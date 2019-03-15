@@ -56,8 +56,9 @@ class Support_test_ODTB2:
         testresult = True
     
         #print ("Messagelist: ", messagelist)
-        if (messagelist == ''):
-            print ("Empty messagelist")
+        if teststring != '' and (messagelist == '' or messagelist == []):
+            print ("Bad: Empty messagelist, teststring '", teststring, "' not found")
+            testresult = False
         else:
             for i in messagelist:
             #print ("can frame  ", i[2].upper())
@@ -105,6 +106,7 @@ class Support_test_ODTB2:
             testresult = False
         elif (not max_no_messages < 0) and (len(SC.can_messages[can_rec]) > max_no_messages):
             print ("Bad: max_no_messages ", len(SC.can_messages[can_rec]))
+            testresult = False
         else:
             print ("number messages ", len(SC.can_messages[can_rec]))
             if (len(SC.can_messages[can_rec]) > 0):

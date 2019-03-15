@@ -60,10 +60,10 @@ class Support_CAN:
         return(payload_value)
 
     def fill_payload(self, payload_value, fill_value = 0):
-        #print ("payload to complete: ", str(payload_value))
+        print ("payload to complete: ", str(payload_value))
         while len(payload_value) < 8:
             payload_value = payload_value + bytes([fill_value])
-        #print ("new payload: ", payload_value)
+        print ("new payload: ", payload_value)
         return(payload_value)
 
     def clear_can_message(self, cm):
@@ -382,8 +382,8 @@ class Support_CAN:
                 #print ("payload rest ", pl_work)
                 if len(pl_work) > 7:
                     #print ("MF pl_append  ", ( bytes([pl_fcount]) + pl_work[0:6]).hex().upper() )
-                    self.add_canframe_tosend(signal_name, (bytes([pl_fcount]) + pl_work[0:6])) 
-                    pl_work = pl_work[6:]
+                    self.add_canframe_tosend(signal_name, (bytes([pl_fcount]) + pl_work[0:7])) 
+                    pl_work = pl_work[7:]
                     pl_fcount = (pl_fcount + 1) & 0x2F
                 else:
                     if padding:
