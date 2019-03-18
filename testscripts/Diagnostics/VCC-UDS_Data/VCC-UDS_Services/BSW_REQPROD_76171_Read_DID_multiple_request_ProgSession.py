@@ -169,12 +169,12 @@ def step_3(stub, s, r, ns):
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
 
 
-# teststep 4: update received messages, verify if DID contained
+# teststep 4: test if DIDs are included in reply
 def step_4(stub, s, r, ns):
     global testresult
     
     stepno = 4
-    purpose = "update received messages, verify if DID contained"
+    purpose = "test if all requested DIDs are included in reply"
     #timeout = 5
     #min_no_messages = 1
     #max_no_messages = 0
@@ -191,12 +191,12 @@ def step_4(stub, s, r, ns):
     print ("all can messages cleared")
     SC.update_can_messages(r)
     print ("all can messages updated")
-    print()
+    print ()
     print ("Step4: messages received ", len(SC.can_messages[r]))
     print ("Step4: messages: ", SC.can_messages[r], "\n")
     print ("Step4: frames received ", len(SC.can_frames[r]))
     print ("Step4: frames: ", SC.can_frames[r], "\n")
-    print("Test if string contains all IDs expected:")
+    print ("Test if string contains all IDs expected:")
 
     testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='F121')
 
@@ -226,12 +226,12 @@ def step_5(stub, s, r, ns):
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
 
 
-# teststep 6: update received messages and frames, display
+# teststep 6: test if DIDs are included in reply
 def step_6(stub, s, r, ns):
     global testresult
     
     stepno = 6
-    purpose = "update received messages and frames, display"
+    purpose = "test if all requested DIDs are included in reply"
     #timeout = 5
     #min_no_messages = 1
     #max_no_messages = 0
@@ -248,12 +248,12 @@ def step_6(stub, s, r, ns):
     print ("all can messages cleared")
     SC.update_can_messages(r)
     print ("all can messages updated")
-    print()
+    print ()
     print ("Step6: messages received ", len(SC.can_messages[r]))
     print ("Step6: messages: ", SC.can_messages[r], "\n")
     print ("Step6: frames received ", len(SC.can_frames[r]))
     print ("Step6: frames: ", SC.can_frames[r], "\n")
-    print("Test if string contains all IDs expected:")
+    print ("Test if string contains all IDs expected:")
     testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='F12A')
 
     
@@ -278,7 +278,6 @@ def step_7(stub, s, r, ns):
     can_mr_extra = ''
     
     SC.change_MF_FC(s, BS, ST, FC_delay, FC_flag, FC_auto)
-    #SC.change_MF_FC(r, BS, ST, FC_delay, FC_flag, FC_auto)
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
 
@@ -305,15 +304,13 @@ def step_8(stub, s, r, ns):
     print ("all can messages cleared")
     SC.update_can_messages(r)
     print ("all can messages updated")
-    print()
+    print ()
     print ("Step8: messages received ", len(SC.can_messages[r]))
     print ("Step8: messages: ", SC.can_messages[r], "\n")
     print ("Step8: frames received ", len(SC.can_frames[r]))
     print ("Step8: frames: ", SC.can_frames[r], "\n")
-    print("Test if string contains all IDs expected:")
+    print ("Test if string contains all IDs expected:")
 
-    #testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='F121')
-    #testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='F12A')
     testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='037F223100000000')
 
     
@@ -322,7 +319,7 @@ def step_9(stub, s, r, ns):
     global testresult
     
     stepno = 9
-    purpose = "send 11 requests at one time - fails in current version (max10)"
+    purpose = "request combined DID EDA0"
     timeout = 1 # wait for message to arrive, but don't test (-1)
     min_no_messages = -1
     max_no_messages = -1
@@ -338,7 +335,6 @@ def step_9(stub, s, r, ns):
     can_mr_extra = ''
     
     SC.change_MF_FC(s, BS, ST, FC_delay, FC_flag, FC_auto)
-    #SC.change_MF_FC(r, BS, ST, FC_delay, FC_flag, FC_auto)
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
 
@@ -365,12 +361,12 @@ def step_10(stub, s, r, ns):
     print ("all can messages cleared")
     SC.update_can_messages(r)
     print ("all can messages updated")
-    print()
+    print ()
     print ("Step8: messages received ", len(SC.can_messages[r]))
     print ("Step8: messages: ", SC.can_messages[r], "\n")
     print ("Step8: frames received ", len(SC.can_frames[r]))
     print ("Step8: frames: ", SC.can_frames[r], "\n")
-    print("Test if string contains all IDs expected:")
+    print ("Test if string contains all IDs expected:")
 
     testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='EDA0')
     testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='F121')
@@ -468,7 +464,7 @@ def run():
     print ("Testcase start: ", datetime.now())
     starttime = time.time()
     print ("time ", time.time())
-    print()
+    print ()
     ############################################
     # precondition
     ############################################
@@ -478,17 +474,17 @@ def run():
     # teststeps
     ############################################
     # step 1:
-    # action: # Change to Extended session
+    # action: # Change to Programming session
     # result: BECM reports mode
     step_1(network_stub, can_send, can_receive, can_namespace)
     
     # step2:
     # action: verify current session
-    # result: BECM reports extended session
+    # result: BECM reports programming session
     step_2(network_stub, can_send, can_receive, can_namespace)
 
     # step3:
-    # action: send several requests at one time - requires SF to send
+    # action: send single requests
     # result: 
     step_3(network_stub, can_send, can_receive, can_namespace)
     
@@ -498,7 +494,7 @@ def run():
     step_4(network_stub, can_send, can_receive, can_namespace)
    
     # step5:
-    # action: send 10 requests at one time
+    # action: request another DID
     # result: 
     step_5(network_stub, can_send, can_receive, can_namespace)
 
@@ -508,41 +504,35 @@ def run():
     step_6(network_stub, can_send, can_receive, can_namespace)
 
     # step7:
-    # action: send 11 requests at one time
+    # action: request 2 DID
     # result: 
     step_7(network_stub, can_send, can_receive, can_namespace)
-
 
     # step8:
     # action: update received messages, verify if DID contained"
     # result: error message expected, as max DID request exceeded
     step_8(network_stub, can_send, can_receive, can_namespace)
     
-
     # step9:
-    # action: send 11 requests at one time
+    # action: send request containing combined DID
     # result: 
     step_9(network_stub, can_send, can_receive, can_namespace)
 
-
     # step10:
     # action: update received messages, verify if DID contained"
-    # result: error message expected, as max DID request exceeded
+    # result: verify if DID contained from combined DID
     step_10(network_stub, can_send, can_receive, can_namespace)
-    
-    
+        
     # step11:
     # action: verify current session
-    # result: BECM reports extended session
+    # result: BECM reports programming session
     step_11(network_stub, can_send, can_receive, can_namespace)
-
 
     # step 12:
     # action: # Change to Default session
     # result: BECM reports mode
     step_12(network_stub, can_send, can_receive, can_namespace)
 
-    
     # step13:
     # action: verify current session
     # result: BECM reports default session
@@ -587,7 +577,7 @@ def run():
         print ("thread enumerate ", threading.enumerate())
             
     print ("Test cleanup end: ", datetime.now())
-    print()
+    print ()
     if testresult:
         print ("Testcase result: PASSED")
     else:
