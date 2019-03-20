@@ -569,4 +569,38 @@ class Support_CAN:
         if (len(temp_message) > 0):
             self.can_messages[can_rec].append(list(temp_message))
         #print ("all can messages : ", self.can_messages)
+        
+        #support function for reading out DTC/DID data:
+    #services
+    #"DiagnosticSessionControl"=10
+    #"reportDTCExtDataRecordByDTCNumber"=19 06
+    #"reportDTCSnapdhotRecordByDTCNumber"= 19 04
+    #"reportDTCByStatusMask" = 19 02 + "confirmedDTC"=03 / "testFailed" = 00
+    #"ReadDataByIentifier" = 22
+    # Etc.....
+    def can_m_send(self, name, message, mask):
+        if name == "DiagnosticSessionControl":
+            ret = bytes(b'\x10')+bytes(message)
+            return ret
+        elif name == "reportDTCExtDataRecordByDTCNumber":
+            ret = bytes(b'\x19\x06')+bytes(message)+bytes(b'\xFF')
+            return ret
+        elif name == "reportDTCSnapdhotRecordByDTCNumber":
+            ret = bytes(b'\x19\x04')+ bytes(message) + bytes(b'\xFF')
+            return ret
+        elif name == "reportDTCByStatusMask":
+            if mask == "confirmedDTC":
+                ret = bytes(b'\x19\x02')+bytes(b'\x03')
+                return ret
+            if mask == "testFailed":
+                ret = bytes(b'\x19\x02')+bytes(b'\x00')
+                return ret
+            else:
+                return "you type not supported mask"
+
+        elif name == "ReadDataByIentifier":
+            ret = bytes(b'\x22')+bytes(message)
+        
+        else:
+            return "you type a wrong name"
 
