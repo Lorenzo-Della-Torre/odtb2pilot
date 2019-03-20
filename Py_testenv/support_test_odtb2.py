@@ -114,3 +114,26 @@ class Support_test_ODTB2:
                     testresult = testresult and self.test_message(SC.can_messages[can_rec], can_answer.hex().upper())
         print ("Step ", step_no, " teststatus:", testresult, "\n")
         return testresult
+        
+    #Pretty Print function support for part numbers
+    def PrettyP(self, title, i):
+        try:
+            y=len(i)
+            # a message filled with \xFF is not readable
+            if str(i[:8]) == "FFFFFFFF":  
+                raise ValueError("Not readable")
+            #error andling for messages without space between 4 BCD and 2 ascii
+            elif y != 14 or str(i[8:10]) != "20":
+                raise ValueError("That is not a part number")
+            else:
+                #error andling for message without ascii valid 
+                j=int(i[10:12],16)
+                x=int(i[12:14],16)
+                if (j < 65 | j > 90) | (x < 65 | x > 90):
+                    raise ValueError("That is not a valid ascii")
+                else:
+                    fascii = str(binascii.unhexlify(i[8:14]).upper())
+                    fascii = str(i[0:8]) + fascii[2:5]
+                    return "{} is: {}".format(title, fascii)
+        except ValueError as ve:
+            print("{} Error: {}".format(title, ve))   
