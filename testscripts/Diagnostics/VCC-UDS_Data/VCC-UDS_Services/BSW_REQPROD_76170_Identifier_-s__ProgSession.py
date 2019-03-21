@@ -193,10 +193,10 @@ def step_4(stub, s, r, ns):
     SC.update_can_messages(r)
     print ("all can messages updated")
     print ()
-    print ("Step3: messages received ", len(SC.can_messages[r]))
-    print ("Step3: messages: ", SC.can_messages[r], "\n")
-    print ("Step3: frames received ", len(SC.can_frames[r]))
-    print ("Step3: frames: ", SC.can_frames[r], "\n")
+    print ("Step4: messages received ", len(SC.can_messages[r]))
+    print ("Step4: messages: ", SC.can_messages[r], "\n")
+    print ("Step4: frames received ", len(SC.can_frames[r]))
+    print ("Step4: frames: ", SC.can_frames[r], "\n")
     print ("Test if string contains all IDs expected:")
 
     testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='F121')
@@ -256,7 +256,7 @@ def step_6(stub, s, r, ns):
     print ("Step6: messages received ", len(SC.can_messages[r]))
     print ("Step6: messages: ", SC.can_messages[r], "\n")
     print ("Step6: frames received ", len(SC.can_frames[r]))
-    print ("Step8: frames: ", SC.can_frames[r], "\n")
+    print ("Step6: frames: ", SC.can_frames[r], "\n")
     print ("Test if string contains all IDs expected:")
 
     testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='037F223100000000')
