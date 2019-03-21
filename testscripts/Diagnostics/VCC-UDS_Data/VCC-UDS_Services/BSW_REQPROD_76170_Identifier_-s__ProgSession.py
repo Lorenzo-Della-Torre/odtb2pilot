@@ -131,7 +131,7 @@ def step_2(stub, s, r, ns):
     
     stepno = 2
     purpose = "Verify programming session"
-    timeout = 5
+    timeout = 1
     min_no_messages = 1
     max_no_messages = 1
 
@@ -148,7 +148,7 @@ def step_3(stub, s, r, ns):
     
     stepno = 3
     purpose = "send 1 request - requires SF to send"
-    timeout = 5 # wait for message to arrive, but don't test (-1)
+    timeout = 1 # wait for message to arrive, but don't test (-1)
     min_no_messages = -1
     max_no_messages = -1
 
@@ -159,7 +159,7 @@ def step_3(stub, s, r, ns):
     FC_flag = 48 #continue send
     FC_auto = False
     
-    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xF1\x20', "")
+    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xF1\x21', "")
     can_mr_extra = ''
     
     SC.change_MF_FC(s, BS, ST, FC_delay, FC_flag, FC_auto)
@@ -199,7 +199,7 @@ def step_4(stub, s, r, ns):
     print ("Step3: frames: ", SC.can_frames[r], "\n")
     print ("Test if string contains all IDs expected:")
 
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='F120')
+    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='F121')
 
     
 # teststep 5: send several requests at one time - requires SF to send, MF for reply
@@ -208,7 +208,7 @@ def step_5(stub, s, r, ns):
     
     stepno = 5
     purpose = "send several requests at one time - requires SF to send"
-    timeout = 5 # wait for message to arrive, but don't test (-1)
+    timeout = 1 # wait for message to arrive, but don't test (-1)
     min_no_messages = -1
     max_no_messages = -1
 
@@ -219,7 +219,7 @@ def step_5(stub, s, r, ns):
     FC_flag = 48 #continue send
     FC_auto = False
     
-    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xF1\x20\xF1\x2A', "")
+    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xF1\x21\xF1\x2A', "")
     can_mr_extra = ''
     
     SC.change_MF_FC(s, BS, ST, FC_delay, FC_flag, FC_auto)
@@ -230,12 +230,12 @@ def step_5(stub, s, r, ns):
     #print ("Step2: frames: ", SC.can_frames, "\n")
 
 
-# teststep 6: test if DIDs are included in reply
+# teststep 6: Verify if number for requests limited in programming session
 def step_6(stub, s, r, ns):
     global testresult
-    
+    #
     stepno = 6
-    purpose = "test if all requested DIDs are included in reply"
+    purpose = "Verify if number for requests limited in programming session"
     #timeout = 5
     #min_no_messages = 1
     #max_no_messages = 0
@@ -253,20 +253,19 @@ def step_6(stub, s, r, ns):
     SC.update_can_messages(r)
     print ("all can messages updated")
     print ()
-    print ("Step3: messages received ", len(SC.can_messages[r]))
-    print ("Step3: messages: ", SC.can_messages[r], "\n")
-    print ("Step3: frames received ", len(SC.can_frames[r]))
-    print ("Step3: frames: ", SC.can_frames[r], "\n")
+    print ("Step6: messages received ", len(SC.can_messages[r]))
+    print ("Step6: messages: ", SC.can_messages[r], "\n")
+    print ("Step6: frames received ", len(SC.can_frames[r]))
+    print ("Step8: frames: ", SC.can_frames[r], "\n")
     print ("Test if string contains all IDs expected:")
 
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='F120')
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='F12A')
+    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='037F223100000000')
 
     # teststep 7: verify session
 def step_7(stub, s, r, ns):
     global testresult
     
-    stepno = 11
+    stepno = 7
     purpose = "Verify Programming session"
     timeout = 1
     min_no_messages = -1
@@ -282,7 +281,7 @@ def step_7(stub, s, r, ns):
 def step_8(stub, s, r, ns):
     global testresult
     
-    stepno = 12
+    stepno = 8
     purpose = "Change to Default session"
     timeout = 1
     min_no_messages = 1
@@ -298,7 +297,7 @@ def step_8(stub, s, r, ns):
 def step_9(stub, s, r, ns):
     global testresult
     
-    stepno = 13
+    stepno = 9
     purpose = "Verify default session"
     timeout = 1
     min_no_messages = 1
@@ -372,12 +371,12 @@ def run():
     # action: send 1 request - requires SF to send, MF for reply
     # result: BECM reports default session
     step_3(network_stub, can_send, can_receive, can_namespace)
-
+    
     # step 4: check if DID is included in reply
     # action: check if expected DID are contained in reply
     # result: true if all contained, false if not
     step_4(network_stub, can_send, can_receive, can_namespace)
-    
+
     # step5:
     # action: send several requests at one time - requires SF to send, MF for reply
     # result: BECM reports default session
