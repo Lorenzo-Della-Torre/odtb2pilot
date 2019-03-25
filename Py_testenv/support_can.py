@@ -588,7 +588,7 @@ class Support_CAN:
         elif name == "reportDTCByStatusMask":
             if mask == "confirmedDTC":
                 ret = b'\x19\x02\x03'
-            if mask == "testFailed":
+            elif mask == "testFailed":
                 ret = b'\x19\x02\x00'
             else:
                 print("You type not supported mask", "\n")
