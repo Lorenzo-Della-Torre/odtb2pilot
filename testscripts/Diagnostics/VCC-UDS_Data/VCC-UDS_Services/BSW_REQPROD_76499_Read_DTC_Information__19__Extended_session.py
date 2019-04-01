@@ -30,7 +30,7 @@ import string
 import logging
 import os
 import sys
-#sys.path.append('generated')
+sys.path.append('generated')
 
 import common_pb2
 import volvo_grpc_network_api_pb2 
@@ -74,25 +74,36 @@ def precondition(stub, s, r, ns):
     SC.subscribe_signal(stub, s, r, ns, timeout)
     #record signal we send as well
     SC.subscribe_signal(stub, r, s, ns, timeout)
+
+    # Parameters for FrameControl FC VCU
+    time.sleep(1)
+    BS=0
+    ST=0
+    FC_delay = 0 #no wait
+    FC_flag = 48 #continue send
+    FC_auto = False
+    SC.change_MF_FC(s, BS, ST, FC_delay, FC_flag, FC_auto)
     
     print()
-    #step_0(stub, s, r, ns)
+    step_0(stub, s, r, ns)
     
     print ("precondition testok:", testresult, "\n")
     
 # teststep 0: Complete ECU Part/Serial Number(s)
 def step_0(stub, s, r, ns):
     global testresult
-    can_m_send = b'\x22\xED\xA0'
-    can_mr_extra = ''
     
     stepno = 0
     purpose = "Complete ECU Part/Serial Number(s)"
     timeout = 5
     min_no_messages = 1
-    max_no_messages = 0
+    max_no_messages = 1
     
+    can_m_send = b'\x22\xED\xA0'
+    can_mr_extra = ''
+
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
+    time.sleep(1)
     
 # teststep 1: Change to Extended session
 def step_1(stub, s, r, ns):
@@ -118,8 +129,8 @@ def step_2(stub, s, r, ns):
     stepno = 2
     purpose = "Verify extended session"
     timeout = 1
-    min_no_messages = 1
-    max_no_messages = 1
+    min_no_messages = -1
+    max_no_messages = -1
 
     can_m_send = b'\x22\xF1\x86'
     can_mr_extra = b'\x03'
@@ -149,8 +160,8 @@ def step_3(stub, s, r, ns):
     stepno = 3
     purpose = "verify that DTC info are sent"
     timeout = 1 #wait a second for reply to be send
-    min_no_messages = 0
-    max_no_messages = 0
+    min_no_messages = -1
+    max_no_messages = -1
   
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     
@@ -165,8 +176,8 @@ def step_4(stub, s, r, ns):
     stepno = 4
     purpose = "Verify Extended session"
     timeout = 1
-    min_no_messages = 1
-    max_no_messages = 1
+    min_no_messages = -1
+    max_no_messages = -1
 
     can_m_send = b'\x22\xF1\x86'
     can_mr_extra = b'\x03'
@@ -197,8 +208,8 @@ def step_6(stub, s, r, ns):
     stepno = 6
     purpose = "Verify default session"
     timeout = 1
-    min_no_messages = 1
-    max_no_messages = 1
+    min_no_messages = -1
+    max_no_messages = -1
 
     can_m_send = b'\x22\xF1\x86'
     can_mr_extra = b'\x01'
