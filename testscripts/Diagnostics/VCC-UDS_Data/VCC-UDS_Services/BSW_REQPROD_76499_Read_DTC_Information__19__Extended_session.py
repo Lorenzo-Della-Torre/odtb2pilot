@@ -160,8 +160,8 @@ def step_3(stub, s, r, ns):
     stepno = 3
     purpose = "verify that DTC info are sent"
     timeout = 1 #wait a second for reply to be send
-    min_no_messages = -1
-    max_no_messages = -1
+    min_no_messages = 1
+    max_no_messages = 1
   
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     
