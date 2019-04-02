@@ -570,7 +570,7 @@ class Support_CAN:
             self.can_messages[can_rec].append(list(temp_message))
         #print ("all can messages : ", self.can_messages)
         
-        #support function for reading out DTC/DID data:
+     #support function for reading out DTC/DID data:
     #services
     #"DiagnosticSessionControl"=10
     #"reportDTCExtDataRecordByDTCNumber"=19 06
@@ -580,27 +580,24 @@ class Support_CAN:
     # Etc.....
     def can_m_send(self, name, message, mask):
         if name == "DiagnosticSessionControl":
-            ret = bytes(b'\x10')+bytes(message)
-            return ret
+            ret = b'\x10' + message
         elif name == "reportDTCExtDataRecordByDTCNumber":
-            ret = bytes(b'\x19\x06')+bytes(message)+bytes(b'\xFF')
-            return ret
+            ret = b'\x19\x06' + message + b'\xFF'
         elif name == "reportDTCSnapdhotRecordByDTCNumber":
-            ret = bytes(b'\x19\x04')+ bytes(message) + bytes(b'\xFF')
-            return ret
+            ret = b'\x19\x04'+ message + b'\xFF'
         elif name == "reportDTCByStatusMask":
             if mask == "confirmedDTC":
-                ret = bytes(b'\x19\x02')+bytes(b'\x03')
-                return ret
-            if mask == "testFailed":
-                ret = bytes(b'\x19\x02')+bytes(b'\x00')
-                return ret
+                ret = b'\x19\x02\x03'
+            elif mask == "testFailed":
+                ret = b'\x19\x02\x00'
             else:
-                return "you type not supported mask"
+                print("You type not supported mask", "\n")
+                ret = b''
 
         elif name == "ReadDataByIentifier":
-            ret = bytes(b'\x22')+bytes(message)
-        
+            ret = b'\x22'+ message
         else:
-            return "you type a wrong name"
+            print("You type a wrong name", "\n")
+            ret = b''
 
+        return ret
