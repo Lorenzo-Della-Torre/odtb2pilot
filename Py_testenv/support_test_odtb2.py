@@ -115,13 +115,14 @@ class Support_test_ODTB2:
         print ("Step ", step_no, " teststatus:", testresult, "\n")
         return testresult
         
-    #Pretty Print function support for part numbers
-    def PrettyP(self, title, i):
+#Pretty Print function support for part numbers
+    def PP_PartNumber(self, i, title=''):
         try:
             y=len(i)
             # a message filled with \xFF is not readable
             if str(i[:8]) == "FFFFFFFF":  
-                raise ValueError("Not readable")
+                #raise ValueError("Not readable")
+                return title + i[:8]
             #error andling for messages without space between 4 BCD and 2 ascii
             elif y != 14 or str(i[8:10]) != "20":
                 raise ValueError("That is not a part number")
@@ -132,8 +133,40 @@ class Support_test_ODTB2:
                 if (j < 65 | j > 90) | (x < 65 | x > 90):
                     raise ValueError("That is not a valid ascii")
                 else:
-                    fascii = str(binascii.unhexlify(i[8:14]).upper())
-                    fascii = str(i[0:8]) + fascii[2:5]
-                    return "{} is: {}".format(title, fascii)
+                    #fascii = str(binascii.unhexlify(i[8:14]).upper())
+                    #fascii = str(i[0:8]) + fascii[2:5]
+                    #return "{} is: {}".format(title, fascii)
+                    #fascii = i[0:8] + bytes.fromhex(i[8:14]).decode('utf-8')
+                    return title + i[0:8] + bytes.fromhex(i[8:14]).decode('utf-8')
         except ValueError as ve:
             print("{} Error: {}".format(title, ve))   
+
+# PrettyPrint Combined_DID EDA0:
+    def PP_CombinedDID_EDA0(self, message, title=''):        
+        pos = message.find('EDA0')
+        retval = ""
+        pos1 = message.find('F120', pos)
+        retval = retval + "Application_Diagnostic_Database '" + self.PP_PartNumber (message[ pos1+4: pos1+18], message[ pos1:pos1+4] + ' ')+ "'\n"
+        pos1 = message.find('F12A', pos1+18)
+        retval = retval + "ECU_Core_Assembly PN            '" + self.PP_PartNumber (message[ pos1+4: pos1+18], message[ pos1:pos1+4] + ' ')+ "'\n"
+        pos1 = message.find('F12B', pos1+18)
+        retval = retval + "ECU_Delivery_Assembly PN        '" + self.PP_PartNumber (message[ pos1+4: pos1+18], message[ pos1:pos1+4] + ' ')+ "'\n"
+        # Combined DID F12E:
+        retval = retval + self.PP_DID_F12E(message[(message.find('F12E',pos1+18)):(message.find('F12E',pos1+18)+76)] )
+        ## ECU serial:
+        retval = retval + "ECU Serial Number         '" + message[144:152] + "'\n"
+        return retval
+
+        
+# PrettyPrint DID F12E:
+    def PP_DID_F12E(self, message, title=''):        
+        retval = ""
+        pos = message.find('F12E')
+        # Combined DID F12E:
+        retval = retval + "Number of SW part numbers '" + message[pos+4:pos+6] + "'\n"
+        retval = retval + "Software Application SWLM '" + self.PP_PartNumber (message[pos+6:pos+20]) + "'\n"
+        retval = retval + "Software Application SWP1 '" + self.PP_PartNumber (message[pos+20:pos+34]) + "'\n"
+        retval = retval + "Software Application SWP2 '" + self.PP_PartNumber (message[pos+34:pos+48]) + "'\n"
+        retval = retval + "Software Application SWCE '" + self.PP_PartNumber (message[pos+48:pos+62]) + "'\n"
+        retval = retval + "ECU SW Structure PartNumb '" + self.PP_PartNumber (message[pos+62:pos+76]) + "'\n"
+        return retval
