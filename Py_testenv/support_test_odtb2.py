@@ -206,3 +206,64 @@ class Support_test_ODTB2:
                 return "{} is: {}".format(title, message[pos + 4: pos + 12])
         except ValueError as ve:
             print("{} Error: {}".format(title, ve))
+            
+            
+    #Pretty Print function support for Real Time DID
+    def PP_DID(self, message, title=''):
+        if title=='Global Real Time':
+            try:
+                pos = message.find('DD00')
+                # a message filled with \xFF is not readable
+                if str(message[pos + 4:pos + 12]) == "FFFFFFFF":  
+                    raise ValueError("Not readable")
+                else:
+                    return "{} is: {}".format(title, message[pos + 4: pos + 12])
+            except ValueError as ve:
+                print("{} Error: {}".format(title, ve))
+
+        elif title=='Total Distance':
+            try:
+                pos = message.find('DD01')
+                # a message filled with \xFF is not readable
+                if str(message[pos + 4:pos + 10]) == "FFFFFF":  
+                    raise ValueError("Not readable")
+                else:
+                    return "{} is: {}".format(title, message[pos + 4: pos + 10])
+            except ValueError as ve:
+                print("{} Error: {}".format(title, ve))
+
+        elif title=='Vehicle Battery Voltage':
+            try:
+                pos = message.find('DD02')
+                # a message filled with \xFF is not readable
+                if str(message[pos + 4:pos + 6]) == "FF":  
+                    raise ValueError("Not readable")
+                else:
+                    return "{} is: {}".format(title, message[pos + 4: pos + 6])
+            except ValueError as ve:
+                print("{} Error: {}".format(title, ve))
+
+        elif title=='Usage Mode':
+            try:
+                pos = message.find('DD0A')
+                # a message filled with \xFF is not readable
+                if str(message[pos + 4:pos + 10]) == "FFFFFF":  
+                    raise ValueError("Not readable")
+                else:
+                    return "{} is: {}".format(title, message[pos + 4: pos + 6])
+            except ValueError as ve:
+                print("{} Error: {}".format(title, ve))
+
+        elif title=='PNC':
+            try:
+                pos = message.find('DD0B')
+                # a message filled with \xFF is not readable
+                if str(message[pos + 4:pos + 6]) == "FF":  
+                    raise ValueError("Not readable")
+                else:
+                    return "{} is: {}".format(title, message[pos + 4: pos + 10])
+            except ValueError as ve:
+                print("{} Error: {}".format(title, ve))
+
+        else:
+            print('not supported DID PP')
