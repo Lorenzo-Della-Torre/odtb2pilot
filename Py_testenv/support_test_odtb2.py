@@ -170,3 +170,39 @@ class Support_test_ODTB2:
         retval = retval + "Software Application SWCE '" + self.PP_PartNumber (message[pos+48:pos+62]) + "'\n"
         retval = retval + "ECU SW Structure PartNumb '" + self.PP_PartNumber (message[pos+62:pos+76]) + "'\n"
         return retval
+
+     #Pretty Print function support for Real Time DID
+    def PP_DID_1_Byte(self, message, title=''):
+        try:
+            pos = message.find(title)
+            # a message filled with \xFF is not readable
+            if str(message[pos + 4:pos + 6]) == "FF":  
+                raise ValueError("Not readable")
+            else:
+                return "{} is: {}".format(title, message[pos + 4: pos + 6])
+        except ValueError as ve:
+            print("{} Error: {}".format(title, ve))
+
+    #Pretty Print function support for Real Time DID
+    def PP_DID_3_Byte(self, message, title=''):
+        try:
+            pos = message.find(title)
+            # a message filled with \xFF is not readable
+            if str(message[pos + 4:pos + 10]) == "FFFFFF":  
+                raise ValueError("Not readable")
+            else:
+                return "{} is: {}".format(title, message[pos + 4: pos + 10])
+        except ValueError as ve:
+            print("{} Error: {}".format(title, ve))
+
+    #Pretty Print function support for Real Time DID
+    def PP_DID_4_Byte(self, message, title=''):
+        try:
+            pos = message.find(title)
+            # a message filled with \xFF is not readable
+            if str(message[pos + 4:pos + 12]) == "FFFFFFFF":  
+                raise ValueError("Not readable")
+            else:
+                return "{} is: {}".format(title, message[pos + 4: pos + 12])
+        except ValueError as ve:
+            print("{} Error: {}".format(title, ve))
