@@ -178,7 +178,7 @@ def step_3(stub, s, r, ns):
     else:
         testresult = False
         print("FAIL: Wrong number of frames received. Expeced", BS1, "Received:", len(SC.can_frames[r]))
-    print ("Step4: frames received ", len(SC.can_frames[r]), "\n")
+    print ("Step3: frames received ", len(SC.can_frames[r]), "\n")
 
  
 # teststep 4: set back FC_delay to default
