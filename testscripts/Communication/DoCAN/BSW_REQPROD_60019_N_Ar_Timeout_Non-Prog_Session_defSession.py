@@ -146,7 +146,7 @@ def step_2(stub, s, r, ns):
     else:
         testresult = False
         print("FAIL: Wrong number of frames received. Expeced", BS1, "Received:", len(SC.can_frames[r]))
-    print ("Step3: frames received ", len(SC.can_frames[r]), "\n")
+    print ("Step2: frames received ", len(SC.can_frames[r]), "\n")
     
 # teststep 3: request EDA0 - with FC delay > timeout 1000 ms
 def step_3(stub, s, r, ns):
