@@ -174,7 +174,7 @@ class Support_test_ODTB2:
      #Pretty Print function support for Real Time DID
     def P_DID(self, message, title,length):
         pos = message.find(title)
-        return "{}".format(message[pos + 4: pos + 4 +(int(length)*2)])
+        return "{}".format(message[pos + 4: pos + 4 +(length*2)])
     
     #Pretty Print function support for Real Time DID
     def PP_DID(self, message, title, length):
