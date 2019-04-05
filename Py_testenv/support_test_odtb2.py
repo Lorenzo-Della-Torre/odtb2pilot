@@ -170,3 +170,36 @@ class Support_test_ODTB2:
         retval = retval + "Software Application SWCE '" + self.PP_PartNumber (message[pos+48:pos+62]) + "'\n"
         retval = retval + "ECU SW Structure PartNumb '" + self.PP_PartNumber (message[pos+62:pos+76]) + "'\n"
         return retval
+
+     #Pretty Print function support for Real Time DID
+    def P_DID(self, message, title,length):
+        pos = message.find(title)
+        return "{}".format(message[pos + 4: pos + 4 +(length*2)])
+    
+    #Pretty Print function support for Real Time DID
+    def PP_DID(self, message, title, length):
+        retval = ""
+        if title=='Global Real Time':
+            retval = "Global Real Time'" + self.P_DID(message,'DD00', length) + "'\n" 
+            
+        elif title=='Total Distance':
+            retval = "Total Distance'" + self.P_DID(message,'DD01', length) + "'\n"
+
+        elif title=='Vehicle Battery Voltage':
+            retval = "Vehicle Battery Voltage'" + self.P_DID(message,'DD02', length) + "'\n"
+
+        elif title=='Usage Mode':
+            retval = "Usage Mode'" + self.P_DID(message,'DD0A', length) + "'\n"
+
+        elif title=='PNC':
+            retval = "PNC'" + self.P_DID(message,'DD0B', length) + "'\n"
+        
+        else:
+            print('not supported DID PP')
+        return retval
+        
+    #Pretty Print function support for Extended DTC
+    def P_Ext_DTC(self, message, title,length):
+        return title + "'{}".format(message[:length*2]) + "'\n"
+        
+    
