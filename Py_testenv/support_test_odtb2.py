@@ -197,3 +197,9 @@ class Support_test_ODTB2:
         else:
             print('not supported DID PP')
         return retval
+        
+    #Pretty Print function support for Extended DTC
+    def P_Ext_DTC(self, message, title,length):
+        return title + "'{}".format(message[:length*2]) + "'\n"
+        
+    
