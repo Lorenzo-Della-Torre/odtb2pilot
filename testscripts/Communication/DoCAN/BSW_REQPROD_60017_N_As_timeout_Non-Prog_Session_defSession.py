@@ -79,14 +79,13 @@ def precondition(stub, s, r, ns):
     SC.subscribe_signal(stub, r, s, ns, timeout)
 
     # Parameters for FrameControl FC VCU
-    #time.sleep(1)
-    #BS=0
-    #ST=0
-    #FC_delay = 0 #no wait
-    #FC_flag = 48 #continue send
-    #FC_auto = False
-    #FC_auto = True
-    #SC.change_MF_FC(s, BS, ST, FC_delay, FC_flag, FC_auto)
+    time.sleep(1)
+    BS=0
+    ST=0
+    FC_delay = 0 #no wait
+    FC_flag = 48 #continue send
+    FC_auto = False
+    SC.change_MF_FC(s, BS, ST, FC_delay, FC_flag, FC_auto)
     
     print()
     step_0(stub, s, r, ns)
@@ -143,17 +142,15 @@ def step_2(stub, s, r, ns):
     ST=0
     FC_delay = 950 #wait 950 ms
     FC_flag = 48 #continue send
-    FC_auto = True
+    FC_auto = False
     
     SC.change_MF_FC(s, BS, ST, FC_delay, FC_flag, FC_auto)
     #SC.change_MF_FC(r, BS, ST, FC_delay, FC_flag, FC_auto)
     
-    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xF1\x20\xF1\x2A', "")
+    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xDD\x02\xDD\x0A\xDD\x0C\x49\x47', "")
     can_mr_extra = ''
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    #print ("Step2: frames received ", len(SC.can_frames))
-    #print ("Step2: frames: ", SC.can_frames, "\n")
 
 
 # teststep 3: test if DIDs are included in reply
@@ -185,8 +182,10 @@ def step_3(stub, s, r, ns):
     print ("Step3: frames: ", SC.can_frames[r], "\n")
     print ("Test if string contains all IDs expected:")
 
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='F120')
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='F12A')
+    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='DD02')
+    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='DD0A')
+    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='DD0C')
+    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='4947')
 
     
 # teststep 4: send request with MF reply, FC_delay > timeout
@@ -205,18 +204,16 @@ def step_4(stub, s, r, ns):
     ST=0
     FC_delay = 1010 #wait 1010 ms with reply
     FC_flag = 48 #continue send
-    FC_auto = True
+    FC_auto = False
     
     
     SC.change_MF_FC(s, BS, ST, FC_delay, FC_flag, FC_auto)
     #SC.change_MF_FC(r, BS, ST, FC_delay, FC_flag, FC_auto)
 
-    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xF1\x20\xF1\x2A', "")
+    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xDD\x02\xDD\x0A\xDD\x0C\x49\x47', "")
     can_mr_extra = ''
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    #print ("Step2: frames received ", len(SC.can_frames))
-    #print ("Step2: frames: ", SC.can_frames, "\n")
 
 
 # teststep 5: test if DIDs are included in reply
@@ -245,140 +242,31 @@ def step_5(stub, s, r, ns):
     print ("Step5: frames received ", len(SC.can_frames[r]))
     print ("Step5: frames: ", SC.can_frames[r], "\n")
 
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='F120')
-    #testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='F12A')
-    print ("verify that only FF received: len(frames_received) == 1 :", len(SC.can_frames[r]) == 1)
-    testresult = testresult and (len(SC.can_frames[r]) == 1)
-
+    print ("verify that no reply received: len(frames_received) == 1 :", len(SC.can_frames[r]) == 0)
+    testresult = testresult and (len(SC.can_frames[r]) == 0)
     
-# teststep 6: request 11 DID at once
+
+## teststep 6: set back FC_delay to default
 def step_6(stub, s, r, ns):
     global testresult
     
     stepno = 6
-    purpose = "send 11 requests at one time - fails in current version (max10)"
-    timeout = 5 # wait for message to arrive, but don't test (-1)
+    purpose = "set back FC_delay to default"
+    timeout = 5 
     min_no_messages = -1
     max_no_messages = -1
 
-    # Parameters for FrameControl FC
+    BS1 = 1
     BS=0
     ST=0
-    FC_delay = 0 #no wait
-    FC_flag = 48 #continue send
+    FC_flag =   48 #continue to send
+    FC_delay =  0 
     FC_auto = False
     
-    can_m_send = b'\x22\x49\x1A\xDD\x02\xDD\x0A\xDD\x0C\x49\x47\x49\x50\xDA\xD0\xDA\xD1\x48\x02\x48\x03\x49\x45'
-    can_mr_extra = ''
-    
-    SC.change_MF_FC(s, BS, ST, FC_delay, FC_flag, FC_auto)
-    
-    testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-
-
-# teststep 7: test if error received
-def step_7(stub, s, r, ns):
-    global testresult
-    #
-    stepno = 7
-    purpose = "verify that error message received"
-    #timeout = 5
-    #min_no_messages = 1
-    #max_no_messages = 0
-    #
-
-    # No normal teststep done,
-    # instead: update CAN messages, verify all serial-numbers received (by checking ID for each serial-number)
-    #teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    
     SuTe.print_test_purpose(stepno, purpose)
-    
-    time.sleep(1)
-    SC.clear_all_can_messages()
-    print ("all can messages cleared")
-    SC.update_can_messages(r)
-    print ("all can messages updated")
-    print ()
-    print ("Step7: messages received ", len(SC.can_messages[r]))
-    print ("Step7: messages: ", SC.can_messages[r], "\n")
-    print ("Step7: frames received ", len(SC.can_frames[r]))
-    print ("Step7: frames: ", SC.can_frames[r], "\n")
-    print ("Test if string contains all IDs expected:")
-
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='037F223100000000')
-
-    
-# teststep 8: send 10 requests at one time - those with most bytes in return
-def step_8(stub, s, r, ns):
-    global testresult
-    
-    stepno = 8
-    purpose = "send 10 requests at one time - those with most bytes in return"
-    timeout = 5 # wait for message to arrive, but don't test (-1)
-    min_no_messages = -1
-    max_no_messages = -1
-
-    # Parameters for FrameControl FC
-    BS=0
-    ST=0
-    FC_delay = 0 #no wait
-    FC_flag = 48 #continue send
-    FC_auto = False
-    
-    # send 11 requests now
-    can_m_send = b'\x22\xED\xA0\xF1\x26\xF1\x2E\xDA\x80\xF1\x8C\xDD\x00\xDD\x0B\xDD\x01\x49\x45\xDB\x72'
-    can_mr_extra = ''
-    
-    SC.change_MF_FC(s, BS, ST, FC_delay, FC_flag, FC_auto)
-    
-    testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-
-
-# teststep 9: test if DIDs are included in reply including those from combined DID
-def step_9(stub, s, r, ns):
-    global testresult
-    #
-    stepno = 9
-    purpose = "test if all requested DIDs are included in reply"
-    #timeout = 5
-    #min_no_messages = 1
-    #max_no_messages = 0
-    #
-
-    # No normal teststep done,
-    # instead: update CAN messages, verify all serial-numbers received (by checking ID for each serial-number)
-    #teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    
-    SuTe.print_test_purpose(stepno, purpose)
-    
-    time.sleep(1)
-    SC.clear_all_can_messages()
-    print ("all can messages cleared")
-    SC.update_can_messages(r)
-    print ("all can messages updated")
-    print ()
-    print ("Step9: messages received ", len(SC.can_messages[r]))
-    print ("Step9: messages: ", SC.can_messages[r], "\n")
-    print ("Step9: frames received ", len(SC.can_frames[r]))
-    print ("Step9: frames: ", SC.can_frames[r], "\n")
-    print ("Test if string contains all IDs expected:")
-
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='EDA0')
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='F120')
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='F12A')
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='F12B')
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='F12E')
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='F18C')
-
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='F126')
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='F12E')
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='DA80')
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='F18C')
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='DD00')
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='DD0B')
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='DD01')
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='4945')
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='DB72')
+    #update_can_messages_2(stub, r)
+    #print(can_frames, "\n")
+    SC.change_MF_FC(r, BS, ST, FC_delay, FC_flag, FC_auto)
 
 
     
