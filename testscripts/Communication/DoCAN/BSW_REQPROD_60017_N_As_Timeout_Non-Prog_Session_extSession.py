@@ -79,14 +79,13 @@ def precondition(stub, s, r, ns):
     SC.subscribe_signal(stub, r, s, ns, timeout)
 
     # Parameters for FrameControl FC VCU
-    #time.sleep(1)
-    #BS=0
-    #ST=0
-    #FC_delay = 0 #no wait
-    #FC_flag = 48 #continue send
-    #FC_auto = False
-    #FC_auto = True
-    #SC.change_MF_FC(s, BS, ST, FC_delay, FC_flag, FC_auto)
+    time.sleep(1)
+    BS=0
+    ST=0
+    FC_delay = 0 #no wait
+    FC_flag = 48 #continue send
+    FC_auto = False
+    SC.change_MF_FC(s, BS, ST, FC_delay, FC_flag, FC_auto)
     
     print()
     step_0(stub, s, r, ns)
@@ -144,7 +143,7 @@ def step_2(stub, s, r, ns):
     #time.sleep(1)
 
     
-# teststep 3: send request with MF reply, FC_delay < timeout
+# teststep 3: send request with MF to send, delay to FC < timeout
 def step_3(stub, s, r, ns):
     global testresult
     
@@ -159,12 +158,12 @@ def step_3(stub, s, r, ns):
     ST=0
     FC_delay = 950 #wait 950 ms
     FC_flag = 48 #continue send
-    FC_auto = True
+    FC_auto = False
     
     SC.change_MF_FC(s, BS, ST, FC_delay, FC_flag, FC_auto)
     #SC.change_MF_FC(r, BS, ST, FC_delay, FC_flag, FC_auto)
     
-    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xF1\x20\xF1\x2A', "")
+    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xDD\x02\xDD\x0A\xDD\x0C\x49\x47', "")
     can_mr_extra = ''
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
@@ -193,14 +192,16 @@ def step_4(stub, s, r, ns):
     SC.update_can_messages(r)
     print ("all can messages updated")
     print ()
-    print ("Step3: messages received ", len(SC.can_messages[r]))
-    print ("Step3: messages: ", SC.can_messages[r], "\n")
-    print ("Step3: frames received ", len(SC.can_frames[r]))
-    print ("Step3: frames: ", SC.can_frames[r], "\n")
+    print ("Step4: messages received ", len(SC.can_messages[r]))
+    print ("Step4: messages: ", SC.can_messages[r], "\n")
+    print ("Step4: frames received ", len(SC.can_frames[r]))
+    print ("Step4: frames: ", SC.can_frames[r], "\n")
     print ("Test if string contains all IDs expected:")
 
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='F120')
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='F12A')
+    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='DD02')
+    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='DD0A')
+    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='DD0C')
+    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='4947')
 
     
 # teststep 5: send request with MF reply, FC_delay > timeout
@@ -219,13 +220,13 @@ def step_5(stub, s, r, ns):
     ST=0
     FC_delay = 1010 #wait 1010 ms with reply
     FC_flag = 48 #continue send
-    FC_auto = True
+    FC_auto = False
     
     
     SC.change_MF_FC(s, BS, ST, FC_delay, FC_flag, FC_auto)
     #SC.change_MF_FC(r, BS, ST, FC_delay, FC_flag, FC_auto)
 
-    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xF1\x20\xF1\x2A', "")
+    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xDD\x02\xDD\x0A\xDD\x0C\x49\x47', "")
     can_mr_extra = ''
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
@@ -257,12 +258,10 @@ def step_6(stub, s, r, ns):
     print ("Step6: frames received ", len(SC.can_frames[r]))
     print ("Step6: frames: ", SC.can_frames[r], "\n")
 
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='F120')
-    print ("verify that only FF received: len(frames_received) == 1 :", len(SC.can_frames[r]) == 1)
-    testresult = testresult and (len(SC.can_frames[r]) == 1)
+    print ("verify that no reply received: len(frames_received) == 1 :", len(SC.can_frames[r]) == 0)
+    testresult = testresult and (len(SC.can_frames[r]) == 0)
     
 
- 
 # teststep 7: set back FC_delay to default
 def step_7(stub, s, r, ns):
     global testresult
@@ -278,7 +277,7 @@ def step_7(stub, s, r, ns):
     ST=0
     FC_flag =   48 #continue to send
     FC_delay =  0 
-    FC_auto = True
+    FC_auto = False
     
     SuTe.print_test_purpose(stepno, purpose)
     #update_can_messages_2(stub, r)
