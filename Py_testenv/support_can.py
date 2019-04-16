@@ -44,9 +44,12 @@ import common_pb2
 class Support_CAN:
 
 # Buffer for receives CAN frames and messages
+    #can_cf_received = [1554802159.4773512, 'BecmToVcu1Front1DiagResFrame', '30000A000000FCCF']
+    can_cf_received = dict()
     can_frames = dict()
     can_messages = dict()
     can_subscribes = dict()
+    
 
     _heartbeat = False
 
@@ -65,6 +68,10 @@ class Support_CAN:
             payload_value = payload_value + bytes([fill_value])
         print ("new payload: ", payload_value)
         return(payload_value)
+
+    def clear_old_CF_frames(self):
+        for cm in self.can_cf_received:
+            self.can_cf_received[cm]=list()
 
     def clear_can_message(self, cm):
         self.can_messages[cm]=list()
@@ -95,6 +102,8 @@ class Support_CAN:
         # add signal to dictionary, empty list of messages    
         self.can_frames[sig] = list()
         self.can_messages[sig] = list()
+        self.can_cf_received[sig] = list()
+        
      
 # Frame control handling
         #default for each signal to register
@@ -291,17 +300,24 @@ class Support_CAN:
             FC_flag = int(last_frame[1:2],16)
             BS = int(last_frame[2:4],16)
             ST = int(last_frame[4:6],16)
-            print ("FC_flag ", FC_flag)
+
+            # safe CF received for later analysis 
+            self.can_cf_received[r].append(self.can_frames[r][0])
         
             if FC_flag == 1:
                 # Wait flag - wait for next FC frame
                 self.send_CF_CAN (stub, s, r, ns, frequency, timeout_ms)
             elif FC_flag == 2:
                 # overflow / abort
+                print ("Error: FC 32 received")
                 return ("Error: FC 32 received")
             elif FC_flag == 0:
                 # continue sending as stated in FC frame
                 print ("continue sending MF message")
+                # delay frame sent after FC received as stated if FC_delay
+                if (self.can_subscribes[s][3] != 0):
+                    print ("delay frame after FC as stated in FC_delay [ms]:", self.can_subscribes[s][3])
+                    time.sleep(self.can_subscribes[s][3]/1000)
                 #print ("already sent: ", self.can_mf_send[s][0])
                 #print ("length mess:  ", len(self.can_mf_send[s][1]))
                 while self.can_mf_send[s][0] < len(self.can_mf_send[s][1]):
@@ -321,14 +337,18 @@ class Support_CAN:
                 return ("FAIL: invalid value in FC")
         if (self.can_mf_send[s][0] == len(self.can_mf_send[s][1])):
             print ("MF sent, remove MF")
+            print ("CAN_CF_RECEIVED: ", self.can_cf_received)
+            #print ("CAN_CF_RECEIVED: ", self.can_cf_received[r])
             #print ("before: can_mf_send[s] ", self.can_mf_send[s])
             self.can_mf_send[s]=[]
             #self.can_mf_send[s].pop(0)
             #print ("after:  can_mf_send[s] ", self.can_mf_send[s])
             print ("remove CF from received frames:")
-            print ("before ", self.can_frames[r])
+            #print ("before ", self.can_frames[r])
+            #self.can_cf_received[r].append(self.can_frames[r][0])
             self.can_frames[r].pop(0)
-            print ("after  ", self.can_frames[r])
+            #print ("after  ", self.can_frames[r])
+            #print ("Safed CF ", self.can_cf_received)
             return ("OK: MF message sent")
         else:
             return ("FAIL: MF message failed to send")
@@ -464,6 +484,7 @@ class Support_CAN:
 
 #change parameters of FC and how FC frame is used
     def change_MF_FC(self, sig, BS, ST, FC_delay, FC_flag, FC_auto):
+        #print ("change_MF_FC")
         #global can_subscribes
         #print ("can_subscribes ", self.can_subscribes)
         self.can_subscribes[sig][1] = BS
@@ -570,7 +591,7 @@ class Support_CAN:
             self.can_messages[can_rec].append(list(temp_message))
         #print ("all can messages : ", self.can_messages)
         
-        #support function for reading out DTC/DID data:
+    #support function for reading out DTC/DID data:
     #services
     #"DiagnosticSessionControl"=10
     #"reportDTCExtDataRecordByDTCNumber"=19 06
@@ -580,27 +601,24 @@ class Support_CAN:
     # Etc.....
     def can_m_send(self, name, message, mask):
         if name == "DiagnosticSessionControl":
-            ret = bytes(b'\x10')+bytes(message)
-            return ret
+            ret = b'\x10' + message
         elif name == "reportDTCExtDataRecordByDTCNumber":
-            ret = bytes(b'\x19\x06')+bytes(message)+bytes(b'\xFF')
-            return ret
+            ret = b'\x19\x06' + message + b'\xFF'
         elif name == "reportDTCSnapdhotRecordByDTCNumber":
-            ret = bytes(b'\x19\x04')+ bytes(message) + bytes(b'\xFF')
-            return ret
+            ret = b'\x19\x04'+ message + b'\xFF'
         elif name == "reportDTCByStatusMask":
             if mask == "confirmedDTC":
-                ret = bytes(b'\x19\x02')+bytes(b'\x03')
-                return ret
-            if mask == "testFailed":
-                ret = bytes(b'\x19\x02')+bytes(b'\x00')
-                return ret
+                ret = b'\x19\x02\x03'
+            elif mask == "testFailed":
+                ret = b'\x19\x02\x00'
             else:
-                return "you type not supported mask"
+                print("You type not supported mask", "\n")
+                ret = b''
 
         elif name == "ReadDataByIentifier":
-            ret = bytes(b'\x22')+bytes(message)
-        
+            ret = b'\x22'+ message
         else:
-            return "you type a wrong name"
+            print("You type a wrong name", "\n")
+            ret = b''
 
+        return ret
