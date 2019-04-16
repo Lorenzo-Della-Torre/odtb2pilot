@@ -77,7 +77,11 @@ class Support_test_ODTB2:
     def teststep(self, stub, m_send, m_receive_extra, can_send = "", can_rec = "", can_nspace="", step_no = '', purpose="", timeout = 5, min_no_messages = -1, max_no_messages = -1, clear_old_mess= True):
         testresult = True
     
-        #clear old messages
+        print ("teststep called")
+        #SC.can_cf_received = [1554802159.4773512, 'BecmToVcu1Front1DiagResFrame', '30000A000000FBBF']#clear old messages
+        SC.clear_old_CF_frames()
+        
+        print ("clear old messages")
         if clear_old_mess: 
             SC.clear_all_can_frames()
             SC.clear_all_can_messages()
@@ -86,8 +90,9 @@ class Support_test_ODTB2:
     
         # wait for messages
         # define answer to expect
+        print ("build answer can_frames to receive")
         can_answer = SC.can_receive(m_send, m_receive_extra)
-        #print ("can_frames to receive", can_answer)
+        print ("can_frames to receive", can_answer)
         # message to send
         print ("To send:   [", time.time(), ", ", can_send, ", ", m_send.hex().upper(),"]")
         #print ("test send CAN_MF: ")
@@ -120,14 +125,14 @@ class Support_test_ODTB2:
         try:
             y=len(i)
             # a message filled with \xFF is not readable
-            if str(i[:8]) == "FFFFFFFF":  
+            if str(i[:8]) == "FFFFFFFF":
                 #raise ValueError("Not readable")
                 return title + i[:8]
-            #error andling for messages without space between 4 BCD and 2 ascii
+            #error handling for messages without space between 4 BCD and 2 ascii
             elif y != 14 or str(i[8:10]) != "20":
                 raise ValueError("That is not a part number")
             else:
-                #error andling for message without ascii valid 
+                #error handling for message without ascii valid 
                 j=int(i[10:12],16)
                 x=int(i[12:14],16)
                 if (j < 65 | j > 90) | (x < 65 | x > 90):
@@ -135,7 +140,7 @@ class Support_test_ODTB2:
                 else:
                     #fascii = str(binascii.unhexlify(i[8:14]).upper())
                     #fascii = str(i[0:8]) + fascii[2:5]
-                    #return "{} is: {}".format(title, fascii)
+                    #return "{} {}".format(title, fascii)
                     #fascii = i[0:8] + bytes.fromhex(i[8:14]).decode('utf-8')
                     return title + i[0:8] + bytes.fromhex(i[8:14]).decode('utf-8')
         except ValueError as ve:
@@ -171,35 +176,182 @@ class Support_test_ODTB2:
         retval = retval + "ECU SW Structure PartNumb '" + self.PP_PartNumber (message[pos+62:pos+76]) + "'\n"
         return retval
 
-     #Pretty Print function support for Real Time DID
-    def P_DID(self, message, title,length):
-        pos = message.find(title)
-        return "{}".format(message[pos + 4: pos + 4 +(length*2)])
-    
-    #Pretty Print function support for Real Time DID
-    def PP_DID(self, message, title, length):
-        retval = ""
-        if title=='Global Real Time':
-            retval = "Global Real Time'" + self.P_DID(message,'DD00', length) + "'\n" 
-            
-        elif title=='Total Distance':
-            retval = "Total Distance'" + self.P_DID(message,'DD01', length) + "'\n"
-
-        elif title=='Vehicle Battery Voltage':
-            retval = "Vehicle Battery Voltage'" + self.P_DID(message,'DD02', length) + "'\n"
-
-        elif title=='Usage Mode':
-            retval = "Usage Mode'" + self.P_DID(message,'DD0A', length) + "'\n"
-
-        elif title=='PNC':
-            retval = "PNC'" + self.P_DID(message,'DD0B', length) + "'\n"
-        
+    def PP_CAN_NRC(self, message):
+        mess_len = len(message)
+        if (mess_len == 0):
+            return ("No NRC found")
         else:
-            print('not supported DID PP')
-        return retval
+            NRC = {
+                '00' : 'positiveResponse',
+                '01' : 'ISOSAEReserved',
+                '02' : 'ISOSAEReserved',
+                '03' : 'ISOSAEReserved',
+                '04' : 'ISOSAEReserved',
+                '05' : 'ISOSAEReserved',
+                '06' : 'ISOSAEReserved',
+                '07' : 'ISOSAEReserved',
+                '08' : 'ISOSAEReserved',
+                '09' : 'ISOSAEReserved',
+                '0A' : 'ISOSAEReserved',
+                '0B' : 'ISOSAEReserved',
+                '0C' : 'ISOSAEReserved',
+                '0D' : 'ISOSAEReserved',
+                '0E' : 'ISOSAEReserved',
+                '0F' : 'ISOSAEReserved',
+                '10' : 'generalReject',
+                '11' : 'serviceNotSupported',
+                '12' : 'subFunctionNotSupported',
+                '13' : 'incorrectMessageLengthOrInvalidFormat',
+                '14' : 'responseTooLong',
+                '15' : 'ISOSAEReserved',
+                '16' : 'ISOSAEReserved',
+                '17' : 'ISOSAEReserved',
+                '18' : 'ISOSAEReserved',
+                '19' : 'ISOSAEReserved',
+                '1A' : 'ISOSAEReserved',
+                '1B' : 'ISOSAEReserved',
+                '1C' : 'ISOSAEReserved',
+                '1D' : 'ISOSAEReserved',
+                '1E' : 'ISOSAEReserved',
+                '1F' : 'ISOSAEReserved',
+                '20' : 'ISOSAEReserved',
+                '21' : 'busyRepeatReques',
+                '22' : 'conditionsNotCorrect',
+                '23' : 'ISOSAEReserved',
+                '24' : 'requestSequenceError',
+                '25' : 'ISOSAEReserved',
+                '26' : 'ISOSAEReserved',
+                '27' : 'ISOSAEReserved',
+                '28' : 'ISOSAEReserved',
+                '29' : 'ISOSAEReserved',
+                '2A' : 'ISOSAEReserved',
+                '2B' : 'ISOSAEReserved',
+                '2C' : 'ISOSAEReserved',
+                '2D' : 'ISOSAEReserved',
+                '2E' : 'ISOSAEReserved',
+                '2F' : 'ISOSAEReserved',
+                '30' : 'ISOSAEReserved',
+                '31' : 'requestOutOfRange',
+                '32' : 'ISOSAEReserved ',
+                '33' : 'securityAccessDenied',
+                '34' : 'ISOSAEReserved',
+                '35' : 'invalidKey',
+                '36' : 'exceedNumberOfAttempts',
+                '37' : 'requiredTimeDelayNotExpired',
+                '38' : 'reservedByExtendedDataLinkSecurityDocument',
+                '39' : 'reservedByExtendedDataLinkSecurityDocument',
+                '3A' : 'reservedByExtendedDataLinkSecurityDocument',
+                '3B' : 'reservedByExtendedDataLinkSecurityDocument',
+                '3C' : 'reservedByExtendedDataLinkSecurityDocument',
+                '3D' : 'reservedByExtendedDataLinkSecurityDocument',
+                '3E' : 'reservedByExtendedDataLinkSecurityDocument',
+                '3F' : 'reservedByExtendedDataLinkSecurityDocument',
+                '40' : 'reservedByExtendedDataLinkSecurityDocument',
+                '41' : 'reservedByExtendedDataLinkSecurityDocument',
+                '42' : 'reservedByExtendedDataLinkSecurityDocument',
+                '43' : 'reservedByExtendedDataLinkSecurityDocument',
+                '44' : 'reservedByExtendedDataLinkSecurityDocument',
+                '45' : 'reservedByExtendedDataLinkSecurityDocument',
+                '46' : 'reservedByExtendedDataLinkSecurityDocument',
+                '47' : 'reservedByExtendedDataLinkSecurityDocument',
+                '48' : 'reservedByExtendedDataLinkSecurityDocument',
+                '49' : 'reservedByExtendedDataLinkSecurityDocument',
+                '4A' : 'reservedByExtendedDataLinkSecurityDocument',
+                '4B' : 'reservedByExtendedDataLinkSecurityDocument',
+                '4C' : 'reservedByExtendedDataLinkSecurityDocument',
+                '4D' : 'reservedByExtendedDataLinkSecurityDocument',
+                '4E' : 'reservedByExtendedDataLinkSecurityDocument',
+                '4F' : 'reservedByExtendedDataLinkSecurityDocument',
+                '50' : 'ISOSAEReserved',
+                '51' : 'ISOSAEReserved',
+                '52' : 'ISOSAEReserved',
+                '53' : 'ISOSAEReserved',
+                '54' : 'ISOSAEReserved',
+                '55' : 'ISOSAEReserved',
+                '56' : 'ISOSAEReserved',
+                '57' : 'ISOSAEReserved',
+                '58' : 'ISOSAEReserved',
+                '59' : 'ISOSAEReserved',
+                '5A' : 'ISOSAEReserved',
+                '5B' : 'ISOSAEReserved',
+                '5C' : 'ISOSAEReserved',
+                '5D' : 'ISOSAEReserved',
+                '5E' : 'ISOSAEReserved',
+                '5F' : 'ISOSAEReserved',
+                '60' : 'ISOSAEReserved',
+                '61' : 'ISOSAEReserved',
+                '62' : 'ISOSAEReserved',
+                '63' : 'ISOSAEReserved',
+                '64' : 'ISOSAEReserved',
+                '65' : 'ISOSAEReserved',
+                '66' : 'ISOSAEReserved',
+                '67' : 'ISOSAEReserved',
+                '68' : 'ISOSAEReserved',
+                '69' : 'ISOSAEReserved',
+                '6A' : 'ISOSAEReserved',
+                '6B' : 'ISOSAEReserved',
+                '6C' : 'ISOSAEReserved',
+                '6D' : 'ISOSAEReserved',
+                '6E' : 'ISOSAEReserved',
+                '6F' : 'ISOSAEReserved',
+                '70' : 'uploadDownloadNotAccepted',
+                '71' : 'transferDataSuspended',
+                '72' : 'generalProgrammingFailure',
+                '73' : 'wrongBlockSequenceCounter',
+                '74' : 'ISOSAEReserved',
+                '75' : 'ISOSAEReserved',
+                '76' : 'ISOSAEReserved',
+                '77' : 'ISOSAEReserved',
+                '78' : 'requestCorrectlyReceived-ResponsePending',
+                '79' : 'ISOSAEReserved',
+                '7A' : 'ISOSAEReserved',
+                '7B' : 'ISOSAEReserved',
+                '7C' : 'ISOSAEReserved',
+                '7D' : 'ISOSAEReserved',
+                '7E' : 'subFunctionNotSupportedInActiveSession',
+                '7F' : 'serviceNotSupportedInActiveSession',
+                '80' : 'ISOSAEReserved',
+                '81' : 'rpmTooHigh',
+                '82' : 'rpmTooLow',
+                '83' : 'engineIsRunning',
+                '84' : 'engineIsNotRunning',
+                '85' : 'engineRunTimeTooLow',
+                '86' : 'temperatureTooHigh',
+                '87' : 'temperatureTooLow',
+                '88' : 'vehicleSpeedTooHigh',
+                '89' : 'vehicleSpeedTooLow',
+                '8A' : 'throttle/PedalTooHigh',
+                '8B' : 'throttle/PedalTooLow',
+                '8C' : 'transmissionRangeNotInNeutral',
+                '8D' : 'transmissionRangeNotInGeard',
+                '8E' : 'ISOSAEReserved',
+                '8F' : 'brakeSwitch(es)NotClosed',
+                '90' : 'shifterLeverNotInPark',
+                '91' : 'torqueConverterClutchLocked',
+                '92' : 'voltageTooHigh',
+                '93' : 'voltageTooLow',
+                '94' : 'reservedForSpecificConditionsNotCorrect',
+                '95' : 'reservedForSpecificConditionsNotCorrect',
+                'FD' : 'reservedForSpecificConditionsNotCorrect',
+                'FE' : 'reservedForSpecificConditionsNotCorrect',
+                'FF' : 'ISOSAEReserved'
+            }
+            return NRC.get(message[0:2], "invalid message: ") + " (" + message + ")"
+                
+                
         
-    #Pretty Print function support for Extended DTC
-    def P_Ext_DTC(self, message, title,length):
-        return title + "'{}".format(message[:length*2]) + "'\n"
+    def PP_Decode_7F_response (self, message):
+        retval = ""
+        mess_len = len(message)
+        if (mess_len == 0):
+            return ("PP_Decode_7F_response: missing message")
+        else:
+            pos = message.find ('7F')
+            if pos == -1:
+                return ("no error message: '7F' not found in message ")
+            else:
+                service = "Service: " + message[pos+2:pos+4] 
+                rc = self.PP_CAN_NRC(message[pos+4:])
+                return "Negative response: " + service + ", " + rc
+                
         
-    
