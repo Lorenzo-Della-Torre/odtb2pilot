@@ -179,8 +179,7 @@ def step_4(stub, s, r, ns):
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='037F101300000000')
-    print ("Error  message: ")
-    print ("SC.can_messages[r]",SC.can_messages[r][0][2]) 
+    print ("Error  message: ",SC.can_messages[r][0][2]) 
     print (SuTe.PP_Decode_7F_response(SC.can_messages[r][0][2]))
     print ("Step ", stepno, " teststatus:", testresult, "\n")
 
@@ -216,8 +215,7 @@ def step_6(stub, s, r, ns):
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='037F101300000000')
-    print ("Error  message: ")
-    print ("SC.can_messages[r]",SC.can_messages[r][0][2]) 
+    print ("Error  message: ",SC.can_messages[r][0][2]) 
     print (SuTe.PP_Decode_7F_response(SC.can_messages[r][0][2]))
     print ("Step ", stepno, " teststatus:", testresult, "\n")
 
@@ -288,8 +286,7 @@ def step_10(stub, s, r, ns):
     testresult = SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)and testresult
     #time.sleep(1)
     testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='037F101300000000')
-    print ("Error  message: ")
-    print ("SC.can_messages[r]",SC.can_messages[r][0][2]) 
+    print ("Error  message: ",SC.can_messages[r][0][2]) 
     print (SuTe.PP_Decode_7F_response(SC.can_messages[r][0][2]))
     print ("Step ", stepno, " teststatus:", testresult, "\n")
 
