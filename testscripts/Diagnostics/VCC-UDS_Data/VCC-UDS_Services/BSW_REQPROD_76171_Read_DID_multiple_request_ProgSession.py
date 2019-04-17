@@ -103,11 +103,11 @@ def step_0(stub, s, r, ns):
     min_no_messages = 1
     max_no_messages = 1
     
-    can_m_send = b'\x22\xED\xA0'
+    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xED\xA0', "")
     can_mr_extra = ''
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    time.sleep(1)
+    print(SuTe.PP_CombinedDID_EDA0(SC.can_messages[r][0][2], title=''))
     
 
 # teststep 1: Change to programming session
@@ -120,7 +120,7 @@ def step_1(stub, s, r, ns):
     min_no_messages = -1
     max_no_messages = -1
 
-    can_m_send = b'\x10\x02'
+    can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x02', "")
     can_mr_extra = ''
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
@@ -137,7 +137,7 @@ def step_2(stub, s, r, ns):
     min_no_messages = 1
     max_no_messages = 1
 
-    can_m_send = b'\x22\xF1\x86'
+    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xF1\x86', "")
     can_mr_extra = b'\x02'
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
@@ -161,7 +161,7 @@ def step_3(stub, s, r, ns):
     FC_flag = 48 #continue send
     FC_auto = False
     
-    can_m_send = b'\x22\xF1\x21'
+    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xF1\x21', "")
     can_mr_extra = ''
     
     SC.change_MF_FC(s, BS, ST, FC_delay, FC_flag, FC_auto)
@@ -218,7 +218,7 @@ def step_5(stub, s, r, ns):
     FC_flag = 48 #continue send
     FC_auto = False
     
-    can_m_send = b'\x22\xF1\x2A'
+    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xF1\x2A', "")
     can_mr_extra = ''
     
     SC.change_MF_FC(s, BS, ST, FC_delay, FC_flag, FC_auto)
@@ -274,7 +274,7 @@ def step_7(stub, s, r, ns):
     FC_flag = 48 #continue send
     FC_auto = False
     
-    can_m_send = b'\x22\xF1\x21\xF1\x2A'
+    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xF1\x21\xF1\x2A', "")
     can_mr_extra = ''
     
     SC.change_MF_FC(s, BS, ST, FC_delay, FC_flag, FC_auto)
@@ -312,6 +312,10 @@ def step_8(stub, s, r, ns):
     print ("Test if string contains all IDs expected:")
 
     testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='037F223100000000')
+    print ("Error  message: ")
+    print ("SC.can_messages[r]",SC.can_messages[r][0][2]) 
+    print (SuTe.PP_Decode_7F_response(SC.can_messages[r][0][2]))
+    print ("Step ", stepno, " teststatus:", testresult, "\n")
 
     
 # teststep 9: request combined DID EDA0
@@ -331,7 +335,7 @@ def step_9(stub, s, r, ns):
     FC_flag = 48 #continue send
     FC_auto = False
     
-    can_m_send = b'\x22\xED\xA0'
+    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xED\xA0', "")
     can_mr_extra = ''
     
     SC.change_MF_FC(s, BS, ST, FC_delay, FC_flag, FC_auto)
@@ -387,7 +391,7 @@ def step_11(stub, s, r, ns):
     min_no_messages = 1
     max_no_messages = 1
 
-    can_m_send = b'\x22\xF1\x86'
+    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xF1\x86', "")
     can_mr_extra = b'\x02'
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
@@ -403,7 +407,7 @@ def step_12(stub, s, r, ns):
     min_no_messages = 1
     max_no_messages = 1
 
-    can_m_send = b'\x10\x01'
+    can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x01', "")
     can_mr_extra = ''
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
@@ -419,7 +423,7 @@ def step_13(stub, s, r, ns):
     min_no_messages = 1
     max_no_messages = 1
 
-    can_m_send = b'\x22\xF1\x86'
+    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xF1\x86', "")
     can_mr_extra = b'\x01'
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
