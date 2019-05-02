@@ -309,7 +309,8 @@ class Support_CAN:
                 self.send_CF_CAN (stub, s, r, ns, frequency, timeout_ms)
             elif FC_flag == 2:
                 # overflow / abort
-                print ("Error: FC 32 received")
+                print ("Error: FC 32 received, empty buffer to send.")
+                self.can_mf_send[s]=[]
                 return ("Error: FC 32 received")
             elif FC_flag == 0:
                 # continue sending as stated in FC frame
@@ -602,21 +603,30 @@ class Support_CAN:
     def can_m_send(self, name, message, mask):
         if name == "DiagnosticSessionControl":
             ret = b'\x10' + message
-        elif name == "reportDTCExtDataRecordByDTCNumber":
-            ret = b'\x19\x06' + message + b'\xFF'
-        elif name == "reportDTCSnapdhotRecordByDTCNumber":
-            ret = b'\x19\x04'+ message + b'\xFF'
-        elif name == "reportDTCByStatusMask":
+        elif name == "ReadDTCInfoExtDataRecordByDTCNumber":
+            #ret = b'\x19\x06' + message + b'\xFF'
+            ret = b'\x19\x06' + message + mask
+        elif name == "ReadDTCInfoSnapshotRecordByDTCNumber":
+            #ret = b'\x19\x04'+ message + b'\xFF'
+            ret = b'\x19\x04'+ message + mask
+        elif name == "ReadDTCByStatusMask":
+            ret = b'\x19\x02'
             if mask == "confirmedDTC":
-                ret = b'\x19\x02\x03'
+                ret = ret + b'\x03'
             elif mask == "testFailed":
-                ret = b'\x19\x02\x00'
+                ret = ret + b'\x00'
             else:
-                print("You type not supported mask", "\n")
+                print("ReadDTC: Supported mask missing.\n")
                 ret = b''
 
         elif name == "ReadDataByIentifier":
             ret = b'\x22'+ message
+        elif name == "RequestUpload":
+            ret = b'\x35'+ message
+        elif name == "TransferData":
+            ret = b'\x36'+ message
+        elif name == "RequestDownload":
+            ret = b'\x74'+ message
         else:
             print("You type a wrong name", "\n")
             ret = b''
