@@ -219,8 +219,8 @@ class Support_CAN:
 # add offset \x40 to first byte
 # add can_extra to message
     def can_receive(self, can_send, can_extra):
-        #print ("can_receive can_send ", can_send)
-        #print ("can_receive can_extra ", can_extra)
+        print ("can_receive can_send ", can_send)
+        print ("can_receive can_extra ", can_extra)
         #print ("len can_send ", len(can_send))
         can_ret = ''
         
@@ -310,7 +310,9 @@ class Support_CAN:
             elif FC_flag == 2:
                 # overflow / abort
                 print ("Error: FC 32 received, empty buffer to send.")
+                #print ("Error: FC 32 received, empty buffer to send, remove FC32 frame.")
                 self.can_mf_send[s]=[]
+                #self.can_frames[r].pop(0)
                 return ("Error: FC 32 received")
             elif FC_flag == 0:
                 # continue sending as stated in FC frame
