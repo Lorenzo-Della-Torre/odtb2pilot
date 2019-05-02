@@ -1,3 +1,10 @@
+# Testscript ODTB2 MEPII
+# project:  BECM basetech MEPII
+# author:   hweiler (Hans-Klaus Weiler)
+# date:     2019-05-02
+# version:  1.0
+# reqprod:  60019
+
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
 
 # Copyright 2015 gRPC authors.
@@ -38,6 +45,8 @@ import volvo_grpc_network_api_pb2_grpc
 import volvo_grpc_functional_api_pb2
 import volvo_grpc_functional_api_pb2_grpc
 import common_pb2
+
+import ODTB_conf
 
 from support_can import Support_CAN
 SC = Support_CAN()
@@ -146,7 +155,7 @@ def step_2(stub, s, r, ns):
     else:
         testresult = False
         print("FAIL: Wrong number of frames received. Expeced", BS1, "Received:", len(SC.can_frames[r]))
-    print ("Step2: frames received ", len(SC.can_frames[r]), "\n")
+    print ("Step3: frames received ", len(SC.can_frames[r]), "\n")
     
 # teststep 3: request EDA0 - with FC delay > timeout 1000 ms
 def step_3(stub, s, r, ns):
@@ -178,7 +187,7 @@ def step_3(stub, s, r, ns):
     else:
         testresult = False
         print("FAIL: Wrong number of frames received. Expeced", BS1, "Received:", len(SC.can_frames[r]))
-    print ("Step3: frames received ", len(SC.can_frames[r]), "\n")
+    print ("Step4: frames received ", len(SC.can_frames[r]), "\n")
 
  
 # teststep 4: set back FC_delay to default
@@ -228,14 +237,7 @@ def run():
     # to be implemented
     
     # where to connect to signal_broker
-    #channel = grpc.insecure_channel('localhost:50051')
-    
-    # old Raspberry board Rpi 3B#channel
-    #channel = grpc.insecure_channel('10.247.249.204:50051')
-    
-    # new Raspberry-board Rpi 3B+
-    # ToDo: get IP via DNS
-    channel = grpc.insecure_channel('10.246.47.27:50051')
+    channel = grpc.insecure_channel(ODTB_conf.ODTB2_DUT + ':' + ODTB_conf.ODTB2_PORT)
     functional_stub = volvo_grpc_functional_api_pb2_grpc.FunctionalServiceStub(channel)
     network_stub = volvo_grpc_network_api_pb2_grpc.NetworkServiceStub(channel)
 

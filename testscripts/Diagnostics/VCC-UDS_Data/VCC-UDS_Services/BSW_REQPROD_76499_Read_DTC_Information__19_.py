@@ -1,3 +1,10 @@
+# Testscript ODTB2 MEPII
+# project:  BECM basetech MEPII
+# author:   hweiler (Hans-Klaus Weiler)
+# date:     2019-05-02
+# version:  1.0
+# reqprod:  76499
+
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
 
 # Copyright 2015 gRPC authors.
@@ -32,11 +39,13 @@ import os
 import sys
 sys.path.append('generated')
 
-import common_pb2
 import volvo_grpc_network_api_pb2 
 import volvo_grpc_network_api_pb2_grpc
 import volvo_grpc_functional_api_pb2
 import volvo_grpc_functional_api_pb2_grpc
+import common_pb2
+
+import ODTB_conf
 
 from support_can import Support_CAN
 SC = Support_CAN()
@@ -99,17 +108,24 @@ def step_0(stub, s, r, ns):
     min_no_messages = 1
     max_no_messages = 1
     
-    can_m_send = b'\x22\xED\xA0'
+    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xED\xA0', "")
     can_mr_extra = ''
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    time.sleep(1)
+    print(SuTe.PP_CombinedDID_EDA0(SC.can_messages[r][0][2], title=''))
     
 
 # teststep 1: verify session
 def step_1(stub, s, r, ns):
     global testresult
-    can_m_send = b'\x22\xF1\x86'
+    
+    stepno = 1
+    purpose = "Verify default session"
+    timeout = 5
+    min_no_messages = 1
+    max_no_messages = 1
+
+    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xF1\x86', "")
     can_mr_extra = b'\x01'
     
     stepno = 1
@@ -122,9 +138,9 @@ def step_1(stub, s, r, ns):
 #support function for reading out DTC/DID data:
     #services
     #"DiagnosticSessionControl"=10
-    #"reportDTCExtDataRecordByDTCNumber"=19 06
-    #"reportDTCSnapdhotRecordByDTCNumber"= 19 04
-    #"reportDTCByStatusMask" = 19 02 + "confirmedDTC"=03 / "testFailed" = 00
+    #"ReadDTCInfoExtDataRecordByDTCNumber"=19 06
+    #"ReadDTCInfoSnapshotRecordByDTCNumber"= 19 04
+    #"ReadDTCByStatusMask" = 19 02 + "confirmedDTC"=03 / "testFailed" = 00
     #"ReadDataByIentifier" = 22
 #def can_m_send_SC():
     #return SC.can_m_send( "ReadDataByIentifieraa", b'\xF1\x20', "confirmedDTC")
@@ -137,7 +153,24 @@ def step_2(stub, s, r, ns):
     
     
     #SC.can_m_send( "Read counters", b'\x0B\x45\x00') #Request current session
-    can_m_send = SC.can_m_send( "reportDTCExtDataRecordByDTCNumber", b'\x0B\x4A\x00' , " ")
+    # b'x\0B\x4A\x00' Hybrid/EV Battery Voltage Sense "D" Circuit--
+    # b'x\01'         Operation cycle counter #1
+    # b'x\02'         Operation cycle counter #2
+    # b'x\03'         Operation cycle counter #3
+    # b'x\04'         Operation cycle counter #4
+    # b'x\05'         Operation cycle counter #5
+    # b'x\06'         Operation cycle counter #6
+    # b'x\07'         Operation cycle counter #7
+    # b'x\10'         DTC fault detection counter
+    # b'x\12'         Max DTC fault detection since last clear
+    # b'x\20'         DTC time stamp 20
+    # b'x\21'         DTC time stamp 21
+    # b'x\30'         DTC Status indicator 30
+    # b'x\FF'         return all available values
+    
+    can_m_send = SC.can_m_send( "ReadDTCInfoExtDataRecordByDTCNumber", b'\x0B\x4A\x00' , b'\xFF')
+    # adding can_mr_extra won't work as it get a CAN_MF
+    #can_mr_extra = b'\x0B\x4A\x00'
     can_mr_extra = ''
     #print(SC.can_m_send( "Read counters", b'\x0B\x45\x00'))
     stepno = 2
@@ -150,7 +183,26 @@ def step_2(stub, s, r, ns):
     
     #SuTe.test_message(SC.can_frames[r], teststring='0462F18601000000')
     #print ("Step ", stepno, " teststatus:", testresult, "\n")
-    return(SC.can_frames[r])
+    time.sleep(1)
+    
+    #SC.clear_all_can_messages()
+    #print ("all can messages cleared")
+    #SC.update_can_messages(r)
+    #print ("all can messages updated")
+    print ()
+    print ("Step2: frames received ", len(SC.can_frames[r]))
+    print ("Step2: frames: ", SC.can_frames[r], "\n")
+    print ("Step2: messages received ", len(SC.can_messages[r]))
+    print ("Step2: messages: ", SC.can_messages[r], "\n")
+
+    # Did you get a positive or negative reply?
+    
+    #return(SC.can_frames[r])
+    #return(SC.can_messages[r])
+    print ("Error  message: ")
+    print ("SC.can_messages[r]",SC.can_messages[r][0][2]) 
+    print (SuTe.PP_Decode_7F_response(SC.can_messages[r][0][2]))
+    print ("Step ", stepno, " teststatus:", testresult, "\n")
 
 def run():
     global testresult
@@ -159,14 +211,7 @@ def run():
     # to be implemented
     
     # where to connect to signal_broker
-    #channel = grpc.insecure_channel('localhost:50051')
-    
-    # old Raspberry board Rpi 3B#channel
-    #channel = grpc.insecure_channel('10.247.249.204:50051')
-    
-    # new Raspberry-board Rpi 3B+
-    # ToDo: get IP via DNS
-    channel = grpc.insecure_channel('10.246.47.27:50051')
+    channel = grpc.insecure_channel(ODTB_conf.ODTB2_DUT + ':' + ODTB_conf.ODTB2_PORT)
     functional_stub = volvo_grpc_functional_api_pb2_grpc.FunctionalServiceStub(channel)
     network_stub = volvo_grpc_network_api_pb2_grpc.NetworkServiceStub(channel)
 
@@ -210,7 +255,7 @@ def run():
     # step2:
     # action: Request battery temp sensor error status
     # result: BECM reports status as MF frame, padded bytes in last frame
-    print(step_2(network_stub, can_send, can_receive, can_namespace))
+    step_2(network_stub, can_send, can_receive, can_namespace)
     
 
         
