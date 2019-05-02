@@ -1,12 +1,5 @@
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
 
-# Testscript ODTB2 MEPII
-# project:  BECM basetech MEPII
-# author:   hweiler (Hans-Klaus Weiler)
-# date:     2019-05-02
-# version:  1.0
-# reqprod:  76171
-
 # Copyright 2015 gRPC authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -45,8 +38,6 @@ import volvo_grpc_network_api_pb2_grpc
 import volvo_grpc_functional_api_pb2
 import volvo_grpc_functional_api_pb2_grpc
 import common_pb2
-
-import ODTB_conf
 
 from support_can import Support_CAN
 SC = Support_CAN()
@@ -447,7 +438,14 @@ def run():
     # to be implemented
     
     # where to connect to signal_broker
-    channel = grpc.insecure_channel(ODTB_conf.ODTB2_DUT + ':' + ODTB_conf.ODTB2_PORT)
+    #channel = grpc.insecure_channel('localhost:50051')
+    
+    # old Raspberry board Rpi 3B#channel
+    #channel = grpc.insecure_channel('10.247.249.204:50051')
+    
+    # new Raspberry-board Rpi 3B+
+    # ToDo: get IP via DNS
+    channel = grpc.insecure_channel('10.246.47.27:50051')
     functional_stub = volvo_grpc_functional_api_pb2_grpc.FunctionalServiceStub(channel)
     network_stub = volvo_grpc_network_api_pb2_grpc.NetworkServiceStub(channel)
 
