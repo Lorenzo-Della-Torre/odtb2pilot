@@ -1,7 +1,7 @@
 # Testscript ODTB2 MEPII
 # project:  BECM basetech MEPII
 # author:   hweiler (Hans-Klaus Weiler)
-# date:     2019-05-02
+# date:     2019-05-09
 # version:  1.0
 # reqprod:  76170
 
@@ -23,28 +23,11 @@
 
 """The Python implementation of the gRPC route guide client."""
 
-from __future__ import print_function
 from datetime import datetime
-import threading
-from threading import Thread
-
-import random
 import time
-
-import grpc
-import string
-
 import logging
 import os
 import sys
-
-sys.path.append('generated')
-
-import volvo_grpc_network_api_pb2
-import volvo_grpc_network_api_pb2_grpc
-import volvo_grpc_functional_api_pb2
-import volvo_grpc_functional_api_pb2_grpc
-import common_pb2
 
 import ODTB_conf
 
@@ -57,7 +40,6 @@ SuTe = Support_test_ODTB2()
 # Global variable:
 testresult = True
 
-
     
 # precondition for test running:
 #  BECM has to be kept alive: start heartbeat
@@ -65,19 +47,7 @@ def precondition(stub, s, r, ns):
     global testresult
     
     # start heartbeat, repeat every 0.8 second
-    SC._heartbeat = True
-    t = Thread (target=SC.send_heartbeat, args = (stub, "EcmFront1NMFr", "Front1CANCfg1", b'\x20\x40\x00\xFF\x00\x00\x00\x00',0.8))
-    t.daemon = True
-    t.start()
-    # wait for BECM to wake up
-    time.sleep(5)
-    # Register signals
-    
-    #messages = list()
-    can_send = "Vcu1ToBecmFront1DiagReqFrame"
-    can_rec = "BecmToVcu1Front1DiagResFrame"
-    can_nspace = "Front1CANCfg1"
-    
+    SC.start_heartbeat(stub, "EcmFront1NMFr", "Front1CANCfg1", b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.8)    
 
     # timeout = more than maxtime script takes
     # needed as thread for registered signals won't stop without timeout
@@ -116,7 +86,7 @@ def step_0(stub, s, r, ns):
     can_mr_extra = ''
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    time.sleep(1)
+    print(SuTe.PP_CombinedDID_EDA0(SC.can_messages[r][0][2], title=''))
     
     # teststep 1: Change to Extended session
 def step_1(stub, s, r, ns):
@@ -132,7 +102,6 @@ def step_1(stub, s, r, ns):
     can_mr_extra = ''
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    #time.sleep(1)
 
     # teststep 2: verify session
 def step_2(stub, s, r, ns):
@@ -141,14 +110,13 @@ def step_2(stub, s, r, ns):
     stepno = 2
     purpose = "Verify extended session"
     timeout = 5
-    min_no_messages = -1
-    max_no_messages = -1
+    min_no_messages = 1
+    max_no_messages = 1
 
     can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xF1\x86', "")
     can_mr_extra = b'\x03'
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    time.sleep(1)
 
     
 # teststep 3: send 1 requests - requires SF to send, MF for reply
@@ -175,8 +143,6 @@ def step_3(stub, s, r, ns):
     #SC.change_MF_FC(r, BS, ST, FC_delay, FC_flag, FC_auto)
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    #print ("Step2: frames received ", len(SC.can_frames))
-    #print ("Step2: frames: ", SC.can_frames, "\n")
 
 
 # teststep 4: test if DIDs are included in reply
@@ -185,10 +151,6 @@ def step_4(stub, s, r, ns):
     
     stepno = 4
     purpose = "test if requested DID are included in reply"
-    #timeout = 5
-    #min_no_messages = 1
-    #max_no_messages = 0
-    #
 
     # No normal teststep done,
     # instead: update CAN messages, verify all serial-numbers received (by checking ID for each serial-number)
@@ -235,8 +197,6 @@ def step_5(stub, s, r, ns):
     #SC.change_MF_FC(r, BS, ST, FC_delay, FC_flag, FC_auto)
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    #print ("Step2: frames received ", len(SC.can_frames))
-    #print ("Step2: frames: ", SC.can_frames, "\n")
 
 
 # teststep 6: test if DIDs are included in reply
@@ -245,10 +205,6 @@ def step_6(stub, s, r, ns):
     
     stepno = 6
     purpose = "test if all requested DIDs are included in reply"
-    #timeout = 5
-    #min_no_messages = 1
-    #max_no_messages = 0
-    #
 
     # No normal teststep done,
     # instead: update CAN messages, verify all serial-numbers received (by checking ID for each serial-number)
@@ -328,25 +284,11 @@ def run():
     # to be implemented
     
     # where to connect to signal_broker
-    channel = grpc.insecure_channel(ODTB_conf.ODTB2_DUT + ':' + ODTB_conf.ODTB2_PORT)
-    functional_stub = volvo_grpc_functional_api_pb2_grpc.FunctionalServiceStub(channel)
-    network_stub = volvo_grpc_network_api_pb2_grpc.NetworkServiceStub(channel)
+    network_stub = SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT)
 
     can_send = "Vcu1ToBecmFront1DiagReqFrame"
     can_receive = "BecmToVcu1Front1DiagResFrame"
-    can_namespace = "Front1CANCfg1"
-
-    # Test PreCondition
-    root = logging.getLogger()
-    root.setLevel(logging.DEBUG)
-    
-    ch = logging.StreamHandler(sys.stdout)
-    ch.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    ch.setFormatter(formatter)
-    root.addHandler(ch)
-    root.info('BEGIN:  %s' % os.path.basename(__file__))
-    
+    can_namespace = SC.nspace_lookup("Front1CANCfg1")
     
     print ("Testcase start: ", datetime.now())
     starttime = time.time()
@@ -415,33 +357,14 @@ def run():
     print ("Testcase end: ", datetime.now())
     print ("Time needed for testrun (seconds): ", int(time.time() - starttime))
 
-    
     print ("Do cleanup now...")
     print ("Stop heartbeat sent")
-    SC._heartbeat = False
-    #time.sleep(5)
+    SC.stop_heartbeat()
 
-    #print ("Signals to unsubscribe")
-    #print ("Number of signals subscribed ", len(SC.can_subscribes))
-    #print ("Can signals subscribed to: ", SC.can_subscribes)
-    for unsubsc in SC.can_subscribes:
-        print ("unsubscribe signal: ", unsubsc)
-        SC.can_subscribes[unsubsc][0].cancel()
-        #print ("can_subscribes obj ", SC.can_subscribes[unsubsc][0])
-
-        print ("waiting for threads to finish")
-    time.sleep(5)
-    
-    print ("active threads remaining: " , threading.active_count())
-    #cleanup
-    #postcondition(network_stub)
-    while threading.active_count() > 1:
-        item =(threading.enumerate())[-1]
-        print ("thread to join ", item)
-        item.join(5)
-        time.sleep(5)
-        print ("active thread after join ", threading.active_count() )
-        print ("thread enumerate ", threading.enumerate())
+    # deregister signals
+    SC.unsubscribe_signals()
+    # if threads should remain: try to stop them 
+    SC.thread_stop()
             
     print ("Test cleanup end: ", datetime.now())
     print ()
