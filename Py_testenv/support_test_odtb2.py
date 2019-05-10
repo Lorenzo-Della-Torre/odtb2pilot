@@ -18,26 +18,29 @@
 
 from __future__ import print_function
 from datetime import datetime
-import threading
-from threading import Thread
-
-import random
 import time
-
-import grpc
-import string
 
 import logging
 import os
 import sys
 
-sys.path.append('generated')
+#import threading
+#from threading import Thread
+#
+#import random
+#
+#import grpc
+#import string
 
-import volvo_grpc_network_api_pb2
-import volvo_grpc_network_api_pb2_grpc
-import volvo_grpc_functional_api_pb2
-import volvo_grpc_functional_api_pb2_grpc
-import common_pb2
+#sys.path.append('generated')
+
+#import network_api_pb2
+#import network_api_pb2_grpc
+#import functional_api_pb2
+#import functional_api_pb2_grpc
+#import system_api_pb2
+#import system_api_pb2_grpc
+#import common_pb2
 
 from support_can import Support_CAN
 SC = Support_CAN()
@@ -77,16 +80,15 @@ class Support_test_ODTB2:
     def teststep(self, stub, m_send, m_receive_extra, can_send = "", can_rec = "", can_nspace="", step_no = '', purpose="", timeout = 5, min_no_messages = -1, max_no_messages = -1, clear_old_mess= True):
         testresult = True
     
-        print ("teststep called")
-        #SC.can_cf_received = [1554802159.4773512, 'BecmToVcu1Front1DiagResFrame', '30000A000000FBBF']#clear old messages
+        #print ("teststep called")
         SC.clear_old_CF_frames()
         
-        print ("clear old messages")
         if clear_old_mess: 
+            print ("clear old messages")
             SC.clear_all_can_frames()
             SC.clear_all_can_messages()
     
-            self.print_test_purpose(step_no, purpose)
+        self.print_test_purpose(step_no, purpose)
     
         # wait for messages
         # define answer to expect
@@ -101,6 +103,7 @@ class Support_test_ODTB2:
         #wait timeout for getting subscribed data
         time.sleep(timeout)
        
+        #print ("all can frames : ", SC.can_frames)
         #print ("all can frames for receiver : ", SC.can_frames[can_rec])
         SC.clear_all_can_messages()
         SC.update_can_messages(can_rec)
@@ -130,13 +133,13 @@ class Support_test_ODTB2:
                 return title + i[:8]
             #error handling for messages without space between 4 BCD and 2 ascii
             elif y != 14 or str(i[8:10]) != "20":
-                raise ValueError("That is not a part number")
+                raise ValueError("That is not a part number: ", i)
             else:
                 #error handling for message without ascii valid 
                 j=int(i[10:12],16)
                 x=int(i[12:14],16)
-                if (j < 65 | j > 90) | (x < 65 | x > 90):
-                    raise ValueError("That is not a valid ascii")
+                if (j < 65) | (j > 90) | (x < 65) | (x > 90):
+                    raise ValueError("No valid value to decode: " + i )
                 else:
                     #fascii = str(binascii.unhexlify(i[8:14]).upper())
                     #fascii = str(i[0:8]) + fascii[2:5]
@@ -144,7 +147,8 @@ class Support_test_ODTB2:
                     #fascii = i[0:8] + bytes.fromhex(i[8:14]).decode('utf-8')
                     return title + i[0:8] + bytes.fromhex(i[8:14]).decode('utf-8')
         except ValueError as ve:
-            print("{} Error: {}".format(title, ve))   
+            print("{} Error: {}".format(title, ve))  
+            return title + i 
 
 # PrettyPrint Combined_DID EDA0:
     def PP_CombinedDID_EDA0(self, message, title=''):        
