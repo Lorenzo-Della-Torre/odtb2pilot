@@ -57,6 +57,8 @@ SuTe = Support_test_ODTB2()
 # Global variable:
 testresult = True
 
+
+    
 # precondition for test running:
 #  BECM has to be kept alive: start heartbeat
 def precondition(stub, s, r, ns):
