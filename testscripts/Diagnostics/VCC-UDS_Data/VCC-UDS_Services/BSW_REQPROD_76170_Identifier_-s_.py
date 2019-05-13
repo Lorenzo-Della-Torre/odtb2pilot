@@ -244,7 +244,7 @@ def run():
     print ("Testcase start: ", datetime.now())
     starttime = time.time()
     print ("time ", time.time())
-    print ()
+    print()
     ############################################
     # precondition
     ############################################
@@ -283,7 +283,7 @@ def run():
     # postCondition
     ############################################
             
-    print ()
+    print()
     print ("time ", time.time())
     print ("Testcase end: ", datetime.now())
     print ("Time needed for testrun (seconds): ", int(time.time() - starttime))
@@ -298,7 +298,7 @@ def run():
     SC.thread_stop()
             
     print ("Test cleanup end: ", datetime.now())
-    print ()
+    print()
     if testresult:
         print ("Testcase result: PASSED")
     else:
