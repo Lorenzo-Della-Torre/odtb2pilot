@@ -16,27 +16,30 @@
 
 """The Python implementation of the gRPC route guide client."""
 
-from __future__ import print_function
+#from __future__ import print_function
 from datetime import datetime
-import threading
-from threading import Thread
-
-import random
 import time
-
-import grpc
-import string
 
 import logging
 import os
 import sys
 
+import threading
+from threading import Thread
+
+import random
+
+import grpc
+import string
+
 sys.path.append('generated')
 
-import volvo_grpc_network_api_pb2
-import volvo_grpc_network_api_pb2_grpc
-import volvo_grpc_functional_api_pb2
-import volvo_grpc_functional_api_pb2_grpc
+import network_api_pb2
+import network_api_pb2_grpc
+import functional_api_pb2
+import functional_api_pb2_grpc
+import system_api_pb2
+import system_api_pb2_grpc
 import common_pb2
 
 
@@ -44,9 +47,12 @@ import common_pb2
 class Support_CAN:
 
 # Buffer for receives CAN frames and messages
+    #can_cf_received = [1554802159.4773512, 'BecmToVcu1Front1DiagResFrame', '30000A000000FCCF']
+    can_cf_received = dict()
     can_frames = dict()
     can_messages = dict()
     can_subscribes = dict()
+    
 
     _heartbeat = False
 
@@ -65,6 +71,10 @@ class Support_CAN:
             payload_value = payload_value + bytes([fill_value])
         print ("new payload: ", payload_value)
         return(payload_value)
+
+    def clear_old_CF_frames(self):
+        for cm in self.can_cf_received:
+            self.can_cf_received[cm]=list()
 
     def clear_can_message(self, cm):
         self.can_messages[cm]=list()
@@ -89,12 +99,14 @@ class Support_CAN:
     def subscribe_to_sig(self, stub, send, sig, nsp, timeout = 5):
         #time_start = time.time()
         source = common_pb2.ClientId(id="app_identifier")
-        signal = volvo_grpc_network_api_pb2.SignalId(name=sig, namespace=nsp)
-        sub_info = volvo_grpc_network_api_pb2.SubscriberConfig(name=source, signals=volvo_grpc_network_api_pb2.SignalIds(signal_id=[signal]), on_change=False)
+        signal = common_pb2.SignalId(name=sig, namespace=nsp)
+        sub_info = network_api_pb2.SubscriberConfig(clientId=source, signals=network_api_pb2.SignalIds(signalId=[signal]), onChange=False)
 
         # add signal to dictionary, empty list of messages    
         self.can_frames[sig] = list()
         self.can_messages[sig] = list()
+        self.can_cf_received[sig] = list()
+        
      
 # Frame control handling
         #default for each signal to register
@@ -144,11 +156,60 @@ class Support_CAN:
         t1.deamon = True
         t1.start()
 
-
-    def unsubscribe_signal(self, stub, signame):
+    def unsubscribe_signal(self, signame):
         # start every subscribe as extra thread as subscribe is blocking
-        print ("unsubscribe signal") 
-        print ("received signals available: ", self.can_subscribes) 
+        print ("unsubscribe signal:",signame)
+        #print ("unsubcribe ", self.can_subscribes[signame][0])
+        #print ("received signals available: ", self.can_subscribes) 
+        self.can_subscribes[signame][0].cancel()
+            
+
+    def unsubscribe_signals(self):
+        #print ("Signals to unsubscribe")
+        #print ("Number of signals subscribed ", len(self.can_subscribes))
+        #print ("Can signals subscribed to: ", self.can_subscribes)
+        for unsubsc in self.can_subscribes:
+            self.unsubscribe_signal(unsubsc)
+        time.sleep(5)
+    
+    def thread_stop(self):
+        print ("active threads remaining: " , threading.active_count())
+        #cleanup
+        #postcondition(network_stub)
+        while threading.active_count() > 1:
+            item =(threading.enumerate())[-1]
+            print ("thread to join ", item)
+            item.join(5)
+            time.sleep(5)
+            print ("active thread after join ", threading.active_count() )
+            print ("thread enumerate ", threading.enumerate())
+
+
+
+    def start_heartbeat(self, stub, hb_id, hb_nspace, hb_frame, hb_intervall):
+        print ("start_heartbeat")
+        # start heartbeat, repeat every 0.8 second
+        self._heartbeat = True
+        t = Thread (target=self.send_heartbeat, args = (stub, hb_id, common_pb2.NameSpace(name =hb_nspace), hb_frame,hb_intervall))
+        t.daemon = True
+        t.start()
+        # wait for BECM to wake up
+        print ("wait 5sec for heartbeat to start")
+        time.sleep(5)
+        print ("start_heartbeat end")
+
+    def stop_heartbeat(self):
+        self._heartbeat = False
+        
+    def connect_to_signalbroker(self, SB_address, SB_port):
+        channel = grpc.insecure_channel(SB_address + ':' + SB_port)
+        functional_stub = functional_api_pb2_grpc.FunctionalServiceStub(channel)
+        network_stub = network_api_pb2_grpc.NetworkServiceStub(channel)
+        return network_stub
+        
+    def nspace_lookup(self, namespace):
+        return common_pb2.NameSpace(name =namespace)
+
 
 
 # make sure you have Front1CANCfg1 namespace in interfaces.json
@@ -168,8 +229,8 @@ class Support_CAN:
 # SG_ NM_NodeID_BECM : 7|8@0+ (1,0) [0|0] "" VCU1
     def subscribe_to_Heartbeat(self, stub):
         source = common_pb2.ClientId(id="app_identifier")
-        signal = volvo_grpc_network_api_pb2.SignalId(name="BecmFront1NMFr", namespace="Front1CANCfg1")
-        sub_info = volvo_grpc_network_api_pb2.SubscriberConfig(name=source, signals=volvo_grpc_network_api_pb2.SignalIds(signal_id=[signal]), on_change=False)
+        signal = common_pb2.SignalId(name="BecmFront1NMFr", namespace="Front1CANCfg1")
+        sub_info = network_api_pb2.SubscriberConfig(clientId=source, signals=network_api_pb2.SignalIds(signalId=[signal]), onChange=False)
         while True:
             try:
                 for response in stub.SubscribeToSignals(sub_info):
@@ -197,10 +258,10 @@ class Support_CAN:
         #print ("t_send signal")
         source = common_pb2.ClientId(id="app_identifier")
 
-        signal = volvo_grpc_network_api_pb2.SignalId(name = signal_name, namespace = namespace)
-        signal_with_payload = volvo_grpc_network_api_pb2.Signal(id = signal)
+        signal = common_pb2.SignalId(name = signal_name, namespace=namespace)
+        signal_with_payload = network_api_pb2.Signal(id = signal)
         signal_with_payload.integer = payload_value
-        publisher_info = volvo_grpc_network_api_pb2.PublisherConfig(name = source, signals=volvo_grpc_network_api_pb2.Signals(signal=[signal_with_payload]), frequency = 0)
+        publisher_info = network_api_pb2.PublisherConfig(clientId  = source, signals=network_api_pb2.Signals(signal=[signal_with_payload]), frequency = 0)
         try:
             self.PublishSignals(publisher_info)
         except grpc._channel._Rendezvous as err:
@@ -231,11 +292,11 @@ class Support_CAN:
     def t_send_GPIO_signal_hex(self, stub, signal_name, namespace, payload_value):
         #print ("t_send GPIO signal_hex")
         source = common_pb2.ClientId(id="app_identifier")
-        signal = volvo_grpc_network_api_pb2.SignalId(name = signal_name, namespace = namespace)
-        signal_with_payload = volvo_grpc_network_api_pb2.Signal(id = signal)
+        signal = common_pb2.SignalId(name = signal_name, namespace=namespace)
+        signal_with_payload = network_api_pb2.Signal(id = signal)
         signal_with_payload.raw = payload_value
         #print ("source: ", source, " signal_with_PL: ",  payload_value)
-        publisher_info = volvo_grpc_network_api_pb2.PublisherConfig(name = source, signals=volvo_grpc_network_api_pb2.Signals(signal=[signal_with_payload]), frequency = 0)
+        publisher_info = network_api_pb2.PublisherConfig(clientId = source, signals=network_api_pb2.Signals(signal=[signal_with_payload]), frequency = 0)
         try:
             stub.PublishSignals(publisher_info)
         except grpc._channel._Rendezvous as err:
@@ -249,12 +310,12 @@ class Support_CAN:
         #print ("payload signal:    ", self.can_mf_send[s])
         #print ("first frame signal ", self.can_mf_send[s][1])
         source = common_pb2.ClientId(id="app_identifier")
-        signal = volvo_grpc_network_api_pb2.SignalId(name = s, namespace = ns)
-        signal_with_payload = volvo_grpc_network_api_pb2.Signal(id = signal)
+        signal = common_pb2.SignalId(name = s, namespace=ns)
+        signal_with_payload = network_api_pb2.Signal(id = signal)
         signal_with_payload.raw = self.can_mf_send[s][1][0]
         
         #print ("Signal_with_payload : ", self.can_mf_send[s][1][0].hex().upper())
-        publisher_info = volvo_grpc_network_api_pb2.PublisherConfig(name = source, signals=volvo_grpc_network_api_pb2.Signals(signal=[signal_with_payload]), frequency = 0)
+        publisher_info = network_api_pb2.PublisherConfig(clientId = source, signals=network_api_pb2.Signals(signal=[signal_with_payload]), frequency = 0)
         try:
             stub.PublishSignals(publisher_info)
         except grpc._channel._Rendezvous as err:
@@ -268,8 +329,8 @@ class Support_CAN:
         last_frame = '00'
         
         source = common_pb2.ClientId(id="app_identifier")
-        signal = volvo_grpc_network_api_pb2.SignalId(name = s, namespace = ns)
-        signal_with_payload = volvo_grpc_network_api_pb2.Signal(id = signal)
+        signal = common_pb2.SignalId(name = s, namespace=ns)
+        signal_with_payload = network_api_pb2.Signal(id = signal)
         
         # wait for FC frame to arrive (max 1 sec)
         # take last frame received
@@ -291,23 +352,31 @@ class Support_CAN:
             FC_flag = int(last_frame[1:2],16)
             BS = int(last_frame[2:4],16)
             ST = int(last_frame[4:6],16)
-            print ("FC_flag ", FC_flag)
+
+            # safe CF received for later analysis 
+            self.can_cf_received[r].append(self.can_frames[r][0])
         
             if FC_flag == 1:
                 # Wait flag - wait for next FC frame
                 self.send_CF_CAN (stub, s, r, ns, frequency, timeout_ms)
             elif FC_flag == 2:
                 # overflow / abort
+                print ("Error: FC 32 received, empty buffer to send.")
+                self.can_mf_send[s]=[]
                 return ("Error: FC 32 received")
             elif FC_flag == 0:
                 # continue sending as stated in FC frame
                 print ("continue sending MF message")
+                # delay frame sent after FC received as stated if FC_delay
+                if (self.can_subscribes[s][3] != 0):
+                    print ("delay frame after FC as stated in FC_delay [ms]:", self.can_subscribes[s][3])
+                    time.sleep(self.can_subscribes[s][3]/1000)
                 #print ("already sent: ", self.can_mf_send[s][0])
                 #print ("length mess:  ", len(self.can_mf_send[s][1]))
                 while self.can_mf_send[s][0] < len(self.can_mf_send[s][1]):
                     signal_with_payload.raw = self.can_mf_send[s][1][self.can_mf_send[s][0]]
                     print ("Signal_with_payload : ", signal_with_payload.raw.hex().upper())
-                    publisher_info = volvo_grpc_network_api_pb2.PublisherConfig(name = source, signals=volvo_grpc_network_api_pb2.Signals(signal=[signal_with_payload]), frequency = 0)
+                    publisher_info = network_api_pb2.PublisherConfig(clientId = source, signals=network_api_pb2.Signals(signal=[signal_with_payload]), frequency = 0)
                     try:
                         stub.PublishSignals(publisher_info)
                         self.can_mf_send[s][0] += 1
@@ -321,14 +390,18 @@ class Support_CAN:
                 return ("FAIL: invalid value in FC")
         if (self.can_mf_send[s][0] == len(self.can_mf_send[s][1])):
             print ("MF sent, remove MF")
+            print ("CAN_CF_RECEIVED: ", self.can_cf_received)
+            #print ("CAN_CF_RECEIVED: ", self.can_cf_received[r])
             #print ("before: can_mf_send[s] ", self.can_mf_send[s])
             self.can_mf_send[s]=[]
             #self.can_mf_send[s].pop(0)
             #print ("after:  can_mf_send[s] ", self.can_mf_send[s])
             print ("remove CF from received frames:")
-            print ("before ", self.can_frames[r])
+            #print ("before ", self.can_frames[r])
+            #self.can_cf_received[r].append(self.can_frames[r][0])
             self.can_frames[r].pop(0)
-            print ("after  ", self.can_frames[r])
+            #print ("after  ", self.can_frames[r])
+            #print ("Safed CF ", self.can_cf_received)
             return ("OK: MF message sent")
         else:
             return ("FAIL: MF message failed to send")
@@ -354,8 +427,8 @@ class Support_CAN:
         #print ("t_send signal_CAN_MF_hex")
         #print ("send CAN_MF payload ", payload_value)
         source = common_pb2.ClientId(id="app_identifier")
-        signal = volvo_grpc_network_api_pb2.SignalId(name = signal_name, namespace = namespace)
-        signal_with_payload = volvo_grpc_network_api_pb2.Signal(id = signal)
+        signal = common_pb2.SignalId(name = signal_name, namespace=namespace)
+        signal_with_payload = network_api_pb2.Signal(id = signal)
         
         # ToDo: test if payload can be sent over CAN (payload less then 4096 bytes)
 
@@ -404,7 +477,7 @@ class Support_CAN:
             #print ("Send first frame SF: ", self.can_mf_send[signal_name][1][0])
             signal_with_payload.raw = self.can_mf_send[signal_name][1][0]
             print ("source: ", source, " signal_with_PL: ",  signal_with_payload.raw)
-            publisher_info = volvo_grpc_network_api_pb2.PublisherConfig(name = source, signals=volvo_grpc_network_api_pb2.Signals(signal=[signal_with_payload]), frequency = 0)
+            publisher_info = network_api_pb2.PublisherConfig(clientId = source, signals=network_api_pb2.Signals(signal=[signal_with_payload]), frequency = 0)
             try:
                 stub.PublishSignals(publisher_info)
             except grpc._channel._Rendezvous as err:
@@ -436,10 +509,10 @@ class Support_CAN:
     def t_send_signal_hex(self, stub, signal_name, namespace, payload_value):
         #print ("t_send signal_hex")
         source = common_pb2.ClientId(id="app_identifier")
-        signal = volvo_grpc_network_api_pb2.SignalId(name = signal_name, namespace = namespace)
-        signal_with_payload = volvo_grpc_network_api_pb2.Signal(id = signal)
+        signal = common_pb2.SignalId(name = signal_name, namespace=namespace)
+        signal_with_payload = network_api_pb2.Signal(id = signal)
         signal_with_payload.raw = payload_value
-        publisher_info = volvo_grpc_network_api_pb2.PublisherConfig(name = source, signals=volvo_grpc_network_api_pb2.Signals(signal=[signal_with_payload]), frequency = 0)
+        publisher_info = network_api_pb2.PublisherConfig(clientId = source, signals=network_api_pb2.Signals(signal=[signal_with_payload]), frequency = 0)
         try:
             stub.PublishSignals(publisher_info)
         except grpc._channel._Rendezvous as err:
@@ -451,11 +524,11 @@ class Support_CAN:
         #print ("t_send signal_raw")
 
         source = common_pb2.ClientId(id="app_identifier")
-        signal = volvo_grpc_network_api_pb2.SignalId(name = signal_name, namespace = namespace)
-        signal_with_payload = volvo_grpc_network_api_pb2.Signal(id = signal)
+        signal = common_pb2.SignalId(name = signal_name, namespace=namespace)
+        signal_with_payload = network_api_pb2.Signal(id = signal)
 
         signal_with_payload.raw = self.fill_payload(self.add_pl_length(payload_value) + payload_value)
-        publisher_info = volvo_grpc_network_api_pb2.PublisherConfig(name = source, signals=volvo_grpc_network_api_pb2.Signals(signal=[signal_with_payload]),  frequency = 0)
+        publisher_info = network_api_pb2.PublisherConfig(clientId = source, signals=network_api_pb2.Signals(signal=[signal_with_payload]),  frequency = 0)
         try:
             stub.PublishSignals(publisher_info)
         except grpc._channel._Rendezvous as err:
@@ -464,6 +537,7 @@ class Support_CAN:
 
 #change parameters of FC and how FC frame is used
     def change_MF_FC(self, sig, BS, ST, FC_delay, FC_flag, FC_auto):
+        #print ("change_MF_FC")
         #global can_subscribes
         #print ("can_subscribes ", self.can_subscribes)
         self.can_subscribes[sig][1] = BS
@@ -506,10 +580,12 @@ class Support_CAN:
         #print ("update_can_messages")
         temp_message = [] #empty list as default
     
+        #print ("records received ", can_rec)
         #print ("number of frames ", len(self.can_frames[can_rec]))
         for i in self.can_frames[can_rec]:
-        #print ("can frame  ", i[2].upper())
-        #print ("test against ", can_answer.hex().upper())
+            #print ("whole can_frame : ",i)
+            #print ("can frame  ", i[2].upper())
+            #print ("test against ", can_answer.hex().upper())
             if (message_status == 0):
                 #print ("message to handle: ", i[2])
                 #print ("message to handle: ", i[2][0:1])
@@ -570,7 +646,7 @@ class Support_CAN:
             self.can_messages[can_rec].append(list(temp_message))
         #print ("all can messages : ", self.can_messages)
         
-        #support function for reading out DTC/DID data:
+    #support function for reading out DTC/DID data:
     #services
     #"DiagnosticSessionControl"=10
     #"reportDTCExtDataRecordByDTCNumber"=19 06
@@ -580,27 +656,33 @@ class Support_CAN:
     # Etc.....
     def can_m_send(self, name, message, mask):
         if name == "DiagnosticSessionControl":
-            ret = bytes(b'\x10')+bytes(message)
-            return ret
-        elif name == "reportDTCExtDataRecordByDTCNumber":
-            ret = bytes(b'\x19\x06')+bytes(message)+bytes(b'\xFF')
-            return ret
-        elif name == "reportDTCSnapdhotRecordByDTCNumber":
-            ret = bytes(b'\x19\x04')+ bytes(message) + bytes(b'\xFF')
-            return ret
-        elif name == "reportDTCByStatusMask":
+            ret = b'\x10' + message
+        elif name == "ReadDTCInfoExtDataRecordByDTCNumber":
+            #ret = b'\x19\x06' + message + b'\xFF'
+            ret = b'\x19\x06' + message + mask
+        elif name == "ReadDTCInfoSnapshotRecordByDTCNumber":
+            #ret = b'\x19\x04'+ message + b'\xFF'
+            ret = b'\x19\x04'+ message + mask
+        elif name == "ReadDTCByStatusMask":
+            ret = b'\x19\x02'
             if mask == "confirmedDTC":
-                ret = bytes(b'\x19\x02')+bytes(b'\x03')
-                return ret
-            if mask == "testFailed":
-                ret = bytes(b'\x19\x02')+bytes(b'\x00')
-                return ret
+                ret = ret + b'\x03'
+            elif mask == "testFailed":
+                ret = ret + b'\x00'
             else:
-                return "you type not supported mask"
+                print("ReadDTC: Supported mask missing.\n")
+                ret = b''
 
         elif name == "ReadDataByIentifier":
-            ret = bytes(b'\x22')+bytes(message)
-        
+            ret = b'\x22'+ message
+        elif name == "RequestUpload":
+            ret = b'\x35'+ message
+        elif name == "TransferData":
+            ret = b'\x36'+ message
+        elif name == "RequestDownload":
+            ret = b'\x74'+ message
         else:
-            return "you type a wrong name"
+            print("You type a wrong name", "\n")
+            ret = b''
 
+        return ret
