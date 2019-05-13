@@ -3,7 +3,7 @@
 # author:   hweiler (Hans-Klaus Weiler)
 # date:     2019-05-09
 # version:  1.0
-# reqprod:  76170
+# reqprod:  60019
 
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
 
@@ -41,7 +41,7 @@ SuTe = Support_test_ODTB2()
 testresult = True
 
 
-    
+
 # precondition for test running:
 #  BECM has to be kept alive: start heartbeat
 def precondition(stub, s, r, ns):
@@ -57,15 +57,6 @@ def precondition(stub, s, r, ns):
     SC.subscribe_signal(stub, s, r, ns, timeout)
     #record signal we send as well
     SC.subscribe_signal(stub, r, s, ns, timeout)
-
-    # Parameters for FrameControl FC VCU
-    time.sleep(1)
-    BS=0
-    ST=0
-    FC_delay = 0 #no wait
-    FC_flag = 48 #continue send
-    FC_auto = False
-    SC.change_MF_FC(s, BS, ST, FC_delay, FC_flag, FC_auto)
     
     print()
     step_0(stub, s, r, ns)
@@ -76,6 +67,9 @@ def precondition(stub, s, r, ns):
 # teststep 0: Complete ECU Part/Serial Number(s)
 def step_0(stub, s, r, ns):
     global testresult
+    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xED\xA0', "")
+    #can_mr_extra = b'\x01'
+    can_mr_extra = ''
     
     stepno = 0
     purpose = "Complete ECU Part/Serial Number(s)"
@@ -83,20 +77,16 @@ def step_0(stub, s, r, ns):
     min_no_messages = 1
     max_no_messages = 1
     
-    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xED\xA0', "")
-    can_mr_extra = ''
-
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     print(SuTe.PP_CombinedDID_EDA0(SC.can_messages[r][0][2], title=''))
     
-
-    # teststep 1: verify session
+# teststep 1: verify session
 def step_1(stub, s, r, ns):
     global testresult
     
     stepno = 1
     purpose = "Verify default session"
-    timeout = 5
+    timeout = 1
     min_no_messages = 1
     max_no_messages = 1
 
@@ -104,129 +94,111 @@ def step_1(stub, s, r, ns):
     can_mr_extra = b'\x01'
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-
     
-# teststep 2: send 1 requests - requires SF to send, MF for reply
+# teststep 2: request EDA0 - with FC delay < timeout 1000 ms
 def step_2(stub, s, r, ns):
     global testresult
     
     stepno = 2
-    purpose = "send 1 request - requires SF to send"
-    timeout = 5 # wait for message to arrive, but don't test (-1)
+    purpose = "request EDA0 - with FC delay < timeout 1000 ms"
+    timeout = 5
     min_no_messages = -1
     max_no_messages = -1
 
-    # Parameters for FrameControl FC
+    BS1 = 11
     BS=0
     ST=0
-    FC_delay = 0 #no wait
-    FC_flag = 48 #continue send
-    FC_auto = False
-    
-    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xF1\x20', "")
+    FC_flag =   48 #continue to send
+    FC_delay = 950 #wait 800ms before sending FC frame back
+    FC_auto = True
+
+    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xED\xA0', "")
     can_mr_extra = ''
     
-    SC.change_MF_FC(s, BS, ST, FC_delay, FC_flag, FC_auto)
-    #SC.change_MF_FC(r, BS, ST, FC_delay, FC_flag, FC_auto)
-    
+    #clear_all_can_frames()
+    SC.change_MF_FC(r, BS, ST, FC_delay, FC_flag, FC_auto)
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    #print ("Step2: frames received ", len(SC.can_frames))
-    #print ("Step2: frames: ", SC.can_frames, "\n")
 
-
-# teststep 3: test if DIDs are included in reply
+    if len(SC.can_frames[r]) == BS1:
+        print ("Timeout due to FC delay: ")
+        print ("number of frames received as expected: ", len(SC.can_frames[r]))
+    else:
+        testresult = False
+        print("FAIL: Wrong number of frames received. Expeced", BS1, "Received:", len(SC.can_frames[r]))
+    print ("Step3: frames received ", len(SC.can_frames[r]), "\n")
+    
+# teststep 3: request EDA0 - with FC delay > timeout 1000 ms
 def step_3(stub, s, r, ns):
     global testresult
     
     stepno = 3
-    purpose = "test if requested DID are included in reply"
-    #timeout = 5
-    #min_no_messages = 1
-    #max_no_messages = 0
-    #
+    purpose = "request EDA0 - with FC delay > timeout 1000 ms"
+    timeout = 5
+    min_no_messages = -1
+    max_no_messages = -1
 
-    # No normal teststep done,
-    # instead: update CAN messages, verify all serial-numbers received (by checking ID for each serial-number)
-    #teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    
-    SuTe.print_test_purpose(stepno, purpose)
-    
-    time.sleep(1)
-    SC.clear_all_can_messages()
-    print ("all can messages cleared")
-    SC.update_can_messages(r)
-    print ("all can messages updated")
-    print ()
-    print ("Step3: messages received ", len(SC.can_messages[r]))
-    print ("Step3: messages: ", SC.can_messages[r], "\n")
-    print ("Step3: frames received ", len(SC.can_frames[r]))
-    print ("Step3: frames: ", SC.can_frames[r], "\n")
-    print ("Test if string contains all IDs expected:")
+    BS1 = 1
+    BS=0
+    ST=0
+    FC_flag =   48 #continue to send
+    FC_delay = 1050 #wait 800ms before sending FC frame back
+    FC_auto = True
 
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='F120')
-
+    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xED\xA0', "")
+    can_mr_extra = ''
     
-# teststep 4: send several requests at one time - requires SF to send, MF for reply
+    #clear_all_can_frames()
+    SC.change_MF_FC(r, BS, ST, FC_delay, FC_flag, FC_auto)
+    testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
+
+    if len(SC.can_frames[r]) == BS1:
+        print ("Timeout due to FC delay: ")
+        print ("number of frames received as expected: ", len(SC.can_frames[r]))
+    else:
+        testresult = False
+        print("FAIL: Wrong number of frames received. Expeced", BS1, "Received:", len(SC.can_frames[r]))
+    print ("Step4: frames received ", len(SC.can_frames[r]), "\n")
+
+ 
+# teststep 4: set back FC_delay to default
 def step_4(stub, s, r, ns):
     global testresult
     
     stepno = 4
-    purpose = "send several requests at one time - requires SF to send"
-    timeout = 5 # wait for message to arrive, but don't test (-1)
+    purpose = "set back FC_delay to default"
+    timeout = 5 
     min_no_messages = -1
     max_no_messages = -1
 
-    # Parameters for FrameControl FC
+    BS1 = 1
     BS=0
     ST=0
-    FC_delay = 0 #no wait
-    FC_flag = 48 #continue send
-    FC_auto = False
+    FC_flag =   48 #continue to send
+    FC_delay =  0 
+    FC_auto = True
     
-    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xF1\x20\xF1\x2A', "")
-    can_mr_extra = ''
-    
-    SC.change_MF_FC(s, BS, ST, FC_delay, FC_flag, FC_auto)
-    #SC.change_MF_FC(r, BS, ST, FC_delay, FC_flag, FC_auto)
-    
-    testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    #print ("Step2: frames received ", len(SC.can_frames))
-    #print ("Step2: frames: ", SC.can_frames, "\n")
+    SuTe.print_test_purpose(stepno, purpose)
+    #update_can_messages_2(stub, r)
+    #print(can_frames, "\n")
+    SC.change_MF_FC(r, BS, ST, FC_delay, FC_flag, FC_auto)
 
 
-# teststep 5: test if DIDs are included in reply
+
+    # teststep 5: verify session
 def step_5(stub, s, r, ns):
     global testresult
     
     stepno = 5
-    purpose = "test if all requested DIDs are included in reply"
-    #timeout = 5
-    #min_no_messages = 1
-    #max_no_messages = 0
-    #
+    purpose = "Verify Default session"
+    timeout = 5
+    min_no_messages = -1
+    max_no_messages = -1
 
-    # No normal teststep done,
-    # instead: update CAN messages, verify all serial-numbers received (by checking ID for each serial-number)
-    #teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
+    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xF1\x86', "")
+    can_mr_extra = b'\x01'
     
-    SuTe.print_test_purpose(stepno, purpose)
-    
+    testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     time.sleep(1)
-    SC.clear_all_can_messages()
-    print ("all can messages cleared")
-    SC.update_can_messages(r)
-    print ("all can messages updated")
-    print ()
-    print ("Step3: messages received ", len(SC.can_messages[r]))
-    print ("Step3: messages: ", SC.can_messages[r], "\n")
-    print ("Step3: frames received ", len(SC.can_frames[r]))
-    print ("Step3: frames: ", SC.can_frames[r], "\n")
-    print ("Test if string contains all IDs expected:")
-
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='F120')
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='F12A')
-
-    
 
 def run():
     global testresult
@@ -249,35 +221,39 @@ def run():
     # precondition
     ############################################
     precondition(network_stub, can_send, can_receive, can_namespace)
+    #print ("after precond active threads ", threading.active_count())
+    #print ("after precond thread enumerate ", threading.enumerate())
+
+    #subscribe_to_BecmFront1NMFr(network_stub)
     
     ############################################
     # teststeps
     ############################################
-    # step 1:
-    # action: verify session
-    # result: default session
+    # step1:
+    # action: check current session
+    # result: BECM reports programmin session
     step_1(network_stub, can_send, can_receive, can_namespace)
-    
+
     # step2:
-    # action: send 1 request - requires SF to send, MF for reply
-    # result: BECM reports default session
+    # action: send request with FC_delay < timeout
+    # result: whole message received
     step_2(network_stub, can_send, can_receive, can_namespace)
 
-    # step 3: check if DID is included in reply
-    # action: check if expected DID are contained in reply
-    # result: true if all contained, false if not
+    # step3:
+    # action: send request with FC_delay > timeout
+    # result: only first frame received
     step_3(network_stub, can_send, can_receive, can_namespace)
-    
+
     # step4:
-    # action: send several requests at one time - requires SF to send, MF for reply
-    # result: BECM reports default session
+    # action: restore FC_delay again
+    # result: 
     step_4(network_stub, can_send, can_receive, can_namespace)
 
-    # step 5: check if DIDs are included in reply including those from combined DID
-    # action: check if expected DID are contained in reply
-    # result: true if all contained, false if not
+    # step5:
+    # action: check current session
+    # result: BECM reports default session
     step_5(network_stub, can_send, can_receive, can_namespace)
-    
+
     
     ############################################
     # postCondition
@@ -287,7 +263,7 @@ def run():
     print ("time ", time.time())
     print ("Testcase end: ", datetime.now())
     print ("Time needed for testrun (seconds): ", int(time.time() - starttime))
-    
+
     print ("Do cleanup now...")
     print ("Stop heartbeat sent")
     SC.stop_heartbeat()

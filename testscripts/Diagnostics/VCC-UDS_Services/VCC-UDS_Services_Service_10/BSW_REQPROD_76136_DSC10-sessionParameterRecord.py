@@ -3,7 +3,7 @@
 # author:   hweiler (Hans-Klaus Weiler)
 # date:     2019-05-09
 # version:  1.0
-# reqprod:  76170
+# reqprod:  76136
 
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
 
@@ -39,6 +39,7 @@ SuTe = Support_test_ODTB2()
 
 # Global variable:
 testresult = True
+
 
     
 # precondition for test running:
@@ -88,26 +89,139 @@ def step_0(stub, s, r, ns):
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     print(SuTe.PP_CombinedDID_EDA0(SC.can_messages[r][0][2], title=''))
     
-    # teststep 1: Change to Programming session
+
+# teststep 1: Change to extended session
 def step_1(stub, s, r, ns):
     global testresult
     
     stepno = 1
-    purpose = "Change to Programming session"
+    purpose = "Change to Extended session"
     timeout = 1
     min_no_messages = -1
     max_no_messages = -1
 
-    can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x02', "")
+    can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x03', "")
     can_mr_extra = ''
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
+    #time.sleep(1)
+    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='065003001901F400')
 
-    # teststep 2: verify session
+
+# teststep 2: Change to extended session
 def step_2(stub, s, r, ns):
     global testresult
     
     stepno = 2
+    purpose = "Change to Extended session"
+    timeout = 1
+    min_no_messages = -1
+    max_no_messages = -1
+
+    can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x03', "")
+    can_mr_extra = ''
+    
+    testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
+    #time.sleep(1)
+    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='065003001901F400')
+
+
+# teststep 3: Change to default session
+def step_3(stub, s, r, ns):
+    global testresult
+    
+    stepno = 3
+    purpose = "Change to default session"
+    timeout = 1
+    min_no_messages = -1
+    max_no_messages = -1
+
+    can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x01', "")
+    can_mr_extra = ''
+    
+    testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
+    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='065001001901F400')
+
+
+# teststep 4: Change to Extended session + Parameter P2_max_server
+def step_4(stub, s, r, ns):
+    global testresult
+    
+    stepno = 4
+    purpose = "Change to Extended session + Parameter P2_max_server"
+    timeout = 1
+    min_no_messages = -1
+    max_no_messages = -1
+
+    #can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x03\x00\x14\x01\x90', "")
+    can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x03\x00\x19\x01\xF4', "")
+    can_mr_extra = ''
+    
+    testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
+    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='037F101300000000')
+    print ("Error  message: ",SC.can_messages[r][0][2]) 
+    print (SuTe.PP_Decode_7F_response(SC.can_messages[r][0][2]))
+    print ("Step ", stepno, " teststatus:", testresult, "\n")
+
+# teststep 5: verify session
+def step_5(stub, s, r, ns):
+    global testresult
+    
+    stepno = 5
+    purpose = "Verify default session"
+    timeout = 1
+    min_no_messages = 1
+    max_no_messages = 1
+
+    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xF1\x86', "")
+    can_mr_extra = b'\x01'
+    
+    testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
+    time.sleep(1)
+
+
+# teststep 6: Change to programming session - parameter p2_max_server
+def step_6(stub, s, r, ns):
+    global testresult
+    
+    stepno = 6
+    purpose = "Change to programming session - parameter p2_max_server"
+    timeout = 1
+    min_no_messages = -1
+    max_no_messages = -1
+
+    can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x02\x10\x02\x10\x02', "")
+    can_mr_extra = ''
+    
+    testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
+    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='037F101300000000')
+    print ("Error  message: ",SC.can_messages[r][0][2]) 
+    print (SuTe.PP_Decode_7F_response(SC.can_messages[r][0][2]))
+    print ("Step ", stepno, " teststatus:", testresult, "\n")
+
+
+# teststep 7: Change to programming session - no extra parameter
+def step_7(stub, s, r, ns):
+    global testresult
+    
+    stepno = 7
+    purpose = "Change to programming session - no extra parameter"
+    timeout = 3
+    min_no_messages = -1
+    max_no_messages = -1
+
+    can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x02', "")
+    can_mr_extra = b'\x00\x19\x01\xF4'
+    
+    testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
+    #time.sleep(1)
+    #testresult = SuTe.test_message(SC.can_messages[r], teststring='065002001901F400') and testresult
+
+# teststep 8: verify session
+def step_8(stub, s, r, ns):
+    global testresult
+    
+    stepno = 8
     purpose = "Verify programming session"
     timeout = 1
     min_no_messages = 1
@@ -119,173 +233,80 @@ def step_2(stub, s, r, ns):
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     time.sleep(1)
 
-    
-# teststep 3: send 1 requests - requires SF to send, MF for reply
-def step_3(stub, s, r, ns):
-    global testresult
-    
-    stepno = 3
-    purpose = "send 1 request - requires SF to send"
-    timeout = 1 # wait for message to arrive, but don't test (-1)
-    min_no_messages = -1
-    max_no_messages = -1
 
-    # Parameters for FrameControl FC
-    BS=0
-    ST=0
-    FC_delay = 0 #no wait
-    FC_flag = 48 #continue send
-    FC_auto = False
-    
-    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xF1\x21', "")
-    can_mr_extra = ''
-    
-    SC.change_MF_FC(s, BS, ST, FC_delay, FC_flag, FC_auto)
-    #SC.change_MF_FC(r, BS, ST, FC_delay, FC_flag, FC_auto)
-    
-    testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    #print ("Step2: frames received ", len(SC.can_frames))
-    #print ("Step2: frames: ", SC.can_frames, "\n")
-
-
-# teststep 4: test if DIDs are included in reply
-def step_4(stub, s, r, ns):
-    global testresult
-    
-    stepno = 4
-    purpose = "test if requested DID are included in reply"
-    #timeout = 5
-    #min_no_messages = 1
-    #max_no_messages = 0
-    #
-
-    # No normal teststep done,
-    # instead: update CAN messages, verify all serial-numbers received (by checking ID for each serial-number)
-    #teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    
-    SuTe.print_test_purpose(stepno, purpose)
-    
-    time.sleep(1)
-    SC.clear_all_can_messages()
-    print ("all can messages cleared")
-    SC.update_can_messages(r)
-    print ("all can messages updated")
-    print ()
-    print ("Step4: messages received ", len(SC.can_messages[r]))
-    print ("Step4: messages: ", SC.can_messages[r], "\n")
-    print ("Step4: frames received ", len(SC.can_frames[r]))
-    print ("Step4: frames: ", SC.can_frames[r], "\n")
-    print ("Test if string contains all IDs expected:")
-
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='F121')
-
-    
-# teststep 5: send several requests at one time - requires SF to send, MF for reply
-def step_5(stub, s, r, ns):
-    global testresult
-    
-    stepno = 5
-    purpose = "send several requests at one time - requires SF to send"
-    timeout = 1 # wait for message to arrive, but don't test (-1)
-    min_no_messages = -1
-    max_no_messages = -1
-
-    # Parameters for FrameControl FC
-    BS=0
-    ST=0
-    FC_delay = 0 #no wait
-    FC_flag = 48 #continue send
-    FC_auto = False
-    
-    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xF1\x21\xF1\x2A', "")
-    can_mr_extra = ''
-    
-    SC.change_MF_FC(s, BS, ST, FC_delay, FC_flag, FC_auto)
-    #SC.change_MF_FC(r, BS, ST, FC_delay, FC_flag, FC_auto)
-    
-    testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    #print ("Step2: frames received ", len(SC.can_frames))
-    #print ("Step2: frames: ", SC.can_frames, "\n")
-
-
-# teststep 6: Verify if number for requests limited in programming session
-def step_6(stub, s, r, ns):
-    global testresult
-    #
-    stepno = 6
-    purpose = "Verify if number for requests limited in programming session"
-    #timeout = 5
-    #min_no_messages = 1
-    #max_no_messages = 0
-    #
-
-    # No normal teststep done,
-    # instead: update CAN messages, verify all serial-numbers received (by checking ID for each serial-number)
-    #teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    
-    SuTe.print_test_purpose(stepno, purpose)
-    
-    time.sleep(1)
-    SC.clear_all_can_messages()
-    print ("all can messages cleared")
-    SC.update_can_messages(r)
-    print ("all can messages updated")
-    print ()
-    print ("Step6: messages received ", len(SC.can_messages[r]))
-    print ("Step6: messages: ", SC.can_messages[r], "\n")
-    print ("Step6: frames received ", len(SC.can_frames[r]))
-    print ("Step6: frames: ", SC.can_frames[r], "\n")
-    print ("Test if string contains all IDs expected:")
-
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='037F223100000000')
-
-    # teststep 7: verify session
-def step_7(stub, s, r, ns):
-    global testresult
-    
-    stepno = 7
-    purpose = "Verify Programming session"
-    timeout = 1
-    min_no_messages = -1
-    max_no_messages = -1
-
-    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xF1\x86', "")
-    can_mr_extra = b'\x02'
-    
-    testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    time.sleep(1)
-
-    # teststep 8: Change to Default session
-def step_8(stub, s, r, ns):
-    global testresult
-    
-    stepno = 8
-    purpose = "Change to Default session"
-    timeout = 1
-    min_no_messages = 1
-    max_no_messages = 1
-
-    can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x01', "")
-    can_mr_extra = ''
-    
-    testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    time.sleep(1)
-
-    # teststep 9: verify session
+# teststep 9: Change to programming session - no extra parameter
 def step_9(stub, s, r, ns):
     global testresult
     
     stepno = 9
-    purpose = "Verify default session"
+    purpose = "Change to programming session - no extra parameter"
+    timeout = 3
+    min_no_messages = -1
+    max_no_messages = -1
+
+    can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x02', "")
+    can_mr_extra = ''
+    
+    testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
+    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='065002001901F400')
+
+# teststep 10: Change to default session - parameter p2_max_server
+def step_10(stub, s, r, ns):
+    global testresult
+    
+    stepno = 10
+    purpose = "Change to programming session - parameter p2_max_server"
     timeout = 1
+    min_no_messages = -1
+    max_no_messages = -1
+
+    can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x01\x10\x01\x10\x01', "")
+    can_mr_extra = ''
+    
+    testresult = SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)and testresult
+    #time.sleep(1)
+    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='037F101300000000')
+    print ("Error  message: ",SC.can_messages[r][0][2]) 
+    print (SuTe.PP_Decode_7F_response(SC.can_messages[r][0][2]))
+    print ("Step ", stepno, " teststatus:", testresult, "\n")
+
+
+# teststep 11: Change to default session - no extra parameter
+def step_11(stub, s, r, ns):
+    global testresult
+    
+    stepno = 11
+    purpose = "Change to default session - no extra parameter"
+    timeout = 5
     min_no_messages = 1
     max_no_messages = 1
+
+    can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x01', "")
+    can_mr_extra = b'\x00\x19\x01\xF4'
+    
+    testresult = SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages) and testresult 
+    #time.sleep(1)
+    #testresult = SuTe.test_message(SC.can_messages[r], teststring='065001001901F400') and testresult
+    #testresult = SuTe.test_message(SC.can_messages[r], teststring='065001003201F400') and testresult
+
+
+# teststep 12: verify session
+def step_12(stub, s, r, ns):
+    global testresult
+    
+    stepno = 12
+    purpose = "Verify default session"
+    timeout = 1
+    min_no_messages = -1
+    max_no_messages = -1
 
     can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xF1\x86', "")
     can_mr_extra = b'\x01'
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     time.sleep(1)
+
+
 
     
 
@@ -305,7 +326,7 @@ def run():
     print ("Testcase start: ", datetime.now())
     starttime = time.time()
     print ("time ", time.time())
-    print()
+    print ()
     ############################################
     # precondition
     ############################################
@@ -315,50 +336,64 @@ def run():
     # teststeps
     ############################################
     # step 1:
-    # action: # Change to Extended session
+    # action: # Change to Programming session
     # result: BECM reports mode
     step_1(network_stub, can_send, can_receive, can_namespace)
     
     # step2:
     # action: verify current session
-    # result: BECM reports extended session
+    # result: BECM reports programming session
     step_2(network_stub, can_send, can_receive, can_namespace)
-    
+
     # step3:
-    # action: send 1 request - requires SF to send, MF for reply
-    # result: BECM reports default session
+    # action: send single requests
+    # result: 
     step_3(network_stub, can_send, can_receive, can_namespace)
     
-    # step 4: check if DID is included in reply
-    # action: check if expected DID are contained in reply
-    # result: true if all contained, false if not
+    # step4:
+    # action: update received messages, verify if DID contained"
+    # result: verify if DID contained
     step_4(network_stub, can_send, can_receive, can_namespace)
-
+   
     # step5:
-    # action: send several requests at one time - requires SF to send, MF for reply
-    # result: BECM reports default session
+    # action: request another DID
+    # result: 
     step_5(network_stub, can_send, can_receive, can_namespace)
 
-    # step 6: check if DIDs are included in reply including those from combined DID
-    # action: check if expected DID are contained in reply
-    # result: true if all contained, false if not
+    # step6:
+    # action: update received messages, verify if DID contained"
+    # result: verify if DID contained
     step_6(network_stub, can_send, can_receive, can_namespace)
 
     # step7:
-    # action: verify current session
-    # result: BECM reports programming session
+    # action: request 2 DID
+    # result: 
     step_7(network_stub, can_send, can_receive, can_namespace)
 
-    # step 8:
-    # action: # Change to Default session
-    # result: BECM reports mode
+    # step8:
+    # action: update received messages, verify if DID contained"
+    # result: error message expected, as max DID request exceeded
     step_8(network_stub, can_send, can_receive, can_namespace)
-
-    # step9:
-    # action: verify current session
-    # result: BECM reports default session
-    step_9(network_stub, can_send, can_receive, can_namespace)
     
+    # step9:
+    # action: send request containing combined DID
+    # result: 
+    step_9(network_stub, can_send, can_receive, can_namespace)
+
+    # step10:
+    # action: update received messages, verify if DID contained"
+    # result: verify if DID contained from combined DID
+    step_10(network_stub, can_send, can_receive, can_namespace)
+
+    # step11:
+    # action: update received messages, verify if DID contained"
+    # result: verify if DID contained from combined DID
+    step_11(network_stub, can_send, can_receive, can_namespace)
+
+    # step12:
+    # action: update received messages, verify if DID contained"
+    # result: verify if DID contained from combined DID
+    step_12(network_stub, can_send, can_receive, can_namespace)
     
     ############################################
     # postCondition
@@ -368,7 +403,7 @@ def run():
     print ("time ", time.time())
     print ("Testcase end: ", datetime.now())
     print ("Time needed for testrun (seconds): ", int(time.time() - starttime))
-
+ 
     print ("Do cleanup now...")
     print ("Stop heartbeat sent")
     SC.stop_heartbeat()
@@ -379,7 +414,7 @@ def run():
     SC.thread_stop()
             
     print ("Test cleanup end: ", datetime.now())
-    print()
+    print ()
     if testresult:
         print ("Testcase result: PASSED")
     else:

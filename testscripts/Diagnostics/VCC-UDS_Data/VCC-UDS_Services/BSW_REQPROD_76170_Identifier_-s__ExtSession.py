@@ -1,3 +1,10 @@
+# Testscript ODTB2 MEPII
+# project:  BECM basetech MEPII
+# author:   hweiler (Hans-Klaus Weiler)
+# date:     2019-05-09
+# version:  1.0
+# reqprod:  76170
+
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
 
 # Copyright 2015 gRPC authors.
@@ -33,14 +40,15 @@ SuTe = Support_test_ODTB2()
 # Global variable:
 testresult = True
 
+    
 # precondition for test running:
 #  BECM has to be kept alive: start heartbeat
 def precondition(stub, s, r, ns):
     global testresult
     
     # start heartbeat, repeat every 0.8 second
-    SC.start_heartbeat(stub, "EcmFront1NMFr", "Front1CANCfg1", b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.8)
-    
+    SC.start_heartbeat(stub, "EcmFront1NMFr", "Front1CANCfg1", b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.8)    
+
     # timeout = more than maxtime script takes
     # needed as thread for registered signals won't stop without timeout
     #timeout = 300   #seconds
@@ -78,7 +86,7 @@ def step_0(stub, s, r, ns):
     can_mr_extra = ''
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    time.sleep(1)
+    print(SuTe.PP_CombinedDID_EDA0(SC.can_messages[r][0][2], title=''))
     
     # teststep 1: Change to Extended session
 def step_1(stub, s, r, ns):
@@ -94,7 +102,6 @@ def step_1(stub, s, r, ns):
     can_mr_extra = ''
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    #time.sleep(1)
 
     # teststep 2: verify session
 def step_2(stub, s, r, ns):
@@ -103,14 +110,13 @@ def step_2(stub, s, r, ns):
     stepno = 2
     purpose = "Verify extended session"
     timeout = 5
-    min_no_messages = -1
-    max_no_messages = -1
+    min_no_messages = 1
+    max_no_messages = 1
 
     can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xF1\x86', "")
     can_mr_extra = b'\x03'
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    time.sleep(1)
 
     
 # teststep 3: send 1 requests - requires SF to send, MF for reply
@@ -137,8 +143,6 @@ def step_3(stub, s, r, ns):
     #SC.change_MF_FC(r, BS, ST, FC_delay, FC_flag, FC_auto)
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    #print ("Step2: frames received ", len(SC.can_frames))
-    #print ("Step2: frames: ", SC.can_frames, "\n")
 
 
 # teststep 4: test if DIDs are included in reply
@@ -147,10 +151,6 @@ def step_4(stub, s, r, ns):
     
     stepno = 4
     purpose = "test if requested DID are included in reply"
-    #timeout = 5
-    #min_no_messages = 1
-    #max_no_messages = 0
-    #
 
     # No normal teststep done,
     # instead: update CAN messages, verify all serial-numbers received (by checking ID for each serial-number)
@@ -197,8 +197,6 @@ def step_5(stub, s, r, ns):
     #SC.change_MF_FC(r, BS, ST, FC_delay, FC_flag, FC_auto)
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    #print ("Step2: frames received ", len(SC.can_frames))
-    #print ("Step2: frames: ", SC.can_frames, "\n")
 
 
 # teststep 6: test if DIDs are included in reply
@@ -207,10 +205,6 @@ def step_6(stub, s, r, ns):
     
     stepno = 6
     purpose = "test if all requested DIDs are included in reply"
-    #timeout = 5
-    #min_no_messages = 1
-    #max_no_messages = 0
-    #
 
     # No normal teststep done,
     # instead: update CAN messages, verify all serial-numbers received (by checking ID for each serial-number)
@@ -295,18 +289,6 @@ def run():
     can_send = "Vcu1ToBecmFront1DiagReqFrame"
     can_receive = "BecmToVcu1Front1DiagResFrame"
     can_namespace = SC.nspace_lookup("Front1CANCfg1")
-
-    # Test PreCondition
-    root = logging.getLogger()
-    root.setLevel(logging.DEBUG)
-    
-    ch = logging.StreamHandler(sys.stdout)
-    ch.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    ch.setFormatter(formatter)
-    root.addHandler(ch)
-    root.info('BEGIN:  %s' % os.path.basename(__file__))
-    
     
     print ("Testcase start: ", datetime.now())
     starttime = time.time()
@@ -375,11 +357,9 @@ def run():
     print ("Testcase end: ", datetime.now())
     print ("Time needed for testrun (seconds): ", int(time.time() - starttime))
 
-    
     print ("Do cleanup now...")
     print ("Stop heartbeat sent")
     SC.stop_heartbeat()
-    #time.sleep(5)
 
     # deregister signals
     SC.unsubscribe_signals()
