@@ -1,3 +1,10 @@
+# Testscript ODTB2 MEPII
+# project:  BECM basetech MEPII
+# author:   LDELLATO (Lorenzo Della Torre)
+# date:     2019-05-13
+# version:  1.0
+# reqprod:  74165
+
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
 
 # Copyright 2015 gRPC authors.
