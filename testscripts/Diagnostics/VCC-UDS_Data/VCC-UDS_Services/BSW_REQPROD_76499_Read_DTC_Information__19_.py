@@ -41,29 +41,6 @@ def precondition(stub, s, r, ns):
     # start heartbeat, repeat every 0.8 second
     SC.start_heartbeat(stub, "EcmFront1NMFr", "Front1CANCfg1", b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.8)
 
-# Global variable:
-testresult = True
-
-# precondition for test running:
-#  BECM has to be kept alive: start heartbeat
-def precondition(stub, s, r, ns):
-    global testresult
-    
-    # start heartbeat, repeat every 0.8 second
-    SC._heartbeat = True
-    t = Thread (target=SC.send_heartbeat, args = (stub, "EcmFront1NMFr", "Front1CANCfg1", b'\x20\x40\x00\xFF\x00\x00\x00\x00',0.8))
-    t.daemon = True
-    t.start()
-    # wait for BECM to wake up
-    time.sleep(5)
-    # Register signals
-    
-    #messages = list()
-    can_send = "Vcu1ToBecmFront1DiagReqFrame"
-    can_rec = "BecmToVcu1Front1DiagResFrame"
-    can_nspace = "Front1CANCfg1"
-    
-
     # timeout = more than maxtime script takes
     # needed as thread for registered signals won't stop without timeout
     #timeout = 300   #seconds
@@ -100,6 +77,8 @@ def step_0(stub, s, r, ns):
     can_mr_extra = ''
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
+    print(SuTe.PP_CombinedDID_EDA0(SC.can_messages[r][0][2], title=''))
+
     time.sleep(1)
     
 
@@ -134,17 +113,17 @@ def step_2(stub, s, r, ns):
     
     
     #SC.can_m_send( "Read counters", b'\x0B\x45\x00') #Request current session
-    can_m_send = SC.can_m_send( "reportDTCExtDataRecordByDTCNumber", b'\x0B\x4A\x00' , " ")
+    can_m_send = SC.can_m_send( "ReadDTCInfoExtDataRecordByDTCNumber", b'\x0D\xE6\x00' , b'\xFF')
     can_mr_extra = ''
     #print(SC.can_m_send( "Read counters", b'\x0B\x45\x00'))
     stepno = 2
     purpose = "verify that DTC info are sent"
     timeout = 1 #wait a second for reply to be send
-    min_no_messages = 1
-    max_no_messages = 1
+    min_no_messages = -1
+    max_no_messages = -1
   
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    
+
     #SuTe.test_message(SC.can_frames[r], teststring='0462F18601000000')
     #print ("Step ", stepno, " teststatus:", testresult, "\n")
     return(SC.can_frames[r])
@@ -161,17 +140,6 @@ def run():
     can_send = "Vcu1ToBecmFront1DiagReqFrame"
     can_receive = "BecmToVcu1Front1DiagResFrame"
     can_namespace = SC.nspace_lookup("Front1CANCfg1")
-
-    # Test PreCondition
-    root = logging.getLogger()
-    root.setLevel(logging.DEBUG)
-    
-    ch = logging.StreamHandler(sys.stdout)
-    ch.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    ch.setFormatter(formatter)
-    root.addHandler(ch)
-    root.info('BEGIN:  %s' % os.path.basename(__file__))
     
     
     print ("Testcase start: ", datetime.now())
@@ -232,4 +200,5 @@ def run():
     
 if __name__ == '__main__':
     run()
+
 
