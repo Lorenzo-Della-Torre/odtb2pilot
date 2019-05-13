@@ -16,33 +16,30 @@
 
 """The Python implementation of the gRPC route guide client."""
 
-from __future__ import print_function
 from datetime import datetime
-import threading
-from threading import Thread
-
-import random
 import time
-
-import grpc
-import string
-
 import logging
 import os
 import sys
-sys.path.append('generated')
 
-import common_pb2
-import volvo_grpc_network_api_pb2 
-import volvo_grpc_network_api_pb2_grpc
-import volvo_grpc_functional_api_pb2
-import volvo_grpc_functional_api_pb2_grpc
+import ODTB_conf
 
 from support_can import Support_CAN
 SC = Support_CAN()
 
 from support_test_odtb2 import Support_test_ODTB2
 SuTe = Support_test_ODTB2()
+
+# Global variable:
+testresult = True
+
+# precondition for test running:
+#  BECM has to be kept alive: start heartbeat
+def precondition(stub, s, r, ns):
+    global testresult
+    
+    # start heartbeat, repeat every 0.8 second
+    SC.start_heartbeat(stub, "EcmFront1NMFr", "Front1CANCfg1", b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.8)
 
 # Global variable:
 testresult = True
@@ -159,20 +156,11 @@ def run():
     # to be implemented
     
     # where to connect to signal_broker
-    #channel = grpc.insecure_channel('localhost:50051')
-    
-    # old Raspberry board Rpi 3B#channel
-    #channel = grpc.insecure_channel('10.247.249.204:50051')
-    
-    # new Raspberry-board Rpi 3B+
-    # ToDo: get IP via DNS
-    channel = grpc.insecure_channel('10.246.47.27:50051')
-    functional_stub = volvo_grpc_functional_api_pb2_grpc.FunctionalServiceStub(channel)
-    network_stub = volvo_grpc_network_api_pb2_grpc.NetworkServiceStub(channel)
+    network_stub = SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT)
 
     can_send = "Vcu1ToBecmFront1DiagReqFrame"
     can_receive = "BecmToVcu1Front1DiagResFrame"
-    can_namespace = "Front1CANCfg1"
+    can_namespace = SC.nspace_lookup("Front1CANCfg1")
 
     # Test PreCondition
     root = logging.getLogger()
@@ -226,30 +214,13 @@ def run():
     
     print ("Do cleanup now...")
     print ("Stop heartbeat sent")
-    SC._heartbeat = False
+    SC.stop_heartbeat()
     #time.sleep(5)
 
-    #print ("Signals to unsubscribe")
-    #print ("Number of signals subscribed ", len(SC.can_subscribes))
-    #print ("Can signals subscribed to: ", SC.can_subscribes)
-    for unsubsc in SC.can_subscribes:
-        print ("unsubscribe signal: ", unsubsc)
-        SC.can_subscribes[unsubsc][0].cancel()
-        #print ("can_subscribes obj ", SC.can_subscribes[unsubsc][0])
-
-        print ("waiting for threads to finish")
-    time.sleep(5)
-    
-    print ("active threads remaining: " , threading.active_count())
-    #cleanup
-    #postcondition(network_stub)
-    while threading.active_count() > 1:
-        item =(threading.enumerate())[-1]
-        print ("thread to join ", item)
-        item.join(5)
-        time.sleep(5)
-        print ("active thread after join ", threading.active_count() )
-        print ("thread enumerate ", threading.enumerate())
+    # deregister signals
+    SC.unsubscribe_signals()
+    # if threads should remain: try to stop them 
+    SC.thread_stop()
             
     print ("Test cleanup end: ", datetime.now())
     print()
