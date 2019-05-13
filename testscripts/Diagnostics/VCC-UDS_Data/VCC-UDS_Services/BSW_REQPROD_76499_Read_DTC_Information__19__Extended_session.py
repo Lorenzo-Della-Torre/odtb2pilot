@@ -77,6 +77,8 @@ def step_0(stub, s, r, ns):
     can_mr_extra = ''
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
+    print(SuTe.PP_CombinedDID_EDA0(SC.can_messages[r][0][2], title=''))
+
     time.sleep(1)
     
 # teststep 1: Change to Extended session
