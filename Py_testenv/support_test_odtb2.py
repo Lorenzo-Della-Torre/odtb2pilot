@@ -1,3 +1,8 @@
+# project:  ODTB2 testenvironment using SignalBroker
+# author:   hweiler (Hans-Klaus Weiler)
+# date:     2019-05-14
+# version:  1.0
+
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
 
 # Copyright 2015 gRPC authors.
