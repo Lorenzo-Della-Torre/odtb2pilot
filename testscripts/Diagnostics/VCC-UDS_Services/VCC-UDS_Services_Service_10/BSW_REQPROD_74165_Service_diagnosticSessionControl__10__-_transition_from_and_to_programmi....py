@@ -193,14 +193,13 @@ def step_5(stub, s, r, ns):
     stepno = 5
     purpose = "Change to default session"
     timeout = 1
-    min_no_messages = -1
-    max_no_messages = -1
+    min_no_messages = 1
+    max_no_messages = 1
 
     can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x01', "")
     can_mr_extra = ''
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='065001')
 
 
 
@@ -255,33 +254,33 @@ def run():
     # teststeps
     ############################################
     # step 1:
-    # action: # Change to Programming session
-    # result: BECM reports mode
+    # action: # register another signal
+    # result: 
     step_1(network_stub, can_send, can_receive, can_namespace)
     
     # step2:
-    # action: verify current session
-    # result: BECM reports programming session
+    # action: Change to Programming session
+    # result: 
     step_2(network_stub, can_send, can_receive, can_namespace)
 
     # step3:
-    # action: send single requests
-    # result: 
+    # action: Verify Programming session
+    # result: BECM reports programming session
     step_3(network_stub, can_send, can_receive, can_namespace)
     
     # step4:
-    # action: update received messages, verify if DID contained"
-    # result: verify if DID contained
+    # action: Verify subscribed signal in step 1 is not sent
+    # result: 
     step_4(network_stub, can_send, can_receive, can_namespace)
    
     # step5:
-    # action: request another DID
-    # result: 
+    # action: Change to Default session
+    # result: BECM reports default session
     step_5(network_stub, can_send, can_receive, can_namespace)
 
     # step6:
-    # action: update received messages, verify if DID contained"
-    # result: verify if DID contained
+    # action: Verify subscribed signal is still sent
+    # result: ECU send frames of subscribed signal
     step_6(network_stub, can_send, can_receive, can_namespace)
     
     ############################################
