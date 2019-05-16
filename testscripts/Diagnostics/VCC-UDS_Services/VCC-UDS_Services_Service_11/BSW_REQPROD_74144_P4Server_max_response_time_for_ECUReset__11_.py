@@ -59,15 +59,6 @@ def precondition(stub, s, r, ns):
     SC.subscribe_signal(stub, s, r, ns, timeout)
     #record signal we send as well
     SC.subscribe_signal(stub, r, s, ns, timeout)
-
-    # Parameters for FrameControl FC VCU
-    time.sleep(1)
-    BS=0
-    ST=0
-    FC_delay = 0 #no wait
-    FC_flag = 48 #continue send
-    FC_auto = False
-    SC.change_MF_FC(s, BS, ST, FC_delay, FC_flag, FC_auto)
     
     print()
     #step_0(stub, s, r, ns)
@@ -99,15 +90,14 @@ def step_1(stub, s, r, ns):
     purpose = "get P2_server_max"
     time.sleep(1)
     timeout = 1
-    min_no_messages = -1
-    max_no_messages = -1
+    min_no_messages = 1
+    max_no_messages = 1
 
     can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x01', "")
     can_mr_extra = ''
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     #time.sleep(1)
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='065001001901F400')
     P2_server_max = int(SC.can_messages[r][0][2][8:10], 16)
     time.sleep(1)
 
@@ -121,14 +111,14 @@ def step_2(stub, s, r, ns):
     stepno = 2
     purpose = "ECU Reset"
     timeout = 1
-    min_no_messages = -1
-    max_no_messages = -1
+    min_no_messages = 1
+    max_no_messages = 1
 
     can_m_send = b'\x11\x01'
     can_mr_extra = ''
     T1=time.time()
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='025101')
+    
     T2 = SC.can_messages[r][0][0]
     time.sleep(1)
 
@@ -139,7 +129,8 @@ def step_3():
     stepno = 3
     purpose = "Verify (time receive message – time sending request) less than P2_server_max"
     SuTe.print_test_purpose(stepno, purpose)
-    if (P2_server_max + 10) > (T2 - T1):
+    jitter_testenv = 10
+    if (P2_server_max + jitter_testenv) > (T2 - T1):
         testresult 
     else:
         testresult = False
