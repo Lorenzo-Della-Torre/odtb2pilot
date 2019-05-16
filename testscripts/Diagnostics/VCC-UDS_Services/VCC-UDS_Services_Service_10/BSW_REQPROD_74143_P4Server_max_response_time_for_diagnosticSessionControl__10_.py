@@ -49,7 +49,8 @@ def precondition(stub, s, r, ns):
     global testresult
     
     # start heartbeat, repeat every 0.8 second
-    SC.start_heartbeat(stub, "EcmFront1NMFr", "Front1CANCfg1", b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.8)    
+    SC.start_periodic(stub, 'heartbeat', True, "EcmFront1NMFr", "Front1CANCfg1", b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.8)
+    time.sleep(4) #wait for ECU startup   
 
     
 
@@ -267,18 +268,8 @@ def run():
     ############################################
     # step 1:
     # action: Change to programming session
-    # result: 
-    step_1(network_stub, can_send, can_receive, can_namespace)
-
-    # step 1:
-    # action: verify Programming session
-    # result:
-    step_1a(network_stub, can_send, can_receive, can_namespace)
-
-    # step 1:
-    # action: Change from programming session to programming session
     # result: positive reply with Parameters P2_server_max and P2*_server_max
-    step_1b(network_stub, can_send, can_receive, can_namespace)
+    step_1(network_stub, can_send, can_receive, can_namespace)
 
     # step 2:
     # action: Wait for the response message
