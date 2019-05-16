@@ -61,14 +61,6 @@ def precondition(stub, s, r, ns):
     #record signal we send as well
     SC.subscribe_signal(stub, r, s, ns, timeout)
 
-    # Parameters for FrameControl FC VCU
-    time.sleep(1)
-    BS=0
-    ST=0
-    FC_delay = 0 #no wait
-    FC_flag = 48 #continue send
-    FC_auto = False
-    SC.change_MF_FC(s, BS, ST, FC_delay, FC_flag, FC_auto)
     
     print()
     #step_0(stub, s, r, ns)
@@ -96,6 +88,8 @@ def step_0(stub, s, r, ns):
 # teststep 1: Change to programming session
 def step_1(stub, s, r, ns):
     global testresult
+    global T1, T2
+    global P2_server_max
     
     stepno = 1
     purpose = "Change to Programming session"
@@ -109,29 +103,6 @@ def step_1(stub, s, r, ns):
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     #time.sleep(1)
 
-# teststep 1a: verify session
-def step_1a(stub, s, r, ns):
-    global testresult
-    
-    stepno = 1
-    purpose = "Verify programming session"
-    timeout = 1
-    min_no_messages = 1
-    max_no_messages = 1
-
-    can_m_send = b'\x22\xF1\x86'
-    can_mr_extra = b'\x02'
-    
-    testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    time.sleep(1)
-
-# teststep 1b: Change to programming session
-def step_1b(stub, s, r, ns):
-    global testresult
-    global T1, T2
-    global P2_server_max
-    stepno = 1
-    purpose = "Change to Programming session from Programming session"
     timeout = 1
     min_no_messages = -1
     max_no_messages = -1
@@ -170,15 +141,14 @@ def step_3(stub, s, r, ns):
     purpose = "Change to default session"
     time.sleep(1)
     timeout = 1
-    min_no_messages = -1
-    max_no_messages = -1
+    min_no_messages = 1
+    max_no_messages = 1
      
     can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x01', "")
     can_mr_extra = ''
     T1 = time.time()
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    #time.sleep(1)
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='065001')
+    
     P2_server_max = int(SC.can_messages[r][0][2][8:10], 16)
     T2 = SC.can_messages[r][0][0]
     time.sleep(1)
@@ -207,15 +177,14 @@ def step_5(stub, s, r, ns):
     purpose = "Change to extended session"
     time.sleep(1)
     timeout = 1
-    min_no_messages = -1
-    max_no_messages = -1
+    min_no_messages = 1
+    max_no_messages = 1
 
     can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x03', "")
     can_mr_extra = ''
     T1 = time.time()
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    #time.sleep(1)
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='065003')
+
     P2_server_max = int(SC.can_messages[r][0][2][8:10], 16)
     T2 = SC.can_messages[r][0][0]
     time.sleep(1)
@@ -245,15 +214,14 @@ def step_7(stub, s, r, ns):
     purpose = "Change to default session"
     time.sleep(1)
     timeout = 1
-    min_no_messages = -1
-    max_no_messages = -1
+    min_no_messages = 1
+    max_no_messages = 1
 
     can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x01', "")
     can_mr_extra = ''
     T1 = time.time()
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    #time.sleep(1)
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='065001')
+    
     P2_server_max = int(SC.can_messages[r][0][2][8:10], 16)
     T2 = SC.can_messages[r][0][0]
     time.sleep(1)
