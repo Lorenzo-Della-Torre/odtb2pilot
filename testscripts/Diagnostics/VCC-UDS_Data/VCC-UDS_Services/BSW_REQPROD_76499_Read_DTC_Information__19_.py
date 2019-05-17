@@ -1,7 +1,7 @@
 # Testscript ODTB2 MEPII
 # project:  BECM basetech MEPII
 # author:   hweiler (Hans-Klaus Weiler)
-# date:     2019-05-09
+# date:     2019-05-17
 # version:  1.0
 # reqprod:  76499
 
@@ -80,7 +80,7 @@ def step_0(stub, s, r, ns):
     min_no_messages = 1
     max_no_messages = 1
     
-    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xED\xA0', "")
+    can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xED\xA0', "")
     can_mr_extra = ''
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
@@ -97,7 +97,7 @@ def step_1(stub, s, r, ns):
     min_no_messages = 1
     max_no_messages = 1
 
-    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xF1\x86', "")
+    can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xF1\x86', "")
     can_mr_extra = b'\x01'
     
     stepno = 1
@@ -113,9 +113,9 @@ def step_1(stub, s, r, ns):
     #"ReadDTCInfoExtDataRecordByDTCNumber"=19 06
     #"ReadDTCInfoSnapshotRecordByDTCNumber"= 19 04
     #"ReadDTCByStatusMask" = 19 02 + "confirmedDTC"=03 / "testFailed" = 00
-    #"ReadDataByIentifier" = 22
+    #"ReadDataByIdentifier" = 22
 #def can_m_send_SC():
-    #return SC.can_m_send( "ReadDataByIentifieraa", b'\xF1\x20', "confirmedDTC")
+    #return SC.can_m_send( "ReadDataByIdentifieraa", b'\xF1\x20', "confirmedDTC")
          
 # teststep 2: verify that padded bytes in SF contain 0x00
 def step_2(stub, s, r, ns):
