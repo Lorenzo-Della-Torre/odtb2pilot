@@ -108,7 +108,7 @@ def step_2(stub, s, r, ns):
     min_no_messages = -1
     max_no_messages = -1
     
-    can_m_send = b'\x10\x02'
+    can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x02', "")
     can_mr_extra = ''
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
@@ -124,7 +124,7 @@ def step_3(stub, s, r, ns):
     min_no_messages = 1
     max_no_messages = 1
 
-    can_m_send = b'\x22\xF1\x86'
+    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xF1\x86', "")
     can_mr_extra = b'\x02'
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
@@ -137,15 +137,14 @@ def step_4(stub, s, r, ns):
     stepno = 4
     purpose = "Change to default session"
     timeout = 1
-    min_no_messages = -1
-    max_no_messages = -1
+    min_no_messages = 1
+    max_no_messages = 1
 
-    can_m_send = b'\x10\x01'
+    can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x01', "")
     can_mr_extra = ''
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    #time.sleep(1)
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='065001003201F400')
+    
 
 
 # teststep 5:  send signal vehicle velocity > 3 km/h   
@@ -167,7 +166,7 @@ def step_6(stub, s, r, ns):
     min_no_messages = -1
     max_no_messages = -1
 
-    can_m_send = b'\x10\x02'
+    can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x02', "")
     can_mr_extra = ''
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
@@ -184,7 +183,7 @@ def step_7(stub, s, r, ns):
     min_no_messages = 1
     max_no_messages = 1
 
-    can_m_send = b'\x22\xF1\x86'
+    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xF1\x86', "")
     can_mr_extra = b'\x01'
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
@@ -252,7 +251,7 @@ def run():
     step_5()
 
     # step 6:
-    # action: # Change to Programming session
+    # action: # Request change to Programming session with changed entry condition
     # result: BECM reports NRC
     step_6(network_stub, can_send, can_receive, can_namespace)
     
