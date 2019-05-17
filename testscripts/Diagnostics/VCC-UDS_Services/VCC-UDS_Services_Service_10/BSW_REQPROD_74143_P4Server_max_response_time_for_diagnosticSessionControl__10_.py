@@ -98,18 +98,12 @@ def step_1(stub, s, r, ns):
     min_no_messages = -1
     max_no_messages = -1
 
-    can_m_send = b'\x10\x02'
+    can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x02', "")
     can_mr_extra = ''
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     #time.sleep(1)
 
-    timeout = 1
-    min_no_messages = -1
-    max_no_messages = -1
-
-    can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x02', "")
-    can_mr_extra = ''
     T1 = time.time()
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     #time.sleep(1)
@@ -122,11 +116,12 @@ def step_2():
     global testresult
     global T1, T2
     global P2_server_max
+    global jitter_testenv
     stepno = 2
     purpose = "Verify (time receive message – time sending request) less than P2_server_max"
     SuTe.print_test_purpose(stepno, purpose)
-    if (P2_server_max + 10) > (T2 - T1):
-        testresult 
+    if (P2_server_max + jitter_testenv) > (T2 - T1):
+        testresult
     else:
         testresult = False
     print ("T difference(s):", (P2_server_max + 10)/1000 - (T2 - T1))
@@ -158,11 +153,12 @@ def step_4():
     global testresult
     global T1, T2
     global P2_server_max
+    global jitter_enstenv
     stepno = 4
     purpose = "Verify (time receive message – time sending request) less than P2_server_max"
     SuTe.print_test_purpose(stepno, purpose)
-    if (P2_server_max + 10) > (T2 - T1):
-        testresult 
+    if (P2_server_max + jitter_testenv) > (T2 - T1):
+        testresult
     else:
         testresult = False
     print ("T difference(s):", (P2_server_max + 10)/1000 - (T2 - T1))
@@ -194,11 +190,12 @@ def step_6():
     global testresult
     global T1, T2
     global P2_server_max
+    global jitter_testenv
     stepno = 6
     purpose = "Verify (time receive message – time sending request) less than P2_server_max"
     SuTe.print_test_purpose(stepno, purpose)
-    if (P2_server_max + 10) > (T2 - T1):
-        testresult 
+    if (P2_server_max + jitter_testenv) > (T2 - T1):
+        testresult
     else:
         testresult = False
     
@@ -231,11 +228,12 @@ def step_8():
     global testresult
     global T1, T2
     global P2_server_max
+    global jitter_testenv
     stepno = 8
     purpose = "Verify (time receive message – time sending request) less than P2_server_max"
     SuTe.print_test_purpose(stepno, purpose)
-    if (P2_server_max + 10) > (T2 - T1):
-        testresult 
+    if (P2_server_max + jitter_testenv) > (T2 - T1):
+        testresult
     else:
         testresult = False
     print ("T difference(s):", (P2_server_max + 10)/1000 - (T2 - T1))
