@@ -170,8 +170,10 @@ def step_6(stub, s, r, ns):
     can_mr_extra = ''
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    #time.sleep(1)
     print(SuTe.PP_Decode_7F_response(SC.can_messages[r][0][2]))
+    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='7F1022')
+    #time.sleep(1)
+    
 
 # teststep 7: verify default session
 def step_7(stub, s, r, ns):
