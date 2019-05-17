@@ -120,6 +120,7 @@ def step_2():
     stepno = 2
     purpose = "Verify (time receive message – time sending request) less than P2_server_max"
     SuTe.print_test_purpose(stepno, purpose)
+    jitter_testenv = 10
     if (P2_server_max + jitter_testenv) > (T2 - T1):
         testresult
     else:
