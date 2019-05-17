@@ -1,6 +1,6 @@
 # project:  ODTB2 testenvironment using SignalBroker
 # author:   hweiler (Hans-Klaus Weiler)
-# date:     2019-05-14
+# date:     2019-05-17
 # version:  1.0
 
 
@@ -240,7 +240,7 @@ class Support_CAN:
  
     def start_heartbeat(self, stub, hb_id, hb_nspace, hb_frame, hb_intervall):
         print ("start_heartbeat")
-        self.start_periodic(stub, 'heartbeat', hb_id, True, hb_nspace, hb_frame, hb_intervall)        
+        self.start_periodic(stub, 'heartbeat', True, hb_id, hb_nspace, hb_frame, hb_intervall)        
         #print ("wait 5sec for heartbeat to start")
         time.sleep(4)
         print ("start_heartbeat end")
@@ -708,8 +708,20 @@ class Support_CAN:
                 print("ReadDTC: Supported mask missing.\n")
                 ret = b''
 
-        elif name == "ReadDataByIentifier":
+        elif name == "ReadDataByIdentifier":
             ret = b'\x22'+ message
+        elif name == "ReadMemoryByAddress":
+            ret = b'\x23'+ mask + message
+        elif name == "SecurityAccess":
+            ret = b'\x27'+ mask + message
+        elif name == "DynamicallyDefineDataIdentifier":
+            ret = b'\x2A'+ mask + message
+        elif name == "ReadDataBePeriodicIdentifier":
+            ret = b'\x2C'+ mask + message
+        elif name == "WriteDataByIdentifier":
+            ret = b'\x2E'+ message
+        elif name == "RoutineControlRequestSID":
+            ret = b'\x31'+ mask + message 
         elif name == "RequestUpload":
             ret = b'\x35'+ message
         elif name == "TransferData":
@@ -717,7 +729,7 @@ class Support_CAN:
         elif name == "RequestDownload":
             ret = b'\x74'+ message
         else:
-            print("You type a wrong name", "\n")
+            print("You type a wrong name: ", name, "\n")
             ret = b''
 
         return ret
