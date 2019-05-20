@@ -1,3 +1,9 @@
+# Testscript ODTB2 MEPII
+# project:  BECM basetech MEPII
+# author:   LDELLATO (Lorenzo Della Torre)
+# date:     2019-05-13
+# version:  1.0
+# reqprod:  74165
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
 
 # Copyright 2015 gRPC authors.
@@ -16,28 +22,13 @@
 
 """The Python implementation of the gRPC route guide client."""
 
-from __future__ import print_function
 from datetime import datetime
-import threading
-from threading import Thread
-
-import random
 import time
-
-import grpc
-import string
-
 import logging
 import os
 import sys
 
-sys.path.append('generated')
-
-import volvo_grpc_network_api_pb2
-import volvo_grpc_network_api_pb2_grpc
-import volvo_grpc_functional_api_pb2
-import volvo_grpc_functional_api_pb2_grpc
-import common_pb2
+import ODTB_conf
 
 from support_can import Support_CAN
 SC = Support_CAN()
@@ -48,26 +39,13 @@ SuTe = Support_test_ODTB2()
 # Global variable:
 testresult = True
 
-
-    
 # precondition for test running:
 #  BECM has to be kept alive: start heartbeat
 def precondition(stub, s, r, ns):
     global testresult
     
     # start heartbeat, repeat every 0.8 second
-    SC._heartbeat = True
-    t = Thread (target=SC.send_heartbeat, args = (stub, "EcmFront1NMFr", "Front1CANCfg1", b'\x20\x40\x00\xFF\x00\x00\x00\x00',0.8))
-    t.daemon = True
-    t.start()
-    # wait for BECM to wake up
-    time.sleep(5)
-    # Register signals
-    
-    #messages = list()
-    #can_send = "Vcu1ToBecmFront1DiagReqFrame"
-    #can_rec = "BecmToVcu1Front1DiagResFrame"
-    #can_nspace = "Front1CANCfg1"
+    SC.start_heartbeat(stub, "EcmFront1NMFr", "Front1CANCfg1", b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.8)
     
 
     # timeout = more than maxtime script takes
@@ -215,14 +193,13 @@ def step_5(stub, s, r, ns):
     stepno = 5
     purpose = "Change to default session"
     timeout = 1
-    min_no_messages = -1
-    max_no_messages = -1
+    min_no_messages = 1
+    max_no_messages = 1
 
     can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x01', "")
     can_mr_extra = ''
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='065001')
 
 
 
@@ -257,37 +234,17 @@ def run():
     # to be implemented
     
     # where to connect to signal_broker
-    #channel = grpc.insecure_channel('localhost:50051')
-    
-    # old Raspberry board Rpi 3B#channel
-    #channel = grpc.insecure_channel('10.247.249.204:50051')
-    
-    # new Raspberry-board Rpi 3B+
-    # ToDo: get IP via DNS
-    channel = grpc.insecure_channel('10.246.47.27:50051')
-    functional_stub = volvo_grpc_functional_api_pb2_grpc.FunctionalServiceStub(channel)
-    network_stub = volvo_grpc_network_api_pb2_grpc.NetworkServiceStub(channel)
+    network_stub = SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT)
 
     can_send = "Vcu1ToBecmFront1DiagReqFrame"
     can_receive = "BecmToVcu1Front1DiagResFrame"
-    can_namespace = "Front1CANCfg1"
+    can_namespace = SC.nspace_lookup("Front1CANCfg1")
 
-    # Test PreCondition
-    root = logging.getLogger()
-    root.setLevel(logging.DEBUG)
-    
-    ch = logging.StreamHandler(sys.stdout)
-    ch.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    ch.setFormatter(formatter)
-    root.addHandler(ch)
-    root.info('BEGIN:  %s' % os.path.basename(__file__))
-    
     
     print ("Testcase start: ", datetime.now())
     starttime = time.time()
     print ("time ", time.time())
-    print ()
+    print()
     ############################################
     # precondition
     ############################################
@@ -297,33 +254,33 @@ def run():
     # teststeps
     ############################################
     # step 1:
-    # action: # Change to Programming session
-    # result: BECM reports mode
+    # action: # register another signal
+    # result: 
     step_1(network_stub, can_send, can_receive, can_namespace)
     
     # step2:
-    # action: verify current session
-    # result: BECM reports programming session
+    # action: Change to Programming session
+    # result: 
     step_2(network_stub, can_send, can_receive, can_namespace)
 
     # step3:
-    # action: send single requests
-    # result: 
+    # action: Verify Programming session
+    # result: BECM reports programming session
     step_3(network_stub, can_send, can_receive, can_namespace)
     
     # step4:
-    # action: update received messages, verify if DID contained"
-    # result: verify if DID contained
+    # action: Verify subscribed signal in step 1 is not sent
+    # result: 
     step_4(network_stub, can_send, can_receive, can_namespace)
    
     # step5:
-    # action: request another DID
-    # result: 
+    # action: Change to Default session
+    # result: BECM reports default session
     step_5(network_stub, can_send, can_receive, can_namespace)
 
     # step6:
-    # action: update received messages, verify if DID contained"
-    # result: verify if DID contained
+    # action: Verify subscribed signal is still sent
+    # result: ECU send frames of subscribed signal
     step_6(network_stub, can_send, can_receive, can_namespace)
     
     ############################################
@@ -338,33 +295,16 @@ def run():
     
     print ("Do cleanup now...")
     print ("Stop heartbeat sent")
-    SC._heartbeat = False
+    SC.stop_heartbeat()
     #time.sleep(5)
 
-    #print ("Signals to unsubscribe")
-    #print ("Number of signals subscribed ", len(SC.can_subscribes))
-    #print ("Can signals subscribed to: ", SC.can_subscribes)
-    for unsubsc in SC.can_subscribes:
-        print ("unsubscribe signal: ", unsubsc)
-        SC.can_subscribes[unsubsc][0].cancel()
-        #print ("can_subscribes obj ", SC.can_subscribes[unsubsc][0])
-
-        print ("waiting for threads to finish")
-    time.sleep(5)
-    
-    print ("active threads remaining: " , threading.active_count())
-    #cleanup
-    #postcondition(network_stub)
-    while threading.active_count() > 1:
-        item =(threading.enumerate())[-1]
-        print ("thread to join ", item)
-        item.join(5)
-        time.sleep(5)
-        print ("active thread after join ", threading.active_count() )
-        print ("thread enumerate ", threading.enumerate())
+    # deregister signals
+    SC.unsubscribe_signals()
+    # if threads should remain: try to stop them 
+    SC.thread_stop()
             
     print ("Test cleanup end: ", datetime.now())
-    print ()
+    print()
     if testresult:
         print ("Testcase result: PASSED")
     else:
