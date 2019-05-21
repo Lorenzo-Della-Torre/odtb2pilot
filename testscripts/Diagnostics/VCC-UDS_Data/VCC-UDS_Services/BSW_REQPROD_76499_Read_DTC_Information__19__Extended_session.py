@@ -80,7 +80,7 @@ def step_0(stub, s, r, ns):
     min_no_messages = 1
     max_no_messages = 1
     
-    can_m_send = b'\x22\xED\xA0'
+    can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xED\xA0', "")
     can_mr_extra = ''
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
@@ -96,7 +96,7 @@ def step_1(stub, s, r, ns):
     min_no_messages = 1
     max_no_messages = 1
 
-    can_m_send = b'\x10\x03'
+    can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x03', "")
     can_mr_extra = ''
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
@@ -113,7 +113,7 @@ def step_2(stub, s, r, ns):
     min_no_messages = -1
     max_no_messages = -1
 
-    can_m_send = b'\x22\xF1\x86'
+    can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xF1\x86', "")
     can_mr_extra = b'\x03'
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
@@ -127,7 +127,7 @@ def step_2(stub, s, r, ns):
     #"reportDTCByStatusMask" = 19 02 + "confirmedDTC"=03 / "testFailed" = 00
     #"ReadDataByIentifier" = 22
          
-# teststep 3: verify that padded bytes in SF contain 0x00
+# teststep 3: Request DTC information using service 19
 def step_3(stub, s, r, ns):
     global testresult
     #global can_frames
@@ -160,7 +160,7 @@ def step_4(stub, s, r, ns):
     min_no_messages = -1
     max_no_messages = -1
 
-    can_m_send = b'\x22\xF1\x86'
+    can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xF1\x86', "")
     can_mr_extra = b'\x03'
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
@@ -176,7 +176,7 @@ def step_5(stub, s, r, ns):
     min_no_messages = 1
     max_no_messages = 1
 
-    can_m_send = b'\x10\x01'
+    can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x01', "")
     can_mr_extra = ''
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
@@ -192,7 +192,7 @@ def step_6(stub, s, r, ns):
     min_no_messages = -1
     max_no_messages = -1
 
-    can_m_send = b'\x22\xF1\x86'
+    can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xF1\x86', "")
     can_mr_extra = b'\x01'
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
