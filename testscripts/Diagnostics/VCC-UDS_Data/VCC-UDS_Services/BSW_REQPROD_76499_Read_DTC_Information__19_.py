@@ -80,7 +80,7 @@ def step_0(stub, s, r, ns):
     min_no_messages = 1
     max_no_messages = 1
     
-    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xED\xA0', "")
+    can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xED\xA0', "")
     can_mr_extra = ''
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
@@ -97,7 +97,7 @@ def step_1(stub, s, r, ns):
     min_no_messages = 1
     max_no_messages = 1
 
-    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xF1\x86', "")
+    can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xF1\x86', "")
     can_mr_extra = b'\x01'
     
     stepno = 1
@@ -148,8 +148,8 @@ def step_2(stub, s, r, ns):
     stepno = 2
     purpose = "verify that DTC info are sent"
     timeout = 1 #wait a second for reply to be send
-    min_no_messages = -1
-    max_no_messages = -1
+    min_no_messages = 1
+    max_no_messages = 1
   
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
 
