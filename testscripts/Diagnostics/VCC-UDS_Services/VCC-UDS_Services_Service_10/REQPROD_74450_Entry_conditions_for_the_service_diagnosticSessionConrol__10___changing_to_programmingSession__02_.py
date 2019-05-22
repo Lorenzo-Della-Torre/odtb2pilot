@@ -1,10 +1,9 @@
 # Testscript ODTB2 MEPII
 # project:  BECM basetech MEPII
 # author:   LDELLATO (Lorenzo Della Torre)
-# date:     2019-05-13
-# version:  1.0
-# reqprod:  74166
-
+# date:     2019-05-14
+# version:  2.0
+# reqprod:  74450
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
 
 # Copyright 2015 gRPC authors.
@@ -40,30 +39,33 @@ SuTe = Support_test_ODTB2()
 # Global variable:
 testresult = True
 
+
+    
 # precondition for test running:
 #  BECM has to be kept alive: start heartbeat
 def precondition(stub, s, r, ns):
     global testresult
-    
+        
     # start heartbeat, repeat every 0.8 second
-    SC.start_heartbeat(stub, "EcmFront1NMFr", "Front1CANCfg1", b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.8)
-
+    #SC.start_heartbeat(stub, "EcmFront1NMFr", "Front1CANCfg1", b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.8)
+    
+    #start_periodic(self, stub, per_name, per_id, per_send, per_nspace, per_frame, per_intervall)
+    SC.start_periodic(stub, 'heartbeat', True, "EcmFront1NMFr", "Front1CANCfg1", b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.8)
+    time.sleep(4) #wait for ECU startup
+    
+    #VCU1Front1Fr06, VehSpdLgtSafe
+    
+    #SC.set_periodic(self, per_name, per_send, per_id, per_nspace, per_frame, per_intervall)
+    #SC.set_periodic('heartbeat', True, "EcmFront1NMFr", "Front1CANCfg1", b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.4)
+    #time.sleep(2)
+    
     # timeout = more than maxtime script takes
     # needed as thread for registered signals won't stop without timeout
     #timeout = 300   #seconds
-    timeout = 60   #seconds
+    timeout = 40   #seconds
     SC.subscribe_signal(stub, s, r, ns, timeout)
     #record signal we send as well
     SC.subscribe_signal(stub, r, s, ns, timeout)
-
-    # Parameters for FrameControl FC VCU
-    time.sleep(1)
-    BS=0
-    ST=0
-    FC_delay = 0 #no wait
-    FC_flag = 48 #continue send
-    FC_auto = False
-    SC.change_MF_FC(s, BS, ST, FC_delay, FC_flag, FC_auto)
     
     print()
     step_0(stub, s, r, ns)
@@ -85,132 +87,112 @@ def step_0(stub, s, r, ns):
     can_mr_extra = ''
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    print(SuTe.PP_CombinedDID_EDA0(SC.can_messages[r][0][2], title=''))
-    
+    print(SuTe.PP_CombinedDID_EDA0(SC.can_messages[r][0][2], title=''))  
 
-# teststep 1: register another signal
-def step_1(stub, s, r, ns):
-    global testresult
+# teststep 1: send signal vehicle velocity < 3km/h  
+def step_1(stub):  
+
     stepno = 1
-    purpose = "register another signal"
+    purpose = "send signal vehicle velocity < 3km/h"
     SuTe.print_test_purpose(stepno, purpose)
-    timeout = 15
-    min_no_messages = -1
-    max_no_messages = -1
+    #VCU1Front1Fr06, VehSpdLgtSafe
+    SC.start_periodic(stub, 'VehSpdLgtSafe', True, "VCU1Front1Fr06", "Front1CANCfg1", b'\x80\xd5\x00\x00\x00\x00\x00\x00',0.015)
 
-    can_send = "ECMFront1Fr02"
-    can_rec = "BECMFront1Fr02"
-    can_nspace = "Front1CANCfg1"
-
-    SC.subscribe_signal(stub, can_send, can_rec, can_nspace, timeout)
-    time.sleep(1)
-    SC.clear_all_can_messages()
-    print ("all can messages cleared")
-    SC.clear_all_can_frames()
-    SC.update_can_messages(r)
-    print ("all can messages updated")
-    time.sleep(1)
-    print ()
-    print ("Step1: frames received ", len(SC.can_frames[can_rec]))
-    print ("Step1: frames: ", SC.can_frames[can_rec], "\n")
-    
-    testresult = testresult and (len(SC.can_frames[can_rec]) > 10)
-    
-    print ("Step ", stepno, " teststatus:", testresult, "\n")
-
-# teststep 2: Change to Extended session
+# teststep 2: Change to programming session
 def step_2(stub, s, r, ns):
     global testresult
     
     stepno = 2
-    purpose = "Change to Extended session"
+    purpose = "Change to Programming session"
     timeout = 1
     min_no_messages = -1
     max_no_messages = -1
-
-    can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x03', "")
+    
+    can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x02', "")
     can_mr_extra = ''
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     #time.sleep(1)
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='065003001901F400')
 
-
-
-
-# teststep 2: check for number of frames/messages for signal step1 within 10 sec
-# teststep 3: change to programming, wait 1 second...
-# teststep 4: clear messages/frames
-# teststep 5: wait 10 sec, check for number of frames received for signal in step1
-# teststep 6: check session
-# teststep 7: change to default
-# teststep 8: check how many frames/messages received within 10 sec
-
+# teststep 3: verify programming session
 def step_3(stub, s, r, ns):
     global testresult
     
     stepno = 3
-    purpose = "Verify subscribed signal in step 1 is sent"
-    SuTe.print_test_purpose(stepno, purpose)
-    can_rec = "BECMFront1Fr02"
-    #SC.update_can_messages(r)
-    SC.clear_all_can_messages()
-    print ("all can messages cleared")
-    SC.clear_all_can_frames()
-    SC.update_can_messages(r)
-    print ("all can messages updated")
+    purpose = "Verify programming session"
+    timeout = 1
+    min_no_messages = 1
+    max_no_messages = 1
+
+    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xF1\x86', "")
+    can_mr_extra = b'\x02'
+    
+    testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     time.sleep(1)
-    print ()
-    print ("Step3: frames received ", len(SC.can_frames[can_rec]))
-    print ("Step3: frames: ", SC.can_frames[can_rec], "\n")
-
-    testresult = testresult and (len(SC.can_frames[can_rec]) > 10)
-
-    print ("Step ", stepno, " teststatus:", testresult, "\n")
-
-# teststep 5: Change to default session
+    
+# teststep 4: Change to default session
 def step_4(stub, s, r, ns):
     global testresult
     
     stepno = 4
     purpose = "Change to default session"
     timeout = 1
-    min_no_messages = -1
-    max_no_messages = -1
+    min_no_messages = 1
+    max_no_messages = 1
 
     can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x01', "")
     can_mr_extra = ''
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='065001')
+    
 
 
+# teststep 5:  send signal vehicle velocity > 3 km/h   
+def step_5():
 
-def step_5(stub, s, r, ns):
-    global testresult
     stepno = 5
-    purpose = "Verify subscribed signal is still sent"
+    purpose = "send signal vehicle velocity > 3km/h"
     SuTe.print_test_purpose(stepno, purpose)
+    SC.set_periodic('VehSpdLgtSafe', True, "VCU1Front1Fr06", "Front1CANCfg1", b'\x80\xd6\x00\x00\x00\x00\x00\x00',0.015)
+    time.sleep(2)
+
+# teststep 6: Change to programming session
+def step_6(stub, s, r, ns):
+    global testresult
+    
+    stepno = 6
+    purpose = "Change to Programming session"
+    timeout = 1
+    min_no_messages = -1
+    max_no_messages = -1
+
+    can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x02', "")
+    can_mr_extra = ''
+    
+    testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
+    print(SuTe.PP_Decode_7F_response(SC.can_messages[r][0][2]))
+    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='7F1022')
+    #time.sleep(1)
+    
+
+# teststep 7: verify default session
+def step_7(stub, s, r, ns):
+    global testresult
+    
+    stepno = 7
+    purpose = "Verify default session"
+    timeout = 1
+    min_no_messages = 1
+    max_no_messages = 1
+
+    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xF1\x86', "")
+    can_mr_extra = b'\x01'
+    
+    testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     time.sleep(1)
-    can_rec = "BECMFront1Fr02"
-    SC.clear_all_can_messages()
-    print ("all can messages cleared")
-    SC.clear_all_can_frames()
-    SC.update_can_messages(r)
-    print ("all can messages updated")
-    time.sleep(1)
-    print ()
-    print ("Step5: frames received ", len(SC.can_frames[can_rec]))
-    print ("Step5: frames: ", SC.can_frames[can_rec], "\n")
-    
-    testresult = testresult and (len(SC.can_frames[can_rec]) > 10)
-    
-    print ("Step ", stepno, " teststatus:", testresult, "\n")
-    
 
 def run():
     global testresult
-
     #start logging
     # to be implemented
     
@@ -221,7 +203,18 @@ def run():
     can_receive = "BecmToVcu1Front1DiagResFrame"
     can_namespace = SC.nspace_lookup("Front1CANCfg1")
 
-
+    # Test PreCondition
+    #root = logging.getLogger()
+    #root.setLevel(logging.DEBUG)
+    #
+    #ch = logging.StreamHandler(sys.stdout)
+    #ch.setLevel(logging.DEBUG)
+    #formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    #ch.setFormatter(formatter)
+    #root.addHandler(ch)
+    #root.info('BEGIN:  %s' % os.path.basename(__file__))
+    
+    
     print ("Testcase start: ", datetime.now())
     starttime = time.time()
     print ("time ", time.time())
@@ -235,30 +228,41 @@ def run():
     # teststeps
     ############################################
     # step 1:
+    # action: # send periodic signal vehicle velocity < 3km/h
+    # result: 
+    step_1(network_stub)
+
+    # step 2:
     # action: # Change to Programming session
-    # result: BECM reports mode
-    step_1(network_stub, can_send, can_receive, can_namespace)
-    
-    # step2:
-    # action: verify current session
-    # result: BECM reports programming session
+    # result: 
     step_2(network_stub, can_send, can_receive, can_namespace)
 
-    # step3:
-    # action: send single requests
-    # result: 
+    # step 3:
+    # action: # Verify programming session
+    # result: BECM reports mode
     step_3(network_stub, can_send, can_receive, can_namespace)
-    
-    # step4:
-    # action: update received messages, verify if DID contained"
-    # result: verify if DID contained
+
+    # step 4:
+    # action: # Change to Default session
+    # result: BECM reports mode
     step_4(network_stub, can_send, can_receive, can_namespace)
-   
-    # step5:
-    # action: request another DID
+
+    # step 5:
+    # action: # send periodic signal vehicle velocity < 3km/h
     # result: 
-    step_5(network_stub, can_send, can_receive, can_namespace)
+    step_5()
+
+    # step 6:
+    # action: # Request change to Programming session with changed entry condition
+    # result: BECM reports NRC
+    step_6(network_stub, can_send, can_receive, can_namespace)
     
+    # step 7:
+    # action: # Verify default session
+    # result: BECM reports mode
+    step_7(network_stub, can_send, can_receive, can_namespace)
+
+
     ############################################
     # postCondition
     ############################################
@@ -268,10 +272,10 @@ def run():
     print ("Testcase end: ", datetime.now())
     print ("Time needed for testrun (seconds): ", int(time.time() - starttime))
 
-    
     print ("Do cleanup now...")
-    print ("Stop heartbeat sent")
-    SC.stop_heartbeat()
+    print ("Stop all periodic signals sent")
+    #SC.stop_heartbeat()
+    SC.stop_periodic_all()
     #time.sleep(5)
 
     # deregister signals

@@ -125,7 +125,7 @@ def step_2(stub, s, r, ns):
     #"reportDTCExtDataRecordByDTCNumber"=19 06
     #"reportDTCSnapdhotRecordByDTCNumber"= 19 04
     #"reportDTCByStatusMask" = 19 02 + "confirmedDTC"=03 / "testFailed" = 00
-    #"ReadDataByIentifier" = 22
+    #"ReadDataByIdentifier" = 22
          
 # teststep 3: Request DTC information using service 19
 def step_3(stub, s, r, ns):
@@ -135,7 +135,7 @@ def step_3(stub, s, r, ns):
     
     
     #SC.can_m_send( "Read counters", b'\x0B\x45\x00') #Request current session
-    can_m_send = SC.can_m_send( "reportDTCSnapdhotRecordByDTCNumber", b'\x0B\x45\x00' , " ")
+    can_m_send = SC.can_m_send( "ReadDTCInfoSnapshotRecordByDTCNumber", b'\x0B\x45\x00' , b'')
     can_mr_extra = ''
     #print(SC.can_m_send( "Read counters", b'\x0B\x45\x00'))
     stepno = 3

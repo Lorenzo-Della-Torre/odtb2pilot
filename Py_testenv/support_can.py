@@ -1,3 +1,9 @@
+# project:  ODTB2 testenvironment using SignalBroker
+# author:   hweiler (Hans-Klaus Weiler)
+# date:     2019-05-17
+# version:  1.0
+
+
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
 
 # Copyright 2015 gRPC authors.
@@ -52,6 +58,7 @@ class Support_CAN:
     can_frames = dict()
     can_messages = dict()
     can_subscribes = dict()
+    can_periodic = dict()
     
 
     _heartbeat = False
@@ -185,21 +192,62 @@ class Support_CAN:
             print ("thread enumerate ", threading.enumerate())
 
 
+# start a periodic signal: parameters network_stub, send TRUE/FALSE, name, DBC_name, DBC_namespace, CAN_frame, intervall
+    def start_periodic(self, stub, per_name, per_send, per_id, per_nspace, per_frame, per_intervall):
+        print ("start_sending_periodic: ", per_name)
+        #self.can_periodic[per_name] = list()
+        self.can_periodic[per_name]=[per_send, per_id, per_nspace, per_frame, per_intervall]
+        #print ("send_periodic1: ", self.can_periodic)
+        #print ("send_periodic2: ", self.can_periodic[per_name])
 
-    def start_heartbeat(self, stub, hb_id, hb_nspace, hb_frame, hb_intervall):
-        print ("start_heartbeat")
-        # start heartbeat, repeat every 0.8 second
-        self._heartbeat = True
-        t = Thread (target=self.send_heartbeat, args = (stub, hb_id, common_pb2.NameSpace(name =hb_nspace), hb_frame,hb_intervall))
+        # start periodic, repeat every per_intervall (ms)
+        t = Thread (target=self.send_periodic, args = (stub, per_name))
         t.daemon = True
         t.start()
-        # wait for BECM to wake up
-        print ("wait 5sec for heartbeat to start")
-        time.sleep(5)
+        print ("wait 1sec for periodic signal to start:", per_name)
+        time.sleep(1)
+        #print ("start_periodic end")
+
+# update parameter to periodic signal: name, parameters send TRUE/FALSE, DBC_name, DBC_namespace, CAN_frame, intervall
+    def set_periodic(self, per_name, per_send, per_id, per_nspace, per_frame, per_intervall):
+        #print ("can_periodic ", self.can_periodic)
+        self.can_periodic[per_name][0] = per_send
+        self.can_periodic[per_name][1] = per_id
+        self.can_periodic[per_name][2] = per_nspace
+        self.can_periodic[per_name][3] = per_frame
+        self.can_periodic[per_name][4] = per_intervall
+
+# try to send periodic signal: parameters network_stub, name
+    def send_periodic(self, stub, per_name):
+        source = common_pb2.ClientId(id="app_identifier")
+        while self.can_periodic[per_name][0]:
+            #print ("Can_periodic ", self.can_periodic[per_name])
+            try:
+                #print ("send periodic signal_name: ", self.can_periodic[per_name])
+                self.t_send_signal_hex(stub, self.can_periodic[per_name][1], common_pb2.NameSpace(name = self.can_periodic[per_name][2]), self.can_periodic[per_name][3])
+                time.sleep(self.can_periodic[per_name][4])
+            except grpc._channel._Rendezvous as err:
+                print(err)
+
+    def stop_periodic(self, per_name):
+        print ("stop_periodic ", per_name)
+        self.set_periodic(per_name, False, self.can_periodic[per_name][1], self.can_periodic[per_name][2], self.can_periodic[per_name][3], self.can_periodic[per_name][4])
+    
+    def stop_periodic_all(self):
+        for ps in self.can_periodic:
+            self.stop_periodic(ps)
+
+ 
+    def start_heartbeat(self, stub, hb_id, hb_nspace, hb_frame, hb_intervall):
+        print ("start_heartbeat")
+        self.start_periodic(stub, 'heartbeat', True, hb_id, hb_nspace, hb_frame, hb_intervall)        
+        #print ("wait 5sec for heartbeat to start")
+        time.sleep(4)
         print ("start_heartbeat end")
 
     def stop_heartbeat(self):
-        self._heartbeat = False
+        self.stop_periodic('heartbeat')
+
         
     def connect_to_signalbroker(self, SB_address, SB_port):
         channel = grpc.insecure_channel(SB_address + ':' + SB_port)
@@ -237,23 +285,10 @@ class Support_CAN:
                     print("Response start: \n", response)
                     print("Response stop")
             except grpc._channel._Rendezvous as err:
-                    print(err)
-
-
-# make sure you have Lin namespace in interfaces.json
-    def send_heartbeat(self, stub, signal_name, namespace, payload_value, intervall_sec):
-        source = common_pb2.ClientId(id="app_identifier")
-        #print ("Heartbeat: ", _heartbeat)
-        while self._heartbeat:
-            try:
-                #print ("send heartbeat signal_name: ", signal_name, " namespace: ", namespace)
-                self.t_send_signal_hex(stub, signal_name, namespace, payload_value)
-                time.sleep(intervall_sec)
-            except grpc._channel._Rendezvous as err:
                 print(err)
 
 
-# make sure you have Lin namespace in interfaces.json
+# send signal on CAN: parameters name_DBC, namespace_DBC, payload
     def t_send_signal(self, signal_name, namespace, payload_value):
         #print ("t_send signal")
         source = common_pb2.ClientId(id="app_identifier")
@@ -673,8 +708,20 @@ class Support_CAN:
                 print("ReadDTC: Supported mask missing.\n")
                 ret = b''
 
-        elif name == "ReadDataByIentifier":
+        elif name == "ReadDataByIdentifier":
             ret = b'\x22'+ message
+        elif name == "ReadMemoryByAddress":
+            ret = b'\x23'+ mask + message
+        elif name == "SecurityAccess":
+            ret = b'\x27'+ mask + message
+        elif name == "DynamicallyDefineDataIdentifier":
+            ret = b'\x2A'+ mask + message
+        elif name == "ReadDataBePeriodicIdentifier":
+            ret = b'\x2C'+ mask + message
+        elif name == "WriteDataByIdentifier":
+            ret = b'\x2E'+ message
+        elif name == "RoutineControlRequestSID":
+            ret = b'\x31'+ mask + message 
         elif name == "RequestUpload":
             ret = b'\x35'+ message
         elif name == "TransferData":
@@ -682,7 +729,7 @@ class Support_CAN:
         elif name == "RequestDownload":
             ret = b'\x74'+ message
         else:
-            print("You type a wrong name", "\n")
+            print("You type a wrong name: ", name, "\n")
             ret = b''
 
         return ret
