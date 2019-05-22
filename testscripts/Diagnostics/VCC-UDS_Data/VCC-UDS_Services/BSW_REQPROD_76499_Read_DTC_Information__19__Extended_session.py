@@ -1,7 +1,7 @@
 # Testscript ODTB2 MEPII
 # project:  BECM basetech MEPII
 # author:   hweiler (Hans-Klaus Weiler)
-# date:     2019-05-09
+# date:     2019-05-17
 # version:  1.0
 # reqprod:  76499
 
@@ -80,7 +80,7 @@ def step_0(stub, s, r, ns):
     min_no_messages = 1
     max_no_messages = 1
     
-    can_m_send = b'\x22\xED\xA0'
+    can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xED\xA0', "")
     can_mr_extra = ''
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
@@ -97,6 +97,7 @@ def step_1(stub, s, r, ns):
     max_no_messages = 1
 
     can_m_send = b'\x10\x03'
+    can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x03', "")
     can_mr_extra = ''
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
@@ -113,7 +114,7 @@ def step_2(stub, s, r, ns):
     min_no_messages = -1
     max_no_messages = -1
 
-    can_m_send = b'\x22\xF1\x86'
+    can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xF1\x86', b'')
     can_mr_extra = b'\x03'
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
@@ -125,7 +126,7 @@ def step_2(stub, s, r, ns):
     #"reportDTCExtDataRecordByDTCNumber"=19 06
     #"reportDTCSnapdhotRecordByDTCNumber"= 19 04
     #"reportDTCByStatusMask" = 19 02 + "confirmedDTC"=03 / "testFailed" = 00
-    #"ReadDataByIentifier" = 22
+    #"ReadDataByIdentifier" = 22
          
 # teststep 3: verify that padded bytes in SF contain 0x00
 def step_3(stub, s, r, ns):
@@ -135,7 +136,7 @@ def step_3(stub, s, r, ns):
     
     
     #SC.can_m_send( "Read counters", b'\x0B\x45\x00') #Request current session
-    can_m_send = SC.can_m_send( "reportDTCSnapdhotRecordByDTCNumber", b'\x0B\x45\x00' , " ")
+    can_m_send = SC.can_m_send( "ReadDTCInfoSnapshotRecordByDTCNumber", b'\x0B\x45\x00' , b'')
     can_mr_extra = ''
     #print(SC.can_m_send( "Read counters", b'\x0B\x45\x00'))
     stepno = 3
@@ -160,7 +161,7 @@ def step_4(stub, s, r, ns):
     min_no_messages = -1
     max_no_messages = -1
 
-    can_m_send = b'\x22\xF1\x86'
+    can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xF1\x86', b'')
     can_mr_extra = b'\x03'
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
@@ -176,7 +177,7 @@ def step_5(stub, s, r, ns):
     min_no_messages = 1
     max_no_messages = 1
 
-    can_m_send = b'\x10\x01'
+    can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x01', b'')
     can_mr_extra = ''
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
@@ -192,7 +193,7 @@ def step_6(stub, s, r, ns):
     min_no_messages = -1
     max_no_messages = -1
 
-    can_m_send = b'\x22\xF1\x86'
+    can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xF1\x86', b'')
     can_mr_extra = b'\x01'
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
@@ -273,17 +274,6 @@ def run():
     SC.unsubscribe_signals()
     # if threads should remain: try to stop them 
     SC.thread_stop()
-    
-    print ("active threads remaining: " , threading.active_count())
-    #cleanup
-    #postcondition(network_stub)
-    while threading.active_count() > 1:
-        item =(threading.enumerate())[-1]
-        print ("thread to join ", item)
-        item.join(5)
-        time.sleep(5)
-        print ("active thread after join ", threading.active_count() )
-        print ("thread enumerate ", threading.enumerate())
             
     print ("Test cleanup end: ", datetime.now())
     print()

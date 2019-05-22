@@ -1,7 +1,7 @@
 # Testscript ODTB2 MEPII
 # project:  BECM basetech MEPII
 # author:   hweiler (Hans-Klaus Weiler)
-# date:     2019-05-09
+# date:     2019-05-17
 # version:  1.0
 # reqprod:  60017
 
@@ -83,7 +83,7 @@ def step_0(stub, s, r, ns):
     min_no_messages = 1
     max_no_messages = 1
     
-    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xED\xA0', "")
+    can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xED\xA0', "")
     can_mr_extra = ''
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
@@ -100,7 +100,7 @@ def step_1(stub, s, r, ns):
     min_no_messages = 1
     max_no_messages = 1
 
-    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xF1\x86', "")
+    can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xF1\x86', "")
     can_mr_extra = b'\x01'
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
@@ -127,7 +127,7 @@ def step_2(stub, s, r, ns):
     SC.change_MF_FC(s, BS, ST, FC_delay, FC_flag, FC_auto)
     #SC.change_MF_FC(r, BS, ST, FC_delay, FC_flag, FC_auto)
     
-    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xDD\x02\xDD\x0A\xDD\x0C\x49\x47', "")
+    can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xDD\x02\xDD\x0A\xDD\x0C\x49\x47', "")
     can_mr_extra = ''
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
@@ -190,7 +190,7 @@ def step_4(stub, s, r, ns):
     SC.change_MF_FC(s, BS, ST, FC_delay, FC_flag, FC_auto)
     #SC.change_MF_FC(r, BS, ST, FC_delay, FC_flag, FC_auto)
 
-    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xDD\x02\xDD\x0A\xDD\x0C\x49\x47', "")
+    can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xDD\x02\xDD\x0A\xDD\x0C\x49\x47', "")
     can_mr_extra = ''
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)

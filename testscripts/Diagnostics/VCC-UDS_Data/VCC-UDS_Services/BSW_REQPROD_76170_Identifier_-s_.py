@@ -1,7 +1,7 @@
 # Testscript ODTB2 MEPII
 # project:  BECM basetech MEPII
 # author:   hweiler (Hans-Klaus Weiler)
-# date:     2019-05-09
+# date:     2019-05-17
 # version:  1.0
 # reqprod:  76170
 
@@ -83,7 +83,7 @@ def step_0(stub, s, r, ns):
     min_no_messages = 1
     max_no_messages = 1
     
-    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xED\xA0', "")
+    can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xED\xA0', "")
     can_mr_extra = ''
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
@@ -100,7 +100,7 @@ def step_1(stub, s, r, ns):
     min_no_messages = 1
     max_no_messages = 1
 
-    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xF1\x86', "")
+    can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xF1\x86', "")
     can_mr_extra = b'\x01'
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
@@ -123,7 +123,7 @@ def step_2(stub, s, r, ns):
     FC_flag = 48 #continue send
     FC_auto = False
     
-    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xF1\x20', "")
+    can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xF1\x20', "")
     can_mr_extra = ''
     
     SC.change_MF_FC(s, BS, ST, FC_delay, FC_flag, FC_auto)
@@ -183,7 +183,7 @@ def step_4(stub, s, r, ns):
     FC_flag = 48 #continue send
     FC_auto = False
     
-    can_m_send = SC.can_m_send( "ReadDataByIentifier", b'\xF1\x20\xF1\x2A', "")
+    can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xF1\x20\xF1\x2A', "")
     can_mr_extra = ''
     
     SC.change_MF_FC(s, BS, ST, FC_delay, FC_flag, FC_auto)
@@ -244,7 +244,7 @@ def run():
     print ("Testcase start: ", datetime.now())
     starttime = time.time()
     print ("time ", time.time())
-    print()
+    print ()
     ############################################
     # precondition
     ############################################
@@ -283,7 +283,7 @@ def run():
     # postCondition
     ############################################
             
-    print()
+    print ()
     print ("time ", time.time())
     print ("Testcase end: ", datetime.now())
     print ("Time needed for testrun (seconds): ", int(time.time() - starttime))
@@ -298,7 +298,7 @@ def run():
     SC.thread_stop()
             
     print ("Test cleanup end: ", datetime.now())
-    print()
+    print ()
     if testresult:
         print ("Testcase result: PASSED")
     else:
