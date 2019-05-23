@@ -50,20 +50,8 @@ def precondition(stub, s, r, ns):
     # start heartbeat, repeat every 0.8 second
     SC.start_heartbeat(stub, "EcmFront1NMFr", "Front1CANCfg1", b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.8)
     
-    #start_periodic(self, stub, per_name, per_id, per_send, per_nspace, per_frame, per_intervall)
-    #SC.start_periodic(stub, 'heartbeat', True, "EcmFront1NMFr", "Front1CANCfg1", b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.8)
     time.sleep(4) #wait for ECU startup
     
-    #VCU1Front1Fr06, VehSpdLgtSafe
-    #SC.start_periodic(stub, 'VehSpdLgtSafe', True, "VCU1Front1Fr06", "Front1CANCfg1", b'\x88\x77\x66\x55\x44\x33\x22\x11', 0.5)
-    #time.sleep(4) #wait for ECU startup
-    #SC.set_periodic(self, per_name, per_send, per_id, per_nspace, per_frame, per_intervall)
-    #SC.set_periodic('heartbeat', True, "EcmFront1NMFr", "Front1CANCfg1", b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.4)
-    #time.sleep(2)
-    
-    # timeout = more than maxtime script takes
-    # needed as thread for registered signals won't stop without timeout
-    #timeout = 300   #seconds
     timeout = 40   #seconds
     SC.subscribe_signal(stub, s, r, ns, timeout)
     #record signal we send as well
