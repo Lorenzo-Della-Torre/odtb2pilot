@@ -1,7 +1,7 @@
 # Testscript ODTB2 MEPII
 # project:  BECM basetech MEPII
-# author:   hweiler (Hans-Klaus Weiler)
-# date:     2019-05-17
+# author:   LDELLATO (Lorenzo Della Torre)
+# date:     2019-05-13
 # version:  1.0
 # reqprod:  76499
 
@@ -152,7 +152,7 @@ def step_2(stub, s, r, ns):
     max_no_messages = 1
   
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    
+
     #SuTe.test_message(SC.can_frames[r], teststring='0462F18601000000')
     #print ("Step ", stepno, " teststatus:", testresult, "\n")
     time.sleep(1)
@@ -188,17 +188,6 @@ def run():
     can_send = "Vcu1ToBecmFront1DiagReqFrame"
     can_receive = "BecmToVcu1Front1DiagResFrame"
     can_namespace = SC.nspace_lookup("Front1CANCfg1")
-
-    # Test PreCondition
-    root = logging.getLogger()
-    root.setLevel(logging.DEBUG)
-    
-    ch = logging.StreamHandler(sys.stdout)
-    ch.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    ch.setFormatter(formatter)
-    root.addHandler(ch)
-    root.info('BEGIN:  %s' % os.path.basename(__file__))
     
     
     print ("Testcase start: ", datetime.now())
@@ -257,4 +246,5 @@ def run():
     
 if __name__ == '__main__':
     run()
+
 
