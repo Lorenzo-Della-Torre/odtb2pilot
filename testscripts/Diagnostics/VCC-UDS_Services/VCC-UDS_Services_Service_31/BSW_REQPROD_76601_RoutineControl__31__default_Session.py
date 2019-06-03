@@ -1,3 +1,10 @@
+# Testscript ODTB2 MEPII
+# project:  BECM basetech MEPII
+# author:   LDELLATO (Lorenzo Della Torre)
+# date:     2019-05-16
+# version:  1.0
+# reqprod:  76601
+
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
 
 # Copyright 2015 gRPC authors.
@@ -43,20 +50,8 @@ def precondition(stub, s, r, ns):
     # start heartbeat, repeat every 0.8 second
     SC.start_heartbeat(stub, "EcmFront1NMFr", "Front1CANCfg1", b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.8)
     
-    #start_periodic(self, stub, per_name, per_id, per_send, per_nspace, per_frame, per_intervall)
-    #SC.start_periodic(stub, 'heartbeat', True, "EcmFront1NMFr", "Front1CANCfg1", b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.8)
-    #time.sleep(4) #wait for ECU startup
+    time.sleep(4) #wait for ECU startup
     
-    #VCU1Front1Fr06, VehSpdLgtSafe
-    #SC.start_periodic(stub, 'VehSpdLgtSafe', True, "VCU1Front1Fr06", "Front1CANCfg1", b'\x88\x77\x66\x55\x44\x33\x22\x11', 0.5)
-    #time.sleep(4) #wait for ECU startup
-    #SC.set_periodic(self, per_name, per_send, per_id, per_nspace, per_frame, per_intervall)
-    #SC.set_periodic('heartbeat', True, "EcmFront1NMFr", "Front1CANCfg1", b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.4)
-    #time.sleep(2)
-    
-    # timeout = more than maxtime script takes
-    # needed as thread for registered signals won't stop without timeout
-    #timeout = 300   #seconds
     timeout = 40   #seconds
     SC.subscribe_signal(stub, s, r, ns, timeout)
     #record signal we send as well
@@ -82,6 +77,7 @@ def step_0(stub, s, r, ns):
     can_mr_extra = ''
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
+    
     print(SuTe.PP_CombinedDID_EDA0(SC.can_messages[r][0][2], title=''))
 
 # teststep 1: verify RoutineControlRequest is sent for Type 1
@@ -136,11 +132,6 @@ def step_2(stub, s, r, ns):
     print(SuTe.PP_Decode_7F_response(SC.can_frames[r][0][2]))
 
     testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='7F3131')
-    #print(SuTe.PP_Decode_7F_response(SC.can_messages[r]))
-    #print ("Step ", stepno, " teststatus:", testresult, "\n")
-    #return(SC.can_frames[r])
-    
-    #testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='7F31')
     
     time.sleep(1)  
 
@@ -187,10 +178,6 @@ def run():
     # precondition
     ############################################
     precondition(network_stub, can_send, can_receive, can_namespace)
-    #print ("after precond active threads ", threading.active_count())
-    #print ("after precond thread enumerate ", threading.enumerate())
-
-    #subscribe_to_BecmFront1NMFr(network_stub)
     
     ############################################
     # teststeps
