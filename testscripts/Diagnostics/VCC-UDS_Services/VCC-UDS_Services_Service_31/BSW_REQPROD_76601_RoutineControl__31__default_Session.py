@@ -1,10 +1,9 @@
 # Testscript ODTB2 MEPII
 # project:  BECM basetech MEPII
 # author:   LDELLATO (Lorenzo Della Torre)
-# date:     2019-05-16
+# date:     2019-05-31
 # version:  1.0
 # reqprod:  76601
-
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
 
 # Copyright 2015 gRPC authors.
@@ -50,8 +49,6 @@ def precondition(stub, s, r, ns):
     # start heartbeat, repeat every 0.8 second
     SC.start_heartbeat(stub, "EcmFront1NMFr", "Front1CANCfg1", b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.8)
     
-    time.sleep(4) #wait for ECU startup
-    
     timeout = 40   #seconds
     SC.subscribe_signal(stub, s, r, ns, timeout)
     #record signal we send as well
@@ -77,14 +74,11 @@ def step_0(stub, s, r, ns):
     can_mr_extra = ''
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    
     print(SuTe.PP_CombinedDID_EDA0(SC.can_messages[r][0][2], title=''))
 
 # teststep 1: verify RoutineControlRequest is sent for Type 1
 def step_1(stub, s, r, ns):
     global testresult
-    #global can_frames
-    #global can_messages
     
     stepno = 1
     purpose = "verify RoutineControl start are sent for Type 1"
@@ -100,11 +94,13 @@ def step_1(stub, s, r, ns):
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     
     if SuTe.test_message(SC.can_messages[r], teststring='71010206'):
-        testresult
+        print("Routine control start is sent for Type 1")
+        
 
     elif SuTe.test_message(SC.can_messages[r], teststring='7F3131') or SuTe.test_message(SC.can_messages[r], teststring='7F3133'):
         print(SuTe.PP_Decode_7F_response(SC.can_frames[r][0][2]))
-        testresult 
+        print("This routine conrol is not implemented or require Security Access")
+         
  
     else:
         print(SuTe.PP_Decode_7F_response(SC.can_frames[r][0][2]))
@@ -113,8 +109,6 @@ def step_1(stub, s, r, ns):
 # teststep 2: verify RoutineControlRequest is not applicable for Type 2
 def step_2(stub, s, r, ns):
     global testresult
-    #global can_frames
-    #global can_messages
     
     stepno = 2
     purpose = "verify RoutineControl is not applicable for Type 2"
@@ -138,8 +132,6 @@ def step_2(stub, s, r, ns):
 # teststep 3: verify RoutineControlRequest is not applicable for Type 3
 def step_3(stub, s, r, ns):
     global testresult
-    #global can_frames
-    #global can_messages
     
     stepno = 3
     purpose = "verify RoutineControl is not applicable for Type 3"
@@ -147,10 +139,10 @@ def step_3(stub, s, r, ns):
     min_no_messages = -1
     max_no_messages = -1
 
-    #SC.can_m_send( "Read counters", b'\x0B\x45\x00') #Request current session
+    
     can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\x40\x00', b'\x01')
     can_mr_extra = ''
-    #print(SC.can_m_send( "Read counters", b'\x0B\x45\x00'))
+    
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     
@@ -160,8 +152,6 @@ def step_3(stub, s, r, ns):
 
 def run():
     global testresult
-    #start logging
-    # to be implemented
     
     # where to connect to signal_broker
     network_stub = SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT)
