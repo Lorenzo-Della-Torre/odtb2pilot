@@ -101,8 +101,6 @@ def step_1(stub, s, r, ns):
 # teststep 2: send RoutineControlRequest start(81) for Type 2
 def step_2(stub, s, r, ns):
     global testresult
-    #global can_frames
-    #global can_messages
     
     stepno = 2
     purpose = "send RoutineControl start(01) in Programming Session"
@@ -111,29 +109,20 @@ def step_2(stub, s, r, ns):
     max_no_messages = -1
 
     #SC.can_m_send( "Read counters", b'\x0B\x45\x00') #Request current session
-    can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\x40\x11', b'\x01')
+    can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\x03\x01', b'\x01')
     can_mr_extra = ''
     #print(SC.can_m_send( "Read counters", b'\x0B\x45\x00'))
     print("can_m_send ",can_m_send)
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    
-    if SuTe.test_message(SC.can_messages[r], teststring='71014011'):
-        testresult
 
-    elif SuTe.test_message(SC.can_messages[r], teststring='7F3131') or SuTe.test_message(SC.can_messages[r], teststring='7F3133'):
-        print(SuTe.PP_Decode_7F_response(SC.can_frames[r][0][2]))
-        testresult 
- 
-    else:
-        print(SuTe.PP_Decode_7F_response(SC.can_frames[r][0][2]))
-        testresult = False
+    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='7F3133')
+
+    print(SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2]))
 
 # teststep 3: verify RoutineControlRequest is sent for Type 2
 def step_3(stub, s, r, ns):
     global testresult
-    #global can_frames
-    #global can_messages
     
     stepno = 3
     purpose = "verify RoutineControl RequestRoutineResult (03) is sent in Programming Session"
@@ -142,23 +131,16 @@ def step_3(stub, s, r, ns):
     max_no_messages = -1
 
     #SC.can_m_send( "Read counters", b'\x0B\x45\x00') #Request current session
-    can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\x40\x11', b'\x03')
+    can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\x03\x01', b'\x03')
     can_mr_extra = ''
     #print(SC.can_m_send( "Read counters", b'\x0B\x45\x00'))
     print("can_m_send ",can_m_send)
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
 
-    if SuTe.test_message(SC.can_messages[r], teststring='71034011'):
-        testresult
+    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='7F3133')
 
-    elif SuTe.test_message(SC.can_messages[r], teststring='7F3131') or SuTe.test_message(SC.can_messages[r], teststring='7F3133'):
-        
-        testresult 
- 
-    else:
-        
-        testresult = False 
+    print(SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2]))
 
 # teststep 4: verify programming session
 def step_4(stub, s, r, ns):
