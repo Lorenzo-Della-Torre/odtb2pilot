@@ -98,8 +98,6 @@ def step_1(stub, s, r, ns):
 # teststep 2: verify RoutineControlRequest start is sent
 def step_2(stub, s, r, ns):
     global testresult
-    #global can_frames
-    #global can_messages
     
     stepno = 2
     purpose = "verify RoutineControl start is sent "
@@ -114,22 +112,13 @@ def step_2(stub, s, r, ns):
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     
-    if SuTe.test_message(SC.can_messages[r], teststring='71014011'):
-        testresult
+    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='71014011')
 
-    elif SuTe.test_message(SC.can_messages[r], teststring='7F3131') or SuTe.test_message(SC.can_messages[r], teststring='7F3133'):
-        print(SuTe.PP_Decode_7F_response(SC.can_frames[r][0][2]))
-        testresult 
- 
-    else:
-        print(SuTe.PP_Decode_7F_response(SC.can_frames[r][0][2]))
-        testresult = False
+    print(SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2]))
 
 # teststep 3: verify RoutineControlRequest stop is sent with Routine Control Option
 def step_3(stub, s, r, ns):
     global testresult
-    #global can_frames
-    #global can_messages
     
     stepno = 3
     purpose = "verify RoutineControl stop is sent for Routine with Routine control option"
@@ -144,16 +133,9 @@ def step_3(stub, s, r, ns):
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     
-    if SuTe.test_message(SC.can_messages[r], teststring='71024011'):
-        testresult
+    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='71024011')
 
-    elif SuTe.test_message(SC.can_messages[r], teststring='7F3131') or SuTe.test_message(SC.can_messages[r], teststring='7F3133'):
-        print(SuTe.PP_Decode_7F_response(SC.can_frames[r][0][2]))
-        testresult 
- 
-    else:
-        print(SuTe.PP_Decode_7F_response(SC.can_frames[r][0][2]))
-        testresult = False
+    print(SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2]))
 
 # teststep 4: verify Extended session
 def step_4(stub, s, r, ns):
@@ -189,8 +171,6 @@ def step_5(stub, s, r, ns):
 
 def run():
     global testresult
-    #start logging
-    # to be implemented
     
     # where to connect to signal_broker
     network_stub = SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT)
