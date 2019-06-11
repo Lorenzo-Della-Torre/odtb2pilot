@@ -83,8 +83,8 @@ def step_1(stub, s, r, ns):
     stepno = 1
     purpose = "verify RoutineControl start are sent for Type 1"
     timeout = 1 #wait a second for reply to be send
-    min_no_messages = -1
-    max_no_messages = -1
+    min_no_messages = 1
+    max_no_messages = 1
 
     #SC.can_m_send( "Read counters", b'\x0B\x45\x00') #Request current session
     can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\x02\x06', b'\x01')
@@ -93,18 +93,7 @@ def step_1(stub, s, r, ns):
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     
-    if SuTe.test_message(SC.can_messages[r], teststring='71010206'):
-        print("Routine control start is sent for Type 1")
-        
-
-    elif SuTe.test_message(SC.can_messages[r], teststring='7F3131') or SuTe.test_message(SC.can_messages[r], teststring='7F3133'):
-        print(SuTe.PP_Decode_7F_response(SC.can_frames[r][0][2]))
-        print("This routine conrol is not implemented or require Security Access")
-         
- 
-    else:
-        print(SuTe.PP_Decode_7F_response(SC.can_frames[r][0][2]))
-        testresult = False 
+    print(SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2]))
 
 # teststep 2: verify RoutineControlRequest is not applicable for Type 2
 def step_2(stub, s, r, ns):
@@ -123,9 +112,9 @@ def step_2(stub, s, r, ns):
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
 
-    print(SuTe.PP_Decode_7F_response(SC.can_frames[r][0][2]))
-
     testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='7F3131')
+
+    print(SuTe.PP_Decode_7F_response(SC.can_frames[r][0][2]))
     
     time.sleep(1)  
 
@@ -146,9 +135,9 @@ def step_3(stub, s, r, ns):
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     
-    print(SuTe.PP_Decode_7F_response(SC.can_frames[r][0][2]))
-    
     testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='7F3131') 
+
+    print(SuTe.PP_Decode_7F_response(SC.can_frames[r][0][2]))
 
 def run():
     global testresult
