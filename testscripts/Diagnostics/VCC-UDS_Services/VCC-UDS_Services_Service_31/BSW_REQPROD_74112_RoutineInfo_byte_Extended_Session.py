@@ -98,14 +98,12 @@ def step_1(stub, s, r, ns):
 # teststep 2: verify RoutineControlRequest start is sent
 def step_2(stub, s, r, ns):
     global testresult
-    #global can_frames
-    #global can_messages
     
     stepno = 2
     purpose = "verify RoutineControl start is sent and routine Type 3 is running "
     timeout = 1 #wait a second for reply to be send
-    min_no_messages = -1
-    max_no_messages = -1
+    min_no_messages = 1
+    max_no_messages = 1
 
     #SC.can_m_send( "Read counters", b'\x0B\x45\x00') #Request current session
     can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\xDC\x00', b'\x01')
@@ -114,29 +112,17 @@ def step_2(stub, s, r, ns):
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     
-    if SuTe.test_message(SC.can_messages[r], teststring='7101DC0032'):
-        print(SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2]))
-        testresult
-
-    elif SuTe.test_message(SC.can_messages[r], teststring='7F3131') or SuTe.test_message(SC.can_messages[r], teststring='7F3133'):
-        print(SuTe.PP_Decode_7F_response(SC.can_frames[r][0][2]))
-        testresult 
- 
-    else:
-        print(SuTe.PP_Decode_7F_response(SC.can_frames[r][0][2]))
-        testresult = False
+    print(SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2]))
 
 # teststep 3: verify Routine Type 3 is still running
 def step_3(stub, s, r, ns):
     global testresult
-    #global can_frames
-    #global can_messages
     
     stepno = 3
     purpose = "verify Routine 3 is still running "
     timeout = 1 #wait a second for reply to be send
-    min_no_messages = -1
-    max_no_messages = -1
+    min_no_messages = 1
+    max_no_messages = 1
 
     #SC.can_m_send( "Read counters", b'\x0B\x45\x00') #Request current session
     can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\xDC\x00', b'\x03')
@@ -145,29 +131,17 @@ def step_3(stub, s, r, ns):
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     
-    if SuTe.test_message(SC.can_messages[r], teststring='7103DC0032'):
-        print(SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2]))
-        testresult
-
-    elif SuTe.test_message(SC.can_messages[r], teststring='7F3131') or SuTe.test_message(SC.can_messages[r], teststring='7F3133'):
-        print(SuTe.PP_Decode_7F_response(SC.can_frames[r][0][2]))
-        testresult 
- 
-    else:
-        print(SuTe.PP_Decode_7F_response(SC.can_frames[r][0][2]))
-        testresult = False
+    print(SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2]))
 
 # teststep 4: verify RoutineControlRequest stop is sent in Extended Session
 def step_4(stub, s, r, ns):
     global testresult
-    #global can_frames
-    #global can_messages
     
     stepno = 4
     purpose = "verify RoutineControl stop is sent in Extended Session and routine is Completed"
     timeout = 1 #wait a second for reply to be send
-    min_no_messages = -1
-    max_no_messages = -1
+    min_no_messages = 1
+    max_no_messages = 1
 
     #SC.can_m_send( "Read counters", b'\x0B\x45\x00') #Request current session
     can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\xDC\x00', b'\x02')
@@ -176,17 +150,7 @@ def step_4(stub, s, r, ns):
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     
-    if SuTe.test_message(SC.can_messages[r], teststring='7102DC0030'):
-        print(SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2]))
-        testresult
-
-    elif SuTe.test_message(SC.can_messages[r], teststring='7F3131') or SuTe.test_message(SC.can_messages[r], teststring='7F3133'):
-        print(SuTe.PP_Decode_7F_response(SC.can_frames[r][0][2]))
-        testresult 
- 
-    else:
-        print(SuTe.PP_Decode_7F_response(SC.can_frames[r][0][2]))
-        testresult = False
+    print(SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2]))
 
 # teststep 5: verify Extended session
 def step_5(stub, s, r, ns):
