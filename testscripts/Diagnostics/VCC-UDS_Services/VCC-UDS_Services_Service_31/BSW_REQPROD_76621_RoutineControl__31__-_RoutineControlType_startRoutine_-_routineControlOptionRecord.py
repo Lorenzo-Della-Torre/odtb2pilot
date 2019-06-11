@@ -113,17 +113,10 @@ def step_2(stub, s, r, ns):
     print("can_m_send ",can_m_send)
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
+
+    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='71014011')
     
-    if SuTe.test_message(SC.can_messages[r], teststring='71014000'):
-        testresult
-
-    elif SuTe.test_message(SC.can_messages[r], teststring='7F3131') or SuTe.test_message(SC.can_messages[r], teststring='7F3133'):
-        testresult 
- 
-    else:
-        testresult = False
-
-
+    print(SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2]))
 
 # teststep 3: verify extended session
 def step_3(stub, s, r, ns):
