@@ -100,6 +100,26 @@ def step_2(stub, s, r, ns):
     global testresult
     
     stepno = 2
+    purpose = "verify RoutineControl start is sent and routine Type 1 is completed"
+    timeout = 1 #wait a second for reply to be send
+    min_no_messages = 1
+    max_no_messages = 1
+
+    #SC.can_m_send( "Read counters", b'\x0B\x45\x00') #Request current session
+    can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\x02\x06', b'\x01')
+    can_mr_extra = ''
+    #print(SC.can_m_send( "Read counters", b'\x0B\x45\x00'))
+
+    testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
+    
+    print(SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2]))
+
+
+# teststep 3: verify RoutineControlRequest start is sent
+def step_3(stub, s, r, ns):
+    global testresult
+    
+    stepno = 3
     purpose = "verify RoutineControl start is sent and routine Type 3 is running "
     timeout = 1 #wait a second for reply to be send
     min_no_messages = 1
@@ -114,11 +134,11 @@ def step_2(stub, s, r, ns):
     
     print(SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2]))
 
-# teststep 3: verify Routine Type 3 is still running
-def step_3(stub, s, r, ns):
+# teststep 4: verify Routine Type 3 is still running
+def step_4(stub, s, r, ns):
     global testresult
     
-    stepno = 3
+    stepno = 4
     purpose = "verify Routine 3 is still running "
     timeout = 1 #wait a second for reply to be send
     min_no_messages = 1
@@ -133,11 +153,11 @@ def step_3(stub, s, r, ns):
     
     print(SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2]))
 
-# teststep 4: verify RoutineControlRequest stop is sent in Extended Session
-def step_4(stub, s, r, ns):
+# teststep 5: verify RoutineControlRequest stop is sent in Extended Session
+def step_5(stub, s, r, ns):
     global testresult
     
-    stepno = 4
+    stepno = 5
     purpose = "verify RoutineControl stop is sent in Extended Session and routine is Completed"
     timeout = 1 #wait a second for reply to be send
     min_no_messages = 1
@@ -152,11 +172,51 @@ def step_4(stub, s, r, ns):
     
     print(SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2]))
 
-# teststep 5: verify Extended session
-def step_5(stub, s, r, ns):
+    time.sleep(1)
+
+# teststep 6: verify RoutineControlRequest start is sent for Type 2
+
+def step_6(stub, s, r, ns):
+    global testresult
+    stepno = 6
+    purpose = "verify RoutineControl start is sent and routine Type 2 is completed "
+    timeout = 1 #wait a second for reply to be send
+    min_no_messages = 1
+    max_no_messages = 1
+
+    #SC.can_m_send( "Read counters", b'\x0B\x45\x00') #Request current session
+    can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\xDC\x10', b'\x01')
+    can_mr_extra = ''
+    #print(SC.can_m_send( "Read counters", b'\x0B\x45\x00'))
+    testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
+
+    print(SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2]))
+
+    time.sleep(1)
+
+# teststep 7: verify RoutineControlRequest stop is sent in Extended Session
+def step_7(stub, s, r, ns):
+    global testresult
+    stepno = 7
+    purpose = "verify RoutineControl result is sent in Extended Session and routine Type 2 is aborted"
+    timeout = 0.1 #wait a second for reply to be send
+    min_no_messages = 1
+    max_no_messages = 1
+
+    #SC.can_m_send( "Read counters", b'\x0B\x45\x00') #Request current session
+    can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\xDC\x10', b'\x02')
+    can_mr_extra = ''
+    #print(SC.can_m_send( "Read counters", b'\x0B\x45\x00'))
+    T2 = time.time()
+    testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
+    
+    print(SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2]))
+    
+# teststep 8: verify Extended session
+def step_8(stub, s, r, ns):
     global testresult
     
-    stepno = 5
+    stepno = 8
     purpose = "Verify Extended session"
     timeout = 1
     min_no_messages = 1
@@ -168,11 +228,11 @@ def step_5(stub, s, r, ns):
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     time.sleep(1)
 
-# teststep 6: Change to default session
-def step_6(stub, s, r, ns):
+# teststep 9: Change to default session
+def step_9(stub, s, r, ns):
     global testresult
     
-    stepno = 6
+    stepno = 9
     purpose = "Change to default session"
     timeout = 1
     min_no_messages = 1
@@ -214,29 +274,44 @@ def run():
     step_1(network_stub, can_send, can_receive, can_namespace)
     
     # step2:
-    # action: send start RoutineControl signal 
+    # action: send start RoutineControl signal for Type 1
     # result: BECM sends positive reply 
     step_2(network_stub, can_send, can_receive, can_namespace)
 
     # step3:
-    # action: send Result RoutineControl signal 
+    # action: send start RoutineControl signal for Type 3
     # result: BECM sends positive reply 
     step_3(network_stub, can_send, can_receive, can_namespace)
 
     # step4:
-    # action: send stop RoutineControl signal in Extended mode
+    # action: send result RoutineControl signal for Type 3
     # result: BECM sends positive reply
     step_4(network_stub, can_send, can_receive, can_namespace)
     
     # step5:
-    # action: # action: Verify BECM in Extended session
-    # result: BECM reports mode
+    # action: send stop RoutineControl signal for Type 3
+    # result: BECM sends positive reply
     step_5(network_stub, can_send, can_receive, can_namespace)
 
     # step6:
+    # action: send start RoutineControl signal for Type 2
+    # result: BECM sends positive reply
+    step_6(network_stub, can_send, can_receive, can_namespace)
+    
+    # step7:
+    # action: send stop RoutineControl signal for Type 2
+    # result: BECM sends positive reply
+    step_7(network_stub, can_send, can_receive, can_namespace)
+    
+    # step8:
+    # action: verify extended session active
+    # result: BECM send active mode
+    step_8(network_stub, can_send, can_receive, can_namespace)
+    
+    # step9:
     # action: change BECM to default
     # result: BECM reports mode
-    step_6(network_stub, can_send, can_receive, can_namespace)
+    step_9(network_stub, can_send, can_receive, can_namespace)
    
     ############################################
     # postCondition
