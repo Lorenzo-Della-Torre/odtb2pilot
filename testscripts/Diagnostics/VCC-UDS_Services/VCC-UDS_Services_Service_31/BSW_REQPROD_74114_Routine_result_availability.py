@@ -158,7 +158,7 @@ def step_5(stub, s, r, ns):
     global testresult
    
     stepno = 5
-    purpose = "Verify routine is Completed for type 3 after Routine control result request is sent"
+    purpose = "Verify routine is Completed for type 3, sending Routine control result request"
     timeout = 1 #wait a second for reply to be send
     min_no_messages = 1
     max_no_messages = 1
