@@ -114,7 +114,6 @@ def step_2(stub, s, r, ns):
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     
-    print(SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2]))
 
 # teststep 3: verify RoutineControlRequest stop is sent in Extended Session
 def step_3(stub, s, r, ns):
@@ -134,9 +133,6 @@ def step_3(stub, s, r, ns):
     #print(SC.can_m_send( "Read counters", b'\x0B\x45\x00'))
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    
-    print(SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2]))
-
     
 
 # teststep 4: verify Extended session
