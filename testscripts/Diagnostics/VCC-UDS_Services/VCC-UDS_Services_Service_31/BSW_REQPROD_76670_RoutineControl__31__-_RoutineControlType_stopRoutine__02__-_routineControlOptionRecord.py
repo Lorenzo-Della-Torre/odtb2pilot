@@ -114,8 +114,6 @@ def step_2(stub, s, r, ns):
     
     testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='71014011')
 
-    print(SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2]))
-
 # teststep 3: verify RoutineControlRequest stop is sent with Routine Control Option
 def step_3(stub, s, r, ns):
     global testresult
@@ -134,8 +132,6 @@ def step_3(stub, s, r, ns):
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     
     testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='71024011')
-
-    print(SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2]))
 
 # teststep 4: verify Extended session
 def step_4(stub, s, r, ns):
