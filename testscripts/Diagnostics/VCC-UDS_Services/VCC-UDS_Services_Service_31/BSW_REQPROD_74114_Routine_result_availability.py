@@ -1,8 +1,8 @@
 # Testscript ODTB2 MEPII
 # project:  BECM basetech MEPII
 # author:   LDELLATO (Lorenzo Della Torre)
-# date:     2019-05-31
-# version:  1.0
+# date:     2019-06-18
+# version:  1.1
 # reqprod:  74114
 
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
@@ -124,15 +124,15 @@ def step_3(stub, s, r, ns):
     stepno = 3
     purpose = "verify Routine Type 3 is in status running after start request is sent "
     timeout = 1 #wait a second for reply to be send
-    min_no_messages = 1
-    max_no_messages = 1
+    min_no_messages = -1
+    max_no_messages = -1
     
     can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\xDC\x00', b'\x01')
     can_mr_extra = ''
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
 
-    print(SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2]))
+    testresult = testresult and SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2],"Type3,Currently active")
         
 
 # teststep 4: verify Routine is completed after routine control stop is sent
@@ -142,8 +142,8 @@ def step_4(stub, s, r, ns):
     stepno = 4
     purpose = "Verify routine is Completed for type 3 after Routine control stop is sent"
     timeout = 1 #wait a second for reply to be send
-    min_no_messages = 1
-    max_no_messages = 1
+    min_no_messages = -1
+    max_no_messages = -1
 
     can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\xDC\x00', b'\x02')
     can_mr_extra = ''
@@ -151,24 +151,24 @@ def step_4(stub, s, r, ns):
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
 
-    print(SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2]))
+    tstresult = testresult and SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2], "Type3,Completed")
 
 # teststep 5: Verify routine is Completed for type 3 after Routine control result request is sent
 def step_5(stub, s, r, ns):
     global testresult
    
     stepno = 5
-    purpose = "Verify routine is Completed for type 3, sending Routine control result request"
+    purpose = "Verify routine is Completed for type 3 after Routine control result request is sent"
     timeout = 1 #wait a second for reply to be send
-    min_no_messages = 1
-    max_no_messages = 1
+    min_no_messages = -1
+    max_no_messages = -1
 
     can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\xDC\x00', b'\x03')
     can_mr_extra = ''
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
 
-    print(SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2]))
+    testresult = testresult and SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2], "Type3,Completed")
 
 # teststep 6: verify Extended session
 def step_6(stub, s, r, ns):
@@ -223,15 +223,15 @@ def step_9(stub, s, r, ns):
     stepno = 9
     purpose = "request routine result Type 3 "
     timeout = 1 #wait a second for reply to be send
-    min_no_messages = 1
-    max_no_messages = 1
+    min_no_messages = -1
+    max_no_messages = -1
 
     can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\xDC\x00', b'\x03')
     can_mr_extra = ''
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     
-    print(SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2]))
+    testresult = testresult and SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2], "Type3,Completed")
 
     # teststep 10: Change to default session
 def step_10(stub, s, r, ns):
