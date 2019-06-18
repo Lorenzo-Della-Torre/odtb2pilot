@@ -380,11 +380,11 @@ class Support_test_ODTB2:
             else: 
                 routine = message[pos+4:pos+8]
                 if message[pos+8:pos+9] == '1':
-                    RType = "1"
+                    RType = "Type1"
                 elif message[pos+8:pos+9] == '2':
-                    RType = "2"
+                    RType = "Type2"
                 elif message[pos+8:pos+9] == '3':
-                    RType = "3"
+                    RType = "Type3"
                 else:
                     RType = "Not supported Routine Type"
                     
@@ -397,11 +397,11 @@ class Support_test_ODTB2:
                 else:
                     RStatus = "Not supported Routine Status"
 
-                print("Type " + RType + " Routine'" + routine + "' " + RStatus + "\n") 
+                print(RType + " Routine'" + routine + "' " + RStatus + "\n") 
         if (RType + ',' + RStatus) == RTRS:
             print("The response is as expected"+"\n")
         else:
-            print("error: received Type" + RType + ',' + RStatus + " expected Type" + RTRS + "\n")
+            print("error: received " + RType + ',' + RStatus + " expected Type" + RTRS + "\n")
             testresult = False
             print ("teststatus:", testresult, "\n")
 
