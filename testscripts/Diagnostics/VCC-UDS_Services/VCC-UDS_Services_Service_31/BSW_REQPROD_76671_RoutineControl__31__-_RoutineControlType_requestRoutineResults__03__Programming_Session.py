@@ -118,7 +118,7 @@ def step_2(stub, s, r, ns):
 
     testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='7F3133')
 
-    print(SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2]))
+    print(SuTe.PP_Decode_7F_response(SC.can_frames[r][0][2]))
 
 # teststep 3: verify RoutineControlRequest is sent for Type 2
 def step_3(stub, s, r, ns):
@@ -140,7 +140,7 @@ def step_3(stub, s, r, ns):
 
     testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='7F3133')
 
-    print(SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2]))
+    print(SuTe.PP_Decode_7F_response(SC.can_frames[r][0][2]))
 
 # teststep 4: verify programming session
 def step_4(stub, s, r, ns):
