@@ -111,8 +111,6 @@ def step_2(stub, s, r, ns):
     print("can_m_send ",can_m_send)
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    
-    print(SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2]))
 
 # teststep 3: verify RoutineControlRequest is sent for Type 2
 def step_3(stub, s, r, ns):
