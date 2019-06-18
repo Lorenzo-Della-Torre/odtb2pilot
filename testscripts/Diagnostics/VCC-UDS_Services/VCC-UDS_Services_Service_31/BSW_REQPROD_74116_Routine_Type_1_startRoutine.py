@@ -1,8 +1,8 @@
 # Testscript ODTB2 MEPII
 # project:  BECM basetech MEPII
 # author:   LDELLATO (Lorenzo Della Torre)
-# date:     2019-06-12
-# version:  1.0
+# date:     2019-06-18
+# version:  1.1
 # reqprod:  74116
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
 
@@ -93,40 +93,18 @@ def step_1(stub, s, r, ns):
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     
-    print(SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2]))
+    testresult = testresult and SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2], "Type1,Completed")
 
-# teststep 2: verify RoutineControlRequest start is not sent
+
+# teststep 2: Change to Programming session
 def step_2(stub, s, r, ns):
     global testresult
     
     stepno = 2
-    purpose = "verify RoutineControl start is not sent for routine not implemented"
-    timeout = 1 #wait a second for reply to be send
-    min_no_messages = -1
-    max_no_messages = -1
-
-    #SC.can_m_send( "Read counters", b'\x0B\x45\x00') #Request current session
-    can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\x02\x12', b'\x01')
-    can_mr_extra = ''
-    #print(SC.can_m_send( "Read counters", b'\x0B\x45\x00'))
-
-    testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='7F3131')
-
-    print(SuTe.PP_Decode_7F_response(SC.can_frames[r][0][2]))
-    
-    time.sleep(1) 
-
-# teststep 3: Change to Programming session
-def step_3(stub, s, r, ns):
-    global testresult
-    
-    stepno = 3
     purpose = "Change to Programming session"
     timeout = 1
-    min_no_messages = 1
-    max_no_messages = 1
+    min_no_messages = -1
+    max_no_messages = -1
 
     can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x02', "")
     can_mr_extra = ''
@@ -137,12 +115,12 @@ def step_3(stub, s, r, ns):
 
     testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='5002')
 
-# teststep 4: verify RoutineControlRequest is sent for Type 2
-def step_4(stub, s, r, ns):
+# teststep 3: verify RoutineControlRequest is sent for Type 2
+def step_3(stub, s, r, ns):
     global testresult
     
-    stepno = 4
-    purpose = "verify RoutineControl start(01) is sent in Programming Session"
+    stepno = 3
+    purpose = "verify RoutineControl start(01) for Type 1 reply with NRC in Programming Session"
     timeout = 1 #wait a second for reply to be send
     min_no_messages = -1
     max_no_messages = -1
@@ -154,16 +132,18 @@ def step_4(stub, s, r, ns):
     print("can_m_send ",can_m_send)
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
+
+    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='7F3131')
     
     print(SuTe.PP_Decode_7F_response(SC.can_frames[r][0][2]))
         
      
 
-# teststep 5: verify programming session
-def step_5(stub, s, r, ns):
+# teststep 4: verify programming session
+def step_4(stub, s, r, ns):
     global testresult
     
-    stepno = 5
+    stepno = 4
     purpose = "Verify programming session"
     timeout = 1
     min_no_messages = 1
@@ -175,11 +155,11 @@ def step_5(stub, s, r, ns):
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     time.sleep(1)
 
-# teststep 6: Change to default session
-def step_6(stub, s, r, ns):
+# teststep 5: Change to default session
+def step_5(stub, s, r, ns):
     global testresult
     
-    stepno = 6
+    stepno = 5
     purpose = "Change to default session"
     timeout = 1
     min_no_messages = 1
@@ -216,31 +196,26 @@ def run():
     # action: verify RoutineControl start is sent for Type 1
     # result: BECM sends positive reply
     step_1(network_stub, can_send, can_receive, can_namespace)
-    
+
     # step2:
-    # action: send start RoutineControl signal for Type 2
-    # result: BECM sends NRC (requestOutOfRange)
+    # action: change BECM to Programming
+    # result: BECM report mode
     step_2(network_stub, can_send, can_receive, can_namespace)
 
     # step3:
-    # action: change BECM to Programming
-    # result: BECM report mode
+    # action: send start RoutineControl signal in Programming Session fro Type 1
+    # result: BECM sends out of Range 
     step_3(network_stub, can_send, can_receive, can_namespace)
 
     # step4:
-    # action: send start RoutineControl signal in Programming Session fro Type 1
-    # result: BECM sends out of Range 
-    step_4(network_stub, can_send, can_receive, can_namespace)
-
-    # step5:
     # action: Verify Programming session active
     # result: BECM sends active mode
-    step_5(network_stub, can_send, can_receive, can_namespace)
+    step_4(network_stub, can_send, can_receive, can_namespace)
     
-    # step 6:
+    # step 5:
     # action: change BECM to default
     # result: BECM report mode
-    step_6(network_stub, can_send, can_receive, can_namespace)
+    step_5(network_stub, can_send, can_receive, can_namespace)
 
    
     ############################################
