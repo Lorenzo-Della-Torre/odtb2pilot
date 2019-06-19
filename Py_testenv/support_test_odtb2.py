@@ -1,7 +1,7 @@
 # project:  ODTB2 testenvironment using SignalBroker
-# author:   hweiler (Hans-Klaus Weiler)
-# date:     2019-05-14
-# version:  1.0
+# author:   LDELLATO (Lorenzo Della Torre)
+# date:     2019-06-18
+# version:  1.2
 
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
 
@@ -362,5 +362,55 @@ class Support_test_ODTB2:
                 service = "Service: " + message[pos+2:pos+4] 
                 rc = self.PP_CAN_NRC(message[pos+4:])
                 return "Negative response: " + service + ", " + rc
+
+    def PP_Decode_Routine_Control_response (self, message, RTRS=''):
+        testresult=True
+        RType = ""
+        RStatus = ""
+        mess_len = len(message)
+        if (mess_len == 0):
+            testresult = False
+            print("PP_Decode_Routine_Control_response: missing message")
+        else:
+            pos = message.find ('71')
+            if pos == -1:
+                testresult = False
+                print("no routine control message: '71' not found in message ")
+        
+            else: 
+                routine = message[pos+4:pos+8]
+                if message[pos+8:pos+9] == '1':
+                    RType = "Type1"
+                elif message[pos+8:pos+9] == '2':
+                    RType = "Type2"
+                elif message[pos+8:pos+9] == '3':
+                    RType = "Type3"
+                else:
+                    RType = "Not supported Routine Type"
+                    
+                if message[pos+9:pos+10] == '0':
+                    RStatus = "Completed"
+                elif message[pos+9:pos+10] == '1':
+                    RStatus = "Aborted"
+                elif message[pos+9:pos+10] == '2':
+                    RStatus = "Currently active"
+                else:
+                    RStatus = "Not supported Routine Status"
+
+                print(RType + " Routine'" + routine + "' " + RStatus + "\n") 
+        if (RType + ',' + RStatus) == RTRS:
+            print("The response is as expected"+"\n")
+        else:
+            print("error: received " + RType + ',' + RStatus + " expected Type" + RTRS + "\n")
+            testresult = False
+            print ("teststatus:", testresult, "\n")
+
+        return testresult  
+
+
+            
+
+
+
                 
         
