@@ -95,43 +95,40 @@ def step_1(stub, s, r, ns):
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
 
-# teststep 2: verify RoutineControlRequest start is sent
+# teststep 2: verify RoutineControlRequest start reply positively
 def step_2(stub, s, r, ns):
     global testresult
     
     stepno = 2
-    purpose = "verify RoutineControl start is sent "
+    purpose = "verify RoutineControl start reply positively for routine with routine control option"
     timeout = 1 #wait a second for reply to be send
     min_no_messages = -1
     max_no_messages = -1
 
-    #SC.can_m_send( "Read counters", b'\x0B\x45\x00') #Request current session
     can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\x40\x11\x02\x00', b'\x01')
     can_mr_extra = ''
-    #print(SC.can_m_send( "Read counters", b'\x0B\x45\x00'))
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='71014011')
+    testresult = testresult and SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2],'Type3,Currently active')
+
 
 # teststep 3: verify RoutineControlRequest stop is sent with Routine Control Option
 def step_3(stub, s, r, ns):
     global testresult
     
     stepno = 3
-    purpose = "verify RoutineControl stop is sent for Routine with Routine control option"
+    purpose = "verify RoutineControl stop react positively for Routine with Routine control option"
     timeout = 1 #wait a second for reply to be send
     min_no_messages = -1
     max_no_messages = -1
 
-    #SC.can_m_send( "Read counters", b'\x0B\x45\x00') #Request current session
     can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\x40\x11', b'\x02')
     can_mr_extra = ''
-    #print(SC.can_m_send( "Read counters", b'\x0B\x45\x00'))
-
+    
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='71024011')
+    testresult = testresult and SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2],'Type3,Completed')
 
 # teststep 4: verify Extended session
 def step_4(stub, s, r, ns):
