@@ -103,44 +103,42 @@ def step_2(stub, s, r, ns):
     global testresult
     
     stepno = 2
-    purpose = "send RoutineControl start(01) in Programming Session"
+    purpose = "verify RoutineControl RequestRoutinestart (01) reply with security access denied in Programming session"
     timeout = 1 #wait a second for reply to be send
     min_no_messages = -1
     max_no_messages = -1
 
-    #SC.can_m_send( "Read counters", b'\x0B\x45\x00') #Request current session
     can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\x03\x01', b'\x01')
     can_mr_extra = ''
-    #print(SC.can_m_send( "Read counters", b'\x0B\x45\x00'))
+    
     print("can_m_send ",can_m_send)
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
 
     testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='7F3133')
 
-    print(SuTe.PP_Decode_7F_response(SC.can_frames[r][0][2]))
+    print(SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2]))
 
 # teststep 3: verify RoutineControlRequest is sent for Type 2
 def step_3(stub, s, r, ns):
     global testresult
     
     stepno = 3
-    purpose = "verify RoutineControl RequestRoutineResult (03) is sent in Programming Session"
+    purpose = "verify RoutineControl RequestRoutineResult (03) reply with security access denied in Programming session"
     timeout = 1 #wait a second for reply to be send
     min_no_messages = -1
     max_no_messages = -1
 
-    #SC.can_m_send( "Read counters", b'\x0B\x45\x00') #Request current session
     can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\x03\x01', b'\x03')
     can_mr_extra = ''
-    #print(SC.can_m_send( "Read counters", b'\x0B\x45\x00'))
+   
     print("can_m_send ",can_m_send)
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
 
     testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='7F3133')
 
-    print(SuTe.PP_Decode_7F_response(SC.can_frames[r][0][2]))
+    print(SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2]))
 
 # teststep 4: verify programming session
 def step_4(stub, s, r, ns):
