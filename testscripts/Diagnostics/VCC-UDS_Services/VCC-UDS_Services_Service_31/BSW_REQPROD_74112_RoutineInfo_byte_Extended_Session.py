@@ -102,8 +102,8 @@ def step_2(stub, s, r, ns):
     stepno = 2
     purpose = "verify RoutineControl start is sent and routine Type 1 is completed"
     timeout = 1 #wait a second for reply to be send
-    min_no_messages = 1
-    max_no_messages = 1
+    min_no_messages = -1
+    max_no_messages = -1
 
     #SC.can_m_send( "Read counters", b'\x0B\x45\x00') #Request current session
     can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\x02\x06', b'\x01')
@@ -112,7 +112,7 @@ def step_2(stub, s, r, ns):
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     
-    print(SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2]))
+    testresult = testresult and SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2],'Type1,Completed')
 
 
 # teststep 3: verify RoutineControlRequest start is sent
@@ -122,8 +122,8 @@ def step_3(stub, s, r, ns):
     stepno = 3
     purpose = "verify RoutineControl start is sent and routine Type 3 is running "
     timeout = 1 #wait a second for reply to be send
-    min_no_messages = 1
-    max_no_messages = 1
+    min_no_messages = -1
+    max_no_messages = -1
 
     #SC.can_m_send( "Read counters", b'\x0B\x45\x00') #Request current session
     can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\xDC\x00', b'\x01')
@@ -132,7 +132,7 @@ def step_3(stub, s, r, ns):
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     
-    print(SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2]))
+    testresult = testresult and SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2],'Type3,Currently active')
 
 # teststep 4: verify Routine Type 3 is still running
 def step_4(stub, s, r, ns):
@@ -141,8 +141,8 @@ def step_4(stub, s, r, ns):
     stepno = 4
     purpose = "verify Routine 3 is still running "
     timeout = 1 #wait a second for reply to be send
-    min_no_messages = 1
-    max_no_messages = 1
+    min_no_messages = -1
+    max_no_messages = -1
 
     #SC.can_m_send( "Read counters", b'\x0B\x45\x00') #Request current session
     can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\xDC\x00', b'\x03')
@@ -151,7 +151,7 @@ def step_4(stub, s, r, ns):
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     
-    print(SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2]))
+    testresult = testresult and SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2],'Type3,Currently active')
 
 # teststep 5: verify RoutineControlRequest stop is sent in Extended Session
 def step_5(stub, s, r, ns):
@@ -160,8 +160,8 @@ def step_5(stub, s, r, ns):
     stepno = 5
     purpose = "verify RoutineControl stop is sent in Extended Session and routine is Completed"
     timeout = 1 #wait a second for reply to be send
-    min_no_messages = 1
-    max_no_messages = 1
+    min_no_messages = -1
+    max_no_messages = -1
 
     #SC.can_m_send( "Read counters", b'\x0B\x45\x00') #Request current session
     can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\xDC\x00', b'\x02')
@@ -170,9 +170,9 @@ def step_5(stub, s, r, ns):
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     
-    print(SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2]))
+    testresult = testresult and SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2],'Type3,Completed')
 
-    time.sleep(1)
+    #time.sleep(1)
 
 # teststep 6: verify RoutineControlRequest start is sent for Type 2
 
@@ -180,37 +180,37 @@ def step_6(stub, s, r, ns):
     global testresult
     stepno = 6
     purpose = "verify RoutineControl start is sent and routine Type 2 is completed "
-    timeout = 1 #wait a second for reply to be send
-    min_no_messages = 1
-    max_no_messages = 1
+    timeout = 0.1 #wait a second for reply to be send
+    min_no_messages = -1
+    max_no_messages = -1
 
     #SC.can_m_send( "Read counters", b'\x0B\x45\x00') #Request current session
     can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\xDC\x10', b'\x01')
     can_mr_extra = ''
     #print(SC.can_m_send( "Read counters", b'\x0B\x45\x00'))
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-
-    print(SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2]))
-
     time.sleep(1)
+    testresult = testresult and SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2],'Type2,Completed')
+
+    
 
 # teststep 7: verify RoutineControlRequest stop is sent in Extended Session
 def step_7(stub, s, r, ns):
     global testresult
     stepno = 7
     purpose = "verify RoutineControl result is sent in Extended Session and routine Type 2 is aborted"
-    timeout = 0.1 #wait a second for reply to be send
-    min_no_messages = 1
-    max_no_messages = 1
+    timeout = 1 #wait a second for reply to be send
+    min_no_messages = -1
+    max_no_messages = -1
 
     #SC.can_m_send( "Read counters", b'\x0B\x45\x00') #Request current session
     can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\xDC\x10', b'\x02')
     can_mr_extra = ''
     #print(SC.can_m_send( "Read counters", b'\x0B\x45\x00'))
-    T2 = time.time()
+
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     
-    print(SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2]))
+    testresult = testresult and SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2],'Type2,Aborted')
     
 # teststep 8: verify Extended session
 def step_8(stub, s, r, ns):
@@ -226,7 +226,7 @@ def step_8(stub, s, r, ns):
     can_mr_extra = b'\x03'
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    time.sleep(1)
+    #time.sleep(1)
 
 # teststep 9: Change to default session
 def step_9(stub, s, r, ns):
