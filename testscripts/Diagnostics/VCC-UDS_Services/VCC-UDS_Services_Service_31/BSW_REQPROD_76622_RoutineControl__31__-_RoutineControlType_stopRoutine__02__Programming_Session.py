@@ -102,20 +102,16 @@ def step_1(stub, s, r, ns):
 # teststep 2: verify RoutineControlRequest start is sent
 def step_2(stub, s, r, ns):
     global testresult
-    #global can_frames
-    #global can_messages
-    
+   
     stepno = 2
-    purpose = "verify RoutineControl start is sent "
+    purpose = "verify RoutineControl start reply positively "
     timeout = 1 #wait a second for reply to be send
     min_no_messages = -1
     max_no_messages = -1
 
-    #SC.can_m_send( "Read counters", b'\x0B\x45\x00') #Request current session
     can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\x03\x01', b'\x01')
     can_mr_extra = ''
-    #print(SC.can_m_send( "Read counters", b'\x0B\x45\x00'))
-
+   
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     
     testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='7F3133')
@@ -125,19 +121,15 @@ def step_2(stub, s, r, ns):
 # teststep 3: verify RoutineControlRequest stop is sent in Programming Session
 def step_3(stub, s, r, ns):
     global testresult
-    #global can_frames
-    #global can_messages
     
     stepno = 3
-    purpose = "verify RoutineControl stop is sent in Programming Session"
+    purpose = "verify RoutineControl stop reply positively in Programming Session"
     timeout = 1 #wait a second for reply to be send
     min_no_messages = -1
     max_no_messages = -1
 
-    #SC.can_m_send( "Read counters", b'\x0B\x45\x00') #Request current session
     can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\x03\x01', b'\x02')
     can_mr_extra = ''
-    #print(SC.can_m_send( "Read counters", b'\x0B\x45\x00'))
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     
