@@ -104,28 +104,28 @@ def step_2(stub, s, r, ns):
     min_no_messages = 1
     max_no_messages = 1
 
-    #SC.can_m_send( "Read counters", b'\x0B\x45\x00') #Request current session
     can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\x40\x11', b'\x01')
     can_mr_extra = ''
-    #print(SC.can_m_send( "Read counters", b'\x0B\x45\x00'))
+    
     print("can_m_send ",can_m_send)
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
+    
+    print(SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2]))
 
 # teststep 3: verify RoutineControlRequest is sent for Type 2
 def step_3(stub, s, r, ns):
     global testresult
     
     stepno = 3
-    purpose = "verify RoutineControl Request Routine Result (03) is sent in Extended Session"
+    purpose = "verify RoutineControl Request Routine Result (03) reply positively in Extended Session"
     timeout = 1 #wait a second for reply to be send
     min_no_messages = 1
     max_no_messages = 1
 
-    #SC.can_m_send( "Read counters", b'\x0B\x45\x00') #Request current session
     can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\x40\x11', b'\x03')
     can_mr_extra = ''
-    #print(SC.can_m_send( "Read counters", b'\x0B\x45\x00'))
+    
     print("can_m_send ",can_m_send)
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
