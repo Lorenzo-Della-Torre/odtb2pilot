@@ -76,12 +76,12 @@ def step_0(stub, s, r, ns):
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     print(SuTe.PP_CombinedDID_EDA0(SC.can_messages[r][0][2], title=''))
 
-# teststep 1: verify RoutineControlRequest is sent for Type 1
+# teststep 1: verify RoutineControlRequest reply positively for Type 1
 def step_1(stub, s, r, ns):
     global testresult
     
     stepno = 1
-    purpose = "verify RoutineControl start are sent for Type 1"
+    purpose = "verify RoutineControl start reply positively for Type 1"
     timeout = 1 #wait a second for reply to be send
     min_no_messages = 1
     max_no_messages = 1
@@ -115,7 +115,7 @@ def step_2(stub, s, r, ns):
 
     testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='5002')
 
-# teststep 3: verify RoutineControlRequest is sent for Type 2
+# teststep 3: verify RoutineControlRequest reply NRC for Type 2
 def step_3(stub, s, r, ns):
     global testresult
     
