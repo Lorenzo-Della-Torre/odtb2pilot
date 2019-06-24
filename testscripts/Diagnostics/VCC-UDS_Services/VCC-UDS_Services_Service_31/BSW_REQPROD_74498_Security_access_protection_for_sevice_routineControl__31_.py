@@ -80,12 +80,12 @@ def step_0(stub, s, r, ns):
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     print(SuTe.PP_CombinedDID_EDA0(SC.can_messages[r][0][2], title=''))
 
-# teststep 1: verify RoutineControlRequest start is sent
+# teststep 1: verify RoutineControlRequest start service is allowed without security access
 def step_1(stub, s, r, ns):
     global testresult
     
     stepno = 1
-    purpose = "verify RoutineControl start is sent and routine Type 1 is completed"
+    purpose = "verify RoutineControl start service is allowed without security access"
     timeout = 1 #wait a second for reply to be send
     min_no_messages = 1
     max_no_messages = 1
@@ -114,12 +114,12 @@ def step_2(stub, s, r, ns):
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
 
-# teststep 3: verify RoutineControlRequest start is sent
+# teststep 3: verify RoutineControlRequest start service is allowed without security access
 def step_3(stub, s, r, ns):
     global testresult
     
     stepno = 3
-    purpose = "verify RoutineControl start is sent and routine Type 1 is completed"
+    purpose = "verify RoutineControl start service is allowed without security access and routine Type 1 is completed"
     timeout = 1 #wait a second for reply to be send
     min_no_messages = 1
     max_no_messages = 1
@@ -153,11 +153,11 @@ def step_4(stub, s, r, ns):
     testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='5002')
 
 
-# teststep 5: verify RoutineControlRequest start is sent for Type 2
+# teststep 5: verify RoutineControlRequest start service is not allowed without security access
 def step_5(stub, s, r, ns):
     global testresult
     stepno = 5
-    purpose = "verify RoutineControl start is sent and routine Type 2 is completed "
+    purpose = "verify RoutineControl start service is not allowed without security access "
     timeout = 1 #wait a second for reply to be send
     min_no_messages = -1
     max_no_messages = -1
