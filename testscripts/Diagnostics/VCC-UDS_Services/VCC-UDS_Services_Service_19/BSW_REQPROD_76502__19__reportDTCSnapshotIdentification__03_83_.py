@@ -77,12 +77,12 @@ def step_0(stub, s, r, ns):
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     print(SuTe.PP_CombinedDID_EDA0(SC.can_messages[r][0][2], title=''))
          
-# teststep 1: verify that Read DTC by Status mask completed are sent
+# teststep 1: verify that ReadDTCInfoSnapshotIdentification are sent
 def step_1(stub, s, r, ns):
     global testresult
     
     stepno = 1
-    purpose = "verify that Read DTC by Status mask completed are sent"
+    purpose = "verify that ReadDTCInfoSnapshotIdentification are sent"
     timeout = 1 #wait a second for reply to be send
     min_no_messages = -1
     max_no_messages = -1
@@ -100,12 +100,12 @@ def step_1(stub, s, r, ns):
     print ("Step2: messages received ", len(SC.can_messages[r]))
     print ("Step2: messages: ", SC.can_messages[r], "\n")
 
-# teststep 2: verify that Read DTC by Status Mask reply with empty frame
+# teststep 2: verify that ReadDTCInfoSnapshotIdentification reply with empty frame
 def step_2(stub, s, r, ns):
     global testresult
     
     stepno = 2
-    purpose = "verify that Read DTC by Status Mask reply with empty frame"
+    purpose = "verify that ReadDTCInfoSnapshotIdentification reply with empty frame"
     timeout = 1 #wait a second for reply to be send
     min_no_messages = -1
     max_no_messages = -1
@@ -139,12 +139,12 @@ def run():
     # teststeps
     ############################################
     # step 1:
-    # action: send signal ReadDTCByStatusMask
+    # action: send signal ReadDTCInfoSnapshotIdentification
     # result: BECM respond positively
     step_1(network_stub, can_send, can_receive, can_namespace)
     
     # step2:
-    # action: send signal ReadDTCByStatusMask (82)
+    # action: send signal ReadDTCInfoSnapshotIdentification (83)
     # result: BECM send empty frame
     step_2(network_stub, can_send, can_receive, can_namespace)
    
