@@ -77,14 +77,14 @@ def step_0(stub, s, r, ns):
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     print(SuTe.PP_CombinedDID_EDA0(SC.can_messages[r][0][2], title=''))
 
-# teststep 1: verify that Read DTC by Status mask completed are sent
+# teststep 1: verify that SnapshotIdentification are sent
 def step_1(stub, s, r, ns):
     global testresult
     global DTCnumber
     global Snapshot_RecordNumber
     
     stepno = 1
-    purpose = "verify that Read DTC by Status mask completed are sent"
+    purpose = "verify that SnapshotIdentification are sent"
     timeout = 1 #wait a second for reply to be send
     min_no_messages = -1
     max_no_messages = -1
@@ -96,14 +96,13 @@ def step_1(stub, s, r, ns):
     testresult = testresult and SuTe.test_message(SC.can_messages[r], '5903')
     time.sleep(1)
 
-    DTCnumber = SuTe.PP_DTCnumber_bytes(SC.can_frames[r][0][2][8:14])
-    Snapshot_RecordNumber = SuTe.PP_Snapshot_RecordNumber_bytes(SC.can_frames[r][0][2][14:16])
+    DTCnumber = SuTe.PP_StringTobytes(SC.can_frames[r][0][2][8:14],3)
+    Snapshot_RecordNumber = SuTe.PP_StringTobytes(SC.can_frames[r][0][2][14:16],1)
     print ()
     print ("Step1: frames received ", len(SC.can_frames[r]))
     print ("Step1: frames: ", SC.can_frames[r], "\n")
     print ("Step1: messages received ", len(SC.can_messages[r]))
     print ("Step1: messages: ", SC.can_messages[r], "\n")
-    
     
 
 # teststep 2: verify that SnapshotRecordByDTCNumber are sent for specific number
