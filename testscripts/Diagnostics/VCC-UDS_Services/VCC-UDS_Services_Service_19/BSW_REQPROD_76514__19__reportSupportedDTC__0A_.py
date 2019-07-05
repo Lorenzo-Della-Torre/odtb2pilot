@@ -84,14 +84,14 @@ def step_1(stub, s, r, ns):
     stepno = 1
     purpose = "verify that ReportSupportedDTC are sent"
     timeout = 1 #wait a second for reply to be send
-    min_no_messages = -1
-    max_no_messages = -1
+    min_no_messages = 1
+    max_no_messages = 1
 
     can_m_send = SC.can_m_send( "ReadDTCInfoReportSupportedDTC", "" ,"")
     can_mr_extra = ''
   
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], '590A')
+    
     time.sleep(1)
     
     print ()
