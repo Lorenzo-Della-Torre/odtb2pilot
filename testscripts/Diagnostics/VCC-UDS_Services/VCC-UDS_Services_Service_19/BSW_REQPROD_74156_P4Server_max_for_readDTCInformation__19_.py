@@ -122,9 +122,7 @@ def step_3():
     purpose = "Verify (time receive message – time sending request) less than P4_server_max"
     SuTe.print_test_purpose(stepno, purpose)
     jitter_testenv = 10
-    if (P4_server_max + jitter_testenv) > (T2 - T1):
-        testresult 
-    else:
+    if (T2 - T1) > (P4_server_max + jitter_testenv):
         testresult = False
     print ("T difference(s):", (P4_server_max + 10)/1000 - (T2 - T1))
     print ("Step ", stepno, " teststatus:", testresult, "\n")
