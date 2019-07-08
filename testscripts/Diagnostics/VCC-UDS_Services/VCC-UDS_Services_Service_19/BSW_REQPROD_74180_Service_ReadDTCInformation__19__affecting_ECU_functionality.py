@@ -1,8 +1,8 @@
 # Testscript ODTB2 MEPII
 # project:  BECM basetech MEPII
 # author:   LDELLATO (Lorenzo Della Torre)
-# date:     2019-06-17
-# version:  1.0
+# date:     2019-07-08
+# version:  1.1
 # reqprod:  74184
 
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
@@ -53,7 +53,7 @@ def precondition(stub, s, r, ns):
     
     time.sleep(4) #wait for ECU startup
 
-    timeout = 40   #seconds
+    timeout = 400   #seconds
     SC.subscribe_signal(stub, s, r, ns, timeout)
     #record signal we send as well
     SC.subscribe_signal(stub, r, s, ns, timeout)
@@ -79,29 +79,15 @@ def step_0(stub, s, r, ns):
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     print(SuTe.PP_CombinedDID_EDA0(SC.can_messages[r][0][2], title=''))
-
-# teststep 1: Change to extended session
+    
+# teststep 1: register another signal
 def step_1(stub, s, r, ns):
     global testresult
-    
+    global frame_step2
     stepno = 1
-    purpose = "Change to Extended session"
-    timeout = 1
-    min_no_messages = 1
-    max_no_messages = 1
-
-    can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x03', "")
-    can_mr_extra = ''
-    
-    testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    
-# teststep 2: register another signal
-def step_2(stub, s, r, ns):
-    global testresult
-    stepno = 2
     purpose = "register another signal"
     SuTe.print_test_purpose(stepno, purpose)
-    timeout = 15
+    timeout = 300
 
     can_send = "ECMFront1Fr02"
     can_rec = "BECMFront1Fr02"
@@ -114,38 +100,54 @@ def step_2(stub, s, r, ns):
     SC.clear_all_can_frames()
     SC.update_can_messages(r)
     print ("all can messages updated")
-    time.sleep(1)
+    time.sleep(10)
     print ()
     print ("Step1: messages received ", len(SC.can_messages[can_rec]))
     print ("Step1: messages: ", SC.can_messages[can_rec], "\n")
     print ("Step1: frames received ", len(SC.can_frames[can_rec]))
+    frame_step2 = len(SC.can_frames[can_rec])
     print ("Step1: frames: ", SC.can_frames[can_rec], "\n")
     
-    testresult = testresult and (len(SC.can_frames[can_rec]) > 10)
+    testresult = testresult and (frame_step2 > 10)
     
     print ("Step ", stepno, " teststatus:", testresult, "\n")
+    
+# teststep 2: verify that while service 19 is cyclically sent non-diagnostic signal is not effected
+def step_2(stub, s, r, ns):
+    global testresult
+    global frame_step2
+    stepno = 2
+    purpose = "verify that while service 19 is cyclically sent non-diagnostic signal is not effected"
+    timeout = 0.1 #wait a second for reply to be send
+    min_no_messages = 1
+    max_no_messages = 1
+    number_of_frames_received = 0
+    SC.clear_all_can_messages()
+    print ("all can messages cleared")
+    SC.clear_all_can_frames()
 
-# teststep 3: verify service 19 is sent in Extended Session
+    can_rec = "BECMFront1Fr02"
+    now = int(time.time())
+    print(now)
+
+    while (now + 10 > int(time.time())):
+        SC.update_can_messages(r)
+        can_m_send = SC.can_m_send( "ReadDTCInfoSnapshotIdentification", "" ,"")
+        can_mr_extra = ''
+        testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages) 
+        number_of_frames_received += len(SC.can_frames[can_rec])
+
+    print ("all can messages updated")
+    print ("Step2: frames received ", number_of_frames_received)
+    testresult = testresult and ((number_of_frames_received + 50) > frame_step2 > (number_of_frames_received - 50))
+    print ("Step ", stepno, " teststatus:", testresult, "\n")
+      
+# Verify subscribed signal in step 1 is still sent
 def step_3(stub, s, r, ns):
     global testresult
     
     stepno = 3
-    purpose = "verify service 19 is sent in Extended Session"
-    timeout = 1 #wait a second for reply to be send
-    min_no_messages = 1
-    max_no_messages = 1
-
-
-    can_m_send = SC.can_m_send( "ReadDTCInfoSnapshotIdentification", "" ,"")
-    can_mr_extra = ''
-
-    testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)   
-
-def step_4(stub, s, r, ns):
-    global testresult
-    
-    stepno = 4
-    purpose = "Verify subscribed signal in step 1 is sent"
+    purpose = "Verify subscribed non-diagnostic signal is still sent as in step 1"
     SuTe.print_test_purpose(stepno, purpose)
     can_rec = "BECMFront1Fr02"
     #SC.update_can_messages(r)
@@ -154,45 +156,14 @@ def step_4(stub, s, r, ns):
     SC.clear_all_can_frames()
     SC.update_can_messages(r)
     print ("all can messages updated")
-    time.sleep(1)
+    time.sleep(10)
     print ()
-    print ("Step3: frames received ", len(SC.can_frames[can_rec]))
-    print ("Step3: frames: ", SC.can_frames[can_rec], "\n")
+    print ("Step4: frames received ", len(SC.can_frames[can_rec]))
+    print ("Step4: frames: ", SC.can_frames[can_rec], "\n")
 
-    testresult = testresult and (len(SC.can_frames[can_rec]) > 10)
+    testresult = testresult and ((len(SC.can_frames[can_rec]) + 50) > frame_step2 > (len(SC.can_frames[can_rec]) - 50))
 
     print ("Step ", stepno, " teststatus:", testresult, "\n")
-    
-# teststep 5: verify Extended session
-def step_5(stub, s, r, ns):
-    global testresult
-    
-    stepno = 5
-    purpose = "Verify Extended session"
-    timeout = 1
-    min_no_messages = 1
-    max_no_messages = 1
-
-    can_m_send =SC.can_m_send( "ReadDataByIdentifier", b'\xF1\x86', "")
-    can_mr_extra = b'\x03'
-    
-    testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    time.sleep(1)
-
-# teststep 6: Change to default session
-def step_6(stub, s, r, ns):
-    global testresult
-    
-    stepno = 6
-    purpose = "Change to default session"
-    timeout = 1
-    min_no_messages = 1
-    max_no_messages = 1
-
-    can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x01', "")
-    can_mr_extra = ''
-    
-    testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
 
 def run():
     global testresult
@@ -218,35 +189,21 @@ def run():
     ############################################
     # teststeps
     ############################################
-    # step 1: 
-    # action:Change to extended session
-    # result: BECM report mode
-    step_1(network_stub, can_send, can_receive, can_namespace)
     
-    # step 2:
+    # step 1:
     # action: Register not diagnostic message
     # result: BECM send requested signals
+    step_1(network_stub, can_send, can_receive, can_namespace)
+
+    # step2:
+    # action:send ReadDTCInformation cyclically 
+    # result: BECM reports confirmed message
     step_2(network_stub, can_send, can_receive, can_namespace)
 
     # step3:
-    # action:ECU Reset
-    # result: BECM reports confirmed message
-    step_3(network_stub, can_send, can_receive, can_namespace)
-
-    # step4:
     # action: Verify signal is still sent
     # result: BECM send requested signals
-    step_4(network_stub, can_send, can_receive, can_namespace)
-    
-    # step 5:
-    # action: Verify Extended session active
-    # result: BECM sends active mode
-    step_5(network_stub, can_send, can_receive, can_namespace)
-    
-    # step 6:
-    # action: change BECM to default
-    # result: BECM report mode
-    step_5(network_stub, can_send, can_receive, can_namespace)
+    step_3(network_stub, can_send, can_receive, can_namespace)
     
     ############################################
     # postCondition
