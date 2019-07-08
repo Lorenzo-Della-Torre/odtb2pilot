@@ -3,7 +3,7 @@
 # author:   LDELLATO (Lorenzo Della Torre)
 # date:     2019-07-08
 # version:  1.1
-# reqprod:  74184
+# reqprod:  74180
 
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
 
@@ -112,12 +112,12 @@ def step_1(stub, s, r, ns):
     
     print ("Step ", stepno, " teststatus:", testresult, "\n")
     
-# teststep 2: verify that while service 19 is cyclically sent non-diagnostic signal is not effected
+# teststep 2: verify that while service 19 is cyclically sent non-diagnostic signal is not affected
 def step_2(stub, s, r, ns):
     global testresult
     global frame_step2
     stepno = 2
-    purpose = "verify that while service 19 is cyclically sent non-diagnostic signal is not effected"
+    purpose = "verify that while service 19 is cyclically sent non-diagnostic signal is not affected"
     timeout = 0.1 #wait a second for reply to be send
     min_no_messages = 1
     max_no_messages = 1
