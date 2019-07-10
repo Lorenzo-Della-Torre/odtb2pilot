@@ -78,7 +78,7 @@ def step_0(stub, s, r, ns):
     print(SuTe.PP_CombinedDID_EDA0(SC.can_messages[r][0][2], title=''))
     
 
-# teststep 1: Change to Default session
+# teststep 1: Change to Extended session
 def step_1(stub, s, r, ns):
     global testresult
     
