@@ -1,7 +1,7 @@
 # Testscript ODTB2 MEPII
 # project:  BECM basetech MEPII
 # author:   hweiler (Hans-Klaus Weiler)
-# date:     2019-05-17
+# date:     2019-05-09
 # version:  1.0
 # reqprod:  76171
 
@@ -46,26 +46,14 @@ testresult = True
 #  BECM has to be kept alive: start heartbeat
 def precondition(stub, s, r, ns):
     global testresult
-    
+        
     # start heartbeat, repeat every 0.8 second
-    SC.start_heartbeat(stub, "EcmFront1NMFr", "Front1CANCfg1", b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.8)    
-
-    # timeout = more than maxtime script takes
-    # needed as thread for registered signals won't stop without timeout
-    #timeout = 300   #seconds
-    timeout = 60   #seconds
+    SC.start_heartbeat(stub, "EcmFront1NMFr", "Front1CANCfg1", b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.8)
+    
+    timeout = 40   #seconds
     SC.subscribe_signal(stub, s, r, ns, timeout)
     #record signal we send as well
     SC.subscribe_signal(stub, r, s, ns, timeout)
-
-    # Parameters for FrameControl FC VCU
-    time.sleep(1)
-    BS=0
-    ST=0
-    FC_delay = 0 #no wait
-    FC_flag = 48 #continue send
-    FC_auto = False
-    SC.change_MF_FC(s, BS, ST, FC_delay, FC_flag, FC_auto)
     
     print()
     step_0(stub, s, r, ns)
@@ -80,38 +68,20 @@ def step_0(stub, s, r, ns):
     stepno = 0
     purpose = "Complete ECU Part/Serial Number(s)"
     timeout = 5
-    min_no_messages = 1
-    max_no_messages = 1
+    min_no_messages = -1
+    max_no_messages = -1
     
     can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xED\xA0', "")
     can_mr_extra = ''
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     print(SuTe.PP_CombinedDID_EDA0(SC.can_messages[r][0][2], title=''))
-    
-
-    # teststep 1: verify session
+      
+# teststep 1: send several requests at one time - requires SF to send, MF for reply
 def step_1(stub, s, r, ns):
     global testresult
     
     stepno = 1
-    purpose = "Verify default session"
-    timeout = 5
-    min_no_messages = 1
-    max_no_messages = 1
-
-    can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xF1\x86', "")
-    can_mr_extra = b'\x01'
-    
-    testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    time.sleep(1)
-
-    
-# teststep 2: send several requests at one time - requires SF to send, MF for reply
-def step_2(stub, s, r, ns):
-    global testresult
-    
-    stepno = 2
     purpose = "send several requests at one time - requires SF to send"
     timeout = 5 # wait for message to arrive, but don't test (-1)
     min_no_messages = -1
@@ -128,23 +98,15 @@ def step_2(stub, s, r, ns):
     can_mr_extra = ''
     
     SC.change_MF_FC(s, BS, ST, FC_delay, FC_flag, FC_auto)
-    #SC.change_MF_FC(r, BS, ST, FC_delay, FC_flag, FC_auto)
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    #print ("Step2: frames received ", len(SC.can_frames))
-    #print ("Step2: frames: ", SC.can_frames, "\n")
 
-
-# teststep 3: test if DIDs are included in reply
-def step_3(stub, s, r, ns):
+# teststep 2: test if DIDs are included in reply
+def step_2(stub, s, r, ns):
     global testresult
     
-    stepno = 3
+    stepno = 2
     purpose = "test if all requested DIDs are included in reply"
-    #timeout = 5
-    #min_no_messages = 1
-    #max_no_messages = 0
-    #
 
     # No normal teststep done,
     # instead: update CAN messages, verify all serial-numbers received (by checking ID for each serial-number)
@@ -158,21 +120,21 @@ def step_3(stub, s, r, ns):
     SC.update_can_messages(r)
     print ("all can messages updated")
     print ()
-    print ("Step3: messages received ", len(SC.can_messages[r]))
-    print ("Step3: messages: ", SC.can_messages[r], "\n")
-    print ("Step3: frames received ", len(SC.can_frames[r]))
-    print ("Step3: frames: ", SC.can_frames[r], "\n")
+    print ("Step2: messages received ", len(SC.can_messages[r]))
+    print ("Step2: messages: ", SC.can_messages[r], "\n")
+    print ("Step2: frames received ", len(SC.can_frames[r]))
+    print ("Step2: frames: ", SC.can_frames[r], "\n")
     print ("Test if string contains all IDs expected:")
 
     testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='F120')
     testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='F12A')
 
     
-# teststep 4: request 10 DID in one request - those with shortest reply
-def step_4(stub, s, r, ns):
+# teststep 3: request 10 DID in one request - those with shortest reply
+def step_3(stub, s, r, ns):
     global testresult
     
-    stepno = 4
+    stepno = 3
     purpose = "request 10 DID in one request - those with shortest reply (MF send, MF reply)"
     timeout = 5 # wait for message to arrive, but don't test (-1)
     min_no_messages = -1
@@ -193,17 +155,13 @@ def step_4(stub, s, r, ns):
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
 
 
-# teststep 5: test if DIDs are included in reply
-def step_5(stub, s, r, ns):
+# teststep 4: test if DIDs are included in reply
+def step_4(stub, s, r, ns):
     global testresult
     
-    stepno = 5
+    stepno = 4
     purpose = "test if all requested DIDs are included in reply"
-    #timeout = 5
-    #min_no_messages = 1
-    #max_no_messages = 0
-    #
-
+    
     # No normal teststep done,
     # instead: update CAN messages, verify all serial-numbers received (by checking ID for each serial-number)
     #teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
@@ -216,10 +174,10 @@ def step_5(stub, s, r, ns):
     SC.update_can_messages(r)
     print ("all can messages updated")
     print ()
-    print ("Step5: messages received ", len(SC.can_messages[r]))
-    print ("Step5: messages: ", SC.can_messages[r], "\n")
-    print ("Step5: frames received ", len(SC.can_frames[r]))
-    print ("Step5: frames: ", SC.can_frames[r], "\n")
+    print ("Step4: messages received ", len(SC.can_messages[r]))
+    print ("Step4: messages: ", SC.can_messages[r], "\n")
+    print ("Step4: frames received ", len(SC.can_frames[r]))
+    print ("Step4: frames: ", SC.can_frames[r], "\n")
     print ("Test if string contains all IDs expected:")
 
     testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='DD02')
@@ -234,11 +192,11 @@ def step_5(stub, s, r, ns):
     testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='4945')
 
     
-# teststep 6: request 11 DID at once
-def step_6(stub, s, r, ns):
+# teststep 5: request 11 DID at once
+def step_5(stub, s, r, ns):
     global testresult
     
-    stepno = 6
+    stepno = 5
     purpose = "send 11 requests at one time - fails in current version (max10)"
     timeout = 5 # wait for message to arrive, but don't test (-1)
     min_no_messages = -1
@@ -259,17 +217,13 @@ def step_6(stub, s, r, ns):
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
 
 
-# teststep 7: test if error received
-def step_7(stub, s, r, ns):
+# teststep 6: test if error received
+def step_6(stub, s, r, ns):
     global testresult
     #
-    stepno = 7
+    stepno = 6
     purpose = "verify that error message received"
-    #timeout = 5
-    #min_no_messages = 1
-    #max_no_messages = 0
-    #
-
+    
     # No normal teststep done,
     # instead: update CAN messages, verify all serial-numbers received (by checking ID for each serial-number)
     #teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
@@ -282,10 +236,10 @@ def step_7(stub, s, r, ns):
     SC.update_can_messages(r)
     print ("all can messages updated")
     print ()
-    print ("Step7: messages received ", len(SC.can_messages[r]))
-    print ("Step7: messages: ", SC.can_messages[r], "\n")
-    print ("Step7: frames received ", len(SC.can_frames[r]))
-    print ("Step7: frames: ", SC.can_frames[r], "\n")
+    print ("Step6: messages received ", len(SC.can_messages[r]))
+    print ("Step6: messages: ", SC.can_messages[r], "\n")
+    print ("Step6: frames received ", len(SC.can_frames[r]))
+    print ("Step6: frames: ", SC.can_frames[r], "\n")
     print ("Test if string contains all IDs expected:")
 
     testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='037F223100000000')
@@ -295,11 +249,11 @@ def step_7(stub, s, r, ns):
     print ("Step ", stepno, " teststatus:", testresult, "\n")
 
     
-# teststep 8: send 10 requests at one time - those with most bytes in return
-def step_8(stub, s, r, ns):
+# teststep 7: send 10 requests at one time - those with most bytes in return
+def step_7(stub, s, r, ns):
     global testresult
     
-    stepno = 8
+    stepno = 7
     purpose = "send 10 requests at one time - those with most bytes in return"
     timeout = 5 # wait for message to arrive, but don't test (-1)
     min_no_messages = -1
@@ -321,17 +275,13 @@ def step_8(stub, s, r, ns):
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
 
 
-# teststep 9: test if DIDs are included in reply including those from combined DID
-def step_9(stub, s, r, ns):
+# teststep 8: test if DIDs are included in reply including those from combined DID
+def step_8(stub, s, r, ns):
     global testresult
     #
-    stepno = 9
+    stepno = 8
     purpose = "test if all requested DIDs are included in reply"
-    #timeout = 5
-    #min_no_messages = 1
-    #max_no_messages = 0
-    #
-
+    
     # No normal teststep done,
     # instead: update CAN messages, verify all serial-numbers received (by checking ID for each serial-number)
     #teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
@@ -344,10 +294,10 @@ def step_9(stub, s, r, ns):
     SC.update_can_messages(r)
     print ("all can messages updated")
     print ()
-    print ("Step9: messages received ", len(SC.can_messages[r]))
-    print ("Step9: messages: ", SC.can_messages[r], "\n")
-    print ("Step9: frames received ", len(SC.can_frames[r]))
-    print ("Step9: frames: ", SC.can_frames[r], "\n")
+    print ("Step8: messages received ", len(SC.can_messages[r]))
+    print ("Step8: messages: ", SC.can_messages[r], "\n")
+    print ("Step8: frames received ", len(SC.can_frames[r]))
+    print ("Step8: frames: ", SC.can_frames[r], "\n")
     print ("Test if string contains all IDs expected:")
 
     testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='EDA0')
@@ -407,49 +357,46 @@ def run():
     ############################################
     # teststeps
     ############################################
-    # step 1:
-    # action: verify session
-    # result: default session
-    step_1(network_stub, can_send, can_receive, can_namespace)
     
-    # step2:
+    # step1:
     # action: send several requests at one time - requires SF to send, MF for reply
     # result: BECM reports programmin session
-    step_2(network_stub, can_send, can_receive, can_namespace)
+    step_1(network_stub, can_send, can_receive, can_namespace)
 
-    # step 3: check if DIDs are included in reply including those from combined DID
+    # step 2: check if DIDs are included in reply including those from combined DID
     # action: check if expected DID are contained in reply
     # result: true if all contained, false if not
-    step_3(network_stub, can_send, can_receive, can_namespace)
+    step_2(network_stub, can_send, can_receive, can_namespace)
     
-    # step4:
+    # step3:
     # action: check current session
     # result: BECM reports default session
-    step_4(network_stub, can_send, can_receive, can_namespace)
+    step_3(network_stub, can_send, can_receive, can_namespace)
    
-    # step 5: check if DIDs are included in reply including those from combined DID
+    # step 4: check if DIDs are included in reply including those from combined DID
     # action: check if expected DID are contained in reply
     # result: true if all contained, false if not
-    step_5(network_stub, can_send, can_receive, can_namespace)
-    # step6:
+    step_4(network_stub, can_send, can_receive, can_namespace)
+
+    # step5:
     # action: send 11 requests at one time
     # result: 
-    step_6(network_stub, can_send, can_receive, can_namespace)
+    step_5(network_stub, can_send, can_receive, can_namespace)
 
-    # step 7: check if error message received
+    # step 6: check if error message received
     # action: check if error message received
     # result: true if error message contained, false if not
-    step_7(network_stub, can_send, can_receive, can_namespace)
+    step_6(network_stub, can_send, can_receive, can_namespace)
 
-    # step8:
+    # step7:
     # action: send 10 requests at one time, containing combined DID
     # result: 
-    step_8(network_stub, can_send, can_receive, can_namespace)
+    step_7(network_stub, can_send, can_receive, can_namespace)
 
-    # step 9: check if DIDs are included in reply including those from combined DID
+    # step 8: check if DIDs are included in reply including those from combined DID
     # action: check if expected DID are contained in reply
     # result: true if all contained, false if not
-    step_9(network_stub, can_send, can_receive, can_namespace)
+    step_8(network_stub, can_send, can_receive, can_namespace)
     
     ############################################
     # postCondition
