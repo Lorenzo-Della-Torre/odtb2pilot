@@ -1,6 +1,6 @@
 # project:  ODTB2 testenvironment using SignalBroker
 # author:   LDELLATO (Lorenzo Della Torre)
-# date:     2019-06-18
+# date:     2019-07-11
 # version:  1.2
 
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
@@ -28,6 +28,7 @@ import time
 import logging
 import os
 import sys
+import binascii
 
 #import threading
 #from threading import Thread
@@ -170,6 +171,8 @@ class Support_test_ODTB2:
         ## ECU serial:
         retval = retval + "ECU Serial Number         '" + message[144:152] + "'\n"
         return retval
+
+
 
         
 # PrettyPrint DID F12E:
@@ -363,6 +366,8 @@ class Support_test_ODTB2:
                 rc = self.PP_CAN_NRC(message[pos+4:])
                 return "Negative response: " + service + ", " + rc
 
+
+    #support function for Routine Control
     def PP_Decode_Routine_Control_response (self, message, RTRS=''):
         testresult=True
         RType = ""
@@ -401,14 +406,108 @@ class Support_test_ODTB2:
         if (RType + ',' + RStatus) == RTRS:
             print("The response is as expected"+"\n")
         else:
-            print("error: received " + RType + ',' + RStatus + " expected Type" + RTRS + "\n")
+            print("error: received " + RType + ',' + RStatus + " expected " + RTRS + "\n")
             testresult = False
             print ("teststatus:", testresult, "\n")
 
         return testresult  
+                
+                
+    #Support function for Security Access
+    def SetSecurityAccessPins(self, Sid):
+        #iteration variable
+        i = int
 
+        #step1: load the challenge bytes, bit by bit, into a 64-bit variable space
+        #insert fivefixed bytes and 3 seed
+        li = 'FFFFFFFFFF'        
+        li = li + Sid[4:6] + Sid[2:4] + Sid[0:2]
+        # Test Pins
+        #li = '43BB42AA41'
+        #li = li + '8A' + '96' + '4E'
+        li = (bin(int(li,16)))
+        li = li[2:]
+        #Extension for Test Pins
+        #li = '0' + li
+        #print(hex(int(li[:8])))
+        li = li[::-1]
 
+        #step2: Load C541A9 hex into the 24 bit Initial Value variable space
+        lista = bin(int('C541A9',16))
+        lista = lista[2:]
+
+        #step3: Perform the Shift Right and Xor operations for 64 times
+        for i in li: 
             
+            lista1 = bin(lista[-1] != i)
+            lista1 = lista1[2:] 
+            # invert position of first bit with the last
+            lista = lista1 + lista[:-1]
+            # Xor between last reference list and last Sid arrow
+            lista3 = bin(lista[3] != lista1)
+            lista3 = lista3[2:]
+            #successive Xor between Blast and ....
+            lista8 = bin(lista[8] != lista1)
+            lista8 = lista8[2:]
+
+            lista11 = bin(lista[11] != lista1)
+            lista11 = lista11[2:]
+           
+            lista18 = bin(lista[18] != lista1)
+            lista18 = lista18[2:]
+            
+            lista20 = bin(lista[20] != lista1)
+            lista20 = lista20[2:]
+           
+            lista = lista [:3] + lista3 + lista[4:8] + lista8 + lista[9:11] + lista11 + lista[12:18] + lista18 + lista[19:20] + lista20 + lista[21:24] 
+
+        #step4: Generate R1, R2, R3
+        R1 = hex(int(lista[12:20],2))
+        R1 = hex(int(R1,16) + int("0x200",16))
+        R1 = R1[3:]
+        #print(R1)
+
+        R2 = hex(int((lista[8:12] + lista[0:4]),2))
+        R2 = hex(int(R2,16) + int("0x200",16))
+        R2 = R2[3:]
+        #print(R2)
+
+        R3 = hex(int((lista[20:24] + lista[4:8]),2))
+        R3 = hex(int(R3,16) + int("0x200",16))
+        R3 = R3[3:]
+        #print(R3)
+        R = hex(int(('0x' + R1 + R2 + R3),16))
+        print(R)
+        return bytes.fromhex(R[2:])
+
+    #convert DTCstring Number in bytes specifying number of bytes       
+    def PP_StringTobytes(self,i,num):
+        #padding the number with 0's
+        pad = '2x0'.zfill(num*2+3)
+        pad = pad[::-1]
+        i = hex(int(i,16) + int(pad,16))
+        i = i[3:]
+        return bytes.fromhex(i)
+
+    
+    def crc16(self, data):
+        data = bytearray(data)
+        crc = 0xFFFF
+        for b in data:
+            crc ^= b << 8
+            for _ in range(8):
+                if crc & 0x8000:
+                    crc = (crc << 1) ^ 0x1021
+                else:
+                    crc = crc << 1
+            crc &= 0xffff
+
+        return crc 
+
+    def CRC32_from_file(self, filename):
+        buf = (binascii.crc32(filename) & 0xFFFFFFFF)
+        return "%08X" % buf
+
 
 
 
