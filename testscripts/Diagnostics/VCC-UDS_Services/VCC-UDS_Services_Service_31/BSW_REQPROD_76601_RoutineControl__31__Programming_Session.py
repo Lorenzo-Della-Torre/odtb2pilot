@@ -48,7 +48,7 @@ def precondition(stub, s, r, ns):
     global testresult
         
     # start heartbeat, repeat every 0.8 second
-    SC.start_heartbeat(stub, "EcmFront1NMFr", "Front1CANCfg1", b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.8)
+    SC.start_heartbeat(stub, "EcmFront1NMFr", "Front1CANCfg0", b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.8)
     
     time.sleep(4) #wait for ECU startup
 
@@ -162,7 +162,7 @@ def run():
 
     can_send = "Vcu1ToBecmFront1DiagReqFrame"
     can_receive = "BecmToVcu1Front1DiagResFrame"
-    can_namespace = SC.nspace_lookup("Front1CANCfg1")
+    can_namespace = SC.nspace_lookup("Front1CANCfg0")
 
     print ("Testcase start: ", datetime.now())
     starttime = time.time()

@@ -260,7 +260,7 @@ class Support_CAN:
 
 
 
-# make sure you have Front1CANCfg1 namespace in interfaces.json
+# make sure you have Front1CANCfg0 namespace in interfaces.json
 #BO_ 1305 BecmFront1NMFr: 8 BECM
 # SG_ InfotainmentAndHMI_BECM : 22|1@0+ (1,0) [0|0] "" VCU1
 # SG_ PNCCharging_BECM : 25|1@0+ (1,0) [0|0] "" VCU1
@@ -277,7 +277,7 @@ class Support_CAN:
 # SG_ NM_NodeID_BECM : 7|8@0+ (1,0) [0|0] "" VCU1
     def subscribe_to_Heartbeat(self, stub):
         source = common_pb2.ClientId(id="app_identifier")
-        signal = common_pb2.SignalId(name="BecmFront1NMFr", namespace="Front1CANCfg1")
+        signal = common_pb2.SignalId(name="BecmFront1NMFr", namespace="Front1CANCfg0")
         sub_info = network_api_pb2.SubscriberConfig(clientId=source, signals=network_api_pb2.SignalIds(signalId=[signal]), onChange=False)
         while True:
             try:
