@@ -692,6 +692,8 @@ class Support_CAN:
     def can_m_send(self, name, message, mask):
         if name == "DiagnosticSessionControl":
             ret = b'\x10' + message
+        elif name == "ClearDiagnosticInformation":
+            ret = b'\x14' + message
         elif name == "ReadDTCInfoExtDataRecordByDTCNumber":
             #ret = b'\x19\x06' + message + b'\xFF'
             ret = b'\x19\x06' + message + mask
