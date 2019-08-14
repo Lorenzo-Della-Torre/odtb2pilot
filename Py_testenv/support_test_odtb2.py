@@ -80,6 +80,7 @@ class Support_test_ODTB2:
                 else:
                     testresult = False
                     print ("Bad: Expected: ", teststring, " received: ", i[2].upper())
+                    print ("Try to decode error message (7F): \n", self.PP_Decode_7F_response (i[2].upper()))
         return testresult
 
         
@@ -126,7 +127,7 @@ class Support_test_ODTB2:
             if (len(SC.can_messages[can_rec]) > 0):
                 if (not min_no_messages < 0):
                     testresult = testresult and self.test_message(SC.can_messages[can_rec], can_answer.hex().upper())
-        print ("Step ", step_no, " teststatus:", testresult, "\n")
+        print ("Step ", step_no, ": teststatus:", testresult, "\n")
         return testresult
         
 #Pretty Print function support for part numbers
@@ -171,8 +172,6 @@ class Support_test_ODTB2:
         ## ECU serial:
         retval = retval + "ECU Serial Number         '" + message[144:152] + "'\n"
         return retval
-
-
 
         
 # PrettyPrint DID F12E:
@@ -406,7 +405,7 @@ class Support_test_ODTB2:
         if (RType + ',' + RStatus) == RTRS:
             print("The response is as expected"+"\n")
         else:
-            print("error: received " + RType + ',' + RStatus + " expected " + RTRS + "\n")
+            print("error: received " + RType + ',' + RStatus + " expected Type" + RTRS + "\n")
             testresult = False
             print ("teststatus:", testresult, "\n")
 
@@ -507,9 +506,3 @@ class Support_test_ODTB2:
     def CRC32_from_file(self, filename):
         buf = (binascii.crc32(filename) & 0xFFFFFFFF)
         return "%08X" % buf
-
-
-
-
-                
-        
