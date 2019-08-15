@@ -47,16 +47,16 @@ def precondition(stub, s, r, ns):
     global testresult
         
     # start heartbeat, repeat every 0.8 second
-    #SC.start_heartbeat(stub, "EcmFront1NMFr", "Front1CANCfg1", b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.8)
+    #SC.start_heartbeat(stub, "EcmFront1NMFr", "Front1CANCfg0", b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.8)
     
     #start_periodic(self, stub, per_name, per_id, per_send, per_nspace, per_frame, per_intervall)
-    SC.start_periodic(stub, 'heartbeat', True, "EcmFront1NMFr", "Front1CANCfg1", b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.8)
+    SC.start_periodic(stub, 'heartbeat', True, "EcmFront1NMFr", "Front1CANCfg0", b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.8)
     time.sleep(4) #wait for ECU startup
     
     #VCU1Front1Fr06, VehSpdLgtSafe
     
     #SC.set_periodic(self, per_name, per_send, per_id, per_nspace, per_frame, per_intervall)
-    #SC.set_periodic('heartbeat', True, "EcmFront1NMFr", "Front1CANCfg1", b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.4)
+    #SC.set_periodic('heartbeat', True, "EcmFront1NMFr", "Front1CANCfg0", b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.4)
     #time.sleep(2)
     
     # timeout = more than maxtime script takes
@@ -96,7 +96,7 @@ def step_1(stub):
     purpose = "send signal vehicle velocity < 3km/h"
     SuTe.print_test_purpose(stepno, purpose)
     #VCU1Front1Fr06, VehSpdLgtSafe
-    SC.start_periodic(stub, 'VehSpdLgtSafe', True, "VCU1Front1Fr06", "Front1CANCfg1", b'\x80\xd5\x00\x00\x00\x00\x00\x00',0.015)
+    SC.start_periodic(stub, 'VehSpdLgtSafe', True, "VCU1Front1Fr06", "Front1CANCfg0", b'\x80\xd5\x00\x00\x00\x00\x00\x00',0.015)
 
 # teststep 2: Change to programming session
 def step_2(stub, s, r, ns):
@@ -153,7 +153,7 @@ def step_5():
     stepno = 5
     purpose = "send signal vehicle velocity > 3km/h"
     SuTe.print_test_purpose(stepno, purpose)
-    SC.set_periodic('VehSpdLgtSafe', True, "VCU1Front1Fr06", "Front1CANCfg1", b'\x80\xd6\x00\x00\x00\x00\x00\x00',0.015)
+    SC.set_periodic('VehSpdLgtSafe', True, "VCU1Front1Fr06", "Front1CANCfg0", b'\x80\xd6\x00\x00\x00\x00\x00\x00',0.015)
     time.sleep(2)
 
 # teststep 6: Change to programming session
@@ -201,7 +201,7 @@ def run():
 
     can_send = "Vcu1ToBecmFront1DiagReqFrame"
     can_receive = "BecmToVcu1Front1DiagResFrame"
-    can_namespace = SC.nspace_lookup("Front1CANCfg1")
+    can_namespace = SC.nspace_lookup("Front1CANCfg0")
 
     # Test PreCondition
     #root = logging.getLogger()

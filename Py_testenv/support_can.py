@@ -260,7 +260,7 @@ class Support_CAN:
 
 
 
-# make sure you have Front1CANCfg1 namespace in interfaces.json
+# make sure you have Front1CANCfg0 namespace in interfaces.json
 #BO_ 1305 BecmFront1NMFr: 8 BECM
 # SG_ InfotainmentAndHMI_BECM : 22|1@0+ (1,0) [0|0] "" VCU1
 # SG_ PNCCharging_BECM : 25|1@0+ (1,0) [0|0] "" VCU1
@@ -277,7 +277,7 @@ class Support_CAN:
 # SG_ NM_NodeID_BECM : 7|8@0+ (1,0) [0|0] "" VCU1
     def subscribe_to_Heartbeat(self, stub):
         source = common_pb2.ClientId(id="app_identifier")
-        signal = common_pb2.SignalId(name="BecmFront1NMFr", namespace="Front1CANCfg1")
+        signal = common_pb2.SignalId(name="BecmFront1NMFr", namespace="Front1CANCfg0")
         sub_info = network_api_pb2.SubscriberConfig(clientId=source, signals=network_api_pb2.SignalIds(signalId=[signal]), onChange=False)
         while True:
             try:
@@ -692,16 +692,37 @@ class Support_CAN:
     def can_m_send(self, name, message, mask):
         if name == "DiagnosticSessionControl":
             ret = b'\x10' + message
+        elif name == "ClearDiagnosticInformation":
+            ret = b'\x14' + message
+        elif name == "ReadDTCInfoReportDTCWithPermanentStatus":
+            ret = b'\x19\x15' + message + mask
+        elif name == "ReadDTCInfoReportSupportedDTC":
+            ret = b'\x19\x0A' + message + mask
         elif name == "ReadDTCInfoExtDataRecordByDTCNumber":
             #ret = b'\x19\x06' + message + b'\xFF'
             ret = b'\x19\x06' + message + mask
         elif name == "ReadDTCInfoSnapshotRecordByDTCNumber":
             #ret = b'\x19\x04'+ message + b'\xFF'
             ret = b'\x19\x04'+ message + mask
+        elif name == "ReadDTCInfoSnapshotIdentification":
+            #ret = b'\x19\x03'+ message + b'\xFF'
+            ret = b'\x19\x03'+ message + mask
         elif name == "ReadDTCByStatusMask":
             ret = b'\x19\x02'
-            if mask == "confirmedDTC":
+            if mask == "warningIndicatorRequested":
+                ret = ret + b'\x07'
+            elif mask == "testNotCompletedThisMonitoringCycle":
+                ret = ret + b'\x06'
+            elif mask == "testFailedSinceLastClear":
+                ret = ret + b'\x05'
+            elif mask == "testNotCompletedSinceLastClear":
+                ret = ret + b'\x04'
+            elif mask == "confirmedDTC":
                 ret = ret + b'\x03'
+            elif mask == "pendingDTC":
+                ret = ret + b'\x02'
+            elif mask == "testFailedThisMonitorCycle":
+                ret = ret + b'\x01'
             elif mask == "testFailed":
                 ret = ret + b'\x00'
             else:

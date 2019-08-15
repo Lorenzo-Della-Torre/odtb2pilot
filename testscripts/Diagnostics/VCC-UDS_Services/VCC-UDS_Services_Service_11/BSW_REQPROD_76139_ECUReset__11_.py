@@ -66,7 +66,7 @@ def precondition(stub, s, r, ns):
     
     # start heartbeat, repeat every 0.8 second
     SC._heartbeat = True
-    t = Thread (target=SC.send_heartbeat, args = (stub, "EcmFront1NMFr", "Front1CANCfg1", b'\x20\x40\x00\xFF\x00\x00\x00\x00',0.8))
+    t = Thread (target=SC.send_heartbeat, args = (stub, "EcmFront1NMFr", "Front1CANCfg0", b'\x20\x40\x00\xFF\x00\x00\x00\x00',0.8))
     t.daemon = True
     t.start()
     # wait for BECM to wake up
@@ -76,7 +76,7 @@ def precondition(stub, s, r, ns):
     #messages = list()
     #can_send = "Vcu1ToBecmFront1DiagReqFrame"
     #can_rec = "BecmToVcu1Front1DiagResFrame"
-    #can_nspace = "Front1CANCfg1"
+    #can_nspace = "Front1CANCfg0"
     
 
     # timeout = more than maxtime script takes
@@ -432,7 +432,7 @@ def run():
 
     can_send = "Vcu1ToBecmFront1DiagReqFrame"
     can_receive = "BecmToVcu1Front1DiagResFrame"
-    can_namespace = "Front1CANCfg1"
+    can_namespace = "Front1CANCfg0"
 
     # Test PreCondition
     root = logging.getLogger()

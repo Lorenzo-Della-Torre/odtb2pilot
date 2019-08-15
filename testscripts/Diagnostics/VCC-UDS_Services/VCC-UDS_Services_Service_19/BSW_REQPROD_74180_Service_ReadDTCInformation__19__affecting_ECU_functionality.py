@@ -49,11 +49,11 @@ def precondition(stub, s, r, ns):
     global testresult
         
     # start heartbeat, repeat every 0.8 second
-    SC.start_heartbeat(stub, "EcmFront1NMFr", "Front1CANCfg1", b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.8)
+    SC.start_heartbeat(stub, "EcmFront1NMFr", "Front1CANCfg0", b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.8)
     
     time.sleep(4) #wait for ECU startup
 
-    timeout = 400   #seconds
+    timeout = 60   #seconds
     SC.subscribe_signal(stub, s, r, ns, timeout)
     #record signal we send as well
     SC.subscribe_signal(stub, r, s, ns, timeout)
@@ -91,7 +91,7 @@ def step_1(stub, s, r, ns):
 
     can_send = "ECMFront1Fr02"
     can_rec = "BECMFront1Fr02"
-    can_nspace = SC.nspace_lookup("Front1CANCfg1")
+    can_nspace = SC.nspace_lookup("Front1CANCfg0")
 
     SC.subscribe_signal(stub, can_send, can_rec, can_nspace, timeout)
     time.sleep(1)
@@ -132,7 +132,7 @@ def step_2(stub, s, r, ns):
 
     while (now + 10 > int(time.time())):
         SC.update_can_messages(r)
-        can_m_send = SC.can_m_send( "ReadDTCInfoSnapshotIdentification", "" ,"")
+        can_m_send = SC.can_m_send( "ReadDTCInfoSnapshotIdentification", b'' ,b'')
         can_mr_extra = ''
         testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages) 
         number_of_frames_received += len(SC.can_frames[can_rec])
@@ -175,7 +175,7 @@ def run():
 
     can_send = "Vcu1ToBecmFront1DiagReqFrame"
     can_receive = "BecmToVcu1Front1DiagResFrame"
-    can_namespace = SC.nspace_lookup("Front1CANCfg1")
+    can_namespace = SC.nspace_lookup("Front1CANCfg0")
 
     print ("Testcase start: ", datetime.now())
     starttime = time.time()

@@ -48,7 +48,7 @@ def precondition(stub, s, r, ns):
     global testresult
         
     # start heartbeat, repeat every 0.8 second
-    SC.start_heartbeat(stub, "EcmFront1NMFr", "Front1CANCfg1", b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.8)
+    SC.start_heartbeat(stub, "EcmFront1NMFr", "Front1CANCfg0", b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.8)
     
     timeout = 40   #seconds
     SC.subscribe_signal(stub, s, r, ns, timeout)
@@ -71,7 +71,7 @@ def step_0(stub, s, r, ns):
     min_no_messages = -1
     max_no_messages = -1
     
-    can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xED\xA0', "")
+    can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xED\xA0', b'')
     can_mr_extra = ''
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
@@ -88,7 +88,7 @@ def step_1(stub, s, r, ns):
     min_no_messages = 1
     max_no_messages = 1
 
-    can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x03', "")
+    can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x03', b'')
     can_mr_extra = ''
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
@@ -103,7 +103,7 @@ def step_2(stub, s, r, ns):
     min_no_messages = 1
     max_no_messages = 1
 
-    can_m_send = SC.can_m_send( "ReadDTCInfoReportDTCWithPermanentStatus", "" ,"")
+    can_m_send = SC.can_m_send( "ReadDTCInfoReportDTCWithPermanentStatus", b'' , b'')
     can_mr_extra = ''
   
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
@@ -126,7 +126,7 @@ def step_3(stub, s, r, ns):
     min_no_messages = 1
     max_no_messages = 1
 
-    can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xF1\x86', "")
+    can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xF1\x86', b'')
     can_mr_extra = b'\x03'
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
@@ -142,7 +142,7 @@ def step_4(stub, s, r, ns):
     min_no_messages = 1
     max_no_messages = 1
 
-    can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x01', "")
+    can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x01', b'')
     can_mr_extra = ''
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
@@ -155,7 +155,7 @@ def run():
 
     can_send = "Vcu1ToBecmFront1DiagReqFrame"
     can_receive = "BecmToVcu1Front1DiagResFrame"
-    can_namespace = SC.nspace_lookup("Front1CANCfg1")
+    can_namespace = SC.nspace_lookup("Front1CANCfg0")
 
     print ("Testcase start: ", datetime.now())
     starttime = time.time()
