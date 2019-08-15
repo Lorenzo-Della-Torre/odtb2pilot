@@ -53,7 +53,7 @@ def precondition(stub, s, r, ns):
     
     time.sleep(4) #wait for ECU startup
 
-    timeout = 400   #seconds
+    timeout = 60   #seconds
     SC.subscribe_signal(stub, s, r, ns, timeout)
     #record signal we send as well
     SC.subscribe_signal(stub, r, s, ns, timeout)
@@ -132,7 +132,7 @@ def step_2(stub, s, r, ns):
 
     while (now + 10 > int(time.time())):
         SC.update_can_messages(r)
-        can_m_send = SC.can_m_send( "ReadDTCInfoSnapshotIdentification", "" ,"")
+        can_m_send = SC.can_m_send( "ReadDTCInfoSnapshotIdentification", b'' ,b'')
         can_mr_extra = ''
         testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages) 
         number_of_frames_received += len(SC.can_frames[can_rec])

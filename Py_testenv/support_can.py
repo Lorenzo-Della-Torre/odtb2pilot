@@ -694,16 +694,35 @@ class Support_CAN:
             ret = b'\x10' + message
         elif name == "ClearDiagnosticInformation":
             ret = b'\x14' + message
+        elif name == "ReadDTCInfoReportDTCWithPermanentStatus":
+            ret = b'\x19\x15' + message + mask
+        elif name == "ReadDTCInfoReportSupportedDTC":
+            ret = b'\x19\x0A' + message + mask
         elif name == "ReadDTCInfoExtDataRecordByDTCNumber":
             #ret = b'\x19\x06' + message + b'\xFF'
             ret = b'\x19\x06' + message + mask
         elif name == "ReadDTCInfoSnapshotRecordByDTCNumber":
             #ret = b'\x19\x04'+ message + b'\xFF'
             ret = b'\x19\x04'+ message + mask
+        elif name == "ReadDTCInfoSnapshotIdentification":
+            #ret = b'\x19\x03'+ message + b'\xFF'
+            ret = b'\x19\x03'+ message + mask
         elif name == "ReadDTCByStatusMask":
             ret = b'\x19\x02'
-            if mask == "confirmedDTC":
+            if mask == "warningIndicatorRequested":
+                ret = ret + b'\x07'
+            elif mask == "testNotCompletedThisMonitoringCycle":
+                ret = ret + b'\x06'
+            elif mask == "testFailedSinceLastClear":
+                ret = ret + b'\x05'
+            elif mask == "testNotCompletedSinceLastClear":
+                ret = ret + b'\x04'
+            elif mask == "confirmedDTC":
                 ret = ret + b'\x03'
+            elif mask == "pendingDTC":
+                ret = ret + b'\x02'
+            elif mask == "testFailedThisMonitorCycle":
+                ret = ret + b'\x01'
             elif mask == "testFailed":
                 ret = ret + b'\x00'
             else:

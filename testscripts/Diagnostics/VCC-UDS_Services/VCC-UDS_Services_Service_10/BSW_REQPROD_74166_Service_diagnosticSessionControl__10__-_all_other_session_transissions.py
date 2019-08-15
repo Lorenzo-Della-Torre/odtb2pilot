@@ -100,7 +100,7 @@ def step_1(stub, s, r, ns):
 
     can_send = "ECMFront1Fr02"
     can_rec = "BECMFront1Fr02"
-    can_nspace = "Front1CANCfg0"
+    can_nspace = SC.nspace_lookup("Front1CANCfg0")
 
     SC.subscribe_signal(stub, can_send, can_rec, can_nspace, timeout)
     time.sleep(1)

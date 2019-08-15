@@ -105,7 +105,7 @@ def step_2(stub, s, r, ns):
     min_no_messages = -1
     max_no_messages = -1
 
-    can_m_send = SC.can_m_send( "ReadDTCInfoSnapshotIdentification", "" ,"")
+    can_m_send = SC.can_m_send( "ReadDTCInfoSnapshotIdentification", b'' , b'')
     can_mr_extra = ''
   
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
