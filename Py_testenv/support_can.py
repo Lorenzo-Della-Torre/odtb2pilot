@@ -726,7 +726,7 @@ class Support_CAN:
                 ret = ret + b'\x03'
             elif mask == "testFailed":
                 ret = ret + b'\x00'
-            elif mask == "testFailedThisMonitoring":
+            elif mask == "testFailedThisMonitoringCycle":
                 ret = ret + b'\x01'
             elif mask == "pendingDTC":
                 ret = ret + b'\x02'
@@ -734,9 +734,9 @@ class Support_CAN:
                 ret = ret + b'\x04'
             elif mask == "testFailedSinceLastClear":
                 ret = ret + b'\x05'
-            elif mask == "testNotCompletedThisMonitoring":
+            elif mask == "testNotCompletedThisMonitoringCycle":
                 ret = ret + b'\x06'
-            elif mask == "WarningINdicatorRequested":
+            elif mask == "warningIndicatorRequested":
                 ret = ret + b'\x07'
             else:
                 print("ReadDTC: Supported mask missing.\n")
@@ -748,7 +748,7 @@ class Support_CAN:
                 ret = ret + b'\x03'
             elif mask == "testFailed":
                 ret = ret + b'\x00'
-            elif mask == "testFailedThisMonitoring":
+            elif mask == "testFailedThisMonitoringCycle":
                 ret = ret + b'\x01'
             elif mask == "pendingDTC":
                 ret = ret + b'\x02'
@@ -756,9 +756,9 @@ class Support_CAN:
                 ret = ret + b'\x04'
             elif mask == "testFailedSinceLastClear":
                 ret = ret + b'\x05'
-            elif mask == "testNotCompletedThisMonitoring":
+            elif mask == "testNotCompletedThisMonitoringCycle":
                 ret = ret + b'\x06'
-            elif mask == "WarningINdicatorRequested":
+            elif mask == "warningIndicatorRequested":
                 ret = ret + b'\x07'
             else:
                 print("ReadDTC: Supported mask missing.\n")
