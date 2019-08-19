@@ -147,7 +147,8 @@ def step_5(stub, s, r, ns):
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
 
-    testresult = testresult and SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2], "Type3,Aborted")    
+    # testresult = testresult and SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2], "Type3,Aborted")  
+    testresult = testresult and SuTe.PP_Decode_Routine_Control_response(SC.can_frames[r][0][2], "Type3,Currently active")
               
 # teststep 6: verify Extended session
 def step_6(stub, s, r, ns):
