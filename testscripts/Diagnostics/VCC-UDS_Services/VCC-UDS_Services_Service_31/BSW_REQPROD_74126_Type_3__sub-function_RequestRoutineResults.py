@@ -90,7 +90,7 @@ def step_1(stub, s, r, ns):
     min_no_messages = 1
     max_no_messages = 1
 
-    can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x03', "")
+    can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x02', "")
     can_mr_extra = ''
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
@@ -105,10 +105,8 @@ def step_2(stub, s, r, ns):
     min_no_messages = -1
     max_no_messages = -1
 
-    #SC.can_m_send( "Read counters", b'\x0B\x45\x00') #Request current session
     can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\xDC\x00', b'\x01')
     can_mr_extra = ''
-    #print(SC.can_m_send( "Read counters", b'\x0B\x45\x00'))
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     
@@ -124,10 +122,8 @@ def step_3(stub, s, r, ns):
     min_no_messages = -1
     max_no_messages = -1
 
-    #SC.can_m_send( "Read counters", b'\x0B\x45\x00') #Request current session
     can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\xDC\x00', b'\x03')
     can_mr_extra = ''
-    #print(SC.can_m_send( "Read counters", b'\x0B\x45\x00'))
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     
@@ -143,10 +139,8 @@ def step_4(stub, s, r, ns):
     min_no_messages = -1
     max_no_messages = -1
 
-    #SC.can_m_send( "Read counters", b'\x0B\x45\x00') #Request current session
     can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\xDC\x00', b'\x02')
     can_mr_extra = ''
-    #print(SC.can_m_send( "Read counters", b'\x0B\x45\x00'))
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     
@@ -162,10 +156,8 @@ def step_5(stub, s, r, ns):
     min_no_messages = -1
     max_no_messages = -1
 
-    #SC.can_m_send( "Read counters", b'\x0B\x45\x00') #Request current session
     can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\xDC\x00', b'\x03')
     can_mr_extra = ''
-    #print(SC.can_m_send( "Read counters", b'\x0B\x45\x00'))
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     
