@@ -694,37 +694,72 @@ class Support_CAN:
             ret = b'\x10' + message
         elif name == "ClearDiagnosticInformation":
             ret = b'\x14' + message
-        elif name == "ReadDTCInfoReportDTCWithPermanentStatus":
-            ret = b'\x19\x15' + message + mask
-        elif name == "ReadDTCInfoReportSupportedDTC":
-            ret = b'\x19\x0A' + message + mask
         elif name == "ReadDTCInfoExtDataRecordByDTCNumber":
             #ret = b'\x19\x06' + message + b'\xFF'
             ret = b'\x19\x06' + message + mask
+        elif name == "ReadDTCInfoExtDataRecordByDTCNumber(86)":
+            #ret = b'\x19\x86' + message + b'\xFF'
+            ret = b'\x19\x86' + message + mask
         elif name == "ReadDTCInfoSnapshotRecordByDTCNumber":
             #ret = b'\x19\x04'+ message + b'\xFF'
             ret = b'\x19\x04'+ message + mask
+        elif name == "ReadDTCInfoSnapshotRecordByDTCNumber(84)":
+            #ret = b'\x19\x84'+ message + b'\xFF'
+            ret = b'\x19\x84'+ message + mask
         elif name == "ReadDTCInfoSnapshotIdentification":
-            #ret = b'\x19\x03'+ message + b'\xFF'
-            ret = b'\x19\x03'+ message + mask
+            #ret = b'\x19\x03'
+            ret = b'\x19\x03'
+        elif name == "ReadDTCInfoSnapshotIdentification(83)":
+            #ret = b'\x19\x83'
+            ret = b'\x19\x83' 
+        elif name == "ReadDTCInfoReportSupportedDTC":
+            #ret = b'\x19\x0A'
+            ret = b'\x19\x0A'
+        elif name == "ReadDTCInfoReportDTCWithPermanentStatus":
+            #ret = b'\x19\x15'
+            ret = b'\x19\x15'
+
+    #ReadDTCByStatusMask (02) support 
         elif name == "ReadDTCByStatusMask":
             ret = b'\x19\x02'
-            if mask == "warningIndicatorRequested":
-                ret = ret + b'\x07'
-            elif mask == "testNotCompletedThisMonitoringCycle":
-                ret = ret + b'\x06'
-            elif mask == "testFailedSinceLastClear":
-                ret = ret + b'\x05'
-            elif mask == "testNotCompletedSinceLastClear":
-                ret = ret + b'\x04'
-            elif mask == "confirmedDTC":
+            if mask == "confirmedDTC":
                 ret = ret + b'\x03'
-            elif mask == "pendingDTC":
-                ret = ret + b'\x02'
-            elif mask == "testFailedThisMonitorCycle":
-                ret = ret + b'\x01'
             elif mask == "testFailed":
                 ret = ret + b'\x00'
+            elif mask == "testFailedThisMonitoringCycle":
+                ret = ret + b'\x01'
+            elif mask == "pendingDTC":
+                ret = ret + b'\x02'
+            elif mask == "testNotCompletedSinceLastClear":
+                ret = ret + b'\x04'
+            elif mask == "testFailedSinceLastClear":
+                ret = ret + b'\x05'
+            elif mask == "testNotCompletedThisMonitoringCycle":
+                ret = ret + b'\x06'
+            elif mask == "warningIndicatorRequested":
+                ret = ret + b'\x07'
+            else:
+                print("ReadDTC: Supported mask missing.\n")
+                ret = b''
+    #ReadDTCByStatusMask (82) support 
+        elif name == "ReadDTCByStatusMask(82)":
+            ret = b'\x19\x82'
+            if mask == "confirmedDTC":
+                ret = ret + b'\x03'
+            elif mask == "testFailed":
+                ret = ret + b'\x00'
+            elif mask == "testFailedThisMonitoringCycle":
+                ret = ret + b'\x01'
+            elif mask == "pendingDTC":
+                ret = ret + b'\x02'
+            elif mask == "testNotCompletedSinceLastClear":
+                ret = ret + b'\x04'
+            elif mask == "testFailedSinceLastClear":
+                ret = ret + b'\x05'
+            elif mask == "testNotCompletedThisMonitoringCycle":
+                ret = ret + b'\x06'
+            elif mask == "warningIndicatorRequested":
+                ret = ret + b'\x07'
             else:
                 print("ReadDTC: Supported mask missing.\n")
                 ret = b''
