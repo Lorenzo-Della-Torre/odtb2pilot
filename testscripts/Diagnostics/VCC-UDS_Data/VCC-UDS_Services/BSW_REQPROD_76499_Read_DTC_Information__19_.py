@@ -44,26 +44,14 @@ testresult = True
 #  BECM has to be kept alive: start heartbeat
 def precondition(stub, s, r, ns):
     global testresult
-    
+        
     # start heartbeat, repeat every 0.8 second
-    SC.start_heartbeat(stub, "EcmFront1NMFr", "Front1CANCfg0", b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.8)        
-
-    # timeout = more than maxtime script takes
-    # needed as thread for registered signals won't stop without timeout
-    #timeout = 300   #seconds
-    timeout = 60   #seconds
+    SC.start_heartbeat(stub, "EcmFront1NMFr", "Front1CANCfg0", b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.8)
+    
+    timeout = 40   #seconds
     SC.subscribe_signal(stub, s, r, ns, timeout)
     #record signal we send as well
     SC.subscribe_signal(stub, r, s, ns, timeout)
-
-    # Parameters for FrameControl FC VCU
-    time.sleep(1)
-    BS=0
-    ST=0
-    FC_delay = 0 #no wait
-    FC_flag = 48 #continue send
-    FC_auto = False
-    SC.change_MF_FC(s, BS, ST, FC_delay, FC_flag, FC_auto)
     
     print()
     step_0(stub, s, r, ns)
@@ -107,38 +95,10 @@ def step_1(stub, s, r, ns):
     max_no_messages = 1
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-#support function for reading out DTC/DID data:
-    #services
-    #"DiagnosticSessionControl"=10
-    #"ReadDTCInfoExtDataRecordByDTCNumber"=19 06
-    #"ReadDTCInfoSnapshotRecordByDTCNumber"= 19 04
-    #"ReadDTCByStatusMask" = 19 02 + "confirmedDTC"=03 / "testFailed" = 00
-    #"ReadDataByIdentifier" = 22
-#def can_m_send_SC():
-    #return SC.can_m_send( "ReadDataByIdentifieraa", b'\xF1\x20', "confirmedDTC")
          
 # teststep 2: verify that padded bytes in SF contain 0x00
 def step_2(stub, s, r, ns):
     global testresult
-    #global can_frames
-    #global can_messages
-    
-    
-    #SC.can_m_send( "Read counters", b'\x0B\x45\x00') #Request current session
-    # b'x\0B\x4A\x00' Hybrid/EV Battery Voltage Sense "D" Circuit--
-    # b'x\01'         Operation cycle counter #1
-    # b'x\02'         Operation cycle counter #2
-    # b'x\03'         Operation cycle counter #3
-    # b'x\04'         Operation cycle counter #4
-    # b'x\05'         Operation cycle counter #5
-    # b'x\06'         Operation cycle counter #6
-    # b'x\07'         Operation cycle counter #7
-    # b'x\10'         DTC fault detection counter
-    # b'x\12'         Max DTC fault detection since last clear
-    # b'x\20'         DTC time stamp 20
-    # b'x\21'         DTC time stamp 21
-    # b'x\30'         DTC Status indicator 30
-    # b'x\FF'         return all available values
     
     can_m_send = SC.can_m_send( "ReadDTCInfoExtDataRecordByDTCNumber", b'\x0B\x4A\x00' , b'\xFF')
     # adding can_mr_extra won't work as it get a CAN_MF
@@ -148,32 +108,21 @@ def step_2(stub, s, r, ns):
     stepno = 2
     purpose = "verify that DTC info are sent"
     timeout = 1 #wait a second for reply to be send
-    min_no_messages = 1
-    max_no_messages = 1
+    min_no_messages = -1
+    max_no_messages = -1
   
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
+    
+    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='59060B4A00')
 
-    #SuTe.test_message(SC.can_frames[r], teststring='0462F18601000000')
-    #print ("Step ", stepno, " teststatus:", testresult, "\n")
     time.sleep(1)
     
-    #SC.clear_all_can_messages()
-    #print ("all can messages cleared")
-    #SC.update_can_messages(r)
-    #print ("all can messages updated")
     print ()
     print ("Step2: frames received ", len(SC.can_frames[r]))
     print ("Step2: frames: ", SC.can_frames[r], "\n")
     print ("Step2: messages received ", len(SC.can_messages[r]))
     print ("Step2: messages: ", SC.can_messages[r], "\n")
 
-    # Did you get a positive or negative reply?
-    
-    #return(SC.can_frames[r])
-    #return(SC.can_messages[r])
-    print ("Error  message: ")
-    print ("SC.can_messages[r]",SC.can_messages[r][0][2]) 
-    print (SuTe.PP_Decode_7F_response(SC.can_messages[r][0][2]))
     print ("Step ", stepno, " teststatus:", testresult, "\n")
 
 def run():
@@ -198,10 +147,6 @@ def run():
     # precondition
     ############################################
     precondition(network_stub, can_send, can_receive, can_namespace)
-    #print ("after precond active threads ", threading.active_count())
-    #print ("after precond thread enumerate ", threading.enumerate())
-
-    #subscribe_to_BecmFront1NMFr(network_stub)
     
     ############################################
     # teststeps
