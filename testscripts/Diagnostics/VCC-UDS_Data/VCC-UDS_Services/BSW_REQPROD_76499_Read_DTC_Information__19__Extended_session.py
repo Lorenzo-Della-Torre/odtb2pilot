@@ -111,7 +111,7 @@ def step_2(stub, s, r, ns):
 def step_3(stub, s, r, ns):
     global testresult
     
-    can_m_send = SC.can_m_send( "ReadDTCInfoSnapshotRecordByDTCNumber", b'\x0B\x45\x00' , b'')
+    can_m_send = SC.can_m_send( "ReadDTCInfoSnapshotRecordByDTCNumber", b'\x0B\x45\x00' , b'\xFF')
     can_mr_extra = ''
     #print(SC.can_m_send( "Read counters", b'\x0B\x45\x00'))
     stepno = 3
