@@ -44,26 +44,14 @@ testresult = True
 #  BECM has to be kept alive: start heartbeat
 def precondition(stub, s, r, ns):
     global testresult
-    
+        
     # start heartbeat, repeat every 0.8 second
-    SC.start_heartbeat(stub, "EcmFront1NMFr", "Front1CANCfg0", b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.8)        
-
-    # timeout = more than maxtime script takes
-    # needed as thread for registered signals won't stop without timeout
-    #timeout = 300   #seconds
-    timeout = 60   #seconds
+    SC.start_heartbeat(stub, "EcmFront1NMFr", "Front1CANCfg0", b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.8)
+    
+    timeout = 40   #seconds
     SC.subscribe_signal(stub, s, r, ns, timeout)
     #record signal we send as well
     SC.subscribe_signal(stub, r, s, ns, timeout)
-
-    # Parameters for FrameControl FC VCU
-    time.sleep(1)
-    BS=0
-    ST=0
-    FC_delay = 0 #no wait
-    FC_flag = 48 #continue send
-    FC_auto = False
-    SC.change_MF_FC(s, BS, ST, FC_delay, FC_flag, FC_auto)
     
     print()
     step_0(stub, s, r, ns)
@@ -110,32 +98,20 @@ def step_2(stub, s, r, ns):
     stepno = 2
     purpose = "Verify extended session"
     timeout = 1
-    min_no_messages = -1
-    max_no_messages = -1
+    min_no_messages = 1
+    max_no_messages = 1
 
     can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xF1\x86', "")
     can_mr_extra = b'\x03'
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     time.sleep(1)
-
-#support function for reading out DTC/DID data:
-    #services
-    #"DiagnosticSessionControl"=10
-    #"reportDTCExtDataRecordByDTCNumber"=19 06
-    #"reportDTCSnapdhotRecordByDTCNumber"= 19 04
-    #"reportDTCByStatusMask" = 19 02 + "confirmedDTC"=03 / "testFailed" = 00
-    #"ReadDataByIdentifier" = 22
          
 # teststep 3: Request DTC information using service 19
 def step_3(stub, s, r, ns):
     global testresult
-    #global can_frames
-    #global can_messages
     
-    
-    #SC.can_m_send( "Read counters", b'\x0B\x45\x00') #Request current session
-    can_m_send = SC.can_m_send( "ReadDTCInfoSnapshotRecordByDTCNumber", b'\x0B\x45\x00' , b'')
+    can_m_send = SC.can_m_send( "ReadDTCInfoSnapshotRecordByDTCNumber", b'\x0B\x45\x00' , b'\xFF')
     can_mr_extra = ''
     #print(SC.can_m_send( "Read counters", b'\x0B\x45\x00'))
     stepno = 3
@@ -146,9 +122,7 @@ def step_3(stub, s, r, ns):
   
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     
-    #SuTe.test_message(SC.can_frames[r], teststring='0462F18601000000')
-    #print ("Step ", stepno, " teststatus:", testresult, "\n")
-    return(SC.can_frames[r])
+    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='59040B4500')
 
 # teststep 4: verify session
 def step_4(stub, s, r, ns):
@@ -157,8 +131,8 @@ def step_4(stub, s, r, ns):
     stepno = 4
     purpose = "Verify Extended session"
     timeout = 1
-    min_no_messages = -1
-    max_no_messages = -1
+    min_no_messages = 1
+    max_no_messages = 1
 
     can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xF1\x86', "")
     can_mr_extra = b'\x03'
@@ -189,8 +163,8 @@ def step_6(stub, s, r, ns):
     stepno = 6
     purpose = "Verify default session"
     timeout = 1
-    min_no_messages = -1
-    max_no_messages = -1
+    min_no_messages = 1
+    max_no_messages = 1
 
     can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xF1\x86', "")
     can_mr_extra = b'\x01'
@@ -220,10 +194,6 @@ def run():
     # precondition
     ############################################
     precondition(network_stub, can_send, can_receive, can_namespace)
-    #print ("after precond active threads ", threading.active_count())
-    #print ("after precond thread enumerate ", threading.enumerate())
-
-    #subscribe_to_BecmFront1NMFr(network_stub)
     
     ############################################
     # teststeps
