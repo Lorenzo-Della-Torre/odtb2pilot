@@ -122,7 +122,7 @@ def step_3(stub, s, r, ns):
   
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='59060B4500')
+    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='59040B4500')
 
 # teststep 4: verify session
 def step_4(stub, s, r, ns):
