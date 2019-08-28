@@ -718,13 +718,6 @@ class Support_CAN:
         elif name == "ReadDTCInfoReportDTCWithPermanentStatus":
             #ret = b'\x19\x15'
             ret = b'\x19\x15'
-        elif name == "ReadGenericInformationReportGenericSnapshotByDTCNumber":
-            #ret = b'\xAF\x04' + message + b'\xFF'
-            ret = b'\xAF\x04' + message + mask
-        elif name == "ReadGenericInformationReportGenericExtendedDataByDTCNumber":
-            #ret = b'\xAF\x06'+ message + b'\xFF'
-            ret = b'\xAF\x06' + message + mask
-        
 
     #ReadDTCByStatusMask (02) support 
         elif name == "ReadDTCByStatusMask":
@@ -791,6 +784,12 @@ class Support_CAN:
             ret = b'\x36'+ message
         elif name == "RequestDownload":
             ret = b'\x74'+ message
+        elif name == "ReadGenericInformationReportGenericSnapshotByDTCNumber":
+            #ret = b'\xAF\x04' + message + b'\xFF'
+            ret = b'\xAF\x04' + message + mask
+        elif name == "ReadGenericInformationReportGenericExtendedDataByDTCNumber":
+            #ret = b'\xAF\x06'+ message + b'\xFF'
+            ret = b'\xAF\x06' + message + mask
         else:
             print("You type a wrong name: ", name, "\n")
             ret = b''
