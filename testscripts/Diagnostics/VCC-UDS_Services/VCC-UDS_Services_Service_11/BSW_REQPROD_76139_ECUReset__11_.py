@@ -254,7 +254,7 @@ def step_11(stub, s, r, ns):
     global testresult
     
     stepno = 11
-    purpose = "Change to Programming session(01) from default"
+    purpose = "Change to Programming session(02)"
     timeout = 1
     min_no_messages = -1
     max_no_messages = -1
@@ -263,7 +263,7 @@ def step_11(stub, s, r, ns):
     can_mr_extra = ''
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-
+    # issue in CMA so you need to repeat the command in that case
     #testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
 
 
@@ -321,7 +321,7 @@ def step_15(stub, s, r, ns):
     global testresult
     
     stepno = 15
-    purpose = "Change to Programming session(01) from default"
+    purpose = "Change to Programming session(02)"
     timeout = 1
     min_no_messages = -1
     max_no_messages = -1
@@ -330,7 +330,7 @@ def step_15(stub, s, r, ns):
     can_mr_extra = ''
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-
+    # issue in CMA so you need to repeat the command in that case
     #testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
 
 # teststep 16: verify session
