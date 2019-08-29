@@ -51,10 +51,10 @@ def precondition(stub, s, r, ns):
     # start heartbeat, repeat every 0.8 second
     SC.start_heartbeat(stub, "EcmFront1NMFr", "Front1CANCfg0", b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.8)
     
-    
-    time.sleep(4) #wait for ECU startup
-    
-    timeout = 40   #seconds
+    # timeout = more than maxtime script takes
+    #timeout = 300   #seconds
+    timeout = 60   #seconds
+
     SC.subscribe_signal(stub, s, r, ns, timeout)
     #record signal we send as well
     SC.subscribe_signal(stub, r, s, ns, timeout)
@@ -88,14 +88,14 @@ def step_1(stub, s, r, ns):
     stepno = 1
     purpose = "ECU Reset"
     timeout = 1
-    min_no_messages = 1
-    max_no_messages = 1
+    min_no_messages = -1
+    max_no_messages = -1
 
     can_m_send = b'\x11\x01'
     can_mr_extra = ''
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    
+    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='025101')
     time.sleep(1)
 
 # teststep 2: verify default session
@@ -141,7 +141,7 @@ def step_4(stub, s, r, ns):
     min_no_messages = 1
     max_no_messages = 1
 
-    can_m_send =  SC.can_m_send( "ReadDataByIdentifier", b'\xF1\x86', "")
+    can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xF1\x86', "")
     can_mr_extra = b'\x01'
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
@@ -392,9 +392,9 @@ def run():
     can_receive = "BecmToVcu1Front1DiagResFrame"
     can_namespace = SC.nspace_lookup("Front1CANCfg0")
 
-    print ("Testcase start: ", datetime.now())
+    print("Testcase start: ", datetime.now())
     starttime = time.time()
-    print ("time ", time.time())
+    print("time ", time.time())
     print()
     ############################################
     # precondition
@@ -407,12 +407,12 @@ def run():
     # step 1:
     # action: # ECU Reset
     # result: 
-    #step_1(network_stub, can_send, can_receive, can_namespace)
+    step_1(network_stub, can_send, can_receive, can_namespace)
     
-    # step4:
+    # step2:
     # action: verify current session
     # result: BECM reports default session
-    #step_2(network_stub, can_send, can_receive, can_namespace)
+    step_2(network_stub, can_send, can_receive, can_namespace)
 
     # step3:
     # action: # ECU Reset(81)
