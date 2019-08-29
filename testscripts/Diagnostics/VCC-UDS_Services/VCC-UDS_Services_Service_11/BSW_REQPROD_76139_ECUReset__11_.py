@@ -112,7 +112,6 @@ def step_2(stub, s, r, ns):
     can_mr_extra = b'\x01'
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    time.sleep(1)
 
 # teststep 3: Reset
 def step_3(stub, s, r, ns):
@@ -145,7 +144,6 @@ def step_4(stub, s, r, ns):
     can_mr_extra = b'\x01'
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    time.sleep(1)
 
 # teststep 5: Change to Extended session
 def step_5(stub, s, r, ns):
@@ -196,7 +194,6 @@ def step_7(stub, s, r, ns):
     can_mr_extra = b'\x01'
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    time.sleep(1)
 
 # teststep 8: Change to Extended session
 def step_8(stub, s, r, ns):
@@ -247,7 +244,6 @@ def step_10(stub, s, r, ns):
     can_mr_extra = b'\x01'
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    time.sleep(1)
 
 # teststep 11: Change to programming session
 def step_11(stub, s, r, ns):
@@ -264,7 +260,7 @@ def step_11(stub, s, r, ns):
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     # issue in CMA so you need to repeat the command in that case
-    #testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
+    testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
 
 
 # teststep 12: verify session
@@ -281,7 +277,6 @@ def step_12(stub, s, r, ns):
     can_mr_extra = b'\x02'
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    time.sleep(1)
 
 # teststep 13: Reset
 def step_13(stub, s, r, ns):
@@ -314,7 +309,6 @@ def step_14(stub, s, r, ns):
     can_mr_extra = b'\x01'
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    time.sleep(1)
 
 # teststep 15: Change to programming session
 def step_15(stub, s, r, ns):
@@ -331,7 +325,7 @@ def step_15(stub, s, r, ns):
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     # issue in CMA so you need to repeat the command in that case
-    #testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
+    testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
 
 # teststep 16: verify session
 def step_16(stub, s, r, ns):
@@ -347,7 +341,6 @@ def step_16(stub, s, r, ns):
     can_mr_extra = b'\x02'
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    time.sleep(1) 
 
 # teststep 17: Reset
 def step_17(stub, s, r, ns):
@@ -379,8 +372,7 @@ def step_18(stub, s, r, ns):
     can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xF1\x86', "")
     can_mr_extra = b'\x01'
     
-    testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    time.sleep(1)   
+    testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)   
 
 def run():
     global testresult
