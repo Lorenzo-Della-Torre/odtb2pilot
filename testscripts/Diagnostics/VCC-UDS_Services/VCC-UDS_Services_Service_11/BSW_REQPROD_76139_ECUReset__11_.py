@@ -5,8 +5,7 @@
 # version:  1.0
 # reqprod:  76139 76140
 
-#inspired by https://grpc.io/docs/tutorials/basic/python.html
-
+# #inspired by https://grpc.io/docs/tutorials/basic/python.html
 # Copyright 2015 gRPC authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,6 +20,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+ 
+
 """The Python implementation of the gRPC route guide client."""
 
 from datetime import datetime
@@ -31,11 +32,6 @@ import sys
 
 import ODTB_conf
 
-import random
-import grpc
-import string
-sys.path.append('generated')
-
 from support_can import Support_CAN
 SC = Support_CAN()
 
@@ -44,30 +40,24 @@ SuTe = Support_test_ODTB2()
 
 # Global variable:
 testresult = True
+
+
     
 # precondition for test running:
 #  BECM has to be kept alive: start heartbeat
 def precondition(stub, s, r, ns):
     global testresult
-    
+        
     # start heartbeat, repeat every 0.8 second
-    SC.start_heartbeat(stub, "EcmFront1NMFr", "Front1CANCfg0", b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.8)        
-
+    SC.start_heartbeat(stub, "EcmFront1NMFr", "Front1CANCfg0", b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.8)
+    
     # timeout = more than maxtime script takes
     #timeout = 300   #seconds
     timeout = 60   #seconds
+
     SC.subscribe_signal(stub, s, r, ns, timeout)
     #record signal we send as well
     SC.subscribe_signal(stub, r, s, ns, timeout)
-
-    # Parameters for FrameControl FC VCU
-    #time.sleep(1)
-    #BS=0
-    #ST=0
-    #FC_delay = 0 #no wait
-    #FC_flag = 48 #continue send
-    #FC_auto = False
-    #SC.change_MF_FC(s, BS, ST, FC_delay, FC_flag, FC_auto)
     
     print()
     step_0(stub, s, r, ns)
@@ -82,8 +72,8 @@ def step_0(stub, s, r, ns):
     stepno = 0
     purpose = "Complete ECU Part/Serial Number(s)"
     timeout = 5
-    min_no_messages = 1
-    max_no_messages = 1
+    min_no_messages = -1
+    max_no_messages = -1
     
     can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xED\xA0', "")
     can_mr_extra = ''
@@ -122,7 +112,6 @@ def step_2(stub, s, r, ns):
     can_mr_extra = b'\x01'
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    time.sleep(1)
 
 # teststep 3: Reset
 def step_3(stub, s, r, ns):
@@ -155,7 +144,6 @@ def step_4(stub, s, r, ns):
     can_mr_extra = b'\x01'
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    time.sleep(1)
 
 # teststep 5: Change to Extended session
 def step_5(stub, s, r, ns):
@@ -173,7 +161,7 @@ def step_5(stub, s, r, ns):
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     #time.sleep(1)
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='065003001901F400')
+    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='065003')
 
 # teststep 6: Reset
 def step_6(stub, s, r, ns):
@@ -206,7 +194,6 @@ def step_7(stub, s, r, ns):
     can_mr_extra = b'\x01'
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    time.sleep(1)
 
 # teststep 8: Change to Extended session
 def step_8(stub, s, r, ns):
@@ -224,7 +211,7 @@ def step_8(stub, s, r, ns):
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     #time.sleep(1)
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='065003001901F400')
+    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='065003')
 
 # teststep 9: Reset
 def step_9(stub, s, r, ns):
@@ -257,14 +244,13 @@ def step_10(stub, s, r, ns):
     can_mr_extra = b'\x01'
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    time.sleep(1)
 
 # teststep 11: Change to programming session
 def step_11(stub, s, r, ns):
     global testresult
     
     stepno = 11
-    purpose = "Change to Programming session"
+    purpose = "Change to Programming session(02)"
     timeout = 1
     min_no_messages = -1
     max_no_messages = -1
@@ -273,7 +259,8 @@ def step_11(stub, s, r, ns):
     can_mr_extra = ''
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    #time.sleep(1)
+    # issue in CMA so you need to repeat the command in that case
+    testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
 
 
 # teststep 12: verify session
@@ -290,7 +277,6 @@ def step_12(stub, s, r, ns):
     can_mr_extra = b'\x02'
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    time.sleep(1)
 
 # teststep 13: Reset
 def step_13(stub, s, r, ns):
@@ -323,14 +309,13 @@ def step_14(stub, s, r, ns):
     can_mr_extra = b'\x01'
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    time.sleep(1)
 
 # teststep 15: Change to programming session
 def step_15(stub, s, r, ns):
     global testresult
     
     stepno = 15
-    purpose = "Change to Programming session"
+    purpose = "Change to Programming session(02)"
     timeout = 1
     min_no_messages = -1
     max_no_messages = -1
@@ -339,8 +324,8 @@ def step_15(stub, s, r, ns):
     can_mr_extra = ''
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    #time.sleep(1)
-
+    # issue in CMA so you need to repeat the command in that case
+    testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
 
 # teststep 16: verify session
 def step_16(stub, s, r, ns):
@@ -356,7 +341,6 @@ def step_16(stub, s, r, ns):
     can_mr_extra = b'\x02'
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    time.sleep(1) 
 
 # teststep 17: Reset
 def step_17(stub, s, r, ns):
@@ -388,23 +372,22 @@ def step_18(stub, s, r, ns):
     can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xF1\x86', "")
     can_mr_extra = b'\x01'
     
-    testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    time.sleep(1)   
+    testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)   
 
 def run():
     global testresult
-
+    
     # where to connect to signal_broker
     network_stub = SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT)
 
     can_send = "Vcu1ToBecmFront1DiagReqFrame"
     can_receive = "BecmToVcu1Front1DiagResFrame"
-    can_namespace = SC.nspace_lookup("Front1CANCfg0")    
-    
-    print ("Testcase start: ", datetime.now())
+    can_namespace = SC.nspace_lookup("Front1CANCfg0")
+
+    print("Testcase start: ", datetime.now())
     starttime = time.time()
-    print ("time ", time.time())
-    print ()
+    print("time ", time.time())
+    print()
     ############################################
     # precondition
     ############################################
@@ -418,7 +401,7 @@ def run():
     # result: 
     step_1(network_stub, can_send, can_receive, can_namespace)
     
-    # step4:
+    # step2:
     # action: verify current session
     # result: BECM reports default session
     step_2(network_stub, can_send, can_receive, can_namespace)
@@ -524,7 +507,7 @@ def run():
     SC.thread_stop()
             
     print ("Test cleanup end: ", datetime.now())
-    print ()
+    print()
     if testresult:
         print ("Testcase result: PASSED")
     else:
