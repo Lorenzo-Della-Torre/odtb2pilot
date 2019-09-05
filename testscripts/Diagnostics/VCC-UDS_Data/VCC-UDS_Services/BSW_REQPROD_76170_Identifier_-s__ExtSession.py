@@ -101,7 +101,7 @@ def step_2(stub, s, r, ns):
     
     stepno = 2
     purpose = "send 1 request - requires SF to send"
-    timeout = 5 # wait for message to arrive, but don't test (-1)
+    timeout = 2 # wait for message to arrive, but don't test (-1)
     min_no_messages = -1
     max_no_messages = -1
 
@@ -154,7 +154,7 @@ def step_4(stub, s, r, ns):
     
     stepno = 4
     purpose = "send several requests at one time - requires SF to send"
-    timeout = 5 # wait for message to arrive, but don't test (-1)
+    timeout = 2 # wait for message to arrive, but don't test (-1)
     min_no_messages = -1
     max_no_messages = -1
 
@@ -208,8 +208,8 @@ def step_6(stub, s, r, ns):
     stepno = 6
     purpose = "Verify Extended session"
     timeout = 1
-    min_no_messages = -1
-    max_no_messages = -1
+    min_no_messages = 1
+    max_no_messages = 1
 
     can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xF1\x86', "")
     can_mr_extra = b'\x03'
