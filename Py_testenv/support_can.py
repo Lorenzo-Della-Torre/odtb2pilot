@@ -787,14 +787,14 @@ class Support_CAN:
             
         elif name == "ReadGenericInformationReportGenericSnapshotByDTCNumber": 
             ret = b'\xAF\x04' + message
-            if mask == "confirmedDTC":
-                ret = ret + b'\x03'
-            elif mask == "testFailed":
+            if mask == "testFailed":
                 ret = ret + b'\x00'
             elif mask == "testFailedThisMonitoringCycle":
                 ret = ret + b'\x01'
             elif mask == "pendingDTC":
                 ret = ret + b'\x02'
+            elif mask == "confirmedDTC":
+                ret = ret + b'\x03'
             elif mask == "testNotCompletedSinceLastClear":
                 ret = ret + b'\x04'
             elif mask == "testFailedSinceLastClear":
@@ -809,14 +809,14 @@ class Support_CAN:
 
         elif name == "ReadGenericInformationReportGenericExtendedDataByDTCNumber":
             ret = b'\xAF\x06' + message
-            if mask == "confirmedDTC":
-                ret = ret + b'\x03'
-            elif mask == "testFailed":
+            if mask == "testFailed":
                 ret = ret + b'\x00'
             elif mask == "testFailedThisMonitoringCycle":
                 ret = ret + b'\x01'
             elif mask == "pendingDTC":
                 ret = ret + b'\x02'
+            elif mask == "confirmedDTC":
+                ret = ret + b'\x03'    
             elif mask == "testNotCompletedSinceLastClear":
                 ret = ret + b'\x04'
             elif mask == "testFailedSinceLastClear":
