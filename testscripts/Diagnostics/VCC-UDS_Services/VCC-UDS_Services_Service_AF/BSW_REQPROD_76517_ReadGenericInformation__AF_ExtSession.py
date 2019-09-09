@@ -1,9 +1,9 @@
 ﻿# Testscript ODTB2 MEPII
 # project:  BECM basetech MEPII
 # author:   FJANSSO8 (Fredrik Jansson)
-# date:     2019-08-15
+# date:     2019-08-19
 # version:  1.0
-# reqprod:  76497
+# reqprod:  76519
 
 # #inspired by https://grpc.io/docs/tutorials/basic/python.html
 # Copyright 2015 gRPC authors.
@@ -72,12 +72,11 @@ def step_0(stub, s, r, ns):
     min_no_messages = -1
     max_no_messages = -1
     
-    can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xED\xA0', "")
+    can_m_send = SC.can_m_send("ReadDataByIdentifier", b'\xED\xA0', "")
     can_mr_extra = ''
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     print(SuTe.PP_CombinedDID_EDA0(SC.can_messages[r][0][2], title=''))
-
 
 # teststep 1: Change to extended session
 def step_1(stub, s, r, ns):
@@ -94,29 +93,24 @@ def step_1(stub, s, r, ns):
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
 
-
-# teststep 2: Request Clear Diagnostic Information with a value of a specific DTC supported by the ECU in that session.
+# teststep 2: Request report Generic Snapshot By DTC Number
 def step_2(stub, s, r, ns):
     global testresult
-
     stepno = 2
-    purpose = "Request Clear Diagnostic Information with a value of a specific DTC supported by the ECU in that session."
-    timeout = 1 #wait a second for reply to be send
-    
+    purpose = "Request report Generic Snapshot By DTC Number"
+    timeout = 3 #Wait three seconds for reply to be send
     min_no_messages = -1
     max_no_messages = -1
     
-    can_m_send = SC.can_m_send("ClearDiagnosticInformation", b'\x92\x06\x00', b'') # Chrash occured
+    can_m_send = SC.can_m_send("ReadGenericInformationReportGenericSnapshotByDTCNumber", b'\xFF\xFF\xFF', b'\xFF')
     can_mr_extra = ''
     
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='0154')
-
+    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='EF04')
 
 # teststep 3: verify Extended session
 def step_3(stub, s, r, ns):
     global testresult
-    
     stepno = 3
     purpose = "Verify Extended session"
     timeout = 1
@@ -176,7 +170,7 @@ def run():
     step_1(network_stub, can_send, can_receive, can_namespace)
 
     # step 2:
-    # action: Request Clear Diagnostic Information with a value of a specific DTC supported by the ECU in that session.
+    # action: Request report Generic Snapshot By DTC Number
     # result: BECM reply positively
     step_2(network_stub, can_send, can_receive, can_namespace)
 
@@ -189,8 +183,6 @@ def run():
     # action: Change BECM to default
     # result: BECM report mode
     step_4(network_stub, can_send, can_receive, can_namespace)
-
-
     ############################################
     # postCondition
     ############################################
