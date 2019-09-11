@@ -787,9 +787,15 @@ class Support_CAN:
         elif name == "ReadGenericInformationReportGenericSnapshotByDTCNumber":
             #ret = b'\xAF\x04' + message + b'\xFF'
             ret = b'\xAF\x04' + message + mask
+        elif name == "ReadGenericInformationReportGenericSnapshotByDTCNumber(84)":
+            #ret = b'\xAF\x04' + message + b'\xFF'
+            ret = b'\xAF\x84' + message + mask
         elif name == "ReadGenericInformationReportGenericExtendedDataByDTCNumber":
             #ret = b'\xAF\x06'+ message + b'\xFF'
             ret = b'\xAF\x06' + message + mask
+        elif name == "ReadGenericInformationReportGenericExtendedDataByDTCNumber(86)":
+            #ret = b'\xAF\x06'+ message + b'\xFF'
+            ret = b'\xAF\x86' + message + mask
         else:
             print("You type a wrong name: ", name, "\n")
             ret = b''
