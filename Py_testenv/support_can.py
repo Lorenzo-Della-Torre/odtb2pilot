@@ -784,51 +784,18 @@ class Support_CAN:
             ret = b'\x36'+ message
         elif name == "RequestDownload":
             ret = b'\x74'+ message
-            
-        elif name == "ReadGenericInformationReportGenericSnapshotByDTCNumber": 
-            ret = b'\xAF\x04' + message
-            if mask == "testFailed":
-                ret = ret + b'\x00'
-            elif mask == "testFailedThisMonitoringCycle":
-                ret = ret + b'\x01'
-            elif mask == "pendingDTC":
-                ret = ret + b'\x02'
-            elif mask == "confirmedDTC":
-                ret = ret + b'\x03'
-            elif mask == "testNotCompletedSinceLastClear":
-                ret = ret + b'\x04'
-            elif mask == "testFailedSinceLastClear":
-                ret = ret + b'\x05'
-            elif mask == "testNotCompletedThisMonitoringCycle":
-                ret = ret + b'\x06'
-            elif mask == "warningIndicatorRequested":
-                ret = ret + b'\x07'
-            else:
-                print("ReadDTC: Supported mask missing.\n")
-                ret = b''
-
+        elif name == "ReadGenericInformationReportGenericSnapshotByDTCNumber":
+            #ret = b'\xAF\x04' + message + b'\xFF'
+            ret = b'\xAF\x04' + message + mask
+        elif name == "ReadGenericInformationReportGenericSnapshotByDTCNumber(84)":
+            #ret = b'\xAF\x04' + message + b'\xFF'
+            ret = b'\xAF\x84' + message + mask
         elif name == "ReadGenericInformationReportGenericExtendedDataByDTCNumber":
-            ret = b'\xAF\x06' + message
-            if mask == "testFailed":
-                ret = ret + b'\x00'
-            elif mask == "testFailedThisMonitoringCycle":
-                ret = ret + b'\x01'
-            elif mask == "pendingDTC":
-                ret = ret + b'\x02'
-            elif mask == "confirmedDTC":
-                ret = ret + b'\x03'    
-            elif mask == "testNotCompletedSinceLastClear":
-                ret = ret + b'\x04'
-            elif mask == "testFailedSinceLastClear":
-                ret = ret + b'\x05'
-            elif mask == "testNotCompletedThisMonitoringCycle":
-                ret = ret + b'\x06'
-            elif mask == "warningIndicatorRequested":
-                ret = ret + b'\x07'
-            else:
-                print("ReadDTC: Supported mask missing.\n")
-                ret = b''
-
+            #ret = b'\xAF\x06'+ message + b'\xFF'
+            ret = b'\xAF\x06' + message + mask
+        elif name == "ReadGenericInformationReportGenericExtendedDataByDTCNumber(86)":
+            #ret = b'\xAF\x06'+ message + b'\xFF'
+            ret = b'\xAF\x86' + message + mask
         else:
             print("You type a wrong name: ", name, "\n")
             ret = b''
