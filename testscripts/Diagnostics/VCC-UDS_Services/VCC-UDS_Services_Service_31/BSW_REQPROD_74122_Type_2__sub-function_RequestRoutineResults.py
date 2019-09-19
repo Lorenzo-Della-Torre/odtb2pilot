@@ -119,7 +119,7 @@ def step_3(stub, can_send, can_receive, can_namespace, result):
     Teststep 2: verify RoutineControlRequest stop is sent in Extended Session
     """
     stepno = 3
-    purpose = "verify RoutineControl result reply positively in Extended Session and routine Type 2 is running"
+    purpose = "verify RoutineControl result reply positively in Extended Session and routine Type 2 is Completed"
     timeout = 1 #wait a second for reply to be send
     min_no_messages = -1
     max_no_messages = -1
