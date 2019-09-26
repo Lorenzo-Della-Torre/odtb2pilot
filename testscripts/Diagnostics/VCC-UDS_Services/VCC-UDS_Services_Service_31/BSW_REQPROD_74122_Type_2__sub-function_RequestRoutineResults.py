@@ -3,7 +3,7 @@
 # author:   LDELLATO (Lorenzo Della Torre)
 # date:     2019-09-19
 # version:  1.0
-# reqprod:  74130
+# reqprod:  74122
 
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
 
@@ -95,10 +95,10 @@ def step_1(stub, can_send, can_receive, can_namespace, result):
 
 def step_2(stub, can_send, can_receive, can_namespace, result):
     """
-    Teststep 2: verify RoutineControlRequest start is sent for Type 2
+    Teststep 2: verify RoutineControlRequest start reply with Routine active 
     """
     stepno = 2
-    purpose = "verify RoutineControl start reply positively and routine Type 2 is Currently active "
+    purpose = "verify RoutineControlRequest start reply positively and routine Type 2 is Currently active "
     timeout = 1 #wait a second for reply to be send
     min_no_messages = -1
     max_no_messages = -1
@@ -111,15 +111,14 @@ def step_2(stub, can_send, can_receive, can_namespace, result):
                                       timeout, min_no_messages, max_no_messages)
     
     result = result and SUTE.PP_Decode_Routine_Control_response(SC.can_frames[can_receive][0][2],'Type2,Currently active')
-
     return result
 
 def step_3(stub, can_send, can_receive, can_namespace, result):
     """
-    Teststep 2: verify RoutineControlRequest stop is sent in Extended Session
+    Teststep 3: verify RoutineControlRequest stop reply with Routine completed
     """
     stepno = 3
-    purpose = "verify RoutineControl result reply positively in Extended Session and routine Type 2 is Completed"
+    purpose = "verify RoutineControlRequest stop reply positively in Extended Session and routine Type 2 is Completed"
     timeout = 1 #wait a second for reply to be send
     min_no_messages = -1
     max_no_messages = -1
@@ -132,16 +131,15 @@ def step_3(stub, can_send, can_receive, can_namespace, result):
                                       timeout, min_no_messages, max_no_messages)
     
     result = result and SUTE.PP_Decode_Routine_Control_response(SC.can_frames[can_receive][0][2],'Type2,Completed')
-
     return result
 
 
 def step_4(stub, can_send, can_receive, can_namespace, result):
     """
-    Teststep 4: verify RoutineControlRequest start is sent
+    Teststep 4: verify RoutineControlRequest result reply with Routine completed
     """
     stepno = 4
-    purpose = "verify RoutineControl stop reply positively and routine Type 2 is completed"
+    purpose = "verify RoutineControlRequest result reply positively in Extended Session and routine Type 2 is Completed"
     timeout = 1 #wait a second for reply to be send
     min_no_messages = -1
     max_no_messages = -1
@@ -154,15 +152,14 @@ def step_4(stub, can_send, can_receive, can_namespace, result):
                                       timeout, min_no_messages, max_no_messages)
     
     result = result and SUTE.PP_Decode_Routine_Control_response(SC.can_frames[can_receive][0][2],'Type2,Completed')
-
     return result
 
 def step_5(stub, can_send, can_receive, can_namespace, result):
     """
-    Teststep 5: verify RoutineControlRequest start is sent for Type 2
+    Teststep 5: verify RoutineControlRequest start reply with Routine Type 2 long max time active
     """
     stepno = 5
-    purpose = "verify RoutineControl start reply positively and routine Type 2 long max time is Currently active "
+    purpose = "verify RoutineControlRequest start reply positively in Extended Session and routine Type 2 long max time is Currently active "
     timeout = 1 #wait a second for reply to be send
     min_no_messages = -1
     max_no_messages = -1
@@ -175,15 +172,14 @@ def step_5(stub, can_send, can_receive, can_namespace, result):
                                       timeout, min_no_messages, max_no_messages)
     
     result = result and SUTE.PP_Decode_Routine_Control_response(SC.can_frames[can_receive][0][2],'Type2,Currently active')
-
     return result
 
 def step_6(stub, can_send, can_receive, can_namespace, result):
     """
-    Teststep 6: verify RoutineControlRequest stop is sent in Extended Session
+    Teststep 6: verify RoutineControlRequest Result reply with Routine Type 2 long max time active
     """
     stepno = 6
-    purpose = "verify RoutineControl result reply positively in Extended Session and routine Type 2 long max time is running"
+    purpose = "verify RoutineControlRequest result reply positively in Extended Session and routine Type 2 long max time is running"
     timeout = 1 #wait a second for reply to be send
     min_no_messages = -1
     max_no_messages = -1
@@ -196,16 +192,15 @@ def step_6(stub, can_send, can_receive, can_namespace, result):
                                       timeout, min_no_messages, max_no_messages)
     
     result = result and SUTE.PP_Decode_Routine_Control_response(SC.can_frames[can_receive][0][2],'Type2,Currently active')
-
     return result
 
 
 def step_7(stub, can_send, can_receive, can_namespace, result):
     """
-    Teststep 7: verify RoutineControlRequest start is sent
+    Teststep 7: verify RoutineControlRequest stop reply with Routine Type 2 long max time Aborted
     """
     stepno = 7
-    purpose = "verify RoutineControl stop reply positively and routine Type 2 long max time is Aborted"
+    purpose = "verify RoutineControlRequest stop reply positively and routine Type 2 long max time is Aborted"
     timeout = 1 #wait a second for reply to be send
     min_no_messages = -1
     max_no_messages = -1
@@ -218,15 +213,14 @@ def step_7(stub, can_send, can_receive, can_namespace, result):
                                       timeout, min_no_messages, max_no_messages)
     
     result = result and SUTE.PP_Decode_Routine_Control_response(SC.can_frames[can_receive][0][2],'Type2,Aborted')
-
     return result
 
 def step_8(stub, can_send, can_receive, can_namespace, result):
     """
-    Teststep 8: verify RoutineControlRequest stop is sent in Extended Session
+    Teststep 8: verify RoutineControlRequest result reply with Routine Type 2 long max time Aborted
     """
     stepno = 8
-    purpose = "verify RoutineControl result reply positively in Extended Session and routine Type 2 long max time is aborted"
+    purpose = "verify RoutineControlRequest result reply positively in Extended Session and routine Type 2 long max time is aborted"
     timeout = 1 #wait a second for reply to be send
     min_no_messages = -1
     max_no_messages = -1
@@ -241,7 +235,6 @@ def step_8(stub, can_send, can_receive, can_namespace, result):
                                  
     
     result = result and SUTE.PP_Decode_Routine_Control_response(SC.can_frames[can_receive][0][2],'Type2,Aborted')
-
     return result   
     
 def step_9(stub, can_send, can_receive, can_namespace, result):
@@ -261,11 +254,8 @@ def step_9(stub, can_send, can_receive, can_namespace, result):
     result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
                                       can_receive, can_namespace, stepno, purpose,
                                       timeout, min_no_messages, max_no_messages)
-
     return result
     
-
-
 def step_10(stub, can_send, can_receive, can_namespace, result):
     """
     Teststep 10: Change to default session
@@ -282,10 +272,8 @@ def step_10(stub, can_send, can_receive, can_namespace, result):
     result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
                                       can_receive, can_namespace, stepno, purpose,
                                       timeout, min_no_messages, max_no_messages)
-
     return result
     
-
 def run():
     """
     Run
