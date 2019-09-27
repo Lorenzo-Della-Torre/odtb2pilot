@@ -118,11 +118,6 @@ def step_2(stub, can_send, can_receive, can_namespace, result, frame_step2):
     """
 
     stepno = 2
-    purpose = ("Verify that while service AF is cyclically sent non-diagnostic signal "
-               "is not affected")
-    timeout = 1.5 # Wait 1.5 seconds for reply to be send
-    min_no_messages = -1
-    max_no_messages = -1
     number_of_frames_received = 0
     frame_deviation = 50
     SC.clear_all_can_messages()
@@ -133,15 +128,11 @@ def step_2(stub, can_send, can_receive, can_namespace, result, frame_step2):
     now = int(time.time())
     print(now)
 
-    while now + 10 > int(time.time()):
-       can_m_send = SC.can_m_send("ReadGenericInformationReportGenericSnapshotByDTCNumber",
-                                  b'\xFF\xFF\xFF', b'\xFF')
+    can_m_send = SC.can_m_send("ReadGenericInformationReportGenericSnapshotByDTCNumber",
+                               b'\xFF\xFF\xFF', b'\xFF')
 
-    can_mr_extra = ''
-    result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send, can_receive,
-                                      can_namespace, stepno, purpose, timeout, min_no_messages,
-                                      max_no_messages)
-    #result = result and SUTE.test_message(SC.can_messages[can_receive], teststring='EF04')
+    while now + 10 > int(time.time()):
+        SC.t_send_signal_CAN_MF(stub, can_send, can_receive, can_namespace, can_m_send, True, 0x00)
 
     number_of_frames_received += len(SC.can_frames[can_rec])
 
