@@ -87,7 +87,7 @@ def step_1(stub, s, r, ns):
     stepno = 1
     purpose = "register another signal"
     SuTe.print_test_purpose(stepno, purpose)
-    timeout = 300
+    timeout = 40
 
     can_send = "ECMFront1Fr02"
     can_rec = "BECMFront1Fr02"
@@ -100,7 +100,7 @@ def step_1(stub, s, r, ns):
     SC.clear_all_can_frames()
     SC.update_can_messages(r)
     print ("all can messages updated")
-    time.sleep(10)
+    time.sleep(5)
     print ()
     print ("Step1: messages received ", len(SC.can_messages[can_rec]))
     print ("Step1: messages: ", SC.can_messages[can_rec], "\n")
@@ -118,9 +118,7 @@ def step_2(stub, s, r, ns):
     global frame_step2
     stepno = 2
     purpose = "verify that while service 19 is cyclically sent non-diagnostic signal is not affected"
-    timeout = 0.1 #wait a second for reply to be send
-    min_no_messages = 1
-    max_no_messages = 1
+    SuTe.print_test_purpose(stepno, purpose)
     number_of_frames_received = 0
     SC.clear_all_can_messages()
     print ("all can messages cleared")
@@ -130,15 +128,12 @@ def step_2(stub, s, r, ns):
     now = int(time.time())
     print(now)
 
-    while (now + 10 > int(time.time())):
-        SC.update_can_messages(r)
-        can_m_send = SC.can_m_send( "ReadDTCInfoSnapshotIdentification", b'' ,b'')
-        can_mr_extra = ''
-        testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages) 
-        number_of_frames_received += len(SC.can_frames[can_rec])
-
-    print ("all can messages updated")
-    print ("Step2: frames received ", number_of_frames_received)
+    SC.update_can_messages(r)
+    can_m_send = SC.can_m_send( "ReadDTCInfoSnapshotIdentification", b'' ,b'')
+    while (now + 5 > int(time.time())):
+        SC.t_send_signal_CAN_MF(stub, s, r, ns, can_m_send, True, 0x00)
+    number_of_frames_received = len(SC.can_frames[can_rec])
+    print ("Step ", stepno, " frames received: ", number_of_frames_received)
     testresult = testresult and ((number_of_frames_received + 50) > frame_step2 > (number_of_frames_received - 50))
     print ("Step ", stepno, " teststatus:", testresult, "\n")
       
@@ -156,7 +151,7 @@ def step_3(stub, s, r, ns):
     SC.clear_all_can_frames()
     SC.update_can_messages(r)
     print ("all can messages updated")
-    time.sleep(10)
+    time.sleep(5)
     print ()
     print ("Step4: frames received ", len(SC.can_frames[can_rec]))
     print ("Step4: frames: ", SC.can_frames[can_rec], "\n")
