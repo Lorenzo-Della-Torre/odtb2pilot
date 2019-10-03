@@ -85,17 +85,21 @@ class Support_CAN:
 
     def clear_can_message(self, cm):
         self.can_messages[cm]=list()
+        return True
     
     def clear_all_can_messages(self):
         for cm in self.can_messages:
             self.can_messages[cm]=list()
+        return True
 
     def clear_can_frame(self, cf):
         self.can_frames[cf]=list()
+        return True
     
     def clear_all_can_frames(self):
         for cf in self.can_frames:
             self.can_frames[cf]=list()
+        return True
     
     def signal2message(self, sigtime, mysignal):
         # format signal to be better readable
@@ -511,7 +515,7 @@ class Support_CAN:
         elif len(self.can_mf_send[signal_name][1]) == 1:
             #print ("Send first frame SF: ", self.can_mf_send[signal_name][1][0])
             signal_with_payload.raw = self.can_mf_send[signal_name][1][0]
-            print ("source: ", source, " signal_with_PL: ",  signal_with_payload.raw)
+            #print ("source: ", source, " signal_with_PL: ",  signal_with_payload.raw)
             publisher_info = network_api_pb2.PublisherConfig(clientId = source, signals=network_api_pb2.Signals(signal=[signal_with_payload]), frequency = 0)
             try:
                 stub.PublishSignals(publisher_info)
@@ -606,9 +610,20 @@ class Support_CAN:
         self.t_send_signal_hex(stub, signal_name, namespace, payload)
         #can_messages[signal_name].append(list(payload)) #add to list of sent frames
 
-# update list of messages for a given can_rec
+
     def update_can_messages(self, can_rec):
+        """
+        update list of messages for a given can_rec
+    
+        parameter:
+        can_rec :   dict() containing frames
+    
+        return:
+        can_mess_updated :  True if messages could be build from CAN-frames in can_rec
+                        False if frames contained in can_rec not being used for building a messages
+        """
         # default message_status = 0 - single frame message
+        can_mess_updated = False
         message_status = 0
         mf_CF_count = 0
         mf_mess_size = 0
@@ -617,69 +632,78 @@ class Support_CAN:
     
         #print ("records received ", can_rec)
         #print ("number of frames ", len(self.can_frames[can_rec]))
-        for i in self.can_frames[can_rec]:
-            #print ("whole can_frame : ",i)
-            #print ("can frame  ", i[2].upper())
-            #print ("test against ", can_answer.hex().upper())
-            if (message_status == 0):
-                #print ("message to handle: ", i[2])
-                #print ("message to handle: ", i[2][0:1])
-                det_mf = int(i[2][0:1], 16)
-                if (det_mf == 0):
-                    #Single frame message, add frame as message
-                    #can_messages[can_rec].append(i)
-                    temp_message = i
-                    #print ("Single frame message received")
-                elif (det_mf == 1):
-                    # First frame of MF-message, change to status=2 consective frames to follow
-                    message_status = 2
-                    mf_CF_count = 32
-                    # get size of message to receive:
-                    #mf_mess_size = (i.integer >> 48) & 0x0FFF
-                    mf_mess_size = int(i[2][1:4], 16)
-                    #print ("update_can_message: message_size ", mf_mess_size)
-                    # add first payload
-                    #print ("update_can_message: whole frame ", i[2])
-                    #print ("update_can_message firstpayload ", i[2][10:])
-                    #temp_message = i[2][10:]
-                    temp_message = i[:]
-                    mf_size_remain = mf_mess_size - 6
-                    mf_CF_count = ((mf_CF_count + 1) & 0xF) + 32
-                elif (det_mf == 2):
-                    print ("consecutive frame not expected without FC")
-                elif (det_mf == 3):
-                    if not (can_rec in self.can_mf_send):
-                        print ("Flow control received - not expected")
-                        print ("Can-frame:  ", i)
-                        #print ("MF sent: ", self.can_mf_send)
+        if (len(self.can_frames[can_rec]) == 0):
+            return can_mess_updated
+        else:
+            for i in self.can_frames[can_rec]:
+                #print ("whole can_frame : ",i)
+                #print ("can frame  ", i[2].upper())
+                #print ("test against ", can_answer.hex().upper())
+                if (message_status == 0):
+                    #print ("message to handle: ", i[2])
+                    #print ("message to handle: ", i[2][0:1])
+                    det_mf = int(i[2][0:1], 16)
+                    if (det_mf == 0):
+                        #Single frame message, add frame as message
+                        #can_messages[can_rec].append(i)
+                        temp_message = i
+                        mf_size_remain = 0
+                        #print ("Single frame message received")
+                    elif (det_mf == 1):
+                        # First frame of MF-message, change to status=2 consective frames to follow
+                        message_status = 2
+                        mf_CF_count = 32
+                        # get size of message to receive:
+                        #mf_mess_size = (i.integer >> 48) & 0x0FFF
+                        mf_mess_size = int(i[2][1:4], 16)
+                        #print ("update_can_message: message_size ", mf_mess_size)
+                        # add first payload
+                        #print ("update_can_message: whole frame ", i[2])
+                        #print ("update_can_message firstpayload ", i[2][10:])
+                        #temp_message = i[2][10:]
+                        temp_message = i[:]
+                        mf_size_remain = mf_mess_size - 6
+                        mf_CF_count = ((mf_CF_count + 1) & 0xF) + 32
+                    elif (det_mf == 2):
+                        print ("consecutive frame not expected without FC")
+                    elif (det_mf == 3):
+                        if not (can_rec in self.can_mf_send):
+                            print ("Flow control received - not expected")
+                            print ("Can-frame:  ", i)
+                            #print ("MF sent: ", self.can_mf_send)
+                            return can_mess_updated
+                        else:
+                            print ("MF sent: ", self.can_mf_send)
+                            print ("FC expected for ", can_rec)
+                            #print ("can_frames      ", self.can_frames)
                     else:
-                        print ("MF sent: ", self.can_mf_send)
-                        print ("FC expected for ", can_rec)
-                        #print ("can_frames      ", self.can_frames)
+                        print ("Reserved CAN-header")
+                elif (message_status == 1):
+                    print ("message not expected")
+                elif (message_status == 2):
+                    #print ("update_can_message: handling of CS frame")
+                    CF_count = int(i[2][0:2], 16)
+                    #print ("update_can_message: secure no frames dropped via CF count:", CF_count, "/", mf_CF_count)
+                    if (mf_size_remain > 7): 
+                        temp_message[2] = temp_message[2] + i[2][2:16]
+                        mf_size_remain -= 7
+                        mf_CF_count = ((mf_CF_count + 1) & 0xF) + 32
+                    else:
+                        temp_message[2] = temp_message[2] + i[2][2:(2+mf_size_remain*2)]
+                        mf_size_remain = 0
+                    #print ("temp_message    ", temp_message)
+                    #print ("can_frames      ", self.can_frames)
+                    #print ("mf_size_remain= ", mf_size_remain)
                 else:
-                    print ("Reserved CAN-header")
-            elif (message_status == 1):
-                print ("message not expected")
-            elif (message_status == 2):
-                #print ("update_can_message: handling of CS frame")
-                CF_count = int(i[2][0:2], 16)
-                #print ("update_can_message: secure no frames dropped via CF count:", CF_count, "/", mf_CF_count)
-                if (mf_size_remain > 7): 
-                    temp_message[2] = temp_message[2] + i[2][2:16]
-                    mf_size_remain -= 7
-                    mf_CF_count = ((mf_CF_count + 1) & 0xF) + 32
-                else:
-                    temp_message[2] = temp_message[2] + i[2][2:(2+mf_size_remain*2)]
-                    mf_size_remain = 0
-                #print ("temp_message    ", temp_message)
-                #print ("can_frames      ", self.can_frames)
-                #print ("mf_size_remain= ", mf_size_remain)
-            else:
-                print ("unexpected message status in can_frames")
-        # don't add empty messages
-        if (len(temp_message) > 0):
-            self.can_messages[can_rec].append(list(temp_message))
-        #print ("all can messages : ", self.can_messages)
+                    print ("unexpected message status in can_frames")
+            # don't add empty messages
+            if (len(temp_message) > 0):
+                if (mf_size_remain == 0): 
+                    can_mess_updated = True
+                    self.can_messages[can_rec].append(list(temp_message))
+                    #print ("can_mess_updated ", can_mess_updated)
+            #print ("all can messages : ", self.can_messages)
+        return can_mess_updated
         
     #support function for reading out DTC/DID data:
     #services
