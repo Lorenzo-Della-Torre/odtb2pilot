@@ -1,5 +1,13 @@
 #!/bin/bash
 
+### token and pass created for tht repo
+TESTREPO=~/Repos/testbranch/odtb2pilot
+cd $TESTREPO
+git pull
+cd ~/testrun
+
+cp -u $TESTREPO/Py_testenv/*.py ~/projects/signalbroker/doc/grpc/grpc_python/
+
 ### GRPC catalog needed for using GRPC in Python scripts
 export PYTHONPATH=$HOME/projects/signalbroker/doc/grpc/grpc_python
 
@@ -8,7 +16,8 @@ TESTRUN=$(date +Testrun_%Y%m%d_%H%M_BECM_BT)
 mkdir $TESTRUN
 echo "Results of testrun $TESTRUN:" >$TESTRUN\/Result.txt
 
-find /home/pi/Repos/odtb2pilot/testscripts -name BSW_REQPROD_*.py >testscripts.lst
+### collect all testscripts
+find $TESTREPO/testscripts -name BSW_REQPROD_*.py >testscripts.lst
 
 #sed -E 's/(.*BSW_REQPROD)(.*)(\.py)/python3 \1\2\3 >BSW_REQPROD\2.log/' testscripts.lst >all_scripts.sh
 # chmod 755 all_scripts.sh
@@ -27,13 +36,14 @@ do
 	echo "$req_tested $testresult $script2run_log" >>$TESTRUN\/Result.txt
 done <testscripts.lst
 
+echo
 echo "ToDo:"
 echo "Tests done...parse logfiles for PASS/FAILED"
 echo "add results for implicitly tested requirements"
-echo "handle requirements verified by several test(scripts)
+echo "handle requirements verified by several test(scripts)"
 echo "handle requirements verified manually"
 echo ""
-echo "Testrun done. Time: " $date
-echo "Testrun done." >>$TESTRUN\/Result.txt
-echo "Time: " $date >>$TESTRUN\/Result.txt
+#echo "Test done." >>$TESTRUN\/Result.txt
+date "+Test done. Time: %Y%m%d %H%M" 
+date "+Test done. Time: %Y%m%d %H%M" >>$TESTRUN\/Result.txt
 
