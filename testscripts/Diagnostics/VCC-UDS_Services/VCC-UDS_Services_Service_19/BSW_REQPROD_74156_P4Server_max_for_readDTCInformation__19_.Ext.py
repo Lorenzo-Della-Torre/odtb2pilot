@@ -77,10 +77,28 @@ def step_0(stub, can_send, can_receive, can_namespace, result):
 
 def step_1(stub, can_send, can_receive, can_namespace, result):
     """
-    Teststep 1: verify ReadDTCInfoSnapshotIdentification reply positively
+    Teststep 1: Change to extended session
+    """
+    stepno = 1
+    purpose = "Change to Extended session"
+    timeout = 1
+    min_no_messages = 1
+    max_no_messages = 1
+
+    can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x03', "")
+    can_mr_extra = ''
+    
+    result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
+                                      can_receive, can_namespace, stepno, purpose,
+                                      timeout, min_no_messages, max_no_messages)    
+    return result
+
+def step_2(stub, can_send, can_receive, can_namespace, result):
+    """
+    Teststep 2: verify ReadDTCInfoSnapshotIdentification reply positively
     """
 
-    stepno = 1
+    stepno = 2
     purpose = "verify ReadDTCInfoSnapshotIdentification reply positively"
     timeout = 1 #wait a second for reply to be send
     min_no_messages = 1
@@ -95,11 +113,11 @@ def step_1(stub, can_send, can_receive, can_namespace, result):
 
     return result
 
-def step_2(stub, can_send, can_receive, can_namespace, result):
+def step_3(stub, can_send, can_receive, can_namespace, result):
     """
-    Teststep 2: Verify (time receive message – time sending request) < P4_server_max
+    Teststep 3: Verify (time receive message – time sending request) < P4_server_max
     """
-    stepno = 2
+    stepno = 3
     purpose = "Verify (time receive message – time sending request) less than P4_server_max"
     SUTE.print_test_purpose(stepno, purpose)
 
@@ -119,6 +137,45 @@ def step_2(stub, can_send, can_receive, can_namespace, result):
     
     if (T_rec - T_send) > ((P4_server_max + jitter_testenv)/1000) :
         result = False 
+
+    return result
+
+def step_4(stub, can_send, can_receive, can_namespace, result):
+    """
+    Teststep 4: verify Extended session
+    """
+    
+    stepno = 4
+    purpose = "Verify Extended session"
+    timeout = 1
+    min_no_messages = 1
+    max_no_messages = 1
+
+    can_m_send =SC.can_m_send( "ReadDataByIdentifier", b'\xF1\x86', "")
+    can_mr_extra = b'\x03'
+    
+    result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
+                                      can_receive, can_namespace, stepno, purpose,
+                                      timeout, min_no_messages, max_no_messages)
+
+    return result
+    
+def step_5(stub, can_send, can_receive, can_namespace, result):
+    """
+    Teststep 5: Change to default session
+    """
+    stepno = 5
+    purpose = "Change to default session"
+    timeout = 1
+    min_no_messages = 1
+    max_no_messages = 1
+
+    can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x01', "")
+    can_mr_extra = ''
+    
+    result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
+                                      can_receive, can_namespace, stepno, purpose,
+                                      timeout, min_no_messages, max_no_messages)
 
     return result
 
@@ -151,16 +208,30 @@ def run():
     ############################################
     # teststeps
     ############################################
-    
-    # step1:
-    # action: send ReadDTCInfoSnapshotIdentification signal in default mode
-    # result: BECM sends positive reply
+    # step 1:
+    # action: change BECM to Extended
+    # result: BECM reports mode
     test_result = step_1(network_stub, can_send, can_receive, can_namespace, test_result)
 
-    # step 2:
+    # step2:
+    # action: send ReadDTCInfoSnapshotIdentification signal in default mode
+    # result: BECM sends positive reply
+    test_result = step_2(network_stub, can_send, can_receive, can_namespace, test_result)
+
+    # step 3:
     # action: Verify (time receive message – time sending request) < P4_server_max 
     # result: positive result
-    test_result = step_2(network_stub, can_send, can_receive, can_namespace, test_result)
+    test_result = step_3(network_stub, can_send, can_receive, can_namespace, test_result)
+
+    # step 4:
+    # action: verify extended session active
+    # result: BECM send active mode
+    test_result = step_4(network_stub, can_send, can_receive, can_namespace, test_result)
+
+    # step 5:
+    # action: # Change to Default session
+    # result: BECM reports mode
+    test_result = step_5(network_stub, can_send, can_receive, can_namespace, test_result)
 
     ############################################
     # postCondition
