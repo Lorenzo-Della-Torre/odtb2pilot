@@ -65,7 +65,6 @@ def get_folder_time(folder):
     return ret_time
 
 
-#def write_table(in_dict, outfile, f_date, f_time):
 def write_table(column_tuples, outfile):
     """Create html table based on the dict"""
     page = HTML()
@@ -74,7 +73,7 @@ def write_table(column_tuples, outfile):
 
     key_set = set()
     in_dict = dict()
-
+    
     # Creating set with only "keys"
     for column_tuple in column_tuples:
         # The second argument in tuple is the dict
@@ -105,16 +104,19 @@ def write_table(column_tuples, outfile):
     for key in sorted_key_list:
         td = table.td('', style='padding: 3px', bgcolor='#e3e3e3')
         td.a('DVM', href='https://c1.confluence.cm.volvocars.biz/display/BSD/VCC+-+UDS+services', target='_blank')
-        table.td(key, style='padding: 3px', bgcolor='#e3e3e3')
+        table.td(key[:-4], style='padding: 3px', bgcolor='#e3e3e3')
         #look up in dicts
         index = 0
         for column_tuple in column_tuples:
+            folder_name = column_tuple[2]
             in_dict = column_tuple[1]
             temp_res = in_dict[key]
             counters[index][temp_res] += 1
             index += 1
             result_td = table.td(bgcolor=COLOR_DICT[temp_res], style='padding: 3px')
-            result_td.a(temp_res, href='https://c1.confluence.cm.volvocars.biz/display/BSD/VCC+-+UDS+services', target='_blank')
+            # Creating URL string
+            href_string = folder_name + '\\' + key
+            result_td.a(temp_res, href=href_string, target='_blank')
         table.tr()
 
     # Sum row
@@ -139,10 +141,17 @@ def write_to_file(content, outfile):
 def main(margs):
     """Call other functions from here."""
     column_tuple = []
-    for folder in margs.report_folder:
-        res_dict, f_date, f_time = get_file_names(folder)
-        folder_time = get_folder_time(folder)
-        folder_tuple = (folder_time, res_dict)
+    
+    folders = margs.report_folder
+    print(folders)
+    folders.sort(reverse = True)
+    print(folders)
+    
+    for folder_name in folders:
+        print(folder_name)
+        res_dict, f_date, f_time = get_file_names(folder_name)
+        folder_time = get_folder_time(folder_name)
+        folder_tuple = (folder_time, res_dict, folder_name)
         column_tuple.append(folder_tuple)
     #write_table(res_dict, margs.html_file, f_date, f_time)
 
