@@ -69,7 +69,9 @@ def write_table(column_tuples, outfile):
     """Create html table based on the dict"""
     page = HTML()
     #page.h('TestResult-ODTB2 run ' + str(f_date) + ' ' + str(f_time))
-    page.style("table {border-collapse: collapse; width: 100%;} th, td {text-align: left; padding: 8px;} tr:nth-child(even) {background-color: #f2f2f2;}")
+    
+    # Adding some style to this page ;) Making it every other row in a different colour
+    page.style("th, td {text-align: left; padding: 8px;} tr:nth-child(even) {background-color: #e3e3e3;}")
     
     table = page.table(border='1', style='border-collapse: collapse')
 
@@ -89,14 +91,13 @@ def write_table(column_tuples, outfile):
 
     # Creating header rows
     table.td("", bgcolor='lightgrey', colspan=amount_of_testruns)
-    table.td("TestResult-ODTB2", colspan=amount_of_testruns, bgcolor='lightgrey',
-             style='padding: 3px')
+    table.td("TestResult-ODTB2", colspan=amount_of_testruns, bgcolor='lightgrey', style='font-weight:bold')
     table.tr()
     counters = list()
-    table.td('', bgcolor='lightgrey', style='padding: 3px')
-    table.td('Test Scripts', bgcolor='lightgrey', style='padding: 3px')
+    table.td('', bgcolor='lightgrey')
+    table.td('Test Scripts', bgcolor='lightgrey', style='font-weight:bold')
     for column_tuple in column_tuples:
-        table.td(column_tuple[0], bgcolor='lightgrey')
+        table.td(column_tuple[0], bgcolor='lightgrey', style='font-weight:bold')
         # Adding one counter for each testresult
         counters.append(collections.Counter())
     table.tr()
@@ -104,9 +105,21 @@ def write_table(column_tuples, outfile):
     # Iterating over the set of keys (rows) matching it with the dicts representing the testrun
     # result. Creating the body of the table.
     for key in sorted_key_list:
-        td = table.td('', style='padding: 3px')
+        # First column
+        td = table.td(style='padding: 3px')
         td.a('DVM', href='https://c1.confluence.cm.volvocars.biz/display/BSD/VCC+-+UDS+services', target='_blank')
-        table.td(key[:-4], style='padding: 3px')
+        
+        #Second column
+        # Creating script URL
+        script_url = 'https://gitlab.cm.volvocars.biz/HWEILER/odtb2pilot/blob/master/testscripts/Diagnostics/VCC-UDS_Services/VCC-UDS_Services_Service_AF/'
+        script_url += key[:-4]
+        script_url += '.py'
+
+        script_td = table.td(style='padding: 3px')
+        # -4 is to remove .log from name when presenting it
+        script_td.a(key[:-4], href=script_url, target='_blank')
+
+        # Result columns
         #look up in dicts
         index = 0
         for column_tuple in column_tuples:
@@ -130,7 +143,7 @@ def write_table(column_tuples, outfile):
             total += counter[item]
         percent = round((counter['PASSED']/total) * 100, 1)
         temp_str = str(counter['PASSED']) + '/' + str(total) + ' Passed (' + str(percent) + '%)'
-        table.td(temp_str, style='font-weight:bold; padding: 3px', bgcolor='lightgrey')
+        table.td(temp_str, style='font-weight:bold', bgcolor='lightgrey')
     table.tr()
     #print(table)
     write_to_file(page, outfile)
@@ -145,12 +158,9 @@ def main(margs):
     column_tuple = []
     
     folders = margs.report_folder
-    print(folders)
     folders.sort(reverse = True)
-    print(folders)
     
     for folder_name in folders:
-        print(folder_name)
         res_dict, f_date, f_time = get_file_names(folder_name)
         folder_time = get_folder_time(folder_name)
         folder_tuple = (folder_time, res_dict, folder_name)
