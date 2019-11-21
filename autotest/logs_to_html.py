@@ -69,6 +69,8 @@ def write_table(column_tuples, outfile):
     """Create html table based on the dict"""
     page = HTML()
     #page.h('TestResult-ODTB2 run ' + str(f_date) + ' ' + str(f_time))
+    page.style("table {border-collapse: collapse; width: 100%;} th, td {text-align: left; padding: 8px;} tr:nth-child(even) {background-color: #f2f2f2;}")
+    
     table = page.table(border='1', style='border-collapse: collapse')
 
     key_set = set()
@@ -102,9 +104,9 @@ def write_table(column_tuples, outfile):
     # Iterating over the set of keys (rows) matching it with the dicts representing the testrun
     # result. Creating the body of the table.
     for key in sorted_key_list:
-        td = table.td('', style='padding: 3px', bgcolor='#e3e3e3')
+        td = table.td('', style='padding: 3px')
         td.a('DVM', href='https://c1.confluence.cm.volvocars.biz/display/BSD/VCC+-+UDS+services', target='_blank')
-        table.td(key[:-4], style='padding: 3px', bgcolor='#e3e3e3')
+        table.td(key[:-4], style='padding: 3px')
         #look up in dicts
         index = 0
         for column_tuple in column_tuples:
