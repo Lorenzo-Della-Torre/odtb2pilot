@@ -62,7 +62,7 @@ def step_0(stub, can_send, can_receive, can_namespace, result):
 
     stepno = 0
     purpose = "Complete ECU Part/Serial Number(s)"
-    timeout = 5
+    timeout = 1
     min_no_messages = -1
     max_no_messages = -1
 
@@ -152,7 +152,7 @@ def step_4(stub, can_send, can_receive, can_namespace, result):
     #global T3, T4
     stepno = 4
     purpose = "Complete ECU Part/Serial Number(s)"
-    timeout = 5
+    timeout = 1
 
     min_no_messages = -1
     max_no_messages = -1
@@ -202,7 +202,7 @@ def step_6(stub, can_send, can_receive, can_namespace, result):
     #global T5, T6
     stepno = 6
     purpose = "request 10 DID in one request - those with shortest reply (MF send, MF reply)"
-    timeout = 5 # wait for message to arrive, but don't test (-1)
+    timeout = 1 # wait for message to arrive, but don't test (-1)
     min_no_messages = -1
     max_no_messages = -1
 
