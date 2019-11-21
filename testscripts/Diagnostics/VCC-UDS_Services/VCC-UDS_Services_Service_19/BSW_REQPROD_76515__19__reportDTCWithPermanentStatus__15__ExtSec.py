@@ -99,7 +99,7 @@ def step_2(stub, s, r, ns):
     
     stepno = 2
     purpose = "verify that ReportDTCWithPermanentStatus are sent"
-    timeout = 1 #wait a second for reply to be send
+    timeout = 3 #wait a second for reply to be send
     min_no_messages = 1
     max_no_messages = 1
 
@@ -108,8 +108,6 @@ def step_2(stub, s, r, ns):
   
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
 
-    time.sleep(1)
-    
     print ()
     print ("Step2: frames received ", len(SC.can_frames[r]))
     print ("Step2: frames: ", SC.can_frames[r], "\n")
