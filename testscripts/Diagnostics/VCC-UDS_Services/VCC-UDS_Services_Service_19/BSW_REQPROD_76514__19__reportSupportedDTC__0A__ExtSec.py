@@ -99,7 +99,7 @@ def step_2(stub, s, r, ns):
     
     stepno = 2
     purpose = "verify that ReportSupportedDTC are sent"
-    timeout = 1 #wait a second for reply to be send
+    timeout = 3 #wait a second for reply to be send
     min_no_messages = 1
     max_no_messages = 1
 
@@ -113,8 +113,6 @@ def step_2(stub, s, r, ns):
     print ("Step2: frames: ", SC.can_frames[r], "\n")
     print ("Step2: messages received ", len(SC.can_messages[r]))
     print ("Step2: messages: ", SC.can_messages[r], "\n")
-    
-    time.sleep(2)
 
     # teststep 3: verify extended session
 def step_3(stub, s, r, ns):
