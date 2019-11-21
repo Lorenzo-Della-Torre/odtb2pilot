@@ -108,13 +108,13 @@ def step_2(stub, s, r, ns):
   
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
 
-    time.sleep(1)
-    
     print ()
     print ("Step2: frames received ", len(SC.can_frames[r]))
     print ("Step2: frames: ", SC.can_frames[r], "\n")
     print ("Step2: messages received ", len(SC.can_messages[r]))
     print ("Step2: messages: ", SC.can_messages[r], "\n")
+    
+     time.sleep(2)
 
     # teststep 3: verify extended session
 def step_3(stub, s, r, ns):
