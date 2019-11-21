@@ -156,13 +156,25 @@ def step_5(stub, can_send, can_receive, can_namespace, result):
     
     result = result and SUTE.PP_Decode_Routine_Control_response(SC.can_frames[can_receive][0][2], "Type3,Currently active")
     return result
-           
-def step_6(stub, can_send, can_receive, can_namespace, result):
+
+def step_6(stub, can_send, can_receive, can_namespace, result):  
     """
-    Teststep 6: verify Extended session
+    Teststep 6: send signal vehicle velocity = 0km/h
+    """
+    stepno = 6
+    purpose = "send signal vehicle velocity = 0km/h"
+    SUTE.print_test_purpose(stepno, purpose)
+    #VCU1Front1Fr06, VehSpdLgtSafe
+    SC.start_periodic(stub, 'VehSpdLgtSafe', True, "VCU1Front1Fr06", "Front1CANCfg0", 
+                      b'\x80\x00\x00\x00\x00\x00\x00\x00',0.015)
+    return result
+           
+def step_7(stub, can_send, can_receive, can_namespace, result):
+    """
+    Teststep 7: verify Extended session
     """
     
-    stepno = 6
+    stepno = 7
     purpose = "Verify Extended session"
     timeout = 1
     min_no_messages = 1
@@ -177,11 +189,11 @@ def step_6(stub, can_send, can_receive, can_namespace, result):
 
     return result
     
-def step_7(stub, can_send, can_receive, can_namespace, result):
+def step_8(stub, can_send, can_receive, can_namespace, result):
     """
-    Teststep 7: Change to default session
+    Teststep 8: Change to default session
     """
-    stepno = 7
+    stepno = 8
     purpose = "Change to default session"
     timeout = 1
     min_no_messages = 1
@@ -251,14 +263,19 @@ def run():
     test_result = step_5(network_stub, can_send, can_receive, can_namespace, test_result)
 
     # step6:
-    # action: Verify Extended session active
-    # result: BECM sends active mode
+    # action: send periodic signal vehicle velocity = 0km/h
+    # result:
     test_result = step_6(network_stub, can_send, can_receive, can_namespace, test_result)
 
     # step7:
+    # action: Verify Extended session active
+    # result: BECM sends active mode
+    test_result = step_7(network_stub, can_send, can_receive, can_namespace, test_result)
+
+    # step8:
     # action: Change to Default session
     # result: BECM reports mode
-    test_result = step_7(network_stub, can_send, can_receive, can_namespace, test_result)
+    test_result = step_8(network_stub, can_send, can_receive, can_namespace, test_result)
    
     ############################################
     # postCondition
