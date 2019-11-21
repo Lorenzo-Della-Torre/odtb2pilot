@@ -112,7 +112,7 @@ def step_2(stub, can_send, can_receive, can_namespace, result):
     max_no_messages = 1
 
     #P4_server_max = 200 # seconds
-    can_m_send = SC.can_m_send("ReadDataByIdentifier", b'\xF1\x20', "")
+    can_m_send = SC.can_m_send("ReadDataByIdentifier", b'\xF1\x21', "")
     can_mr_extra = ''
 
     #T1 = time.time()
@@ -158,7 +158,7 @@ def step_4(stub, can_send, can_receive, can_namespace, result):
     #global T3, T4
     stepno = 4
     purpose = "Complete ECU Part/Serial Number(s)"
-    timeout = 5
+    timeout = 1
 
     min_no_messages = -1
     max_no_messages = -1
