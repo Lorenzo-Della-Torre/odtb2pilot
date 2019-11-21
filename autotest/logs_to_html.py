@@ -117,7 +117,7 @@ def write_table(column_tuples, outfile):
 
         script_td = table.td(style='padding: 3px')
         # -4 is to remove .log from name when presenting it
-        script_td.a(key[:-4], href=script_url, target='_blank')
+        script_td.a(key[:-4], href=script_url, target='_blank', style='color:black')
 
         # Result columns
         #look up in dicts
@@ -131,7 +131,7 @@ def write_table(column_tuples, outfile):
             result_td = table.td(bgcolor=COLOR_DICT[temp_res], style='padding: 3px')
             # Creating URL string
             href_string = folder_name + '\\' + key
-            result_td.a(temp_res, href=href_string, target='_blank')
+            result_td.a(temp_res, href=href_string, target='_blank', style='color:black')
         table.tr()
 
     # Sum row
