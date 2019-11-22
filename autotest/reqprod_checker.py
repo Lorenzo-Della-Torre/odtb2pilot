@@ -49,7 +49,8 @@ def parse_xlsx(file_path):
 
 def parse_csv(file_path):
     """Get info from the csv"""
-    ret_dict = {}
+    ret_dict_meth = {}
+    ret_dict_link = {}
     with open(file_path) as csvfile:
         csvreader = csv.reader(csvfile, delimiter=',')
         firstline = True
@@ -61,12 +62,14 @@ def parse_csv(file_path):
                     temp_reqprod = line[REQPROD_IDX_SWRS]
                     temp_verif = line[VERIF_IDX_SWRS]
                     temp_link = line[LINK_IDX_SWRS]
-                    ret_dict[temp_reqprod] = (temp_verif, temp_link)
-    return ret_dict
+                    ret_dict_meth[temp_reqprod] = temp_verif
+                    ret_dict_link[temp_reqprod] = temp_link
+    return ret_dict_meth, ret_dict_link
 
-def create_csv(fip_d, swrs_d):
+def create_csv(fip_d, swrs_d, swrs_d2):
     """Combine the fip and swrs to one file"""
     all_keys = set()
+    # Note that swrs_d, swrs_d2 have the same keys
     for key in fip_d:
         all_keys.add(key)
     for key2 in swrs_d:
@@ -75,25 +78,27 @@ def create_csv(fip_d, swrs_d):
     #all_keys.add(swrs_d.keys())
     sort_keys = sorted(filter(None, all_keys))
     print(sort_keys)
-    write_to_file(sort_keys, fip_d, swrs_d)
+    write_to_file(sort_keys, fip_d, swrs_d, swrs_d2)
 
-def write_to_file(keys, fip, swrs):
+def write_to_file(keys, fip, swrs, swrs_links):
     """Write output to file"""
     with open(OUTPUT_FILE, 'w') as csvfile:
-        writer = csv.writer(csvfile, delimiter=';')
-        writer.writerow(["REQPROD", "TEST_METHOD", "ELEKTRA"])
+        writer = csv.writer(csvfile, delimiter=';', lineterminator='\n')
+        writer.writerow(["REQPROD", "TEST_METHOD", "ELEKTRA", "LINK"])
         for key in keys:
-            writer.writerow([key, fip.get(key,'-'), swrs.get(key, '-')])
+            writer.writerow([key, fip.get(key,'-'), swrs.get(key, '-'), swrs_links.get(key, '-')])
     csvfile.close()
 
 def main(margs):
     """Call functions from here"""
     fip_dict = parse_xlsx(margs.fip)
     if margs.swrs:
-        swrs_dict = parse_csv(margs.swrs)
+        swrs_meth_dict, swrs_link_dict = parse_csv(margs.swrs)
+
     else:
-        swrs_dict = {}
-    create_csv(fip_dict, swrs_dict)
+        swrs_meth_dict = {}
+        swrs_link_dict = {}
+    create_csv(fip_dict, swrs_meth_dict, swrs_link_dict)
 
 if __name__ == "__main__":
     # Boilerplate to launch the main function with the command line arguments.

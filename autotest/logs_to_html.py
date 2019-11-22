@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # Date: 2019-11-19
-# Author: Anton Svensson (asvens37)
+# Authors: Anton Svensson (asvens37), Fredrik Jansson (fjansso8)
 
 """
 Create html table from log files.
@@ -16,6 +16,7 @@ from os import listdir
 from os.path import isfile, join
 import re
 import collections
+import csv
 
 RE_DATE_START = re.compile('\s*Testcase\s+start:\s+(?P<date>\d+-\d+-\d+)\s+(?P<time>\d+:\d+:\d+)')
 RE_RESULT = re.compile('\s*Testcase\s+result:\s+(?P<result>\w+)')
@@ -23,12 +24,20 @@ RE_FOLDER_TIME = re.compile('.*Testrun_(?P<date>\d+_\d+)')
 
 COLOR_DICT = {'PASSED':'#94f7a2', 'FAILED':'#f54949', 'NA':'#94c4f7'}
 
+REQPROD_IDX = 0
+FIP_VERIF_IDX = 1
+SWRS_VERIF_IDX = 2
+SWRS_LINK_IDX = 3
+
+
 ### Code ###
 def parse_some_args():
     """Get the command line input, using the defined flags."""
     parser = argparse.ArgumentParser(description='Create html table from generated test reports')
     parser.add_argument("--logfolder", help="path to log reports", type=str, action='store',
                         dest='report_folder', nargs='+', required=True,)
+    parser.add_argument("--reqcsv", help="csv with the REQPROD keys from Elektra", type=str, action='store',
+                        dest='req_csv',)
     parser.add_argument("--outfile", help="name of outfile html", type=str, action='store',
                         dest='html_file', default='test.html',)
     ret_args = parser.parse_args()
@@ -64,6 +73,39 @@ def get_folder_time(folder):
     ret_time = temp_time.group('date')
     return ret_time
 
+def get_reqprod_links(infile):
+    """Return dict of REQPROD number linked to Elektra direct link"""
+    ret_verif_dict = {}
+    ret_links_dict = {}
+    with open(infile) as csvfile:
+        csvreader = csv.reader(csvfile, delimiter=';')
+        firstline = True
+        for line in csvreader:
+            if firstline:
+                firstline = False
+            else:
+                temp_reqprod = line[REQPROD_IDX]
+                temp_verif = get_verif(line[FIP_VERIF_IDX], line[SWRS_VERIF_IDX])
+                temp_link = line[SWRS_LINK_IDX]
+                ret_verif_dict[temp_reqprod] = temp_verif
+                ret_links_dict[temp_reqprod] = temp_link
+    return ret_verif_dict, ret_links_dict
+
+def get_verif(fip_val, swrs_val):
+    """Helper function that will compare and return verification method"""
+    ret_val = None
+    if fip_val == swrs_val:                     
+        ret_val = fip_val
+        #print("same %s" % fip_val)
+    elif fip_val == '-':
+        ret_val = swrs_val
+        #print("SWRS rulez!!!")
+    else:
+        # default, can be merged with first if we like
+        # kept it for debugging possibilities
+        ret_val = fip_val
+        #print("buhu!!11")
+    return ret_val
 
 def write_table(column_tuples, outfile):
     """Create html table based on the dict"""
@@ -166,7 +208,8 @@ def main(margs):
         folder_tuple = (folder_time, res_dict, folder_name)
         column_tuple.append(folder_tuple)
     #write_table(res_dict, margs.html_file, f_date, f_time)
-
+    if margs.req_csv:
+        verif_dict, e_link_dict = get_reqprod_links(margs.req_csv)
     write_table(column_tuple, margs.html_file)
     print("working")
 
