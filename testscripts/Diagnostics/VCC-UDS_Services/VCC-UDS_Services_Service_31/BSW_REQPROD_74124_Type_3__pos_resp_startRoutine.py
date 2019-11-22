@@ -73,9 +73,34 @@ def step_0(stub, can_send, can_receive, can_namespace, result):
 
 def step_1(stub, can_send, can_receive, can_namespace, result):
     """
-    Teststep 1: Change to extended session
+    Teststep 1:get initial conditions on speed
     """
+    global init_speed
+    global init_speed_str
     stepno = 1
+    purpose = "get initial conditions on speed"
+    timeout = 1 # wait for message to arrive, but don't test (-1)
+    min_no_messages = -1
+    max_no_messages = -1
+    
+    can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\x4A\x57', "")
+    can_mr_extra = ''
+    
+    result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
+                                      can_receive, can_namespace, stepno, purpose,
+                                      timeout, min_no_messages, max_no_messages)
+
+    #print ("Step", stepno, ": speed: ", str(int(SC.can_frames[can_receive][0][2][8:12], 16) >> 1), "\n")
+    init_speed_str = SC.can_frames[can_receive][0][2][8:12]
+    init_speed = bytes([int(SC.can_frames[can_receive][0][2][8:12], 16) >> 1])
+    #print(init_speed)
+    return result
+
+def step_2(stub, can_send, can_receive, can_namespace, result):
+    """
+    Teststep 2: Change to extended session
+    """
+    stepno = 2
     purpose = "Change to Extended session"
     timeout = 1
     min_no_messages = 1
@@ -89,11 +114,11 @@ def step_1(stub, can_send, can_receive, can_namespace, result):
                                       timeout, min_no_messages, max_no_messages)    
     return result
 
-def step_2(stub, can_send, can_receive, can_namespace, result):  
+def step_3(stub, can_send, can_receive, can_namespace, result):  
     """
-    Teststep 2: send signal vehicle velocity > 3km/h
+    Teststep 3: send signal vehicle velocity > 3km/h
     """
-    stepno = 2
+    stepno = 3
     purpose = "send signal vehicle velocity > 3km/h"
     SUTE.print_test_purpose(stepno, purpose)
     #VCU1Front1Fr06, VehSpdLgtSafe
@@ -101,11 +126,11 @@ def step_2(stub, can_send, can_receive, can_namespace, result):
                       b'\x80\xd6\x00\x00\x00\x00\x00\x00',0.015)
     return result
 
-def step_3(stub, can_send, can_receive, can_namespace, result):
+def step_4(stub, can_send, can_receive, can_namespace, result):
     """
-    Teststep 3: verify RoutineControl start reply Aborted for Type 3
+    Teststep 4: verify RoutineControl start reply Aborted for Type 3
     """
-    stepno = 3
+    stepno = 4
     purpose = "verify RoutineControl start(01) is sent in Extended Session"
     timeout = 1 #wait a second for reply to be send
     min_no_messages = -1
@@ -123,11 +148,11 @@ def step_3(stub, can_send, can_receive, can_namespace, result):
     result = result and SUTE.PP_Decode_Routine_Control_response(SC.can_frames[can_receive][0][2], "Type3,Aborted")
     return result
 
-def step_4(stub, can_send, can_receive, can_namespace, result):  
+def step_5(stub, can_send, can_receive, can_namespace, result):  
     """
-    Teststep 4: send signal vehicle velocity < 3km/h
+    Teststep 5: send signal vehicle velocity < 3km/h
     """
-    stepno = 4
+    stepno = 5
     purpose = "send signal vehicle velocity < 3km/h"
     SUTE.print_test_purpose(stepno, purpose)
     #VCU1Front1Fr06, VehSpdLgtSafe
@@ -135,11 +160,11 @@ def step_4(stub, can_send, can_receive, can_namespace, result):
                       b'\x80\xd5\x00\x00\x00\x00\x00\x00',0.015)
     return result
 
-def step_5(stub, can_send, can_receive, can_namespace, result):
+def step_6(stub, can_send, can_receive, can_namespace, result):
     """
-    Teststep 5: verify RoutineControl start(01) reply Currently active
+    Teststep 6: verify RoutineControl start(01) reply Currently active
     """
-    stepno = 5
+    stepno = 6
     purpose = "verify RoutineControl start(01) is sent in Extended Session"
     timeout = 1 #wait a second for reply to be send
     min_no_messages = -1
@@ -157,46 +182,48 @@ def step_5(stub, can_send, can_receive, can_namespace, result):
     result = result and SUTE.PP_Decode_Routine_Control_response(SC.can_frames[can_receive][0][2], "Type3,Currently active")
     return result
 
-def step_6(stub, can_send, can_receive, can_namespace, result):  
+def step_7(stub, can_send, can_receive, can_namespace, result):  
     """
-    Teststep 6: send signal vehicle velocity > 3km/h
+    Teststep 7: send signal vehicle velocity = init speed
     """
-    stepno = 6
-    purpose = "send signal vehicle velocity > 3km/h"
+    global init_speed
+    stepno = 7
+    purpose = "send signal vehicle velocity = init speed"
     SUTE.print_test_purpose(stepno, purpose)
     #VCU1Front1Fr06, VehSpdLgtSafe
     SC.start_periodic(stub, 'VehSpdLgtSafe', True, "VCU1Front1Fr06", "Front1CANCfg0", 
-                      b'\x80\xd6\x00\x00\x00\x00\x00\x00',0.015)
+                      b'\x80' + init_speed + b'\x00\x00\x00\x00\x00\x00',0.015)
     return result
 
-def step_7(stub, can_send, can_receive, can_namespace, result):
+def step_8(stub, can_send, can_receive, can_namespace, result):
     """
-    Teststep 7: verify result routine reply with Aborted for Type 3
+    Teststep 8:verify initial conditions on speed
     """
-    stepno = 7
-    purpose = "verify RoutineControlRequest (03) is sent in Extended Session"
-    timeout = 1 #wait a second for reply to be send
+    global init_speed
+    global init_speed_str
+    stepno = 8
+    purpose = "verify initial conditions on speed"
+    timeout = 1 # wait for message to arrive, but don't test (-1)
     min_no_messages = -1
     max_no_messages = -1
-
-    can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\x40\x00', b'\x03')
+    
+    can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\x4A\x57', "")
     can_mr_extra = ''
     
-    print("can_m_send ",can_m_send)
-
     result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
                                       can_receive, can_namespace, stepno, purpose,
                                       timeout, min_no_messages, max_no_messages)
     
-    result = result and SUTE.PP_Decode_Routine_Control_response(SC.can_frames[can_receive][0][2], "Type3,Aborted")
+    result = result and SUTE.test_message(SC.can_messages[can_receive], init_speed_str)
+
     return result
            
-def step_8(stub, can_send, can_receive, can_namespace, result):
+def step_9(stub, can_send, can_receive, can_namespace, result):
     """
-    Teststep 8: verify Extended session
+    Teststep 9: verify Extended session
     """
     
-    stepno = 8
+    stepno = 9
     purpose = "Verify Extended session"
     timeout = 1
     min_no_messages = 1
@@ -211,11 +238,11 @@ def step_8(stub, can_send, can_receive, can_namespace, result):
 
     return result
     
-def step_9(stub, can_send, can_receive, can_namespace, result):
+def step_10(stub, can_send, can_receive, can_namespace, result):
     """
-    Teststep 9: Change to default session
+    Teststep 10: Change to default session
     """
-    stepno = 9
+    stepno = 10
     purpose = "Change to default session"
     timeout = 1
     min_no_messages = 1
@@ -260,50 +287,54 @@ def run():
     # teststeps
     ############################################
     # step 1:
-    # action:change BECM to Extended session
-    # result: BECM reply with mode
+    # action:request initial conditions on speed
+    # result: BECM reply with speed
     test_result = step_1(network_stub, can_send, can_receive, can_namespace, test_result)
 
-    # step2:
-    # action: send periodic signal vehicle velocity > 3km/h
-    # result: 
+    # step 2:
+    # action:change BECM to Extended session
+    # result: BECM reply with mode
     test_result = step_2(network_stub, can_send, can_receive, can_namespace, test_result)
 
     # step3:
-    # action: send start RoutineControl signal for Type 3 (01)
-    # result: BECM sends positive reply
+    # action: send periodic signal vehicle velocity > 3km/h
+    # result: 
     test_result = step_3(network_stub, can_send, can_receive, can_namespace, test_result)
 
     # step4:
-    # action: send periodic signal vehicle velocity < 3km/h
-    # result:
+    # action: send start RoutineControl signal for Type 3 (01)
+    # result: BECM sends positive reply
     test_result = step_4(network_stub, can_send, can_receive, can_namespace, test_result)
 
     # step5:
-    # action: send start RoutineControl signal for Type 3 (01)
-    # result: BECM sends positive reply
+    # action: send periodic signal vehicle velocity < 3km/h
+    # result:
     test_result = step_5(network_stub, can_send, can_receive, can_namespace, test_result)
 
     # step6:
-    # action: send periodic signal vehicle velocity > 3km/h
-    # result:
-    test_result = step_6(network_stub, can_send, can_receive, can_namespace, test_result)
-
-    # step7:
-    # action: send Result RoutineControl signal for Type 3 (03)
+    # action: send start RoutineControl signal for Type 3 (01)
     # result: BECM sends positive reply
+    test_result = step_6(network_stub, can_send, can_receive, can_namespace, test_result)
+    
+    # step7:
+    # action: send periodic signal vehicle velocity = 0km/h
+    # result:
     test_result = step_7(network_stub, can_send, can_receive, can_namespace, test_result)
 
     # step8:
-    # action: Verify Extended session active
-    # result: BECM sends active mode
+    # action: verify signal vehicle velocity = 0km/h
+    # result:
     test_result = step_8(network_stub, can_send, can_receive, can_namespace, test_result)
 
-    # step 9:
-    # action: Change to Default session
-    # result: BECM reports mode
+    # step9:
+    # action: Verify Extended session active
+    # result: BECM sends active mode
     test_result = step_9(network_stub, can_send, can_receive, can_namespace, test_result)
 
+    # step10:
+    # action: Change to Default session
+    # result: BECM reports mode
+    test_result = step_10(network_stub, can_send, can_receive, can_namespace, test_result)
    
     ############################################
     # postCondition
