@@ -21,6 +21,7 @@ import csv
 RE_DATE_START = re.compile('\s*Testcase\s+start:\s+(?P<date>\d+-\d+-\d+)\s+(?P<time>\d+:\d+:\d+)')
 RE_RESULT = re.compile('\s*Testcase\s+result:\s+(?P<result>\w+)')
 RE_FOLDER_TIME = re.compile('.*Testrun_(?P<date>\d+_\d+)')
+RE_REQPROD_ID = re.compile('\s*BSW_REQPROD_(?P<reqprod>\d+)_')
 
 COLOR_DICT = {'PASSED':'#94f7a2', 'FAILED':'#f54949', 'NA':'#94c4f7'}
 
@@ -107,7 +108,7 @@ def get_verif(fip_val, swrs_val):
         #print("buhu!!11")
     return ret_val
 
-def write_table(column_tuples, outfile):
+def write_table(column_tuples, outfile, verif_d, elektra_d):
     """Create html table based on the dict"""
     page = HTML()
     #page.h('TestResult-ODTB2 run ' + str(f_date) + ' ' + str(f_time))
@@ -137,6 +138,7 @@ def write_table(column_tuples, outfile):
     table.tr()
     counters = list()
     table.td('', bgcolor='lightgrey')
+    table.td('REQPROD', bgcolor='lightgrey')
     table.td('Test Scripts', bgcolor='lightgrey', style='font-weight:bold')
     for column_tuple in column_tuples:
         table.td(column_tuple[0], bgcolor='lightgrey', style='font-weight:bold')
@@ -152,6 +154,14 @@ def write_table(column_tuples, outfile):
         td.a('DVM', href='https://c1.confluence.cm.volvocars.biz/display/BSD/VCC+-+UDS+services', target='_blank')
         
         #Second column
+        # Elektra link
+        elektra_td = table.td(style='padding: 3px')
+        e_match = RE_REQPROD_ID.match(key)
+        if e_match:
+            e_key = str(e_match.group('reqprod'))
+            elektra_td.a(e_key, href=elektra_d[e_key], target='_blank')
+
+        #Third column
         # Creating script URL
         script_url = 'https://gitlab.cm.volvocars.biz/HWEILER/odtb2pilot/blob/master/testscripts/Diagnostics/VCC-UDS_Services/VCC-UDS_Services_Service_AF/'
         script_url += key[:-4]
@@ -198,6 +208,8 @@ def write_to_file(content, outfile):
 def main(margs):
     """Call other functions from here."""
     column_tuple = []
+    verif_dict = {}
+    e_link_dict = {}
     
     folders = margs.report_folder
     folders.sort(reverse = True)
@@ -210,7 +222,7 @@ def main(margs):
     #write_table(res_dict, margs.html_file, f_date, f_time)
     if margs.req_csv:
         verif_dict, e_link_dict = get_reqprod_links(margs.req_csv)
-    write_table(column_tuple, margs.html_file)
+    write_table(column_tuple, margs.html_file, verif_dict, e_link_dict)
     print("working")
 
 
