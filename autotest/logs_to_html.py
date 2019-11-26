@@ -14,6 +14,7 @@ import argparse
 from html import HTML
 from os import listdir
 from os.path import isfile, join
+import os
 import re
 import collections
 import csv
@@ -22,7 +23,6 @@ RE_DATE_START = re.compile('\s*Testcase\s+start:\s+(?P<date>\d+-\d+-\d+)\s+(?P<t
 RE_RESULT = re.compile('\s*Testcase\s+result:\s+(?P<result>\w+)')
 RE_FOLDER_TIME = re.compile('.*Testrun_(?P<date>\d+_\d+)')
 RE_REQPROD_ID = re.compile('\s*BSW_REQPROD_(?P<reqprod>\d+)_', flags=re.IGNORECASE)
-RE_SERVICE = re.compile('_(?P<service>[a-fA-F0-9]{2})_')
 # case insensetive
 
 COLOR_DICT = {'PASSED':'#94f7a2', 'FAILED':'#f54949', 'NA':'#94c4f7'}
@@ -107,8 +107,25 @@ def get_verif(fip_val, swrs_val):
         # default, can be merged with first if we like
         # kept it for debugging possibilities
         ret_val = fip_val
-        #print("buhu!!11")
     return ret_val
+
+def get_url_dict():
+    """Create and return a dict with the urls to the different scripts."""
+    # Assumption: this file is in odtb2pilot/autotest, and the scripts are in
+    #              odtb2pilot/testscripts/*/*.py
+    TESTS_FOLDER = "testscripts"
+    GITLAB_URL_ROOT = "https://gitlab.cm.volvocars.biz/HWEILER/odtb2pilot/blob/master/testscripts"
+    ret_dict = {}
+    for root, dirs, files in os.walk("../" + TESTS_FOLDER):
+        for file in files:
+            if file.endswith(".py"):
+                temp_path = os.path.join(root, file)
+                temp_path_fix = temp_path.replace('\\', '/')
+                # Split at first TESTS_FOLDER in case that name is reused later in the path
+                temp_url = GITLAB_URL_ROOT + temp_path_fix.split(TESTS_FOLDER, 1)[1]
+                key_name = file.lower().split(".py")[:-1]
+                ret_dict[key_name[0]] = temp_url
+    return ret_dict
 
 def write_table(column_tuples, outfile, verif_d, elektra_d):
     """Create html table based on the dict"""
@@ -127,11 +144,15 @@ def write_table(column_tuples, outfile, verif_d, elektra_d):
         # The second argument in tuple is the dict
         in_dict = column_tuple[1]
         for key in in_dict:
-            key_set.add(key)
+            key_name = key.split(".log")[:-1]
+            key_set.add(key_name[0])
 
     # Sorting the keys
     sorted_key_list = sorted(key_set)
     amount_of_testruns = str(len(column_tuples))
+
+    # Create the urls for the different files in GitLab
+    url_dict = get_url_dict()
 
     # Creating header rows
     table.td("", bgcolor='lightgrey', colspan='3')
@@ -165,22 +186,10 @@ def write_table(column_tuples, outfile, verif_d, elektra_d):
         
         # Third column
         # Creating script URL
-        s_match = RE_SERVICE.search(key)
-        print("Key: " + key)
-        print("s_match: " + str(s_match))
-        if s_match:
-            service_key = str(s_match.group('service'))
-            script_url = 'https://gitlab.cm.volvocars.biz/HWEILER/odtb2pilot/blob/master/testscripts/Diagnostics/VCC-UDS_Services/VCC-UDS_Services_Service_'
-            script_url += service_key
-            script_url += '/'
-            # -4 is to remove .log
-            script_url += key[:-4]
-            script_url += '.py'
-            # -4 is to remove .log from name when presenting it
-            script_td = table.td(style='padding: 3px')
-            script_td.a(key[:-4], href=script_url, target='_blank', style='color:blue; text-decoration: none;')
-        else:
-            table.td(key[:-4], style='padding: 3px')
+        script_url = url_dict[key.lower()]
+
+        script_td = table.td(style='padding: 3px')
+        script_td.a(key, href=script_url, target='_blank', style='color:blue; text-decoration: none;')
 
         # Result columns
         # Look up in dicts
@@ -188,7 +197,8 @@ def write_table(column_tuples, outfile, verif_d, elektra_d):
         for column_tuple in column_tuples:
             folder_name = column_tuple[2]
             in_dict = column_tuple[1]
-            temp_res = in_dict[key]
+            # add file extension to get log
+            temp_res = in_dict[key + ".log"]
             counters[index][temp_res] += 1
             index += 1
             result_td = table.td(bgcolor=COLOR_DICT[temp_res], style='padding: 3px')
