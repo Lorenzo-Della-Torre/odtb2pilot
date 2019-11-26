@@ -21,7 +21,9 @@ import csv
 RE_DATE_START = re.compile('\s*Testcase\s+start:\s+(?P<date>\d+-\d+-\d+)\s+(?P<time>\d+:\d+:\d+)')
 RE_RESULT = re.compile('\s*Testcase\s+result:\s+(?P<result>\w+)')
 RE_FOLDER_TIME = re.compile('.*Testrun_(?P<date>\d+_\d+)')
-RE_REQPROD_ID = re.compile('\s*BSW_REQPROD_(?P<reqprod>\d+)_')
+RE_REQPROD_ID = re.compile('\s*BSW_REQPROD_(?P<reqprod>\d+)_', flags=re.IGNORECASE)
+RE_SERVICE = re.compile('_(?P<service>[a-fA-F0-9]{2})_')
+# case insensetive
 
 COLOR_DICT = {'PASSED':'#94f7a2', 'FAILED':'#f54949', 'NA':'#94c4f7'}
 
@@ -111,8 +113,7 @@ def get_verif(fip_val, swrs_val):
 def write_table(column_tuples, outfile, verif_d, elektra_d):
     """Create html table based on the dict"""
     page = HTML()
-    #page.h('TestResult-ODTB2 run ' + str(f_date) + ' ' + str(f_time))
-    
+
     # Adding some style to this page ;) Making it every other row in a different colour
     page.style("th, td {text-align: left; padding: 8px;} tr:nth-child(even) {background-color: #e3e3e3;}")
     
@@ -133,7 +134,7 @@ def write_table(column_tuples, outfile, verif_d, elektra_d):
     amount_of_testruns = str(len(column_tuples))
 
     # Creating header rows
-    table.td("", bgcolor='lightgrey', colspan=amount_of_testruns)
+    table.td("", bgcolor='lightgrey', colspan='3')
     table.td("TestResult-ODTB2", colspan=amount_of_testruns, bgcolor='lightgrey', style='font-weight:bold')
     table.tr()
     counters = list()
@@ -151,28 +152,38 @@ def write_table(column_tuples, outfile, verif_d, elektra_d):
     for key in sorted_key_list:
         # First column
         td = table.td(style='padding: 3px')
-        td.a('DVM', href='https://c1.confluence.cm.volvocars.biz/display/BSD/VCC+-+UDS+services', target='_blank')
+        td.a('DVM', href='https://c1.confluence.cm.volvocars.biz/display/BSD/VCC+-+UDS+services', target='_blank', style='color:black; text-decoration: none;' )
         
-        #Second column
+        # Second column
         # Elektra link
         elektra_td = table.td(style='padding: 3px')
         e_match = RE_REQPROD_ID.match(key)
+
         if e_match:
             e_key = str(e_match.group('reqprod'))
-            elektra_td.a(e_key, href=elektra_d[e_key], target='_blank')
-
-        #Third column
+            elektra_td.a(e_key, href=elektra_d[e_key], target='_blank', style='color:black; text-decoration: none;')
+        
+        # Third column
         # Creating script URL
-        script_url = 'https://gitlab.cm.volvocars.biz/HWEILER/odtb2pilot/blob/master/testscripts/Diagnostics/VCC-UDS_Services/VCC-UDS_Services_Service_AF/'
-        script_url += key[:-4]
-        script_url += '.py'
-
-        script_td = table.td(style='padding: 3px')
-        # -4 is to remove .log from name when presenting it
-        script_td.a(key[:-4], href=script_url, target='_blank', style='color:black')
+        s_match = RE_SERVICE.search(key)
+        print("Key: " + key)
+        print("s_match: " + str(s_match))
+        if s_match:
+            service_key = str(s_match.group('service'))
+            script_url = 'https://gitlab.cm.volvocars.biz/HWEILER/odtb2pilot/blob/master/testscripts/Diagnostics/VCC-UDS_Services/VCC-UDS_Services_Service_'
+            script_url += service_key
+            script_url += '/'
+            # -4 is to remove .log
+            script_url += key[:-4]
+            script_url += '.py'
+            # -4 is to remove .log from name when presenting it
+            script_td = table.td(style='padding: 3px')
+            script_td.a(key[:-4], href=script_url, target='_blank', style='color:blue; text-decoration: none;')
+        else:
+            table.td(key[:-4], style='padding: 3px')
 
         # Result columns
-        #look up in dicts
+        # Look up in dicts
         index = 0
         for column_tuple in column_tuples:
             folder_name = column_tuple[2]
@@ -183,12 +194,12 @@ def write_table(column_tuples, outfile, verif_d, elektra_d):
             result_td = table.td(bgcolor=COLOR_DICT[temp_res], style='padding: 3px')
             # Creating URL string
             href_string = folder_name + '\\' + key
-            result_td.a(temp_res, href=href_string, target='_blank', style='color:black')
+            result_td.a(temp_res, href=href_string, target='_blank', style='color:black; text-decoration: none;')
         table.tr()
 
     # Sum row
     temp_str = ""
-    table.td(temp_str, bgcolor='lightgrey', style='padding: 3px', colspan=amount_of_testruns)
+    table.td(temp_str, bgcolor='lightgrey', style='padding: 3px', colspan='3')
     for counter in counters:
         total = 0
         for item in counter:
