@@ -25,7 +25,7 @@ RE_REQPROD_ID = re.compile('\s*BSW_REQPROD_(?P<reqprod>\d+)_', flags=re.IGNORECA
 RE_SERVICE = re.compile('_(?P<service>[a-fA-F0-9]{2})_')
 # case insensetive
 
-COLOR_DICT = {'PASSED':'#94f7a2', 'FAILED':'#f54949', 'NA':'#94c4f7'}
+COLOR_DICT = {'PASSED':'#94f7a2', 'FAILED':'#f54949', 'NA':'#94c4f7', 'MISSING':'WHITE'}
 
 REQPROD_IDX = 0
 FIP_VERIF_IDX = 1
@@ -111,17 +111,22 @@ def get_verif(fip_val, swrs_val):
     return ret_val
 
 def write_table(column_tuples, outfile, verif_d, elektra_d):
+    #print(verif_d)
+    #print('\n-------------------------------------------------------------------------------\n')
+    #print(elektra_d)
+
     """Create html table based on the dict"""
     page = HTML()
 
     # Adding some style to this page ;) Making it every other row in a different colour
-    page.style("th, td {text-align: left; padding: 8px;} tr:nth-child(even) {background-color: #e3e3e3;}")
-    
+    page.style("th, td {text-align: left; padding: 8px;}"
+               "tr:nth-child(even) {background-color: #e3e3e3;}")
+
     table = page.table(border='1', style='border-collapse: collapse')
 
     key_set = set()
     in_dict = dict()
-    
+
     # Creating set with only "keys"
     for column_tuple in column_tuples:
         # The second argument in tuple is the dict
@@ -149,11 +154,17 @@ def write_table(column_tuples, outfile, verif_d, elektra_d):
 
     # Iterating over the set of keys (rows) matching it with the dicts representing the testrun
     # result. Creating the body of the table.
+    #req_set = set()
+    
+    #for key in verif_d:
+    
+    req_set_counter = collections.Counter()
+
     for key in sorted_key_list:
         # First column
         td = table.td(style='padding: 3px')
         td.a('DVM', href='https://c1.confluence.cm.volvocars.biz/display/BSD/VCC+-+UDS+services', target='_blank', style='color:black; text-decoration: none;' )
-        
+
         # Second column
         # Elektra link
         elektra_td = table.td(style='padding: 3px')
@@ -162,12 +173,14 @@ def write_table(column_tuples, outfile, verif_d, elektra_d):
         if e_match:
             e_key = str(e_match.group('reqprod'))
             elektra_td.a(e_key, href=elektra_d[e_key], target='_blank', style='color:black; text-decoration: none;')
-        
+            #req_set.add(e_key)
+            req_set_counter[verif_d[e_key]] += 1
+
         # Third column
         # Creating script URL
         s_match = RE_SERVICE.search(key)
-        print("Key: " + key)
-        print("s_match: " + str(s_match))
+        #print("Key: " + key)
+        #print("s_match: " + str(s_match))
         if s_match:
             service_key = str(s_match.group('service'))
             script_url = 'https://gitlab.cm.volvocars.biz/HWEILER/odtb2pilot/blob/master/testscripts/Diagnostics/VCC-UDS_Services/VCC-UDS_Services_Service_'
@@ -176,8 +189,8 @@ def write_table(column_tuples, outfile, verif_d, elektra_d):
             # -4 is to remove .log
             script_url += key[:-4]
             script_url += '.py'
-            # -4 is to remove .log from name when presenting it
             script_td = table.td(style='padding: 3px')
+            # -4 is to remove .log from name when presenting it
             script_td.a(key[:-4], href=script_url, target='_blank', style='color:blue; text-decoration: none;')
         else:
             table.td(key[:-4], style='padding: 3px')
@@ -187,9 +200,11 @@ def write_table(column_tuples, outfile, verif_d, elektra_d):
         index = 0
         for column_tuple in column_tuples:
             folder_name = column_tuple[2]
-            in_dict = column_tuple[1]
-            temp_res = in_dict[key]
-            counters[index][temp_res] += 1
+            temp_dict = column_tuple[1]
+            temp_res = 'MISSING'
+            if key in temp_dict:
+                temp_res = temp_dict[key]
+                counters[index][temp_res] += 1
             index += 1
             result_td = table.td(bgcolor=COLOR_DICT[temp_res], style='padding: 3px')
             # Creating URL string
@@ -198,14 +213,26 @@ def write_table(column_tuples, outfile, verif_d, elektra_d):
         table.tr()
 
     # Sum row
-    temp_str = ""
-    table.td(temp_str, bgcolor='lightgrey', style='padding: 3px', colspan='3')
+    print(len(verif_d))
+    #print(len(req_set))
+    print(req_set_counter)
+
+    coverage_str = ''
+    '''coverage_str = str(round((len(req_set)/len(verif_d)) * 100, 1))
+    coverage_str += '% of the requirements covered ('
+    coverage_str += str(len(req_set))
+    coverage_str += '/'
+    coverage_str += str(len(verif_d))
+    coverage_str += ')'''
+    table.td(coverage_str, bgcolor='lightgrey', style='padding: 3px; font-weight:bold', colspan='3')
+    
+    temp_str = ""    
     for counter in counters:
         total = 0
         for item in counter:
             total += counter[item]
         percent = round((counter['PASSED']/total) * 100, 1)
-        temp_str = str(counter['PASSED']) + '/' + str(total) + ' Passed (' + str(percent) + '%)'
+        temp_str = str(percent) + '% Passed (' + str(counter['PASSED']) + '/' + str(total) +')'
         table.td(temp_str, style='font-weight:bold', bgcolor='lightgrey')
     table.tr()
     #print(table)
