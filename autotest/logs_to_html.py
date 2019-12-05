@@ -46,7 +46,7 @@ def parse_some_args():
     ret_args = parser.parse_args()
     return ret_args
 
-def get_file_names(folder_path):
+def get_file_names_and_results(folder_path):
     """Return list with all filenames in folder"""
     res_dict = {}
     # Will take time and date from last file. OK for now.
@@ -67,7 +67,9 @@ def get_file_names(folder_path):
                 if time_match:
                     f_date = time_match.group('date')
                     f_time = time_match.group('time')
-            res_dict[file] = result
+            # Remove '.log' from name
+            test_name = file.split(".log")[:-1][0]
+            res_dict[test_name] = result
     return res_dict, f_date, f_time
 
 def get_folder_time(folder):
@@ -127,7 +129,7 @@ def get_url_dict():
                 ret_dict[key_name[0]] = temp_url
     return ret_dict
 
-def write_table(testres_tuple_list, outfile, verif_d, elektra_d):
+def write_table(folderinfo_and_result_tuple_list, outfile, verif_d, elektra_d):
     #print(verif_d)
     #print('\n-------------------------------------------------------------------------------\n')
     #print(elektra_d)
@@ -145,16 +147,15 @@ def write_table(testres_tuple_list, outfile, verif_d, elektra_d):
     in_dict = dict()
 
     # Creating set with only "keys"
-    for testres_tuple in testres_tuple_list:
+    for testres_tuple in folderinfo_and_result_tuple_list:
         # The second argument in tuple is the result dict
         in_dict = testres_tuple[1]
         for key in in_dict:
-            key_name = key.split(".log")[:-1]
-            key_set.add(key_name[0])
+            key_set.add(key)
 
     # Sorting the keys
     sorted_key_list = sorted(key_set)
-    amount_of_testruns = str(len(testres_tuple_list))
+    amount_of_testruns = str(len(folderinfo_and_result_tuple_list))
 
     # Create the urls for the different files in GitLab
     url_dict = get_url_dict()
@@ -167,7 +168,7 @@ def write_table(testres_tuple_list, outfile, verif_d, elektra_d):
     table.td('', bgcolor='lightgrey')
     table.td('REQPROD', bgcolor='lightgrey')
     table.td('Test Scripts', bgcolor='lightgrey', style='font-weight:bold')
-    for testres_tuple in testres_tuple_list:
+    for testres_tuple in folderinfo_and_result_tuple_list:
         table.td(testres_tuple[0], bgcolor='lightgrey', style='font-weight:bold')
         # Adding one counter for each testresult
         res_counter_list.append(collections.Counter())
@@ -180,7 +181,8 @@ def write_table(testres_tuple_list, outfile, verif_d, elektra_d):
     #for key in verif_d:
     
     #req_set_counter = collections.Counter()
-
+    
+    # For each row
     for key in sorted_key_list:
         # First column
         td = table.td(style='padding: 3px')
@@ -207,12 +209,14 @@ def write_table(testres_tuple_list, outfile, verif_d, elektra_d):
         # Result columns
         # Look up in dicts
         index = 0
-        for testres_tuple in testres_tuple_list:
-            folder_name = testres_tuple[2]
-            temp_dict = testres_tuple[1]
+        for folderinfo_and_result_tuple in folderinfo_and_result_tuple_list:
+            folder_name = folderinfo_and_result_tuple[2]
+            testres_dict = folderinfo_and_result_tuple[1]
             temp_res = 'MISSING'
-            if key in temp_dict:
-                temp_res = temp_dict[key]
+            #print(testres_dict)
+            if key in testres_dict:
+                temp_res = testres_dict[key]
+                print(temp_res)
                 res_counter_list[index][temp_res] += 1
             index += 1
             result_td = table.td(bgcolor=COLOR_DICT[temp_res], style='padding: 3px')
@@ -260,7 +264,7 @@ def write_to_file(content, outfile):
 
 def main(margs):
     """Call other functions from here."""
-    column_tuple_list = []
+    folderinfo_and_result_tuple_list = []
     verif_dict = {}
     e_link_dict = {}
     
@@ -268,14 +272,14 @@ def main(margs):
     folders.sort(reverse = True)
     
     for folder_name in folders:
-        res_dict, f_date, f_time = get_file_names(folder_name)
+        res_dict, f_date, f_time = get_file_names_and_results(folder_name)
         folder_time = get_folder_time(folder_name)
-        folder_tuple = (folder_time, res_dict, folder_name)
-        column_tuple_list.append(folder_tuple)
+        folderinfo_and_result_tuple = (folder_time, res_dict, folder_name)
+        folderinfo_and_result_tuple_list.append(folderinfo_and_result_tuple)
     #write_table(res_dict, margs.html_file, f_date, f_time)
     if margs.req_csv:
         verif_dict, e_link_dict = get_reqprod_links(margs.req_csv)
-    write_table(column_tuple_list, margs.html_file, verif_dict, e_link_dict)
+    write_table(folderinfo_and_result_tuple_list, margs.html_file, verif_dict, e_link_dict)
     print("working")
 
 
