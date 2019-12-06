@@ -1,7 +1,7 @@
 # Testscript ODTB2 MEPII
 # project:  BECM basetech MEPII
 # author:   LDELLATO (Lorenzo Della Torre)
-# date:     2019-10-08
+# date:     2019-11-06
 # version:  1.0
 # #inspired by https://grpc.io/docs/tutorials/basic/python.html
 # Copyright 2015 gRPC authors.
@@ -46,7 +46,6 @@ def precondition(stub, can_send, can_receive, can_namespace, result):
     SC.start_periodic(stub,"Networkeptalive", True, "Vcu1ToAllFuncFront1DiagReqFrame", "Front1CANCfg0", b'\x02\x3E\x80\x00\x00\x00\x00\x00', 1.02)
     
     # timeout = more than maxtime script takes
-    #timeout = 90   #seconds
     timeout = 90   #seconds"
 
     SC.subscribe_signal(stub, can_send, can_receive, can_namespace, timeout)
@@ -55,7 +54,6 @@ def precondition(stub, can_send, can_receive, can_namespace, result):
 
     print()
     result = step_0(stub, can_send, can_receive, can_namespace, result)
-
     print("precondition testok:", result, "\n")
     return result
 
@@ -165,10 +163,10 @@ def step_4(stub, can_send, can_receive, can_namespace, result):
 
 def step_5(stub, can_send, can_receive, can_namespace, result):
     """
-    Teststep 5:Flash Erase
+    Teststep 5:Flash Erase in PBL reply with Aborted
     """
     stepno = 5
-    purpose = "Flash Erase"
+    purpose = "Flash Erase Routine reply Aborted in PBL"
 
     # Parameters for FrameControl FC
     BS=0
@@ -178,12 +176,12 @@ def step_5(stub, can_send, can_receive, can_namespace, result):
     FC_auto = False
     
     memory_add = SUTE.PP_StringTobytes(str('80000000'),4)
-    print(memory_add)
+    
     memory_size = SUTE.PP_StringTobytes(str('0000C000'),4)
-    print(memory_size)
+
     erase = memory_add + memory_size
         
-    timeout = 15 #wait a second for reply to be send
+    timeout = 1 #wait a second for reply to be send
 
     min_no_messages = -1
     max_no_messages = -1
@@ -228,12 +226,10 @@ def step_6(stub, can_send, can_receive, can_namespace, result):
     data = SUTE.main(sys.argv[1])
     find = data.find
     header_len = find(b'\x3B\x0D\x0A\x7D') + 4
-    #print ('Header length: 0x%04X' % header_len)
 
     if header_len < 100:
         print ('Unknown format')
         quit(-1)
-
     off1 = find(b'sw_signature_dev = 0x') + 21
     end = find(b';\r\n}')
     #print(data[off1:end])
@@ -243,12 +239,10 @@ def step_6(stub, can_send, can_receive, can_namespace, result):
     call = bytes.fromhex(str(data[off2 : off2 + 8])[2:-1])
     out_hex = intelhex.IntelHex()
     offset = header_len
-    #print(SUTE.CRC32_from_file(data[offset:len(data)]))
+    
     block_address = unpack('>L', data[offset: offset + 4])[0]
     print(block_address)
-    #block_address_by = PP_StringTobytes(hex(block_address),4)
-    #print(block_address_by)
-    ##stop measuring
+    
 
     """
     Iteration to Download the SBL by blocks
@@ -267,8 +261,6 @@ def step_6(stub, can_send, can_receive, can_namespace, result):
         offset += 2
       
         crc_res = 'ok ' if SUTE.crc16(block_data) == crc else 'error'
-    
-        #print(hex(SUTE.crc16(block_data)))
 
         print ("Block adr: 0x%X length: 0x%X crc %s" % (block_addr, block_len, crc_res))
 
@@ -287,12 +279,8 @@ def step_6(stub, can_send, can_receive, can_namespace, result):
         result = result and SUTE.test_message(SC.can_messages[can_receive], '74')
 
         NBL = PP_StringTobytes(SC.can_frames[can_receive][0][2][6:10],2)
-        #print(SC.can_frames[can_receive][0][2])
         NBL = unpack('>H', NBL)[0]
         print("NBL: ",NBL)
-        #print(block_len)
-        #print(int(block_len/NBL))
-        #ending time 
         
         """
         Flash blocks to BECM with transfer data service 0x36
@@ -317,7 +305,6 @@ def step_6(stub, can_send, can_receive, can_namespace, result):
                                               can_receive, can_namespace, stepno, purpose,
                                               timeout, min_no_messages, max_no_messages)
             result = result and SUTE.test_message(SC.can_messages[can_receive], '76')
-            #print(SC.can_messages[can_receive])
 
         """    
         Transfer data exit with service 0x37
@@ -384,10 +371,10 @@ def step_8(stub, can_send, can_receive, can_namespace, result):
 
 def step_9(stub, can_send, can_receive, can_namespace, result):
     """
-    Teststep 9:Flash Erase
+    Teststep 9:Flash Erase of PBL memory address is not allowed
     """
     stepno = 9
-    purpose = "Flash Erase"
+    purpose = "Flash Erase of PBL memory address is not allowed"
 
     # Parameters for FrameControl FC
     BS=0
@@ -395,14 +382,15 @@ def step_9(stub, can_send, can_receive, can_namespace, result):
     FC_delay = 0 #no wait
     FC_flag = 48 #continue send
     FC_auto = False
-    
+
+    #memory address of PBL: PBL start with the address 80000000 for all ECU
     memory_add = SUTE.PP_StringTobytes(str('80000000'),4)
-    print(memory_add)
+    #memory size to erase
     memory_size = SUTE.PP_StringTobytes(str('0000C000'),4)
-    print(memory_size)
+    
     erase = memory_add + memory_size
         
-    timeout = 15 #wait a second for reply to be send
+    timeout = 5 #wait a second for reply to be send
 
     min_no_messages = -1
     max_no_messages = -1
