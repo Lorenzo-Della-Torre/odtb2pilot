@@ -1,8 +1,7 @@
 # project:  ODTB2 testenvironment using SignalBroker
-# author:   hweiler (Hans-Klaus Weiler)
-# date:     2019-12-10
-# version:  1.0
-
+# author:   LDELLATO (Lorenzo Della Torre)
+# date:     2019-07-11
+# version:  1.2
 
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
 
@@ -22,44 +21,72 @@
 
 """The Python implementation of the gRPC route guide client."""
 
+from __future__ import print_function
+import binascii
 
-#from __future__ import print_function
-from datetime import datetime
-import time
+#class for supporting Security Access
+class Support_Security_Access:
+    def SetSecurityAccessPins(self, Sid):
+        #iteration variable
+        i = int
 
-import logging
-import os
-import sys
+        #step1: load the challenge bytes, bit by bit, into a 64-bit variable space
+        #insert fivefixed bytes and 3 seed
+        li = 'FFFFFFFFFF'        
+        li = li + Sid[4:6] + Sid[2:4] + Sid[0:2]
+        # Test Pins
+        #li = '43BB42AA41'
+        #li = li + '8A' + '96' + '4E'
+        li = (bin(int(li,16)))
+        li = li[2:]
+        #Extension for Test Pins
+        #li = '0' + li
+        #print(hex(int(li[:8])))
+        li = li[::-1]
 
-import threading
-from threading import Thread
+        #step2: Load C541A9 hex into the 24 bit Initial Value variable space
+        lista = bin(int('C541A9',16))
+        lista = lista[2:]
 
-import random
+        #step3: Perform the Shift Right and Xor operations for 64 times
+        for i in li: 
+            
+            lista1 = bin(lista[-1] != i)
+            lista1 = lista1[2:] 
+            # invert position of first bit with the last
+            lista = lista1 + lista[:-1]
+            # Xor between last reference list and last Sid arrow
+            lista3 = bin(lista[3] != lista1)
+            lista3 = lista3[2:]
+            #successive Xor between Blast and ....
+            lista8 = bin(lista[8] != lista1)
+            lista8 = lista8[2:]
 
-import grpc
-import string
+            lista11 = bin(lista[11] != lista1)
+            lista11 = lista11[2:]
+           
+            lista18 = bin(lista[18] != lista1)
+            lista18 = lista18[2:]
+            
+            lista20 = bin(lista[20] != lista1)
+            lista20 = lista20[2:]
+           
+            lista = lista [:3] + lista3 + lista[4:8] + lista8 + lista[9:11] + lista11 + lista[12:18] + lista18 + lista[19:20] + lista20 + lista[21:24] 
 
-
-#import network_api_pb2
-#import network_api_pb2_grpc
-#import functional_api_pb2
-#import functional_api_pb2_grpc
-#import system_api_pb2
-#import system_api_pb2_grpc
-#import common_pb2
-
-
-#class for supporting activating and using security access
-class Support_SecAcc:
-
-# Global variables for use in SecAss
-
-    _heartbeat = False
-
-    
-    def Sec_Acc_request_sid(self, payload_value):
-        payload_value = bytes([len(payload_value)]) + payload_value
-        #print ("new payload: ", payload_value)
-        return(payload_value)
-
-
+        #step4: Generate R1, R2, R3
+        R1 = hex(int(lista[12:20],2))
+        R1 = hex(int(R1,16) + int("0x200",16))
+        R1 = R1[3:]
+        #print(R1)
+        R2 = hex(int((lista[8:12] + lista[0:4]),2))
+        R2 = hex(int(R2,16) + int("0x200",16))
+        R2 = R2[3:]
+        #print(R2)
+        R3 = hex(int((lista[20:24] + lista[4:8]),2))
+        R3 = hex(int(R3,16) + int("0x200",16))
+        R3 = R3[3:]
+        #print(R3)
+        R = hex(int(('0x' + R1 + R2 + R3),16) + int("0x2000000",16))
+        R = R[3:]
+        print(R)
+        return bytes.fromhex(R)
