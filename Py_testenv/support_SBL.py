@@ -170,7 +170,7 @@ class Support_SBL_Download:
         """
         testresult = True
         purpose = "verify RoutineControl start are sent for Check Programming Preconditions"
-        timeout = 0.05 #wait a second for reply to be send
+        timeout = 1 #wait a second for reply to be send
         min_no_messages = -1
         max_no_messages = -1
 
