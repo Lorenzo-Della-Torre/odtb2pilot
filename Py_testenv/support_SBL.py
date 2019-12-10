@@ -181,14 +181,14 @@ class Support_SBL_Download:
         FC_flag = 48 #continue send
         FC_auto = False
 
-        """can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\x02\x06', b'\x01')
+        can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\x02\x06', b'\x01')
         can_mr_extra = ''
 
         testresult = testresult and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
                                         can_rec, can_nspace, step_no, purpose,
                                         timeout, min_no_messages, max_no_messages)
     
-        testresult = testresult and SUTE.PP_Decode_Routine_Control_response(SC.can_frames[can_rec][0][2], 'Type1,Completed')"""
+        testresult = testresult and SUTE.PP_Decode_Routine_Control_response(SC.can_messages[can_rec][0][2], 'Type1,Completed')
 
         """
         Teststep 2: Change to Programming session
