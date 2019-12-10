@@ -41,7 +41,7 @@ SSA = Support_Security_Access()
 #class for supporting Secondary Bootloader Download
 class Support_SBL_Download:
 
-    def SBL_Download(self, stub, can_send = "", can_rec = "", can_nspace="", step_no = '', purpose=""):
+    def SBL_Download(self, stub, can_send = "", can_rec = "", can_nspace="", step_no = '', purpose="", file_N = 1):
         """
         SBL Download 
         """
@@ -60,11 +60,7 @@ class Support_SBL_Download:
         """
         Read vbf file for SBL download
         """
-        if len(sys.argv) !=2:
-            print('Please specify VBF file')
-            quit(-1)
-
-        data = SUTE.main(sys.argv[1])
+        data = SUTE.main(sys.argv[file_N])
         find = data.find
         header_len = find(b'\x3B\x0D\x0A\x7D') + 4
         #print ('Header length: 0x%04X' % header_len)
@@ -171,7 +167,7 @@ class Support_SBL_Download:
         testresult = True
         min_no_messages = -1
         max_no_messages = -1
-        
+
         # Parameters for FrameControl FC
         BS=0
         ST=0
