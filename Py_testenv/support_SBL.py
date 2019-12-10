@@ -296,6 +296,39 @@ class Support_SBL_Download:
         FC_delay = 0 #no wait
         FC_flag = 48 #continue send
         FC_auto = False
+        
+        """
+        Security Access Request SID
+        """
+        purpose = "Security Access Request SID"
+        timeout = 0.05
+        min_no_messages = 1
+        max_no_messages = 1
+
+        can_m_send = b'\x27\x01'
+        can_mr_extra = ''
+    
+        testresult = testresult and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
+                                      can_rec, can_nspace, step_no, purpose,
+                                      timeout, min_no_messages, max_no_messages)
+
+        R = SSA.SetSecurityAccessPins(SC.can_messages[can_rec][0][2][6:12])
+
+        """
+        Security Access Send Key
+        """
+        purpose = "Security Access Send Key"
+        timeout = 0.05
+        min_no_messages = -1
+        max_no_messages = -1
+
+        can_m_send = b'\x27\x02'+ R
+        can_mr_extra = ''
+    
+        testresult = testresult and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
+                                      can_rec, can_nspace, step_no, purpose,
+                                      timeout, min_no_messages, max_no_messages)
+        testresult = testresult and SUTE.test_message(SC.can_messages[can_rec], '6702')
 
         """
         SBL Download 
@@ -358,9 +391,13 @@ class Support_SBL_Download:
                         can_rec, can_nspace, step_no, purpose,
                         timeout, min_no_messages, max_no_messages)
 
+        print(SC.can_messages[can_rec])
+
         if SUTE.test_message(SC.can_messages[can_rec], '62F18601') or SUTE.test_message(SC.can_messages[can_rec], '62F18603'):
             testresult = self.SBL_Activation_Def(stub, can_send, can_rec, can_nspace, step_no, purpose)
         elif SUTE.test_message(SC.can_messages[can_rec], '62F18602'):
             testresult = self.SBL_Activation_Prog(stub, can_send, can_rec, can_nspace, step_no, purpose)
+        else:
+            print("error message: ", SC.can_messages[can_rec])
         time.sleep(1)
         return testresult
