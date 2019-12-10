@@ -164,16 +164,14 @@ class Support_SBL_Download:
           
         return testresult, sw_signature, call
 
-    def SBL_Activation(self, stub, can_send = "", can_rec = "", can_nspace="", step_no = '', purpose=""):
+    def SBL_Activation_Def(self, stub, can_send = "", can_rec = "", can_nspace="", step_no = '', purpose=""):
         """
-        verify RoutineControlRequest is sent for Type 1
+        function used for BECM in Default or Extended mode
         """
         testresult = True
-        purpose = "verify RoutineControl start are sent for Check Programming Preconditions"
-        timeout = 0.05 #wait a second for reply to be send
         min_no_messages = -1
         max_no_messages = -1
-
+        
         # Parameters for FrameControl FC
         BS=0
         ST=0
@@ -181,17 +179,23 @@ class Support_SBL_Download:
         FC_flag = 48 #continue send
         FC_auto = False
 
+        """
+        verify RoutineControlRequest is sent for Type 1
+        """
+        purpose = "verify RoutineControl start are sent for Check Programming Preconditions"
+        timeout = 0.05 #wait a second for reply to be send
+        
         can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\x02\x06', b'\x01')
         can_mr_extra = ''
 
         testresult = testresult and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
                                         can_rec, can_nspace, step_no, purpose,
                                         timeout, min_no_messages, max_no_messages)
-    
+        print(SC.can_messages[can_rec])
         testresult = testresult and SUTE.PP_Decode_Routine_Control_response(SC.can_messages[can_rec][0][2], 'Type1,Completed')
 
         """
-        Teststep 2: Change to Programming session
+        Change to Programming session
         """
         purpose = "Change to Programming session(01) from default"
         timeout = 1
@@ -243,7 +247,6 @@ class Support_SBL_Download:
         """
         SBL Download 
         """
-        
         purpose = 'SBL Download'
         tresult, sw_signature, call = self.SBL_Download(stub, can_send, can_rec, can_nspace, step_no, purpose)
         testresult = testresult and tresult
@@ -251,7 +254,6 @@ class Support_SBL_Download:
         """
         Check Memory
         """
-       
         purpose = "verify RoutineControl start are sent for Type 1"
         timeout = 1 #wait a second for reply to be send
 
@@ -282,3 +284,87 @@ class Support_SBL_Download:
         testresult = testresult and SUTE.PP_Decode_Routine_Control_response(SC.can_messages[can_rec][0][2], 'Type1,Completed')
         return testresult
 
+    
+    def SBL_Activation_Prog(self, stub, can_send = "", can_rec = "", can_nspace="", step_no = '', purpose=""):
+        """
+        function used for BECM in forced Programming mode
+        """
+        
+        testresult = True 
+        min_no_messages = -1
+        max_no_messages = -1
+
+        # Parameters for FrameControl FC
+        BS=0
+        ST=0
+        FC_delay = 0 #no wait
+        FC_flag = 48 #continue send
+        FC_auto = False
+
+        """
+        SBL Download 
+        """
+        purpose = 'SBL Download'
+        tresult, sw_signature, call = self.SBL_Download(stub, can_send, can_rec, can_nspace, step_no, purpose)
+        testresult = testresult and tresult
+    
+        """
+        Check Memory
+        """
+        purpose = "verify RoutineControl start are sent for Type 1"
+        timeout = 1 #wait a second for reply to be send
+
+        can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\x02\x12' + sw_signature, b'\x01')
+        can_mr_extra = ''
+        SC.change_MF_FC(can_send, BS, ST, FC_delay, FC_flag, FC_auto)
+            
+        testresult = testresult and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
+                                      can_rec, can_nspace, step_no, purpose,
+                                      timeout, min_no_messages, max_no_messages)
+    
+        testresult = testresult and SUTE.PP_Decode_Routine_Control_response(SC.can_messages[can_rec][0][2], 'Type1,Completed')
+        print(SC.can_messages[can_rec])
+    
+        """
+        Activate SBL
+        """
+        purpose = "verify RoutineControl start are sent for Type 1"
+        timeout = 2 #wait a second for reply to be send
+
+        can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\x03\x01' + call, b'\x01')
+        can_mr_extra = ''
+
+        testresult = testresult and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
+                                      can_rec, can_nspace, step_no, purpose,
+                                      timeout, min_no_messages, max_no_messages)
+    
+        testresult = testresult and SUTE.PP_Decode_Routine_Control_response(SC.can_messages[can_rec][0][2], 'Type1,Completed')
+        return testresult
+
+    def SBL_Activation(self, stub, can_send = "", can_rec = "", can_nspace="", step_no = '', purpose=""):
+        """
+        Function used to activate the Secondary Bootloader
+        """
+        testresult = True
+
+        """
+        Teststep 11: verify session
+        """
+        purpose = "Verify Session"
+        timeout = 1
+        min_no_messages = -1
+        max_no_messages = -1
+
+        can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xF1\x86', "")
+        can_mr_extra = ''
+    
+        SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
+                        can_rec, can_nspace, step_no, purpose,
+                        timeout, min_no_messages, max_no_messages)
+
+        if SUTE.test_message(SC.can_messages[can_rec], '62F18601') or SUTE.test_message(SC.can_messages[can_rec], '62F18603'):
+            testresult = self.SBL_Activation_Def(stub, can_send, can_rec, can_nspace, step_no, purpose)
+        elif SUTE.test_message(SC.can_messages[can_rec], '62F18602'):
+            testresult = self.SBL_Activation_Prog(stub, can_send, can_rec, can_nspace, step_no, purpose)
+        time.sleep(1)
+        return testresult
