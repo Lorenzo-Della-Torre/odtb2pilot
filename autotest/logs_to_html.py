@@ -11,13 +11,19 @@ Output: html file with the results in a table
 
 #import logging
 import argparse
-from html import HTML
+import logging
+import sys
+
+import os
 from os import listdir
 from os.path import isfile, join
-import os
+
+from datetime import datetime
 import re
 import collections
 import csv
+
+from html import HTML
 
 RE_DATE_START = re.compile('\s*Testcase\s+start:\s+(?P<date>\d+-\d+-\d+)\s+(?P<time>\d+:\d+:\d+)')
 RE_RESULT = re.compile('\s*Testcase\s+result:\s+(?P<result>\w+)')
@@ -177,10 +183,13 @@ def write_table(folderinfo_and_result_tuple_list, outfile, verif_d, elektra_d):
                "th {background-color: lightgrey; padding: 8px;}"
                "td {padding: 3px;}"
                "tr:nth-child(even) {background-color: #e3e3e3;}"
-               "a {color:black; text-decoration: none;}")
+               "a {color:black; text-decoration: none;}"
+               "#header {background-color: lightgrey; height: 100px; line-height: 100px;"
+               "width: 1000px; text-align:center; vertical-align: middle; border:1px black solid;"
+               "margin:30px; font-size: 50px;}")
 
+    page.div('Test Summary Report', id='header')
     table = page.table()
-
     key_set = set()
 
     # Creating set with only "keys", using a set to not get duplicates.
@@ -301,6 +310,11 @@ def write_table(folderinfo_and_result_tuple_list, outfile, verif_d, elektra_d):
 
         coverage_table.tr()
 
+    now = datetime.now()
+    current_time = now.strftime("Generated %Y-%m-%d %H:%M:%S")
+    logging.debug("Current Time = %s", current_time)
+    page.p(current_time)
+
     write_to_file(page, outfile)
 
 
@@ -311,6 +325,9 @@ def write_to_file(content, outfile):
 
 def main(margs):
     """Call other functions from here"""
+
+    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.DEBUG)
+
     folderinfo_and_result_tuple_list = []
     verif_dict = {}
     e_link_dict = {}
