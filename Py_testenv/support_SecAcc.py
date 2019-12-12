@@ -21,11 +21,20 @@
 
 """The Python implementation of the gRPC route guide client."""
 
-from __future__ import print_function
+import time
+from datetime import datetime
 import binascii
+
+from support_can import Support_CAN
+from support_test_odtb2 import Support_test_ODTB2
+
+SC = Support_CAN()
+SUTE = Support_test_ODTB2()
 
 #class for supporting Security Access
 class Support_Security_Access:
+
+    #Algorithm to decode the Security Access Pin
     def SetSecurityAccessPins(self, Sid):
         #iteration variable
         i = int
@@ -90,3 +99,39 @@ class Support_Security_Access:
         R = R[3:]
         print(R)
         return bytes.fromhex(R)
+    
+    #Support function to activate the Security Access
+    def Activation_Security_Access(self, stub, can_send, can_rec, can_nspace, step_no, purpose):
+        """
+        Security Access Request SID
+        """
+        testresult = True
+        timeout = 0.05
+        min_no_messages = 1
+        max_no_messages = 1
+
+        can_m_send = b'\x27\x01'
+        can_mr_extra = ''
+    
+        testresult = testresult and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
+                                      can_rec, can_nspace, step_no, purpose,
+                                      timeout, min_no_messages, max_no_messages)
+
+        R = self.SetSecurityAccessPins(SC.can_messages[can_rec][0][2][6:12])
+
+        """
+        Security Access Send Key
+        """
+        timeout = 0.05
+        min_no_messages = -1
+        max_no_messages = -1
+
+        can_m_send = b'\x27\x02'+ R
+        can_mr_extra = ''
+    
+        testresult = testresult and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
+                                      can_rec, can_nspace, step_no, purpose,
+                                      timeout, min_no_messages, max_no_messages)
+        testresult = testresult and SUTE.test_message(SC.can_messages[can_rec], '6702') 
+        time.sleep(1)
+        return testresult
