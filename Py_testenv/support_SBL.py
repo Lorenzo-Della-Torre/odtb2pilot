@@ -38,7 +38,7 @@ SUTE = Support_test_ODTB2()
 SSA = Support_Security_Access()
 
 #class for supporting Secondary Bootloader Download
-class Support_SBL_Download:
+class Support_SBL:
 
     def SBL_Download(self, stub, can_send = "", can_rec = "", can_nspace="", step_no = '', purpose="", file_N = 1):
         """
