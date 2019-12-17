@@ -38,7 +38,7 @@ from support_SecAcc import Support_Security_Access
 
 SC = Support_CAN()
 SUTE = Support_test_ODTB2()
-SSBL = Support_SBL_Download()
+SSBL = Support_SBL()
 SSA = Support_Security_Access()
 
 def precondition(stub, can_send, can_receive, can_namespace, result):
