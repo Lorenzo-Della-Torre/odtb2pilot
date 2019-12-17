@@ -597,3 +597,8 @@ class Support_test_ODTB2:
         """
         buf = (binascii.crc32(filename) & 0xFFFFFFFF)
         return "%08X" % buf
+        
+    def main(self, filename):
+        with open(filename, 'rb') as f:
+            data = f.read()
+        return data
