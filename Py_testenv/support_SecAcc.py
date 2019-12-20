@@ -1,7 +1,7 @@
 # project:  ODTB2 testenvironment using SignalBroker
 # author:   LDELLATO (Lorenzo Della Torre)
-# date:     2019-07-11
-# version:  1.2
+# date:     2019-12-11
+# version:  0.1
 
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
 
@@ -33,6 +33,8 @@ SUTE = Support_test_ODTB2()
 
 #class for supporting Security Access
 class Support_Security_Access:
+
+    #Algorithm to decode the Security Access Pin
     def SetSecurityAccessPins(self, Sid):
         #iteration variable
         i = int
@@ -97,7 +99,8 @@ class Support_Security_Access:
         R = R[3:]
         print(R)
         return bytes.fromhex(R)
-
+    
+    #Support function to activate the Security Access
     def Activation_Security_Access(self, stub, can_send, can_rec, can_nspace, step_no, purpose):
         """
         Security Access Request SID

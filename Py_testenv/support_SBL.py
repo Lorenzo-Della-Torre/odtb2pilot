@@ -1,7 +1,7 @@
 # project:  ODTB2 testenvironment using SignalBroker
 # author:   LDELLATO (Lorenzo Della Torre)
-# date:     2019-07-11
-# version:  1.2
+# date:     2019-12-11
+# version:  0.1
 
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
 
@@ -39,7 +39,8 @@ SSA = Support_Security_Access()
 
 #class for supporting Secondary Bootloader Download
 class Support_SBL:
-
+    
+    # Support Function for flashing Secondary Bootloader SW  
     def SBL_Download(self, stub, can_send = "", can_rec = "", can_nspace="", step_no = '', purpose="", file_N = 1):
         """
         SBL Download 
@@ -82,7 +83,8 @@ class Support_SBL:
         testresult = testresult and self.Check_Memory(stub, can_send, can_rec, can_nspace, step_no, purpose, sw_signature)    
           
         return testresult, call
-
+    
+    # Support Function for flashing SW Parts
     def SW_Part_Download(self, stub, can_send = "", can_rec = "", can_nspace="", step_no = '', purpose="", file_N=2):
         """
         Software Download
@@ -132,6 +134,7 @@ class Support_SBL:
         
         return testresult
 
+    # Support Function for Flashing and activate Secondary Bootloader from Default session
     def SBL_Activation_Def(self, stub, can_send = "", can_rec = "", can_nspace="", step_no = '', purpose=""):
         """
         function used for BECM in Default or Extended mode
@@ -191,7 +194,8 @@ class Support_SBL:
         testresult = testresult and self.Activate_SBL(stub, can_send, can_rec, can_nspace, step_no, purpose,call)
 
         return testresult
-    
+
+    # Support Function for Flashing and activate Secondary Bootloader from Programming session
     def SBL_Activation_Prog(self, stub, can_send = "", can_rec = "", can_nspace="", step_no = '', purpose=""):
         """
         function used for BECM in forced Programming mode
@@ -217,7 +221,8 @@ class Support_SBL:
         testresult = testresult and self.Activate_SBL(stub, can_send, can_rec, can_nspace, step_no, purpose,call)
 
         return  testresult
-
+    
+    # Support Function to select Support functions to use for activating SBL based on actual mode
     def SBL_Activation(self, stub, can_send = "", can_rec = "", can_nspace="", step_no = '', purpose=""):
         """
         Function used to activate the Secondary Bootloader
@@ -253,7 +258,7 @@ class Support_SBL:
     
 #------------------------------Support Support SWDL Functions-------------------------------
 
-    #support function for Routine Control
+    #support function for Extracting Completed and compatible Routine Control Response 
     def PP_Decode_Routine_Complete_Compatible (self, message):
         testresult = True
         mess_len = len(message)
@@ -264,7 +269,7 @@ class Support_SBL:
             pos = message.find ('0205')
             res = message[pos+6:pos+16]
             val = "{0:40b}".format(int(res, 16))
-            if val[38] == '0':
+            if val[38] == '0' or '':
                 val_Ca = 'Compatible'
             elif val[38] == '1':
                 val_Ca = 'Not Compatible'
@@ -282,7 +287,8 @@ class Support_SBL:
 
         print(val_Cl + val_Ca)
         return testresult
-
+    
+    #Support function for Routine Complete & Compatible
     def Check_Complete_Compatible_Routine(self, stub, can_send, can_rec, can_nspace, step_no, purpose):
         testresult = True
         timeout = 1 #wait a second for reply to be send
@@ -310,10 +316,10 @@ class Support_SBL:
         print(SC.can_messages[can_rec][0][2])
         return testresult
 
-    #Read and decode vbf files
+    #Read and decode vbf files for Secondary Bootloader
     def Read_vbf_file_SBL(self, file_N = 1):
         unpack = struct.unpack
-        data = SUTE.read_f(sys.argv[file_N])
+        data = SUTE.main(sys.argv[file_N])
         find = data.find
         header_len = find(b'\x3B\x0D\x0A\x7D') + 4
         #print ('Header length: 0x%04X' % header_len)
@@ -338,10 +344,11 @@ class Support_SBL:
         block_address = unpack('>L', data[offset: offset + 4])[0]
         print(block_address)
         return offset, data, sw_signature, call, data_format
-
+    
+    #Read and decode vbf files for Software Parts
     def Read_vbf_file(self, file_N):
         unpack = struct.unpack
-        data = SUTE.read_f(sys.argv[file_N])
+        data = SUTE.main(sys.argv[file_N])
         find = data.find 
         header_len = find(b'\x3B\x0D\x0A\x7D') + 4
         #print ('Header length: 0x%04X' % header_len)
@@ -361,10 +368,10 @@ class Support_SBL:
         offset = header_len
         print(SUTE.CRC32_from_file(data[offset:len(data)]))
         block_address = unpack('>L', data[offset: offset + 4])[0]
-        block_address_by = SUTE.PP_StringTobytes(hex(block_address),4)
         erase = memory_add + memory_size
         return offset, off, data, sw_signature, data_format, erase
-
+    
+    #Support function for Routine Flash Erase
     def Flash_Erase(self, stub, can_send, can_rec, can_nspace, step_no, purpose, erase, data, off):
         testresult = True
         timeout = 15 #wait a second for reply to be send
@@ -414,7 +421,7 @@ class Support_SBL:
             testresult = testresult and SUTE.PP_Decode_Routine_Control_response(SC.can_messages[can_rec][0][2], 'Type1,Completed')
         return testresult
     
-    #Extraction of block data
+    #Extraction of block data from vbf file
     def Block_data_extract(self, offset, data):
         PP_StringTobytes = SUTE.PP_StringTobytes
         unpack = struct.unpack
@@ -428,7 +435,7 @@ class Support_SBL:
         offset +=2
         return offset, block_data, block_addr_by, block_len_by, block_addr, block_len
     
-    #crc calculation for block
+    #crc calculation for each block
     def crc_calculation(self, data, offset, block_data, block_addr, block_len):
         unpack = struct.unpack
         crc = unpack('>H', data[offset : offset + 2])[0]
@@ -438,7 +445,8 @@ class Support_SBL:
         crc_res = 'ok ' if SUTE.crc16(block_data) == crc else 'error'
 
         return "Block adr: 0x%X length: 0x%X crc %s" % (block_addr, block_len, crc_res)
-
+    
+    #Support function for Request Download
     def Request_Block_Download(self, stub, can_send, can_rec, can_nspace, step_no, purpose, block_addr_by, block_len_by, data_format):
         testresult = True
         PP_StringTobytes = SUTE.PP_StringTobytes
@@ -469,7 +477,8 @@ class Support_SBL:
         NBL = unpack('>H', NBL)[0]
         print("NBL: ",NBL)
         return testresult, NBL
-
+    
+    # Support function for Transfer Data
     def Flash_blocks(self, NBL, stub, can_send, can_rec, can_nspace, step_no, purpose, block_len, block_data):
         testresult = True
         pad = 0
@@ -501,7 +510,8 @@ class Support_SBL:
             testresult = testresult and SUTE.test_message(SC.can_messages[can_rec], '76')
                 #print(SC.can_messages[can_receive])
         return testresult
-
+    
+    #Support function for Request Transfer Exit
     def Transfer_data_exit(self, stub, can_send, can_rec, can_nspace, step_no, purpose): 
         testresult = True
         min_no_messages = 1
@@ -514,7 +524,8 @@ class Support_SBL:
                                           timeout, min_no_messages, max_no_messages)
 
         return testresult  
-
+    
+    #Support function for Check Memory
     def Check_Memory(self, stub, can_send, can_rec, can_nspace, step_no, purpose, sw_signature1):
         testresult = True
         timeout = 2
@@ -537,7 +548,8 @@ class Support_SBL:
         testresult = testresult and SUTE.PP_Decode_Routine_Control_response(SC.can_messages[can_rec][0][2], 'Type1,Completed')
         print(SC.can_messages[can_rec])
         return testresult
-
+    
+    #Support function for Routine Control Activate Secondary Bootloader
     def Activate_SBL(self, stub, can_send, can_rec, can_nspace, step_no, purpose,call):
         testresult = True
         timeout = 2 #wait a second for reply to be send
