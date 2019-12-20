@@ -1,7 +1,7 @@
 # project:  ODTB2 testenvironment using SignalBroker
 # author:   LDELLATO (Lorenzo Della Torre)
-# date:     2019-07-11
-# version:  1.2
+# date:     2019-12-11
+# version:  0.1
 
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
 
