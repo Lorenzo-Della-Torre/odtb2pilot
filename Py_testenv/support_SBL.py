@@ -260,11 +260,9 @@ class Support_SBL:
 
     #support function for Extracting Completed and compatible Routine Control Response 
     def PP_Decode_Routine_Complete_Compatible (self, message):
-        testresult = True
         mess_len = len(message)
         if (mess_len == 0):
-            testresult = False
-            print("PP_Decode_Routine_Control_response: missing message")
+            val_C = "PP_Decode_Routine_Control_response: missing message"
         else:
             pos = message.find ('0205')
             res = message[pos+6:pos+16]
@@ -273,7 +271,6 @@ class Support_SBL:
                 val_Ca = 'Compatible'
             elif val[38] == '1':
                 val_Ca = 'Not Compatible'
-                #testresult=False
             else:
                 val_Ca = 'Wrong Decoding'
 
@@ -281,12 +278,11 @@ class Support_SBL:
                 val_Cl = 'Complete, '
             elif val[39] == '1':
                 val_Cl = 'Not Complete, '
-                #testresult=False
             else:
                 val_Cl = 'Wrong Decoding'
-
-        print(val_Cl + val_Ca)
-        return testresult
+                
+            val_C = val_Cl + val_Ca
+        return val_C
     
     #Support function for Routine Complete & Compatible
     def Check_Complete_Compatible_Routine(self, stub, can_send, can_rec, can_nspace, step_no, purpose):
