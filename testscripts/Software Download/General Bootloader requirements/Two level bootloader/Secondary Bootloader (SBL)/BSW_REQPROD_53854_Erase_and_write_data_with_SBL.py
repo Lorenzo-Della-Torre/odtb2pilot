@@ -33,7 +33,7 @@ import struct
 import ODTB_conf
 from support_can import Support_CAN
 from support_test_odtb2 import Support_test_ODTB2
-from support_SBL import Support_SBL_Download
+from support_SBL import Support_SBL
 from support_SecAcc import Support_Security_Access
 
 SC = Support_CAN()
