@@ -33,12 +33,12 @@ import struct
 import ODTB_conf
 from support_can import Support_CAN
 from support_test_odtb2 import Support_test_ODTB2
-from support_SBL import Support_SBL_Download
+from support_SBL import Support_SBL
 from support_SecAcc import Support_Security_Access
 
 SC = Support_CAN()
 SUTE = Support_test_ODTB2()
-SSBL = Support_SBL_Download()
+SSBL = Support_SBL()
 SSA = Support_Security_Access()
 
 def precondition(stub, can_send, can_receive, can_namespace, result):
@@ -299,12 +299,12 @@ def run():
     # step 3:
     # action: 
     # result: BECM sends positive reply
-    test_result = step_3(network_stub, can_send, can_receive, can_namespace, test_result)
+    #test_result = step_3(network_stub, can_send, can_receive, can_namespace, test_result)
     
     # step 4:
     # action: 
     # result: BECM sends positive reply
-    test_result = step_4(network_stub, can_send, can_receive, can_namespace, test_result)
+    #test_result = step_4(network_stub, can_send, can_receive, can_namespace, test_result)
     
     # step 5:
     # action: 
@@ -314,12 +314,12 @@ def run():
     # step 6:
     # action: 
     # result: BECM sends positive reply
-    test_result = step_6(network_stub, can_send, can_receive, can_namespace, test_result)
+    #test_result = step_6(network_stub, can_send, can_receive, can_namespace, test_result)
 
     # step 7:
     # action: 
     # result: BECM sends positive reply
-    test_result = step_7(network_stub, can_send, can_receive, can_namespace, test_result)
+    #test_result = step_7(network_stub, can_send, can_receive, can_namespace, test_result)
 
     # step 8:
     # action: 
@@ -334,17 +334,17 @@ def run():
     # step 10:
     # action: 
     # result: BECM sends positive reply
-    #test_result = step_10(network_stub, can_send, can_receive, can_namespace, test_result)
+    test_result = step_10(network_stub, can_send, can_receive, can_namespace, test_result)
 
     # step 11:
     # action: 
     # result: BECM sends positive reply
-    #test_result = step_11(network_stub, can_send, can_receive, can_namespace, test_result)
+    test_result = step_11(network_stub, can_send, can_receive, can_namespace, test_result)
 
     # step 12:
     # action: 
     # result: BECM sends positive reply5
-    #test_result = step_12(network_stub, can_send, can_receive, can_namespace, test_result)
+    test_result = step_12(network_stub, can_send, can_receive, can_namespace, test_result)
    
     ############################################
     # postCondition
