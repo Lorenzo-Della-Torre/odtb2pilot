@@ -1,8 +1,8 @@
 # Testscript ODTB2 MEPII
 # project:  BECM basetech MEPII
 # author:   LDELLATO (Lorenzo Della Torre)
-# date:     2019-11-06
-# version:  1.0
+# date:     2020-01-08
+# version:  1.1
 # reqprod:  53854
 
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
@@ -175,13 +175,14 @@ def step_4(stub, can_send, can_receive, can_namespace, result):
 
 def step_5(stub, can_send, can_receive, can_namespace, result):
     """
-    Teststep 5: SBL Download 
+    Teststep 5: Download SBL
     """
     global call
     stepno = 5
-    purpose = 'SBL Download'
-    tresult, call = SSBL.SBL_Download(stub, can_send, can_receive, can_namespace, stepno, purpose)
-    result = result and tresult
+    purpose = "Download and Activation of SBL"
+    resultt, call = SSBL.SBL_Download(stub, can_send,
+                                      can_receive, can_namespace, stepno, purpose)
+    result = result and resultt
     return result
 
 def step_6(stub, can_send, can_receive, can_namespace, result):
@@ -191,8 +192,8 @@ def step_6(stub, can_send, can_receive, can_namespace, result):
     global call
     stepno = 6
     purpose = "Activation of SBL"
-    result = result and SSBL.Activate_SBL(stub, can_send, can_receive, can_namespace, stepno, purpose,call)
-
+    result = result and SSBL.Activate_SBL(stub, can_send,
+                                          can_receive, can_namespace, stepno, purpose, call)
     return result
 
 def step_7(stub, can_send, can_receive, can_namespace, result):
@@ -343,9 +344,9 @@ def run():
     # action: 
     # result: BECM sends positive reply
     test_result = step_8(network_stub, can_send, can_receive, can_namespace, test_result)
-    
+
     # step 9:
-    # action: verify RoutineControl start is sent for Type 1
+    # action: 
     # result: BECM sends positive reply
     test_result = step_9(network_stub, can_send, can_receive, can_namespace, test_result)
    
