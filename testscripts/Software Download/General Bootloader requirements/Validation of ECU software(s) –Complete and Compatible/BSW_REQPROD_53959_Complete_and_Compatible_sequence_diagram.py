@@ -299,12 +299,12 @@ def run():
     # step 3:
     # action: 
     # result: BECM sends positive reply
-    #test_result = step_3(network_stub, can_send, can_receive, can_namespace, test_result)
+    test_result = step_3(network_stub, can_send, can_receive, can_namespace, test_result)
     
     # step 4:
     # action: 
     # result: BECM sends positive reply
-    #test_result = step_4(network_stub, can_send, can_receive, can_namespace, test_result)
+    test_result = step_4(network_stub, can_send, can_receive, can_namespace, test_result)
     
     # step 5:
     # action: 
@@ -314,22 +314,22 @@ def run():
     # step 6:
     # action: 
     # result: BECM sends positive reply
-    #test_result = step_6(network_stub, can_send, can_receive, can_namespace, test_result)
+    test_result = step_6(network_stub, can_send, can_receive, can_namespace, test_result)
 
     # step 7:
     # action: 
     # result: BECM sends positive reply
-    #test_result = step_7(network_stub, can_send, can_receive, can_namespace, test_result)
+    test_result = step_7(network_stub, can_send, can_receive, can_namespace, test_result)
 
     # step 8:
     # action: 
     # result: BECM sends positive reply
-    #test_result = step_8(network_stub, can_send, can_receive, can_namespace, test_result)
+    test_result = step_8(network_stub, can_send, can_receive, can_namespace, test_result)
 
     # step 9:
     # action: 
     # result: BECM sends positive reply
-    #test_result = step_9(network_stub, can_send, can_receive, can_namespace, test_result)
+    test_result = step_9(network_stub, can_send, can_receive, can_namespace, test_result)
 
     # step 10:
     # action: 
