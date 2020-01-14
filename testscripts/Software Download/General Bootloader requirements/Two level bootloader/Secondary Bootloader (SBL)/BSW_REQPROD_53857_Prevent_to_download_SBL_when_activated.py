@@ -103,18 +103,39 @@ def step_2(stub, can_send, can_receive, can_namespace, result):
 
 def step_3(stub, can_send, can_receive, can_namespace, result):
     """
-    Teststep 3: SBL Download secondary flash after activation is not allowed
+    Teststep 3: Read VBF files for SBL
     """
     stepno = 3
-    purpose = "SBL Download"
-    
-    # Read vbf file for SBL download
-    offset, data, _, _, data_format = SSBL.Read_vbf_file_SBL(1)
-        
-    #Extract the 1st SBL block
-    offset, _, block_addr_by, block_len_by, _, _ = SSBL.Block_data_extract(offset, data)
+    purpose = "SBL files reading"
+    global offset, data, data_format
 
-    #Request Download the 1st SBL block
+    SUTE.print_test_purpose(stepno, purpose)
+    
+    offset, data, _, _, data_format = SSBL.Read_vbf_file_SBL(1)
+
+    return result
+
+def step_4(stub, can_send, can_receive, can_namespace, result):
+    """
+    Teststep 4: Extract data for the 1st block from VBF
+    """
+    stepno = 4
+    purpose = "EXtract data for the 1st block from VBF" 
+    global block_addr_by, block_len_by, offset 
+
+    SUTE.print_test_purpose(stepno, purpose)  
+        
+    _, _, block_addr_by, block_len_by, _, _ = SSBL.Block_data_extract(offset, data)
+
+    return result
+
+def step_5(stub, can_send, can_receive, can_namespace, result):
+    """
+    Teststep 5: Request Download the 1st SBL block
+    """
+    stepno = 5
+    purpose = "Request Download the 1st SBL block"  
+
     timeout = 0.05
     min_no_messages = -1
     max_no_messages = -1
@@ -139,41 +160,10 @@ def step_3(stub, can_send, can_receive, can_namespace, result):
     print(SUTE.PP_Decode_7F_response(SC.can_frames[can_receive][0][2]))
     return result
 
-def step_4(stub, can_send, can_receive, can_namespace, result):
-    """
-    Teststep 4: Reset
-    """
-    stepno = 4
-    purpose = "ECU Reset"
-    timeout = 1
-    min_no_messages = -1
-    max_no_messages = -1
-
-    can_m_send = b'\x11\x01'
-    can_mr_extra = ''
-    
-    result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-                                      can_receive, can_namespace, stepno, purpose,
-                                      timeout, min_no_messages, max_no_messages)
-
-    result = result and SUTE.test_message(SC.can_messages[can_receive], teststring='025101')
-    time.sleep(1)
-    return result
-
-def step_5(stub, can_send, can_receive, can_namespace, result):
-    """
-    Teststep 5: Download and Activate SBL after Hard Reset
-    """
-    stepno = 5
-    purpose = "Download and Activation of SBL after Hard Reset"
-    result = result and SSBL.SBL_Activation(stub, can_send,
-                                            can_receive, can_namespace, stepno, purpose)
-    return result
-
 def step_6(stub, can_send, can_receive, can_namespace, result):
     """
     Teststep 6: Reset
-    """ 
+    """
     stepno = 6
     purpose = "ECU Reset"
     timeout = 1
@@ -193,9 +183,40 @@ def step_6(stub, can_send, can_receive, can_namespace, result):
 
 def step_7(stub, can_send, can_receive, can_namespace, result):
     """
-    Teststep 7: verify session
+    Teststep 7: Download and Activate SBL after Hard Reset
     """
     stepno = 7
+    purpose = "Download and Activation of SBL after Hard Reset"
+    result = result and SSBL.SBL_Activation(stub, can_send,
+                                            can_receive, can_namespace, stepno, purpose)
+    return result
+
+def step_8(stub, can_send, can_receive, can_namespace, result):
+    """
+    Teststep 8: Reset
+    """ 
+    stepno = 8
+    purpose = "ECU Reset"
+    timeout = 1
+    min_no_messages = -1
+    max_no_messages = -1
+
+    can_m_send = b'\x11\x01'
+    can_mr_extra = ''
+    
+    result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
+                                      can_receive, can_namespace, stepno, purpose,
+                                      timeout, min_no_messages, max_no_messages)
+
+    result = result and SUTE.test_message(SC.can_messages[can_receive], teststring='025101')
+    time.sleep(1)
+    return result
+
+def step_9(stub, can_send, can_receive, can_namespace, result):
+    """
+    Teststep 9: verify session
+    """
+    stepno = 9
     purpose = "Verify Default session"
     timeout = 1
     min_no_messages = 1
@@ -273,6 +294,16 @@ def run():
     # action: verify RoutineControl start is sent for Type 1
     # result: BECM sends positive reply
     test_result = step_7(network_stub, can_send, can_receive, can_namespace, test_result)
+    
+    # step 8:
+    # action: 
+    # result: 
+    test_result = step_8(network_stub, can_send, can_receive, can_namespace, test_result)
+
+    # step 9:
+    # action: 
+    # result: 
+    test_result = step_9(network_stub, can_send, can_receive, can_namespace, test_result)
    
     ############################################
     # postCondition
