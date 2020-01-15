@@ -26,9 +26,7 @@
 import time
 from datetime import datetime
 import sys
-import binascii
-import intelhex
-import struct
+import logging
 
 import ODTB_conf
 from support_can import Support_CAN
@@ -46,31 +44,28 @@ def precondition(stub, can_send, can_receive, can_namespace, result):
     Precondition for test running:
     BECM has to be kept alive: start heartbeat
     """
-        
     # start heartbeat, repeat every 0.8 second
-    SC.start_heartbeat(stub, "MvcmFront1NMFr", "Front1CANCfg0", b'\x00\x40\xFF\xFF\xFF\xFF\xFF\xFF', 0.4)
+    SC.start_heartbeat(stub, "MvcmFront1NMFr", "Front1CANCfg0",
+                       b'\x00\x40\xFF\xFF\xFF\xFF\xFF\xFF', 0.4)
     
-    SC.start_periodic(stub,"Networkeptalive", True, "Vcu1ToAllFuncFront1DiagReqFrame", "Front1CANCfg0", b'\x02\x3E\x80\x00\x00\x00\x00\x00', 1.02)
+    SC.start_periodic(stub, "Networkeptalive", True, "Vcu1ToAllFuncFront1DiagReqFrame", 
+                      "Front1CANCfg0", b'\x02\x3E\x80\x00\x00\x00\x00\x00', 1.02)
     
     # timeout = more than maxtime script takes
-    timeout = 90   #seconds
-
+    timeout = 90   #seconds"
 
     SC.subscribe_signal(stub, can_send, can_receive, can_namespace, timeout)
     #record signal we send as well
     SC.subscribe_signal(stub, can_receive, can_send, can_namespace, timeout)
 
-    print()
     result = step_0(stub, can_send, can_receive, can_namespace, result)
-
-    print("precondition testok:", result, "\n")
+    logging.info("Precondition testok: %s\n", result)
     return result
 
 def step_0(stub, can_send, can_receive, can_namespace, result):
     """
     Teststep 0: Complete ECU Part/Serial Number(s)
     """
-
     stepno = 0
     purpose = "Complete ECU Part/Serial Number(s)"
     timeout = 1
@@ -83,8 +78,7 @@ def step_0(stub, can_send, can_receive, can_namespace, result):
     result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
                                       can_receive, can_namespace, stepno, purpose,
                                       timeout, min_no_messages, max_no_messages)
-    print(SUTE.PP_CombinedDID_EDA0(SC.can_messages[can_receive][0][2], title=''))
-    time.sleep(1)
+    logging.info('%s', SUTE.PP_CombinedDID_EDA0(SC.can_messages[can_receive][0][2], title=''))
     return result
 
 def step_1(stub, can_send, can_receive, can_namespace, result):
@@ -97,28 +91,28 @@ def step_1(stub, can_send, can_receive, can_namespace, result):
     min_no_messages = -1
     max_no_messages = -1
 
-    can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\x02\x06', b'\x01')
+    can_m_send = SC.can_m_send("RoutineControlRequestSID", b'\x02\x06', b'\x01')
     can_mr_extra = ''
 
     result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
                                       can_receive, can_namespace, stepno, purpose,
                                       timeout, min_no_messages, max_no_messages)
     
-    result = result and SUTE.PP_Decode_Routine_Control_response(SC.can_messages[can_receive][0][2], 'Type1,Completed')
+    result = result and SUTE.PP_Decode_Routine_Control_response(SC.can_messages[can_receive][0][2], 
+                                                                'Type1,Completed')
     return result
 
 def step_2(stub, can_send, can_receive, can_namespace, result):
     """
     Teststep 2: Change to Programming session
     """
-    
     stepno = 2
     purpose = "Change to Programming session(01) from default"
     timeout = 1
     min_no_messages = -1
     max_no_messages = -1
 
-    can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x02', "")
+    can_m_send = SC.can_m_send("DiagnosticSessionControl", b'\x02', "")
     can_mr_extra = ''
     
     result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
@@ -136,36 +130,32 @@ def step_3(stub, can_send, can_receive, can_namespace, result):
     """
     stepno = 3
     purpose = "Security Access Request SID"
-    result = result and SSA.Activation_Security_Access(stub, can_send, can_receive, can_namespace, stepno, purpose) 
+    result = result and SSA.Activation_Security_Access(stub, can_send, can_receive, can_namespace, 
+                                                       stepno, purpose) 
     return result
 
-def step_4(stub, can_send, can_receive, can_namespace, result):
+def step_4():
     """
     Teststep 4: Read VBF files for ESS
     """
     stepno = 4
     purpose = "ESS files reading"
-    global offset, data, data_format
+    global OFFSET, DATA, DATA_FORMAT
 
     SUTE.print_test_purpose(stepno, purpose)
-    
-    offset, _, data, _, data_format, _ = SSBL.Read_vbf_file(1)
+    OFFSET, _, DATA, _, DATA_FORMAT, _ = SSBL.Read_vbf_file(1)
 
-    return result
-
-def step_5(stub, can_send, can_receive, can_namespace, result):
+def step_5():
     """
     Teststep 5: Extract data for the 1st block from VBF
     """
+    global BLOCK_ADDR_BY, BLOCK_LEN_BY
+
     stepno = 5
     purpose = "EXtract data for the 1st block from VBF" 
-    global block_addr_by, block_len_by, offset 
-
-    SUTE.print_test_purpose(stepno, purpose)  
-        
-    _, _, block_addr_by, block_len_by, _, _ = SSBL.Block_data_extract(offset, data)
-
-    return result
+    
+    SUTE.print_test_purpose(stepno, purpose)      
+    _, _, BLOCK_ADDR_BY, BLOCK_LEN_BY, _, _ = SSBL.Block_data_extract(OFFSET, DATA)
 
 def step_6(stub, can_send, can_receive, can_namespace, result):
     """
@@ -178,25 +168,25 @@ def step_6(stub, can_send, can_receive, can_namespace, result):
     min_no_messages = -1
     max_no_messages = -1
         
-    can_m_send = b'\x34' + data_format + b'\x44'+ block_addr_by + block_len_by
+    can_m_send = b'\x34' + DATA_FORMAT + b'\x44'+ BLOCK_ADDR_BY + BLOCK_LEN_BY
     can_mr_extra = '' 
 
     # Parameters for FrameControl FC
-    BS=0
-    ST=0
-    FC_delay = 0 #no wait
-    FC_flag = 48 #continue sends
-    FC_auto = False
+    BS = 0
+    separation_time = 0
+    frame_control_delay = 0 #no wait
+    frame_control_flag = 48 #continue send
+    frame_control_auto = False
 
-    SC.change_MF_FC(can_send, BS, ST, FC_delay, FC_flag, FC_auto)
+    SC.change_MF_FC(can_send, BS, separation_time, frame_control_delay, frame_control_flag,
+                    frame_control_auto)
     
     result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-                                          can_receive, can_namespace, stepno, purpose,
-                                          timeout, min_no_messages, max_no_messages)
-    print(SC.can_messages[can_receive][0][2])
+                                      can_receive, can_namespace, stepno, purpose,
+                                      timeout, min_no_messages, max_no_messages)
+
     result = result and SUTE.test_message(SC.can_messages[can_receive], teststring='7F3431')
-    
-    print(SUTE.PP_Decode_7F_response(SC.can_frames[can_receive][0][2]))
+    logging.info('%s', SUTE.PP_Decode_7F_response(SC.can_frames[can_receive][0][2]))
     return result
 
 def step_7(stub, can_send, can_receive, can_namespace, result):
@@ -217,7 +207,6 @@ def step_7(stub, can_send, can_receive, can_namespace, result):
                                       timeout, min_no_messages, max_no_messages)
 
     result = result and SUTE.test_message(SC.can_messages[can_receive], teststring='025101')
-    time.sleep(1)
     return result
 
 def step_8(stub, can_send, can_receive, can_namespace, result):
@@ -230,22 +219,20 @@ def step_8(stub, can_send, can_receive, can_namespace, result):
     min_no_messages = 1
     max_no_messages = 1
 
-    can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xF1\x86', "")
+    can_m_send = SC.can_m_send("ReadDataByIdentifier", b'\xF1\x86', "")
     can_mr_extra = b'\x01'
     
     result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
                                       can_receive, can_namespace, stepno, purpose,
                                       timeout, min_no_messages, max_no_messages)
-    time.sleep(1)
     return result
     
-
 def run():
     """
-    Run
+    Run - Call other functions from here
     """
-
-    test_result = True
+    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.DEBUG)
+    result = True
 
     # start logging
     # to be implemented
@@ -257,85 +244,84 @@ def run():
     can_receive = "BecmToVcu1Front1DiagResFrame"
     can_namespace = SC.nspace_lookup("Front1CANCfg0")
 
-    print("Testcase start: ", datetime.now())
+    logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
-    print("time ", time.time())
-    print()
+    logging.info("Time: %s \n", time.time())
     ############################################
     # precondition
     ############################################
-    test_result = precondition(network_stub, can_send, can_receive, can_namespace,test_result)
+    result = precondition(network_stub, can_send, can_receive, can_namespace, result)
     
     ############################################
     # teststeps
     ############################################
     # step 1:
-    # action: verify RoutineControl start is sent for Type 1
-    # result: BECM sends positive reply
-    test_result = step_1(network_stub, can_send, can_receive, can_namespace, test_result)
+    # action: 
+    # result: 
+    result = step_1(network_stub, can_send, can_receive, can_namespace, result)
 
     # step 2:
-    # action: Change to Programming session
-    # result: BECM sends positive reply
-    test_result = step_2(network_stub, can_send, can_receive, can_namespace, test_result)
+    # action: 
+    # result: 
+    result = step_2(network_stub, can_send, can_receive, can_namespace, result)
 
     # step 3:
-    # action: Request Security Access
-    # result: BECM sends positive reply
-    test_result = step_3(network_stub, can_send, can_receive, can_namespace, test_result)
+    # action: 
+    # result: 
+    result = step_3(network_stub, can_send, can_receive, can_namespace, result)
     
     # step 4:
-    # action: Send security access key
-    # result: BECM sends positive reply
-    test_result = step_4(network_stub, can_send, can_receive, can_namespace, test_result)
+    # action: 
+    # result: 
+    step_4()
     
     # step 5:
-    # action: SBL Download
-    # result: BECM sends positive reply
-    test_result = step_5(network_stub, can_send, can_receive, can_namespace, test_result)
+    # action: 
+    # result: 
+    step_5()
     
     # step 6:
-    # action: SBL Download
-    # result: BECM sends positive reply
-    test_result = step_6(network_stub, can_send, can_receive, can_namespace, test_result)
+    # action: 
+    # result: 
+    result = step_6(network_stub, can_send, can_receive, can_namespace, result)
     
     # step 7:  
-    # action: verify RoutineControl start is sent for Type 1
-    # result: BECM sends positive reply
-    test_result = step_7(network_stub, can_send, can_receive, can_namespace, test_result)
-    
+    # action: 
+    # result: 
+    result = step_7(network_stub, can_send, can_receive, can_namespace, result)
+    time.sleep(1)
+
     # step 8:
     # action: 
     # result: 
-    test_result = step_8(network_stub, can_send, can_receive, can_namespace, test_result)
-   
+    result = step_8(network_stub, can_send, can_receive, can_namespace, result)
+    time.sleep(1)
+
     ############################################
     # postCondition
     ############################################
             
-    print()
-    print ("time ", time.time())
-    print ("Testcase end: ", datetime.now())
-    print ("Time needed for testrun (seconds): ", int(time.time() - starttime))
+    logging.debug("\nTime: %s \n", time.time())
+    logging.info("Testcase end: %s", datetime.now())
+    logging.info("Time needed for testrun (seconds): %s", int(time.time() - starttime))
 
-    print ("Do cleanup now...")
-    print ("Stop all periodic signals sent")
-    #SC.stop_heartbeat()
+    logging.info("Do cleanup now...")
+    logging.info("Stop all periodic signals sent")
     SC.stop_periodic_all()
-    #time.sleep(5)
 
     # deregister signals
     SC.unsubscribe_signals()
-    # if threads should remain: try to stop them 
+    # if threads should remain: try to stop them
     SC.thread_stop()
-            
-    print ("Test cleanup end: ", datetime.now())
-    print()
-    if test_result:
-        print ("Testcase result: PASSED")
+
+    logging.info("Test cleanup end: %s\n", datetime.now())
+
+    if result:
+        logging.info("Testcase result: PASSED")
     else:
-        print ("Testcase result: FAILED")
-  
+        logging.info("Testcase result: FAILED")
+
+
 if __name__ == '__main__':
     run()
 
