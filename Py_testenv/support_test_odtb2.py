@@ -233,6 +233,41 @@ class Support_test_ODTB2:
         retval = retval + "ECU Serial Number         '" + message[144:152] + "'\n"
         return retval
         
+    def PP_CombinedDID_EDA0_PBL(self, message, title=''):  
+        """
+        PrettyPrint Combined_DID EDA0 for PBL
+        """
+        pos = message.find('EDA0')
+        retval = ""
+        pos1 = message.find('F121', pos)
+        retval = retval + "PBL_Diagnostic_Database_Part_Number '"\
+                        + self.PP_PartNumber (message[ pos1+4: pos1+18], message[ pos1:pos1+4]\
+                        + ' ')\
+                        + "'\n"
+        pos1 = message.find('F12A', pos1+18)
+        retval = retval + "ECU_Core_Assembly PN                '"\
+                        + self.PP_PartNumber (message[ pos1+4: pos1+18], message[ pos1:pos1+4]\
+                        + ' ')\
+                        + "'\n"
+        pos1 = message.find('F12B', pos1+18)
+        retval = retval + "ECU_Delivery_Assembly PN            '"\
+                        + message[ pos1:pos1+4]\
+                        + ' '\
+                        + message[ pos1+4: pos1+12]\
+                        + "'\n"
+        pos1 = message.find('F18C', pos1+12)
+        retval = retval + "ECU_Serial_Number                   '"\
+                        + message[ pos1:pos1+4]\
+                        + ' '\
+                        + message[ pos1+4: pos1+12]\
+                        + "'\n"
+        pos1 = message.find('F125', pos1+12)
+        retval = retval + "PBL_Sw_part_Number                  '"\
+                        + self.PP_PartNumber (message[ pos1+4: pos1+18], message[ pos1:pos1+4]\
+                        + ' ')\
+                        + "'\n"
+        return retval
+        
     def PP_CombinedDID_EDA0_SBL(self, message, title=''): 
         """
         PrettyPrint Combined_DID EDA0 for SBL
