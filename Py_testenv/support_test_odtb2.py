@@ -251,9 +251,8 @@ class Support_test_ODTB2:
                         + "'\n"
         pos1 = message.find('F12B', pos1+18)
         retval = retval + "ECU_Delivery_Assembly PN            '"\
-                        + message[ pos1:pos1+4]\
-                        + ' '\
-                        + message[ pos1+4: pos1+12]\
+                        + self.PP_PartNumber (message[ pos1+4: pos1+18], message[ pos1:pos1+4]\
+                        + ' ')\
                         + "'\n"
         pos1 = message.find('F18C', pos1+12)
         retval = retval + "ECU_Serial_Number                   '"\
@@ -285,10 +284,8 @@ class Support_test_ODTB2:
                         + ' ')\
                         + "'\n"
         pos1 = message.find('F12B', pos1+18)
-        retval = retval + "ECU_Delivery_Assembly PN            '"\
-                        + message[ pos1:pos1+4]\
-                        + ' '\
-                        + message[ pos1+4: pos1+12]\
+        retval = retval + self.PP_PartNumber (message[ pos1+4: pos1+18], message[ pos1:pos1+4]\
+                        + ' ')\
                         + "'\n"
         pos1 = message.find('F18C', pos1+12)
         retval = retval + "ECU_Serial_Number                   '"\
