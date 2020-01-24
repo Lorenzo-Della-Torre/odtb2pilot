@@ -184,7 +184,7 @@ def step_5(margs):
     stepno = 5
     purpose = "Extract all DID from Data Base"
     SUTE.print_test_purpose(stepno, purpose)
-    did_list = SC.Extract_DB_DID_ID(DB_NUMBER, margs)   
+    did_list = SUTE.Extract_DB_DID_ID(DB_NUMBER, margs)   
     return did_list
 
 def step_6(stub, can_send, can_receive, can_namespace, did_list, result):
