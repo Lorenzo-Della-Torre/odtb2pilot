@@ -2,8 +2,11 @@
 # project:  BECM basetech MEPII
 # author:   LDELLATO
 # date:     2020-01-20
+# reqprod:  53843
 # version:  1.0
-# #inspired by https://grpc.io/docs/tutorials/basic/python.html
+
+#inspired by https://grpc.io/docs/tutorials/basic/python.html
+
 # Copyright 2015 gRPC authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
