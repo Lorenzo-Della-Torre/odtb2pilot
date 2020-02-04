@@ -27,17 +27,17 @@ from datetime import datetime
 import time
 import logging
 import sys
+from html import HTML
 from support_test_odtb2 import Support_test_ODTB2
 import ODTB_conf
 import parameters as parammod
 from output.did_dict import sddb_resp_item_dict
 from output.did_dict import sddb_app_did_dict
 from output.did_dict import app_diag_part_num
-
 from support_can import Support_CAN
+
 SC = Support_CAN()
 SUPPORT_TEST = Support_test_ODTB2()
-
 
 def pp_frame_info(msg, did_struct, frame, size, sid):
     ''' Pretty print the frame information '''
@@ -101,7 +101,7 @@ def read_response(network_stub, m_send, m_receive_extra, did, can_send="", can_r
     logging.debug('To send:   [%s, %s, %s]', time.time(), can_send, m_send.upper())
     SC.t_send_signal_CAN_MF(network_stub, can_send, can_rec, can_nspace, m_send, True, 0x00)
     # Wait timeout for getting subscribed data
-    timeout = 5 # wait for message to arrive
+    timeout = 0.2 #0.5 #5 # wait for message to arrive
     time.sleep(timeout)
     SC.clear_all_can_messages()
 
@@ -114,7 +114,6 @@ def read_response(network_stub, m_send, m_receive_extra, did, can_send="", can_r
     temp_message = [] #empty list as default
 
     sid_test = False
-
     for i in SC.can_frames[can_rec]:
         if message_status == 0:
             det_mf = int(i[2][0:1], 16)
@@ -125,20 +124,21 @@ def read_response(network_stub, m_send, m_receive_extra, did, can_send="", can_r
                 sid = frame[2:4]
 
                 # Verify SID, should be 62 (Service 22 + 40)
-                if sid == '62':
+                if sid in ('62', '7F'):
                     sid_test = True
                     did = frame[4:8]
                     index = 8+(int(size)-3)*2
                     payload = frame[8:index]
-                else:
-                    did_struct['error_message'] = 'Wrong SID. 62 expected, received %s' % (sid)
+
                     # Error code received
                     if sid == '7F':
                         did = ''
                         index = 8+(int(size)-3)*2
                         payload = frame[6:index]
-                        decoded_7f = ", Negative response: " + SUPPORT_TEST.PP_CAN_NRC(payload)
-                        did_struct['error_message'] += decoded_7f
+                        decoded_7f = "Negative response: " + SUPPORT_TEST.PP_CAN_NRC(payload)
+                        did_struct['error_message'] = decoded_7f
+                else:
+                    did_struct['error_message'] = 'Wrong SID. 62 expected, received %s' % (sid)
 
                 did_struct['did'] = did
                 did_struct['payload'] = payload
@@ -229,7 +229,7 @@ def precondition(network_stub, can_send, can_receive, can_namespace):
     SC.start_heartbeat(network_stub, "EcmFront1NMFr", "Front1CANCfg0",
                        b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.8)
 
-    timeout = 1000   #seconds
+    timeout = 50   #seconds
     SC.subscribe_signal(network_stub, can_send, can_receive, can_namespace, timeout)
     #record signal we send as well
     SC.subscribe_signal(network_stub, can_receive, can_send, can_namespace, timeout)
@@ -241,7 +241,7 @@ def step_0(network_stub, can_send, can_receive, can_namespace):
     ''' Teststep 0: Complete ECU Part/Serial Number(s) '''
     stepno = 0
     purpose = "Complete ECU Part/Serial Number(s)"
-    timeout = 5
+    timeout = 1
     min_no_messages = -1
     max_no_messages = -1
 
@@ -338,14 +338,10 @@ def mark(did, value):
     Creates checked or unchecked checkbox string
     returns string
     '''
-    msg = ''
+    msg = '[ ]'
     if value in did:
         if did[value]:
             msg = '[X]'
-        else:
-            msg = '[ ]'
-    else:
-        msg = '[ ]'
     return msg
 
 def pp_result(dictionary, result_dict, diagnostic_part_number_match_message):
@@ -384,22 +380,42 @@ def pp_result(dictionary, result_dict, diagnostic_part_number_match_message):
     result += '\n------------------------------------------------------------------------------'
     return result
 
-def match_part_numbers(network_stub, can_send, can_receive, can_namespace, diagnostic_part_number):
+def compare_part_numbers(network_stub, can_send, can_receive, can_namespace,
+                         diagnostic_part_number):
     '''
     Testing so that the Application Diagnostic Database Part Number is correct (matching)
     It is stored in DID F120 and we match with the ssdb part number
     '''
-    did_part_number = parammod.DID_TO_GET_PART_NUMBER
-    did_dict = service_22(network_stub, can_send, can_receive, can_namespace, did_part_number)
+    PART_NUMBER_STRING_LENGTH = 14
 
-    logging.debug('-------------------------------------------------')
-    if diagnostic_part_number == did_dict['payload']:
+    # Get diagnostic part number from ECU (using service 22)
+    did_dict = service_22(network_stub, can_send, can_receive, can_namespace,
+                          parammod.DID_TO_GET_PART_NUMBER)
+    ecu_diag_part_num_full = did_dict['payload']
+
+    # Checking length
+    if len(ecu_diag_part_num_full) != PART_NUMBER_STRING_LENGTH:
+        raise RuntimeError('ECU Diagnostic Part Number is to short!')
+
+    # Extracting the last part of diagnostic part nummer (AA, AB, ...)
+    ecu_diag_part_num_version_hex = ecu_diag_part_num_full[8:PART_NUMBER_STRING_LENGTH]
+    # Decoding from hex to ASCII
+    ecu_diag_part_num_version = bytearray.fromhex(ecu_diag_part_num_version_hex).decode()
+    # Putting it back together to complete string again
+    ecu_diag_part_num_full = ecu_diag_part_num_full[0:8] + ecu_diag_part_num_version
+
+    # Clean underscore (Replace with whitespace) from SDDB file part number
+    sddb_cleaned_part_number = diagnostic_part_number.replace('_', ' ')
+
+    # Comparing part numbers
+    if sddb_cleaned_part_number == ecu_diag_part_num_full:
         diagnostic_part_number_match_message = 'Diagnostic part number is matching!'
     else:
         diagnostic_part_number_match_message = (
             'Diagnostic part number is NOT matching! Expected ' +
-            diagnostic_part_number + ', but got ' + did_dict['payload'])
+            sddb_cleaned_part_number + ', but got ' + ecu_diag_part_num_full)
 
+    logging.debug('-------------------------------------------------')
     logging.debug(diagnostic_part_number_match_message)
     logging.debug(did_dict)
     logging.debug('-------------------------------------------------')
@@ -552,6 +568,97 @@ def scale_data(did_dict_with_result):
         did_dict_with_result['formatted_result_value'] = formatted_result_value_list
     return did_dict_with_result
 
+def add_ws_every_nth_char(payload_in, nth):
+    '''
+    Adds whitespace every n:th character to the supplied string
+    '''
+    result = " ".join(payload_in[i:i+nth] for i in range(0, len(payload_in), nth))
+    return result
+
+def generate_html(outfile, dictionary, pass_or_fail_counter_dict,
+                  diagnostic_part_number_match_message):
+    """Create html table based on the dict"""
+    page = HTML()
+
+    # Adding some style to this page ;)
+    # Example:  Making every other row in a different colour
+    #           Customizing padding
+    #           Customizing links
+    page.style("table {border-collapse: collapse;}"
+               "table, th, td {border: 1px solid black;}"
+               "th, td {text-align: left;}"
+               "th {background-color: lightgrey; padding: 8px;}"
+               "td {padding: 3px;}"
+               "tr:nth-child(even) {background-color: #e3e3e3;}"
+               "a {color:black; text-decoration: none;}"
+               "#header, #match, #passed_fail{background-color: lightgrey; height: 100px;"
+               "line-height: 100px; width: 1000px; text-align:center; vertical-align: middle;"
+               "border:1px black solid; margin:30px;}"
+               "#header {font-size: 50px;}"
+               "#match {font-size: 25px;}"
+               "#passed_fail {font-size: 25px;}"
+               "")
+
+    page.div('Summary Report: Sending all DIDs Test', id='header')
+    page.div(diagnostic_part_number_match_message, id='match')
+    page.div(str(pass_or_fail_counter_dict), id='passed_fail')
+
+    table = page.table()
+
+    did_th = table.th()
+    did_th('DID')
+    table.th('Name')
+    table.th('Scaled values')
+    table.th('Error Message')
+    payload_th = table.th()
+    payload_th('Payload')
+
+    table.tr()
+
+    for data_identifier_object in dictionary.values():
+        #sid_mark = mark(data_identifier_object, 'sid_test')
+        #did_mark = mark(data_identifier_object, 'did_in_response_test')
+        #length_mark = mark(data_identifier_object, 'length_test')
+        did = '  ' + data_identifier_object['ID']
+        name = '  ' + data_identifier_object['Name']
+
+        # First column
+        table.td(did)
+
+        # Second column
+        table.td(name)
+
+        result = str()
+        if 'formatted_result_value' in data_identifier_object:
+            for formatted_result_value in data_identifier_object['formatted_result_value']:
+                result += formatted_result_value + '\n'
+        table.td(result)
+
+        error_message = str()
+        if 'error_message' in data_identifier_object:
+            error_message = data_identifier_object['error_message']
+            error_msg_td = table.td(bgcolor='#ff9ea6')
+            error_msg_td(error_message)
+        else:
+            table.td()
+
+        # Column - Payload
+        payload = ''
+        if 'payload' in data_identifier_object:
+            payload = data_identifier_object['payload']
+            payload = add_ws_every_nth_char(payload, 16)
+        table.td(payload)
+        table.tr()
+
+    now = datetime.now()
+    current_time = now.strftime("Generated %Y-%m-%d %H:%M:%S")
+    page.p(current_time)
+    write_to_file(page, outfile)
+
+def write_to_file(content, outfile):
+    """Write content to outfile"""
+    with open(outfile, 'w') as file:
+        file.write(str(content))
 
 def run():
     ''' run '''
@@ -574,20 +681,22 @@ def run():
     ############################################
     precondition(network_stub, can_send, can_receive, can_namespace)
 
-    #diagnostic_part_number = app_diag_part_num.split('_')
-
     # Testing so that the Application Diagnostic Database Part Number is correct (matching)
     # It is stored in DID F120 and we match with the ssdb part number
-    diagnostic_part_number_match_message = match_part_numbers(network_stub, can_send,
-                                                              can_receive, can_namespace,
-                                                              app_diag_part_num)
+    diagnostic_part_number_match_message = str()
+    try:
+        diagnostic_part_number_match_message = compare_part_numbers(network_stub, can_send,
+                                                                    can_receive, can_namespace,
+                                                                    app_diag_part_num)
+    except RuntimeError as runtime_error:
+        diagnostic_part_number_match_message = runtime_error
 
     # For each line in dictionary_from_file, store result
     pass_or_fail_counter_dict = {"Passed": 0, "Failed": 0}
 
     all_results_dict = dict()
+
     for did_dict_from_file_values in sddb_app_did_dict.values():
-    #for did_dict_from_file_values in sddb_pbl_did_dict.values():
         did_id = did_dict_from_file_values['ID']
 
         did_dict_with_result = did_dict_from_file_values
@@ -607,12 +716,14 @@ def run():
         did_dict_with_result, pass_or_fail_counter_dict = test_response(did_dict_with_result,
                                                                         pass_or_fail_counter_dict,
                                                                         did_id)
-
         # Add the results
         all_results_dict[did_id] = did_dict_with_result
 
     logging.info(pp_result(all_results_dict, pass_or_fail_counter_dict,
                            diagnostic_part_number_match_message))
+
+    generate_html("test_file.html", all_results_dict, pass_or_fail_counter_dict,
+                  diagnostic_part_number_match_message)
 
     ############################################
     # postCondition
