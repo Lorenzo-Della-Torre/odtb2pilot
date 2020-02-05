@@ -39,6 +39,12 @@ from support_can import Support_CAN
 SC = Support_CAN()
 SUPPORT_TEST = Support_test_ODTB2()
 
+# The different status the test run can have
+PASSED_STATUS = 'PASSED'
+FAILED_STATUS = 'FAILED'
+
+COLOR_DICT = {PASSED_STATUS:'#94f7a2', FAILED_STATUS:'#ff9ea6'}
+
 def pp_frame_info(msg, did_struct, frame, size, sid):
     ''' Pretty print the frame information '''
 
@@ -584,71 +590,120 @@ def generate_html(outfile, dictionary, pass_or_fail_counter_dict,
     # Example:  Making every other row in a different colour
     #           Customizing padding
     #           Customizing links
-    page.style("table {border-collapse: collapse;}"
-               "table, th, td {border: 1px solid black;}"
+    page.style("table#main {border-collapse: collapse;}"
+               "table#main, th, td {border: 1px solid black;}"
                "th, td {text-align: left;}"
                "th {background-color: lightgrey; padding: 8px;}"
                "td {padding: 3px;}"
                "tr:nth-child(even) {background-color: #e3e3e3;}"
                "a {color:black; text-decoration: none;}"
-               "#header, #match, #passed_fail{background-color: lightgrey; height: 100px;"
+               "#header, #match, #passed_fail{height: 100px;"
                "line-height: 100px; width: 1000px; text-align:center; vertical-align: middle;"
                "border:1px black solid; margin:30px;}"
-               "#header {font-size: 50px;}"
-               "#match {font-size: 25px;}"
-               "#passed_fail {font-size: 25px;}"
+               "#header {font-size: 50px; background-color: lightgrey;}"
+               "#match {font-size: 25px; background-color: #ffdea6}"
+               "#passed_fail {font-size: 25px; background-color: #ffdea6}"
                "")
 
     page.div('Summary Report: Sending all DIDs Test', id='header')
     page.div(diagnostic_part_number_match_message, id='match')
     page.div(str(pass_or_fail_counter_dict), id='passed_fail')
 
-    table = page.table()
-
-    did_th = table.th()
+    table = page.table(id='main')
+    # First row in table
+    table_row = table.tr()
+    # First column
+    did_th = table_row.th()
     did_th('DID')
-    table.th('Name')
-    table.th('Scaled values')
-    table.th('Error Message')
-    payload_th = table.th()
+    # Next column
+    table_row.th('Name')
+    # Next column
+    table_row.th('Correct SID')
+    # Next column
+    table_row.th('Correct DID')
+    # Next column
+    table_row.th('Correct size')
+    # Next column
+    table_row.th('Scaled values')
+    # Next column
+    table_row.th('Error Message')
+    # Next column
+    payload_th = table_row.th()
     payload_th('Payload')
 
-    table.tr()
 
     for data_identifier_object in dictionary.values():
-        #sid_mark = mark(data_identifier_object, 'sid_test')
-        #did_mark = mark(data_identifier_object, 'did_in_response_test')
-        #length_mark = mark(data_identifier_object, 'length_test')
-        did = '  ' + data_identifier_object['ID']
-        name = '  ' + data_identifier_object['Name']
+        sid_test = False
+        if 'sid_test' in data_identifier_object:
+            sid_test = data_identifier_object['sid_test']
+
+        did_in_response_test = False
+        if 'did_in_response_test' in data_identifier_object:
+            did_in_response_test = data_identifier_object['did_in_response_test']
+
+        length_test = False
+        if 'length_test' in data_identifier_object:
+            length_test = data_identifier_object['length_test']
+
+        did = data_identifier_object['ID']
+        name = data_identifier_object['Name']
+
+        table_row = table.tr()
 
         # First column
-        table.td(did)
+        table_row.td(did)
 
-        # Second column
-        table.td(name)
+        # Second column (Name)
+        name_td = table_row.td(style='white-space: nowrap;')
+        name_td(name)
 
-        result = str()
+        # column (Result)
+        result_td = table_row.td(style='white-space: nowrap;')
+        if sid_test:
+            result_td(style='background-color: ' + COLOR_DICT[PASSED_STATUS])
+        else:
+            result_td(style='background-color: ' + COLOR_DICT[FAILED_STATUS])
+
+        # column (Result)
+        result_td = table_row.td(style='white-space: nowrap;')
+        if did_in_response_test:
+            result_td(style='background-color: ' + COLOR_DICT[PASSED_STATUS])
+        else:
+            result_td(style='background-color: ' + COLOR_DICT[FAILED_STATUS])
+
+        # column (Result)
+        result_td = table_row.td(style='white-space: nowrap;')
+        if length_test:
+            result_td(style='background-color: ' + COLOR_DICT[PASSED_STATUS])
+        else:
+            result_td(style='background-color: ' + COLOR_DICT[FAILED_STATUS])
+
+        table_cell = table_row.td()
+        inner_table = table_cell.table(style='border-style: none; border: 0px;')
         if 'formatted_result_value' in data_identifier_object:
             for formatted_result_value in data_identifier_object['formatted_result_value']:
-                result += formatted_result_value + '\n'
-        table.td(result)
+                inner_tr = inner_table.tr()
+                inner_td = inner_tr.td(style='border-style: none; white-space: nowrap;')
+                inner_td(formatted_result_value)
+        else:
+            inner_tr = inner_table.tr()
+            inner_tr.td(style='border-style: none;')
 
         error_message = str()
         if 'error_message' in data_identifier_object:
             error_message = data_identifier_object['error_message']
-            error_msg_td = table.td(bgcolor='#ff9ea6')
+            error_msg_td = table_row.td(style='white-space: nowrap; background-color:' +
+                                        COLOR_DICT[FAILED_STATUS])
             error_msg_td(error_message)
         else:
-            table.td()
+            table_row.td()
 
         # Column - Payload
         payload = ''
         if 'payload' in data_identifier_object:
             payload = data_identifier_object['payload']
             payload = add_ws_every_nth_char(payload, 16)
-        table.td(payload)
-        table.tr()
+        table_row.td(payload)
 
     now = datetime.now()
     current_time = now.strftime("Generated %Y-%m-%d %H:%M:%S")
