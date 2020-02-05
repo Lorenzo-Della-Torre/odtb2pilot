@@ -777,7 +777,7 @@ def run():
     logging.info(pp_result(all_results_dict, pass_or_fail_counter_dict,
                            diagnostic_part_number_match_message))
 
-    generate_html("test_file.html", all_results_dict, pass_or_fail_counter_dict,
+    generate_html("result_report.html", all_results_dict, pass_or_fail_counter_dict,
                   diagnostic_part_number_match_message)
 
     ############################################
