@@ -133,6 +133,56 @@ class Support_SBL:
         testresult = testresult and self.Check_Memory(stub, can_send, can_rec, can_nspace, step_no, purpose, sw_signature1)
         
         return testresult
+        
+    # Support Function for flashing SW Parts without Check
+    def SW_Part_Download_No_Check(self, stub, can_send="", can_rec="", can_nspace="", step_no='', purpose="", file_N=2):
+        """
+        Software Download
+        """
+        testresult = True
+        purpose = "Software Download"
+        """
+        Read vbf file for SBL download
+        """
+        offset, off, data, sw_signature, data_format, erase = self.Read_vbf_file(file_N)
+        
+        """
+        Erase Memory
+        """   
+        testresult = testresult and self.Flash_Erase(stub, can_send, can_rec, can_nspace, 
+                                                     step_no, purpose, erase, data, off)
+        """
+        Iteration to Download the Software by blocks
+        """
+    
+        while offset < len(data):
+
+            """
+            Extract data block
+            """
+            offset, block_data, block_addr_by, block_len_by, _, block_len = self.Block_data_extract(offset, data)
+
+            #print(self.crc_calculation(data, offset, block_data, block_addr, block_len))
+            """
+            Request Download
+            """
+            resultt, NBL = self.Request_Block_Download(stub, can_send, can_rec, can_nspace, 
+                                                       step_no, purpose, block_addr_by, 
+                                                       block_len_by, data_format)
+            testresult = testresult and resultt
+            """
+            Flash blocks to BECM with transfer data service 0x36
+            """
+            testresult = testresult and self.Flash_blocks(NBL, stub, can_send, can_rec, can_nspace, 
+                                                          step_no, purpose, block_len, block_data)
+
+            """    
+            Transfer data exit with service 0x37
+            """
+            testresult = testresult and self.Transfer_data_exit(stub, can_send, can_rec, 
+                                                                can_nspace, step_no, purpose)
+        
+        return testresult, sw_signature
 
     # Support Function for Flashing and activate Secondary Bootloader from Default session
     def SBL_Activation_Def(self, stub, can_send = "", can_rec = "", can_nspace="", step_no = '', purpose=""):
