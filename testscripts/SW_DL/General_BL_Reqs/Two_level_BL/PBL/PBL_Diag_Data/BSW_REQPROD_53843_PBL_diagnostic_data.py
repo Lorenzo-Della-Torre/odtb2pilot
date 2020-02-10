@@ -110,7 +110,7 @@ def step_1(stub, can_send, can_receive, can_namespace, result):
     Teststep 1: verify RoutineControlRequest is sent for Type 1
     """
     stepno = 1
-    purpose = "verify RoutineControl start are sent for Check Programming Preconditions"
+    purpose = "verify RoutineControl start is sent for Check Programming Preconditions"
     timeout = 1 #wait a second for reply to be send
     min_no_messages = -1
     max_no_messages = -1
