@@ -333,6 +333,46 @@ class Support_SBL:
                 
             val_C = val_Cl + val_Ca
         return val_C
+        
+    #support function for Extracting Check Memory Routine Control Response
+    def PP_Decode_Routine_Check_Memory(self, message):
+        mess_len = len(message)
+        if mess_len == 0:
+            val_C = "PP_Decode_Routine_Control_response: missing message"
+        else:
+            pos = message.find('0212')
+            res = message[pos+7:pos+8]
+            #val = "{0:8b}".format(int(res, 16))
+            if res == '0' or '':
+                val_C = 'The verification is passed'
+            elif res == '1':
+                val_C = 'The signed data could not be authenticated'
+                #testresult=False
+            elif res == '2':
+                val_C = 'The public key integrity check failed'
+            elif res == '3':
+                val_C = 'Invalid format of length of th eVerification Block Table'
+            elif res == '4':
+                val_C = 'The address of hash values of the downloaded data blocks does not match the expected values'
+            elif res == '5':
+                val_C = 'The blank check failed'
+            elif res == '6':
+                val_C = 'No data downloaded at all, nothing to verify'
+            elif res == '7':
+                val_C = 'Read error during hash calculation over memory content'
+            elif res == '8':
+                val_C = 'ESS content is not valid'
+            elif res == '9':
+                val_C = 'Additional processor failed verification'
+            elif res == 'A':
+                val_C = 'Error storing vaildity status information'
+            elif res == 'B':
+                val_C = 'Certioficate verification failed'
+            elif res == 'C':
+                val_C = 'User definable'
+            else:
+                val_C = 'Wrong Decoding'
+        return val_C
     
     #Support function for Routine Complete & Compatible
     def Check_Complete_Compatible_Routine(self, stub, can_send, can_rec, can_nspace, step_no, purpose):
