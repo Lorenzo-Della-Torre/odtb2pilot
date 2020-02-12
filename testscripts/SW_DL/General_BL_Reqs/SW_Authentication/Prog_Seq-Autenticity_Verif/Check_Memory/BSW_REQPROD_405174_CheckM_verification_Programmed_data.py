@@ -56,7 +56,19 @@ def precondition(stub, can_send, can_receive, can_namespace, result):
     SC.subscribe_signal(stub, can_send, can_receive, can_namespace, timeout)
     #record signal we send as well
     SC.subscribe_signal(stub, can_receive, can_send, can_namespace, timeout)
+    
+    #wait for signals to be registered
+    time.sleep(1)
+    # Change FC_auto for signal we’re sending
+    BS = 0
+    separation_time = 0
+    frame_control_delay = 0 #no wait
+    frame_control_flag = 48 #continue send
+    frame_control_auto = False
 
+    SC.change_MF_FC(can_send, BS, separation_time, frame_control_delay, frame_control_flag,
+                    frame_control_auto)
+                    
     result = step_0(stub, can_send, can_receive, can_namespace, result)
     logging.info("Precondition testok: %s\n", result)
     return result
