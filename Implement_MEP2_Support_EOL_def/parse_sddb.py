@@ -62,6 +62,7 @@ def parse_xml_did_info(sddb_path, mode):
     ecu = ecu_determination(root, mode)
     logging.debug('\n ECU: %s\n', ecu)
 
+    diag_part_num_washed = str()
     for ecu_app in root.findall(ecu):
         diag_part_num = ecu_app.attrib[DIAG_PART]
         diag_part_num_washed = diag_part_num.replace(" ", "_")
@@ -152,21 +153,24 @@ def stringify(string):
 
 def main(margs):
     """Parse diagnostic file and output the data in a file."""
-
     # Setting up logging
     logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
     if margs.sddb:
         input_file_name = margs.sddb
+        # Picking only the filename of the path
+        input_file_name = input_file_name.split('\\')[-1]
         create_folder(parammod.OUTPUT_FOLDER)
 
         # Generate output_file_name based on input_file_name(add _WASHED)
+        # Supports both the ending .txt and .sddb
         output_file_name = input_file_name.replace(".txt", "_")
+        output_file_name = input_file_name.replace(".sddb", "_")
         output_file_name = '%s/%s%s.txt' % (parammod.OUTPUT_FOLDER, output_file_name, 'WASHED')
 
         # Read file, decode ugly character to pretty characters, then write it.
-        change_encoding(margs.sddb, output_file_name)
+        change_encoding(input_file_name, output_file_name)
         # Remove unwanted characters
-        wash_xml(margs.sddb, output_file_name)
+        wash_xml(input_file_name, output_file_name)
 
         # Read information from SDDB XML file, put in dicts
         pbl_dict, pbl_diag_part_num = parse_xml_did_info(output_file_name, 'PBL')
