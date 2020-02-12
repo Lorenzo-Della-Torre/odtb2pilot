@@ -31,6 +31,7 @@
 from __future__ import print_function
 import time
 
+import argparse
 import binascii
 
 #sys.path.append('generated')
@@ -326,6 +327,34 @@ class Support_test_ODTB2:
                         + self.PP_PartNumber(message[pos+62:pos+76])\
                         + "'\n"
         return retval
+        
+    def Extract_DB_DID_ID(self, DB, args):
+        """
+        Extract requested data from a Data Base dictionary.
+        """ 
+        message = []
+        parse_did_dict = {}
+        # Import Data Base if Application Diagnostic Database are compatible
+        if args.did_file is not None:
+            module = importlib.import_module(args.did_file[:-3])
+            parse_did_dict = module.parse_ssdb_dict     
+        else:   
+            DB = DB.replace(" ", "_")
+            listoffiles = os.listdir('./output')
+            pattern = 'did_from_{}.py'.format(DB)
+            for entry in listoffiles:
+                if fnmatch.fnmatch(entry, pattern):
+                    entry = entry[:-3]
+                    module = importlib.import_module("output." + entry)
+                    parse_did_dict = module.parse_ssdb_dict 
+
+            # Extract Service ID from DB 
+        if parse_did_dict != {}:
+            for key in parse_did_dict.keys():
+                message.append(parse_did_dict[key].get('ID')) 
+            return message 
+        raise Exception("Pattern " + pattern + " not found: " 
+                        "Insert the dict file of DIDs manually by args")
 
     def PP_CAN_NRC(self, message):
         """
