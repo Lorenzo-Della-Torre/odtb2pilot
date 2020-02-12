@@ -235,7 +235,7 @@ def precondition(network_stub, can_send, can_receive, can_namespace):
     SC.start_heartbeat(network_stub, "EcmFront1NMFr", "Front1CANCfg0",
                        b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.8)
 
-    timeout = 50   #seconds
+    timeout = 100   #seconds
     SC.subscribe_signal(network_stub, can_send, can_receive, can_namespace, timeout)
     #record signal we send as well
     SC.subscribe_signal(network_stub, can_receive, can_send, can_namespace, timeout)
@@ -326,8 +326,9 @@ def test_response(did_dict, pass_or_fail_counter_dict, did_id):
             if 'payload_length' in did_dict:
                 did_dict['error_message'] = 'Size wrong. Expected %s but was %s' % (
                     did_dict['Size'], str(did_dict['payload_length']))
+                pass_or_fail_counter_dict['wrong_size'] += 1
             else:
-                did_dict['error_message'] = 'No payload length?'
+                did_dict['error_message'] = 'No payload?'
 
             did_dict['length_test'] = False
             pass_or_fail_counter_dict['Failed'] += 1
@@ -414,8 +415,11 @@ def compare_part_numbers(network_stub, can_send, can_receive, can_namespace,
     sddb_cleaned_part_number = diagnostic_part_number.replace('_', ' ')
 
     # Comparing part numbers
+    diagnostic_part_number_match = False
     if sddb_cleaned_part_number == ecu_diag_part_num_full:
-        diagnostic_part_number_match_message = 'Diagnostic part number is matching!'
+        diagnostic_part_number_match_message = ('Diagnostic part number is matching! Expected ' +
+        sddb_cleaned_part_number + ', and got ' + ecu_diag_part_num_full)
+        diagnostic_part_number_match = True
     else:
         diagnostic_part_number_match_message = (
             'Diagnostic part number is NOT matching! Expected ' +
@@ -425,7 +429,7 @@ def compare_part_numbers(network_stub, can_send, can_receive, can_namespace,
     logging.debug(diagnostic_part_number_match_message)
     logging.debug(did_dict)
     logging.debug('-------------------------------------------------')
-    return diagnostic_part_number_match_message
+    return diagnostic_part_number_match_message, diagnostic_part_number_match
 
 def get_sub_payload(payload, offset, size):
     '''
@@ -528,16 +532,22 @@ def scale_data(did_dict_with_result):
     For each DID which were tested, look up response items. Scale payload using formula in
     Response Item.
     '''
-
-    payload = did_dict_with_result['payload']
-    did_id = did_dict_with_result['ID']
-    key = '22' + did_id
-    logging.debug('Payload = %s (Length = %s)', payload, did_dict_with_result['payload_length'])
-
-    # For each response item for the dict
     formatted_result_value_list = list()
-    for resp_item in sddb_resp_item_dict[key]:
-        try:
+
+    try:    
+        payload = dict()
+        if 'payload' in did_dict_with_result:
+            payload = did_dict_with_result['payload']
+        else:
+            logging.fatal('No payload to Scale!')
+
+        did_id = did_dict_with_result['ID']
+        key = '22' + did_id
+        logging.debug('Payload = %s (Length = %s)', payload, did_dict_with_result['payload_length'])
+
+        # For each response item for the dict
+        for resp_item in sddb_resp_item_dict[key]:
+
             sub_payload = get_sub_payload(payload, resp_item['Offset'], resp_item['Size'])
             logging.debug('=================================================================')
             logging.debug('Name = %s', resp_item['Name'])
@@ -549,10 +559,13 @@ def scale_data(did_dict_with_result):
                 compare_value = resp_item['CompareValue']
                 compare_value = clean_compare_value(compare_value)
                 if sub_payload != compare_value:
-                    logging.debug('--------------------')
-                    logging.debug('Has compare value! But no match. Comparing %s with %s',
-                                  compare_value, sub_payload)
-                    logging.debug('--------------------')
+                    
+                    match_msg = 'Has compare value, but no match. Comparing %s with %s' % (compare_value, sub_payload)
+                    logging.debug(match_msg)
+
+                    # Adding message, but it will be overwritten if we get a match
+                    #formatted_result_value = resp_item['Name'] + ' = ' + match_msg
+                    #formatted_result_value_list.append(formatted_result_value)
                 else:
                     logging.debug('Equal! Comparing %s with %s', compare_value, sub_payload)
                     # Adding name for easier readability
@@ -567,8 +580,10 @@ def scale_data(did_dict_with_result):
                 # Adding converted raw data
                 formatted_result_value += get_scaled_value(resp_item, sub_payload)
                 formatted_result_value_list.append(formatted_result_value)
-        except RuntimeError as runtime_error:
-            logging.fatal(runtime_error)
+    except RuntimeError as runtime_error:
+        logging.fatal(runtime_error)
+    except KeyError as key_error:
+        logging.fatal(key_error)
 
     if formatted_result_value_list:
         did_dict_with_result['formatted_result_value'] = formatted_result_value_list
@@ -582,7 +597,7 @@ def add_ws_every_nth_char(payload_in, nth):
     return result
 
 def generate_html(outfile, dictionary, pass_or_fail_counter_dict,
-                  diagnostic_part_number_match_message):
+                  diagnostic_part_number_match_message, diagnostic_part_number_match):
     """Create html table based on the dict"""
     page = HTML()
 
@@ -597,39 +612,57 @@ def generate_html(outfile, dictionary, pass_or_fail_counter_dict,
                "td {padding: 3px;}"
                "tr:nth-child(even) {background-color: #e3e3e3;}"
                "a {color:black; text-decoration: none;}"
-               "#header, #match, #passed_fail{height: 100px;"
+               "#header, #match, #no_match, #passed_fail{height: 100px;"
                "line-height: 100px; width: 1000px; text-align:center; vertical-align: middle;"
                "border:1px black solid; margin:30px;}"
                "#header {font-size: 50px; background-color: lightgrey;}"
-               "#match {font-size: 25px; background-color: #ffdea6}"
+               "#match {font-size: 25px; background-color: " + COLOR_DICT[PASSED_STATUS] + "}" #ffdea6}"
+               "#no_match {font-size: 25px; background-color: " + COLOR_DICT[FAILED_STATUS] + "}"   #ffdea6}"
                "#passed_fail {font-size: 25px; background-color: #ffdea6}"
                "")
 
+    # Header box
     page.div('Summary Report: Sending all DIDs Test', id='header')
-    page.div(diagnostic_part_number_match_message, id='match')
+
+    # Match part number box
+    if (diagnostic_part_number_match):
+        page.div(diagnostic_part_number_match_message, id='match')
+    else:
+        page.div(diagnostic_part_number_match_message, id='no_match')
+
+    # Passed/failed counter box
     page.div(str(pass_or_fail_counter_dict), id='passed_fail')
 
     table = page.table(id='main')
     # First row in table
+    table_row_first = table.tr()
+    # First column
+    did_th = table_row_first.th(colspan="2")
+    # Next column
+    correct_th = table_row_first.th(colspan="3")
+    correct_th('Correct')
+    # Next column
+    table_row_first.th(colspan="3")
+
+    
+    # Second row in table
     table_row = table.tr()
     # First column
-    did_th = table_row.th()
-    did_th('DID')
+    did_th = table_row.th('DID')
     # Next column
     table_row.th('Name')
     # Next column
-    table_row.th('Correct SID')
+    table_row.th('SID')
     # Next column
-    table_row.th('Correct DID')
+    table_row.th('DID')
     # Next column
-    table_row.th('Correct size')
+    table_row.th('size')
     # Next column
     table_row.th('Scaled values')
     # Next column
     table_row.th('Error Message')
     # Next column
-    payload_th = table_row.th()
-    payload_th('Payload')
+    table_row.th('Payload')
 
 
     for data_identifier_object in dictionary.values():
@@ -692,8 +725,8 @@ def generate_html(outfile, dictionary, pass_or_fail_counter_dict,
         error_message = str()
         if 'error_message' in data_identifier_object:
             error_message = data_identifier_object['error_message']
-            error_msg_td = table_row.td(style='white-space: nowrap; background-color:' +
-                                        COLOR_DICT[FAILED_STATUS])
+            #error_msg_td = table_row.td(style='white-space: nowrap; background-color:' +
+            error_msg_td = table_row.td(style='background-color:' + COLOR_DICT[FAILED_STATUS])
             error_msg_td(error_message)
         else:
             table_row.td()
@@ -739,15 +772,16 @@ def run():
     # Testing so that the Application Diagnostic Database Part Number is correct (matching)
     # It is stored in DID F120 and we match with the ssdb part number
     diagnostic_part_number_match_message = str()
+    diagnostic_part_number_match = bool()
     try:
-        diagnostic_part_number_match_message = compare_part_numbers(network_stub, can_send,
-                                                                    can_receive, can_namespace,
-                                                                    app_diag_part_num)
+        diagnostic_part_number_match_message, diagnostic_part_number_match = (
+            compare_part_numbers(network_stub, can_send, can_receive, can_namespace,
+                                 app_diag_part_num))
     except RuntimeError as runtime_error:
         diagnostic_part_number_match_message = runtime_error
 
     # For each line in dictionary_from_file, store result
-    pass_or_fail_counter_dict = {"Passed": 0, "Failed": 0}
+    pass_or_fail_counter_dict = {"Passed": 0, "Failed": 0, "wrong_size": 0}
 
     all_results_dict = dict()
 
@@ -778,7 +812,7 @@ def run():
                            diagnostic_part_number_match_message))
 
     generate_html("result_report.html", all_results_dict, pass_or_fail_counter_dict,
-                  diagnostic_part_number_match_message)
+                  diagnostic_part_number_match_message, diagnostic_part_number_match)
 
     ############################################
     # postCondition
