@@ -1,7 +1,7 @@
 # project:  ODTB2 testenvironment using SignalBroker
 # author:   hweiler (Hans-Klaus Weiler)
-# date:     2020-01-23
-# version:  1.1
+# date:     2020-02-12
+# version:  1.2
 
 
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
@@ -689,7 +689,7 @@ class Support_CAN:
             # send payload as MF
 
             #send FirstFrame:
-            self.send_FF_CAN(stub, signal_name, namespace, frequency=0)
+            self.send_FF_CAN(stub, signal_name, namespace, freq=0)
             #send ConsecutiveFrames:
             self.send_CF_CAN(stub, signal_name, rec_name, namespace)
 
@@ -896,6 +896,8 @@ class Support_CAN:
         """
         if name == "DiagnosticSessionControl":
             ret = b'\x10' + message
+        elif name == "ECUResetHardReset":
+            ret = b'\x11\x01' + message
         elif name == "ClearDiagnosticInformation":
             ret = b'\x14' + message
         elif name == "ReadDTCInfoExtDataRecordByDTCNumber":
