@@ -11,4 +11,4 @@ pylint:
   stage: Static Analysis
   allow_failure: true
   script:
-  - pylint -d C0301 *.py
+  - pylint --ignored-classes=_socketobject *.py
