@@ -26,9 +26,6 @@
 import time
 from datetime import datetime
 import sys
-import binascii
-import intelhex
-import struct
 
 import ODTB_conf
 from support_can import Support_CAN
