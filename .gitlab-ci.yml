@@ -11,4 +11,6 @@ pylint:
   stage: Static Analysis
   allow_failure: true
   script:
-  - pylint -d C0301 *.py
+  - pylint -d C0301 Py_testenv/*.py
+  - pylint autotest/*.py
+  - pylint testscripts/*.py
