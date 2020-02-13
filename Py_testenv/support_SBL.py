@@ -405,7 +405,7 @@ class Support_SBL:
     #Read and decode vbf files for Secondary Bootloader
     def Read_vbf_file_SBL(self, file_N = 1):
         unpack = struct.unpack
-        data = SUTE.main(sys.argv[file_N])
+        data = SUTE.read_f(sys.argv[file_N])
         find = data.find
         header_len = find(b'\x3B\x0D\x0A\x7D') + 4
         #print ('Header length: 0x%04X' % header_len)
@@ -434,7 +434,7 @@ class Support_SBL:
     #Read and decode vbf files for Software Parts
     def Read_vbf_file(self, file_N):
         unpack = struct.unpack
-        data = SUTE.main(sys.argv[file_N])
+        data = SUTE.read_f(sys.argv[file_N])
         find = data.find 
         header_len = find(b'\x3B\x0D\x0A\x7D') + 4
         #print ('Header length: 0x%04X' % header_len)
