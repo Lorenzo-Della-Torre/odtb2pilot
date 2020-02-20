@@ -143,7 +143,7 @@ def step_4():
     global OFFSET, DATA, DATA_FORMAT
 
     SUTE.print_test_purpose(stepno, purpose)
-    OFFSET, _, DATA, _, DATA_FORMAT, _ = SSBL.Read_vbf_file(1)
+    OFFSET, _, DATA, _, DATA_FORMAT, _ = SSBL.read_vbf_file(1)
 
 def step_5():
     """
@@ -155,7 +155,7 @@ def step_5():
     purpose = "EXtract data for the 1st block from VBF"
 
     SUTE.print_test_purpose(stepno, purpose)
-    _, _, BLOCK_ADDR_BY, BLOCK_LEN_BY, _, _ = SSBL.Block_data_extract(OFFSET, DATA)
+    _, _, BLOCK_ADDR_BY, BLOCK_LEN_BY, _, _ = SSBL.block_data_extract(OFFSET, DATA)
 
 def step_6(stub, can_send, can_receive, can_namespace, result):
     """

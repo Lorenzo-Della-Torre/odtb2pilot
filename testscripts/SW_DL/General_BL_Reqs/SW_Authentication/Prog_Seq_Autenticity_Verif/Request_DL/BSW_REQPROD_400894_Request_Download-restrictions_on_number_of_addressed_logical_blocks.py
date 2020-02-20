@@ -88,7 +88,7 @@ def step_1(stub, can_send, can_receive, can_namespace, result):
     """
     stepno = 1
     purpose = "Download and Activation of SBL"
-    result = result and SSBL.SBL_Activation(stub, can_send, can_receive, can_namespace,
+    result = result and SSBL.sbl_activation(stub, can_send, can_receive, can_namespace,
                                             stepno, purpose)
     return result
 
@@ -98,7 +98,7 @@ def step_2(stub, can_send, can_receive, can_namespace, result):
     """
     stepno = 2
     purpose = "ESS Software Part Download"
-    result = result and SSBL.SW_Part_Download(stub, can_send, can_receive,
+    result = result and SSBL.sw_part_download(stub, can_send, can_receive,
                                               can_namespace, stepno, purpose, 2)
     return result
 
@@ -112,7 +112,7 @@ def step_3():
 
     SUTE.print_test_purpose(stepno, purpose)
 
-    OFFSET, _, DATA, _, DATA_FORMAT, _ = SSBL.Read_vbf_file(3)
+    OFFSET, _, DATA, _, DATA_FORMAT, _ = SSBL.read_vbf_file(3)
 
 def step_4():
     """
@@ -124,7 +124,7 @@ def step_4():
 
     SUTE.print_test_purpose(stepno, purpose)
 
-    _, _, BLOCK_ADDR_BY, BLOCK_LEN_BY, _, _ = SSBL.Block_data_extract(OFFSET, DATA)
+    _, _, BLOCK_ADDR_BY, BLOCK_LEN_BY, _, _ = SSBL.block_data_extract(OFFSET, DATA)
 
 def step_5(stub, can_send, can_receive, can_namespace, result):
     """
@@ -136,7 +136,7 @@ def step_5(stub, can_send, can_receive, can_namespace, result):
 
     SUTE.print_test_purpose(stepno, purpose)
 
-    resultt, _ = SSBL.Request_Block_Download(stub, can_send, can_receive, can_namespace, stepno, purpose,
+    resultt, _ = SSBL.request_block_download(stub, can_send, can_receive, can_namespace, stepno, purpose,
                                              BLOCK_ADDR_BY, BLOCK_LEN_BY, DATA_FORMAT)
     result = result and resultt
     return result
@@ -151,7 +151,7 @@ def step_6():
 
     SUTE.print_test_purpose(stepno, purpose)
 
-    OFFSET_2, _, DATA_2, _, DATA_FORMAT_2, _ = SSBL.Read_vbf_file(4)
+    OFFSET_2, _, DATA_2, _, DATA_FORMAT_2, _ = SSBL.read_vbf_file(4)
 
 def step_7():
     """
@@ -163,7 +163,7 @@ def step_7():
 
     SUTE.print_test_purpose(stepno, purpose)
 
-    _, _, BLOCK_ADDR_BY_2, BLOCK_LEN_BY_2, _, _ = SSBL.Block_data_extract(OFFSET_2, DATA_2)
+    _, _, BLOCK_ADDR_BY_2, BLOCK_LEN_BY_2, _, _ = SSBL.block_data_extract(OFFSET_2, DATA_2)
 
 def step_8(stub, can_send, can_receive, can_namespace, result):
     """
@@ -206,7 +206,7 @@ def step_9(stub, can_send, can_receive, can_namespace, result):
 
     SUTE.print_test_purpose(stepno, purpose)
 
-    resultt, _ = SSBL.Request_Block_Download(stub, can_send, can_receive, can_namespace, stepno, purpose,
+    resultt, _ = SSBL.request_block_download(stub, can_send, can_receive, can_namespace, stepno, purpose,
                                              BLOCK_ADDR_BY, BLOCK_LEN_BY, DATA_FORMAT)
     result = result and resultt
     return result
@@ -220,7 +220,7 @@ def step_10(stub, can_send, can_receive, can_namespace, result):
 
     for i in range(3, 7):
 
-        result = result and SSBL.SW_Part_Download(stub, can_send, can_receive,
+        result = result and SSBL.sw_part_download(stub, can_send, can_receive,
                                                   can_namespace, stepno, purpose, i)
 
     return result
@@ -232,7 +232,7 @@ def step_11(stub, can_send, can_receive, can_namespace, result):
     stepno = 11
     purpose = "verify RoutineControl start are sent for Type 1"
 
-    result = result and SSBL.Check_Complete_Compatible_Routine(stub, can_send, can_receive,
+    result = result and SSBL.check_complete_compatible_routine(stub, can_send, can_receive,
                                                                can_namespace, stepno, purpose)
     result = result and SUTE.test_message(SC.can_messages[can_receive], 'Complete, Compatible')
     return result

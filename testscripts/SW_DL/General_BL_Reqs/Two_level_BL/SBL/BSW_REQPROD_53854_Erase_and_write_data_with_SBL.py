@@ -177,7 +177,7 @@ def step_5(stub, can_send, can_receive, can_namespace, result):
     global call
     stepno = 5
     purpose = "Download and Activation of SBL"
-    resultt, call = SSBL.SBL_Download(stub, can_send,
+    resultt, call = SSBL.sbl_download(stub, can_send,
                                       can_receive, can_namespace, stepno, purpose)
     result = result and resultt
     return result
@@ -189,7 +189,7 @@ def step_6(stub, can_send, can_receive, can_namespace, result):
     global call
     stepno = 6
     purpose = "Activation of SBL"
-    result = result and SSBL.Activate_SBL(stub, can_send,
+    result = result and SSBL.activate_sbl(stub, can_send,
                                           can_receive, can_namespace, stepno, purpose, call)
     return result
 

@@ -77,7 +77,7 @@ def step_1(stub, can_send, can_receive, can_namespace, result):
     """
     stepno = 1
     purpose = "Download and Activation of SBL"
-    result = result and SSBL.SBL_Activation(stub, can_send, can_receive, can_namespace,
+    result = result and SSBL.sbl_activation(stub, can_send, can_receive, can_namespace,
                                             stepno, purpose)
     return result
 
@@ -87,7 +87,7 @@ def step_2(stub, can_send, can_receive, can_namespace, result):
     """
     stepno = 2
     purpose = "ESS Software Part Download without Check Routine"
-    resultt, sw_signature = SSBL.SW_Part_Download_No_Check(stub, can_send, can_receive,
+    resultt, sw_signature = SSBL.sw_part_download_no_check(stub, can_send, can_receive,
                                                            can_namespace, stepno, purpose, 2)
     result = result and resultt
     return result, sw_signature
@@ -98,9 +98,9 @@ def step_3(stub, can_send, can_receive, can_namespace, result):
     """
     stepno = 3
     purpose = "verify RoutineControl start are sent for Type 1"
-    result = result and SSBL.Check_Complete_Compatible_Routine(stub, can_send, can_receive,
+    result = result and SSBL.check_complete_compatible_routine(stub, can_send, can_receive,
                                                                can_namespace, stepno, purpose)
-    result = result and (SSBL.PP_Decode_Routine_Complete_Compatible
+    result = result and (SSBL.pp_decode_routine_complete_compatible
                          (SC.can_messages[can_receive][0][2]) == 'Not Complete, Compatible')
     res_before_check_memory = SC.can_messages[can_receive][0][2]
     return result, res_before_check_memory
@@ -111,7 +111,7 @@ def step_4(stub, can_send, can_receive, can_namespace, sw_signature, result):
     """
     stepno = 4
     purpose = "Check Memory"
-    result = result and SSBL.Check_Memory(stub, can_send, can_receive, can_namespace,
+    result = result and SSBL.check_memory(stub, can_send, can_receive, can_namespace,
                                           stepno, purpose, sw_signature)
     return result
 
@@ -121,9 +121,9 @@ def step_5(stub, can_send, can_receive, can_namespace, result):
     """
     stepno = 5
     purpose = "verify RoutineControl start are sent for Type 1"
-    result = result and SSBL.Check_Complete_Compatible_Routine(stub, can_send, can_receive,
+    result = result and SSBL.check_complete_compatible_routine(stub, can_send, can_receive,
                                                                can_namespace, stepno, purpose)
-    result = result and (SSBL.PP_Decode_Routine_Complete_Compatible
+    result = result and (SSBL.pp_decode_routine_complete_compatible
                          (SC.can_messages[can_receive][0][2]) == 'Not Complete, Compatible')
     res_after_check_memory = SC.can_messages[can_receive][0][2]
     return result, res_after_check_memory
@@ -145,7 +145,7 @@ def step_7(stub, can_send, can_receive, can_namespace, result):
     stepno = 7
     purpose = "continue Download SW"
     for i in range(3, 7):
-        result = result and SSBL.SW_Part_Download(stub, can_send, can_receive,
+        result = result and SSBL.sw_part_download(stub, can_send, can_receive,
                                                   can_namespace, stepno, purpose, i)
     return result
 
@@ -155,9 +155,9 @@ def step_8(stub, can_send, can_receive, can_namespace, result):
     """
     stepno = 8
     purpose = "verify RoutineControl start are sent for Type 1"
-    result = result and SSBL.Check_Complete_Compatible_Routine(stub, can_send, can_receive,
+    result = result and SSBL.check_complete_compatible_routine(stub, can_send, can_receive,
                                                                can_namespace, stepno, purpose)
-    result = result and (SSBL.PP_Decode_Routine_Complete_Compatible
+    result = result and (SSBL.pp_decode_routine_complete_compatible
                          (SC.can_messages[can_receive][0][2]) == 'Complete, Compatible')
     return result
 

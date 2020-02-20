@@ -85,7 +85,7 @@ def step_1(stub, can_send, can_receive, can_namespace, result):
     """
     stepno = 1
     purpose = "Download of SBL"
-    result = result and SSBL.SBL_Download(stub, can_send,
+    result = result and SSBL.sbl_download(stub, can_send,
                                             can_receive, can_namespace, stepno, purpose)
     return result
 
@@ -95,7 +95,7 @@ def step_2(stub, can_send, can_receive, can_namespace, result):
     """
     stepno = 2
     purpose = "Re-Download and Activation of SBL"
-    result = result and SSBL.SBL_Activation(stub, can_send,
+    result = result and SSBL.sbl_activation(stub, can_send,
                                             can_receive, can_namespace, stepno, purpose)
     return result
 
@@ -109,7 +109,7 @@ def step_3(stub, can_send, can_receive, can_namespace, result):
 
     SUTE.print_test_purpose(stepno, purpose)
 
-    offset, data, _, _, data_format = SSBL.Read_vbf_file_SBL(1)
+    offset, data, _, _, data_format = SSBL.read_vbf_file_sbl(1)
 
     return result
 
@@ -123,7 +123,7 @@ def step_4(stub, can_send, can_receive, can_namespace, result):
 
     SUTE.print_test_purpose(stepno, purpose)
 
-    _, _, block_addr_by, block_len_by, _, _ = SSBL.Block_data_extract(offset, data)
+    _, _, block_addr_by, block_len_by, _, _ = SSBL.block_data_extract(offset, data)
 
     return result
 
@@ -185,7 +185,7 @@ def step_7(stub, can_send, can_receive, can_namespace, result):
     """
     stepno = 7
     purpose = "Download and Activation of SBL after Hard Reset"
-    result = result and SSBL.SBL_Activation(stub, can_send,
+    result = result and SSBL.sbl_activation(stub, can_send,
                                             can_receive, can_namespace, stepno, purpose)
     return result
 

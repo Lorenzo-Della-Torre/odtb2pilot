@@ -43,12 +43,12 @@ def precondition(stub, can_send, can_receive, can_namespace, result):
     Precondition for test running:
     BECM has to be kept alive: start heartbeat
     """
-        
+
     # start heartbeat, repeat every 0.8 second
     SC.start_heartbeat(stub, "MvcmFront1NMFr", "Front1CANCfg0", b'\x00\x40\xFF\xFF\xFF\xFF\xFF\xFF', 0.4)
-    
+
     SC.start_periodic(stub,"Networkeptalive", True, "Vcu1ToAllFuncFront1DiagReqFrame", "Front1CANCfg0", b'\x02\x3E\x80\x00\x00\x00\x00\x00', 1.02)
-    
+
     # timeout = more than maxtime script takes
     #timeout = 90   #seconds
     timeout = 2000   #seconds"
@@ -91,7 +91,7 @@ def step_1(stub, can_send, can_receive, can_namespace, result):
     """
     stepno = 1
     purpose = "Download and Activation of SBL"
-    result = result and SSBL.SBL_Activation(stub, can_send,
+    result = result and SSBL.sbl_activation(stub, can_send,
                                             can_receive, can_namespace, stepno, purpose)
     return result
 
@@ -101,7 +101,7 @@ def step_2(stub, can_send, can_receive, can_namespace, result):
     """
     stepno = 2
     purpose = "ESS Software Part Download"
-    result = result and SSBL.SW_Part_Download(stub, can_send, can_receive, 
+    result = result and SSBL.sw_part_download(stub, can_send, can_receive,
                                               can_namespace, stepno, purpose, 2)
     return result
 
@@ -111,8 +111,8 @@ def step_3(stub, can_send, can_receive, can_namespace, result):
     """
     stepno = 3
     purpose = "Not Compatible Software Download"
-    
-    result = result and SSBL.SW_Part_Download(stub, can_send, can_receive, 
+
+    result = result and SSBL.sw_part_download(stub, can_send, can_receive,
                                               can_namespace, stepno, purpose, 3)
     return result
 
@@ -123,20 +123,20 @@ def step_4(stub, can_send, can_receive, can_namespace, result):
     stepno = 4
     purpose = "verify RoutineControl start are sent for Type 1"
 
-    result = result and SSBL.Check_Complete_Compatible_Routine(stub, can_send, can_receive, 
+    result = result and SSBL.check_complete_compatible_routine(stub, can_send, can_receive,
                                                                can_namespace, stepno, purpose)
     result = result and SUTE.test_message(SC.can_messages[can_receive], 'Not Complete, Compatible')
     return result
 
-def step_5(stub, can_send, can_receive, can_namespace, result):    
+def step_5(stub, can_send, can_receive, can_namespace, result):
     """
     Download other SW Parts
     """
     stepno = 5
     purpose = "continue Download SW"
     for i in range(4, 7):
-        
-        result = result and SSBL.SW_Part_Download(stub, can_send, can_receive, 
+
+        result = result and SSBL.sw_part_download(stub, can_send, can_receive,
                                                   can_namespace, stepno, purpose, i)
 
     return result
@@ -148,7 +148,7 @@ def step_6(stub, can_send, can_receive, can_namespace, result):
     stepno = 6
     purpose = "verify RoutineControl start are sent for Type 1"
 
-    result = result and SSBL.Check_Complete_Compatible_Routine(stub, can_send, can_receive, 
+    result = result and SSBL.check_complete_compatible_routine(stub, can_send, can_receive,
                                                                can_namespace, stepno, purpose)
     result = result and SUTE.test_message(SC.can_messages[can_receive], 'Complete, Not Compatible')
     return result
@@ -157,7 +157,7 @@ def step_7(stub, can_send, can_receive, can_namespace, result):
     """
     Teststep 7: Reset
     """
-    
+
     stepno = 7
     purpose = "ECU Reset"
     timeout = 1
@@ -166,7 +166,7 @@ def step_7(stub, can_send, can_receive, can_namespace, result):
 
     can_m_send = b'\x11\x01'
     can_mr_extra = ''
-    
+
     result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
                                       can_receive, can_namespace, stepno, purpose,
                                       timeout, min_no_messages, max_no_messages)
@@ -181,23 +181,23 @@ def step_8(stub, can_send, can_receive, can_namespace, result):
     """
     stepno = 8
     purpose = "Download and Activation of SBL"
-    result = result and SSBL.SBL_Activation(stub, can_send,
+    result = result and SSBL.sbl_activation(stub, can_send,
                                             can_receive, can_namespace, stepno, purpose)
     return result
 
-def step_9(stub, can_send, can_receive, can_namespace, result):    
+def step_9(stub, can_send, can_receive, can_namespace, result):
     """
     Teststep 9: Download Compatibles SW Parts
     """
     stepno = 9
     purpose = "Download compatibles SW"
-    result = result and SSBL.SW_Part_Download(stub, can_send, can_receive, 
+    result = result and SSBL.sw_part_download(stub, can_send, can_receive,
                                               can_namespace, stepno, purpose, 2)
-    result = result and SSBL.SW_Part_Download(stub, can_send, can_receive, 
+    result = result and SSBL.sw_part_download(stub, can_send, can_receive,
                                               can_namespace, stepno, purpose, 7)
     for i in range(4, 7):
-        
-        result = result and SSBL.SW_Part_Download(stub, can_send, can_receive, 
+
+        result = result and SSBL.sw_part_download(stub, can_send, can_receive,
                                                   can_namespace, stepno, purpose, i)
 
     return result
@@ -209,7 +209,7 @@ def step_10(stub, can_send, can_receive, can_namespace, result):
     stepno = 10
     purpose = "verify RoutineControl start are sent for Type 1"
 
-    result = result and SSBL.Check_Complete_Compatible_Routine(stub, can_send, can_receive, 
+    result = result and SSBL.check_complete_compatible_routine(stub, can_send, can_receive,
                                                                can_namespace, stepno, purpose)
     result = result and SUTE.test_message(SC.can_messages[can_receive], 'Complete, Compatible')
     return result
@@ -217,7 +217,7 @@ def step_10(stub, can_send, can_receive, can_namespace, result):
 def step_11(stub, can_send, can_receive, can_namespace, result):
     """
     Teststep 11: Reset
-    """ 
+    """
     stepno = 11
     purpose = "ECU Reset"
     timeout = 1
@@ -226,7 +226,7 @@ def step_11(stub, can_send, can_receive, can_namespace, result):
 
     can_m_send = b'\x11\x01'
     can_mr_extra = ''
-    
+
     result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
                                       can_receive, can_namespace, stepno, purpose,
                                       timeout, min_no_messages, max_no_messages)
@@ -247,7 +247,7 @@ def step_12(stub, can_send, can_receive, can_namespace, result):
 
     can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xF1\x86', "")
     can_mr_extra = b'\x01'
-    
+
     result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
                                       can_receive, can_namespace, stepno, purpose,
                                       timeout, min_no_messages, max_no_messages)
@@ -279,7 +279,7 @@ def run():
     # precondition
     ############################################
     test_result = precondition(network_stub, can_send, can_receive, can_namespace,test_result)
-    
+
     ############################################
     # teststeps
     ############################################
@@ -292,61 +292,61 @@ def run():
     # action:
     # result: BECM sends positive reply
     test_result = step_2(network_stub, can_send, can_receive, can_namespace, test_result)
-    
+
     # step 3:
-    # action: 
+    # action:
     # result: BECM sends positive reply
     test_result = step_3(network_stub, can_send, can_receive, can_namespace, test_result)
-    
+
     # step 4:
-    # action: 
+    # action:
     # result: BECM sends positive reply
     test_result = step_4(network_stub, can_send, can_receive, can_namespace, test_result)
-    
+
     # step 5:
-    # action: 
+    # action:
     # result: BECM sends positive reply
     test_result = step_5(network_stub, can_send, can_receive, can_namespace, test_result)
 
     # step 6:
-    # action: 
+    # action:
     # result: BECM sends positive reply
     test_result = step_6(network_stub, can_send, can_receive, can_namespace, test_result)
 
     # step 7:
-    # action: 
+    # action:
     # result: BECM sends positive reply
     test_result = step_7(network_stub, can_send, can_receive, can_namespace, test_result)
 
     # step 8:
-    # action: 
+    # action:
     # result: BECM sends positive reply
     test_result = step_8(network_stub, can_send, can_receive, can_namespace, test_result)
 
     # step 9:
-    # action: 
+    # action:
     # result: BECM sends positive reply
     test_result = step_9(network_stub, can_send, can_receive, can_namespace, test_result)
 
     # step 10:
-    # action: 
+    # action:
     # result: BECM sends positive reply
     test_result = step_10(network_stub, can_send, can_receive, can_namespace, test_result)
 
     # step 11:
-    # action: 
+    # action:
     # result: BECM sends positive reply
     test_result = step_11(network_stub, can_send, can_receive, can_namespace, test_result)
 
     # step 12:
-    # action: 
+    # action:
     # result: BECM sends positive reply5
     test_result = step_12(network_stub, can_send, can_receive, can_namespace, test_result)
-   
+
     ############################################
     # postCondition
     ############################################
-            
+
     print()
     print ("time ", time.time())
     print ("Testcase end: ", datetime.now())
@@ -360,9 +360,9 @@ def run():
 
     # deregister signals
     SC.unsubscribe_signals()
-    # if threads should remain: try to stop them 
+    # if threads should remain: try to stop them
     SC.thread_stop()
-            
+
     print ("Test cleanup end: ", datetime.now())
     print()
     if test_result:
@@ -370,6 +370,6 @@ def run():
     else:
         print ("Testcase result: FAILED")
 
-    
+
 if __name__ == '__main__':
     run()
