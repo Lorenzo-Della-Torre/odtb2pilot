@@ -622,7 +622,7 @@ class Support_SBL:
         testresult = True
         min_no_messages = 1
         max_no_messages = 1
-        timeout = 0.02
+        timeout = 0.05
         can_m_send = b'\x37'
         can_mr_extra = ''
         testresult = testresult and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
