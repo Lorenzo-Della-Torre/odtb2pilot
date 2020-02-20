@@ -46,12 +46,12 @@ def precondition(stub, can_send, can_receive, can_namespace, result):
     Precondition for test running:
     BECM has to be kept alive: start heartbeat
     """
-        
+
     # start heartbeat, repeat every 0.8 second
     SC.start_heartbeat(stub, "MvcmFront1NMFr", "Front1CANCfg0", b'\x00\x40\xFF\xFF\xFF\xFF\xFF\xFF', 0.4)
-    
+
     SC.start_periodic(stub,"Networkeptalive", True, "Vcu1ToAllFuncFront1DiagReqFrame", "Front1CANCfg0", b'\x02\x3E\x80\x00\x00\x00\x00\x00', 1.02)
-    
+
     # timeout = more than maxtime script takes
     timeout = 90   #seconds"
 
@@ -92,11 +92,11 @@ def step_1(stub, can_send, can_receive, can_namespace, result):
     """
     stepno = 1
     purpose = "Download and Activation of SBL"
-    result = result and SSBL.SBL_Activation(stub, can_send,
+    result = result and SSBL.sbl_activation(stub, can_send,
                                             can_receive, can_namespace, stepno, purpose)
-    
+
     return result
-    
+
 def step_2(stub, can_send, can_receive, can_namespace, result):
     """
     Teststep 2: test presence of tester preset Zero Sub Function
@@ -150,7 +150,7 @@ def step_4(stub, can_send, can_receive, can_namespace, result):
 
     can_m_send =  b'\x2E\xF1\x86\x02'
     can_mr_extra = ''
-    
+
     result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
                                       can_receive, can_namespace, stepno, purpose,
                                       timeout, min_no_messages, max_no_messages)
@@ -160,20 +160,20 @@ def step_4(stub, can_send, can_receive, can_namespace, result):
     time.sleep(1)
     return result
 
-def step_5(stub, can_send, can_receive, can_namespace, result):    
+def step_5(stub, can_send, can_receive, can_namespace, result):
     """
     Teststep 5: Security Access Request SID
     """
     global R
     stepno = 5
-    purpose = "Security Access Request SID" 
+    purpose = "Security Access Request SID"
     timeout = 0.05
     min_no_messages = -1
     max_no_messages = -1
 
     can_m_send = b'\x27\x01'
     can_mr_extra = ''
-    
+
     result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
                                       can_receive, can_namespace, stepno, purpose,
                                       timeout, min_no_messages, max_no_messages)
@@ -187,18 +187,18 @@ def step_6(stub, can_send, can_receive, can_namespace, result):
     """
     global R
     stepno = 6
-    purpose = "Security Access Send Key" 
+    purpose = "Security Access Send Key"
     timeout = 1
     min_no_messages = -1
     max_no_messages = -1
 
     can_m_send = b'\x27\x02'+ R
     can_mr_extra = ''
-    
+
     result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
                                       can_receive, can_namespace, stepno, purpose,
                                       timeout, min_no_messages, max_no_messages)
-    result = result and SUTE.test_message(SC.can_messages[can_receive], '7F2724') 
+    result = result and SUTE.test_message(SC.can_messages[can_receive], '7F2724')
     time.sleep(1)
     return result
 
@@ -214,7 +214,7 @@ def step_7(stub, can_send, can_receive, can_namespace, result):
 
     can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x02', "")
     can_mr_extra = ''
-    
+
     result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
                                       can_receive, can_namespace, stepno, purpose,
                                       timeout, min_no_messages, max_no_messages)
@@ -243,9 +243,9 @@ def step_8(stub, can_send, can_receive, can_namespace, result):
     result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
                                       can_receive, can_namespace, stepno, purpose,
                                       timeout, min_no_messages, max_no_messages)
-    
+
     result = result and SUTE.test_message(SC.can_messages[can_receive], SBL_Part_N)
-    
+
     time.sleep(1)
     return result
 
@@ -261,7 +261,7 @@ def step_9(stub, can_send, can_receive, can_namespace, result):
 
     can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x01', "")
     can_mr_extra = ''
-    
+
     result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
                                       can_receive, can_namespace, stepno, purpose,
                                       timeout, min_no_messages, max_no_messages)
@@ -272,7 +272,7 @@ def step_9(stub, can_send, can_receive, can_namespace, result):
 def step_10(stub, can_send, can_receive, can_namespace, result):
     """
     Teststep 10: Reset
-    """ 
+    """
     stepno = 10
     purpose = "ECU Reset"
     timeout = 1
@@ -281,7 +281,7 @@ def step_10(stub, can_send, can_receive, can_namespace, result):
 
     can_m_send = b'\x11\x01'
     can_mr_extra = ''
-    
+
     result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
                                       can_receive, can_namespace, stepno, purpose,
                                       timeout, min_no_messages, max_no_messages)
@@ -302,7 +302,7 @@ def step_11(stub, can_send, can_receive, can_namespace, result):
 
     can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xF1\x86', "")
     can_mr_extra = b'\x01'
-    
+
     result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
                                       can_receive, can_namespace, stepno, purpose,
                                       timeout, min_no_messages, max_no_messages)
@@ -334,7 +334,7 @@ def run():
     # precondition
     ############################################
     test_result = precondition(network_stub, can_send, can_receive, can_namespace,test_result)
-    
+
     ############################################
     # teststeps
     ############################################
@@ -347,50 +347,50 @@ def run():
     # action:
     # result: BECM sends positive reply
     test_result = step_2(network_stub, can_send, can_receive, can_namespace, test_result)
-    
+
     # step 3:
-    # action: 
+    # action:
     # result: BECM sends positive reply
     test_result = step_3(network_stub, can_send, can_receive, can_namespace, test_result)
-    
+
     # step 4:
-    # action: 
+    # action:
     # result: BECM sends positive reply
     test_result = step_4(network_stub, can_send, can_receive, can_namespace, test_result)
-    
+
     # step 5:
-    # action: 
+    # action:
     # result: BECM sends positive reply
     test_result = step_5(network_stub, can_send, can_receive, can_namespace, test_result)
 
     # step 6:
-    # action: 
+    # action:
     # result: BECM sends positive reply
     test_result = step_6(network_stub, can_send, can_receive, can_namespace, test_result)
 
     # step 7:
-    # action: 
+    # action:
     # result: BECM sends positive reply
     test_result = step_7(network_stub, can_send, can_receive, can_namespace, test_result)
 
     # step 8:
-    # action: 
+    # action:
     # result: BECM sends positive reply
     test_result = step_8(network_stub, can_send, can_receive, can_namespace, test_result)
 
     # step 9:
-    # action: 
+    # action:
     # result: BECM sends positive reply
     test_result = step_9(network_stub, can_send, can_receive, can_namespace, test_result)
 
     test_result = step_10(network_stub, can_send, can_receive, can_namespace, test_result)
 
     test_result = step_11(network_stub, can_send, can_receive, can_namespace, test_result)
-   
+
     ############################################
     # postCondition
     ############################################
-            
+
     print()
     print ("time ", time.time())
     print ("Testcase end: ", datetime.now())
@@ -404,9 +404,9 @@ def run():
 
     # deregister signals
     SC.unsubscribe_signals()
-    # if threads should remain: try to stop them 
+    # if threads should remain: try to stop them
     SC.thread_stop()
-            
+
     print ("Test cleanup end: ", datetime.now())
     print()
     if test_result:
@@ -414,6 +414,6 @@ def run():
     else:
         print ("Testcase result: FAILED")
 
-    
+
 if __name__ == '__main__':
     run()

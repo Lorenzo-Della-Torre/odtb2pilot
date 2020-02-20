@@ -157,7 +157,7 @@ def step_4():
 
     SUTE.print_test_purpose(stepno, purpose)
 
-    offset, _, data, _, data_format, _ = SSBL.Read_vbf_file(2)
+    offset, _, data, _, data_format, _ = SSBL.read_vbf_file(2)
     return offset, data, data_format
 
 def step_5(offset, data):
@@ -169,7 +169,7 @@ def step_5(offset, data):
 
     SUTE.print_test_purpose(stepno, purpose)
 
-    _, _, block_addr_by, block_len_by, _, _ = SSBL.Block_data_extract(offset, data)
+    _, _, block_addr_by, block_len_by, _, _ = SSBL.block_data_extract(offset, data)
     return block_addr_by, block_len_by
 
 def step_6(stub, can_send, can_receive, can_namespace, block_addr_by, block_len_by,
@@ -182,7 +182,7 @@ def step_6(stub, can_send, can_receive, can_namespace, block_addr_by, block_len_
 
     SUTE.print_test_purpose(stepno, purpose)
 
-    resultt, _ = SSBL.Request_Block_Download(stub, can_send, can_receive, can_namespace, stepno,
+    resultt, _ = SSBL.request_block_download(stub, can_send, can_receive, can_namespace, stepno,
                                              purpose, block_addr_by, block_len_by, data_format)
     result = result and not resultt
     return result
@@ -213,7 +213,7 @@ def step_8(stub, can_send, can_receive, can_namespace, result):
     """
     stepno = 8
     purpose = "Download and Activation of SBL"
-    result = result and SSBL.SBL_Activation(stub, can_send, can_receive, can_namespace,
+    result = result and SSBL.sbl_activation(stub, can_send, can_receive, can_namespace,
                                             stepno, purpose)
     return result
 
@@ -223,7 +223,7 @@ def step_9(stub, can_send, can_receive, can_namespace, result):
     """
     stepno = 9
     purpose = "Software Part Download != ESS"
-    result = result and SSBL.SW_Part_Download(stub, can_send, can_receive,
+    result = result and SSBL.sw_part_download(stub, can_send, can_receive,
                                               can_namespace, stepno, purpose, 3)
     return result
 
@@ -233,7 +233,7 @@ def step_10(stub, can_send, can_receive, can_namespace, result):
     """
     stepno = 10
     purpose = "ESS Software Part Download"
-    result = result and SSBL.SW_Part_Download(stub, can_send, can_receive,
+    result = result and SSBL.sw_part_download(stub, can_send, can_receive,
                                               can_namespace, stepno, purpose, 2)
     return result
 
@@ -245,7 +245,7 @@ def step_11(stub, can_send, can_receive, can_namespace, result):
     purpose = "continue Download SW"
     for i in range(4, 7):
 
-        result = result and SSBL.SW_Part_Download(stub, can_send, can_receive,
+        result = result and SSBL.sw_part_download(stub, can_send, can_receive,
                                                   can_namespace, stepno, purpose, i)
 
     return result
@@ -257,9 +257,9 @@ def step_12(stub, can_send, can_receive, can_namespace, result):
     stepno = 12
     purpose = "verify RoutineControl start are sent for Type 1"
 
-    result = result and SSBL.Check_Complete_Compatible_Routine(stub, can_send, can_receive,
+    result = result and SSBL.check_complete_compatible_routine(stub, can_send, can_receive,
                                                                can_namespace, stepno, purpose)
-    result = result and (SSBL.PP_Decode_Routine_Complete_Compatible
+    result = result and (SSBL.pp_decode_routine_complete_compatible
                          (SC.can_messages[can_receive][0][2]) == 'Not Complete, Compatible')
     return result
 
@@ -269,7 +269,7 @@ def step_13(stub, can_send, can_receive, can_namespace, result):
     """
     stepno = 13
     purpose = "Software Part Download != ESS as in step 9"
-    result = result and SSBL.SW_Part_Download(stub, can_send, can_receive,
+    result = result and SSBL.sw_part_download(stub, can_send, can_receive,
                                               can_namespace, stepno, purpose, 3)
     return result
 
@@ -280,9 +280,9 @@ def step_14(stub, can_send, can_receive, can_namespace, result):
     stepno = 14
     purpose = "verify RoutineControl start are sent for Type 1"
 
-    result = result and SSBL.Check_Complete_Compatible_Routine(stub, can_send, can_receive,
+    result = result and SSBL.check_complete_compatible_routine(stub, can_send, can_receive,
                                                                can_namespace, stepno, purpose)
-    result = result and (SSBL.PP_Decode_Routine_Complete_Compatible
+    result = result and (SSBL.pp_decode_routine_complete_compatible
                          (SC.can_messages[can_receive][0][2]) == 'Complete, Compatible')
     return result
 

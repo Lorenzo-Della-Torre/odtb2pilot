@@ -88,7 +88,7 @@ def step_1(stub, can_send, can_receive, can_namespace, result):
 
     step_no = 1
     purpose = "Download and activate Secondary Boot Loader"
-    return result and SUPPORT_SBL.SBL_Activation_Def(stub, can_send, can_receive, can_namespace,
+    return result and SUPPORT_SBL.sbl_activation_def(stub, can_send, can_receive, can_namespace,
                                                      step_no, purpose)
 
 

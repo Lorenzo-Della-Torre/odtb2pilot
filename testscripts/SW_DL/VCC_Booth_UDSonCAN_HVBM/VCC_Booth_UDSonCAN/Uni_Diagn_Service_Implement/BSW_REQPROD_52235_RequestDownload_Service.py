@@ -157,7 +157,7 @@ def step_4():
 
     SUTE.print_test_purpose(stepno, purpose)
 
-    offset, data, _, _, data_format = SSBL.Read_vbf_file_SBL(1)
+    offset, data, _, _, data_format = SSBL.read_vbf_file_sbl(1)
 
     return offset, data, data_format
 
@@ -168,7 +168,7 @@ def step_5(offset, data):
     stepno = 5
     purpose = "Extract 1st data block"
     SUTE.print_test_purpose(stepno, purpose)
-    _, _, block_addr_by, block_len_by, _, _ = SSBL.Block_data_extract(offset, data)
+    _, _, block_addr_by, block_len_by, _, _ = SSBL.block_data_extract(offset, data)
 
     return block_addr_by, block_len_by
 
@@ -179,7 +179,7 @@ def step_6(stub, can_send, can_receive, can_namespace, block_addr_by,
     """
     stepno = 6
     purpose = "get maxNumberOfBlockLenght from request download service"
-    _, nbl = SSBL.Request_Block_Download(stub, can_send, can_receive, can_namespace,
+    _, nbl = SSBL.request_block_download(stub, can_send, can_receive, can_namespace,
                                          stepno, purpose, block_addr_by,
                                          block_len_by, data_format)
     result = result and nbl > 2000

@@ -90,7 +90,7 @@ def step_1(stub, can_send, can_receive, can_namespace, result):
     """
     stepno = 1
     purpose = "Download and Activation of SBL"
-    result = result and SSBL.SBL_Activation(stub, can_send, can_receive, can_namespace,
+    result = result and SSBL.sbl_activation(stub, can_send, can_receive, can_namespace,
                                             stepno, purpose)
     return result
 
@@ -102,7 +102,7 @@ def step_2():
     purpose = "ESS files reading"
     global ERASE
     SUTE.print_test_purpose(stepno, purpose)
-    _, _, _, _, _, ERASE = SSBL.Read_vbf_file(2)
+    _, _, _, _, _, ERASE = SSBL.read_vbf_file(2)
 
 def step_3(stub, can_send, can_receive, can_namespace, result):
     """
