@@ -120,7 +120,7 @@ def step_2(stub, s, r, ns):
     print ("len FC ", len(SC.can_cf_received[r]))
     print ("FC: ", SC.can_cf_received[r])
     print ("CAN_frames: ", SC.can_frames)
-    print ("Verify if FC is as required. Continue to send (0x30): 0x"+ int((SC.can_cf_received[r][0][2][0:2]),16).to_bytes(1, 'big').hex(), "ST: 0x"+ int((SC.can_cf_received[r][0][2][4:6]),16).to_bytes(1,'big').hex())
+    print ("Verify if FC is as required. Continue to send (0x30): 0x"+ int((SC.can_cf_received[r][0][2][0:2]),16).to_bytes(1, 'big').hex(), "separation_time: 0x"+ int((SC.can_cf_received[r][0][2][4:6]),16).to_bytes(1,'big').hex())
     print ("Verify block_size is 0x00 (4095 bytes): ", int((SC.can_cf_received[r][0][2][2:4]),16), ": ", (0 == int((SC.can_cf_received[r][0][2][2:4]),16) ))
     testresult = (0 == int((SC.can_cf_received[r][0][2][2:4]),16))  and testresult
 

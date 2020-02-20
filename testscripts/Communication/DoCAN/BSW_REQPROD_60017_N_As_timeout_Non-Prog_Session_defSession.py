@@ -61,11 +61,11 @@ def precondition(stub, s, r, ns):
     # Parameters for FrameControl FC VCU
     time.sleep(1)
     block_size=0
-    ST=0
-    FC_delay = 0 #no wait
-    FC_flag = 48 #continue send
-    FC_auto = False
-    SC.change_MF_FC(s, block_size, ST, FC_delay, FC_flag, FC_auto)
+    separation_time=0
+    frame_control_delay = 0 #no wait
+    frame_control_flag = 48 #continue send
+    frame_control_auto = False
+    SC.change_MF_FC(s, block_size, separation_time, frame_control_delay, frame_control_flag, frame_control_auto)
 
     print()
     step_0(stub, s, r, ns)
@@ -107,7 +107,7 @@ def step_1(stub, s, r, ns):
     time.sleep(1)
 
 
-# teststep 2: send request with MF reply, FC_delay < timeout
+# teststep 2: send request with MF reply, frame_control_delay < timeout
 def step_2(stub, s, r, ns):
     global testresult
 
@@ -119,13 +119,13 @@ def step_2(stub, s, r, ns):
 
     # Parameters for FrameControl FC
     block_size=0
-    ST=0
-    FC_delay = 950 #wait 950 ms
-    FC_flag = 48 #continue send
-    FC_auto = False
+    separation_time=0
+    frame_control_delay = 950 #wait 950 ms
+    frame_control_flag = 48 #continue send
+    frame_control_auto = False
 
-    SC.change_MF_FC(s, block_size, ST, FC_delay, FC_flag, FC_auto)
-    #SC.change_MF_FC(r, block_size, ST, FC_delay, FC_flag, FC_auto)
+    SC.change_MF_FC(s, block_size, separation_time, frame_control_delay, frame_control_flag, frame_control_auto)
+    #SC.change_MF_FC(r, block_size, separation_time, frame_control_delay, frame_control_flag, frame_control_auto)
 
     can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xDD\x02\xDD\x0A\xDD\x0C\x49\x47', "")
     can_mr_extra = ''
@@ -168,7 +168,7 @@ def step_3(stub, s, r, ns):
     testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='4947')
 
 
-# teststep 4: send request with MF reply, FC_delay > timeout
+# teststep 4: send request with MF reply, frame_control_delay > timeout
 def step_4(stub, s, r, ns):
     print ("Step4 start")
     global testresult
@@ -181,14 +181,14 @@ def step_4(stub, s, r, ns):
 
     # Parameters for FrameControl FC
     block_size=0
-    ST=0
-    FC_delay = 1010 #wait 1010 ms with reply
-    FC_flag = 48 #continue send
-    FC_auto = False
+    separation_time=0
+    frame_control_delay = 1010 #wait 1010 ms with reply
+    frame_control_flag = 48 #continue send
+    frame_control_auto = False
 
 
-    SC.change_MF_FC(s, block_size, ST, FC_delay, FC_flag, FC_auto)
-    #SC.change_MF_FC(r, block_size, ST, FC_delay, FC_flag, FC_auto)
+    SC.change_MF_FC(s, block_size, separation_time, frame_control_delay, frame_control_flag, frame_control_auto)
+    #SC.change_MF_FC(r, block_size, separation_time, frame_control_delay, frame_control_flag, frame_control_auto)
 
     can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xDD\x02\xDD\x0A\xDD\x0C\x49\x47', "")
     can_mr_extra = ''
@@ -226,27 +226,27 @@ def step_5(stub, s, r, ns):
     testresult = testresult and (len(SC.can_frames[r]) == 0)
 
 
-## teststep 6: set back FC_delay to default
+## teststep 6: set back frame_control_delay to default
 def step_6(stub, s, r, ns):
     global testresult
 
     stepno = 6
-    purpose = "set back FC_delay to default"
+    purpose = "set back frame_control_delay to default"
     timeout = 5
     min_no_messages = -1
     max_no_messages = -1
 
     block_size1 = 1
     block_size=0
-    ST=0
-    FC_flag =   48 #continue to send
-    FC_delay =  0
-    FC_auto = False
+    separation_time=0
+    frame_control_flag =   48 #continue to send
+    frame_control_delay =  0
+    frame_control_auto = False
 
     SuTe.print_test_purpose(stepno, purpose)
     #update_can_messages_2(stub, r)
     #print(can_frames, "\n")
-    SC.change_MF_FC(r, block_size, ST, FC_delay, FC_flag, FC_auto)
+    SC.change_MF_FC(r, block_size, separation_time, frame_control_delay, frame_control_flag, frame_control_auto)
 
 
 

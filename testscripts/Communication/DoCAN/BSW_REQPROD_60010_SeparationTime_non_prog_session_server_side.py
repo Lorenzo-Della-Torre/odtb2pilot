@@ -117,8 +117,8 @@ def step_2(stub, s, r, ns):
     print ("Step ", stepno," frames: ", SC.can_frames[r], "\n")
     print ("len FC ", len(SC.can_cf_received[r]))
     print ("FC: ", SC.can_cf_received[r])
-    print ("Verify if FC is as required. Continue to send (0x30): 0x"+ int((SC.can_cf_received[r][0][2][0:2]),16).to_bytes(1, 'big').hex(), "ST: 0x"+ int((SC.can_cf_received[r][0][2][4:6]),16).to_bytes(1,'big').hex())
-    print ("Verify ST less then 15ms: 15 > ", int((SC.can_cf_received[r][0][2][4:6]),16), ": ", (15 > int((SC.can_cf_received[r][0][2][4:6]),16) ))
+    print ("Verify if FC is as required. Continue to send (0x30): 0x"+ int((SC.can_cf_received[r][0][2][0:2]),16).to_bytes(1, 'big').hex(), "separation_time: 0x"+ int((SC.can_cf_received[r][0][2][4:6]),16).to_bytes(1,'big').hex())
+    print ("Verify separation_time less then 15ms: 15 > ", int((SC.can_cf_received[r][0][2][4:6]),16), ": ", (15 > int((SC.can_cf_received[r][0][2][4:6]),16) ))
     testresult = (15 > int((SC.can_cf_received[r][0][2][4:6]),16) ) and testresult
     #print ("FC: ", Support_CAN.can_cf_received)
     #testresult = SuTe.test_message(SC.can_cf_received[r], teststring='30000A0000000000') and testresult
@@ -175,8 +175,8 @@ def step_5(stub, s, r, ns):
     print ("Step ", stepno," frames: ", SC.can_frames[r], "\n")
     print ("len FC ", len(SC.can_cf_received[r]))
     print ("FC: ", SC.can_cf_received[r])
-    print ("Verify if FC is as required. Continue to send (0x30): 0x"+ int((SC.can_cf_received[r][0][2][0:2]),16).to_bytes(1, 'big').hex(), "ST: 0x"+ int((SC.can_cf_received[r][0][2][4:6]),16).to_bytes(1,'big').hex())
-    print ("Verify ST less then 15ms: 15 > ", int((SC.can_cf_received[r][0][2][4:6]),16), ": ", (15 > int((SC.can_cf_received[r][0][2][4:6]),16) ))
+    print ("Verify if FC is as required. Continue to send (0x30): 0x"+ int((SC.can_cf_received[r][0][2][0:2]),16).to_bytes(1, 'big').hex(), "separation_time: 0x"+ int((SC.can_cf_received[r][0][2][4:6]),16).to_bytes(1,'big').hex())
+    print ("Verify separation_time less then 15ms: 15 > ", int((SC.can_cf_received[r][0][2][4:6]),16), ": ", (15 > int((SC.can_cf_received[r][0][2][4:6]),16) ))
     testresult = (15 > int((SC.can_cf_received[r][0][2][4:6]),16) ) and testresult
     print ("Step ", stepno, " teststatus:", testresult, "\n")
 
@@ -259,7 +259,7 @@ def run():
 
     # step2:
     # action: send MF request
-    # result: FC frame received with ST timing in required range
+    # result: FC frame received with separation_time timing in required range
     step_2(network_stub, can_send, can_receive, can_namespace)
 
     # action: verify current session
@@ -271,7 +271,7 @@ def run():
     step_4(network_stub, can_send, can_receive, can_namespace)
 
     # action: send MF request
-    # result: FC frame received with ST timing in required range
+    # result: FC frame received with separation_time timing in required range
     step_5(network_stub, can_send, can_receive, can_namespace)
 
     # action: verify current session

@@ -112,12 +112,12 @@ def step_2(stub, s, r, ns):
 
     # Parameters for FrameControl FC
     block_size=0
-    ST=0
-    FC_delay = 970 #wait max 1000ms before sending FC frame back
-    FC_flag = 49 #Wait
-    FC_auto = False
+    separation_time=0
+    frame_control_delay = 970 #wait max 1000ms before sending FC frame back
+    frame_control_flag = 49 #Wait
+    frame_control_auto = False
 
-    SC.change_MF_FC(r, block_size, ST, FC_delay, FC_flag, FC_auto)
+    SC.change_MF_FC(r, block_size, separation_time, frame_control_delay, frame_control_flag, frame_control_auto)
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
 
 
@@ -129,10 +129,10 @@ def step_3(stub, s, r, ns):
 
     # Parameters for FrameControl FC
     block_size=0
-    ST=0
-    FC_delay = 970 # requirement: wait max 1000ms before sending FC frame back
-    FC_flag = 49 #Wait
-    FC_auto = False
+    separation_time=0
+    frame_control_delay = 970 # requirement: wait max 1000ms before sending FC frame back
+    frame_control_flag = 49 #Wait
+    frame_control_auto = False
 
     max_delay = 254   #number of delays wanted
     #max_delay = 4   #number of delays wanted
@@ -140,7 +140,7 @@ def step_3(stub, s, r, ns):
     print ("Step ", stepno, ":")
     print ("Purpose: ", purpose)
 
-    SC.change_MF_FC(r, block_size, ST, FC_delay, FC_flag, FC_auto)
+    SC.change_MF_FC(r, block_size, separation_time, frame_control_delay, frame_control_flag, frame_control_auto)
     # do a loop:
     # send intended number of FC Wait frames
     #
@@ -155,33 +155,33 @@ def step_3(stub, s, r, ns):
     #    TSdelay = TS_delay / 1000
 
     for count in range(max_delay):
-        time.sleep(FC_delay/1000)
+        time.sleep(frame_control_delay/1000)
         #print ("Step3 loop: messages received ", len(SC.can_messages))
         #print ("Step3 loop: messages: ", SC.can_messages, "\n")
-        #SC.send_FC_frame(stub,s,ns,FC_flag,block_size,ST)
-        #print ("step3 FC to send:  FC_flag ", SC.can_subscribes[r][4]," block_size: ",  SC.can_subscribes[r][1]," ST: ", SC.can_subscribes[r][2])
+        #SC.send_FC_frame(stub,s,ns,frame_control_flag,block_size,separation_time)
+        #print ("step3 FC to send:  frame_control_flag ", SC.can_subscribes[r][4]," block_size: ",  SC.can_subscribes[r][1]," separation_time: ", SC.can_subscribes[r][2])
         SC.send_FC_frame(stub, s, ns, SC.can_subscribes[r][4], SC.can_subscribes[r][1], SC.can_subscribes[r][2])
         SC.can_subscribes[r][5] += 1
         print ("DelayNo.: ", SC.can_subscribes[r][5]-1, ", Number of can_frames received: ", len(SC.can_frames[r]))
 
 
-# teststep 4: send flow control with continue flag (0x30), block_size=0, ST=0
+# teststep 4: send flow control with continue flag (0x30), block_size=0, separation_time=0
 def step_4(stub, s, r, ns):
 
     stepno = 4
     purpose = "Change FC to continue (0x30)"
 
     block_size = 0          # b'\x00'
-    ST = 0          # b'\x00'
-    FC_delay = 0
-    FC_flag = 48    # b'\x30'
-    FC_auto = True
+    separation_time = 0          # b'\x00'
+    frame_control_delay = 0
+    frame_control_flag = 48    # b'\x30'
+    frame_control_auto = True
 
     SuTe.print_test_purpose(stepno, purpose)
     #
     time.sleep( SC.can_subscribes[r][3] / 1000)
-    SC.change_MF_FC(r, block_size, ST, FC_delay, FC_flag, FC_auto)
-    #SC.send_FC_frame(stub,s,ns,FC_flag,block_size,ST)
+    SC.change_MF_FC(r, block_size, separation_time, frame_control_delay, frame_control_flag, frame_control_auto)
+    #SC.send_FC_frame(stub,s,ns,frame_control_flag,block_size,separation_time)
     SC.send_FC_frame(stub, s, ns, SC.can_subscribes[r][4], SC.can_subscribes[r][1], SC.can_subscribes[r][2])
 
 

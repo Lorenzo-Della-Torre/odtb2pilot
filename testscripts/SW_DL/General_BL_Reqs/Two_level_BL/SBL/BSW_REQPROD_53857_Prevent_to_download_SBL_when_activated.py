@@ -143,12 +143,12 @@ def step_5(stub, can_send, can_receive, can_namespace, result):
 
     # Parameters for FrameControl FC
     block_size=0
-    ST=0
-    FC_delay = 0 #no wait
-    FC_flag = 48 #continue sends
-    FC_auto = False
+    separation_time=0
+    frame_control_delay = 0 #no wait
+    frame_control_flag = 48 #continue sends
+    frame_control_auto = False
 
-    SC.change_MF_FC(can_send, block_size, ST, FC_delay, FC_flag, FC_auto)
+    SC.change_MF_FC(can_send, block_size, separation_time, frame_control_delay, frame_control_flag, frame_control_auto)
 
     result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
                                           can_receive, can_namespace, stepno, purpose,

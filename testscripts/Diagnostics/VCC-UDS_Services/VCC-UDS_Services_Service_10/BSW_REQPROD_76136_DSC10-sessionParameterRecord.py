@@ -61,11 +61,11 @@ def precondition(stub, s, r, ns):
     # Parameters for FrameControl FC VCU
     time.sleep(1)
     block_size=0
-    ST=0
-    FC_delay = 0 #no wait
-    FC_flag = 48 #continue send
-    FC_auto = False
-    SC.change_MF_FC(s, block_size, ST, FC_delay, FC_flag, FC_auto)
+    separation_time=0
+    frame_control_delay = 0 #no wait
+    frame_control_flag = 48 #continue send
+    frame_control_auto = False
+    SC.change_MF_FC(s, block_size, separation_time, frame_control_delay, frame_control_flag, frame_control_auto)
 
     print()
     step_0(stub, s, r, ns)

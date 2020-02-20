@@ -109,15 +109,15 @@ def step_2(stub, s, r, ns):
 
     # Parameters for FrameControl FC
     block_size=0
-    ST=0
-    FC_delay = 0 #no wait
-    FC_flag = 48 #continue send
-    FC_auto = False
+    separation_time=0
+    frame_control_delay = 0 #no wait
+    frame_control_flag = 48 #continue send
+    frame_control_auto = False
 
     can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xF1\x21', "")
     can_mr_extra = ''
 
-    SC.change_MF_FC(s, block_size, ST, FC_delay, FC_flag, FC_auto)
+    SC.change_MF_FC(s, block_size, separation_time, frame_control_delay, frame_control_flag, frame_control_auto)
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
 
@@ -161,15 +161,15 @@ def step_4(stub, s, r, ns):
 
     # Parameters for FrameControl FC
     block_size=0
-    ST=0
-    FC_delay = 0 #no wait
-    FC_flag = 48 #continue send
-    FC_auto = False
+    separation_time=0
+    frame_control_delay = 0 #no wait
+    frame_control_flag = 48 #continue send
+    frame_control_auto = False
 
     can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xF1\x2A', "")
     can_mr_extra = ''
 
-    SC.change_MF_FC(s, block_size, ST, FC_delay, FC_flag, FC_auto)
+    SC.change_MF_FC(s, block_size, separation_time, frame_control_delay, frame_control_flag, frame_control_auto)
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
 
@@ -213,15 +213,15 @@ def step_6(stub, s, r, ns):
 
     # Parameters for FrameControl FC
     block_size=0
-    ST=0
-    FC_delay = 0 #no wait
-    FC_flag = 48 #continue send
-    FC_auto = False
+    separation_time=0
+    frame_control_delay = 0 #no wait
+    frame_control_flag = 48 #continue send
+    frame_control_auto = False
 
     can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xF1\x21\xF1\x2A', "")
     can_mr_extra = ''
 
-    SC.change_MF_FC(s, block_size, ST, FC_delay, FC_flag, FC_auto)
+    SC.change_MF_FC(s, block_size, separation_time, frame_control_delay, frame_control_flag, frame_control_auto)
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
 
@@ -266,15 +266,15 @@ def step_8(stub, s, r, ns):
 
     # Parameters for FrameControl FC
     block_size=0
-    ST=0
-    FC_delay = 0 #no wait
-    FC_flag = 48 #continue send
-    FC_auto = False
+    separation_time=0
+    frame_control_delay = 0 #no wait
+    frame_control_flag = 48 #continue send
+    frame_control_auto = False
 
     can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xED\xA0', "")
     can_mr_extra = ''
 
-    SC.change_MF_FC(s, block_size, ST, FC_delay, FC_flag, FC_auto)
+    SC.change_MF_FC(s, block_size, separation_time, frame_control_delay, frame_control_flag, frame_control_auto)
 
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
 

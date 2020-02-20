@@ -208,14 +208,14 @@ def step_6(stub, can_send, can_receive, can_namespace, result):
 
     # Parameters for FrameControl FC
     block_size=0
-    ST=0
-    FC_delay = 0 #no wait
-    FC_flag = 48 #continue send
-    FC_auto = False
+    separation_time=0
+    frame_control_delay = 0 #no wait
+    frame_control_flag = 48 #continue send
+    frame_control_auto = False
     can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xDD\x02\xDD\x0A\xDD\x0C\x49\x47\x49\x50\xDA\xD0\xDA\xD1\x48\x02\x48\x03\x49\x45', "")
     can_mr_extra = ''
 
-    SC.change_MF_FC(can_send, block_size, ST, FC_delay, FC_flag, FC_auto)
+    SC.change_MF_FC(can_send, block_size, separation_time, frame_control_delay, frame_control_flag, frame_control_auto)
 
     #T5 = time.time()
 
