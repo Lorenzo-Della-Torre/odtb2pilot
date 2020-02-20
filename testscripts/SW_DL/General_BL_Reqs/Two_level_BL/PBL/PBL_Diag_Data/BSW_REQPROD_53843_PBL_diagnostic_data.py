@@ -68,19 +68,19 @@ def precondition(stub, can_send, can_receive, can_namespace, result):
     SC.subscribe_signal(stub, can_send, can_receive, can_namespace, timeout)
     #record signal we send as well
     SC.subscribe_signal(stub, can_receive, can_send, can_namespace, timeout)
-    
+
     #wait for signals to be registered
     time.sleep(1)
     # Change FC_auto for signal we’re sending
-    BS = 0
+    block_size = 0
     separation_time = 0
     frame_control_delay = 0 #no wait
     frame_control_flag = 48 #continue send
     frame_control_auto = False
 
-    SC.change_MF_FC(can_send, BS, separation_time, frame_control_delay, frame_control_flag,
+    SC.change_MF_FC(can_send, block_size, separation_time, frame_control_delay, frame_control_flag,
                     frame_control_auto)
-                    
+
     result = step_0(stub, can_send, can_receive, can_namespace, result)
     logging.info("Precondition testok: %s\n", result)
     return result
@@ -121,8 +121,8 @@ def step_1(stub, can_send, can_receive, can_namespace, result):
     result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
                                       can_receive, can_namespace, stepno, purpose,
                                       timeout, min_no_messages, max_no_messages)
-    
-    result = result and SUTE.PP_Decode_Routine_Control_response(SC.can_messages[can_receive][0][2], 
+
+    result = result and SUTE.PP_Decode_Routine_Control_response(SC.can_messages[can_receive][0][2],
                                                                 'Type1,Completed')
     return result
 
@@ -138,7 +138,7 @@ def step_2(stub, can_send, can_receive, can_namespace, result):
 
     can_m_send = SC.can_m_send("DiagnosticSessionControl", b'\x02', "")
     can_mr_extra = ''
-    
+
     result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
                                       can_receive, can_namespace, stepno, purpose,
                                       timeout, min_no_messages, max_no_messages)
@@ -154,8 +154,8 @@ def step_3(stub, can_send, can_receive, can_namespace, result):
     """
     stepno = 3
     purpose = "Security Access Request SID"
-    result = result and SSA.Activation_Security_Access(stub, can_send, can_receive, can_namespace, 
-                                                       stepno, purpose) 
+    result = result and SSA.Activation_Security_Access(stub, can_send, can_receive, can_namespace,
+                                                       stepno, purpose)
     return result
 
 
@@ -170,7 +170,7 @@ def step_4(stub, can_send, can_receive, can_namespace, result):
     max_no_messages = 1
     global DB_NUMBER
     # Parameters for FrameControl FC
-    BS = 0
+    block_size = 0
     separation_time = 0
     frame_control_delay = 0 #no wait
     frame_control_flag = 48 #continue send
@@ -179,7 +179,7 @@ def step_4(stub, can_send, can_receive, can_namespace, result):
     can_m_send = SC.can_m_send("ReadDataByIdentifier", b'\xF1\x21', "")
     can_mr_extra = ''
 
-    SC.change_MF_FC(can_send, BS, separation_time, frame_control_delay, frame_control_flag,
+    SC.change_MF_FC(can_send, block_size, separation_time, frame_control_delay, frame_control_flag,
                     frame_control_auto)
 
     result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send, can_receive,
@@ -196,7 +196,7 @@ def step_5(margs):
     stepno = 5
     purpose = "Extract all DID from Data Base"
     SUTE.print_test_purpose(stepno, purpose)
-    did_list = SUTE.Extract_DB_DID_ID(DB_NUMBER, margs)   
+    did_list = SUTE.Extract_DB_DID_ID(DB_NUMBER, margs)
     return did_list
 
 def step_6(stub, can_send, can_receive, can_namespace, did_list, result):
@@ -236,14 +236,14 @@ def step_7(stub, can_send, can_receive, can_namespace, result):
                              can_namespace, stepno, purpose, timeout, min_no_messages,
                              max_no_messages)
 
-    result = result and SUTE.test_message(SC.can_messages[can_receive], teststring='7F2231') 
+    result = result and SUTE.test_message(SC.can_messages[can_receive], teststring='7F2231')
     #logging.info('%s', SUTE.PP_Decode_7F_response(SC.can_frames[can_receive][0][2]))
     return result
 
 def step_8(stub, can_send, can_receive, can_namespace, result):
     """
     Teststep 8: Reset
-    """ 
+    """
     stepno = 8
     purpose = "ECU Reset"
     timeout = 1
@@ -252,7 +252,7 @@ def step_8(stub, can_send, can_receive, can_namespace, result):
 
     can_m_send = b'\x11\x01'
     can_mr_extra = ''
-    
+
     result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
                                       can_receive, can_namespace, stepno, purpose,
                                       timeout, min_no_messages, max_no_messages)
@@ -272,7 +272,7 @@ def step_9(stub, can_send, can_receive, can_namespace, result):
 
     can_m_send = SC.can_m_send("ReadDataByIdentifier", b'\xF1\x86', "")
     can_mr_extra = b'\x01'
-    
+
     result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
                                       can_receive, can_namespace, stepno, purpose,
                                       timeout, min_no_messages, max_no_messages)
@@ -309,49 +309,49 @@ def run(margs):
     # teststeps
     ############################################
     # step 1:
-    # action: 
+    # action:
     # result:
     result = step_1(network_stub, can_send, can_receive, can_namespace, result)
 
     # step 2:
-    # action: 
+    # action:
     # result:
     result = step_2(network_stub, can_send, can_receive, can_namespace, result)
 
     # step 3:
-    # action: 
+    # action:
     # result:
     result = step_3(network_stub, can_send, can_receive, can_namespace, result)
 
     # step 4:
-    # action: 
+    # action:
     # result:
     result = step_4(network_stub, can_send, can_receive, can_namespace, result)
-    
+
     # step 5:
-    # action: 
+    # action:
     # result:
     did_list = step_5(margs)
-    
+
     # step 6:
-    # action: 
+    # action:
     # result:
     result = step_6(network_stub, can_send, can_receive, can_namespace, did_list, result)
 
     # step 7:
-    # action: 
-    # result: 
+    # action:
+    # result:
     result = step_7(network_stub, can_send, can_receive, can_namespace, result)
 
     # step 8:
-    # action: 
-    # result: 
+    # action:
+    # result:
     result = step_8(network_stub, can_send, can_receive, can_namespace, result)
     time.sleep(1)
 
     # step 9:
-    # action: 
-    # result: 
+    # action:
+    # result:
     result = step_9(network_stub, can_send, can_receive, can_namespace, result)
     time.sleep(1)
 
@@ -382,4 +382,3 @@ def run(margs):
 if __name__ == '__main__':
     ARGS = parse_some_args()
     run(ARGS)
-

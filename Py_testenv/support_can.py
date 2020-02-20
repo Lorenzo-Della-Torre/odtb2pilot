@@ -146,7 +146,7 @@ class Support_CAN:
 
 # Frame control handling
         #default for each signal to register
-        BS = 0          # send remaining frames without flow control
+        block_size = 0          # send remaining frames without flow control
         ST = 0          # no separation time needed between frames
         FC_delay = 0    # delay to send FC response in ms
         FC_flag = 48    # 48=0x30 continue to send
@@ -161,7 +161,7 @@ class Support_CAN:
                 subscribe_object = stub.SubscribeToSignals(sub_info, timeout)
             print("Subscribe to signal ", sig)
             self.can_subscribes[sig] =\
-                [subscribe_object, BS, ST, FC_delay, FC_flag, FC_responses, FC_auto]
+                [subscribe_object, block_size, ST, FC_delay, FC_flag, FC_responses, FC_auto]
             #print("list response in sub_info ", [stub.SubscribeToSignals(sub_info, timeout)])
             for response in subscribe_object:
                 #if multiframe detected prepare answer and send it
@@ -169,11 +169,11 @@ class Support_CAN:
                 #print("Test if AUTO_FC[",sig,"]: ",self.can_subscribes[sig][6])
                 if (det_mf == 1) and (self.can_subscribes[sig][6]):
                     # send wanted reply with delay
-                    #print("send ", send, "NSP: ", nsp, "FC_flag ", FC_flag, " BS ", BS, " ST ", ST)
+                    #print("send ", send, "NSP: ", nsp, "FC_flag ", FC_flag, " block_size ", block_size, " ST ", ST)
                     time.sleep(self.can_subscribes[sig][3]/1000)
-                    #self.send_FC_frame(stub, send, nsp, FC_flag, BS, ST)
+                    #self.send_FC_frame(stub, send, nsp, FC_flag, block_size, ST)
                     ###print("FC_values: FC_delay",self.can_subscribes[sig][4],\
-                    ###         " BS:", self.can_subscribes[sig][1],\
+                    ###         " block_size:", self.can_subscribes[sig][1],\
                     ###         " TS: ", self.can_subscribes[sig][2])
                     self.send_FC_frame(stub, send, nsp, self.can_subscribes[sig][4],\
                         self.can_subscribes[sig][1], self.can_subscribes[sig][2])
@@ -322,11 +322,11 @@ class Support_CAN:
                     burst_frame, burst_intervall, burst_quantity):
         """
         send_burst
-        
+
         Sends a number of CAN-frames in a row with given intervall.
         That's sometimes needed for waking up MCU or getting frames sent
         withing a certain time intervall.
-        
+
         Parameters
         burst_id        Name from CAN-DB for getting CAN ID for burst to be sent
         burst_namespace Namespace to look for burst-id
@@ -528,7 +528,7 @@ class Support_CAN:
         if int(last_frame[0:1]) == 3:
             # fetch next CAN frames to send
             FC_flag = int(last_frame[1:2], 16)
-            BS = int(last_frame[2:4], 16)
+            block_size = int(last_frame[2:4], 16)
             ST = int(last_frame[4:6], 16)
 
             # safe CF received for later analysis
@@ -564,8 +564,8 @@ class Support_CAN:
                         time.sleep((ST and 0x7F) / 1000)
                         print("Frames sent(CF): ", self.can_mf_send[s][0],\
                                 "of ", len(self.can_mf_send[s][1]))
-                        BS -= 1
-                        if BS == 0: break
+                        block_size -= 1
+                        if block_size == 0: break
                     except grpc._channel._Rendezvous as err:
                         print(err)
             else:
@@ -743,14 +743,14 @@ class Support_CAN:
 
 
 #change parameters of FC and how FC frame is used
-    def change_MF_FC(self, sig, BS, ST, FC_delay, FC_flag, FC_auto):
+    def change_MF_FC(self, sig, block_size, ST, FC_delay, FC_flag, FC_auto):
         """
         change_MF_FC
         """
         #print("change_MF_FC")
         #global can_subscribes
         #print("can_subscribes ", self.can_subscribes)
-        self.can_subscribes[sig][1] = BS
+        self.can_subscribes[sig][1] = block_size
         self.can_subscribes[sig][2] = ST
         self.can_subscribes[sig][3] = FC_delay
         self.can_subscribes[sig][4] = FC_flag
@@ -758,30 +758,30 @@ class Support_CAN:
         self.can_subscribes[sig][6] = FC_auto
 
 # build FlowControl frame and send
-    def send_FC_frame(self, stub, signal_name, namespace, FC_flag, BS, ST):
+    def send_FC_frame(self, stub, signal_name, namespace, FC_flag, block_size, ST):
         """
         send_FC_frame
         """
         #print("send_FC_frame")
 
         #print("send_FC_frame parameters: SigName ", signal_name," NSP ",namespace, \
-        #           " FC_flag ", FC_flag," BS ",BS, " ST ",ST)
-        #payload=(FC_flag << 8) + BS
+        #           " FC_flag ", FC_flag," block_size ",block_size, " ST ",ST)
+        #payload=(FC_flag << 8) + block_size
         #payload=(payload << 8) + ST
         if (FC_flag < 48) | (FC_flag > 50):
             print("CAN Flowcontrol: Error FC_flag: Out_of_range ", FC_flag)
-        if BS > 255:
-            print("CAN Flowcontrol: Blocksize ouf_of_range ", BS)
+        if block_size > 255:
+            print("CAN Flowcontrol: Blocksize ouf_of_range ", block_size)
         #if(ST < b'\xf1') | (ST > b'\xf9'):
         if(ST > 127) & ((ST < 241) | (ST > 249)):
             print("CAN Flowcontrol: separationtime out_of_range", ST)
         #payload= b'\x30\x00\x00\x00\x00\x00\x00\x00'
         #print("payload FC ", FC_flag +1, "to_bytes ", FC_flag.to_bytes(1,'big'))
-        #print("payload BS ", BS, " to_bytes ", BS.to_bytes(1,'big'))
+        #print("payload block_size ", block_size, " to_bytes ", block_size.to_bytes(1,'big'))
         #print("payload ST ", ST, " to_bytes ", ST.to_bytes(1,'big'))
 
         payload = FC_flag.to_bytes(1, 'big') \
-                    +BS.to_bytes(1, 'big') \
+                    +block_size.to_bytes(1, 'big') \
                     +ST.to_bytes(1, 'big') \
                     +b'\x00\x00\x00\x00\x00'
         #print("Payload FC frame", payload)

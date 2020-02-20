@@ -44,14 +44,14 @@ def precondition(stub, can_send, can_receive, can_namespace, result):
     Precondition for test running:
     BECM has to be kept alive: start heartbeat
     """
-        
+
     # start heartbeat, repeat every 0.8 second
-    SC.start_heartbeat(stub, "MvcmFront1NMFr", "Front1CANCfg0", 
+    SC.start_heartbeat(stub, "MvcmFront1NMFr", "Front1CANCfg0",
                        b'\x00\x40\xFF\xFF\xFF\xFF\xFF\xFF', 0.4)
-    
-    SC.start_periodic(stub, "Networkeptalive", True, "Vcu1ToAllFuncFront1DiagReqFrame", 
+
+    SC.start_periodic(stub, "Networkeptalive", True, "Vcu1ToAllFuncFront1DiagReqFrame",
                       "Front1CANCfg0", b'\x02\x3E\x80\x00\x00\x00\x00\x00', 1.02)
-    
+
     # timeout = more than maxtime script takes
     timeout = 920   #seconds"
 
@@ -88,7 +88,7 @@ def step_1(stub, can_send, can_receive, can_namespace, result):
     """
     stepno = 1
     purpose = "Download and Activation of SBL"
-    result = result and SSBL.SBL_Activation(stub, can_send, can_receive, can_namespace, 
+    result = result and SSBL.SBL_Activation(stub, can_send, can_receive, can_namespace,
                                             stepno, purpose)
     return result
 
@@ -98,7 +98,7 @@ def step_2(stub, can_send, can_receive, can_namespace, result):
     """
     stepno = 2
     purpose = "ESS Software Part Download"
-    result = result and SSBL.SW_Part_Download(stub, can_send, can_receive, 
+    result = result and SSBL.SW_Part_Download(stub, can_send, can_receive,
                                               can_namespace, stepno, purpose, 2)
     return result
 
@@ -111,7 +111,7 @@ def step_3():
     global OFFSET, DATA, DATA_FORMAT
 
     SUTE.print_test_purpose(stepno, purpose)
-    
+
     OFFSET, _, DATA, _, DATA_FORMAT, _ = SSBL.Read_vbf_file(3)
 
 def step_4():
@@ -119,11 +119,11 @@ def step_4():
     Teststep 4: Extract data for the 1st data block from 1st file
     """
     stepno = 4
-    purpose = "EXtract data for the 1st block from VBF" 
-    global BLOCK_ADDR_BY, BLOCK_LEN_BY 
+    purpose = "EXtract data for the 1st block from VBF"
+    global BLOCK_ADDR_BY, BLOCK_LEN_BY
 
-    SUTE.print_test_purpose(stepno, purpose)  
-        
+    SUTE.print_test_purpose(stepno, purpose)
+
     _, _, BLOCK_ADDR_BY, BLOCK_LEN_BY, _, _ = SSBL.Block_data_extract(OFFSET, DATA)
 
 def step_5(stub, can_send, can_receive, can_namespace, result):
@@ -135,8 +135,8 @@ def step_5(stub, can_send, can_receive, can_namespace, result):
     global BLOCK_ADDR_BY, BLOCK_LEN_BY, DATA_FORMAT
 
     SUTE.print_test_purpose(stepno, purpose)
-    
-    resultt, _ = SSBL.Request_Block_Download(stub, can_send, can_receive, can_namespace, stepno, purpose, 
+
+    resultt, _ = SSBL.Request_Block_Download(stub, can_send, can_receive, can_namespace, stepno, purpose,
                                              BLOCK_ADDR_BY, BLOCK_LEN_BY, DATA_FORMAT)
     result = result and resultt
     return result
@@ -150,7 +150,7 @@ def step_6():
     global OFFSET_2, DATA_2, DATA_FORMAT_2
 
     SUTE.print_test_purpose(stepno, purpose)
-    
+
     OFFSET_2, _, DATA_2, _, DATA_FORMAT_2, _ = SSBL.Read_vbf_file(4)
 
 def step_7():
@@ -158,11 +158,11 @@ def step_7():
     Teststep 7: Extract data for the 1st data block from 2nd file
     """
     stepno = 7
-    purpose = "EXtract data for the 1st data block from VBF" 
-    global BLOCK_ADDR_BY_2, BLOCK_LEN_BY_2, OFFSET_2 
+    purpose = "EXtract data for the 1st data block from VBF"
+    global BLOCK_ADDR_BY_2, BLOCK_LEN_BY_2, OFFSET_2
 
-    SUTE.print_test_purpose(stepno, purpose)  
-        
+    SUTE.print_test_purpose(stepno, purpose)
+
     _, _, BLOCK_ADDR_BY_2, BLOCK_LEN_BY_2, _, _ = SSBL.Block_data_extract(OFFSET_2, DATA_2)
 
 def step_8(stub, can_send, can_receive, can_namespace, result):
@@ -170,30 +170,30 @@ def step_8(stub, can_send, can_receive, can_namespace, result):
     Teststep 8: Request Download the 1st data block (2nd Logical Block)
     """
     stepno = 8
-    purpose = "Request Download the 1st data block"  
+    purpose = "Request Download the 1st data block"
 
     timeout = 0.05
     min_no_messages = -1
     max_no_messages = -1
-        
+
     can_m_send = b'\x34' + DATA_FORMAT_2 + b'\x44'+ BLOCK_ADDR_BY_2 + BLOCK_LEN_BY_2
-    can_mr_extra = '' 
+    can_mr_extra = ''
 
     # Parameters for FrameControl FC
-    BS = 0
+    block_size = 0
     separation_time = 0
     frame_control_delay = 0 #no wait
     frame_control_flag = 48 #continue send
     frame_control_auto = False
 
-    SC.change_MF_FC(can_send, BS, separation_time, frame_control_delay, frame_control_flag,
+    SC.change_MF_FC(can_send, block_size, separation_time, frame_control_delay, frame_control_flag,
                     frame_control_auto)
-    
+
     result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
                                           can_receive, can_namespace, stepno, purpose,
                                           timeout, min_no_messages, max_no_messages)
     result = result and SUTE.test_message(SC.can_messages[can_receive], teststring='7F3431')
-    
+
     logging.info('%s', SUTE.PP_Decode_7F_response(SC.can_frames[can_receive][0][2]))
     return result
 
@@ -205,22 +205,22 @@ def step_9(stub, can_send, can_receive, can_namespace, result):
     purpose = "Request Download again for the 1st data block (1st Logical Block)"
 
     SUTE.print_test_purpose(stepno, purpose)
-    
-    resultt, _ = SSBL.Request_Block_Download(stub, can_send, can_receive, can_namespace, stepno, purpose, 
+
+    resultt, _ = SSBL.Request_Block_Download(stub, can_send, can_receive, can_namespace, stepno, purpose,
                                              BLOCK_ADDR_BY, BLOCK_LEN_BY, DATA_FORMAT)
     result = result and resultt
     return result
 
-def step_10(stub, can_send, can_receive, can_namespace, result):    
+def step_10(stub, can_send, can_receive, can_namespace, result):
     """
     Teststep 10: Download SW Parts
     """
     stepno = 10
     purpose = "Download SW"
-    
+
     for i in range(3, 7):
-        
-        result = result and SSBL.SW_Part_Download(stub, can_send, can_receive, 
+
+        result = result and SSBL.SW_Part_Download(stub, can_send, can_receive,
                                                   can_namespace, stepno, purpose, i)
 
     return result
@@ -232,7 +232,7 @@ def step_11(stub, can_send, can_receive, can_namespace, result):
     stepno = 11
     purpose = "verify RoutineControl start are sent for Type 1"
 
-    result = result and SSBL.Check_Complete_Compatible_Routine(stub, can_send, can_receive, 
+    result = result and SSBL.Check_Complete_Compatible_Routine(stub, can_send, can_receive,
                                                                can_namespace, stepno, purpose)
     result = result and SUTE.test_message(SC.can_messages[can_receive], 'Complete, Compatible')
     return result
@@ -240,7 +240,7 @@ def step_11(stub, can_send, can_receive, can_namespace, result):
 def step_12(stub, can_send, can_receive, can_namespace, result):
     """
     Teststep 12: Reset
-    """ 
+    """
     stepno = 12
     purpose = "ECU Reset"
     timeout = 1
@@ -249,7 +249,7 @@ def step_12(stub, can_send, can_receive, can_namespace, result):
 
     can_m_send = b'\x11\x01'
     can_mr_extra = ''
-    
+
     result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
                                       can_receive, can_namespace, stepno, purpose,
                                       timeout, min_no_messages, max_no_messages)
@@ -269,7 +269,7 @@ def step_13(stub, can_send, can_receive, can_namespace, result):
 
     can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xF1\x86', "")
     can_mr_extra = b'\x01'
-    
+
     result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
                                       can_receive, can_namespace, stepno, purpose,
                                       timeout, min_no_messages, max_no_messages)
@@ -300,81 +300,81 @@ def run():
     # precondition
     ############################################
     result = precondition(network_stub, can_send, can_receive, can_namespace, result)
-    
+
     ############################################
     # teststeps
     ############################################
     # step 1:
-    # action: 
-    # result: 
+    # action:
+    # result:
     result = step_1(network_stub, can_send, can_receive, can_namespace, result)
 
     # step 2:
     # action:
-    # result: 
+    # result:
     result = step_2(network_stub, can_send, can_receive, can_namespace, result)
 
     # step 3:
-    # action: 
-    # result: 
+    # action:
+    # result:
     step_3()
-    
+
     # step 4:
-    # action: 
-    # result: 
+    # action:
+    # result:
     step_4()
-    
+
     # step 5:
-    # action: 
-    # result: 
+    # action:
+    # result:
     result = step_5(network_stub, can_send, can_receive, can_namespace, result)
 
     # step 6:
-    # action: 
-    # result: 
+    # action:
+    # result:
     step_6()
 
     # step 7:
-    # action: 
-    # result: 
+    # action:
+    # result:
     step_7()
 
     # step 8:
-    # action: 
-    # result: 
+    # action:
+    # result:
     result = step_8(network_stub, can_send, can_receive, can_namespace, result)
 
     # step 9:
-    # action: 
-    # result: 
+    # action:
+    # result:
     result = step_9(network_stub, can_send, can_receive, can_namespace, result)
 
     # step 10:
-    # action: 
-    # result: 
+    # action:
+    # result:
     #result = step_10(network_stub, can_send, can_receive, can_namespace, result)
 
     # step 11:
-    # action: 
-    # result: 
+    # action:
+    # result:
     #result = step_11(network_stub, can_send, can_receive, can_namespace, result)
 
     # step 12:
-    # action: 
-    # result: 
+    # action:
+    # result:
     #result = step_12(network_stub, can_send, can_receive, can_namespace, result)
     time.sleep(1)
 
     # step 13:
-    # action: 
-    # result: 
+    # action:
+    # result:
     #result = step_13(network_stub, can_send, can_receive, can_namespace, result)
     time.sleep(1)
 
     ############################################
     # postCondition
     ############################################
-            
+
     logging.debug("\nTime: %s \n", time.time())
     logging.info("Testcase end: %s", datetime.now())
     logging.info("Time needed for testrun (seconds): %s", int(time.time() - starttime))

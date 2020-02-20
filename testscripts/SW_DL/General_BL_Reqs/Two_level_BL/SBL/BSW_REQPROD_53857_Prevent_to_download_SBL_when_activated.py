@@ -41,12 +41,12 @@ def precondition(stub, can_send, can_receive, can_namespace, result):
     Precondition for test running:
     BECM has to be kept alive: start heartbeat
     """
-        
+
     # start heartbeat, repeat every 0.8 second
     SC.start_heartbeat(stub, "MvcmFront1NMFr", "Front1CANCfg0", b'\x00\x40\xFF\xFF\xFF\xFF\xFF\xFF', 0.4)
-    
+
     SC.start_periodic(stub,"Networkeptalive", True, "Vcu1ToAllFuncFront1DiagReqFrame", "Front1CANCfg0", b'\x02\x3E\x80\x00\x00\x00\x00\x00', 1.02)
-    
+
     # timeout = more than maxtime script takes
     timeout = 120   #seconds"
 
@@ -108,7 +108,7 @@ def step_3(stub, can_send, can_receive, can_namespace, result):
     global offset, data, data_format
 
     SUTE.print_test_purpose(stepno, purpose)
-    
+
     offset, data, _, _, data_format = SSBL.Read_vbf_file_SBL(1)
 
     return result
@@ -118,11 +118,11 @@ def step_4(stub, can_send, can_receive, can_namespace, result):
     Teststep 4: Extract data for the 1st block from VBF
     """
     stepno = 4
-    purpose = "EXtract data for the 1st block from VBF" 
-    global block_addr_by, block_len_by, offset 
+    purpose = "EXtract data for the 1st block from VBF"
+    global block_addr_by, block_len_by, offset
 
-    SUTE.print_test_purpose(stepno, purpose)  
-        
+    SUTE.print_test_purpose(stepno, purpose)
+
     _, _, block_addr_by, block_len_by, _, _ = SSBL.Block_data_extract(offset, data)
 
     return result
@@ -132,28 +132,28 @@ def step_5(stub, can_send, can_receive, can_namespace, result):
     Teststep 5: Request Download the 1st SBL block
     """
     stepno = 5
-    purpose = "Request Download the 1st SBL block"  
+    purpose = "Request Download the 1st SBL block"
 
     timeout = 0.05
     min_no_messages = -1
     max_no_messages = -1
-        
+
     can_m_send = b'\x34' + data_format + b'\x44'+ block_addr_by + block_len_by
     can_mr_extra = ''
 
     # Parameters for FrameControl FC
-    BS=0
+    block_size=0
     ST=0
     FC_delay = 0 #no wait
     FC_flag = 48 #continue sends
     FC_auto = False
 
-    SC.change_MF_FC(can_send, BS, ST, FC_delay, FC_flag, FC_auto)
-    
+    SC.change_MF_FC(can_send, block_size, ST, FC_delay, FC_flag, FC_auto)
+
     result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
                                           can_receive, can_namespace, stepno, purpose,
                                           timeout, min_no_messages, max_no_messages)
-    
+
     result = result and SUTE.test_message(SC.can_messages[can_receive], teststring='7F3431')
     print(SUTE.PP_Decode_7F_response(SC.can_frames[can_receive][0][2]))
     return result
@@ -170,7 +170,7 @@ def step_6(stub, can_send, can_receive, can_namespace, result):
 
     can_m_send = b'\x11\x01'
     can_mr_extra = ''
-    
+
     result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
                                       can_receive, can_namespace, stepno, purpose,
                                       timeout, min_no_messages, max_no_messages)
@@ -192,7 +192,7 @@ def step_7(stub, can_send, can_receive, can_namespace, result):
 def step_8(stub, can_send, can_receive, can_namespace, result):
     """
     Teststep 8: Reset
-    """ 
+    """
     stepno = 8
     purpose = "ECU Reset"
     timeout = 1
@@ -201,7 +201,7 @@ def step_8(stub, can_send, can_receive, can_namespace, result):
 
     can_m_send = b'\x11\x01'
     can_mr_extra = ''
-    
+
     result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
                                       can_receive, can_namespace, stepno, purpose,
                                       timeout, min_no_messages, max_no_messages)
@@ -222,13 +222,13 @@ def step_9(stub, can_send, can_receive, can_namespace, result):
 
     can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xF1\x86', "")
     can_mr_extra = b'\x01'
-    
+
     result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
                                       can_receive, can_namespace, stepno, purpose,
                                       timeout, min_no_messages, max_no_messages)
     time.sleep(1)
     return result
-    
+
 def run():
     """
     Run
@@ -254,7 +254,7 @@ def run():
     # precondition
     ############################################
     test_result = precondition(network_stub, can_send, can_receive, can_namespace,test_result)
-    
+
     ############################################
     # teststeps
     ############################################
@@ -272,41 +272,41 @@ def run():
     # action: Request Security Access
     # result: BECM sends positive reply
     test_result = step_3(network_stub, can_send, can_receive, can_namespace, test_result)
-    
+
     # step 4:
     # action: Send security access key
     # result: BECM sends positive reply
     test_result = step_4(network_stub, can_send, can_receive, can_namespace, test_result)
-    
+
     # step 5:
     # action: SBL Download
     # result: BECM sends positive reply
     test_result = step_5(network_stub, can_send, can_receive, can_namespace, test_result)
-    
+
     # step 6:
     # action: SBL Download
     # result: BECM sends positive reply
     test_result = step_6(network_stub, can_send, can_receive, can_namespace, test_result)
-    
-    # step 7:  
+
+    # step 7:
     # action: verify RoutineControl start is sent for Type 1
     # result: BECM sends positive reply
     test_result = step_7(network_stub, can_send, can_receive, can_namespace, test_result)
-    
+
     # step 8:
-    # action: 
-    # result: 
+    # action:
+    # result:
     test_result = step_8(network_stub, can_send, can_receive, can_namespace, test_result)
 
     # step 9:
-    # action: 
-    # result: 
+    # action:
+    # result:
     test_result = step_9(network_stub, can_send, can_receive, can_namespace, test_result)
-   
+
     ############################################
     # postCondition
     ############################################
-            
+
     print()
     print ("time ", time.time())
     print ("Testcase end: ", datetime.now())
@@ -320,15 +320,15 @@ def run():
 
     # deregister signals
     SC.unsubscribe_signals()
-    # if threads should remain: try to stop them 
+    # if threads should remain: try to stop them
     SC.thread_stop()
-            
+
     print ("Test cleanup end: ", datetime.now())
     print()
     if test_result:
         print ("Testcase result: PASSED")
     else:
         print ("Testcase result: FAILED")
-  
+
 if __name__ == '__main__':
     run()
