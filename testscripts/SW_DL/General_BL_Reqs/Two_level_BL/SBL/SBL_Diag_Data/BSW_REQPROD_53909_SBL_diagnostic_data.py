@@ -103,7 +103,7 @@ def step_2(stub, can_send, can_receive, can_namespace, result):
     max_no_messages = -1
 
     # Parameters for FrameControl FC
-    BS = 0
+    block_size = 0
     separation_time = 0
     frame_control_delay = 0 #no wait
     frame_control_flag = 48 #continue send
@@ -112,7 +112,7 @@ def step_2(stub, can_send, can_receive, can_namespace, result):
     can_m_send = SC.can_m_send("ReadDataByIdentifier", b'\xF1\x22', "")
     can_mr_extra = ''
 
-    SC.change_MF_FC(can_send, BS, separation_time, frame_control_delay, frame_control_flag,
+    SC.change_MF_FC(can_send, block_size, separation_time, frame_control_delay, frame_control_flag,
                     frame_control_auto)
 
     return result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send, can_receive,
@@ -159,7 +159,7 @@ def step_4(stub, can_send, can_receive, can_namespace, result):
     max_no_messages = -1
 
     # Parameters for FrameControl FC
-    BS = 0
+    block_size = 0
     separation_time = 0
     frame_control_delay = 0 #no wait
     frame_control_flag = 48 #continue send
@@ -168,7 +168,7 @@ def step_4(stub, can_send, can_receive, can_namespace, result):
     can_m_send = SC.can_m_send("ReadDataByIdentifier", b'\xF1\x21\xF1\x2A', "")
     can_mr_extra = ''
 
-    SC.change_MF_FC(can_send, BS, separation_time, frame_control_delay, frame_control_flag,
+    SC.change_MF_FC(can_send, block_size, separation_time, frame_control_delay, frame_control_flag,
                     frame_control_auto)
 
     return result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send, can_receive,
@@ -216,7 +216,7 @@ def step_6(stub, can_send, can_receive, can_namespace, result):
     max_no_messages = -1
 
     # Parameters for FrameControl FC
-    BS = 0
+    block_size = 0
     separation_time = 0
     frame_control_delay = 0 #no wait
     frame_control_flag = 48 #continue send
@@ -225,7 +225,7 @@ def step_6(stub, can_send, can_receive, can_namespace, result):
     can_m_send = SC.can_m_send("ReadDataByIdentifier", b'\xF1\x22', "")
     can_mr_extra = ''
 
-    SC.change_MF_FC(can_send, BS, separation_time, frame_control_delay, frame_control_flag,
+    SC.change_MF_FC(can_send, block_size, separation_time, frame_control_delay, frame_control_flag,
                     frame_control_auto)
 
     return result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send, can_receive,

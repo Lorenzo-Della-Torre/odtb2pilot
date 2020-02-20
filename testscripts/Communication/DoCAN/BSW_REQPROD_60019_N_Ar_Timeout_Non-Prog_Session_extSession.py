@@ -46,9 +46,9 @@ testresult = True
 #  BECM has to be kept alive: start heartbeat
 def precondition(stub, s, r, ns):
     global testresult
-    
+
     # start heartbeat, repeat every 0.8 second
-    SC.start_heartbeat(stub, "EcmFront1NMFr", "Front1CANCfg0", b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.8)        
+    SC.start_heartbeat(stub, "EcmFront1NMFr", "Front1CANCfg0", b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.8)
 
     # timeout = more than maxtime script takes
     # needed as thread for registered signals won't stop without timeout
@@ -57,32 +57,32 @@ def precondition(stub, s, r, ns):
     SC.subscribe_signal(stub, s, r, ns, timeout)
     #record signal we send as well
     SC.subscribe_signal(stub, r, s, ns, timeout)
-    
+
     print()
     step_0(stub, s, r, ns)
-    
+
     print ("precondition testok:", testresult, "\n")
 
-    
+
 # teststep 0: Complete ECU Part/Serial Number(s)
 def step_0(stub, s, r, ns):
     global testresult
     can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xED\xA0', "")
     can_mr_extra = ''
-    
+
     stepno = 0
     purpose = "Complete ECU Part/Serial Number(s)"
     timeout = 5
     min_no_messages = 1
     max_no_messages = 1
-    
+
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     print(SuTe.PP_CombinedDID_EDA0(SC.can_messages[r][0][2], title=''))
-    
+
 # teststep 1: Change to Extended session
 def step_1(stub, s, r, ns):
     global testresult
-    
+
     stepno = 1
     purpose = "Change to Extended session"
     timeout = 1
@@ -91,14 +91,14 @@ def step_1(stub, s, r, ns):
 
     can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x03', "")
     can_mr_extra = ''
-    
+
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
 
-    
+
 # teststep 2: verify session
 def step_2(stub, s, r, ns):
     global testresult
-    
+
     stepno = 2
     purpose = "Verify extended session"
     timeout = 1
@@ -107,22 +107,22 @@ def step_2(stub, s, r, ns):
 
     can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xF1\x86', "")
     can_mr_extra = b'\x03'
-    
+
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     #time.sleep(1)
-    
+
 # teststep 3: request EDA0 - with FC delay < timeout 1000 ms
 def step_3(stub, s, r, ns):
     global testresult
-    
+
     stepno = 3
     purpose = "request EDA0 - with FC delay < timeout 1000 ms"
     timeout = 5
     min_no_messages = -1
     max_no_messages = -1
 
-    BS1 = 11
-    BS=0
+    block_size1 = 11
+    block_size=0
     ST=0
     FC_flag =   48 #continue to send
     FC_delay = 950 #wait 800ms before sending FC frame back
@@ -130,31 +130,31 @@ def step_3(stub, s, r, ns):
 
     can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xED\xA0', "")
     can_mr_extra = ''
-    
+
     #clear_all_can_frames()
-    SC.change_MF_FC(r, BS, ST, FC_delay, FC_flag, FC_auto)
+    SC.change_MF_FC(r, block_size, ST, FC_delay, FC_flag, FC_auto)
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
 
-    if len(SC.can_frames[r]) == BS1:
+    if len(SC.can_frames[r]) == block_size1:
         print ("Timeout due to FC delay: ")
         print ("number of frames received as expected: ", len(SC.can_frames[r]))
     else:
         testresult = False
-        print("FAIL: Wrong number of frames received. Expeced", BS1, "Received:", len(SC.can_frames[r]))
+        print("FAIL: Wrong number of frames received. Expeced", block_size1, "Received:", len(SC.can_frames[r]))
     print ("Step3: frames received ", len(SC.can_frames[r]), "\n")
-    
+
 # teststep 4: request EDA0 - with FC delay > timeout 1000 ms
 def step_4(stub, s, r, ns):
     global testresult
-    
+
     stepno = 4
     purpose = "request EDA0 - with FC delay > timeout 1000 ms"
     timeout = 5
     min_no_messages = -1
     max_no_messages = -1
 
-    BS1 = 1
-    BS=0
+    block_size1 = 1
+    block_size=0
     ST=0
     FC_flag =   48 #continue to send
     FC_delay = 1050 #wait 800ms before sending FC frame back
@@ -162,47 +162,47 @@ def step_4(stub, s, r, ns):
 
     can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xED\xA0', "")
     can_mr_extra = ''
-    
+
     #clear_all_can_frames()
-    SC.change_MF_FC(r, BS, ST, FC_delay, FC_flag, FC_auto)
+    SC.change_MF_FC(r, block_size, ST, FC_delay, FC_flag, FC_auto)
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
 
-    if len(SC.can_frames[r]) == BS1:
+    if len(SC.can_frames[r]) == block_size1:
         print ("Timeout due to FC delay: ")
         print ("number of frames received as expected: ", len(SC.can_frames[r]))
     else:
         testresult = False
-        print("FAIL: Wrong number of frames received. Expeced", BS1, "Received:", len(SC.can_frames[r]))
+        print("FAIL: Wrong number of frames received. Expeced", block_size1, "Received:", len(SC.can_frames[r]))
     print ("Step4: frames received ", len(SC.can_frames[r]), "\n")
 
- 
+
 # teststep 5: set back FC_delay to default
 def step_5(stub, s, r, ns):
     global testresult
-    
+
     stepno = 5
     purpose = "set back FC_delay to default"
-    timeout = 5 
+    timeout = 5
     min_no_messages = -1
     max_no_messages = -1
 
-    BS1 = 1
-    BS=0
+    block_size1 = 1
+    block_size=0
     ST=0
     FC_flag =   48 #continue to send
-    FC_delay =  0 
+    FC_delay =  0
     FC_auto = True
-    
+
     SuTe.print_test_purpose(stepno, purpose)
     #update_can_messages_2(stub, r)
     #print(can_frames, "\n")
-    SC.change_MF_FC(r, BS, ST, FC_delay, FC_flag, FC_auto)
+    SC.change_MF_FC(r, block_size, ST, FC_delay, FC_flag, FC_auto)
 
 
 # teststep 6: verify session
 def step_6(stub, s, r, ns):
     global testresult
-    
+
     stepno = 6
     purpose = "Verify extended session"
     timeout = 5
@@ -211,14 +211,14 @@ def step_6(stub, s, r, ns):
 
     can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xF1\x86', "")
     can_mr_extra = b'\x03'
-    
+
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     time.sleep(1)
 
 # teststep 7: Change to default session
 def step_7(stub, s, r, ns):
     global testresult
-    
+
     stepno = 7
     purpose = "Change to Default session"
     timeout = 1
@@ -227,14 +227,14 @@ def step_7(stub, s, r, ns):
 
     can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x01', "")
     can_mr_extra = ''
-    
+
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     #time.sleep(1)
 
     # teststep 8: verify session
 def step_8(stub, s, r, ns):
     global testresult
-    
+
     stepno = 8
     purpose = "Verify Default session"
     timeout = 5
@@ -243,7 +243,7 @@ def step_8(stub, s, r, ns):
 
     can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xF1\x86', "")
     can_mr_extra = b'\x01'
-    
+
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
     time.sleep(1)
 
@@ -252,7 +252,7 @@ def run():
 
     #start logging
     # to be implemented
-    
+
     # where to connect to signal_broker
     network_stub = SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT)
 
@@ -263,15 +263,15 @@ def run():
     # Test PreCondition
     root = logging.getLogger()
     root.setLevel(logging.DEBUG)
-    
+
     ch = logging.StreamHandler(sys.stdout)
     ch.setLevel(logging.DEBUG)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     ch.setFormatter(formatter)
     root.addHandler(ch)
     root.info('BEGIN:  %s' % os.path.basename(__file__))
-    
-    
+
+
     print ("Testcase start: ", datetime.now())
     starttime = time.time()
     print ("time ", time.time())
@@ -284,7 +284,7 @@ def run():
     #print ("after precond thread enumerate ", threading.enumerate())
 
     #subscribe_to_BecmFront1NMFr(network_stub)
-    
+
     ############################################
     # teststeps
     ############################################
@@ -292,7 +292,7 @@ def run():
     # action: change BECM to programming
     # result: BECM reports mode
     step_1(network_stub, can_send, can_receive, can_namespace)
-    
+
     # step2:
     # action: check current session
     # result: BECM reports programmin session
@@ -310,7 +310,7 @@ def run():
 
     # step5:
     # action: restore FC_delay again
-    # result: 
+    # result:
     step_5(network_stub, can_send, can_receive, can_namespace)
 
     # step6:
@@ -328,11 +328,11 @@ def run():
     # result: BECM reports default session
     step_8(network_stub, can_send, can_receive, can_namespace)
 
-    
+
     ############################################
     # postCondition
     ############################################
-            
+
     print()
     print ("time ", time.time())
     print ("Testcase end: ", datetime.now())
@@ -344,9 +344,9 @@ def run():
 
     # deregister signals
     SC.unsubscribe_signals()
-    # if threads should remain: try to stop them 
+    # if threads should remain: try to stop them
     SC.thread_stop()
-            
+
     print ("Test cleanup end: ", datetime.now())
     print()
     if testresult:
@@ -354,6 +354,6 @@ def run():
     else:
         print ("Testcase result: FAILED")
 
-    
+
 if __name__ == '__main__':
     run()

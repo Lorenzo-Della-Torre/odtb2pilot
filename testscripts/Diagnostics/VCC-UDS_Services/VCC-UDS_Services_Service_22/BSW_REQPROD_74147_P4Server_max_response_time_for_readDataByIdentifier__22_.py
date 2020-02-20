@@ -121,9 +121,9 @@ def step_2(stub, can_send, can_receive, can_namespace, result):
     print ("Tdiff: T_send-T_rec  : ", (T_send-T_rec))
     #print("T difference(s):", (P4_server_max + 10) - (T_send - T_rec))
     print("Step ", stepno, " teststatus:", result, "\n")
-    
+
     if (T_rec - T_send) > ((P4_server_max + jitter_testenv)/1000) :
-        result = False 
+        result = False
 
     return result
 
@@ -171,9 +171,9 @@ def step_4(stub, can_send, can_receive, can_namespace, result):
     print ("Time P4_s_max + jitter ", P4_server_max + jitter_testenv)
     print ("Tdiff: T_send-T_rec  : ", (T_send-T_rec))
     print("Step ", stepno, " teststatus:", result, "\n")
-    
+
     if (T_rec - T_send) > ((P4_server_max + jitter_testenv)/1000) :
-        result = False 
+        result = False
 
     return result
 
@@ -189,7 +189,7 @@ def step_5(stub, can_send, can_receive, can_namespace, result):
     max_no_messages = -1
 
     # Parameters for FrameControl FC
-    BS=0
+    block_size=0
     ST=0
     FC_delay = 0 #no wait
     FC_flag = 48 #continue send
@@ -197,7 +197,7 @@ def step_5(stub, can_send, can_receive, can_namespace, result):
     can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xDD\x02\xDD\x0A\xDD\x0C\x49\x47\x49\x50\xDA\xD0\xDA\xD1\x48\x02\x48\x03\x49\x45', "")
     can_mr_extra = ''
 
-    SC.change_MF_FC(can_send, BS, ST, FC_delay, FC_flag, FC_auto)
+    SC.change_MF_FC(can_send, block_size, ST, FC_delay, FC_flag, FC_auto)
 
     #T5 = time.time()
 
@@ -229,9 +229,9 @@ def step_6(stub, can_send, can_receive, can_namespace, result):
     print ("Time P4_s_max + jitter ", P4_server_max + jitter_testenv)
     print ("Tdiff: T_send-T_rec  : ", (T_send-T_rec))
     print("Step ", stepno, " teststatus:", result, "\n")
-    
+
     if (T_rec - T_send) > ((P4_server_max + jitter_testenv)/1000) :
-        result = False 
+        result = False
 
     return result
 
@@ -265,14 +265,14 @@ def run():
     ############################################
     # teststeps
     ############################################
-    
+
     # step1:
     # action: send ReadDataByIdentifier signal in default mode
     # result: BECM sends positive reply
     test_result = step_1(network_stub, can_send, can_receive, can_namespace, test_result)
 
     # step 2:
-    # action: Verify (time receive message – time sending request) < P4_server_max 
+    # action: Verify (time receive message – time sending request) < P4_server_max
     # result: positive result
     test_result = step_2(network_stub, can_send, can_receive, can_namespace, test_result)
 
@@ -282,7 +282,7 @@ def run():
     test_result = step_3(network_stub, can_send, can_receive, can_namespace, test_result)
 
     # step 4:
-    # action: Verify (time receive message – time sending request) < P4_server_max 
+    # action: Verify (time receive message – time sending request) < P4_server_max
     # result: positive result
     test_result = step_4(network_stub, can_send, can_receive, can_namespace, test_result)
 
@@ -290,16 +290,16 @@ def run():
     # action: send ReadDataByIdentifier 10 DID
     # result: BECM sends positive reply
     test_result = step_5(network_stub, can_send, can_receive, can_namespace, test_result)
-    
+
     # step 6:
-    # action: Verify (time receive message – time sending request) < P4_server_max 
+    # action: Verify (time receive message – time sending request) < P4_server_max
     # result: positive result
     test_result = step_6(network_stub, can_send, can_receive, can_namespace, test_result)
 
     ############################################
     # postCondition
     ############################################
-            
+
     print()
     print("time ", time.time())
     print("Testcase end: ", datetime.now())
