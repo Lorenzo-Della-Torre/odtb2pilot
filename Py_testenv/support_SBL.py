@@ -470,8 +470,8 @@ class Support_SBL:
         can_m_send = SC.can_m_send("RoutineControlRequestSID", b'\xFF\x00' + erase, b'\x01')
         can_mr_extra = ''
 
-        SC.change_MF_FC(can_send, block_size, separation_time, frame_control_delay, frame_control_flag,
-                        frame_control_auto)
+        SC.change_MF_FC(can_send, block_size, separation_time, frame_control_delay,
+                        frame_control_flag, frame_control_auto)
         time.sleep(1)
         testresult = testresult and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
                                                   can_rec, can_nspace, step_no, purpose,
@@ -496,8 +496,8 @@ class Support_SBL:
             can_m_send = SC.can_m_send("RoutineControlRequestSID", b'\xFF\x00' + erase, b'\x01')
             can_mr_extra = ''
 
-            SC.change_MF_FC(can_send, block_size, separation_time, frame_control_delay, frame_control_flag,
-                            frame_control_auto)
+            SC.change_MF_FC(can_send, block_size, separation_time, frame_control_delay,
+                            frame_control_flag, frame_control_auto)
             time.sleep(1)
             testresult = testresult and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
                                                       can_rec, can_nspace, step_no, purpose,
@@ -562,8 +562,8 @@ class Support_SBL:
         can_m_send = b'\x34' + data_format + b'\x44'+ block_addr_by + block_len_by
         can_mr_extra = ''
 
-        SC.change_MF_FC(can_send, block_size, separation_time, frame_control_delay, frame_control_flag,
-                        frame_control_auto)
+        SC.change_MF_FC(can_send, block_size, separation_time, frame_control_delay,
+                        frame_control_flag, frame_control_auto)
 
         testresult = testresult and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
                                                   can_rec, can_nspace, step_no, purpose,
@@ -604,8 +604,8 @@ class Support_SBL:
 
             can_mr_extra = ''
 
-            SC.change_MF_FC(can_send, block_size, separation_time, frame_control_delay, frame_control_flag,
-                            frame_control_auto)
+            SC.change_MF_FC(can_send, block_size, separation_time, frame_control_delay,
+                            frame_control_flag, frame_control_auto)
 
             testresult = testresult and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
                                                       can_rec, can_nspace, step_no, purpose,
@@ -648,8 +648,8 @@ class Support_SBL:
         frame_control_auto = False
         can_m_send = SC.can_m_send("RoutineControlRequestSID", b'\x02\x12' + sw_signature1, b'\x01')
         can_mr_extra = ''
-        SC.change_MF_FC(can_send, block_size, separation_time, frame_control_delay, frame_control_flag,
-                        frame_control_auto)
+        SC.change_MF_FC(can_send, block_size, separation_time, frame_control_delay,
+                        frame_control_flag, frame_control_auto)
         time.sleep(1)
         testresult = testresult and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
                                                   can_rec, can_nspace, step_no, purpose,
