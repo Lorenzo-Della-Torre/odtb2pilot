@@ -27,14 +27,18 @@ from datetime import datetime
 import time
 import logging
 import sys
-from html import HTML
+from collections import namedtuple
+from yattag import Doc
 from support_test_odtb2 import Support_test_ODTB2
 import ODTB_conf
 import parameters as parammod
+import BSW_REQPROD_Implement_MEP2_Support_EOL_def_conf as conf
 from output.did_dict import sddb_resp_item_dict
 from output.did_dict import sddb_app_did_dict
 from output.did_dict import app_diag_part_num
 from support_can import Support_CAN
+
+
 
 SC = Support_CAN()
 SUPPORT_TEST = Support_test_ODTB2()
@@ -43,7 +47,7 @@ SUPPORT_TEST = Support_test_ODTB2()
 PASSED_STATUS = 'PASSED'
 FAILED_STATUS = 'FAILED'
 
-COLOR_DICT = {PASSED_STATUS:'#94f7a2', FAILED_STATUS:'#ff9ea6'}
+Infoentry = namedtuple('Infoentry', 'did name c_sid c_did c_size scal_val_list err_msg payload')
 
 def pp_frame_info(msg, did_struct, frame, size, sid):
     ''' Pretty print the frame information '''
@@ -107,7 +111,7 @@ def read_response(network_stub, m_send, m_receive_extra, did, can_send="", can_r
     logging.debug('To send:   [%s, %s, %s]', time.time(), can_send, m_send.upper())
     SC.t_send_signal_CAN_MF(network_stub, can_send, can_rec, can_nspace, m_send, True, 0x00)
     # Wait timeout for getting subscribed data
-    timeout = 0.2 #0.5 #5 # wait for message to arrive
+    timeout = conf.response_timeout #0.5 #5 # wait for message to arrive
     time.sleep(timeout)
     SC.clear_all_can_messages()
 
@@ -130,6 +134,7 @@ def read_response(network_stub, m_send, m_receive_extra, did, can_send="", can_r
                 sid = frame[2:4]
 
                 # Verify SID, should be 62 (Service 22 + 40)
+                payload = str()
                 if sid in ('62', '7F'):
                     sid_test = True
                     did = frame[4:8]
@@ -235,7 +240,7 @@ def precondition(network_stub, can_send, can_receive, can_namespace):
     SC.start_heartbeat(network_stub, "EcmFront1NMFr", "Front1CANCfg0",
                        b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.8)
 
-    timeout = 100   #seconds
+    timeout = conf.script_timeout
     SC.subscribe_signal(network_stub, can_send, can_receive, can_namespace, timeout)
     #record signal we send as well
     SC.subscribe_signal(network_stub, can_receive, can_send, can_namespace, timeout)
@@ -284,10 +289,6 @@ def adding_info(copy_from_dict, dictionary):
     Copies some information from one dictionary to another
     Returns the dictionary
     '''
-
-    #dictionary = dict()
-    #if 'Size' in copy_from_dict:
-    #    dictionary['Size'] = copy_from_dict['Size']
     if 'payload' in copy_from_dict:
         dictionary['payload'] = copy_from_dict['payload']
         dictionary['payload_length'] = copy_from_dict['payload_length']
@@ -301,135 +302,117 @@ def adding_info(copy_from_dict, dictionary):
         dictionary['did'] = copy_from_dict['did']
     return dictionary
 
-def test_response(did_dict, pass_or_fail_counter_dict, did_id):
+def summarize_result(did_dict, pass_or_fail_counter_dict, did_id):
     '''
     Comparing the expected size with the actual size and
     compares the received DID value with the expected DID value.
     Adding how the tests went to the did dictionary and adds one 'Failed' or 'Passed'
-    to the result dictionary
+    to the result dictionary.
     '''
-    # Comparing the expected size with the actual size
+    c_did = False
+    c_sid = False
+    c_size = False
+
+    if 'sid_test' in did_dict and did_dict['sid_test']:
+        c_sid = True
+    # No error message yet
     if 'error_message' not in did_dict:
         # Verifying DID in response
         if 'did' in did_dict and did_id in did_dict['did']:
-            did_dict['did_in_response_test'] = True
-        else:
-            did_dict['did_in_response_test'] = False
-
+            c_did = True
         # Verifying payload length
         if ('payload_length' in did_dict and int(did_dict['Size']) ==
                 did_dict['payload_length']):
             pass_or_fail_counter_dict['Passed'] += 1
-            did_dict['Result'] = True
-            did_dict['length_test'] = True
+            c_size = True
+        # Wrong payload length
         else:
             if 'payload_length' in did_dict:
                 did_dict['error_message'] = 'Size wrong. Expected %s but was %s' % (
                     did_dict['Size'], str(did_dict['payload_length']))
-                pass_or_fail_counter_dict['wrong_size'] += 1
             else:
                 did_dict['error_message'] = 'No payload?'
-
-            did_dict['length_test'] = False
             pass_or_fail_counter_dict['Failed'] += 1
-            did_dict['Result'] = False
+
+    # Already an error message
     else:
         pass_or_fail_counter_dict['Failed'] += 1
-        did_dict['Result'] = False
+        if 'Negative response: conditionsNotCorrect (22)' in did_dict['error_message']:
+            pass_or_fail_counter_dict['conditionsNotCorrect (22)'] += 1
+        if 'Negative response: requestOutOfRange (31)' in did_dict['error_message']:
+            pass_or_fail_counter_dict['requestOutOfRange (31)'] += 1
 
-    return did_dict, pass_or_fail_counter_dict
+    did = did_dict['ID']
+    name = did_dict['Name']
+    scal_val_list = list()
+    if 'formatted_result_value' in did_dict:
+        for formatted_result_value in did_dict['formatted_result_value']:
+            scal_val_list.append(formatted_result_value)
+
+    err_msg = str()
+    if 'error_message' in did_dict:
+        err_msg = did_dict['error_message']
+
+    pp_payload = str()
+    if 'payload' in did_dict:
+        payload = did_dict['payload']
+        pp_payload = 'Payload: ' + add_ws_every_nth_char(payload, 16)
+
+    formula = str()
+    if 'Formula' in did_dict:
+        formula = did_dict['Formula']
+
+    data = 'Formula = [' + formula + '] ' + pp_payload
+
+    info_entry = Infoentry(did=did, name=name, c_sid=c_sid, c_did=c_did, c_size=c_size,
+                           scal_val_list=scal_val_list, err_msg=err_msg, payload=data)
+    return info_entry, pass_or_fail_counter_dict
 
 
-def mark(did, value):
-    '''
-    Creates checked or unchecked checkbox string
-    returns string
-    '''
-    msg = '[ ]'
-    if value in did:
-        if did[value]:
-            msg = '[X]'
-    return msg
-
-def pp_result(dictionary, result_dict, diagnostic_part_number_match_message):
-    ''' Pretty print the report '''
-    result = '\n\n       L\n       E\n       N\n S  D  G\n I  I  T\n D  D  H   DID   Name'
-    result += '\n------------------------------------------------------------------------------'
-
-    for data_identifier_object in dictionary.values():
-        sid_mark = mark(data_identifier_object, 'sid_test')
-        did_mark = mark(data_identifier_object, 'did_in_response_test')
-        length_mark = mark(data_identifier_object, 'length_test')
-        did = '  ' + data_identifier_object['ID']
-        name = '  ' + data_identifier_object['Name']
-
-        payload = ''
-        if 'payload' in data_identifier_object:
-            payload = '                 Payload: ' + data_identifier_object['payload']
-
-        error_message = ''
-        if 'error_message' in data_identifier_object:
-            error_message = '                 Error message: %s' % (
-                data_identifier_object['error_message'])
-
-        result += '\n' + sid_mark + did_mark + length_mark + did + name
-        result += '\n' + payload
-
-        if error_message != '':
-            result += '\n' + error_message
-
-        if 'formatted_result_value' in data_identifier_object:
-            for formatted_result_value in data_identifier_object['formatted_result_value']:
-                result += '\n                 ' + formatted_result_value
-
-    result += '\n------------------------------------------------------------------------------'
-    result += '\n %s\n\n %s' % (str(result_dict), diagnostic_part_number_match_message)
-    result += '\n------------------------------------------------------------------------------'
-    return result
-
-def compare_part_numbers(network_stub, can_send, can_receive, can_namespace,
-                         diagnostic_part_number):
+def comp_part_nbrs(network_stub, can_send, can_receive, can_namespace,
+                   sddb_cleaned_part_number):
     '''
     Testing so that the Application Diagnostic Database Part Number is correct (matching)
-    It is stored in DID F120 and we match with the ssdb part number
+    It is stored in DID F120 and we match with the sddb part number
     '''
-    PART_NUMBER_STRING_LENGTH = 14
+    message = str()
+    match = False
+    try:
+        PART_NUMBER_STRING_LENGTH = 14
 
-    # Get diagnostic part number from ECU (using service 22)
-    did_dict = service_22(network_stub, can_send, can_receive, can_namespace,
-                          parammod.DID_TO_GET_PART_NUMBER)
-    ecu_diag_part_num_full = did_dict['payload']
+        # Get diagnostic part number from ECU (using service 22)
+        did_dict = service_22(network_stub, can_send, can_receive, can_namespace,
+                              parammod.DID_TO_GET_PART_NUMBER)
+        ecu_diag_part_num_full = did_dict['payload']
 
-    # Checking length
-    if len(ecu_diag_part_num_full) != PART_NUMBER_STRING_LENGTH:
-        raise RuntimeError('ECU Diagnostic Part Number is to short!')
+        # Checking length
+        if len(ecu_diag_part_num_full) != PART_NUMBER_STRING_LENGTH:
+            raise RuntimeError('ECU Diagnostic Part Number is to short!')
 
-    # Extracting the last part of diagnostic part nummer (AA, AB, ...)
-    ecu_diag_part_num_version_hex = ecu_diag_part_num_full[8:PART_NUMBER_STRING_LENGTH]
-    # Decoding from hex to ASCII
-    ecu_diag_part_num_version = bytearray.fromhex(ecu_diag_part_num_version_hex).decode()
-    # Putting it back together to complete string again
-    ecu_diag_part_num_full = ecu_diag_part_num_full[0:8] + ecu_diag_part_num_version
+        # Extracting the last part of diagnostic part nummer (AA, AB, ...)
+        ecu_diag_part_num_version_hex = ecu_diag_part_num_full[8:PART_NUMBER_STRING_LENGTH]
+        # Decoding from hex to ASCII
+        ecu_diag_part_num_version = bytearray.fromhex(ecu_diag_part_num_version_hex).decode()
+        # Putting it back together to complete string again
+        ecu_diag_part_num_full = ecu_diag_part_num_full[0:8] + ecu_diag_part_num_version
 
-    # Clean underscore (Replace with whitespace) from SDDB file part number
-    sddb_cleaned_part_number = diagnostic_part_number.replace('_', ' ')
+        # Comparing part numbers
+        if sddb_cleaned_part_number == ecu_diag_part_num_full:
+            message = ('Diagnostic part number is matching! Expected ' +
+                       sddb_cleaned_part_number + ', and got ' + ecu_diag_part_num_full)
+            match = True
+        else:
+            message = (
+                'Diagnostic part number is NOT matching! Expected ' +
+                sddb_cleaned_part_number + ', but got ' + ecu_diag_part_num_full)
 
-    # Comparing part numbers
-    diagnostic_part_number_match = False
-    if sddb_cleaned_part_number == ecu_diag_part_num_full:
-        diagnostic_part_number_match_message = ('Diagnostic part number is matching! Expected ' +
-        sddb_cleaned_part_number + ', and got ' + ecu_diag_part_num_full)
-        diagnostic_part_number_match = True
-    else:
-        diagnostic_part_number_match_message = (
-            'Diagnostic part number is NOT matching! Expected ' +
-            sddb_cleaned_part_number + ', but got ' + ecu_diag_part_num_full)
-
-    logging.debug('-------------------------------------------------')
-    logging.debug(diagnostic_part_number_match_message)
-    logging.debug(did_dict)
-    logging.debug('-------------------------------------------------')
-    return diagnostic_part_number_match_message, diagnostic_part_number_match
+        logging.debug('-------------------------------------------------')
+        logging.debug(message)
+        logging.debug(did_dict)
+        logging.debug('-------------------------------------------------')
+    except RuntimeError as runtime_error:
+        message = runtime_error
+    return match, message
 
 def get_sub_payload(payload, offset, size):
     '''
@@ -475,54 +458,102 @@ def populate_formula(formula, value, size):
 
     # Check for "Bitwise AND"
     # Removing characters we don't want
-    formula = formula.replace('&amp;0x', '&')
-    formula = formula.replace('&0x', '&')
-    and_pos = formula.find('&')
-    if and_pos != -1:
-        logging.debug('Formula = %s and_pos = %s', formula, and_pos)
-        hex_value = formula[and_pos + 1:and_pos + 1 + int(size) * 2]
+    formula = formula.replace('&amp;0x', '&0x')
+    and_pos_hex = formula.find('&0x')
+    and_pos_bit = formula.find('&0b')
+
+    # It is a bitwise-and HEX
+    if and_pos_hex != -1:
+        logging.debug('Formula = %s and_pos_hex = %s', formula, and_pos_hex)
+        hex_value = formula[and_pos_hex + 1:and_pos_hex + 3 + int(size) * 2]
         formula = formula.replace(hex_value, str(int(hex_value, 16)) + ')')
         populated_formula = formula.replace('X', '(' +str(value))
+    # It is a bitwise-and bit-mapping
+    elif and_pos_bit != -1:
+        logging.debug('Formula = %s and_pos_bit = %s', formula, and_pos_bit)
+        bit_value = bin(value)
+        populated_formula = formula.replace('X', '(' +str(bit_value) + ')')
     else:
         logging.debug('Value = %s', value)
         populated_formula = formula.replace('X', str(value))
     return populated_formula
 
 
-def clean_compare_value(compare_value):
+def clean_compare_value_hex(compare_value):
     '''
-    Removing '=0x' from compare value
+    Removing '=0x' from compare value or '='
     '''
     cleaned_compare_value = compare_value.replace('=0x', '')
     return cleaned_compare_value
 
 
-def get_scaled_value(resp_item, value):
+def get_scaled_value(resp_item, sub_payload):
     '''
     Input - Response Item with at least formula
             Value which should converted from raw data
     Returns the string with converted data
     '''
-    int_value = int(value, 16)
-
-    unit = str()
-    # Extracts the unit value (if it exists)
-    if 'Unit' in resp_item:
-        unit = resp_item['Unit']
-
+    int_value = int(sub_payload, 16)
     if 'Formula' in resp_item:
         size = resp_item['Size']
         formula = resp_item['Formula']
         logging.debug('Formula = %s', formula)
         populated_formula = populate_formula(formula, int_value, size)
         logging.debug('Populated formula = %s', populated_formula)
-        result = str(eval(populated_formula))
-        logging.debug('Formula = %s => %s = [%s %s]', formula, result, result, unit)
-        return result + ' ' + unit
 
-    # If we reach this, then there is no formula. That is an issue, formula should be mandatory
-    logging.debug('No formula!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-    return 'No formula'
+        try:
+            result = str(eval(populated_formula))
+            int_result = int(float(result))
+            logging.debug('Formula = %s => %s', formula, result)
+            return int_result
+        except RuntimeError as runtime_error:
+            logging.fatal(runtime_error)
+            raise RuntimeError('Failed parsing formula')
+        except SyntaxError as syntax_error:
+            logging.fatal(syntax_error)
+            raise SyntaxError('Failed parsing formula')
+    else:
+        # If we reach this, then there is no formula. That is an issue, formula should be mandatory
+        logging.fatal('No formula!')
+        raise RuntimeError('No formula!')
+
+
+def get_scaled_value_with_unit(resp_item, sub_payload):
+    '''
+    Input - Response Item with at least formula
+            sub_payload which should converted from raw data
+    Returns the string with converted data
+    '''
+    try:
+        scaled_value = get_scaled_value(resp_item, sub_payload)
+        unit = str()
+        # Extracts the unit value (if it exists)
+        if 'Unit' in resp_item:
+            unit = resp_item['Unit']
+        return str(scaled_value) + ' ' + unit
+    except RuntimeError as runtime_error:
+        logging.fatal(runtime_error)
+        return 'Runtime error'
+    except SyntaxError as syntax_error:
+        logging.fatal(syntax_error)
+        return 'Syntax error'
+
+
+def compare(scaled_value, compare_value):
+    '''
+    Comparing two values. Returns boolean.
+    If the compare value contains '=', then we add an '='
+    Example:    Scaled value:    0x40
+                Compare value:  =0x40
+                Result: eval('0x40==0x40') which gives True
+    '''
+    improved_compare_value = compare_value
+    # To be able to compare we need to change '=' to '=='
+    if '=' in compare_value:
+        improved_compare_value = compare_value.replace('=', '==')
+    result = eval(str(scaled_value) + str(improved_compare_value))
+    return result
+
 
 def scale_data(did_dict_with_result):
     '''
@@ -534,52 +565,64 @@ def scale_data(did_dict_with_result):
     '''
     formatted_result_value_list = list()
 
-    try:    
+    try:
         payload = dict()
         if 'payload' in did_dict_with_result:
             payload = did_dict_with_result['payload']
         else:
-            logging.fatal('No payload to Scale!')
+            logging.fatal('No payload to Scale!!')
 
         did_id = did_dict_with_result['ID']
         key = '22' + did_id
-        logging.debug('Payload = %s (Length = %s)', payload, did_dict_with_result['payload_length'])
+        logging.debug('Payload = %s (Length = %s)', payload,
+                      did_dict_with_result['payload_length'])
 
         # For each response item for the dict
         for resp_item in sddb_resp_item_dict[key]:
-
             sub_payload = get_sub_payload(payload, resp_item['Offset'], resp_item['Size'])
-            logging.debug('=================================================================')
+            logging.debug('==================================')
             logging.debug('Name = %s', resp_item['Name'])
-            logging.debug('--------------------')
+            logging.debug('----------------------------------')
             logging.debug('Payload = %s (Sub payload = %s (Offset = %s Size = %s))', payload,
                           sub_payload, resp_item['Offset'], resp_item['Size'])
 
+            # Has compare value
             if 'CompareValue' in resp_item:
                 compare_value = resp_item['CompareValue']
-                compare_value = clean_compare_value(compare_value)
-                if sub_payload != compare_value:
-                    
-                    match_msg = 'Has compare value, but no match. Comparing %s with %s' % (compare_value, sub_payload)
-                    logging.debug(match_msg)
+                logging.debug("Compare_value: %s", compare_value)
 
-                    # Adding message, but it will be overwritten if we get a match
-                    #formatted_result_value = resp_item['Name'] + ' = ' + match_msg
-                    #formatted_result_value_list.append(formatted_result_value)
-                else:
-                    logging.debug('Equal! Comparing %s with %s', compare_value, sub_payload)
-                    # Adding name for easier readability
-                    formatted_result_value = resp_item['Name'] + ' = '
-                    # Adding converted raw data
-                    formatted_result_value += get_scaled_value(resp_item, sub_payload)
-                    formatted_result_value_list.append(formatted_result_value)
+                try:
+                    scaled_value = get_scaled_value(resp_item, sub_payload)
+                    logging.debug("Scaled_value: %s", str(scaled_value))
+
+                    if compare(scaled_value, compare_value):
+                        logging.debug('Equal! Comparing %s with %s', str(compare_value),
+                                      scaled_value)
+                        # Adding name for easier readability
+                        formatted_result_value = resp_item['Name'] + ': '
+                        # When comparison value exist, the unit is usually something like:
+                        # on/off, open/close, True/False
+                        # Then we just add that value and not the comparison value.
+                        if 'Unit' in resp_item:
+                            formatted_result_value += resp_item['Unit']
+                        # Adding scaled value if no Unit value exists
+                        else:
+                            formatted_result_value += str(scaled_value)
+                        formatted_result_value_list.append(formatted_result_value)
+                        did_dict_with_result['Formula'] = resp_item['Formula']
+                except RuntimeError as runtime_error:
+                    logging.fatal(runtime_error)
+                except SyntaxError as syntax_error:
+                    logging.fatal(syntax_error)
+            # Has no compare value
             else:
                 logging.debug('No compare value!')
                 # Adding name for easier readability
                 formatted_result_value = resp_item['Name'] + ' = '
-                # Adding converted raw data
-                formatted_result_value += get_scaled_value(resp_item, sub_payload)
+                # Adding scaled data to the result string
+                formatted_result_value += get_scaled_value_with_unit(resp_item, sub_payload)
                 formatted_result_value_list.append(formatted_result_value)
+                did_dict_with_result['Formula'] = resp_item['Formula']
     except RuntimeError as runtime_error:
         logging.fatal(runtime_error)
     except KeyError as key_error:
@@ -596,155 +639,81 @@ def add_ws_every_nth_char(payload_in, nth):
     result = " ".join(payload_in[i:i+nth] for i in range(0, len(payload_in), nth))
     return result
 
-def generate_html(outfile, dictionary, pass_or_fail_counter_dict,
-                  diagnostic_part_number_match_message, diagnostic_part_number_match):
+
+def generate_html2(outfile, result_list, pass_or_fail_counter_dict, part_nbr_match,
+                   part_nbr_match_msg):
     """Create html table based on the dict"""
-    page = HTML()
+    # Used for for selecting style class
+    MATCH_DICT = {True:'match', False:'no_match'}
+    ERROR_DICT = {True:'error', False:''}
 
-    # Adding some style to this page ;)
-    # Example:  Making every other row in a different colour
-    #           Customizing padding
-    #           Customizing links
-    page.style("table#main {border-collapse: collapse;}"
-               "table#main, th, td {border: 1px solid black;}"
-               "th, td {text-align: left;}"
-               "th {background-color: lightgrey; padding: 8px;}"
-               "td {padding: 3px;}"
-               "tr:nth-child(even) {background-color: #e3e3e3;}"
-               "a {color:black; text-decoration: none;}"
-               "#header, #match, #no_match, #passed_fail{height: 100px;"
-               "line-height: 100px; width: 1000px; text-align:center; vertical-align: middle;"
-               "border:1px black solid; margin:30px;}"
-               "#header {font-size: 50px; background-color: lightgrey;}"
-               "#match {font-size: 25px; background-color: " + COLOR_DICT[PASSED_STATUS] + "}" #ffdea6}"
-               "#no_match {font-size: 25px; background-color: " + COLOR_DICT[FAILED_STATUS] + "}"   #ffdea6}"
-               "#passed_fail {font-size: 25px; background-color: #ffdea6}"
-               "")
+    HEADING_LIST = ['DID', 'Name', 'Correct SID', 'Correct DID', 'Correct size', 'Scaled values',
+                    'Error Message', 'Payload']
+    doc, tag, text, line = Doc().ttl()
 
-    # Header box
-    page.div('Summary Report: Sending all DIDs Test', id='header')
+    style = ("table#main {border-collapse: collapse; width: 100%;}"
+             "table#main, th, td {border: 1px solid black;}"
+             "th, td {text-align: left;}"
+             "th {background-color: lightgrey; padding: 8px;}"
+             "td {padding: 3px;}"
+             "tr:nth-child(even) {background-color: #e3e3e3;}"
+             "a {color:black; text-decoration: none;}"
+             "#header, #match, #no_match, #passed_fail {height: 100px;"
+             "line-height: 100px; width: 1000px; text-align:center; vertical-align: middle;"
+             "border:1px black solid; margin:30px;}"
+             "#header {font-size: 50px; background-color: lightgrey;}"
+             "#match, .match {background-color: #94f7a2}"
+             "#no_match, .no_match, .error {background-color: #ff9ea6}"
+             "#no_match, .no_match, #passed_fail, #match, .match {font-size: 25px;}"
+             "#passed_fail {background-color: #ffdea6}"
+             ".borderless, #scal_val {border-style: none; border: 0px;}"
+             ".no_wrap, #scal_val {white-space: nowrap;}"
+             "")
 
-    # Match part number box
-    if (diagnostic_part_number_match):
-        page.div(diagnostic_part_number_match_message, id='match')
-    else:
-        page.div(diagnostic_part_number_match_message, id='no_match')
+    with tag('html'):
+        with tag('head'):
+            with tag('style'):
+                text(style)
+        with tag('body'):
+            with tag('div', id='header'): # Header box
+                text('Summary Report: Sending all DIDs Test')
+            with tag('div', id=MATCH_DICT[part_nbr_match]): # Match box
+                text(part_nbr_match_msg)
+            with tag('div', id='passed_fail'): # Passed/failed counter box
+                text(str(pass_or_fail_counter_dict))
+            with tag('table', id='main'):
+                with tag('tr'):
+                    for heading in HEADING_LIST:
+                        line('th', heading)
+                for elem in result_list:
+                    error_exist = False
+                    if elem.err_msg:
+                        error_exist = True
 
-    # Passed/failed counter box
-    page.div(str(pass_or_fail_counter_dict), id='passed_fail')
+                    with tag('tr'):
+                        line('td', elem.did)
+                        line('td', elem.name, klass='no_wrap')
+                        line('td', '', klass=MATCH_DICT[elem.c_sid])
+                        line('td', '', klass=MATCH_DICT[elem.c_did])
+                        line('td', '', klass=MATCH_DICT[elem.c_size])
+                        with tag('td'):
+                            with tag('table', klass='borderless'):
+                                for scal_val in elem.scal_val_list:
+                                    with tag('tr'):
+                                        line('td', scal_val, id='scal_val')
+                        line('td', elem.err_msg, klass=ERROR_DICT[error_exist])
+                        line('td', elem.payload)
+            text(get_current_time())
+    write_to_file(doc.getvalue(), outfile)
 
-    table = page.table(id='main')
-    # First row in table
-    table_row_first = table.tr()
-    # First column
-    did_th = table_row_first.th(colspan="2")
-    # Next column
-    correct_th = table_row_first.th(colspan="3")
-    correct_th('Correct')
-    # Next column
-    table_row_first.th(colspan="3")
-
-    
-    # Second row in table
-    table_row = table.tr()
-    # First column
-    did_th = table_row.th('DID')
-    # Next column
-    table_row.th('Name')
-    # Next column
-    table_row.th('SID')
-    # Next column
-    table_row.th('DID')
-    # Next column
-    table_row.th('size')
-    # Next column
-    table_row.th('Scaled values')
-    # Next column
-    table_row.th('Error Message')
-    # Next column
-    table_row.th('Payload')
-
-
-    for data_identifier_object in dictionary.values():
-        sid_test = False
-        if 'sid_test' in data_identifier_object:
-            sid_test = data_identifier_object['sid_test']
-
-        did_in_response_test = False
-        if 'did_in_response_test' in data_identifier_object:
-            did_in_response_test = data_identifier_object['did_in_response_test']
-
-        length_test = False
-        if 'length_test' in data_identifier_object:
-            length_test = data_identifier_object['length_test']
-
-        did = data_identifier_object['ID']
-        name = data_identifier_object['Name']
-
-        table_row = table.tr()
-
-        # First column
-        table_row.td(did)
-
-        # Second column (Name)
-        name_td = table_row.td(style='white-space: nowrap;')
-        name_td(name)
-
-        # column (Result)
-        result_td = table_row.td(style='white-space: nowrap;')
-        if sid_test:
-            result_td(style='background-color: ' + COLOR_DICT[PASSED_STATUS])
-        else:
-            result_td(style='background-color: ' + COLOR_DICT[FAILED_STATUS])
-
-        # column (Result)
-        result_td = table_row.td(style='white-space: nowrap;')
-        if did_in_response_test:
-            result_td(style='background-color: ' + COLOR_DICT[PASSED_STATUS])
-        else:
-            result_td(style='background-color: ' + COLOR_DICT[FAILED_STATUS])
-
-        # column (Result)
-        result_td = table_row.td(style='white-space: nowrap;')
-        if length_test:
-            result_td(style='background-color: ' + COLOR_DICT[PASSED_STATUS])
-        else:
-            result_td(style='background-color: ' + COLOR_DICT[FAILED_STATUS])
-
-        table_cell = table_row.td()
-        inner_table = table_cell.table(style='border-style: none; border: 0px;')
-        if 'formatted_result_value' in data_identifier_object:
-            for formatted_result_value in data_identifier_object['formatted_result_value']:
-                inner_tr = inner_table.tr()
-                inner_td = inner_tr.td(style='border-style: none; white-space: nowrap;')
-                inner_td(formatted_result_value)
-        else:
-            inner_tr = inner_table.tr()
-            inner_tr.td(style='border-style: none;')
-
-        error_message = str()
-        if 'error_message' in data_identifier_object:
-            error_message = data_identifier_object['error_message']
-            #error_msg_td = table_row.td(style='white-space: nowrap; background-color:' +
-            error_msg_td = table_row.td(style='background-color:' + COLOR_DICT[FAILED_STATUS])
-            error_msg_td(error_message)
-        else:
-            table_row.td()
-
-        # Column - Payload
-        payload = ''
-        if 'payload' in data_identifier_object:
-            payload = data_identifier_object['payload']
-            payload = add_ws_every_nth_char(payload, 16)
-        table_row.td(payload)
-
+def get_current_time():
+    ''' Returns current time '''
     now = datetime.now()
     current_time = now.strftime("Generated %Y-%m-%d %H:%M:%S")
-    page.p(current_time)
-    write_to_file(page, outfile)
+    return current_time
 
 def write_to_file(content, outfile):
-    """Write content to outfile"""
+    '''Write content to outfile'''
     with open(outfile, 'w') as file:
         file.write(str(content))
 
@@ -769,23 +738,16 @@ def run():
     ############################################
     precondition(network_stub, can_send, can_receive, can_namespace)
 
-    # Testing so that the Application Diagnostic Database Part Number is correct (matching)
-    # It is stored in DID F120 and we match with the ssdb part number
-    diagnostic_part_number_match_message = str()
-    diagnostic_part_number_match = bool()
-    try:
-        diagnostic_part_number_match_message, diagnostic_part_number_match = (
-            compare_part_numbers(network_stub, can_send, can_receive, can_namespace,
-                                 app_diag_part_num))
-    except RuntimeError as runtime_error:
-        diagnostic_part_number_match_message = runtime_error
 
+    pass_or_fail_counter_dict = {"Passed": 0, "Failed": 0, "conditionsNotCorrect (22)": 0,
+                                 "requestOutOfRange (31)": 0}
+    result_list = list()
+
+    did_counter = 1 # Used when we don't want to run through all tests
     # For each line in dictionary_from_file, store result
-    pass_or_fail_counter_dict = {"Passed": 0, "Failed": 0, "wrong_size": 0}
-
-    all_results_dict = dict()
-
     for did_dict_from_file_values in sddb_app_did_dict.values():
+        logging.debug('DID counter: %s', str(did_counter))
+
         did_id = did_dict_from_file_values['ID']
 
         did_dict_with_result = did_dict_from_file_values
@@ -802,17 +764,26 @@ def run():
             did_dict_with_result = scale_data(did_dict_with_result)
 
         # Summarizing the result
-        did_dict_with_result, pass_or_fail_counter_dict = test_response(did_dict_with_result,
-                                                                        pass_or_fail_counter_dict,
-                                                                        did_id)
+        info_entry, pass_or_fail_counter_dict = summarize_result(did_dict_with_result,
+                                                                 pass_or_fail_counter_dict, did_id)
         # Add the results
-        all_results_dict[did_id] = did_dict_with_result
+        result_list.append(info_entry)
 
-    logging.info(pp_result(all_results_dict, pass_or_fail_counter_dict,
-                           diagnostic_part_number_match_message))
+        if did_counter >= conf.max_no_of_dids:
+            break
 
-    generate_html("result_report.html", all_results_dict, pass_or_fail_counter_dict,
-                  diagnostic_part_number_match_message, diagnostic_part_number_match)
+        did_counter += 1
+
+    # Clean underscore (Replace with whitespace) from SDDB file part number
+    sddb_cleaned_part_number = app_diag_part_num.replace('_', ' ')
+
+    # Comparing the part numbers
+    part_nbr_match, part_nbr_match_msg = comp_part_nbrs(network_stub, can_send, can_receive,
+                                                        can_namespace, sddb_cleaned_part_number)
+
+    file_name = "result_report_%s.html" % app_diag_part_num
+    generate_html2(file_name, result_list, pass_or_fail_counter_dict, part_nbr_match,
+                   part_nbr_match_msg)
 
     ############################################
     # postCondition

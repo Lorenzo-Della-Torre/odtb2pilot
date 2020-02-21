@@ -156,16 +156,15 @@ def main(margs):
     # Setting up logging
     logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
     if margs.sddb:
-        input_file_name = margs.sddb
         # Picking only the filename of the path
-        input_file_name = input_file_name.split('\\')[-1]
+        input_file_name = margs.sddb.split('\\')[-1]
         create_folder(parammod.OUTPUT_FOLDER)
 
         # Generate output_file_name based on input_file_name(add _WASHED)
         # Supports both the ending .txt and .sddb
-        output_file_name = input_file_name.replace(".txt", "_")
-        output_file_name = input_file_name.replace(".sddb", "_")
-        output_file_name = '%s/%s%s.txt' % (parammod.OUTPUT_FOLDER, output_file_name, 'WASHED')
+        tmp_output_file_name = input_file_name.replace(".txt", "_")
+        tmp_output_file_name = input_file_name.replace(".sddb", "_")
+        output_file_name = '%s/%s%s.txt' % (parammod.OUTPUT_FOLDER, tmp_output_file_name, 'WASHED')
 
         # Read file, decode ugly character to pretty characters, then write it.
         change_encoding(input_file_name, output_file_name)
