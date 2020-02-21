@@ -555,8 +555,8 @@ class Support_CAN:
                 #print("already sent: ", self.can_mf_send[s][0])
                 #print("length mess:  ", len(self.can_mf_send[s][1]))
                 while self.can_mf_send[s][0] < len(self.can_mf_send[s][1]):
-                    signal_with_payload_raw = self.can_mf_send[s][1][self.can_mf_send[s][0]]
-                    print("Signal_with_payload : ", signal_with_payload_raw.hex().upper())
+                    signal_with_payload.raw = self.can_mf_send[s][1][self.can_mf_send[s][0]]
+                    print("Signal_with_payload : ", signal_with_payload.raw.hex().upper())
                     publisher_info = network_api_pb2.PublisherConfig(clientId=source,\
                         signals=network_api_pb2.Signals(signal=[signal_with_payload]), frequency=0)
                     try:
