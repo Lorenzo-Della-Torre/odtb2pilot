@@ -202,7 +202,7 @@ class Support_SBL:
                                                   timeout, min_no_messages, max_no_messages)
 
         # Security Access Request SID
-        testresult = testresult and SSA.Activation_Security_Access(stub, can_send, can_rec,
+        testresult = testresult and SSA.activation_security_access(stub, can_send, can_rec,
                                                                    can_nspace, step_no, purpose)
 
         # SBL Download
@@ -226,7 +226,7 @@ class Support_SBL:
         testresult = True
 
         # Security Access Request SID
-        testresult = testresult and SSA.Activation_Security_Access(stub, can_send, can_rec,
+        testresult = testresult and SSA.activation_security_access(stub, can_send, can_rec,
                                                                    can_nspace, step_no, purpose)
 
         # SBL Download
@@ -394,7 +394,6 @@ class Support_SBL:
         """
         Read and decode vbf files for Secondary Bootloader
         """
-        unpack = struct.unpack
         data = SUTE.read_f(sys.argv[file_n])
         find = data.find
         header_len = find(b'\x3B\x0D\x0A\x7D') + 4
@@ -417,7 +416,7 @@ class Support_SBL:
         data_format = bytes.fromhex(str(data[off3 : off3+2])[2:-1])
         logging.info(data_format)
         #print(SUTE.CRC32_from_file(data[offset:len(data)]))
-        block_address = unpack('>L', data[offset: offset + 4])[0]
+        block_address = int.from_bytes(data[offset: offset + 4], 'big')
         logging.info(block_address)
         return offset, data, sw_signature, call, data_format
 
@@ -426,7 +425,6 @@ class Support_SBL:
         """
         Read and decode vbf files for Software Parts
         """
-        #unpack = struct.unpack
         data = SUTE.read_f(sys.argv[file_n])
         find = data.find
         header_len = find(b'\x3B\x0D\x0A\x7D') + 4
@@ -512,12 +510,12 @@ class Support_SBL:
         """
         Extraction of block data from vbf file
         """
-        PP_StringTobytes = SUTE.PP_StringTobytes
-        unpack = struct.unpack
-        [block_addr, block_len] = unpack('>2L', data[offset: offset + 8])
+        block_addr_by = data[offset: offset + 4]
+        print("block_address: {}".format(block_addr_by))
+        block_len_by = data[offset+4: offset + 8]
+        block_addr = int.from_bytes(block_addr_by, 'big')
+        block_len = int.from_bytes(block_len_by, 'big')
         offset += 8
-        block_addr_by = PP_StringTobytes(hex(block_addr), 4)
-        block_len_by = PP_StringTobytes(hex(block_len), 4)
 
         block_data = data[offset : offset + block_len]
         offset += block_len
@@ -529,8 +527,7 @@ class Support_SBL:
         """
         crc calculation for each block
         """
-        unpack = struct.unpack
-        crc = unpack('>H', data[offset : offset + 2])[0]
+        crc = int.from_bytes(a, 'big')
         #print(hex(crc))
         offset += 2
 
@@ -545,8 +542,6 @@ class Support_SBL:
         Support function for Request Download
         """
         testresult = True
-        PP_StringTobytes = SUTE.PP_StringTobytes
-        unpack = struct.unpack
         # Parameters for FrameControl FC
         block_size = 0
         separation_time = 0
@@ -568,11 +563,10 @@ class Support_SBL:
                                                   can_rec, can_nspace, step_no, purpose,
                                                   timeout, min_no_messages, max_no_messages)
         testresult = testresult and SUTE.test_message(SC.can_messages[can_rec], '74')
-
-        nbl = PP_StringTobytes(SC.can_frames[can_rec][0][2][6:10], 2)
-        #print(SC.can_frames[can_receive][0][2])
-        nbl = unpack('>H', nbl)[0]
-        logging.info("nbl: %s\n", nbl)
+        nbl = SUTE.PP_StringTobytes(SC.can_frames[can_rec][0][2][6:10], 4)
+        print("NBL: {}".format(nbl))
+        #nbl = int.from_bytes(SC.can_frames[can_rec][0][2][6:10])
+        nbl = int.from_bytes(nbl, 'big')
         return testresult, nbl
 
     # Support function for Transfer Data
@@ -621,7 +615,7 @@ class Support_SBL:
         testresult = True
         min_no_messages = 1
         max_no_messages = 1
-        timeout = 0.05
+        timeout = 0.1
         can_m_send = b'\x37'
         can_mr_extra = ''
         testresult = testresult and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
