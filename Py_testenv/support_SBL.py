@@ -25,7 +25,6 @@ import time
 
 import logging
 import sys
-import struct
 
 from support_can import Support_CAN
 from support_test_odtb2 import Support_test_ODTB2
