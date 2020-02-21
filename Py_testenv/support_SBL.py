@@ -203,7 +203,7 @@ class Support_SBL:
                                                   timeout, min_no_messages, max_no_messages)
 
         # Security Access Request SID
-        testresult = testresult and SSA.Activation_Security_Access(stub, can_send, can_rec,
+        testresult = testresult and SSA.activation_security_access(stub, can_send, can_rec,
                                                                    can_nspace, step_no, purpose)
 
         # SBL Download
@@ -227,7 +227,7 @@ class Support_SBL:
         testresult = True
 
         # Security Access Request SID
-        testresult = testresult and SSA.Activation_Security_Access(stub, can_send, can_rec,
+        testresult = testresult and SSA.activation_security_access(stub, can_send, can_rec,
                                                                    can_nspace, step_no, purpose)
 
         # SBL Download

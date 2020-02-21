@@ -130,7 +130,7 @@ def step_3(stub, can_send, can_receive, can_namespace, result):
     """
     stepno = 3
     purpose = "Security Access Request SID"
-    result = result and SSA.Activation_Security_Access(stub, can_send, can_receive, can_namespace, stepno, purpose)
+    result = result and SSA.activation_security_access(stub, can_send, can_receive, can_namespace, stepno, purpose)
     return result
 
 def step_4(stub, can_send, can_receive, can_namespace, result):
