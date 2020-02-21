@@ -408,7 +408,7 @@ class Support_CAN:
 
 
 # send signal on CAN: parameters name_DBC, namespace_DBC, payload
-    def t_send_signal(self, signal_name, namespace, payload_value):
+    def t_send_signal(self, stub, signal_name, namespace, payload_value):
         """
         t_send_signal
         """
@@ -422,7 +422,7 @@ class Support_CAN:
                             signals=network_api_pb2.Signals(signal=[signal_with_payload]),\
                                                                     frequency=0)
         try:
-            self.PublishSignals(publisher_info)
+            stub.PublishSignals(publisher_info)
         except grpc._channel._Rendezvous as err:
             print(err)
 
@@ -555,8 +555,8 @@ class Support_CAN:
                 #print("already sent: ", self.can_mf_send[s][0])
                 #print("length mess:  ", len(self.can_mf_send[s][1]))
                 while self.can_mf_send[s][0] < len(self.can_mf_send[s][1]):
-                    signal_with_payload.raw = self.can_mf_send[s][1][self.can_mf_send[s][0]]
-                    print("Signal_with_payload : ", signal_with_payload.raw.hex().upper())
+                    signal_with_payload_raw = self.can_mf_send[s][1][self.can_mf_send[s][0]]
+                    print("Signal_with_payload : ", signal_with_payload_raw.hex().upper())
                     publisher_info = network_api_pb2.PublisherConfig(clientId=source,\
                         signals=network_api_pb2.Signals(signal=[signal_with_payload]), frequency=0)
                     try:
