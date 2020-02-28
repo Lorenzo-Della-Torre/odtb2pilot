@@ -178,7 +178,7 @@ def step_5(stub, can_send, can_receive, can_namespace, result):
                                       can_receive, can_namespace, stepno, purpose,
                                       timeout, min_no_messages, max_no_messages)
     result = result and SUTE.test_message(SC.can_messages[can_receive], '6701000000')
-    R = SSA.SetSecurityAccessPins(SC.can_messages[can_receive][0][2][6:12])
+    R = SSA.set_security_access_pins(SC.can_messages[can_receive][0][2][6:12])
     return result
 
 def step_6(stub, can_send, can_receive, can_namespace, result):

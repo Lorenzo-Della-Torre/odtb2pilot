@@ -256,8 +256,8 @@ class Support_test_ODTB2:
         ## ECU serial:
         retval = retval + "ECU Serial Number         '" + message[144:152] + "'\n"
         return retval
-        
-    def PP_CombinedDID_EDA0_PBL(self, message, title=''):  
+
+    def PP_CombinedDID_EDA0_PBL(self, message, title=''):
         """
         PrettyPrint Combined_DID EDA0 for PBL
         """
@@ -290,8 +290,8 @@ class Support_test_ODTB2:
                         + ' ')\
                         + "'\n"
         return retval
-        
-    def PP_CombinedDID_EDA0_SBL(self, message, title=''): 
+
+    def PP_CombinedDID_EDA0_SBL(self, message, title=''):
         """
         PrettyPrint Combined_DID EDA0 for SBL
         """
@@ -350,18 +350,18 @@ class Support_test_ODTB2:
                         + self.PP_PartNumber(message[pos+62:pos+76])\
                         + "'\n"
         return retval
-        
+
     def Extract_DB_DID_ID(self, DB, args):
         """
         Extract requested data from a Data Base dictionary.
-        """ 
+        """
         message = []
         parse_did_dict = {}
         # Import Data Base if Application Diagnostic Database are compatible
         if args.did_file is not None:
             module = importlib.import_module(args.did_file[:-3])
-            parse_did_dict = module.parse_ssdb_dict     
-        else:   
+            parse_did_dict = module.parse_ssdb_dict
+        else:
             DB = DB.replace(" ", "_")
             listoffiles = os.listdir('./output')
             pattern = 'did_from_{}.py'.format(DB)
@@ -369,14 +369,14 @@ class Support_test_ODTB2:
                 if fnmatch.fnmatch(entry, pattern):
                     entry = entry[:-3]
                     module = importlib.import_module("output." + entry)
-                    parse_did_dict = module.parse_ssdb_dict 
+                    parse_did_dict = module.parse_ssdb_dict
 
-            # Extract Service ID from DB 
+            # Extract Service ID from DB
         if parse_did_dict != {}:
             for key in parse_did_dict.keys():
-                message.append(parse_did_dict[key].get('ID')) 
-            return message 
-        raise Exception("Pattern " + pattern + " not found: " 
+                message.append(parse_did_dict[key].get('ID'))
+            return message
+        raise Exception("Pattern " + pattern + " not found: "
                         "Insert the dict file of DIDs manually by args")
 
     def PP_CAN_NRC(self, message):
@@ -608,7 +608,7 @@ class Support_test_ODTB2:
         return testresult
 
 
-    def SetSecurityAccessPins(self, Sid):
+    def set_security_access_pins(self, Sid):
         """
         Support function for Security Access
         """
@@ -716,7 +716,7 @@ class Support_test_ODTB2:
         """
         buf = (binascii.crc32(filename) & 0xFFFFFFFF)
         return "%08X" % buf
-        
+
     def read_f(self, filename):
         with open(filename, 'rb') as f:
             data = f.read()
