@@ -45,6 +45,29 @@ class Support_test_ODTB2:
     class for supporting sending/receiving CAN frames
     """
 
+    def parse_some_args():
+        ''' Get the command line input, using the defined flags. '''
+        parser = argparse.ArgumentParser(description='Execute testscript')
+        parser.add_argument("--config_file", help="Input config file which overrides the default one",
+                            type=str, action='store', dest='conf_file', required=False,)
+        ret_args = parser.parse_args()
+        return ret_args
+
+
+    def config(margs):
+        ''' Determine which config file to use.
+            If we have a config file as input parameter, then use it.
+            Otherwise use default config file '''
+        if margs.conf_file:
+            file_name = margs.conf_file
+        else:
+            # Return first path of the script's name.
+            f_name_wo_type = os.path.basename(__file__).split('.')[0]
+            # Add .conf at the end, to show that it is a config file.
+            file_name = f_name_wo_type + '.conf'
+        return file_name
+
+
     def print_test_purpose(self, stepno, purpose):
         """
         print_test_purpose
