@@ -86,8 +86,8 @@ def step_1(stub, can_send, can_receive, can_namespace):
     max_no_messages = -1
 
     # Parameters for FrameControl FC
-    block_size = 0
-    ST = 0
+    block_size=0
+    separation_time=0
     frame_control_delay = 0 #no wait
     frame_control_flag = 48 #continue send
     frame_control_auto = False
@@ -95,8 +95,7 @@ def step_1(stub, can_send, can_receive, can_namespace):
     can_m_send = SC.can_m_send("ReadDataByIdentifier", b'\xF1\x20', "")
     can_mr_extra = ''
 
-    SC.change_MF_FC(can_send, block_size, ST, frame_control_delay, frame_control_flag,
-                    frame_control_auto)
+    SC.change_MF_FC(s, block_size, separation_time, frame_control_delay, frame_control_flag, frame_control_auto)
 
     test_result = SUPPORT_TEST.teststep(stub, can_m_send, can_mr_extra, can_send,
                                         can_receive, can_namespace, stepno, purpose,
@@ -135,8 +134,8 @@ def step_3(stub, can_send, can_receive, can_namespace):
     max_no_messages = -1
 
     # Parameters for FrameControl FC
-    block_size = 0
-    ST = 0
+    block_size=0
+    separation_time=0
     frame_control_delay = 0 #no wait
     frame_control_flag = 48 #continue send
     frame_control_auto = False
@@ -144,8 +143,7 @@ def step_3(stub, can_send, can_receive, can_namespace):
     can_m_send = SC.can_m_send("ReadDataByIdentifier", b'\xF1\x20\xF1\x2A', "")
     can_mr_extra = ''
 
-    SC.change_MF_FC(can_send, block_size, ST, frame_control_delay, frame_control_flag,
-                    frame_control_auto)
+    SC.change_MF_FC(s, block_size, separation_time, frame_control_delay, frame_control_flag, frame_control_auto)
 
     test_result = SUPPORT_TEST.teststep(stub, can_m_send, can_mr_extra, can_send,
                                         can_receive, can_namespace, stepno, purpose,

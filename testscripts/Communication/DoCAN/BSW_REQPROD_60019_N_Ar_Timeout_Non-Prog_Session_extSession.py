@@ -123,16 +123,16 @@ def step_3(stub, s, r, ns):
 
     block_size1 = 11
     block_size=0
-    ST=0
-    FC_flag =   48 #continue to send
-    FC_delay = 950 #wait 800ms before sending FC frame back
-    FC_auto = True
+    separation_time=0
+    frame_control_flag =   48 #continue to send
+    frame_control_delay = 950 #wait 800ms before sending FC frame back
+    frame_control_auto = True
 
     can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xED\xA0', "")
     can_mr_extra = ''
 
     #clear_all_can_frames()
-    SC.change_MF_FC(r, block_size, ST, FC_delay, FC_flag, FC_auto)
+    SC.change_MF_FC(r, block_size, separation_time, frame_control_delay, frame_control_flag, frame_control_auto)
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
 
     if len(SC.can_frames[r]) == block_size1:
@@ -155,16 +155,16 @@ def step_4(stub, s, r, ns):
 
     block_size1 = 1
     block_size=0
-    ST=0
-    FC_flag =   48 #continue to send
-    FC_delay = 1050 #wait 800ms before sending FC frame back
-    FC_auto = True
+    separation_time=0
+    frame_control_flag =   48 #continue to send
+    frame_control_delay = 1050 #wait 800ms before sending FC frame back
+    frame_control_auto = True
 
     can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xED\xA0', "")
     can_mr_extra = ''
 
     #clear_all_can_frames()
-    SC.change_MF_FC(r, block_size, ST, FC_delay, FC_flag, FC_auto)
+    SC.change_MF_FC(r, block_size, separation_time, frame_control_delay, frame_control_flag, frame_control_auto)
     testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
 
     if len(SC.can_frames[r]) == block_size1:
@@ -176,27 +176,27 @@ def step_4(stub, s, r, ns):
     print ("Step4: frames received ", len(SC.can_frames[r]), "\n")
 
 
-# teststep 5: set back FC_delay to default
+# teststep 5: set back frame_control_delay to default
 def step_5(stub, s, r, ns):
     global testresult
 
     stepno = 5
-    purpose = "set back FC_delay to default"
+    purpose = "set back frame_control_delay to default"
     timeout = 5
     min_no_messages = -1
     max_no_messages = -1
 
     block_size1 = 1
     block_size=0
-    ST=0
-    FC_flag =   48 #continue to send
-    FC_delay =  0
-    FC_auto = True
+    separation_time=0
+    frame_control_flag =   48 #continue to send
+    frame_control_delay =  0
+    frame_control_auto = True
 
     SuTe.print_test_purpose(stepno, purpose)
     #update_can_messages_2(stub, r)
     #print(can_frames, "\n")
-    SC.change_MF_FC(r, block_size, ST, FC_delay, FC_flag, FC_auto)
+    SC.change_MF_FC(r, block_size, separation_time, frame_control_delay, frame_control_flag, frame_control_auto)
 
 
 # teststep 6: verify session
@@ -299,17 +299,17 @@ def run():
     step_2(network_stub, can_send, can_receive, can_namespace)
 
     # step3:
-    # action: send request with FC_delay < timeout
+    # action: send request with frame_control_delay < timeout
     # result: whole message received
     step_3(network_stub, can_send, can_receive, can_namespace)
 
     # step4:
-    # action: send request with FC_delay > timeout
+    # action: send request with frame_control_delay > timeout
     # result: only first frame received
     step_4(network_stub, can_send, can_receive, can_namespace)
 
     # step5:
-    # action: restore FC_delay again
+    # action: restore frame_control_delay again
     # result:
     step_5(network_stub, can_send, can_receive, can_namespace)
 

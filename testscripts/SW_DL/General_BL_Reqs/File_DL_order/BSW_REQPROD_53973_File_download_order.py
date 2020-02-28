@@ -61,7 +61,7 @@ def precondition(stub, can_send, can_receive, can_namespace, result):
 
     #wait for signals to be registered
     time.sleep(1)
-    # Change FC_auto for signal we’re sending
+    # Change frame_control_auto for signal we’re sending
     block_size = 0
     separation_time = 0
     frame_control_delay = 0 #no wait

@@ -109,12 +109,12 @@ def step_2(stub, s, r, ns):
 
     # Parameters for FrameControl FC
     block_size=0
-    ST=0
-    FC_delay = 0 #wait 950 ms
-    FC_flag = 48 #wait with send
-    FC_auto = False
+    separation_time=0
+    frame_control_delay = 0 #wait 950 ms
+    frame_control_flag = 48 #wait with send
+    frame_control_auto = False
 
-    SC.change_MF_FC(s, block_size, ST, FC_delay, FC_flag, FC_auto)
+    SC.change_MF_FC(s, block_size, separation_time, frame_control_delay, frame_control_flag, frame_control_auto)
 
     can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xDD\x02\xDD\x0A\xDD\x0C\x49\x47', "")
     can_mr_extra = ''
@@ -291,12 +291,12 @@ def step_8(stub, s, r, ns):
 
     # Parameters for FrameControl FC
     #block_size=0
-    #ST=0
-    #FC_delay = 0 #wait 950 ms
-    #FC_flag = 48 #wait with send
-    #FC_auto = False
+    #separation_time=0
+    #frame_control_delay = 0 #wait 950 ms
+    #frame_control_flag = 48 #wait with send
+    #frame_control_auto = False
     #
-    #SC.change_MF_FC(s, block_size, ST, FC_delay, FC_flag, FC_auto)
+    #SC.change_MF_FC(s, block_size, separation_time, frame_control_delay, frame_control_flag, frame_control_auto)
 
     # message to send:
     payload = b'\xDD\x02\xDD\x0A\xDD\x0C\x49\x47'

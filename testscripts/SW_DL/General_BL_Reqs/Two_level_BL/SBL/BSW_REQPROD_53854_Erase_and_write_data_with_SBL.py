@@ -142,10 +142,10 @@ def step_4(stub, can_send, can_receive, can_namespace, result):
 
     # Parameters for FrameControl FC
     block_size=0
-    ST=0
-    FC_delay = 0 #no wait
-    FC_flag = 48 #continue send
-    FC_auto = False
+    separation_time=0
+    frame_control_delay = 0 #no wait
+    frame_control_flag = 48 #continue send
+    frame_control_auto = False
 
     memory_add = SUTE.PP_StringTobytes(str('80000000'),4)
 
@@ -161,7 +161,7 @@ def step_4(stub, can_send, can_receive, can_namespace, result):
     can_m_send = SC.can_m_send( "RoutineControlRequestSID", b'\xFF\x00' + erase, b'\x01')
     can_mr_extra = ''
 
-    SC.change_MF_FC(can_send, block_size, ST, FC_delay, FC_flag, FC_auto)
+    SC.change_MF_FC(can_send, block_size, separation_time, frame_control_delay, frame_control_flag, frame_control_auto)
     time.sleep(1)
     result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
                                       can_receive, can_namespace, stepno, purpose,
@@ -202,10 +202,10 @@ def step_7(stub, can_send, can_receive, can_namespace, result):
 
     # Parameters for FrameControl FC
     block_size=0
-    ST=0
-    FC_delay = 0 #no wait
-    FC_flag = 48 #continue send
-    FC_auto = False
+    separation_time=0
+    frame_control_delay = 0 #no wait
+    frame_control_flag = 48 #continue send
+    frame_control_auto = False
 
     #memory address of PBL: PBL start with the address 80000000 for all ECU
     memory_add = SUTE.PP_StringTobytes(str('80000000'),4)
@@ -222,7 +222,7 @@ def step_7(stub, can_send, can_receive, can_namespace, result):
     can_m_send = SC.can_m_send( "RoutineControlRequestSID", b'\xFF\x00' + erase, b'\x01')
     can_mr_extra = ''
 
-    SC.change_MF_FC(can_send, block_size, ST, FC_delay, FC_flag, FC_auto)
+    SC.change_MF_FC(can_send, block_size, separation_time, frame_control_delay, frame_control_flag, frame_control_auto)
     time.sleep(1)
     result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
                                       can_receive, can_namespace, stepno, purpose,
