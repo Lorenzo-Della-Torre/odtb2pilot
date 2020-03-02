@@ -685,12 +685,10 @@ class Support_test_ODTB2:
         """
         convert DTCstring Number in bytes specifying number of bytes
         """
-        #padding the number with 0's
-        pad = '2x0'.zfill(num*2+3)
-        pad = pad[::-1]
+        #adding trailing 0's
+        pad = '0x2'.ljust(num*2 + 3, '0')
         i = hex(int(i, 16) + int(pad, 16))
-        i = i[3:]
-        return bytes.fromhex(i)
+        return bytes.fromhex(i[3:])
 
 
     def crc16(self, data):
