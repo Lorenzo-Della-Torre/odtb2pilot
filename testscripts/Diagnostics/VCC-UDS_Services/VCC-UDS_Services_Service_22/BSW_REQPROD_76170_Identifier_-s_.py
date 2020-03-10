@@ -86,8 +86,8 @@ def step_1(stub, can_send, can_receive, can_namespace):
     max_no_messages = -1
 
     # Parameters for FrameControl FC
-    block_size=0
-    separation_time=0
+    block_size = 0
+    separation_time = 0
     frame_control_delay = 0 #no wait
     frame_control_flag = 48 #continue send
     frame_control_auto = False
@@ -95,7 +95,8 @@ def step_1(stub, can_send, can_receive, can_namespace):
     can_m_send = SC.can_m_send("ReadDataByIdentifier", b'\xF1\x20', "")
     can_mr_extra = ''
 
-    SC.change_MF_FC(s, block_size, separation_time, frame_control_delay, frame_control_flag, frame_control_auto)
+    SC.change_MF_FC(can_send, block_size, separation_time, frame_control_delay, frame_control_flag,
+                    frame_control_auto)
 
     test_result = SUPPORT_TEST.teststep(stub, can_m_send, can_mr_extra, can_send,
                                         can_receive, can_namespace, stepno, purpose,
@@ -134,8 +135,8 @@ def step_3(stub, can_send, can_receive, can_namespace):
     max_no_messages = -1
 
     # Parameters for FrameControl FC
-    block_size=0
-    separation_time=0
+    block_size = 0
+    separation_time = 0
     frame_control_delay = 0 #no wait
     frame_control_flag = 48 #continue send
     frame_control_auto = False
@@ -143,7 +144,8 @@ def step_3(stub, can_send, can_receive, can_namespace):
     can_m_send = SC.can_m_send("ReadDataByIdentifier", b'\xF1\x20\xF1\x2A', "")
     can_mr_extra = ''
 
-    SC.change_MF_FC(s, block_size, separation_time, frame_control_delay, frame_control_flag, frame_control_auto)
+    SC.change_MF_FC(can_send, block_size, separation_time, frame_control_delay, frame_control_flag,
+                    frame_control_auto)
 
     test_result = SUPPORT_TEST.teststep(stub, can_m_send, can_mr_extra, can_send,
                                         can_receive, can_namespace, stepno, purpose,
@@ -170,7 +172,8 @@ def step_4(can_receive):
     logging.info("Test if string contains all IDs expected:")
 
     test_result = SUPPORT_TEST.test_message(SC.can_messages[can_receive], teststring='F120')
-    test_result += SUPPORT_TEST.test_message(SC.can_messages[can_receive], teststring='F12A')
+    test_result = test_result and SUPPORT_TEST.test_message(SC.can_messages[can_receive],
+                                                            teststring='F12A')
     return test_result
 
 
@@ -206,22 +209,22 @@ def main(margs):
     # step1:
     # action: send 1 request - requires SF to send, MF for reply
     # result: BECM reports default session
-    test_result += step_1(network_stub, can_send, can_receive, can_namespace)
+    test_result = test_result and step_1(network_stub, can_send, can_receive, can_namespace)
 
     # step 2: check if DID is included in reply
     # action: check if expected DID are contained in reply
     # result: true if all contained, false if not
-    test_result += step_2(can_receive)
+    test_result = test_result and step_2(can_receive)
 
     # step3:
     # action: send several requests at one time - requires SF to send, MF for reply
     # result: BECM reports default session
-    test_result += step_3(network_stub, can_send, can_receive, can_namespace)
+    test_result = test_result and step_3(network_stub, can_send, can_receive, can_namespace)
 
     # step 4: check if DIDs are included in reply including those from combined DID
     # action: check if expected DID are contained in reply
     # result: true if all contained, false if not
-    test_result += step_4(can_receive)
+    test_result = test_result and step_4(can_receive)
 
 
     ############################################
