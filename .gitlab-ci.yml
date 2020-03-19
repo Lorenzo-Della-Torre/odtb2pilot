@@ -13,7 +13,7 @@ pylint:
   stage: Static Analysis
   allow_failure: true
   script:
-  - find ./autotest/ -type f -name "*.py" | xargs pylint || true
-  - find ./Py_testenv/ -type f -name "*.py" | xargs pylint || true
-  - find ./testscripts/ -type f -name "*.py" | xargs pylint || true
-  - pylint -d R0801 *.py
+  - find ./autotest/ -type f -name "*.py" | xargs pylint -d R0801 || true
+  - find ./Py_testenv/ -type f -name "*.py" | xargs pylint -d R0801 || true
+  - find ./testscripts/ -type f -name "*.py" | xargs pylint --module-rgx="BSW_REQPROD_\d*_.*" -d R0801 || true
+  - find ./manual_test/ -type f -name "*.py" | xargs pylint --module-rgx="BSW_REQPROD_\d*_.*" -d R0801 || true
