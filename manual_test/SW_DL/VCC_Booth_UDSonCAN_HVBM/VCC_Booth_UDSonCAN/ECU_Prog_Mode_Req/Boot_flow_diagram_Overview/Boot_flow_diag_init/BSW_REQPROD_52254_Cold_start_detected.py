@@ -19,9 +19,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+"""
+message = "Testcase result: To be inspected"
+"""
 import logging
-#message = "Testcase result: To be inspected"
-logging.basicConfig(filename='{}.log'.format((__file__)[:-3]), format='%(asctime)s - %(message)s', level=logging.INFO)
+
+logging.basicConfig(filename='{}.log'.format((__file__)[:-3]),
+                    format='%(asctime)s - %(message)s', level=logging.INFO)
 
 logging.info("Testcase result: To be inspected")
