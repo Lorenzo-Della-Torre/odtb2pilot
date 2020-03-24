@@ -112,7 +112,7 @@ class Support_Security_Access:
         """
         #Security Access request sid
         testresult = True
-        timeout = 0.05
+        timeout = 0.1
         min_no_messages = 1
         max_no_messages = 1
 
