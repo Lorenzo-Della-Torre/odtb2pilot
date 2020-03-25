@@ -22,13 +22,6 @@
 
 """The Python implementation of the gRPC route guide client."""
 
-import network_api_pb2
-import network_api_pb2_grpc
-import functional_api_pb2
-import functional_api_pb2_grpc
-import system_api_pb2
-import system_api_pb2_grpc
-import common_pb2
 #from datetime import datetime
 import time
 #import logging
@@ -40,6 +33,13 @@ import sys
 import grpc
 #import string
 sys.path.append('generated')
+import network_api_pb2
+import network_api_pb2_grpc
+import functional_api_pb2
+import functional_api_pb2_grpc
+import system_api_pb2
+import system_api_pb2_grpc
+import common_pb2
 
 class Support_CAN:
     """
