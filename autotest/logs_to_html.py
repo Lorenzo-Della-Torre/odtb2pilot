@@ -23,12 +23,12 @@ import re
 import collections
 import csv
 
-from html import HTML
+from html import HTML # pylint: disable=no-name-in-module
 
-RE_DATE_START = re.compile('\s*Testcase\s+start:\s+(?P<date>\d+-\d+-\d+)\s+(?P<time>\d+:\d+:\d+)')
-RE_RESULT = re.compile('\s*Testcase\s+result:\s+(?P<result>\w+)')
-RE_FOLDER_TIME = re.compile('.*Testrun_(?P<date>\d+_\d+)')
-RE_REQPROD_ID = re.compile('\s*BSW_REQPROD_(?P<reqprod>\d+)_', flags=re.IGNORECASE)
+RE_DATE_START = re.compile(r'\s*Testcase\s+start:\s+(?P<date>\d+-\d+-\d+)\s+(?P<time>\d+:\d+:\d+)')
+RE_RESULT = re.compile(r'\s*Testcase\s+result:\s+(?P<result>\w+)')
+RE_FOLDER_TIME = re.compile(r'.*Testrun_(?P<date>\d+_\d+)')
+RE_REQPROD_ID = re.compile(r'\s*BSW_REQPROD_(?P<reqprod>\d+)_', flags=re.IGNORECASE)
 # case insensetive
 
 # When calculating per cent, how many decimals do we want
@@ -155,21 +155,21 @@ def get_url_dict():
     """Create and return a dict with the urls to the different scripts."""
     # Assumption: this file is in odtb2pilot/autotest, and the scripts are in
     #              odtb2pilot/testscripts/*/*.py
-    TESTS_FOLDER = "testscripts"
-    GITLAB_URL_ROOT = "https://gitlab.cm.volvocars.biz/HWEILER/odtb2pilot/blob/master/testscripts"
+    tests_folder = "testscripts"
+    gitlab_url_root = "https://gitlab.cm.volvocars.biz/HWEILER/odtb2pilot/blob/master/testscripts"
     ret_dict = {}
-    for root, dirs, files in os.walk("../" + TESTS_FOLDER):
+    for root, files in os.walk("../" + tests_folder):
         for file in files:
             if file.endswith(PY_FILE_EXT):
                 temp_path = os.path.join(root, file)
                 temp_path_fix = temp_path.replace('\\', '/')
-                # Split at first TESTS_FOLDER in case that name is reused later in the path
-                temp_url = GITLAB_URL_ROOT + temp_path_fix.split(TESTS_FOLDER, 1)[1]
+                # Split at first tests_folder in case that name is reused later in the path
+                temp_url = gitlab_url_root + temp_path_fix.split(tests_folder, 1)[1]
                 key_name = file.lower().split(PY_FILE_EXT)[:-1]
                 ret_dict[key_name[0]] = temp_url
     return ret_dict
 
-def write_table(folderinfo_and_result_tuple_list, outfile, verif_d, elektra_d):
+def write_table(folderinfo_and_result_tuple_list, outfile, verif_d, elektra_d): # pylint: disable=too-many-locals, too-many-branches, too-many-statements
     """Create html table based on the dict"""
     page = HTML()
 
@@ -224,15 +224,15 @@ def write_table(folderinfo_and_result_tuple_list, outfile, verif_d, elektra_d):
 
     req_set = set()
 
-    DVM_URL_SERVICE_LEVEL = 'https://c1.confluence.cm.volvocars.biz/display/BSD/VCC+-+UDS+services'
+    dvm_url_service_level = 'https://c1.confluence.cm.volvocars.biz/display/BSD/VCC+-+UDS+services'
 
     # Iterating over the set of keys (rows) matching it with the dicts representing the testrun
     # result. Creating the body of the table.
     # The testcript names are the keys
     for key in sorted_key_list:
         # First column - DVM
-        td = table.td()
-        td.a('DVM', href=DVM_URL_SERVICE_LEVEL, target='_blank')
+        table_cell = table.td()
+        table_cell.a('DVM', href=dvm_url_service_level, target='_blank')
 
         # Second column - Elektra link
         elektra_td = table.td()
@@ -294,19 +294,19 @@ def write_table(folderinfo_and_result_tuple_list, outfile, verif_d, elektra_d):
         tested_counter[verif_d[req]] += 1
 
     for each in req_counter:
-        td = coverage_table.td(each)                      # First column
-        td = coverage_table.td(str(req_counter[each]))    # Second column
+        table_cell = coverage_table.td(each)                      # First column
+        table_cell = coverage_table.td(str(req_counter[each]))    # Second column
         tested_str = ''
         if tested_counter[each] > 0:
             tested_str = str(tested_counter[each])
-        td = coverage_table.td(tested_str)                # Third column
+        table_cell = coverage_table.td(tested_str)                # Third column
 
         # Calculating the per cent
         percent = (tested_counter[each] / req_counter[each]) * 100
         coverage = ''
         if percent > 0:
             coverage = str(round(percent, AMOUNT_OF_DECIMALS)) + '%'
-        td = coverage_table.td(coverage)                  # Fourth column
+        table_cell = coverage_table.td(coverage)                  # Fourth column
 
         coverage_table.tr()
 
@@ -336,7 +336,7 @@ def main(margs):
     folders.sort(reverse=True)
 
     for folder_name in folders:
-        res_dict, f_date, f_time = get_file_names_and_results(folder_name)
+        res_dict, _, _ = get_file_names_and_results(folder_name)
         folder_time = get_folder_time(folder_name)
         # Put all data in a tuple
         folderinfo_and_result_tuple = (folder_time, res_dict, folder_name)
