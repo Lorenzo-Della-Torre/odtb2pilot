@@ -293,7 +293,7 @@ class Support_SBL:
             pos = message.find('0205')
             res = message[pos+6:pos+16]
             val = "{0:40b}".format(int(res, 16))
-            if val[38] == '0' or '':
+            if val[38] == '0' or ' ':
                 val_ca = 'Compatible'
             elif val[38] == '1':
                 val_ca = 'Not Compatible'
