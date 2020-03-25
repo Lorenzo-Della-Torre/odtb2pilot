@@ -1,0 +1,57 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module BSW_REQPROD_76171_Read_DID_multiple_request_ProgSession</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong>BSW_REQPROD_76171_Read_DID_multiple_request_ProgSession</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:c%3A%5Crepo%5Codtb2pilot%5Ctestscripts%5Cdiagnostics%5Cvcc-uds_services%5Cvcc-uds_services_service_22%5Cbsw_reqprod_76171_read_did_multiple_request_progsession.py">c:\repo\odtb2pilot\testscripts\diagnostics\vcc-uds_services\vcc-uds_services_service_22\bsw_reqprod_76171_read_did_multiple_request_progsession.py</a></font></td></tr></table>
+    <p><tt>The&nbsp;Python&nbsp;implementation&nbsp;of&nbsp;the&nbsp;gRPC&nbsp;route&nbsp;guide&nbsp;client.</tt></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="ODTB_conf.html">ODTB_conf</a><br>
+<a href="logging.html">logging</a><br>
+</td><td width="25%" valign=top><a href="os.html">os</a><br>
+<a href="sys.html">sys</a><br>
+</td><td width="25%" valign=top><a href="time.html">time</a><br>
+</td><td width="25%" valign=top></td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#eeaa77">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Functions</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#eeaa77"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl><dt><a name="-precondition"><strong>precondition</strong></a>(stub, s, r, ns)</dt><dd><tt>#&nbsp;precondition&nbsp;for&nbsp;test&nbsp;running:<br>
+#&nbsp;&nbsp;BECM&nbsp;has&nbsp;to&nbsp;be&nbsp;kept&nbsp;alive:&nbsp;start&nbsp;heartbeat</tt></dd></dl>
+ <dl><dt><a name="-run"><strong>run</strong></a>()</dt></dl>
+ <dl><dt><a name="-step_0"><strong>step_0</strong></a>(stub, s, r, ns)</dt><dd><tt>#&nbsp;teststep&nbsp;0:&nbsp;Complete&nbsp;ECU&nbsp;Part/Serial&nbsp;Number(s)</tt></dd></dl>
+ <dl><dt><a name="-step_1"><strong>step_1</strong></a>(stub, s, r, ns)</dt></dl>
+ <dl><dt><a name="-step_10"><strong>step_10</strong></a>(stub, s, r, ns)</dt><dd><tt>#&nbsp;teststep&nbsp;10:&nbsp;verify&nbsp;session</tt></dd></dl>
+ <dl><dt><a name="-step_11"><strong>step_11</strong></a>(stub, s, r, ns)</dt></dl>
+ <dl><dt><a name="-step_2"><strong>step_2</strong></a>(stub, s, r, ns)</dt><dd><tt>#&nbsp;teststep&nbsp;2:&nbsp;send&nbsp;1&nbsp;requests&nbsp;-&nbsp;requires&nbsp;SF&nbsp;to&nbsp;send,&nbsp;MF&nbsp;for&nbsp;reply</tt></dd></dl>
+ <dl><dt><a name="-step_3"><strong>step_3</strong></a>(stub, s, r, ns)</dt><dd><tt>#&nbsp;teststep&nbsp;3:&nbsp;test&nbsp;if&nbsp;DIDs&nbsp;are&nbsp;included&nbsp;in&nbsp;reply</tt></dd></dl>
+ <dl><dt><a name="-step_4"><strong>step_4</strong></a>(stub, s, r, ns)</dt><dd><tt>#&nbsp;teststep&nbsp;4:&nbsp;send&nbsp;1&nbsp;requests&nbsp;-&nbsp;requires&nbsp;SF&nbsp;to&nbsp;send,&nbsp;MF&nbsp;for&nbsp;reply</tt></dd></dl>
+ <dl><dt><a name="-step_5"><strong>step_5</strong></a>(stub, s, r, ns)</dt><dd><tt>#&nbsp;teststep&nbsp;5:&nbsp;test&nbsp;if&nbsp;DIDs&nbsp;are&nbsp;included&nbsp;in&nbsp;reply</tt></dd></dl>
+ <dl><dt><a name="-step_6"><strong>step_6</strong></a>(stub, s, r, ns)</dt><dd><tt>#&nbsp;teststep&nbsp;6:&nbsp;request&nbsp;2&nbsp;DID&nbsp;-&nbsp;same&nbsp;DID&nbsp;as&nbsp;requested&nbsp;single&nbsp;before</tt></dd></dl>
+ <dl><dt><a name="-step_7"><strong>step_7</strong></a>(stub, s, r, ns)</dt><dd><tt>#&nbsp;teststep&nbsp;7:&nbsp;Verify&nbsp;if&nbsp;number&nbsp;for&nbsp;requests&nbsp;limited&nbsp;in&nbsp;programming&nbsp;session</tt></dd></dl>
+ <dl><dt><a name="-step_8"><strong>step_8</strong></a>(stub, s, r, ns)</dt><dd><tt>#&nbsp;teststep&nbsp;8:&nbsp;request&nbsp;combined&nbsp;DID&nbsp;EDA0</tt></dd></dl>
+ <dl><dt><a name="-step_9"><strong>step_9</strong></a>(stub, s, r, ns)</dt><dd><tt>#&nbsp;teststep&nbsp;9:&nbsp;verify&nbsp;if&nbsp;combined&nbsp;DID&nbsp;can&nbsp;be&nbsp;requested</tt></dd></dl>
+</td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#55aa55">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Data</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#55aa55"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><strong>SC</strong> = &lt;support_can.Support_CAN object&gt;<br>
+<strong>SuTe</strong> = &lt;support_test_odtb2.Support_test_ODTB2 object&gt;<br>
+<strong>testresult</strong> = True</td></tr></table>
+</body></html>

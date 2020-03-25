@@ -1,0 +1,53 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module BSW_REQPROD_74147_P4Server_max_response_time_for_readDataByIdentifier__22__Ext</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong>BSW_REQPROD_74147_P4Server_max_response_time_for_readDataByIdentifier__22__Ext</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:c%3A%5Crepo%5Codtb2pilot%5Ctestscripts%5Cdiagnostics%5Cvcc-uds_services%5Cvcc-uds_services_service_22%5Cbsw_reqprod_74147_p4server_max_response_time_for_readdatabyidentifier__22__ext.py">c:\repo\odtb2pilot\testscripts\diagnostics\vcc-uds_services\vcc-uds_services_service_22\bsw_reqprod_74147_p4server_max_response_time_for_readdatabyidentifier__22__ext.py</a></font></td></tr></table>
+    <p><tt>The&nbsp;Python&nbsp;implementation&nbsp;of&nbsp;the&nbsp;gRPC&nbsp;route&nbsp;guide&nbsp;client.</tt></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="ODTB_conf.html">ODTB_conf</a><br>
+</td><td width="25%" valign=top><a href="time.html">time</a><br>
+</td><td width="25%" valign=top></td><td width="25%" valign=top></td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#eeaa77">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Functions</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#eeaa77"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl><dt><a name="-precondition"><strong>precondition</strong></a>(stub, can_send, can_receive, can_namespace, result)</dt><dd><tt>Precondition&nbsp;for&nbsp;test&nbsp;running:<br>
+BECM&nbsp;has&nbsp;to&nbsp;be&nbsp;kept&nbsp;alive:&nbsp;start&nbsp;heartbeat</tt></dd></dl>
+ <dl><dt><a name="-run"><strong>run</strong></a>()</dt><dd><tt>Run</tt></dd></dl>
+ <dl><dt><a name="-step_0"><strong>step_0</strong></a>(stub, can_send, can_receive, can_namespace, result)</dt><dd><tt>Teststep&nbsp;0:&nbsp;Complete&nbsp;ECU&nbsp;Part/Serial&nbsp;Number(s)</tt></dd></dl>
+ <dl><dt><a name="-step_1"><strong>step_1</strong></a>(stub, can_send, can_receive, can_namespace, result)</dt><dd><tt>Teststep&nbsp;1:&nbsp;Change&nbsp;to&nbsp;extended&nbsp;session</tt></dd></dl>
+ <dl><dt><a name="-step_2"><strong>step_2</strong></a>(stub, can_send, can_receive, can_namespace, result)</dt><dd><tt>Teststep&nbsp;2:&nbsp;verify&nbsp;ReadDataByIdentifier&nbsp;reply&nbsp;positively</tt></dd></dl>
+ <dl><dt><a name="-step_3"><strong>step_3</strong></a>(stub, can_send, can_receive, can_namespace, result)</dt><dd><tt>Teststep&nbsp;3:&nbsp;Verify&nbsp;(time&nbsp;receive&nbsp;message&nbsp;–&nbsp;time&nbsp;sending&nbsp;request)&nbsp;&lt;&nbsp;P4_server_max</tt></dd></dl>
+ <dl><dt><a name="-step_4"><strong>step_4</strong></a>(stub, can_send, can_receive, can_namespace, result)</dt><dd><tt>Teststep&nbsp;4:&nbsp;Complete&nbsp;ECU&nbsp;Part/Serial&nbsp;Number(s)</tt></dd></dl>
+ <dl><dt><a name="-step_5"><strong>step_5</strong></a>(stub, can_send, can_receive, can_namespace, result)</dt><dd><tt>Teststep&nbsp;5:&nbsp;Verify&nbsp;(time&nbsp;receive&nbsp;message&nbsp;–&nbsp;time&nbsp;sending&nbsp;request)&nbsp;&lt;&nbsp;P4_server_max</tt></dd></dl>
+ <dl><dt><a name="-step_6"><strong>step_6</strong></a>(stub, can_send, can_receive, can_namespace, result)</dt><dd><tt>Teststep&nbsp;6:&nbsp;request&nbsp;10&nbsp;DID&nbsp;in&nbsp;one&nbsp;request&nbsp;-&nbsp;those&nbsp;with&nbsp;shortest&nbsp;reply</tt></dd></dl>
+ <dl><dt><a name="-step_7"><strong>step_7</strong></a>(stub, can_send, can_receive, can_namespace, result)</dt><dd><tt>Teststep&nbsp;7:&nbsp;Verify&nbsp;(time&nbsp;receive&nbsp;message&nbsp;–&nbsp;time&nbsp;sending&nbsp;request)&nbsp;&lt;&nbsp;P4_server_max</tt></dd></dl>
+ <dl><dt><a name="-step_8"><strong>step_8</strong></a>(stub, can_send, can_receive, can_namespace, result)</dt><dd><tt>Teststep&nbsp;8:&nbsp;verify&nbsp;Extended&nbsp;session</tt></dd></dl>
+ <dl><dt><a name="-step_9"><strong>step_9</strong></a>(stub, can_send, can_receive, can_namespace, result)</dt><dd><tt>Teststep&nbsp;9:&nbsp;Change&nbsp;to&nbsp;default&nbsp;session</tt></dd></dl>
+</td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#55aa55">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Data</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#55aa55"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><strong>P4_server_max</strong> = 200<br>
+<strong>SC</strong> = &lt;support_can.Support_CAN object&gt;<br>
+<strong>SUTE</strong> = &lt;support_test_odtb2.Support_test_ODTB2 object&gt;<br>
+<strong>jitter_testenv</strong> = 10</td></tr></table>
+</body></html>
