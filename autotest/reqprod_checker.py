@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
 
-# Date: 2019-11-21
-# Author: Anton Svensson (asvens37)
-
-"""
-Compare REQPROD id from SWRS for MEP2 BaseTech and the FIP from Confluence.
+""" Compare REQPROD id from SWRS for MEP2 BaseTech and the FIP from Confluence.
+    Date: 2019-11-21
+    Author: Anton Svensson (asvens37)
 """
 
 import argparse
-import openpyxl
 import csv
+import openpyxl # pylint: disable=import-error
 
 OUTPUT_FILE = "req_bsw.csv"
 
@@ -35,10 +33,10 @@ def parse_some_args():
 def parse_xlsx(file_path):
     """Get info from the fip"""
     ret_dict = {}
-    wb = openpyxl.load_workbook(file_path)
-    ws = wb.active
+    workbook = openpyxl.load_workbook(file_path)
+    workspace = workbook.active
     firstline = True
-    for line in ws:
+    for line in workspace:
         if firstline:
             firstline = False
         else:
@@ -55,7 +53,7 @@ def parse_csv(file_path):
         csvreader = csv.reader(csvfile, delimiter=',')
         firstline = True
         for line in csvreader:
-            if len(line) > 1 :
+            if len(line) > 1:
                 if firstline:
                     firstline = False
                 else:
@@ -86,7 +84,7 @@ def write_to_file(keys, fip, swrs, swrs_links):
         writer = csv.writer(csvfile, delimiter=';', lineterminator='\n')
         writer.writerow(["REQPROD", "TEST_METHOD", "ELEKTRA", "LINK"])
         for key in keys:
-            writer.writerow([key, fip.get(key,'-'), swrs.get(key, '-'), swrs_links.get(key, '-')])
+            writer.writerow([key, fip.get(key, '-'), swrs.get(key, '-'), swrs_links.get(key, '-')])
     csvfile.close()
 
 def main(margs):
