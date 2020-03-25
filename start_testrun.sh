@@ -17,7 +17,8 @@ mkdir $TESTRUN
 echo "Results of testrun $TESTRUN:" >$TESTRUN\/Result.txt
 
 ### collect all testscripts
-find $TESTREPO/testscripts -name BSW_REQPROD_*.py >testscripts.lst
+find $TESTREPO/test_cases -name BSW_REQPROD_*.py >testscripts.lst
+find $TESTREPO/test_cases_old -name BSW_REQPROD_*.py >>testscripts.lst
 
 #sed -E 's/(.*BSW_REQPROD)(.*)(\.py)/python3 \1\2\3 >BSW_REQPROD\2.log/' testscripts.lst >all_scripts.sh
 # chmod 755 all_scripts.sh
