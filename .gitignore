@@ -2,3 +2,5 @@
 *.log
 *.pyc
 *.vbf
+*.html
+*.sddb
