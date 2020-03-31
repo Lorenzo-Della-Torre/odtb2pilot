@@ -2,3 +2,6 @@
 *.log
 *.pyc
 *.vbf
+*.html
+*.sddb
+did_dict.py
