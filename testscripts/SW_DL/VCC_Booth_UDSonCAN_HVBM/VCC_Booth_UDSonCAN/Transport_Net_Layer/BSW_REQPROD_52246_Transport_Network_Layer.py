@@ -84,7 +84,7 @@ def step_0(stub, can_send, can_receive, can_namespace, result):
 
 def step_1(stub, can_send, can_receive, can_namespace, result):
     """
-    Teststep 1: verify RoutineControlRequest is sent for Type 1
+    Teststep 1: verify Programming Preconditions are fulfilled
     """
     stepno = 1
     purpose = "verify RoutineControl start are sent for Check Programming Preconditions"
@@ -157,9 +157,9 @@ def step_4(stub, can_send, can_receive, can_namespace, result):
     SC.change_MF_FC(can_send, block_size, separation_time, frame_control_delay,
                     frame_control_flag, frame_control_auto)
 
-    result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send, can_receive,
-                             can_namespace, stepno, purpose, timeout, min_no_messages,
-                             max_no_messages)
+    result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send, can_receive,
+                                      can_namespace, stepno, purpose, timeout, min_no_messages,
+                                      max_no_messages)
 
     return result
 
