@@ -27,9 +27,9 @@ import logging
 from datetime import datetime
 import time
 import sys
-from support_test_odtb2 import Support_test_ODTB2 # pylint: disable=import-error
-from support_can import Support_CAN # pylint: disable=import-error
-import ODTB_conf # pylint: disable=import-error
+from Py_testenv.support_test_odtb2 import Support_test_ODTB2
+from Py_testenv.support_can import Support_CAN
+import Py_testenv.ODTB_conf
 
 SC = Support_CAN()
 SUPPORT_TEST = Support_test_ODTB2()
