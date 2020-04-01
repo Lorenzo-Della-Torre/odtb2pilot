@@ -51,7 +51,7 @@ def precondition(stub, can_send, can_receive, can_namespace, result):
                       "Front1CANCfg0", b'\x02\x3E\x80\x00\x00\x00\x00\x00', 1.02)
 
     # timeout = more than maxtime script takes
-    timeout = 950   #seconds"
+    timeout = 1800   #seconds"
 
     SC.subscribe_signal(stub, can_send, can_receive, can_namespace, timeout)
     #record signal we send as well
