@@ -29,7 +29,7 @@ import time
 import sys
 from Py_testenv.support_test_odtb2 import Support_test_ODTB2
 from Py_testenv.support_can import Support_CAN
-import Py_testenv.ODTB_conf
+import Py_testenv.ODTB_conf as ODTB_config
 
 SC = Support_CAN()
 SUPPORT_TEST = Support_test_ODTB2()
@@ -187,7 +187,7 @@ def main(margs):
     logging.debug('Config File name: %s', config_file)
 
     # where to connect to signal_broker
-    network_stub = SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT)
+    network_stub = SC.connect_to_signalbroker(ODTB_config.ODTB2_DUT, ODTB_config.ODTB2_PORT)
 
     can_send = "Vcu1ToBecmFront1DiagReqFrame"
     can_receive = "BecmToVcu1Front1DiagResFrame"
