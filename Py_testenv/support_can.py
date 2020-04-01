@@ -55,6 +55,7 @@ class Support_CAN:
 
 
     _heartbeat = False
+    _debug = False
 
     #init array for payload to send
     can_mf_send = dict()
@@ -556,7 +557,8 @@ class Support_CAN:
                 #print("length mess:  ", len(self.can_mf_send[s][1]))
                 while self.can_mf_send[s][0] < len(self.can_mf_send[s][1]):
                     signal_with_payload.raw = self.can_mf_send[s][1][self.can_mf_send[s][0]]
-                    print("Signal_with_payload : ", signal_with_payload.raw.hex().upper())
+                    if self._debug:
+                        print("Signal_with_payload : ", signal_with_payload.raw.hex().upper())
                     publisher_info = network_api_pb2.PublisherConfig(clientId=source,\
                         signals=network_api_pb2.Signals(signal=[signal_with_payload]), frequency=0)
                     try:
@@ -564,8 +566,9 @@ class Support_CAN:
                         self.can_mf_send[s][0] += 1
                         # wait ms, only 0-127 ms allowed, microseconds 0xF1-0xF9 ignored:
                         time.sleep((separation_time and 0x7F) / 1000)
-                        print("Frames sent(CF): ", self.can_mf_send[s][0],\
-                                "of ", len(self.can_mf_send[s][1]))
+                        if self._debug:
+                            print("Frames sent(CF): ", self.can_mf_send[s][0],\
+                                    "of ", len(self.can_mf_send[s][1]))
                         block_size -= 1
                         if block_size == 0: break
                     except grpc._channel._Rendezvous as err:
@@ -661,9 +664,10 @@ class Support_CAN:
                         #print("MF pl_append  ", (bytes([pl_fcount]) + pl_work[0:]).hex().upper() )
                         self.add_canframe_tosend(signal_name, bytes([pl_fcount]) + pl_work[0:])
                     pl_work = []
-        print("PayLoad array as hex: : ")
-        for pl_frames in self.can_mf_send[signal_name][1]:
-            print(pl_frames.hex().upper())
+        if self._debug:
+            print("PayLoad array as hex: : ")
+            for pl_frames in self.can_mf_send[signal_name][1]:
+                print(pl_frames.hex().upper())
 
         if self.can_mf_send[signal_name][1] == []:
             print("payload empty: nothing to send")
