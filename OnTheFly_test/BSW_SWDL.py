@@ -196,7 +196,7 @@ def run():
     # action: verify RoutineControl start is sent for Type 1
     # result: BECM sends positive reply
     result = step_1(network_stub, can_send, can_receive, can_namespace, result)
-    result = step_4(network_stub, can_send, can_receive, can_namespace, result)
+   
     # step 2:
     # action:
     # result: BECM sends positive reply
@@ -250,6 +250,3 @@ def run():
 if __name__ == '__main__':
     run()
 
-
-if __name__ == '__main__':
-    run()
