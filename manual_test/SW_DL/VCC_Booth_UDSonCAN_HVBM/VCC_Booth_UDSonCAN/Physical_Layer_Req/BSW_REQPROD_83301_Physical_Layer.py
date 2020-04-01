@@ -27,4 +27,4 @@ import logging
 logging.basicConfig(filename='{}.log'.format((__file__)[-3]), format='%(asctime)s - %(message)s',
                     level=logging.INFO)
 
-logging.info("Testcase result: tested implicitly by REQPRODs REQPRODs in LC: CAN Datailnk Layer –   SW reqs.")
+logging.info("Testcase result: tested implicitly by REQPRODs REQPRODs in LC: CAN Datailnk Layer – SW reqs.")
