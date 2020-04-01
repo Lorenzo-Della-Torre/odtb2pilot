@@ -28,11 +28,11 @@ from datetime import datetime
 import sys
 import logging
 
-import ODTB_conf
-from support_can import Support_CAN
-from support_test_odtb2 import Support_test_ODTB2
-from support_SBL import Support_SBL
-from support_SecAcc import Support_Security_Access
+import Py_testenv.ODTB_conf as ODTB_config
+from Py_testenv.support_can import Support_CAN
+from Py_testenv.support_test_odtb2 import Support_test_ODTB2
+from Py_testenv.support_SBL import Support_SBL
+from Py_testenv.support_SecAcc import Support_Security_Access
 
 SC = Support_CAN()
 SUTE = Support_test_ODTB2()
@@ -191,7 +191,7 @@ def run():
     # to be implemented
 
     # where to connect to signal_broker
-    network_stub = SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT)
+    network_stub = SC.connect_to_signalbroker(ODTB_config.ODTB2_DUT, ODTB_config.ODTB2_PORT)
 
     can_send = "Vcu1ToBecmFront1DiagReqFrame"
     can_receive = "BecmToVcu1Front1DiagResFrame"
