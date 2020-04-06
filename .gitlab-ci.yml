@@ -24,6 +24,6 @@ strict_pylint_analysis:
   stage: Static Analysis Part 2
   allow_failure: false
   script:
-  - find ./autotest/ -type f -name "*.py" | xargs pylint -d R0801
-  - find ./manual_test/ -type f -name "*.py" | xargs pylint --module-rgx="BSW_REQPROD_\d*_.*" -d R0801
+  - find ./autotest/ -type f -name "*.py" | xargs pylint-fail-under --fail_under 10.0 -d R0801
+  - find ./manual_test/ -type f -name "*.py" | xargs pylint-fail-under --fail_under 10.0 --module-rgx="BSW_REQPROD_\d*_.*" -d R0801
   - find ./test_cases/ -type f -name "*.py" | xargs pylint-fail-under --fail_under 10.0 --module-rgx="BSW_REQPROD_\d*_.*" -d R0801
