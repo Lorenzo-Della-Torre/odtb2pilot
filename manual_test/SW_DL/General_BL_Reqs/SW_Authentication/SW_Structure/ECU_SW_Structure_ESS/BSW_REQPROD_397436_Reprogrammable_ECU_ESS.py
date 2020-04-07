@@ -27,4 +27,4 @@ import logging
 logging.basicConfig(filename='{}.log'.format((__file__)[-3]), format='%(asctime)s - %(message)s',
                     level=logging.INFO)
 
-logging.info("Testcase result tested implicitly by REQPROD_411891_Immediately_apply_ESS_update")
+logging.info("Testcase result: Tested implicitly by REQPROD_411891_Immediately_apply_ESS_update")
