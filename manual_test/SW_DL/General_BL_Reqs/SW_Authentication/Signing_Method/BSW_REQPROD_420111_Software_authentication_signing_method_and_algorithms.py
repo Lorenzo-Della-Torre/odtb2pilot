@@ -5,7 +5,7 @@
     author      LDELLATO (Lorenzo Della Torre)
     date        2020-04-21
     version     1.0
-    reqprod      420111
+    reqprod     420111
 
     Inspired by https://grpc.io/docs/tutorials/basic/python.html
     Copyright 2015 gRPC authors.
