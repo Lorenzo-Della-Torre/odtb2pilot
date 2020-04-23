@@ -695,13 +695,15 @@ class Support_test_ODTB2:
         """
         crc16
         """
+        mask_crc16_citt = 0x1021
         data = bytearray(data)
+        # crc initial value
         crc = 0xFFFF
         for b in data:
             crc ^= b << 8
             for _ in range(8):
                 if crc & 0x8000:
-                    crc = (crc << 1) ^ 0x1021
+                    crc = (crc << 1) ^ mask_crc16_citt
                 else:
                     crc = crc << 1
             crc &= 0xffff
