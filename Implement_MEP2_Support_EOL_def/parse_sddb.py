@@ -145,6 +145,7 @@ def wash_xml(input_file_name, output_file_name):
             for line in input_file:
                 line = line.replace('°C', 'C')
                 line = line.replace('µC', 'C')
+                line = line.replace(u'\xa0', u' ')
                 washed_file.write(line)
 
 def stringify(string):
