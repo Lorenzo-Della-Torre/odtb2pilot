@@ -76,6 +76,39 @@ class Support_SBL:
                                                       purpose, sw_signature)
 
         return testresult, call
+        
+    # Support Function for flashing Secondary Bootloader SW without Check Memory
+    def sbl_download_no_check(self, stub, can_send="", can_rec="", can_nspace="", step_no='',
+                     purpose="", file_n=1):
+        """
+        SBL Download
+        """
+        testresult = True
+        purpose = "SBL Download"
+        # Read vbf file for SBL download
+        offset, data, _, call, data_format = self.read_vbf_file_sbl(file_n)
+
+        # Iteration to Download the SBL by blocks
+        while offset < len(data):
+            # Extract data block
+            offset, block_data, block_addr_by, block_len_by, _, block_len = (
+                self.block_data_extract(offset, data))
+
+            #print(self.crc_calculation(data, offset, block_data, block_addr, block_len))
+            # Request Download
+            testresultt, nbl = self.request_block_download(stub, can_send, can_rec,
+                                                           can_nspace, step_no, purpose,
+                                                           block_addr_by, block_len_by, data_format)
+            testresult = testresult and testresultt
+            # Flash blocks to BECM with transfer data service 0x36
+            testresult = testresult and self.flash_blocks(nbl, stub, can_send, can_rec, can_nspace,
+                                                          step_no, purpose, block_len, block_data)
+
+            #Transfer data exit with service 0x37
+            testresult = testresult and self.transfer_data_exit(stub, can_send, can_rec, can_nspace,
+                                                                step_no, purpose)
+
+        return testresult, call
 
     # Support Function for flashing SW Parts
     def sw_part_download(self, stub, can_send="", can_rec="", can_nspace="", step_no='',
