@@ -133,12 +133,13 @@ class Support_test_ODTB2:
         testresult      bool    result of teststep is as expected
         """
         testresult = True
+        debug = False
 
         #print("teststep called")
         SC.clear_old_CF_frames()
 
         if clear_old_mess:
-            print("clear old messages")
+            if debug: print("clear old messages")
             SC.clear_all_can_frames()
             SC.clear_all_can_messages()
 
@@ -146,12 +147,12 @@ class Support_test_ODTB2:
 
         # wait for messages
         # define answer to expect
-        print("build answer can_frames to receive")
+        if debug: print("build answer can_frames to receive")
         can_answer = SC.can_receive(m_send, m_receive_extra)
-        print("can_frames to receive", can_answer)
+        if debug: print("can_frames to receive", can_answer)
         # message to send
         wait_start = time.time()
-        print("To send:   [", time.time(), ", ", can_send, ", ", m_send.hex().upper(), "]")
+        if debug: print("To send:   [", time.time(), ", ", can_send, ", ", m_send.hex().upper(), "]")
         #print("test send CAN_MF: ")
         #SC.t_send_signal_CAN_MF(stub, can_send, can_rec, can_nspace, m_send)
         SC.clear_all_can_messages()
@@ -183,7 +184,7 @@ class Support_test_ODTB2:
         #SC.update_can_messages(can_rec)
 
         #print("all can messages : ", SC.can_messages)
-        print("rec can messages : ", SC.can_messages[can_rec])
+        if debug: print("rec can messages : ", SC.can_messages[can_rec])
         if len(SC.can_messages[can_rec]) < min_no_messages:
             print("Bad: min_no_messages not reached: ", len(SC.can_messages[can_rec]))
             testresult = False
@@ -678,7 +679,7 @@ class Support_test_ODTB2:
         r_3 = r_3[3:]
         #print(r_3)
         r = hex(int(('0x' + r_1 + r_2 + r_3), 16))
-        print(r)
+        #print(r)
         return bytes.fromhex(r[2:])
 
     def PP_StringTobytes(self, i, num):
