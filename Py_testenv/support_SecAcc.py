@@ -35,8 +35,8 @@ class Support_Security_Access:
     class for supporting Security Access
     """
 
-    _debug = True
-    #_debug = False
+    #_debug = True
+    _debug = False
 
     #Algorithm to decode the Security Access Pin
     def set_security_access_pins(self, sid, fixed_load='FFFFFFFFFF'):

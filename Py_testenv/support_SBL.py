@@ -43,12 +43,15 @@ class Support_SBL:
     """
     class for supporting Secondary Bootloader Download
     """
+    #_debug = True
+    _debug = False
 
     def transfer_data_block(self, offset, data, data_format,\
                             stub, can_send, can_rec, can_nspace,\
                             step_no, purpose):
         # Iteration to Download the SBL by blocks
-        print("offset: ", offset, "len(data): ", len(data))
+        if self._debug:
+            print("offset: ", offset, "len(data): ", len(data))
         while offset < len(data):
             # Extract data block
             offset, block_data, block_addr, block_len, block_crc16 = (
@@ -62,7 +65,8 @@ class Support_SBL:
             #print("FileHeader   CRC calculation CRC16: {0:04X}".format(SUTE.crc16(block_data)))
                        
             #decompress block_data if needed
-            print("DataFormat block: ", data_format.hex())
+            if self._debug:
+                print("DataFormat block: ", data_format.hex())
             if data_format.hex() == '00':
                 decompr_data = block_data
             elif data_format.hex() == '10':
@@ -76,10 +80,11 @@ class Support_SBL:
             else:
                 print("Unknown compression format:", data_format.hex())
                 
-            print("Header       CRC16 block_data:  {0:04X}".format(block_crc16))
-            print("Decompressed CRC16 calculation: {0:04X}".format(SUTE.crc16(decompr_data)))
-            print("Length block from header:  {0:08X}".format(block_len))
-            print("Length block decompressed: {0:08X}".format(len(decompr_data)))
+            if self._debug:
+                print("Header       CRC16 block_data:  {0:04X}".format(block_crc16))
+                print("Decompressed CRC16 calculation: {0:04X}".format(SUTE.crc16(decompr_data)))
+                print("Length block from header:  {0:08X}".format(block_len))
+                print("Length block decompressed: {0:08X}".format(len(decompr_data)))
             #print("Decomp data: ")
             #print(decompr_data)
 
@@ -525,18 +530,21 @@ class Support_SBL:
         """
         block_addr = int.from_bytes(data[offset: offset + 4], 'big')
         offset += 4
-        print("block_Startaddress:              {0:08X}".format(block_addr))
+        if self._debug:
+            print("block_Startaddress:              {0:08X}".format(block_addr))
         block_len = int.from_bytes(data[offset: offset + 4], 'big')
         offset += 4
         #block_addr = int.from_bytes(block_addr, 'big')
         #block_len = int.from_bytes(block_len_by, 'big')
         
         #print("block_data_extract - offset:    {0:08X}".format(offset))
-        print("block_data_extract - block_len : {0:08X}".format(block_len))
+        if self._debug:
+            print("block_data_extract - block_len : {0:08X}".format(block_len))
         block_data = data[offset : offset + block_len]
         offset += block_len
         crc16 = int.from_bytes(data[offset: offset + 2], 'big')
-        print("CRC16 in blockdata              {0:04X}".format(crc16))
+        if self._debug:
+            print("CRC16 in blockdata              {0:04X}".format(crc16))
         offset += 2
         return offset, block_data, block_addr, block_len, crc16
 
@@ -547,15 +555,17 @@ class Support_SBL:
         """
         #crc = int.from_bytes(a, 'big')
         #print ("CRC calculation - data:       ", data)
-        print ("CRC calculation - offset:     {0:08X}".format(offset))
-        print ("CRC calculation - block_data:        ",block_data)
-        print ("CRC calculation - block_addr: {0:08X}".format(block_addr))
-        print ("CRC calculation - block_len:  {0:04X}".format(block_len))
+        if self._debug:
+            print ("CRC calculation - offset:     {0:08X}".format(offset))
+            print ("CRC calculation - block_data:        ",block_data)
+            print ("CRC calculation - block_addr: {0:08X}".format(block_addr))
+            print ("CRC calculation - block_len:  {0:04X}".format(block_len))
         #crc = int.from_bytes(data, 'big')
         #print(hex(crc))
         offset += 2
 
-        print("CRC calculation CRC16: {0:04X]".format(SUTE.crc16(block_data)))
+        if self._debug:
+            print("CRC calculation CRC16: {0:04X]".format(SUTE.crc16(block_data)))
         #"crc_res = 'ok ' if SUTE.crc16(block_data) == crc else 'error'
         crc_res = 'ok'
         return "Block adr: 0x%X length: 0x%X crc %s" % (block_addr, block_len, crc_res)
@@ -589,7 +599,8 @@ class Support_SBL:
                                    timeout, min_no_messages, max_no_messages)
         testresult = testresult and SUTE.test_message(SC.can_messages[can_rec], '74')
         nbl = SUTE.PP_StringTobytes(SC.can_frames[can_rec][0][2][6:10], 4)
-        print("NBL: {}".format(nbl))
+        if self._debug:
+            print("NBL: {}".format(nbl))
         #nbl = int.from_bytes(SC.can_frames[can_rec][0][2][6:10])
         nbl = int.from_bytes(nbl, 'big')
         return testresult, nbl
