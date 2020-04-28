@@ -6,7 +6,7 @@
     version:  1.0
     reqprod  404771
 
-    #inspired by httpsgrpc.iodocstutorialsbasicpython.html
+    Inspired by httpsgrpc.iodocstutorialsbasicpython.html
     Copyright 2015 gRPC authors.
 
     Licensed under the Apache License, Version 2.0 (the License);
@@ -27,6 +27,5 @@ import logging
 logging.basicConfig(filename='{}.log'.format((__file__)[-3]), format='%(asctime)s - %(message)s',
                     level=logging.INFO)
 
-logging.info("""Testcase result tested implicitly by REQPROD_405174 in LC :
-             General Bootloader Requirements"""
-             )
+
+logging.info("Testcase result tested implicitly by REQPROD_405174")
