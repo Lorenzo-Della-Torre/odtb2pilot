@@ -46,6 +46,11 @@ class Support_SBL:
     #_debug = True
     _debug = False
 
+    def __init__(self, sbl = '', ess = '', df = []):
+        self._sbl = sbl
+        self._ess = ess
+        self._df = df
+
     def transfer_data_block(self, offset, data, data_format,\
                             stub, can_send, can_rec, can_nspace,\
                             step_no, purpose):
@@ -116,8 +121,8 @@ class Support_SBL:
         return testresult
                             
     # Support Function for flashing Secondary Bootloader SW
-    def sbl_download(self, stub, can_send="", can_rec="", can_nspace="", step_no='',
-                     purpose="", file_n=1):
+    def sbl_download(self, stub, file_n, can_send="", can_rec="", can_nspace="", step_no='',
+                     purpose=""):
         """
         SBL Download
         """
@@ -136,16 +141,17 @@ class Support_SBL:
         return testresult, call
 
     # Support Function for flashing SW Parts
-    def sw_part_download(self, stub, can_send="", can_rec="", can_nspace="", step_no='',
-                         purpose="", file_n=2):
+    def sw_part_download(self, stub, file_n, can_send="", can_rec="", can_nspace="", step_no='',
+                         purpose=""):
         """
         Software Download
         """
         #testresult = True
         
-        testresult, sw_signature=self.sw_part_download_no_check(stub, can_send, can_rec, can_nspace,\
-                                                                step_no, purpose,\
-                                                                file_n)
+        print ("sw_part_download filename: ", file_n)
+        testresult, sw_signature=self.sw_part_download_no_check(stub, file_n, can_send, can_rec, can_nspace,\
+                                                                step_no, purpose\
+                                                                )
         
         #purpose = "Software Download"
         ## Read vbf file for SBL download
@@ -167,14 +173,15 @@ class Support_SBL:
         return testresult
 
     # Support Function for flashing SW Parts without Check
-    def sw_part_download_no_check(self, stub, can_send="", can_rec="", can_nspace="", step_no='',
-                                  purpose="", file_n=2):
+    def sw_part_download_no_check(self, stub, file_n, can_send="", can_rec="", can_nspace="", step_no='',
+                                  purpose=""):
         """
         Software Download
         """
         #testresult = True
         purpose = "Software Download"
         # Read vbf file for SBL download
+        print ("sw_part_download_no_check filename: ", file_n)
         offset, off, data, sw_signature, data_format, erase = self.read_vbf_file(file_n)
 
         # Erase Memory
@@ -249,7 +256,7 @@ class Support_SBL:
 
         # SBL Download
         purpose = 'SBL Download'
-        tresult, call = self.sbl_download(stub, can_send, can_rec, can_nspace, step_no, purpose)
+        tresult, call = self.sbl_download(stub, self._sbl, can_send, can_rec, can_nspace, step_no, purpose)
         testresult = testresult and tresult
 
         # Activate SBL
@@ -408,11 +415,12 @@ class Support_SBL:
         return testresult
 
     #Read and decode vbf files for Secondary Bootloader
-    def read_vbf_file_sbl(self, file_n=1):
+    def read_vbf_file_sbl(self, f_path_name):
         """
         Read and decode vbf files for Secondary Bootloader
         """
-        data = SUTE.read_f(sys.argv[file_n])
+        print("File to read: ", f_path_name)
+        data = SUTE.read_f(f_path_name)
         find = data.find
         header_len = find(b'\x3B\x0D\x0A\x7D') + 4
         #print ('Header length: 0x%04X' % header_len)
@@ -439,11 +447,11 @@ class Support_SBL:
         return offset, data, sw_signature, call, data_format
 
     #Read and decode vbf files for Software Parts
-    def read_vbf_file(self, file_n):
+    def read_vbf_file(self, f_path_name):
         """
         Read and decode vbf files for Software Parts
         """
-        data = SUTE.read_f(sys.argv[file_n])
+        data = SUTE.read_f(f_path_name)
         find = data.find
         header_len = find(b'\x3B\x0D\x0A\x7D') + 4
         #print ('Header length: 0x%04X' % header_len)
@@ -651,7 +659,7 @@ class Support_SBL:
         #testresult = True
         min_no_messages = 1
         max_no_messages = 1
-        timeout = 0.1
+        timeout = 0.2
         can_m_send = b'\x37'
         can_mr_extra = ''
         testresult = SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
