@@ -1,9 +1,11 @@
-""" Testscript ODTB2 MEPII
-    project:  BECM basetech MEPII
-    author:   LDELLATO (Lorenzo Della Torre)
-    date:     2020-03-10
-    version:  1.0
-    reqprod:  52251
+""" Testscript for a requirement which needs to be tested by code inspection (To be inspected)
+
+    Testscript  ODTB2 MEPII
+    project     BECM basetech MEPII
+    author      LDELLATO (Lorenzo Della Torre)
+    date        2020-04-23
+    version     1.0
+    reqprod     366327
 
     Inspired by https://grpc.io/docs/tutorials/basic/python.html
     Copyright 2015 gRPC authors.
@@ -12,7 +14,7 @@
     you may not use this file except in compliance with the License.
     You may obtain a copy of the License at
 
-        http://www.apache.org/licenses/LICENSE-2.0
+    http://www.apache.org/licenses/LICENSE-2.0
 
     Unless required by applicable law or agreed to in writing, software
     distributed under the License is distributed on an "AS IS" BASIS,
