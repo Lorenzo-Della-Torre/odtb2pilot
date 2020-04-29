@@ -160,7 +160,7 @@ def step_5(stub, can_send, can_receive, can_namespace, call):
                            can_receive, can_namespace, stepno, purpose,
                            timeout, min_no_messages, max_no_messages)
 
-    result = SUTE.test_message(SC.can_messages[can_receive], teststring='7F3131')
+    result = result and SUTE.test_message(SC.can_messages[can_receive], teststring='7F3131')
     logging.info(SUTE.PP_Decode_7F_response(SC.can_frames[can_receive][0][2]))
     return result
 
