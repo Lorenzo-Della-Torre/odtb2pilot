@@ -145,7 +145,7 @@ def step_4(stub, can_send, can_receive, can_namespace, result):
     result = result and tresult
     return call, result
 
-def step_5(stub, can_send, can_receive, can_namespace, call, result):
+def step_5(stub, can_send, can_receive, can_namespace, call):
     """
     Teststep 5: SBL activation with correct call
     """
@@ -156,9 +156,9 @@ def step_5(stub, can_send, can_receive, can_namespace, call, result):
     max_no_messages = -1
     can_m_send = SC.can_m_send("RoutineControlRequestSID", b'\x03\x01' + call, b'\x01')
     can_mr_extra = ''
-    result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-                                      can_receive, can_namespace, stepno, purpose,
-                                      timeout, min_no_messages, max_no_messages)
+    result = SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
+                           can_receive, can_namespace, stepno, purpose,
+                           timeout, min_no_messages, max_no_messages)
 
     result = result and SUTE.test_message(SC.can_messages[can_receive], teststring='7F3131')
     logging.info(SUTE.PP_Decode_7F_response(SC.can_frames[can_receive][0][2]))
@@ -255,7 +255,7 @@ def run():
     # step 5:
     # action:
     # result:
-    result = step_5(network_stub, can_send, can_receive, can_namespace, call, result)
+    result = result and step_5(network_stub, can_send, can_receive, can_namespace, call)
 
     # step 6:
     # action:
