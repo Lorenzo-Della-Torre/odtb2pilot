@@ -23,9 +23,10 @@
 """
 
 import logging
+import sys
 
-logging.basicConfig(filename='{}.log'.format((__file__)[-3]), format='%(asctime)s - %(message)s',
-                    level=logging.INFO)
+logging.basicConfig(format='%(asctime)s - %(message)s',
+                    stream=sys.stdout, level=logging.DEBUG)
 
 logging.info("Testcase result tested implicitly by REQPROD_53848_Communication_protocol" \
              "REQPROD_53849_Applicable_CAN_standards" \
