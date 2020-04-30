@@ -8,8 +8,8 @@ step_1:
         purpose: verify RoutineControl start(01) is sent in Extended Session
         min_no_messages": -1
         max_no_messages: -1
-        mode: '0206'
-        mask: '01'
+        mode: "\x02\x06"
+        mask: "\x01"
         routine_result: Type1,Completed
 step_2:
         timeout: 1
