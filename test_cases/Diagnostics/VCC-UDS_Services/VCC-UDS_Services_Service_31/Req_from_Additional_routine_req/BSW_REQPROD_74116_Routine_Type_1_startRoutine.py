@@ -60,7 +60,7 @@ def step_0(can_param, result):
     serv_ = SC.Extract_Parameter_yml(
         "step_{}".format(stepno),
         service="ReadDataByIdentifier",
-        did="EDA0")
+        did=b'DA0")
 
     param_ = SC.Extract_Parameter_yml(
         "step_{}".format(stepno),
