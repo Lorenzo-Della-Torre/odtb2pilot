@@ -1,10 +1,10 @@
 """ Testscript for an implicitly tested requirement (tested implicitly)
     Testscript ODTB2 MEPII
     project  BECM basetech MEPII
-    author   LDELLATO (Lorenzo Della Torre)
-    date     2020-03-23
-    version  1.0
-    reqprod  52249
+    author:   LDELLATO (Lorenzo Della Torre)
+    date:     2020-04-23
+    version:  1.0
+    reqprod  404771
 
     Inspired by httpsgrpc.iodocstutorialsbasicpython.html
     Copyright 2015 gRPC authors.
@@ -28,5 +28,4 @@ import sys
 logging.basicConfig(format='%(asctime)s - %(message)s',
                     stream=sys.stdout, level=logging.DEBUG)
 
-logging.info("Testcase result tested implicitly by REQPRODs in REQ-SET : " \
-             "General Bootloader requirements / -; 1")
+logging.info("Testcase result: Tested implicitly by REQPROD_405174")
