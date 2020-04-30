@@ -48,8 +48,8 @@ def precondition(stub, can_send, can_receive, can_namespace, result):
     
     #send burst for 10seconds (10000 x 0.01 sec)
     #to enter prog
-    #SC.send_burst(stub, "Vcu1ToAllFuncFront1DiagReqFrame", can_namespace, 
-    #              b'\x02\x10\x82\x00\x00\x00\x00\x00', 0.001, 600)
+    SC.send_burst(stub, "Vcu1ToAllFuncFront1DiagReqFrame", can_namespace, 
+                  b'\x02\x10\x82\x00\x00\x00\x00\x00', 0.001, 600)
     SC.start_heartbeat(stub, "MvcmFront1NMFr", "Front1CANCfg0",
                        b'\x00\x40\xFF\xFF\xFF\xFF\xFF\xFF', 0.4)
 
@@ -104,7 +104,7 @@ def step_2(stub, can_send, can_receive, can_namespace, result):
     """
     stepno = 2
     purpose = "ESS Software Part Download"
-    result = result and SSBL.sw_part_download(stub, SSBL._ess, can_send, can_receive,
+    result = result and SSBL.sw_part_download(stub, SSBL.get_ess_filename(), can_send, can_receive,
                                               can_namespace, stepno, purpose)
     return result
 
@@ -114,7 +114,7 @@ def step_3(stub, can_send, can_receive, can_namespace, result):
     """
     stepno = 3
     purpose = "continue Download SW"
-    for i in SSBL._df:
+    for i in SSBL.get_df_filenames():
 
         result = result and SSBL.sw_part_download(stub, i, can_send, can_receive,
                                                   can_namespace, stepno, purpose)
@@ -163,7 +163,7 @@ def step_6(stub, can_send, can_receive, can_namespace, result):
     min_no_messages = 1
     max_no_messages = 1
 
-    can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xF1\x86', "")
+    can_m_send = SC.can_m_send("ReadDataByIdentifier", b'\xF1\x86', "")
     can_mr_extra = b'\x01'
 
     result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
@@ -195,21 +195,24 @@ def run():
     ############################################
     # precondition
     ############################################
-    
+
     # read arguments for files to DL:
-    SSBL.__init__()
-    for fn in sys.argv:
-        if not fn.find('.vbf') == -1:
-            print ("Filename to DL: ", fn)
-            if not fn.find('sbl') == -1: SSBL._sbl = fn
-            elif not fn.find('ess') == -1: SSBL._ess = fn
-            else: SSBL._df.append(fn)
-    print("argv init: ")
-    print("sbl: ", SSBL._sbl)
-    print("ess: ", SSBL._ess)
-    print("df: ", SSBL._df)
+    f_sbl = ''
+    f_ess = ''
+    f_df = []
+    for f_name in sys.argv:
+        if not f_name.find('.vbf') == -1:
+            print("Filename to DL: ", f_name)
+            if not f_name.find('sbl') == -1:
+                f_sbl = f_name
+            elif not f_name.find('ess') == -1:
+                f_ess = f_name
+            else:
+                f_df.append(f_name)
+    SSBL.__init__(f_sbl, f_ess, f_df)
+    SSBL.show_filenames()
     time.sleep(10)
-    
+
     result = precondition(network_stub, can_send, can_receive, can_namespace, result)
 
     ############################################
@@ -272,4 +275,3 @@ def run():
 
 if __name__ == '__main__':
     run()
-
