@@ -909,6 +909,9 @@ class Support_CAN:
                         # if yaml key return value from yaml file
                         if data[str(argv[0])].get(key) != None:
                             value[key] = data[str(argv[0])].get(key)
+                            #convert some values to bytes
+                            if key == 'mode' or key == 'mask' or key == 'did':
+                                value[key] = bytes(value[key], 'utf-8')
                         # else if yaml key not present return default value
                         else:
                             value[key] = arg
@@ -929,113 +932,113 @@ class Support_CAN:
             Etc.....
         """
         if name == "DiagnosticSessionControl":
-            ret = '10' + message
+            ret = b'\x10' + message
         elif name == "ECUResetHardReset":
-            ret = '1101' + message
+            ret = b'\x11\x01' + message
         elif name == "ClearDiagnosticInformation":
-            ret = '14' + message
+            ret = b'\x14' + message
         elif name == "ReadDTCInfoExtDataRecordByDTCNumber":
-            #ret = '1906' + message + b'\xFF'
-            ret = '1906' + message + mask
+            #ret = b'\x19\x06' + message + b'\xFF'
+            ret = b'\x19\x06' + message + mask
         elif name == "ReadDTCInfoExtDataRecordByDTCNumber(86)":
-            #ret = '1986' + message + b'\xFF'
-            ret = '1986' + message + mask
+            #ret = b'\x19\x86' + message + b'\xFF'
+            ret = b'\x19\x86' + message + mask
         elif name == "ReadDTCInfoSnapshotRecordByDTCNumber":
-            #ret = '1904'+ message + b'\xFF'
-            ret = '1904'+ message + mask
+            #ret = b'\x19\x04'+ message + b'\xFF'
+            ret = b'\x19\x04'+ message + mask
         elif name == "ReadDTCInfoSnapshotRecordByDTCNumber(84)":
-            #ret = '1984'+ message + b'\xFF'
-            ret = '1984'+ message + mask
+            #ret = b'\x19\x84'+ message + b'\xFF'
+            ret = b'\x19\x84'+ message + mask
         elif name == "ReadDTCInfoSnapshotIdentification":
             #ret = b'\x19\x03'
-            ret = '1903'
+            ret = b'\x19\x03'
         elif name == "ReadDTCInfoSnapshotIdentification(83)":
             #ret = b'\x19\x83'
-            ret = '1983'
+            ret = b'\x19\x83'
         elif name == "ReadDTCInfoReportSupportedDTC":
-            #ret = '190A'
-            ret = '190A'
+            #ret = b'\x19\x0A'
+            ret = b'\x19\x0A'
         elif name == "ReadDTCInfoReportDTCWithPermanentStatus":
             #ret = b'\x19\x15'
-            ret = '1915'
+            ret = b'\x19\x15'
 
     #ReadDTCByStatusMask (02) support
         elif name == "ReadDTCByStatusMask":
-            ret = '1902'
+            ret = b'\x19\x02'
             if mask == "confirmedDTC":
-                ret = ret + '03'
+                ret = ret + b'\x03'
             elif mask == "testFailed":
-                ret = ret + '00'
+                ret = ret + b'\x00'
             elif mask == "testFailedThisMonitoringCycle":
-                ret = ret + '01'
+                ret = ret + b'\x01'
             elif mask == "pendingDTC":
-                ret = ret + '02'
+                ret = ret + b'\x02'
             elif mask == "testNotCompletedSinceLastClear":
-                ret = ret + '04'
+                ret = ret + b'\x04'
             elif mask == "testFailedSinceLastClear":
-                ret = ret + '05'
+                ret = ret + b'\x05'
             elif mask == "testNotCompletedThisMonitoringCycle":
-                ret = ret + '06'
+                ret = ret + b'\x06'
             elif mask == "warningIndicatorRequested":
-                ret = ret + '07'
+                ret = ret + b'\x07'
             else:
                 print("ReadDTC: Supported mask missing.\n")
-                ret = ''
+                ret = b''
     #ReadDTCByStatusMask (82) support
         elif name == "ReadDTCByStatusMask(82)":
-            ret = '1982'
+            ret = b'\x19\x82'
             if mask == "confirmedDTC":
-                ret = ret + '03'
+                ret = ret + b'\x03'
             elif mask == "testFailed":
-                ret = ret + '00'
+                ret = ret + b'\x00'
             elif mask == "testFailedThisMonitoringCycle":
-                ret = ret + '01'
+                ret = ret + b'\x01'
             elif mask == "pendingDTC":
-                ret = ret + '02'
+                ret = ret + b'\x02'
             elif mask == "testNotCompletedSinceLastClear":
-                ret = ret + '04'
+                ret = ret + b'\x04'
             elif mask == "testFailedSinceLastClear":
-                ret = ret + '05'
+                ret = ret + b'\x05'
             elif mask == "testNotCompletedThisMonitoringCycle":
-                ret = ret + '06'
+                ret = ret + b'\x06'
             elif mask == "warningIndicatorRequested":
-                ret = ret + '07'
+                ret = ret + b'\x07'
             else:
                 print("ReadDTC: Supported mask missing.\n")
-                ret = ''
+                ret = b''
         elif name == "ReadDataByIdentifier":
-            ret = '22'+ message
+            ret = b'\x22'+ message
         elif name == "ReadMemoryByAddress":
-            ret = '23'+ mask + message
+            ret = b'\x23'+ mask + message
         elif name == "SecurityAccess":
-            ret = '27'+ mask + message
+            ret = b'\x27'+ mask + message
         elif name == "DynamicallyDefineDataIdentifier":
-            ret = '2A'+ mask + message
+            ret = b'\x2A'+ mask + message
         elif name == "ReadDataBePeriodicIdentifier":
-            ret = '2C'+ mask + message
+            ret = b'\x2C'+ mask + message
         elif name == "WriteDataByIdentifier":
-            ret = '2E'+ message
+            ret = b'\x2E'+ message
         elif name == "RoutineControlRequestSID":
-            ret = '31'+ mask + message
+            ret = b'\x31'+ mask + message
         elif name == "RequestUpload":
-            ret = '35'+ message
+            ret = b'\x35'+ message
         elif name == "TransferData":
-            ret = '36'+ message
+            ret = b'\x36'+ message
         elif name == "RequestDownload":
-            ret = '74'+ message
+            ret = b'\x74'+ message
         elif name == "ReadGenericInformationReportGenericSnapshotByDTCNumber":
             #ret = b'\xAF\x04' + message + b'\xFF'
-            ret = 'AF04' + message + mask
+            ret = b'\xAF\x04' + message + mask
         elif name == "ReadGenericInformationReportGenericSnapshotByDTCNumber(84)":
             #ret = b'\xAF\x04' + message + b'\xFF'
-            ret = 'AF84' + message + mask
+            ret = b'\xAF\x84' + message + mask
         elif name == "ReadGenericInformationReportGenericExtendedDataByDTCNumber":
             #ret = b'\xAF\x06'+ message + b'\xFF'
-            ret = 'AF06' + message + mask
+            ret = b'\xAF\x06' + message + mask
         elif name == "ReadGenericInformationReportGenericExtendedDataByDTCNumber(86)":
             #ret = b'\xAF\x06'+ message + b'\xFF'
-            ret = 'AF86' + message + mask
+            ret = b'\xAF\x86' + message + mask
         else:
             print("You type a wrong name: ", name, "\n")
-            ret = ''
-        return bytes.fromhex(ret)
+            ret = b''
+        return ret
