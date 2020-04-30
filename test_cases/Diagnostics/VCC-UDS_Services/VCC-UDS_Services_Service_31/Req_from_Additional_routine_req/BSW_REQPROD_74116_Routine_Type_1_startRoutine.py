@@ -60,7 +60,7 @@ def step_0(can_param, result):
     serv_ = SC.Extract_Parameter_yml(
         "step_{}".format(stepno),
         service="ReadDataByIdentifier",
-        did=b'DA0")
+        did=b'\xED\xA0')
 
     param_ = SC.Extract_Parameter_yml(
         "step_{}".format(stepno),
@@ -83,8 +83,8 @@ def step_1(can_param, result):
     serv_ = SC.Extract_Parameter_yml(
         "step_{}".format(stepno),
         service="RoutineControlRequestSID",
-        mode='0206',
-        mask='01',
+        mode=b'\x02\x06',
+        mask=b'\x01',
         routine_result="Type1,Completed")
 
     param_ = SC.Extract_Parameter_yml(
@@ -111,7 +111,7 @@ def step_2(can_param, result):
     serv_ = SC.Extract_Parameter_yml(
         "step_{}".format(stepno),
         service="DiagnosticSessionControl",
-        mode='02')
+        mode=b'\x02')
 
     param_ = SC.Extract_Parameter_yml(
         "step_{}".format(stepno),
@@ -136,8 +136,8 @@ def step_3(can_param, result):
     serv_ = SC.Extract_Parameter_yml(
         "step_{}".format(stepno),
         service="RoutineControlRequestSID",
-        mode='0206',
-        mask='01')
+        mode=b'\x02\x06',
+        mask=b'\x01')
 
     param_ = SC.Extract_Parameter_yml(
         "step_{}".format(stepno),
@@ -165,7 +165,7 @@ def step_4(can_param, result):
     serv_ = SC.Extract_Parameter_yml(
         "step_{}".format(stepno),
         service="ReadDataByIdentifier",
-        did="F186")
+        did=b'\xF1\x86')
 
     param_ = SC.Extract_Parameter_yml(
         "step_{}".format(stepno),
@@ -189,7 +189,7 @@ def step_5(can_param, result):
     serv_ = SC.Extract_Parameter_yml(
         "step_{}".format(stepno),
         service="DiagnosticSessionControl",
-        mode='01')
+        mode=b'\x01')
 
     param_ = SC.Extract_Parameter_yml(
         "step_{}".format(stepno),
