@@ -47,7 +47,8 @@ class LZSS_Encoder():
     def __init__(self):
         pass
 
-    def _byte2int(self, byte) -> int:
+    @staticmethod
+    def _byte2int(byte) -> int:
         assert len(byte) == 1
         return int.from_bytes(byte, byteorder="big")
 
@@ -57,10 +58,11 @@ class LZSS_Encoder():
         last_byte = infile.read(1)
         if last_byte:
             buffer.put_byte(self._byte2int(last_byte))  # read another byte to buffer
-            return True
+            ret_v = True
         else: # EOF?
             buffer.pop()
-            return buffer.get_fill() > 0
+            ret_v = buffer.get_fill() > 0
+        return ret_v
 
     def encode(self, inpath, outpath):
         """
@@ -134,7 +136,6 @@ class LZSS_Encoder():
                         else:
                             reference_length_bits = reader.readbits(self.LZSS_LENGTH_BIT_COUNT)
                             reference_length_bits = reference_length_bits + self.LZSS_BREAK_EVEN +1
-                            #print("New length: ", reference_length_bits)
                             #Python array starts at 0, correct position:
                             #Correct length to be loop+1
                             reference = Reference(reference_pos_bits-1, reference_length_bits)

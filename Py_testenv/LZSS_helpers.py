@@ -1,3 +1,9 @@
+"""
+    LZSS helpers taken from
+    #https://stackoverflow.com/a/10691412
+
+    Demo simple implementation of LZSS using Python.
+"""
 import sys
 import contextlib
 import array
@@ -10,27 +16,53 @@ class Reference():
         self._length = length
 
     def get_length(self) -> int:
+        """
+            get_length
+                returns length of object
+        """
         return self._length
 
     def get_pos(self) -> int:
+        """
+            param: self
+            returns: argument _position from param
+        """
         return self._position
 
     def get_bits(self) -> int:
+        """
+            get_bits
+                param: self
+                returns: number of bits in self
+        """
         # 12 bits for position = max pos is 4096
         # 4 bits for length = max match size is 16
         return self._position << 4 | self._length
 
     @staticmethod
-    def from_bytes(bytes: bytes):
-        assert len(bytes) == 2
-        position = (bytes[0] << 4) | (bytes[1] & ~0b1111)
-        length   = bytes[1] & 0b1111
+    def from_bytes(f_bytes: bytes):
+        """
+            from_bytes
+                param: f_bytes
+                returns: last 4 bits
+        """
+        assert len(f_bytes) == 2
+        position = (f_bytes[0] << 4) | (f_bytes[1] & ~0b1111)
+        length = f_bytes[1] & 0b1111
         return Reference(position, length)
 
     def __str__(self):
         return "reference: {0}, {1}".format(self._position, self._length)
 
 class CircularBuffer():
+    """
+        LZSS helpers taken from
+        #https://stackoverflow.com/a/10691412
+        CircularBuffer implements a sliding window
+        slightly changed from LZSS helpers to fit Volvo implementation
+
+        Demo simple implementation of LZSS using Python.
+    """
 
     def __init__(self, max_buffer_size: int):
         self._buffer = array.array('B', bytes(max_buffer_size))
@@ -40,26 +72,23 @@ class CircularBuffer():
         #self._buffer_size = 0
         self._fill = 0
 
-    def put_byte(self, b: int):
-        #if (self._max_buffer_size == self._fill):
-        #    print("Start sliding: {0:02X}".format(b))
-        #if (self._putpos)>1015 : print("Putpos ", self._putpos, "{0:02X}".format(b), " Startpos: ", self._startpos)
-        #if (self._putpos)<10 : print("Putpos ", self._putpos, "{0:02X}".format(b), " Startpos: ", self._startpos)
-        self._buffer[self._putpos]= b
-        self._putpos= (self._putpos+1) % self._max_buffer_size
-        #if (self._putpos > 1015): print ("Set self._putpos to: ", self._putpos)
-        #if (self._putpos < 10): print ("Set self._putpos to: ", self._putpos)
-        if self._fill < self._max_buffer_size: self._fill=self._fill +1
-        if (self._fill == self._max_buffer_size): self._startpos=self._putpos
-        #self._buffer.append(byte)
-        #self._buffer_size += 1
-        #if (self._buffer_size > self._max_buffer_size):
-        #    self._buffer.pop(0)
+    def put_byte(self, num_of_bits: int):
+        """
+            put_byte
+            writes #num_of_bits from self
+        """
+        self._buffer[self._putpos] = num_of_bits
+        self._putpos = (self._putpos+1) % self._max_buffer_size
+        if self._fill < self._max_buffer_size:
+            self._fill = self._fill +1
+        if self._fill == self._max_buffer_size:
+            self._startpos = self._putpos
 
     def get_byte_at(self, pos: int) -> int:
-        #print("Position for get_byte_at: ", pos)
-        #print("Startpos: ", self._startpos)
-        #npos = (self._startpos + pos) % self._max_buffer_size
+        """
+            get_byte
+            reads byte from buffer at position pos
+        """
         npos = pos % self._max_buffer_size
         return self._buffer[npos]
 
@@ -67,21 +96,32 @@ class CircularBuffer():
     #    return self._buffer[start_pos : start_pos + length]
 
     def get_fill(self) -> int:
+        """
+            get_fill
+            returns number of bytes buffer is filled with
+        """
         return len(self._fill)
 
     def get_longest_match(self, max_allowable_match_length: int, buffer) -> Reference:
+        """
+            get_longest_match
+            get the longest match from look_ahead_buffereturns
+            returns Reference to match
+        """
         # walk it
         longest_match_length = 0
         longest_match_pos = -1
         for i in range(0, self.get_fill()):
             j = 0
-            #j = self.startpos
-            #while(i + j < self.get_fill() and # is there still some symbols left to compare with?
-            while(( (i + j)% self._max_buffer_size)< self.get_fill() and # is there still some symbols left to compare with?
-                j < buffer.get_fill() and
-                buffer.get_byte_at(j) == self.get_byte_at(i + j)): # if there are, check another
+            # is there still some symbols left to compare with?
+            while(((i + j)% self._max_buffer_size) < self.get_fill() and
+                  j < buffer.get_fill() and
+                  buffer.get_byte_at(j) == self.get_byte_at(i + j)):
+                # if there are, check another
                 j += 1
-            if (j > longest_match_length):
+                if j > max_allowable_match_length:
+                    print("max_allowable_match_length overflow")
+            if j > longest_match_length:
                 longest_match_length = j
                 longest_match_pos = i
         return Reference(longest_match_pos, longest_match_length)
@@ -95,32 +135,47 @@ class CircularBuffer():
 
 
 class SmartOpener():
-    #https://stackoverflow.com/a/17603000
+    """
+        taken from:
+        #https://stackoverflow.com/a/17603000
 
+    """
     @staticmethod
     @contextlib.contextmanager
     def smart_write(filename=None, mode='wb'):
+        """
+            smart_write
+            opens file,
+            stores file_handle
+            writes to file
+        """
         if filename and filename != '-':
-            fh = open(file=filename, mode=mode)
+            file_h = open(file=filename, mode=mode)
         else:
-            fh = sys.stdout.buffer
+            file_h = sys.stdout.buffer
 
         try:
-            yield fh
+            yield file_h
         finally:
-            if fh is not sys.stdout:
-                fh.close()
+            if file_h is not sys.stdout:
+                file_h.close()
 
     @staticmethod
     @contextlib.contextmanager
     def smart_read(filename=None, mode='rb'):
+        """
+            smart_write
+            opens file,
+            stores file_handle
+            reads from file
+        """
         if filename and filename != '-':
-            fh = open(file=filename, mode=mode)
+            file_h = open(file=filename, mode=mode)
         else:
-            fh = sys.stdin.buffer
+            file_h = sys.stdin.buffer
 
         try:
-            yield fh
+            yield file_h
         finally:
-            if fh is not sys.stdin.buffer:
-                fh.close()
+            if file_h is not sys.stdin.buffer:
+                file_h.close()
