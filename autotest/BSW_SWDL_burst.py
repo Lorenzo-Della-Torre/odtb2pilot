@@ -45,10 +45,10 @@ def precondition(stub, can_send, can_receive, can_namespace, result):
     BECM has to be kept alive: start heartbeat
     """
     # start heartbeat, repeat every 0.8 second
-    
+
     #send burst for 10seconds (10000 x 0.01 sec)
     #to enter prog
-    SC.send_burst(stub, "Vcu1ToAllFuncFront1DiagReqFrame", can_namespace, 
+    SC.send_burst(stub, "Vcu1ToAllFuncFront1DiagReqFrame", can_namespace,
                   b'\x02\x10\x82\x00\x00\x00\x00\x00', 0.001, 600)
     SC.start_heartbeat(stub, "MvcmFront1NMFr", "Front1CANCfg0",
                        b'\x00\x40\xFF\xFF\xFF\xFF\xFF\xFF', 0.4)
@@ -56,7 +56,7 @@ def precondition(stub, can_send, can_receive, can_namespace, result):
     SC.start_periodic(stub, "Networkeptalive", True, "Vcu1ToAllFuncFront1DiagReqFrame",
                       "Front1CANCfg0", b'\x02\x3E\x80\x00\x00\x00\x00\x00', 1.02)
 
-    SC.send_burst(stub, "Vcu1ToAllFuncFront1DiagReqFrame", can_namespace, 
+    SC.send_burst(stub, "Vcu1ToAllFuncFront1DiagReqFrame", can_namespace,
                   b'\x02\x10\x82\x00\x00\x00\x00\x00', 0.001, 5000)
     # timeout = more than maxtime script takes
     timeout = 1800   #Normally takes about 1000 seconds, give it some extra time"
