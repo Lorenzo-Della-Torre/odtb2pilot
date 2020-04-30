@@ -53,6 +53,18 @@ class Support_SBL:
             self._df = []
         else:
             self._df = df
+            
+    def show_filenames(self):
+        print("SBL: ", self._sbl)
+        print("ESS: ", self._ess)
+        print("DF:  ", self._df)
+    
+    def get_sbl_filename(self):
+        return self._sbl
+    def get_ess_filename(self):
+        return self._ess
+    def get_df_filenames(self):
+        return self._df
 
     def transfer_data_block(self, offset, data, data_format,\
                             stub, can_send, can_rec, can_nspace,\
