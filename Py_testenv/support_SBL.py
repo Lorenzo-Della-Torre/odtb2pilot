@@ -30,19 +30,115 @@ from support_can import Support_CAN
 from support_test_odtb2 import Support_test_ODTB2
 from support_SecAcc import Support_Security_Access
 
+from support_LZSS import LZSS_Encoder
+
 SC = Support_CAN()
 SUTE = Support_test_ODTB2()
 SSA = Support_Security_Access()
+
+LZSS = LZSS_Encoder()
 
 #class for supporting Secondary Bootloader Download
 class Support_SBL:
     """
     class for supporting Secondary Bootloader Download
     """
+    #_debug = True
+    _debug = False
+
+    def __init__(self, sbl='', ess='', df=''):
+        self._sbl = sbl
+        self._ess = ess
+        if df == '':
+            self._df = []
+        else:
+            self._df = df
+            
+    def show_filenames(self):
+        print("SBL: ", self._sbl)
+        print("ESS: ", self._ess)
+        print("DF:  ", self._df)
+    
+    def get_sbl_filename(self):
+        return self._sbl
+    def get_ess_filename(self):
+        return self._ess
+    def get_df_filenames(self):
+        return self._df
+
+    def transfer_data_block(self, offset, data, data_format,\
+                            stub, can_send, can_rec, can_nspace,\
+                            step_no, purpose):
+        """
+            transfer_data_block
+            support function to transfer
+            data with given offset and data_format to
+            intended destination, given by
+            stub, can_send, can_rec, can_nspace
+
+            step_no, purpose:
+                used for logging purposes
+        """
+        # Iteration to Download the SBL by blocks
+        if self._debug:
+            print("offset: ", offset, "len(data): ", len(data))
+        while offset < len(data):
+            # Extract data block
+            offset, block_data, block_addr, block_len, block_crc16 = (
+                self.block_data_extract(offset, data))
+
+            #block_addr_x = int.from_bytes(block_addr_by, 'big')
+            #block_len_x = int.from_bytes(block_len_by, 'big')
+            block_addr_b = block_addr.to_bytes(4, 'big')
+            block_len_b = block_len.to_bytes(4, 'big')
+
+            #print("FileHeader   CRC calculation CRC16: {0:04X}".format(SUTE.crc16(block_data)))
+
+            #decompress block_data if needed
+            if self._debug:
+                print("DataFormat block: ", data_format.hex())
+            if data_format.hex() == '00':
+                decompr_data = block_data
+            elif data_format.hex() == '10':
+                decompr_data = b''
+                decompr_data = LZSS.decode_barray(block_data)
+            else:
+                print("Unknown compression format:", data_format.hex())
+
+            if self._debug:
+                print("Header       CRC16 block_data:  {0:04X}".format(block_crc16))
+                print("Decompressed CRC16 calculation: {0:04X}".format(SUTE.crc16(decompr_data)))
+                print("Length block from header:  {0:08X}".format(block_len))
+                print("Length block decompressed: {0:08X}".format(len(decompr_data)))
+
+            if SUTE.crc16(decompr_data) == block_crc16:
+                # Request Download
+                testresult, nbl =\
+                    self.request_block_download(stub, can_send, can_rec,
+                                                can_nspace, step_no, purpose,
+                                                block_addr_b, block_len_b, data_format)
+                #testresult = testresult and testresultt
+                # Flash blocks to BECM with transfer data service 0x36
+                testresult = testresult and\
+                             self.flash_blocks(nbl, stub, can_send, can_rec, can_nspace,
+                                               step_no, purpose, block_len, block_data)
+
+                #Transfer data exit with service 0x37
+                testresult = testresult and\
+                             self.transfer_data_exit(stub, can_send, can_rec, can_nspace,
+                                                     step_no, purpose)
+            else:
+                print("CRC doesn't match after decompression")
+                print("Header       CRC16 block_data:  {0:04X}".format(block_crc16))
+                print("Decompressed CRC16 calculation: {0:04X}".format(SUTE.crc16(decompr_data)))
+                print("Header       block length: {0:08X}".format(block_len))
+                print("Decompressed block length: {0:08X}".format(len(decompr_data)))
+                testresult = False
+        return testresult
 
     # Support Function for flashing Secondary Bootloader SW
-    def sbl_download(self, stub, can_send="", can_rec="", can_nspace="", step_no='',
-                     purpose="", file_n=1):
+    def sbl_download(self, stub, file_n, can_send="", can_rec="", can_nspace="", step_no='',
+                     purpose=""):
         """
         SBL Download
         """
@@ -51,144 +147,56 @@ class Support_SBL:
         # Read vbf file for SBL download
         offset, data, sw_signature, call, data_format = self.read_vbf_file_sbl(file_n)
 
-        # Iteration to Download the SBL by blocks
-        while offset < len(data):
-            # Extract data block
-            offset, block_data, block_addr_by, block_len_by, _, block_len = (
-                self.block_data_extract(offset, data))
-
-            #print(self.crc_calculation(data, offset, block_data, block_addr, block_len))
-            # Request Download
-            testresultt, nbl = self.request_block_download(stub, can_send, can_rec,
-                                                           can_nspace, step_no, purpose,
-                                                           block_addr_by, block_len_by, data_format)
-            testresult = testresult and testresultt
-            # Flash blocks to BECM with transfer data service 0x36
-            testresult = testresult and self.flash_blocks(nbl, stub, can_send, can_rec, can_nspace,
-                                                          step_no, purpose, block_len, block_data)
-
-            #Transfer data exit with service 0x37
-            testresult = testresult and self.transfer_data_exit(stub, can_send, can_rec, can_nspace,
-                                                                step_no, purpose)
-
+        testresult = testresult and self.transfer_data_block(offset, data, data_format,\
+                                                            stub, can_send, can_rec, can_nspace,\
+                                                            step_no, purpose)
         #Check memory
         testresult = testresult and self.check_memory(stub, can_send, can_rec, can_nspace, step_no,
                                                       purpose, sw_signature)
 
         return testresult, call
-        
-    # Support Function for flashing Secondary Bootloader SW without Check Memory
-    def sbl_download_no_check(self, stub, can_send="", can_rec="", can_nspace="", step_no='',
-                     purpose="", file_n=1):
-        """
-        SBL Download
-        """
-        testresult = True
-        purpose = "SBL Download"
-        # Read vbf file for SBL download
-        offset, data, _, call, data_format = self.read_vbf_file_sbl(file_n)
-
-        # Iteration to Download the SBL by blocks
-        while offset < len(data):
-            # Extract data block
-            offset, block_data, block_addr_by, block_len_by, _, block_len = (
-                self.block_data_extract(offset, data))
-
-            #print(self.crc_calculation(data, offset, block_data, block_addr, block_len))
-            # Request Download
-            testresultt, nbl = self.request_block_download(stub, can_send, can_rec,
-                                                           can_nspace, step_no, purpose,
-                                                           block_addr_by, block_len_by, data_format)
-            testresult = testresult and testresultt
-            # Flash blocks to BECM with transfer data service 0x36
-            testresult = testresult and self.flash_blocks(nbl, stub, can_send, can_rec, can_nspace,
-                                                          step_no, purpose, block_len, block_data)
-
-            #Transfer data exit with service 0x37
-            testresult = testresult and self.transfer_data_exit(stub, can_send, can_rec, can_nspace,
-                                                                step_no, purpose)
-
-        return testresult, call
 
     # Support Function for flashing SW Parts
-    def sw_part_download(self, stub, can_send="", can_rec="", can_nspace="", step_no='',
-                         purpose="", file_n=2):
+    def sw_part_download(self, stub, file_n, can_send="", can_rec="", can_nspace="", step_no='',
+                         purpose=""):
         """
         Software Download
         """
-        testresult = True
-        purpose = "Software Download"
-        # Read vbf file for SBL download
-        offset, off, data, sw_signature1, data_format, erase = self.read_vbf_file(file_n)
+        #testresult = True
 
-        # Erase Memory
-        testresult = testresult and self.flash_erase(stub, can_send, can_rec, can_nspace, step_no,
-                                                     purpose, erase, data, off)
-        # Iteration to Download the Software by blocks
-
-        while offset < len(data):
-
-            # Extract data block
-            offset, block_data, block_addr_by, block_len_by, _, block_len = (
-                self.block_data_extract(offset, data))
-
-            #print(self.crc_calculation(data, offset, block_data, block_addr, block_len))
-            # Request Download
-            resultt, nbl = self.request_block_download(stub, can_send, can_rec,
-                                                       can_nspace, step_no,
-                                                       purpose, block_addr_by,
-                                                       block_len_by, data_format)
-            testresult = testresult and resultt
-            # Flash blocks to BECM with transfer data service 0x36
-            testresult = testresult and self.flash_blocks(nbl, stub, can_send, can_rec,
-                                                          can_nspace, step_no, purpose,
-                                                          block_len, block_data)
-
-            # Transfer data exit with service 0x37
-            testresult = testresult and self.transfer_data_exit(stub, can_send, can_rec, can_nspace,
-                                                                step_no, purpose)
+        print("sw_part_download filename: ", file_n)
+        testresult, sw_signature =\
+            self.sw_part_download_no_check(stub, file_n, can_send, can_rec, can_nspace,\
+                                           step_no, purpose\
+                                          )
 
         # Check memory
-        testresult = testresult and self.check_memory(stub, can_send, can_rec, can_nspace, step_no,
-                                                      purpose, sw_signature1)
-
+        testresult = testresult and self.check_memory(stub, can_send, can_rec, can_nspace,\
+                                                      step_no, purpose,\
+                                                      sw_signature)
         return testresult
 
     # Support Function for flashing SW Parts without Check
-    def sw_part_download_no_check(self, stub, can_send="", can_rec="", can_nspace="", step_no='',
-                                  purpose="", file_n=2):
+    def sw_part_download_no_check(self, stub, file_n,\
+                                  can_send="", can_rec="", can_nspace="",\
+                                  step_no='', purpose=""):
         """
         Software Download
         """
-        testresult = True
+        #testresult = True
         purpose = "Software Download"
         # Read vbf file for SBL download
+        print("sw_part_download_no_check filename: ", file_n)
         offset, off, data, sw_signature, data_format, erase = self.read_vbf_file(file_n)
 
         # Erase Memory
-        testresult = testresult and self.flash_erase(stub, can_send, can_rec, can_nspace,
-                                                     step_no, purpose, erase, data, off)
+        testresult = self.flash_erase(stub, can_send, can_rec, can_nspace,
+                                      step_no, purpose, erase, data, off)
         # Iteration to Download the Software by blocks
 
-        while offset < len(data):
-
-            # Extract data block
-            offset, block_data, block_addr_by, block_len_by, _, block_len = (
-                self.block_data_extract(offset, data))
-
-            #print(self.crc_calculation(data, offset, block_data, block_addr, block_len))
-            # Request Download
-            resultt, nbl = self.request_block_download(stub, can_send, can_rec, can_nspace,
-                                                       step_no, purpose, block_addr_by,
-                                                       block_len_by, data_format)
-            testresult = testresult and resultt
-            # Flash blocks to BECM with transfer data service 0x36
-            testresult = testresult and self.flash_blocks(nbl, stub, can_send, can_rec, can_nspace,
-                                                          step_no, purpose, block_len, block_data)
-
-            #Transfer data exit with service 0x37
-            testresult = testresult and self.transfer_data_exit(stub, can_send, can_rec,
-                                                                can_nspace, step_no, purpose)
+        testresult = testresult and self.transfer_data_block(offset, data, data_format,\
+                                                            stub, can_send, can_rec, can_nspace,\
+                                                            step_no, purpose)
 
         return testresult, sw_signature
 
@@ -234,19 +242,8 @@ class Support_SBL:
                                                   can_rec, can_nspace, step_no, purpose,
                                                   timeout, min_no_messages, max_no_messages)
 
-        # Security Access Request SID
-        testresult = testresult and SSA.activation_security_access(stub, can_send, can_rec,
-                                                                   can_nspace, step_no, purpose)
-
-        # SBL Download
-        purpose = 'SBL Download'
-        tresult, call = self.sbl_download(stub, can_send, can_rec, can_nspace, step_no, purpose)
-        testresult = testresult and tresult
-
-        # Activate SBL
-        purpose = "Activation of SBL"
-        testresult = testresult and self.activate_sbl(stub, can_send, can_rec, can_nspace,
-                                                      step_no, purpose, call)
+        testresult = testresult and self.sbl_activation_prog(stub, can_send, can_rec, can_nspace,\
+                                            step_no, purpose)
 
         return testresult
 
@@ -264,7 +261,9 @@ class Support_SBL:
 
         # SBL Download
         purpose = 'SBL Download'
-        tresult, call = self.sbl_download(stub, can_send, can_rec, can_nspace, step_no, purpose)
+        tresult, call = self.sbl_download(stub, self._sbl,\
+                                          can_send, can_rec, can_nspace,\
+                                          step_no, purpose)
         testresult = testresult and tresult
 
         # Activate SBL
@@ -308,7 +307,7 @@ class Support_SBL:
                                                   step_no, purpose)
         else:
             logging.info("error message: %s\n", SC.can_messages[can_rec])
-        time.sleep(1)
+        time.sleep(0.1)
         return testresult
 
 
@@ -407,8 +406,9 @@ class Support_SBL:
         can_m_send = SC.can_m_send("RoutineControlRequestSID", b'\x02\x05', b'\x01')
         can_mr_extra = ''
 
-        SC.change_MF_FC(can_send, block_size, separation_time, frame_control_delay, frame_control_flag,
-                        frame_control_auto)
+        SC.change_MF_FC(can_send, block_size,\
+                        separation_time, frame_control_delay,\
+                        frame_control_flag, frame_control_auto)
 
         testresult = testresult and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
                                                   can_rec, can_nspace, step_no, purpose,
@@ -423,18 +423,19 @@ class Support_SBL:
         return testresult
 
     #Read and decode vbf files for Secondary Bootloader
-    def read_vbf_file_sbl(self, file_n=1):
+    def read_vbf_file_sbl(self, f_path_name):
         """
         Read and decode vbf files for Secondary Bootloader
         """
-        data = SUTE.read_f(sys.argv[file_n])
+        print("File to read: ", f_path_name)
+        data = SUTE.read_f(f_path_name)
         find = data.find
         header_len = find(b'\x3B\x0D\x0A\x7D') + 4
         #print ('Header length: 0x%04X' % header_len)
 
         if header_len < 100:
             logging.info('Unknown format')
-            quit(-1)
+            sys.exit() #quit(-1)
 
         off1 = find(b'sw_signature_dev = 0x') + 21
         end = find(b';\r\n}')
@@ -454,11 +455,11 @@ class Support_SBL:
         return offset, data, sw_signature, call, data_format
 
     #Read and decode vbf files for Software Parts
-    def read_vbf_file(self, file_n):
+    def read_vbf_file(self, f_path_name):
         """
         Read and decode vbf files for Software Parts
         """
-        data = SUTE.read_f(sys.argv[file_n])
+        data = SUTE.read_f(f_path_name)
         find = data.find
         header_len = find(b'\x3B\x0D\x0A\x7D') + 4
         #print ('Header length: 0x%04X' % header_len)
@@ -543,29 +544,37 @@ class Support_SBL:
         """
         Extraction of block data from vbf file
         """
-        block_addr_by = data[offset: offset + 4]
-        print("block_address: {}".format(block_addr_by))
-        block_len_by = data[offset+4: offset + 8]
-        block_addr = int.from_bytes(block_addr_by, 'big')
-        block_len = int.from_bytes(block_len_by, 'big')
-        offset += 8
-
+        block_addr = int.from_bytes(data[offset: offset + 4], 'big')
+        offset += 4
+        if self._debug:
+            print("block_Startaddress:              {0:08X}".format(block_addr))
+        block_len = int.from_bytes(data[offset: offset + 4], 'big')
+        offset += 4
+        if self._debug:
+            print("block_data_extract - block_len : {0:08X}".format(block_len))
         block_data = data[offset : offset + block_len]
         offset += block_len
+        crc16 = int.from_bytes(data[offset: offset + 2], 'big')
+        if self._debug:
+            print("CRC16 in blockdata              {0:04X}".format(crc16))
         offset += 2
-        return offset, block_data, block_addr_by, block_len_by, block_addr, block_len
+        return offset, block_data, block_addr, block_len, crc16
 
     #crc calculation for each block
-    def crc_calculation(self, data, offset, block_data, block_addr, block_len):
+    def crc_calculation(self, offset, block_data, block_addr, block_len):
         """
         crc calculation for each block
         """
-        crc = int.from_bytes(a, 'big')
-        #print(hex(crc))
+        if self._debug:
+            print("CRC calculation - offset:     {0:08X}".format(offset))
+            print("CRC calculation - block_data:        ", block_data)
+            print("CRC calculation - block_addr: {0:08X}".format(block_addr))
+            print("CRC calculation - block_len:  {0:04X}".format(block_len))
         offset += 2
 
-        crc_res = 'ok ' if SUTE.crc16(block_data) == crc else 'error'
-
+        if self._debug:
+            print("CRC calculation CRC16: {0:04X}".format(SUTE.crc16(block_data)))
+        crc_res = 'ok'
         return "Block adr: 0x%X length: 0x%X crc %s" % (block_addr, block_len, crc_res)
 
     #Support function for Request Download
@@ -574,7 +583,7 @@ class Support_SBL:
         """
         Support function for Request Download
         """
-        testresult = True
+        #testresult = True
         # Parameters for FrameControl FC
         block_size = 0
         separation_time = 0
@@ -592,12 +601,13 @@ class Support_SBL:
         SC.change_MF_FC(can_send, block_size, separation_time, frame_control_delay,
                         frame_control_flag, frame_control_auto)
 
-        testresult = testresult and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-                                                  can_rec, can_nspace, step_no, purpose,
-                                                  timeout, min_no_messages, max_no_messages)
+        testresult = SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
+                                   can_rec, can_nspace, step_no, purpose,
+                                   timeout, min_no_messages, max_no_messages)
         testresult = testresult and SUTE.test_message(SC.can_messages[can_rec], '74')
         nbl = SUTE.PP_StringTobytes(SC.can_frames[can_rec][0][2][6:10], 4)
-        print("NBL: {}".format(nbl))
+        if self._debug:
+            print("NBL: {}".format(nbl))
         #nbl = int.from_bytes(SC.can_frames[can_rec][0][2][6:10])
         nbl = int.from_bytes(nbl, 'big')
         return testresult, nbl
@@ -608,7 +618,7 @@ class Support_SBL:
         """
         Support function for Transfer Data
         """
-        testresult = True
+        #testresult = True
         pad = 0
 
         for i in range(int(block_len/(nbl-2))+1):
@@ -633,9 +643,9 @@ class Support_SBL:
             SC.change_MF_FC(can_send, block_size, separation_time, frame_control_delay,
                             frame_control_flag, frame_control_auto)
 
-            testresult = testresult and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-                                                      can_rec, can_nspace, step_no, purpose,
-                                                      timeout, min_no_messages, max_no_messages)
+            testresult = SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
+                                       can_rec, can_nspace, step_no, purpose,
+                                       timeout, min_no_messages, max_no_messages)
             testresult = testresult and SUTE.test_message(SC.can_messages[can_rec], '76')
                 #print(SC.can_messages[can_receive])
         return testresult
@@ -645,15 +655,15 @@ class Support_SBL:
         """
         Support function for Request Transfer Exit
         """
-        testresult = True
+        #testresult = True
         min_no_messages = 1
         max_no_messages = 1
-        timeout = 0.1
+        timeout = 0.2
         can_m_send = b'\x37'
         can_mr_extra = ''
-        testresult = testresult and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-                                                  can_rec, can_nspace, step_no, purpose,
-                                                  timeout, min_no_messages, max_no_messages)
+        testresult = SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
+                                   can_rec, can_nspace, step_no, purpose,
+                                   timeout, min_no_messages, max_no_messages)
 
         return testresult
 
