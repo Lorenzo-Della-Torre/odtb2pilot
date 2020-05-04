@@ -38,8 +38,8 @@ import binascii
 
 from support_can import Support_CAN
 SC = Support_CAN()
-param_ = dict()
-can_param = dict()
+#param_ = dict()
+#can_param = dict()
 
 class Support_test_ODTB2:
     """
@@ -49,7 +49,8 @@ class Support_test_ODTB2:
     def parse_some_args():
         ''' Get the command line input, using the defined flags. '''
         parser = argparse.ArgumentParser(description='Execute testscript')
-        parser.add_argument("--config_file", help="Input config file which overrides the default one",
+        parser.add_argument("--config_file",\
+                            help="Input config file which overrides the default one",\
                             type=str, action='store', dest='conf_file', required=False,)
         ret_args = parser.parse_args()
         return ret_args
@@ -138,7 +139,8 @@ class Support_test_ODTB2:
         SC.clear_old_CF_frames()
 
         if clear_old_mess:
-            if debug: print("clear old messages")
+            if debug:
+                print("clear old messages")
             SC.clear_all_can_frames()
             SC.clear_all_can_messages()
 
@@ -146,16 +148,26 @@ class Support_test_ODTB2:
 
         # wait for messages
         # define answer to expect
-        if debug: print("build answer can_frames to receive")
+        if debug:
+            print("build answer can_frames to receive")
         can_answer = SC.can_receive(can_param["m_send"], can_param["mr_extra"])
-        if debug: print("can_frames to receive", can_answer)
+        if debug:
+            print("can_frames to receive", can_answer)
         # message to send
         wait_start = time.time()
-        if debug: print("To send:   [", time.time(), ", ", can_param["can_send"], ", ", (can_param["m_send"]).hex().upper(), "]")
+        if debug:
+            print("To send:   [", time.time(), ", ",\
+                  can_param["can_send"], ", ",\
+                  (can_param["m_send"]).hex().upper(), "]")
         #print("test send CAN_MF: ")
-        #SC.t_send_signal_CAN_MF(Param.stub, Param.can_send, Param.can_rec, Param.can_nspace, Param.m_send)
+        #SC.t_send_signal_CAN_MF(Param.stub,\
+        #                        Param.can_send, Param.can_rec,\
+        #                        Param.can_nspace, Param.m_send)
         SC.clear_all_can_messages()
-        SC.t_send_signal_CAN_MF(can_param["stub"], can_param["can_send"], can_param["can_rec"], can_param["can_nspace"], can_param["m_send"], True, 0x00)
+        SC.t_send_signal_CAN_MF(can_param["stub"],\
+                                can_param["can_send"], can_param["can_rec"],\
+                                can_param["can_nspace"], can_param["m_send"],\
+                                True, 0x00)
         #wait timeout for getting subscribed data
         if (wait_max or (param_["max_no_messages"] == -1)):
             time.sleep(param_["timeout"])
@@ -183,11 +195,14 @@ class Support_test_ODTB2:
         #SC.update_can_messages(Param.can_rec)
 
         #print("all can messages : ", SC.can_messages)
-        if debug: print("rec can messages : ", SC.can_messages[can_param["can_rec"]])
+        if debug:
+            print("rec can messages : ", SC.can_messages[can_param["can_rec"]])
         if len(SC.can_messages[can_param["can_rec"]]) < param_["min_no_messages"]:
-            print("Bad: min_no_messages not reached: ", len(SC.can_messages[can_param["can_rec"]]))
+            print("Bad: min_no_messages not reached: ",\
+                  len(SC.can_messages[can_param["can_rec"]]))
             testresult = False
-        elif param_["max_no_messages"] >= 0 and len(SC.can_messages[can_param["can_rec"]]) > param_["max_no_messages"]:
+        elif param_["max_no_messages"] >= 0 and\
+                len(SC.can_messages[can_param["can_rec"]]) > param_["max_no_messages"]:
             print("Bad: max_no_messages ", len(SC.can_messages[can_param["can_rec"]]))
             testresult = False
         else:
@@ -195,8 +210,9 @@ class Support_test_ODTB2:
             #if len(SC.can_messages[Param.can_rec]) > 0:
             if SC.can_messages[can_param["can_rec"]]:
                 if param_["min_no_messages"] >= 0:
-                    testresult = testresult and self.test_message(SC.can_messages[can_param["can_rec"]],
-                                                                  can_answer.hex().upper())
+                    testresult = testresult and\
+                        self.test_message(SC.can_messages[can_param["can_rec"]],\
+                                          can_answer.hex().upper())
         print("Step ", step_no, ": teststatus:", testresult, "\n")
         return testresult
 
@@ -265,28 +281,28 @@ class Support_test_ODTB2:
         retval = ""
         pos1 = message.find('F121', pos)
         retval = retval + "PBL_Diagnostic_Database_Part_Number '"\
-                        + self.PP_PartNumber (message[ pos1+4: pos1+18], message[ pos1:pos1+4]\
+                        + self.PP_PartNumber(message[pos1+4: pos1+18], message[pos1:pos1+4]\
                         + ' ')\
                         + "'\n"
         pos1 = message.find('F12A', pos1+18)
         retval = retval + "ECU_Core_Assembly PN                '"\
-                        + self.PP_PartNumber (message[ pos1+4: pos1+18], message[ pos1:pos1+4]\
+                        + self.PP_PartNumber(message[pos1+4: pos1+18], message[pos1:pos1+4]\
                         + ' ')\
                         + "'\n"
         pos1 = message.find('F12B', pos1+18)
         retval = retval + "ECU_Delivery_Assembly PN            '"\
-                        + self.PP_PartNumber (message[ pos1+4: pos1+18], message[ pos1:pos1+4]\
+                        + self.PP_PartNumber(message[pos1+4: pos1+18], message[pos1:pos1+4]\
                         + ' ')\
                         + "'\n"
         pos1 = message.find('F18C', pos1+18)
         retval = retval + "ECU_Serial_Number                   '"\
-                        + message[ pos1:pos1+4]\
+                        + message[pos1:pos1+4]\
                         + ' '\
-                        + message[ pos1+4: pos1+12]\
+                        + message[pos1+4: pos1+12]\
                         + "'\n"
         pos1 = message.find('F125', pos1+12)
         retval = retval + "PBL_Sw_part_Number                  '"\
-                        + self.PP_PartNumber (message[ pos1+4: pos1+18], message[ pos1:pos1+4]\
+                        + self.PP_PartNumber(message[pos1+4: pos1+18], message[pos1:pos1+4]\
                         + ' ')\
                         + "'\n"
         return retval
@@ -299,27 +315,27 @@ class Support_test_ODTB2:
         retval = ""
         pos1 = message.find('F122', pos)
         retval = retval + "SBL_Diagnostic_Database_Part_Number '"\
-                        + self.PP_PartNumber (message[ pos1+4: pos1+18], message[ pos1:pos1+4]\
+                        + self.PP_PartNumber(message[pos1+4: pos1+18], message[pos1:pos1+4]\
                         + ' ')\
                         + "'\n"
         pos1 = message.find('F12A', pos1+18)
         retval = retval + "ECU_Core_Assembly PN                '"\
-                        + self.PP_PartNumber (message[ pos1+4: pos1+18], message[ pos1:pos1+4]\
+                        + self.PP_PartNumber(message[pos1+4: pos1+18], message[pos1:pos1+4]\
                         + ' ')\
                         + "'\n"
         pos1 = message.find('F12B', pos1+18)
-        retval = retval + self.PP_PartNumber (message[ pos1+4: pos1+18], message[ pos1:pos1+4]\
+        retval = retval + self.PP_PartNumber(message[pos1+4: pos1+18], message[pos1:pos1+4]\
                         + ' ')\
                         + "'\n"
         pos1 = message.find('F18C', pos1+18)
         retval = retval + "ECU_Serial_Number                   '"\
-                        + message[ pos1:pos1+4]\
+                        + message[pos1:pos1+4]\
                         + ' '\
-                        + message[ pos1+4: pos1+12]\
+                        + message[pos1+4: pos1+12]\
                         + "'\n"
         pos1 = message.find('F124', pos1+12)
         retval = retval + "SBL_Sw_version_Number               '"\
-                        + self.PP_PartNumber (message[ pos1+4: pos1+18], message[ pos1:pos1+4]\
+                        + self.PP_PartNumber(message[pos1+4: pos1+18], message[pos1:pos1+4]\
                         + ' ')\
                         + "'\n"
         return retval
