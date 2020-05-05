@@ -913,8 +913,10 @@ class Support_CAN:
                             if key == 'mode' or key == 'mask' or key == 'did':
                                 value[key] = bytes(value[key], 'utf-8')
                         # else if yaml key not present return default value
-                        else:
+                        elif arg != None:
                             value[key] = arg
+                        else:
+                            logging.info("the key '{}' doesn't return any value".format(key))
                     # return a tuple with yaml/default values
                     return value
 
