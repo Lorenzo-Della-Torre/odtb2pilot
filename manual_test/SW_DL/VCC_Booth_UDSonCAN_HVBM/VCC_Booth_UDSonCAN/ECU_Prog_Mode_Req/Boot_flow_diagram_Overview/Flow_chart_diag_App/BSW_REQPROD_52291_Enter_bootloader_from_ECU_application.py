@@ -1,4 +1,4 @@
-""" Testscript for a requirement which needs to be tested by code inspection (To be inspected)
+""" Testscript for an implicitly tested requirement (tested implicitly)
 
     Testscript  ODTB2 MEPII
     project     BECM basetech MEPII
