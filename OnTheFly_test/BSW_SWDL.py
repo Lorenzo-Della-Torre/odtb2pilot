@@ -4,6 +4,10 @@
 # date:     2019-12-13
 # version:  1.0
 
+# date:     2020-05-04
+# version:  1.1
+# changes:  parameter support functions
+
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
 
 # Copyright 2015 gRPC authors.
@@ -67,14 +71,6 @@ def step_0(stub, can_send, can_receive, can_namespace):
     Teststep 0: Complete ECU Part/Serial Number(s)
     """
     stepno = 0
-    #purpose = "Complete ECU Part/Serial Number(s)"
-    #timeout = 1
-    #min_no_messages = -1
-    #max_no_messages = -1
-
-    #ts_param = can_param
-    #can_param = Dict[stub, can_send, can_rec, can_nspace, m_send, mr_extra: str]
-    #ts_param = Dict()
     ts_param = {"stub": stub,\
                 "m_send" : SC.can_m_send("ReadDataByIdentifier", b'\xED\xA0', ""),\
                 "mr_extra" : '',\
@@ -97,9 +93,6 @@ def step_0(stub, can_send, can_receive, can_namespace):
 
     result = SUTE.teststep(ts_param,\
                            stepno, extra_param)
-    #result = SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-    #                       can_receive, can_namespace, stepno, purpose,
-    #                       timeout, min_no_messages, max_no_messages)
     logging.info('%s', SUTE.PP_CombinedDID_EDA0(SC.can_messages[can_receive][0][2], title=''))
     return result
 
@@ -146,7 +139,6 @@ def step_4(stub, can_send, can_receive, can_namespace):
 
     result = SSBL.check_complete_compatible_routine(stub, can_send, can_receive,
                                                     can_namespace, stepno, purpose)
-
     return result
 
 def step_5(stub, can_send, can_receive, can_namespace):
@@ -154,15 +146,6 @@ def step_5(stub, can_send, can_receive, can_namespace):
     Teststep 5: Reset
     """
     stepno = 5
-    #purpose = "ECU Reset"
-    #timeout = 1
-    #min_no_messages = -1
-    #max_no_messages = -1
-
-    can_m_send = b'\x11\x01'
-    can_mr_extra = ''
-
-    #ts_param = Dict()
     ts_param = {"stub" : stub,\
                 "m_send" : b'\x11\x01',\
                 "mr_extra" : '',\
@@ -178,10 +161,6 @@ def step_5(stub, can_send, can_receive, can_namespace):
 
     result = SUTE.teststep(ts_param,\
                            stepno, extra_param)
-    #result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-    #                                  can_receive, can_namespace, stepno, purpose,
-    #                                  timeout, min_no_messages, max_no_messages)
-
     result = result and SUTE.test_message(SC.can_messages[can_receive], teststring='025101')
     time.sleep(1)
     return result
@@ -191,15 +170,6 @@ def step_6(stub, can_send, can_receive, can_namespace):
     Teststep 6: verify session
     """
     stepno = 6
-    #purpose = "Verify Default session"
-    #timeout = 1
-    #min_no_messages = 1
-    #max_no_messages = 1
-
-    #can_m_send = SC.can_m_send("ReadDataByIdentifier", b'\xF1\x86', "")
-    #can_mr_extra = b'\x01'
-
-    #ts_param = Dict()
     ts_param = {"stub" : stub,\
                 "m_send" : SC.can_m_send("ReadDataByIdentifier", b'\xF1\x86', ""),\
                 "mr_extra" : b'\x01',\
@@ -215,9 +185,6 @@ def step_6(stub, can_send, can_receive, can_namespace):
 
     result = SUTE.teststep(ts_param,\
                            stepno, extra_param)
-    #result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-    #                                  can_receive, can_namespace, stepno, purpose,
-    #                                  timeout, min_no_messages, max_no_messages)
     time.sleep(1)
     return result
 
@@ -226,7 +193,6 @@ def run():
     Run - Call other functions from here
     """
     logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.DEBUG)
-    #result = True
 
     # start logging
     # to be implemented
@@ -237,7 +203,6 @@ def run():
     can_send = "Vcu1ToBecmFront1DiagReqFrame"
     can_receive = "BecmToVcu1Front1DiagResFrame"
     can_namespace = SC.nspace_lookup("Front1CANCfg0")
-    #can_namespace = "Front1CANCfg0"
 
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()

@@ -34,7 +34,7 @@ import ODTB_conf
 from support_can import Support_CAN
 from support_test_odtb2 import Support_test_ODTB2
 SC = Support_CAN()
-SuTe = Support_test_ODTB2()
+SUTE = Support_test_ODTB2()
 
 
 def frames_received(can_receive, timespan):
@@ -98,9 +98,9 @@ def step_0(stub, can_send, can_receive, can_namespace):
                    "max_no_messages" : 1
                   }
 
-    testresult = SuTe.teststep(ts_param,\
+    testresult = SUTE.teststep(ts_param,\
                            stepno, extra_param)
-    print(SuTe.PP_CombinedDID_EDA0(SC.can_messages[can_receive][0][2], title=''))
+    print(SUTE.PP_CombinedDID_EDA0(SC.can_messages[can_receive][0][2], title=''))
     return testresult
 
 def step_1(stub, can_send, can_receive, can_namespace):
@@ -121,7 +121,7 @@ def step_1(stub, can_send, can_receive, can_namespace):
                    "min_no_messages" : 1,\
                    "max_no_messages" : 1
                   }
-    return SuTe.teststep(ts_param,\
+    return SUTE.teststep(ts_param,\
                          stepno, extra_param)
 
 def step_2(stub, can_send, can_receive, can_namespace):
@@ -143,7 +143,7 @@ def step_2(stub, can_send, can_receive, can_namespace):
                    "min_no_messages" : 1,\
                    "max_no_messages" : 1
                   }
-    testresult = SuTe.teststep(ts_param,\
+    testresult = SUTE.teststep(ts_param,\
                                stepno, extra_param)
     if not testresult:
         print("Received frames: ", SC.can_frames[can_receive])
@@ -175,7 +175,7 @@ def step_3(stub, can_send, can_receive, can_namespace):
                    "min_no_messages" : 1,\
                    "max_no_messages" : 1\
                   }
-    testresult = SuTe.teststep(ts_param,\
+    testresult = SUTE.teststep(ts_param,\
                                stepno, extra_param)
     if not testresult:
         print("Received frames: ", SC.can_frames[can_receive])
@@ -208,7 +208,7 @@ def step_4(stub, can_send, can_receive, can_namespace):
                    "min_no_messages" : 1,\
                    "max_no_messages" : 1\
                   }
-    testresult = SuTe.teststep(ts_param,\
+    testresult = SUTE.teststep(ts_param,\
                                stepno, extra_param)
     if not testresult:
         print("Received frames: ", SC.can_frames[can_receive])
@@ -242,7 +242,7 @@ def step_5(stub, can_send, can_receive, can_namespace):
                    "min_no_messages" : -1,\
                    "max_no_messages" : -1\
                   }
-    testresult = SuTe.teststep(ts_param,\
+    testresult = SUTE.teststep(ts_param,\
                                stepno, extra_param)
     if not testresult:
         print("Received frames: ", SC.can_frames[can_receive])
@@ -275,7 +275,7 @@ def step_6(stub, can_send, can_receive, can_namespace):
                    "min_no_messages" : -1,\
                    "max_no_messages" : -1\
                   }
-    testresult = SuTe.teststep(ts_param,\
+    testresult = SUTE.teststep(ts_param,\
                                stepno, extra_param)
     if not testresult:
         print("Received frames: ", SC.can_frames[can_receive])
