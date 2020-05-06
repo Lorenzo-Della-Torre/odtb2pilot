@@ -3,7 +3,7 @@
     Testscript  ODTB2 MEPII
     project     BECM basetech MEPII
     author      LDELLATO (Lorenzo Della Torre)
-    date        2020-04-06
+    date        2020-05-06
     version     1.0
     reqprod     52286
 
