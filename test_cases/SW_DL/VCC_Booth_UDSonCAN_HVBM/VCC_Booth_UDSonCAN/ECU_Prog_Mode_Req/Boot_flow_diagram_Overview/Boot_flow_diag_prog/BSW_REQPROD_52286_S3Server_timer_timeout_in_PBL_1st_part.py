@@ -145,7 +145,7 @@ def step_3(can_param, result):
         purpose="Verify Programming session",
         min_no_messages=-1,
         max_no_messages=-1,
-        time_to_sleep = 5)
+        time_to_sleep=5)
 
     can_param["m_send"] = SC.can_m_send(serv_["service"], serv_["did"], "")
     can_param["mr_extra"] = b'\x02'
