@@ -159,16 +159,31 @@ class Support_Security_Access:
         #Security Access request sid
         testresult = True
         #timeout = 0.1
-        timeout = 1
-        min_no_messages = 1
-        max_no_messages = 1
+        #timeout = 1
+        #min_no_messages = 1
+        #max_no_messages = 1
 
-        can_m_send = b'\x27\x01'
-        can_mr_extra = ''
+        #can_m_send = b'\x27\x01'
+        #can_mr_extra = ''
 
-        testresult = SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-                                   can_rec, can_nspace, step_no, purpose,
-                                   timeout, min_no_messages, max_no_messages)
+        ts_param = {"stub" : stub,\
+                    "m_send" : b'\x27\x01',\
+                    "mr_extra" : '',\
+                    "can_send" : can_send,\
+                    "can_rec"  : can_rec,\
+                    "can_nspace" : can_nspace\
+                    }
+        extra_param = {"purpose" : purpose,\
+                    "timeout" : 1,\
+                    "min_no_messages" : -1,\
+                    "max_no_messages" : -1
+                    }
+
+        testresult = SUTE.teststep(ts_param,\
+                                   step_no, extra_param)
+        #testresult = SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
+        #                           can_rec, can_nspace, step_no, purpose,
+        #                           timeout, min_no_messages, max_no_messages)
         seed = SC.can_messages[can_rec][0][2][6:12]
         return testresult, seed
 
@@ -177,19 +192,31 @@ class Support_Security_Access:
             Support function: request seed for calculating security access pin
         """
         #Security Access Send Key
-        #timeout = 0.05
+        #timeout = 0.1
         #min_no_messages = -1
         #max_no_messages = -1
-        timeout = 0.1
-        min_no_messages = -1
-        max_no_messages = -1
 
-        can_m_send = b'\x27\x02'+ payload_value
-        can_mr_extra = ''
+        #can_m_send = b'\x27\x02'+ payload_value
+        #can_mr_extra = ''
 
-        testresult = SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-                                   can_rec, can_nspace, step_no, purpose,
-                                   timeout, min_no_messages, max_no_messages)
+        ts_param = {"stub" : stub,\
+                    "m_send" : b'\x27\x02'+ payload_value,\
+                    "mr_extra" : '',\
+                    "can_send" : can_send,\
+                    "can_rec"  : can_rec,\
+                    "can_nspace" : can_nspace\
+                    }
+        extra_param = {"purpose" : purpose,\
+                    "timeout" : 0.1,\
+                    "min_no_messages" : -1,\
+                    "max_no_messages" : -1
+                    }
+
+        testresult = SUTE.teststep(ts_param,\
+                                   step_no, extra_param)
+        #testresult = SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
+        #                           can_rec, can_nspace, step_no, purpose,
+        #                           timeout, min_no_messages, max_no_messages)
         testresult = testresult and SUTE.test_message(SC.can_messages[can_rec], '6702')
         #time.sleep(1)
         return testresult
