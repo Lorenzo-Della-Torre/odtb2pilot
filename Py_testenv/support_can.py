@@ -907,13 +907,13 @@ class Support_CAN:
                     value = dict()
                     for key, arg in kwargs.items():
                         # if yaml key return value from yaml file
-                        if data[str(argv[0])].get(key) != None:
+                        if data[str(argv[0])].get(key) is not None:
                             value[key] = data[str(argv[0])].get(key)
                             #convert some values to bytes
-                            if key == 'mode' or key == 'mask' or key == 'did':
+                            if key in ('mode', 'mask', 'did'):
                                 value[key] = bytes(value[key], 'utf-8')
                         # else if yaml key not present return default value
-                        elif arg != None:
+                        elif arg is not None:
                             value[key] = arg
                         else:
                             logging.info("the key '{}' doesn't return any value".format(key))
