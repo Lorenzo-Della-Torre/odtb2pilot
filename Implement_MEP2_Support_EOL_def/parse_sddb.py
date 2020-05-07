@@ -143,9 +143,9 @@ def wash_xml(input_file_name, output_file_name):
     with open(output_file_name, 'w+') as washed_file:
         with open(input_file_name, encoding='latin1') as input_file:
             for line in input_file:
-                line = line.replace('°C', 'C')
-                line = line.replace('µC', 'C')
-                line = line.replace(u'\xa0', u' ')
+                line = line.replace('°C', 'degC')
+                line = line.replace('µC', 'uC')
+                line = line.replace(u'\xa0', u' ') #non-breaking space
                 washed_file.write(line)
 
 def stringify(string):
