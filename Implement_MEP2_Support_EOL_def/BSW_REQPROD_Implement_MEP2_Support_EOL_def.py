@@ -383,33 +383,34 @@ def comp_part_nbrs(network_stub, can_send, can_receive, can_namespace,
         # Get diagnostic part number from ECU (using service 22)
         did_dict = service_22(network_stub, can_send, can_receive, can_namespace,
                               parammod.DID_TO_GET_PART_NUMBER)
-        ecu_diag_part_num_full = did_dict['payload']
+        if 'payload' in did_dict:
+            ecu_diag_part_num_full = did_dict['payload']
 
-        # Checking length
-        if len(ecu_diag_part_num_full) != PART_NUMBER_STRING_LENGTH:
-            raise RuntimeError('ECU Diagnostic Part Number is to short!')
+            # Checking length
+            if len(ecu_diag_part_num_full) != PART_NUMBER_STRING_LENGTH:
+                raise RuntimeError('ECU Diagnostic Part Number is to short!')
 
-        # Extracting the last part of diagnostic part nummer (AA, AB, ...)
-        ecu_diag_part_num_version_hex = ecu_diag_part_num_full[8:PART_NUMBER_STRING_LENGTH]
-        # Decoding from hex to ASCII
-        ecu_diag_part_num_version = bytearray.fromhex(ecu_diag_part_num_version_hex).decode()
-        # Putting it back together to complete string again
-        ecu_diag_part_num_full = ecu_diag_part_num_full[0:8] + ecu_diag_part_num_version
+            # Extracting the last part of diagnostic part nummer (AA, AB, ...)
+            ecu_diag_part_num_version_hex = ecu_diag_part_num_full[8:PART_NUMBER_STRING_LENGTH]
+            # Decoding from hex to ASCII
+            ecu_diag_part_num_version = bytearray.fromhex(ecu_diag_part_num_version_hex).decode()
+            # Putting it back together to complete string again
+            ecu_diag_part_num_full = ecu_diag_part_num_full[0:8] + ecu_diag_part_num_version
 
-        # Comparing part numbers
-        if sddb_cleaned_part_number == ecu_diag_part_num_full:
-            message = ('Diagnostic part number is matching! Expected ' +
-                       sddb_cleaned_part_number + ', and got ' + ecu_diag_part_num_full)
-            match = True
-        else:
-            message = (
-                'Diagnostic part number is NOT matching! Expected ' +
-                sddb_cleaned_part_number + ', but got ' + ecu_diag_part_num_full)
+            # Comparing part numbers
+            if sddb_cleaned_part_number == ecu_diag_part_num_full:
+                message = ('Diagnostic part number is matching! Expected ' +
+                           sddb_cleaned_part_number + ', and got ' + ecu_diag_part_num_full)
+                match = True
+            else:
+                message = (
+                    'Diagnostic part number is NOT matching! Expected ' +
+                    sddb_cleaned_part_number + ', but got ' + ecu_diag_part_num_full)
 
-        logging.debug('-------------------------------------------------')
-        logging.debug(message)
-        logging.debug(did_dict)
-        logging.debug('-------------------------------------------------')
+            logging.debug('-------------------------------------------------')
+            logging.debug(message)
+            logging.debug(did_dict)
+            logging.debug('-------------------------------------------------')
     except RuntimeError as runtime_error:
         message = runtime_error
     return match, message
@@ -548,10 +549,14 @@ def compare(scaled_value, compare_value):
                 Result: eval('0x40==0x40') which gives True
     '''
     improved_compare_value = compare_value
+    result = False # If not True, then default is False
     # To be able to compare we need to change '=' to '=='
     if '=' in compare_value:
         improved_compare_value = compare_value.replace('=', '==')
-    result = eval(str(scaled_value) + str(improved_compare_value))
+    try:
+        result = eval(str(scaled_value) + str(improved_compare_value))
+    except NameError as nameError:
+        logging.error(nameError)
     return result
 
 
