@@ -29,4 +29,4 @@ import sys
 logging.basicConfig(format='%(asctime)s - %(message)s',
                     stream=sys.stdout, level=logging.DEBUG)
 
-logging.info("Testcase result: To be inspected")
+logging.info("Testcase result: Tested implicitly by REQ_53957")
