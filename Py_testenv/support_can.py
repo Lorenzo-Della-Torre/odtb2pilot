@@ -895,30 +895,30 @@ class Support_CAN:
         """
         # Import Parameters if REQPROD name are compatible
         pattern_req = re.match(r"\w+_(?P<reqprod>\d{3,})_\w+", sys.argv[0])
-
         listOfFiles = os.listdir('./parameters_yml')
-        for entry in listOfFiles:
-            entry_req = re.match(r"\w+_(?P<reqprod>\d{3,})\.\w+", entry)
-            if entry_req.group('reqprod') == pattern_req.group('reqprod'):
-                # extract yaml data from directory
-                with open('./parameters_yml/' + entry) as f:
-                    data = yaml.safe_load(f)
-                    # intitialize a tuple
-                    value = dict()
-                    for key, arg in kwargs.items():
-                        # if yaml key return value from yaml file
-                        if data[str(argv[0])].get(key) is not None:
-                            value[key] = data[str(argv[0])].get(key)
-                            #convert some values to bytes
-                            if key in ('mode', 'mask', 'did'):
-                                value[key] = bytes(value[key], 'utf-8')
-                        # else if yaml key not present return default value
-                        elif arg is not None:
-                            value[key] = arg
-                        else:
-                            logging.info("the key '{}' doesn't return any value".format(key))
-                    # return a tuple with yaml/default values
-                    return value
+        # intitialize a tuple
+        value = dict()
+        try:
+            for entry in listOfFiles:
+                entry_req = re.match(r"\w+_(?P<reqprod>\d{3,})\.\w+", entry)
+                if entry_req.group('reqprod') == pattern_req.group('reqprod'):
+                    entry_good = entry
+            # extract yaml data from directory
+            with open('./parameters_yml/' + entry_good) as f:
+                data = yaml.safe_load(f)
+        except:
+            print("The pattern {} is not present in the directory\n".format(pattern_req.group('reqprod')))
+            sys.exit(1)
+        for key, arg in kwargs.items():
+            # if yaml key return value from yaml file
+            if data[str(argv[0])].get(key) is not None:
+                value[key] = data[str(argv[0])].get(key)
+                #convert some values to bytes
+                if key in('mode', 'mask', 'did'):
+                    value[key] = bytes(value[key], 'utf-8')
+            else:
+                value[key] = arg
+        return value
 
     def can_m_send(self, name, message, mask):
         """
