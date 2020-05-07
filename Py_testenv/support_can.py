@@ -906,8 +906,9 @@ class Support_CAN:
             # extract yaml data from directory
             with open('./parameters_yml/' + entry_good) as f:
                 data = yaml.safe_load(f)
-        except:
-            print("The pattern {} is not present in the directory\n".format(pattern_req.group('reqprod')))
+        except IOError:
+            logging.info("The pattern {} is not present in the directory\n"\
+                  .format(pattern_req.group('reqprod')))
             sys.exit(1)
         for key, arg in kwargs.items():
             # if yaml key return value from yaml file
