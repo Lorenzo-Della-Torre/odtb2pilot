@@ -38,7 +38,8 @@ import binascii
 
 from support_can import Support_CAN
 SC = Support_CAN()
-
+#param_ = dict()
+#can_param = dict()
 
 class Support_test_ODTB2:
     """
@@ -48,7 +49,8 @@ class Support_test_ODTB2:
     def parse_some_args():
         ''' Get the command line input, using the defined flags. '''
         parser = argparse.ArgumentParser(description='Execute testscript')
-        parser.add_argument("--config_file", help="Input config file which overrides the default one",
+        parser.add_argument("--config_file",\
+                            help="Input config file which overrides the default one",\
                             type=str, action='store', dest='conf_file', required=False,)
         ret_args = parser.parse_args()
         return ret_args
@@ -103,21 +105,19 @@ class Support_test_ODTB2:
         return testresult
 
 
-    def teststep(self, stub, m_send, m_receive_extra,
-                 can_send="", can_rec="", can_nspace="",
-                 step_no='', purpose="", timeout=5,
-                 min_no_messages=-1, max_no_messages=-1,
+    def teststep(self, can_param, step_no, param_,
                  clear_old_mess=True, wait_max=False):
         """
         teststep for ODTB2 testenvironment
-
+        step_no='', purpose="", timeout=5, min_no_messages=-1,
+                 max_no_messages=-1,
         Parameter:
-        stub
-        m_send
-        m_receive_extra
+        Param.stub
+        Param.m_send
+        Param.m_receive_extra
         can_send
         can_rec
-        can_nspace
+        Param.can_nspace
 
         Optional parameter:
         step_no         integer teststep
@@ -133,70 +133,86 @@ class Support_test_ODTB2:
         testresult      bool    result of teststep is as expected
         """
         testresult = True
+        debug = False
 
         #print("teststep called")
         SC.clear_old_CF_frames()
 
         if clear_old_mess:
-            print("clear old messages")
+            if debug:
+                print("clear old messages")
             SC.clear_all_can_frames()
             SC.clear_all_can_messages()
 
-        self.print_test_purpose(step_no, purpose)
+        self.print_test_purpose(step_no, param_["purpose"])
 
         # wait for messages
         # define answer to expect
-        print("build answer can_frames to receive")
-        can_answer = SC.can_receive(m_send, m_receive_extra)
-        print("can_frames to receive", can_answer)
+        if debug:
+            print("build answer can_frames to receive")
+        can_answer = SC.can_receive(can_param["m_send"], can_param["mr_extra"])
+        if debug:
+            print("can_frames to receive", can_answer)
         # message to send
         wait_start = time.time()
-        print("To send:   [", time.time(), ", ", can_send, ", ", m_send.hex().upper(), "]")
+        if debug:
+            print("To send:   [", time.time(), ", ",\
+                  can_param["can_send"], ", ",\
+                  (can_param["m_send"]).hex().upper(), "]")
         #print("test send CAN_MF: ")
-        #SC.t_send_signal_CAN_MF(stub, can_send, can_rec, can_nspace, m_send)
+        #SC.t_send_signal_CAN_MF(Param.stub,\
+        #                        Param.can_send, Param.can_rec,\
+        #                        Param.can_nspace, Param.m_send)
         SC.clear_all_can_messages()
-        SC.t_send_signal_CAN_MF(stub, can_send, can_rec, can_nspace, m_send, True, 0x00)
+        SC.t_send_signal_CAN_MF(can_param["stub"],\
+                                can_param["can_send"], can_param["can_rec"],\
+                                can_param["can_nspace"], can_param["m_send"],\
+                                True, 0x00)
         #wait timeout for getting subscribed data
-        if (wait_max or (max_no_messages == -1)):
-            time.sleep(timeout)
-            SC.update_can_messages(can_rec)
+        if (wait_max or (param_["max_no_messages"] == -1)):
+            time.sleep(param_["timeout"])
+            SC.update_can_messages(can_param["can_rec"])
         else:
-            SC.update_can_messages(can_rec)
-            #print("len_can_mess: ", (len(SC.can_messages[can_rec])))
+            SC.update_can_messages(can_param["can_rec"])
+            #print("len_can_mess: ", (len(SC.can_messages[Param.can_rec])))
             #print("min_no_mess:  ", min_no_messages)
-            while((time.time()-wait_start <= timeout)
-                  and (len(SC.can_messages[can_rec]) < max_no_messages)
+            while((time.time()-wait_start <= param_["timeout"])
+                  and (len(SC.can_messages[can_param["can_rec"]]) < param_["max_no_messages"])
                   #and (not(SC.clear_all_can_messages()
-                  #      and SC.update_can_messages(can_rec))
+                  #      and SC.update_can_messages(Param.can_rec))
                   #    )
                  ):
                 SC.clear_all_can_messages()
-                SC.update_can_messages(can_rec)
+                SC.update_can_messages(can_param["can_rec"])
                 #print("can_mess_read")
-                #print("can_franes: ", SC.can_frames[can_rec])
-                #print("can_mess:   ", SC.can_messages[can_rec])
+                #print("can_franes: ", SC.can_frames[Param.can_rec])
+                #print("can_mess:   ", SC.can_messages[Param.can_rec])
 
         #print("all can frames : ", SC.can_frames)
-        #print("all can frames for receiver : ", SC.can_frames[can_rec])
+        #print("all can frames for receiver : ", SC.can_frames[Param.can_rec])
 
         #SC.clear_all_can_messages()
-        #SC.update_can_messages(can_rec)
+        #SC.update_can_messages(Param.can_rec)
 
         #print("all can messages : ", SC.can_messages)
-        print("rec can messages : ", SC.can_messages[can_rec])
-        if len(SC.can_messages[can_rec]) < min_no_messages:
-            print("Bad: min_no_messages not reached: ", len(SC.can_messages[can_rec]))
+        if debug:
+            print("rec can messages : ", SC.can_messages[can_param["can_rec"]])
+        if len(SC.can_messages[can_param["can_rec"]]) < param_["min_no_messages"]:
+            print("Bad: min_no_messages not reached: ",\
+                  len(SC.can_messages[can_param["can_rec"]]))
             testresult = False
-        elif max_no_messages >= 0 and len(SC.can_messages[can_rec]) > max_no_messages:
-            print("Bad: max_no_messages ", len(SC.can_messages[can_rec]))
+        elif param_["max_no_messages"] >= 0 and\
+                len(SC.can_messages[can_param["can_rec"]]) > param_["max_no_messages"]:
+            print("Bad: max_no_messages ", len(SC.can_messages[can_param["can_rec"]]))
             testresult = False
         else:
-            #print("number messages ", len(SC.can_messages[can_rec]))
-            #if len(SC.can_messages[can_rec]) > 0:
-            if SC.can_messages[can_rec]:
-                if min_no_messages >= 0:
-                    testresult = testresult and self.test_message(SC.can_messages[can_rec],
-                                                                  can_answer.hex().upper())
+            #print("number messages ", len(SC.can_messages[Param.can_rec]))
+            #if len(SC.can_messages[Param.can_rec]) > 0:
+            if SC.can_messages[can_param["can_rec"]]:
+                if param_["min_no_messages"] >= 0:
+                    testresult = testresult and\
+                        self.test_message(SC.can_messages[can_param["can_rec"]],\
+                                          can_answer.hex().upper())
         print("Step ", step_no, ": teststatus:", testresult, "\n")
         return testresult
 
@@ -265,28 +281,28 @@ class Support_test_ODTB2:
         retval = ""
         pos1 = message.find('F121', pos)
         retval = retval + "PBL_Diagnostic_Database_Part_Number '"\
-                        + self.PP_PartNumber (message[ pos1+4: pos1+18], message[ pos1:pos1+4]\
+                        + self.PP_PartNumber(message[pos1+4: pos1+18], message[pos1:pos1+4]\
                         + ' ')\
                         + "'\n"
         pos1 = message.find('F12A', pos1+18)
         retval = retval + "ECU_Core_Assembly PN                '"\
-                        + self.PP_PartNumber (message[ pos1+4: pos1+18], message[ pos1:pos1+4]\
+                        + self.PP_PartNumber(message[pos1+4: pos1+18], message[pos1:pos1+4]\
                         + ' ')\
                         + "'\n"
         pos1 = message.find('F12B', pos1+18)
         retval = retval + "ECU_Delivery_Assembly PN            '"\
-                        + self.PP_PartNumber (message[ pos1+4: pos1+18], message[ pos1:pos1+4]\
+                        + self.PP_PartNumber(message[pos1+4: pos1+18], message[pos1:pos1+4]\
                         + ' ')\
                         + "'\n"
         pos1 = message.find('F18C', pos1+18)
         retval = retval + "ECU_Serial_Number                   '"\
-                        + message[ pos1:pos1+4]\
+                        + message[pos1:pos1+4]\
                         + ' '\
-                        + message[ pos1+4: pos1+12]\
+                        + message[pos1+4: pos1+12]\
                         + "'\n"
         pos1 = message.find('F125', pos1+12)
         retval = retval + "PBL_Sw_part_Number                  '"\
-                        + self.PP_PartNumber (message[ pos1+4: pos1+18], message[ pos1:pos1+4]\
+                        + self.PP_PartNumber(message[pos1+4: pos1+18], message[pos1:pos1+4]\
                         + ' ')\
                         + "'\n"
         return retval
@@ -299,27 +315,27 @@ class Support_test_ODTB2:
         retval = ""
         pos1 = message.find('F122', pos)
         retval = retval + "SBL_Diagnostic_Database_Part_Number '"\
-                        + self.PP_PartNumber (message[ pos1+4: pos1+18], message[ pos1:pos1+4]\
+                        + self.PP_PartNumber(message[pos1+4: pos1+18], message[pos1:pos1+4]\
                         + ' ')\
                         + "'\n"
         pos1 = message.find('F12A', pos1+18)
         retval = retval + "ECU_Core_Assembly PN                '"\
-                        + self.PP_PartNumber (message[ pos1+4: pos1+18], message[ pos1:pos1+4]\
+                        + self.PP_PartNumber(message[pos1+4: pos1+18], message[pos1:pos1+4]\
                         + ' ')\
                         + "'\n"
         pos1 = message.find('F12B', pos1+18)
-        retval = retval + self.PP_PartNumber (message[ pos1+4: pos1+18], message[ pos1:pos1+4]\
+        retval = retval + self.PP_PartNumber(message[pos1+4: pos1+18], message[pos1:pos1+4]\
                         + ' ')\
                         + "'\n"
         pos1 = message.find('F18C', pos1+18)
         retval = retval + "ECU_Serial_Number                   '"\
-                        + message[ pos1:pos1+4]\
+                        + message[pos1:pos1+4]\
                         + ' '\
-                        + message[ pos1+4: pos1+12]\
+                        + message[pos1+4: pos1+12]\
                         + "'\n"
         pos1 = message.find('F124', pos1+12)
         retval = retval + "SBL_Sw_version_Number               '"\
-                        + self.PP_PartNumber (message[ pos1+4: pos1+18], message[ pos1:pos1+4]\
+                        + self.PP_PartNumber(message[pos1+4: pos1+18], message[pos1:pos1+4]\
                         + ' ')\
                         + "'\n"
         return retval
@@ -678,7 +694,7 @@ class Support_test_ODTB2:
         r_3 = r_3[3:]
         #print(r_3)
         r = hex(int(('0x' + r_1 + r_2 + r_3), 16))
-        print(r)
+        #print(r)
         return bytes.fromhex(r[2:])
 
     def PP_StringTobytes(self, i, num):
@@ -695,13 +711,15 @@ class Support_test_ODTB2:
         """
         crc16
         """
+        mask_crc16_citt = 0x1021
         data = bytearray(data)
+        # crc initial value
         crc = 0xFFFF
         for b in data:
             crc ^= b << 8
             for _ in range(8):
                 if crc & 0x8000:
-                    crc = (crc << 1) ^ 0x1021
+                    crc = (crc << 1) ^ mask_crc16_citt
                 else:
                     crc = crc << 1
             crc &= 0xffff

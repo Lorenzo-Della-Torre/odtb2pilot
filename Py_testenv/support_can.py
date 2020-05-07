@@ -25,10 +25,12 @@
 #from datetime import datetime
 import time
 #import logging
-#import os
+import os
 import threading
 from threading import Thread
 import sys
+import yaml
+import re
 #import random
 import grpc
 #import string
@@ -886,6 +888,38 @@ class Support_CAN:
                     #print("can_mess_updated ", can_mess_updated)
             #print("all can messages : ", self.can_messages)
         return can_mess_updated
+        
+    def Extract_Parameter_yml(self, *argv, **kwargs):
+        """
+        Extract requested data from a Parameter dictionary from yaml.
+        """
+        # Import Parameters if REQPROD name are compatible
+        pattern_req = re.match(r"\w+_(?P<reqprod>\d{3,})_\w+", sys.argv[0])
+        listOfFiles = os.listdir('./parameters_yml')
+        # intitialize a tuple
+        value = dict()
+        try:
+            for entry in listOfFiles:
+                entry_req = re.match(r"\w+_(?P<reqprod>\d{3,})\.\w+", entry)
+                if entry_req.group('reqprod') == pattern_req.group('reqprod'):
+                    entry_good = entry
+            # extract yaml data from directory
+            with open('./parameters_yml/' + entry_good) as f:
+                data = yaml.safe_load(f)
+        except IOError:
+            logging.info("The pattern {} is not present in the directory\n"\
+                  .format(pattern_req.group('reqprod')))
+            sys.exit(1)
+        for key, arg in kwargs.items():
+            # if yaml key return value from yaml file
+            if data[str(argv[0])].get(key) is not None:
+                value[key] = data[str(argv[0])].get(key)
+                #convert some values to bytes
+                if key in('mode', 'mask', 'did'):
+                    value[key] = bytes(value[key], 'utf-8')
+            else:
+                value[key] = arg
+        return value
 
     def can_m_send(self, name, message, mask):
         """

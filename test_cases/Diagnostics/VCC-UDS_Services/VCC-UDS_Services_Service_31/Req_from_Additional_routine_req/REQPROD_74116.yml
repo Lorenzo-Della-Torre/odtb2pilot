@@ -1,0 +1,21 @@
+main:
+        can_send: Vcu1ToBecmFront1DiagReqFrame
+        can_receive: BecmToVcu1Front1DiagResFrame
+step_0:
+        timeout: 5
+step_1:
+        timeout: 1
+        purpose: verify RoutineControl start(01) is sent in Extended Session
+        min_no_messages": -1
+        max_no_messages: -1
+        mode: "\x02\x06"
+        mask: "\x01"
+        routine_result: Type1,Completed
+step_2:
+        timeout: 1
+step_3:
+        timeout: 1
+step_4:
+        timeout: 1
+step_5:
+        timeout: 1
