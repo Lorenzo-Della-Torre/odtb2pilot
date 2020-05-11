@@ -22,24 +22,26 @@
 """The Python implementation of the gRPC route guide client."""
 
 import time
-
 import logging
 import sys
 
-from support_can import Support_CAN
-from support_test_odtb2 import Support_test_ODTB2
-from support_SecAcc import Support_Security_Access
-
+from support_can_hw import SupportCanHW
+from support_carcom import SupportCARCOM
+from support_can import SupportCAN
+from support_test_odtb2 import SupportTestODTB2
+from support_sec_acc import SupportSecurityAccess
 from support_LZSS import LZSS_Encoder
 
-SC = Support_CAN()
-SUTE = Support_test_ODTB2()
-SSA = Support_Security_Access()
-
+SC = SupportCAN()
+SC_HW = SupportCanHW()
+S_CARCOM = SupportCARCOM()
+SUTE = SupportTestODTB2()
+SSA = SupportSecurityAccess()
 LZSS = LZSS_Encoder()
 
-#class for supporting Secondary Bootloader Download
-class Support_SBL:
+class SupportSBL:
+    # Disable the too-many-public-methods violation. Not sure how to split it
+    # pylint: disable=too-many-public-methods
     """
     class for supporting Secondary Bootloader Download
     """
@@ -53,22 +55,39 @@ class Support_SBL:
             self._df = []
         else:
             self._df = df
-            
+
+
     def show_filenames(self):
+        """
+        show_filenames
+        """
         print("SBL: ", self._sbl)
         print("ESS: ", self._ess)
         print("DF:  ", self._df)
-    
+
+
     def get_sbl_filename(self):
+        """
+        get_sbl_filename
+        """
         return self._sbl
+
+
     def get_ess_filename(self):
+        """
+        get_ess_filename
+        """
         return self._ess
+
+
     def get_df_filenames(self):
+        """
+        get_df_filenames
+        """
         return self._df
 
-    def transfer_data_block(self, offset, data, data_format,\
-                            stub, can_send, can_rec, can_nspace,\
-                            step_no, purpose):
+
+    def transfer_data_block(self, data_param, can_param, step_no, purpose):
         """
             transfer_data_block
             support function to transfer
@@ -78,32 +97,42 @@ class Support_SBL:
 
             step_no, purpose:
                 used for logging purposes
+
+            Replaced:
+            can_param["stub"] = stub
+            can_param["nspace"] = can_nspace
+            can_param["can_send"] = can_send
+            can_param["can_rec"] = can_rec
+            data_param["offset"] = offset
+            data_param["data"] = data
+            data_param["data_format"] = data_format
+            data_param["block_data"] = block_addr_b
+            data_param["block_len"] = block_len_b
+            data_param["nbl"] = nbl
         """
         # Iteration to Download the SBL by blocks
         if self._debug:
-            print("offset: ", offset, "len(data): ", len(data))
-        while offset < len(data):
+            print("offset: ", data_param["offset"], "len(data): ", len(data_param["data"]))
+        while data_param["offset"] < len(data_param["data"]):
             # Extract data block
-            offset, block_data, block_addr, block_len, block_crc16 = (
-                self.block_data_extract(offset, data))
+            data_param["offset"], block_data, block_addr, block_len, block_crc16 = (
+                self.block_data_extract(data_param["offset"], data_param["data"]))
 
-            #block_addr_x = int.from_bytes(block_addr_by, 'big')
-            #block_len_x = int.from_bytes(block_len_by, 'big')
-            block_addr_b = block_addr.to_bytes(4, 'big')
-            block_len_b = block_len.to_bytes(4, 'big')
+            data_param["block_data"] = block_addr.to_bytes(4, 'big')
+            data_param["block_len"] = block_len.to_bytes(4, 'big')
 
             #print("FileHeader   CRC calculation CRC16: {0:04X}".format(SUTE.crc16(block_data)))
 
             #decompress block_data if needed
             if self._debug:
-                print("DataFormat block: ", data_format.hex())
-            if data_format.hex() == '00':
+                print("DataFormat block: ", data_param["data_format"].hex())
+            if data_param["data_format"].hex() == '00':
                 decompr_data = block_data
-            elif data_format.hex() == '10':
+            elif data_param["data_format"].hex() == '10':
                 decompr_data = b''
                 decompr_data = LZSS.decode_barray(block_data)
             else:
-                print("Unknown compression format:", data_format.hex())
+                print("Unknown compression format:", data_param["data_format"].hex())
 
             if self._debug:
                 print("Header       CRC16 block_data:  {0:04X}".format(block_crc16))
@@ -113,20 +142,16 @@ class Support_SBL:
 
             if SUTE.crc16(decompr_data) == block_crc16:
                 # Request Download
-                testresult, nbl =\
-                    self.request_block_download(stub, can_send, can_rec,
-                                                can_nspace, step_no, purpose,
-                                                block_addr_b, block_len_b, data_format)
-                #testresult = testresult and testresultt
+                testresult, data_param["nbl"] =\
+                    self.request_block_download(can_param, step_no, purpose, data_param)
+
                 # Flash blocks to BECM with transfer data service 0x36
                 testresult = testresult and\
-                             self.flash_blocks(nbl, stub, can_send, can_rec, can_nspace,
-                                               step_no, purpose, block_len, block_data)
+                             self.flash_blocks(can_param, step_no, purpose, data_param)
 
                 #Transfer data exit with service 0x37
                 testresult = testresult and\
-                             self.transfer_data_exit(stub, can_send, can_rec, can_nspace,
-                                                     step_no, purpose)
+                             self.transfer_data_exit(can_param, step_no, purpose)
             else:
                 print("CRC doesn't match after decompression")
                 print("Header       CRC16 block_data:  {0:04X}".format(block_crc16))
@@ -136,204 +161,220 @@ class Support_SBL:
                 testresult = False
         return testresult
 
+
     # Support Function for flashing Secondary Bootloader SW
-    def sbl_download(self, stub, file_n, can_send="", can_rec="", can_nspace="", step_no='',
-                     purpose=""):
+    def sbl_download(self, file_n, can_param, step_no='', purpose=""):
         """
         SBL Download
-        """
-        testresult = True
-        purpose = "SBL Download"
-        # Read vbf file for SBL download
-        offset, data, sw_signature, call, data_format = self.read_vbf_file_sbl(file_n)
 
-        testresult = testresult and self.transfer_data_block(offset, data, data_format,\
-                                                            stub, can_send, can_rec, can_nspace,\
-                                                            step_no, purpose)
+        Replaced:
+        can_param["stub"] = stub
+        can_param["nspace"] = can_nspace
+        can_param["can_send"] = can_send
+        can_param["can_rec"] = can_rec
+        data_param["offset"] = offset
+        data_param["data"] = data
+        data_param["data_format"] = data_format
+        """
+        purpose = "SBL Download"
+        data_param = dict()
+
+        # Read vbf file for SBL download
+        data_param["offset"], data_param["data"], sw_signature, call, data_param["data_format"] =\
+            self.read_vbf_file_sbl(file_n)
+
+        testresult = self.transfer_data_block(data_param, can_param, step_no, purpose)
+
         #Check memory
-        testresult = testresult and self.check_memory(stub, can_send, can_rec, can_nspace, step_no,
-                                                      purpose, sw_signature)
+        testresult = testresult and self.check_memory(can_param, step_no, purpose, sw_signature)
 
         return testresult, call
 
+
     # Support Function for flashing SW Parts
-    def sw_part_download(self, stub, file_n, can_send="", can_rec="", can_nspace="", step_no='',
-                         purpose=""):
+    def sw_part_download(self, file_n, can_param, step_no='', purpose=""):
         """
         Software Download
-        """
-        #testresult = True
 
+        Replaced:
+        can_param["stub"] = stub
+        can_param["nspace"] = can_nspace
+        can_param["can_send"] = can_send
+        can_param["can_rec"] = can_rec
+        """
         print("sw_part_download filename: ", file_n)
         testresult, sw_signature =\
-            self.sw_part_download_no_check(stub, file_n, can_send, can_rec, can_nspace,\
-                                           step_no, purpose\
-                                          )
-
+            self.sw_part_download_no_check(file_n, can_param, step_no, purpose)
         # Check memory
-        testresult = testresult and self.check_memory(stub, can_send, can_rec, can_nspace,\
-                                                      step_no, purpose,\
-                                                      sw_signature)
+        testresult = testresult and self.check_memory(can_param, step_no, purpose, sw_signature)
         return testresult
 
+
     # Support Function for flashing SW Parts without Check
-    def sw_part_download_no_check(self, stub, file_n,\
-                                  can_send="", can_rec="", can_nspace="",\
-                                  step_no='', purpose=""):
+    def sw_part_download_no_check(self, file_n, can_param, step_no='', purpose=""):
         """
         Software Download
+
+        Replaced:
+        can_param["stub"] = stub
+        can_param["nspace"] = can_nspace
+        can_param["can_send"] = can_send
+        can_param["can_rec"] = can_rec
+        data_param["offset"] = offset
+        data_param["off"] = off
+        data_param["data"] = data
+        data_param["data_format"] = data_format
+        data_param["erase"] = erase
         """
-        #testresult = True
         purpose = "Software Download"
+        data_param = dict()
+
         # Read vbf file for SBL download
         print("sw_part_download_no_check filename: ", file_n)
-        offset, off, data, sw_signature, data_format, erase = self.read_vbf_file(file_n)
+        data_param["offset"], data_param["off"], data_param["data"], sw_signature,\
+            data_param["data_format"], data_param["erase"] = self.read_vbf_file(file_n)
 
         # Erase Memory
-        testresult = self.flash_erase(stub, can_send, can_rec, can_nspace,
-                                      step_no, purpose, erase, data, off)
+        testresult = self.flash_erase(can_param, step_no, purpose, data_param)
         # Iteration to Download the Software by blocks
-
-        testresult = testresult and self.transfer_data_block(offset, data, data_format,\
-                                                            stub, can_send, can_rec, can_nspace,\
-                                                            step_no, purpose)
-
+        testresult = testresult and self.transfer_data_block(data_param, can_param, step_no,
+                                                             purpose)
         return testresult, sw_signature
 
+
     # Support Function for Flashing and activate Secondary Bootloader from Default session
-    def sbl_activation_def(self, stub, can_send="", can_rec="", can_nspace="", step_no='',
-                           purpose=""):
+    def sbl_activation_def(self, can_param, step_no='', purpose=""):
         """
         function used for BECM in Default or Extended mode
+
+        Replaced:
+        can_param["stub"] = stub
+        can_param["nspace"] = can_nspace
+        can_param["can_send"] = can_send
+        can_param["can_rec"] = can_rec
         """
 
-
         # verify RoutineControlRequest is sent for Type 1
-
-        ts_param = {"stub" : stub,\
-                    "m_send" : SC.can_m_send("RoutineControlRequestSID", b'\x02\x06', b'\x01'),\
-                    "mr_extra" : '',\
-                    "can_send" : can_send,\
-                    "can_rec"  : can_rec,\
-                    "can_nspace" : can_nspace\
-                }
-        extra_param = {"purpose" : "verify RoutineControl start are sent for Check Programming Preconditions",\
-                    "timeout" : 0.05,\
-                    "min_no_messages" : -1,\
-                    "max_no_messages" : -1
+        ts_param = {"stub" : can_param["stub"],
+                    "m_send" : S_CARCOM.can_m_send("RoutineControlRequestSID",
+                                                   b'\x02\x06', b'\x01'),
+                    "mr_extra" : '',
+                    "can_send" : can_param["can_send"],
+                    "can_rec"  : can_param["can_rec"],
+                    "can_nspace" : can_param["nspace"]
                     }
+        extra_param = {"purpose" : \
+                       "verify RoutineControl start are sent for Check Programming Preconditions",
+                       "timeout" : 0.05,
+                       "min_no_messages" : -1,
+                       "max_no_messages" : -1
+                      }
 
-        testresult = SUTE.teststep(ts_param,\
-                                   step_no, extra_param)
-        #testresult = testresult and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-        #                                          can_rec, can_nspace, step_no, purpose,
-        #                                          timeout, min_no_messages, max_no_messages)
-        logging.info(SC.can_messages[can_rec])
+        testresult = SUTE.teststep(ts_param, step_no, extra_param)
+        logging.info(SC.can_messages[can_param["can_rec"]])
         testresult = testresult and (
-            SUTE.PP_Decode_Routine_Control_response(SC.can_messages[can_rec][0][2],
+            SUTE.pp_decode_routine_control_response(SC.can_messages[can_param["can_rec"]][0][2],
                                                     'Type1,Completed'))
 
         # Change to Programming session
 
-        ts_param = {"stub" : stub,\
-                    "m_send" : SC.can_m_send("DiagnosticSessionControl", b'\x02', ""),\
-                    "mr_extra" : '',\
-                    "can_send" : can_send,\
-                    "can_rec"  : can_rec,\
-                    "can_nspace" : can_nspace\
-                }
-        extra_param = {"purpose" : "Change to Programming session(02) from default",\
-                    "timeout" : 1,\
-                    "min_no_messages" : -1,\
-                    "max_no_messages" : -1
-                    }
+        ts_param = {"stub" : can_param["stub"],
+                    "m_send" : S_CARCOM.can_m_send("DiagnosticSessionControl", b'\x02', ""),
+                    "mr_extra" : '',
+                    "can_send" : can_param["can_send"],
+                    "can_rec"  : can_param["can_rec"],
+                    "can_nspace" : can_param["nspace"]
+                   }
+        extra_param = {"purpose" : "Change to Programming session(02) from default",
+                       "timeout" : 1,
+                       "min_no_messages" : -1,
+                       "max_no_messages" : -1
+                      }
 
-        testresult = testresult and SUTE.teststep(ts_param,\
-                                                  step_no, extra_param)
-        testresult = testresult and SUTE.teststep(ts_param,\
-                                                  step_no, extra_param)
-
-        testresult = testresult and self.sbl_activation_prog(stub, can_send, can_rec, can_nspace,\
-                                            step_no, purpose)
-
+        testresult = testresult and SUTE.teststep(ts_param, step_no, extra_param)
+        testresult = testresult and SUTE.teststep(ts_param, step_no, extra_param)
+        testresult = testresult and self.sbl_activation_prog(can_param, step_no, purpose)
         return testresult
 
+
     # Support Function for Flashing and activate Secondary Bootloader from Programming session
-    def sbl_activation_prog(self, stub, can_send="", can_rec="", can_nspace="", step_no='',
-                            purpose=""):
+    def sbl_activation_prog(self, can_param, step_no='', purpose=""):
         """
-        function used for BECM in forced Programming mode
+        Function used for BECM in forced Programming mode
+
+        Replaced:
+        can_param["stub"] = stub
+        can_param["nspace"] = can_nspace
+        can_param["can_send"] = can_send
+        can_param["can_rec"] = can_rec
         """
-        testresult = True
+        fc_param = dict()
+        fc_param["delay"] = 0 #no wait
+        fc_param["flag"] = 48 #continue send
+        fc_param["auto"] = False
 
         # Security Access Request SID
-        testresult = testresult and SSA.activation_security_access(stub, can_send, can_rec,
-                                                                   can_nspace, step_no, purpose)
-
+        testresult = SSA.activation_security_access(can_param, step_no, purpose)
         # SBL Download
         purpose = 'SBL Download'
-        tresult, call = self.sbl_download(stub, self._sbl,\
-                                          can_send, can_rec, can_nspace,\
-                                          step_no, purpose)
+        tresult, call = self.sbl_download(self._sbl, can_param, step_no, purpose)
         testresult = testresult and tresult
 
         # Activate SBL
         purpose = "Activation of SBL"
-        testresult = testresult and self.activate_sbl(stub, can_send, can_rec, can_nspace,
-                                                      step_no, purpose, call)
-
+        testresult = testresult and self.activate_sbl(can_param, step_no, purpose, call)
         return  testresult
 
+
     # Support Function to select Support functions to use for activating SBL based on actual mode
-    def sbl_activation(self, stub, can_send="", can_rec="", can_nspace="", step_no='',
-                       purpose=""):
+    def sbl_activation(self, can_param, step_no='', purpose=""):
         """
         Function used to activate the Secondary Bootloader
+
+        Replaced:
+        can_param["stub"] = stub
+        can_param["nspace"] = can_nspace
+        can_param["can_send"] = can_send
+        can_param["can_rec"] = can_rec
         """
         testresult = True
 
-
         # verify session
+        ts_param = {"stub" : can_param["stub"],
+                    "m_send" : S_CARCOM.can_m_send("ReadDataByIdentifier", b'\xF1\x86', ""),
+                    "mr_extra" : '',
+                    "can_send" : can_param["can_send"],
+                    "can_rec"  : can_param["can_rec"],
+                    "can_nspace" : can_param["nspace"]
+                   }
+        extra_param = {"purpose" : "Verify Session",
+                       "timeout" : 1,
+                       "min_no_messages" : -1,
+                       "max_no_messages" : -1
+                      }
 
-        ts_param = {"stub" : stub,\
-                    "m_send" : SC.can_m_send("ReadDataByIdentifier", b'\xF1\x86', ""),\
-                    "mr_extra" : '',\
-                    "can_send" : can_send,\
-                    "can_rec"  : can_rec,\
-                    "can_nspace" : can_nspace\
-                }
-        extra_param = {"purpose" : "Verify Session",\
-                    "timeout" : 1,\
-                    "min_no_messages" : -1,\
-                    "max_no_messages" : -1
-                    }
-
-        SUTE.teststep(ts_param,\
-                      step_no, extra_param)
+        SUTE.teststep(ts_param, step_no, extra_param)
 
 
-        logging.info(SC.can_messages[can_rec])
+        logging.info(SC.can_messages[can_param["can_rec"]])
 
-        if SUTE.test_message(SC.can_messages[can_rec],
-                             '62F18601') or SUTE.test_message(SC.can_messages[can_rec],
-                                                              '62F18603'):
-            testresult = self.sbl_activation_def(stub, can_send, can_rec, can_nspace,
-                                                 step_no, purpose)
-        elif SUTE.test_message(SC.can_messages[can_rec], '62F18602'):
-            testresult = self.sbl_activation_prog(stub, can_send, can_rec, can_nspace,
-                                                  step_no, purpose)
+        if SUTE.test_message(SC.can_messages[can_param["can_rec"]], '62F18601')\
+            or SUTE.test_message(SC.can_messages[can_param["can_rec"]], '62F18603'):
+            testresult = self.sbl_activation_def(can_param, step_no, purpose)
+        elif SUTE.test_message(SC.can_messages[can_param["can_rec"]], '62F18602'):
+            testresult = self.sbl_activation_prog(can_param, step_no, purpose)
         else:
-            logging.info("error message: %s\n", SC.can_messages[can_rec])
+            logging.info("error message: %s\n", SC.can_messages[can_param["can_rec"]])
         time.sleep(0.1)
         return testresult
 
 
 #------------------------------Support Support SWDL Functions-------------------------------
 
-    #support function for Extracting Completed and compatible Routine Control Response
-    def pp_decode_routine_complete_compatible(self, message):
+    @classmethod
+    def pp_decode_routine_complete_compatible(cls, message):
         """
-        support function for Extracting Completed and compatible Routine Control Response
+        Support function for Extracting Completed and compatible Routine Control Response
         """
         mess_len = len(message)
         if mess_len == 0:
@@ -348,21 +389,20 @@ class Support_SBL:
                 val_ca = 'Not Compatible'
             else:
                 val_ca = 'Wrong Decoding'
-
             if val[39] == '0':
                 val_cl = 'Complete, '
             elif val[39] == '1':
                 val_cl = 'Not Complete, '
             else:
                 val_cl = 'Wrong Decoding'
-
             val_c = val_cl + val_ca
         return val_c
 
-    #support function for Extracting Check Memory Routine Control Response
-    def pp_decode_routine_check_memory(self, message):
+
+    @classmethod
+    def pp_decode_routine_check_memory(cls, message):
         """
-        support function for Extracting Check Memory Routine Control Response
+        Support function for Extracting Check Memory Routine Control Response
         """
         mess_len = len(message)
         if mess_len == 0:
@@ -370,43 +410,35 @@ class Support_SBL:
         else:
             pos = message.find('0212')
             res = message[pos+7:pos+8]
-            #val = "{0:8b}".format(int(res, 16))
-            if res == '0' or '':
-                val_c = 'The verification is passed'
-            elif res == '1':
-                val_c = 'The signed data could not be authenticated'
-                #testresult=False
-            elif res == '2':
-                val_c = 'The public key integrity check failed'
-            elif res == '3':
-                val_c = 'Invalid format of length of th eVerification Block Table'
-            elif res == '4':
-                val_c = '''The address of hash values of the downloaded data blocks
-                           does not match the expected values'''
-            elif res == '5':
-                val_c = 'The blank check failed'
-            elif res == '6':
-                val_c = 'No data downloaded at all, nothing to verify'
-            elif res == '7':
-                val_c = 'Read error during hash calculation over memory content'
-            elif res == '8':
-                val_c = 'ESS content is not valid'
-            elif res == '9':
-                val_c = 'Additional processor failed verification'
-            elif res == 'A':
-                val_c = 'Error storing vaildity status information'
-            elif res == 'B':
-                val_c = 'Certioficate verification failed'
-            elif res == 'C':
-                val_c = 'User definable'
-            else:
-                val_c = 'Wrong Decoding'
+            switcher = {
+                '0' or '': 'The verification is passed',
+                '1': 'The signed data could not be authenticated',
+                '2': 'The public key integrity check failed',
+                '3': 'Invalid format of length of th eVerification Block Table',
+                '4': '', # The address of hash values of the downloaded data blocks
+                         # does not match the expected values''',
+                '5': 'The blank check failed',
+                '6': 'No data downloaded at all, nothing to verify',
+                '7': 'Read error during hash calculation over memory content',
+                '8': 'ESS content is not valid',
+                '9': 'Additional processor failed verification',
+                'A': 'Error storing vaildity status information',
+                'B': 'Certioficate verification failed',
+                'C': 'User definable',
+            }
+            val_c = switcher.get(res, 'Wrong Decoding')
         return val_c
 
-    def check_complete_compatible_routine(self, stub, can_send, can_rec, can_nspace,
-                                          step_no, purpose):
+
+    def check_complete_compatible_routine(self, can_param, step_no, purpose):
         """
         Support function for Routine Complete & Compatible
+
+        Replaced:
+        can_param["stub"] = stub
+        can_param["nspace"] = can_nspace
+        can_param["can_send"] = can_send
+        can_param["can_rec"] = can_rec
         """
 
         # Parameters for FrameControl FC
@@ -416,36 +448,41 @@ class Support_SBL:
         frame_control_flag = 48 #continue send
         frame_control_auto = True
 
-        SC.change_MF_FC(can_send, block_size,\
-                        separation_time, frame_control_delay,\
-                        frame_control_flag, frame_control_auto)
+        fc_param = dict()
+        fc_param["delay"] = frame_control_delay
+        fc_param["flag"] = frame_control_flag
+        fc_param["auto"] = frame_control_auto
 
-        ts_param = {"stub" : stub,\
-                    "m_send" : SC.can_m_send("RoutineControlRequestSID", b'\x02\x05', b'\x01'),\
-                    "mr_extra" : '',\
-                    "can_send" : can_send,\
-                    "can_rec"  : can_rec,\
-                    "can_nspace" : can_nspace\
-                }
-        extra_param = {"purpose" : purpose,\
-                    "timeout" : 1,\
-                    "min_no_messages" : -1,\
-                    "max_no_messages" : -1
-                    }
+        SC_HW.change_mf_fc(can_param["can_send"], block_size, separation_time, fc_param)
 
-        testresult = SUTE.teststep(ts_param,\
-                                   step_no, extra_param)
+        ts_param = {"stub" : can_param["stub"],
+                    "m_send" : S_CARCOM.can_m_send("RoutineControlRequestSID",
+                                                   b'\x02\x05', b'\x01'),
+                    "mr_extra" : '',
+                    "can_send" : can_param["can_send"],
+                    "can_rec"  : can_param["can_rec"],
+                    "can_nspace" : can_param["nspace"]
+                   }
+        extra_param = {"purpose" : purpose,
+                       "timeout" : 1,
+                       "min_no_messages" : -1,
+                       "max_no_messages" : -1
+                      }
+
+        testresult = SUTE.teststep(ts_param, step_no, extra_param)
 
         testresult = testresult and (
-            SUTE.PP_Decode_Routine_Control_response(SC.can_messages[can_rec][0][2],
+            SUTE.pp_decode_routine_control_response(SC.can_messages[can_param["can_rec"]][0][2],
                                                     'Type1,Completed'))
         testresult = testresult and (
-            self.pp_decode_routine_complete_compatible(SC.can_messages[can_rec][0][2]))
-        logging.info(SC.can_messages[can_rec][0][2])
+            self.pp_decode_routine_complete_compatible(\
+                SC.can_messages[can_param["can_rec"]][0][2]))
+        logging.info(SC.can_messages[can_param["can_rec"]][0][2])
         return testresult
 
-    #Read and decode vbf files for Secondary Bootloader
-    def read_vbf_file_sbl(self, f_path_name):
+
+    @classmethod
+    def read_vbf_file_sbl(cls, f_path_name):
         """
         Read and decode vbf files for Secondary Bootloader
         """
@@ -476,20 +513,23 @@ class Support_SBL:
         logging.info(block_address)
         return offset, data, sw_signature, call, data_format
 
-    #Read and decode vbf files for Software Parts
-    def read_vbf_file(self, f_path_name):
+
+    @classmethod
+    def read_vbf_file(cls, f_path_name):
+        # Disable too-many-locals violations in this function.
+        # Should be rewritten, maybe using regexp
+        # pylint: disable=too-many-locals
         """
         Read and decode vbf files for Software Parts
         """
         data = SUTE.read_f(f_path_name)
         find = data.find
         header_len = find(b'\x3B\x0D\x0A\x7D') + 4
-        #print ('Header length: 0x%04X' % header_len)
 
         off = data.find(b'erase = ') + 12
-        memory_add = SUTE.PP_StringTobytes(str(data[off : off + 8])[2:-1], 4)
+        memory_add = SUTE.pp_string_to_bytes(str(data[off : off + 8])[2:-1], 4)
         off += 12
-        memory_size = SUTE.PP_StringTobytes(str(data[off : off + 8])[2:-1], 4)
+        memory_size = SUTE.pp_string_to_bytes(str(data[off : off + 8])[2:-1], 4)
         off += 8
         off1 = data.find(b'sw_signature_dev = 0x') + 21
         off2 = data.find(b'data_format_identifier = 0x') + 27
@@ -499,79 +539,95 @@ class Support_SBL:
         data_format = bytes.fromhex(str(data[off2 : off2+2])[2:-1])
         logging.info(sw_signature)
         offset = header_len
-        logging.info(SUTE.CRC32_from_file(data[offset:len(data)]))
-        #block_address = unpack('>L', data[offset: offset + 4])[0]
+        logging.info(SUTE.crc32_from_file(data[offset:len(data)]))
         erase = memory_add + memory_size
         return offset, off, data, sw_signature, data_format, erase
 
-    #Support function for Routine Flash Erase
-    def flash_erase(self, stub, can_send, can_rec, can_nspace, step_no, purpose, erase, data, off):
+
+    @classmethod
+    def flash_erase(cls, can_param, step_no, purpose, data_param):
+        # Disable too-many-locals violations in this function.
+        # Should be rewritten, maybe using regexp
+        # pylint: disable=too-many-locals
         """
         Support function for Routine Flash Erase
+
+        Replaced:
+        can_param["stub"] = stub
+        can_param["nspace"] = can_nspace
+        can_param["can_send"] = can_send
+        can_param["can_rec"] = can_rec
+        data_param["off"] = off
+        data_param["data"] = data
+        data_param["erase"] = erase
         """
         # Parameters for FrameControl FC
         block_size = 0
         separation_time = 0
-        frame_control_delay = 0 #no wait
-        frame_control_flag = 48 #continue send
-        frame_control_auto = False
 
-        SC.change_MF_FC(can_send, block_size, separation_time, frame_control_delay,
-                        frame_control_flag, frame_control_auto)
+        fc_param = dict()
+        fc_param["delay"] = 0 #no wait
+        fc_param["flag"] = 48 #continue send
+        fc_param["auto"] = False
+
+        SC_HW.change_mf_fc(can_param["can_send"], block_size, separation_time, fc_param)
+
         time.sleep(1)
-        ts_param = {"stub" : stub,\
-                    "m_send" : SC.can_m_send("RoutineControlRequestSID", b'\xFF\x00' + erase, b'\x01'),\
-                    "mr_extra" : '',\
-                    "can_send" : can_send,\
-                    "can_rec"  : can_rec,\
-                    "can_nspace" : can_nspace\
-                }
-        extra_param = {"purpose" : purpose,\
-                    "timeout" : 15,\
-                    "min_no_messages" : -1,\
-                    "max_no_messages" : -1
-                    }
+        ts_param = {"stub" : can_param["stub"],
+                    "m_send" : S_CARCOM.can_m_send("RoutineControlRequestSID",
+                                                   b'\xFF\x00' + data_param["erase"], b'\x01'),
+                    "mr_extra" : '',
+                    "can_send" : can_param["can_send"],
+                    "can_rec"  : can_param["can_rec"],
+                    "can_nspace" : can_param["nspace"]
+                   }
+        extra_param = {"purpose" : purpose,
+                       "timeout" : 15,
+                       "min_no_messages" : -1,
+                       "max_no_messages" : -1
+                      }
 
-        testresult = SUTE.teststep(ts_param,\
-                                   step_no, extra_param)
+        testresult = SUTE.teststep(ts_param, step_no, extra_param)
 
         testresult = testresult and (
-            SUTE.PP_Decode_Routine_Control_response(SC.can_messages[can_rec][0][2],
+            SUTE.pp_decode_routine_control_response(SC.can_messages[can_param["can_rec"]][0][2],
                                                     'Type1,Completed'))
 
         # Erase Memory
-        while data[off + 24 : off + 25] == b'x':
-            off += 25
-            memory_add = SUTE.PP_StringTobytes(str(data[off : off + 8])[2:-1], 4)
-            off += 12
-            memory_size = SUTE.PP_StringTobytes(str(data[off : off + 8])[2:-1], 4)
-            off += 8
-            erase = memory_add + memory_size
+        while data_param["data"][data_param["off"] + 24 : data_param["off"] + 25] == b'x':
+            data_param["off"] += 25
+            memory_add = SUTE.pp_string_to_bytes(str(data_param["data"][data_param["off"] :\
+                data_param["off"] + 8])[2:-1], 4)
+            data_param["off"] += 12
+            memory_size = SUTE.pp_string_to_bytes(str(data_param["data"][data_param["off"] :\
+                data_param["off"] + 8])[2:-1], 4)
+            data_param["off"] += 8
+            data_param["erase"] = memory_add + memory_size
 
-            SC.change_MF_FC(can_send, block_size, separation_time, frame_control_delay,
-                            frame_control_flag, frame_control_auto)
+            SC_HW.change_mf_fc(can_param["can_send"], block_size, separation_time, fc_param)
+
             time.sleep(1)
-            ts_param = {"stub" : stub,\
-                        "m_send" : SC.can_m_send("RoutineControlRequestSID", b'\xFF\x00' + erase, b'\x01'),\
-                        "mr_extra" : '',\
-                        "can_send" : can_send,\
-                        "can_rec"  : can_rec,\
-                        "can_nspace" : can_nspace\
+            ts_param = {"stub" : can_param["stub"],
+                        "m_send" : S_CARCOM.can_m_send("RoutineControlRequestSID",
+                                                       b'\xFF\x00' + data_param["erase"], b'\x01'),
+                        "mr_extra" : '',
+                        "can_send" : can_param["can_send"],
+                        "can_rec"  : can_param["can_rec"],
+                        "can_nspace" : can_param["nspace"]
                        }
-            extra_param = {"purpose" : purpose,\
-                           "timeout" : 15,\
-                           "min_no_messages" : -1,\
+            extra_param = {"purpose" : purpose,
+                           "timeout" : 15,
+                           "min_no_messages" : -1,
                            "max_no_messages" : -1
                           }
 
-            testresult = SUTE.teststep(ts_param,\
-                                       step_no, extra_param)
+            testresult = SUTE.teststep(ts_param, step_no, extra_param)
             testresult = testresult and (
-                SUTE.PP_Decode_Routine_Control_response(SC.can_messages[can_rec][0][2],
+                SUTE.pp_decode_routine_control_response(SC.can_messages[can_param["can_rec"]][0][2],
                                                         'Type1,Completed'))
         return testresult
 
-    #Extraction of block data from vbf file
+
     def block_data_extract(self, offset, data):
         """
         Extraction of block data from vbf file
@@ -592,6 +648,7 @@ class Support_SBL:
         offset += 2
         return offset, block_data, block_addr, block_len, crc16
 
+
     #crc calculation for each block
     def crc_calculation(self, offset, block_data, block_addr, block_len):
         """
@@ -609,174 +666,209 @@ class Support_SBL:
         crc_res = 'ok'
         return "Block adr: 0x%X length: 0x%X crc %s" % (block_addr, block_len, crc_res)
 
-    #Support function for Request Download
-    def request_block_download(self, stub, can_send, can_rec, can_nspace, step_no, purpose,
-                               block_addr_by, block_len_by, data_format):
+
+    def request_block_download(self, can_param, step_no, purpose, data_param):
         """
         Support function for Request Download
+
+        Replaced:
+        can_param["stub"] = stub
+        can_param["nspace"] = can_nspace
+        can_param["can_send"] = can_send
+        can_param["can_rec"] = can_rec''
+        data_param["block_addr_by"] = block_addr_by
+        data_param["block_len_by"] = block_len_by
+        data_param["data_format"] = data_format
         """
         #testresult = True
         # Parameters for FrameControl FC
         block_size = 0
         separation_time = 0
-        frame_control_delay = 0 #no wait
-        frame_control_flag = 48 #continue send
-        frame_control_auto = False
 
-        SC.change_MF_FC(can_send, block_size, separation_time, frame_control_delay,
-                        frame_control_flag, frame_control_auto)
+        fc_param = dict()
+        fc_param["delay"] = 0 #no wait
+        fc_param["flag"] = 48 #continue send
+        fc_param["auto"] = False
 
-        ts_param = {"stub" : stub,\
-                    "m_send" : b'\x34' + data_format + b'\x44'+ block_addr_by + block_len_by,\
-                    "mr_extra" : '',\
-                    "can_send" : can_send,\
-                    "can_rec"  : can_rec,\
-                    "can_nspace" : can_nspace\
+        SC_HW.change_mf_fc(can_param["can_send"], block_size, separation_time, fc_param)
+
+        ts_param = {"stub" : can_param["stub"],
+                    "m_send" : b'\x34' + data_param["data_format"] + b'\x44'+\
+                    data_param["block_addr_by"] + data_param["block_len_by"],
+                    "mr_extra" : '',
+                    "can_send" : can_param["can_send"],
+                    "can_rec"  : can_param["can_rec"],
+                    "can_nspace" : can_param["nspace"]
                    }
-        extra_param = {"purpose" : purpose,\
-                       "timeout" : 0.05,\
-                       "min_no_messages" : -1,\
+        extra_param = {"purpose" : purpose,
+                       "timeout" : 0.05,
+                       "min_no_messages" : -1,
                        "max_no_messages" : -1
                       }
 
-        testresult = SUTE.teststep(ts_param,\
-                                   step_no, extra_param)
-        testresult = testresult and SUTE.test_message(SC.can_messages[can_rec], '74')
-        nbl = SUTE.PP_StringTobytes(SC.can_frames[can_rec][0][2][6:10], 4)
+        testresult = SUTE.teststep(ts_param, step_no, extra_param)
+        testresult = testresult and SUTE.test_message(SC.can_messages[can_param["can_rec"]], '74')
+        nbl = SUTE.pp_string_to_bytes(SC.can_frames[can_param["can_rec"]][0][2][6:10], 4)
         if self._debug:
             print("NBL: {}".format(nbl))
-        #nbl = int.from_bytes(SC.can_frames[can_rec][0][2][6:10])
         nbl = int.from_bytes(nbl, 'big')
         return testresult, nbl
 
-    # Support function for Transfer Data
-    def flash_blocks(self, nbl, stub, can_send, can_rec, can_nspace, step_no, purpose, block_len,
-                     block_data):
+
+    @classmethod
+    def flash_blocks(cls, can_param, step_no, purpose, data_param):
         """
         Support function for Transfer Data
+
+        Replaced:
+        can_param["stub"] = stub
+        can_param["nspace"] = can_nspace
+        can_param["can_send"] = can_send
+        can_param["can_rec"] = can_rec
+        data_param["block_len"] = block_len
+        data_param["block_data"] = block_data
+        data_param["nbl"] = nbl
         """
-        #testresult = True
+
         pad = 0
+        for i in range(int(data_param["block_len"]/(data_param["nbl"]-2))+1):
 
-        for i in range(int(block_len/(nbl-2))+1):
-
-            pad = (nbl-2)*i
+            pad = (data_param["nbl"]-2)*i
             i += 1
             ibyte = bytes([i])
             # Parameters for FrameControl FC
             block_size = 0
             separation_time = 0
-            frame_control_delay = 0 #no wait
-            frame_control_flag = 48 #continue send
-            frame_control_auto = False
 
-            SC.change_MF_FC(can_send, block_size, separation_time, frame_control_delay,
-                            frame_control_flag, frame_control_auto)
+            fc_param = dict()
+            fc_param["delay"] = 0 #no wait
+            fc_param["flag"] = 48 #continue send
+            fc_param["auto"] = False
 
-            ts_param = {"stub" : stub,\
-                        "m_send" : b'\x36' + ibyte + block_data[pad:pad + nbl-2],\
-                        "mr_extra" : '',\
-                        "can_send" : can_send,\
-                        "can_rec"  : can_rec,\
-                        "can_nspace" : can_nspace\
-                        }
-            extra_param = {"purpose" : purpose,\
-                        "timeout" : 0.02,\
-                        "min_no_messages" : -1,\
-                        "max_no_messages" : -1
-                        }
+            SC_HW.change_mf_fc(can_param["can_send"], block_size, separation_time, fc_param)
 
-            testresult = SUTE.teststep(ts_param,\
-                                       step_no, extra_param)
-            #testresult = SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-            #                           can_rec, can_nspace, step_no, purpose,
-            #                           timeout, min_no_messages, max_no_messages)
-            testresult = testresult and SUTE.test_message(SC.can_messages[can_rec], '76')
-                #print(SC.can_messages[can_receive])
+            ts_param = {"stub" : can_param["stub"],
+                        "m_send" : b'\x36' + ibyte + data_param["block_data"][pad:pad +\
+                            data_param["nbl"]-2],
+                        "mr_extra" : '',
+                        "can_send" : can_param["can_send"],
+                        "can_rec"  : can_param["can_rec"],
+                        "can_nspace" : can_param["nspace"]
+                       }
+            extra_param = {"purpose" : purpose,
+                           "timeout" : 0.02,
+                           "min_no_messages" : -1,
+                           "max_no_messages" : -1
+                          }
+
+            testresult = SUTE.teststep(ts_param, step_no, extra_param)
+            testresult = testresult and SUTE.test_message(SC.can_messages[can_param["can_rec"]],
+                                                          '76')
         return testresult
 
-    #Support function for Request Transfer Exit
-    def transfer_data_exit(self, stub, can_send, can_rec, can_nspace, step_no, purpose):
+
+    @classmethod
+    def transfer_data_exit(cls, can_param, step_no, purpose):
         """
         Support function for Request Transfer Exit
-        """
-        #testresult = True
-        ts_param = {"stub" : stub,\
-                    "m_send" : b'\x37',\
-                    "mr_extra" : '',\
-                    "can_send" : can_send,\
-                    "can_rec"  : can_rec,\
-                    "can_nspace" : can_nspace\
-                    }
-        extra_param = {"purpose" : purpose,\
-                    "timeout" : 0.2,\
-                    "min_no_messages" : 1,\
-                    "max_no_messages" : 1
-                    }
 
-        testresult = SUTE.teststep(ts_param,\
-                                   step_no, extra_param)
+        Replaced:
+        can_param["stub"] = stub
+        can_param["nspace"] = can_nspace
+        can_param["can_send"] = can_send
+        can_param["can_rec"] = can_rec
+        """
+        ts_param = {"stub" : can_param["stub"],
+                    "m_send" : b'\x37',
+                    "mr_extra" : '',
+                    "can_send" : can_param["can_send"],
+                    "can_rec"  : can_param["can_rec"],
+                    "can_nspace" : can_param["nspace"]
+                   }
+        extra_param = {"purpose" : purpose,
+                       "timeout" : 0.2,
+                       "min_no_messages" : 1,
+                       "max_no_messages" : 1
+                      }
+
+        testresult = SUTE.teststep(ts_param, step_no, extra_param)
         return testresult
 
-    #Support function for Check Memory
-    def check_memory(self, stub, can_send, can_rec, can_nspace, step_no, purpose, sw_signature1):
+
+    @classmethod
+    def check_memory(cls, can_param, step_no, purpose, sw_signature1):
         """
         Support function for Check Memory
+
+        Replaced:
+        can_param["stub"] = stub
+        can_param["nspace"] = can_nspace
+        can_param["can_send"] = can_send
+        can_param["can_rec"] = can_rec
         """
         # Parameters for FrameControl FC
         block_size = 0
         separation_time = 0
-        frame_control_delay = 0 #no wait
-        frame_control_flag = 48 #continue send
-        frame_control_auto = False
 
-        SC.change_MF_FC(can_send, block_size, separation_time, frame_control_delay,
-                        frame_control_flag, frame_control_auto)
+        fc_param = dict()
+        fc_param["delay"] = 0 #no wait
+        fc_param["flag"] = 48 #continue send
+        fc_param["auto"] = False
+
+        SC_HW.change_mf_fc(can_param["can_send"], block_size, separation_time, fc_param)
+
         time.sleep(1)
-        ts_param = {"stub" : stub,\
-                    "m_send" : SC.can_m_send("RoutineControlRequestSID", b'\x02\x12' + sw_signature1, b'\x01'),\
-                    "mr_extra" : '',\
-                    "can_send" : can_send,\
-                    "can_rec"  : can_rec,\
-                    "can_nspace" : can_nspace\
-                    }
-        extra_param = {"purpose" : purpose,\
-                    "timeout" : 2,\
-                    "min_no_messages" : -1,\
-                    "max_no_messages" : -1
-                    }
+        ts_param = {"stub" : can_param["stub"],
+                    "m_send" : S_CARCOM.can_m_send("RoutineControlRequestSID",
+                                                   b'\x02\x12' + sw_signature1, b'\x01'),
+                    "mr_extra" : '',
+                    "can_send" : can_param["can_send"],
+                    "can_rec"  : can_param["can_rec"],
+                    "can_nspace" : can_param["nspace"]
+                   }
+        extra_param = {"purpose" : purpose,
+                       "timeout" : 2,
+                       "min_no_messages" : -1,
+                       "max_no_messages" : -1
+                      }
 
-        testresult = SUTE.teststep(ts_param,\
-                                   step_no, extra_param)
+        testresult = SUTE.teststep(ts_param, step_no, extra_param)
 
         testresult = testresult and (
-            SUTE.PP_Decode_Routine_Control_response(SC.can_messages[can_rec][0][2],
+            SUTE.pp_decode_routine_control_response(SC.can_messages[can_param["can_rec"]][0][2],
                                                     'Type1,Completed'))
-        logging.info(SC.can_messages[can_rec])
+        logging.info(SC.can_messages[can_param["can_rec"]])
         return testresult
 
-    #Support function for Routine Control Activate Secondary Bootloader
-    def activate_sbl(self, stub, can_send, can_rec, can_nspace, step_no, purpose, call):
+
+    @classmethod
+    def activate_sbl(cls, can_param, step_no, purpose, call):
         """
         Support function for Routine Control Activate Secondary Bootloader
+
+        Replaced:
+        can_param["stub"] = stub
+        can_param["nspace"] = can_nspace
+        can_param["can_send"] = can_send
+        can_param["can_rec"] = can_rec
         """
 
-        ts_param = {"stub" : stub,\
-                    "m_send" : SC.can_m_send("RoutineControlRequestSID", b'\x03\x01' + call, b'\x01'),\
-                    "mr_extra" : '',\
-                    "can_send" : can_send,\
-                    "can_rec"  : can_rec,\
-                    "can_nspace" : can_nspace\
-                    }
-        extra_param = {"purpose" : purpose,\
-                    "timeout" : 2,\
-                    "min_no_messages" : -1,\
-                    "max_no_messages" : -1
-                    }
+        ts_param = {"stub" : can_param["stub"],
+                    "m_send" : S_CARCOM.can_m_send("RoutineControlRequestSID",
+                                                   b'\x03\x01' + call, b'\x01'),
+                    "mr_extra" : '',
+                    "can_send" : can_param["can_send"],
+                    "can_rec"  : can_param["can_rec"],
+                    "can_nspace" : can_param["nspace"]
+                   }
+        extra_param = {"purpose" : purpose,
+                       "timeout" : 2,
+                       "min_no_messages" : -1,
+                       "max_no_messages" : -1
+                      }
 
-        testresult = SUTE.teststep(ts_param,\
-                                   step_no, extra_param)
+        testresult = SUTE.teststep(ts_param, step_no, extra_param)
         testresult = testresult and (
-            SUTE.PP_Decode_Routine_Control_response(SC.can_messages[can_rec][0][2],
+            SUTE.pp_decode_routine_control_response(SC.can_messages[can_param["can_rec"]][0][2],
                                                     'Type1,Completed'))
         return testresult
