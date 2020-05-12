@@ -100,7 +100,7 @@ class SupportSBL:
 
             Replaced:
             can_param["stub"] = stub
-            can_param["nspace"] = can_nspace
+            can_param["can_nspace"] = can_nspace
             can_param["can_send"] = can_send
             can_param["can_rec"] = can_rec
             data_param["offset"] = offset
@@ -169,7 +169,7 @@ class SupportSBL:
 
         Replaced:
         can_param["stub"] = stub
-        can_param["nspace"] = can_nspace
+        can_param["can_nspace"] = can_nspace
         can_param["can_send"] = can_send
         can_param["can_rec"] = can_rec
         data_param["offset"] = offset
@@ -198,7 +198,7 @@ class SupportSBL:
 
         Replaced:
         can_param["stub"] = stub
-        can_param["nspace"] = can_nspace
+        can_param["can_nspace"] = can_nspace
         can_param["can_send"] = can_send
         can_param["can_rec"] = can_rec
         """
@@ -217,7 +217,7 @@ class SupportSBL:
 
         Replaced:
         can_param["stub"] = stub
-        can_param["nspace"] = can_nspace
+        can_param["can_nspace"] = can_nspace
         can_param["can_send"] = can_send
         can_param["can_rec"] = can_rec
         data_param["offset"] = offset
@@ -249,7 +249,7 @@ class SupportSBL:
 
         Replaced:
         can_param["stub"] = stub
-        can_param["nspace"] = can_nspace
+        can_param["can_nspace"] = can_nspace
         can_param["can_send"] = can_send
         can_param["can_rec"] = can_rec
         """
@@ -261,7 +261,7 @@ class SupportSBL:
                     "mr_extra" : '',
                     "can_send" : can_param["can_send"],
                     "can_rec"  : can_param["can_rec"],
-                    "can_nspace" : can_param["nspace"]
+                    "can_nspace" : can_param["can_nspace"]
                     }
         extra_param = {"purpose" : \
                        "verify RoutineControl start are sent for Check Programming Preconditions",
@@ -283,7 +283,7 @@ class SupportSBL:
                     "mr_extra" : '',
                     "can_send" : can_param["can_send"],
                     "can_rec"  : can_param["can_rec"],
-                    "can_nspace" : can_param["nspace"]
+                    "can_nspace" : can_param["can_nspace"]
                    }
         extra_param = {"purpose" : "Change to Programming session(02) from default",
                        "timeout" : 1,
@@ -304,7 +304,7 @@ class SupportSBL:
 
         Replaced:
         can_param["stub"] = stub
-        can_param["nspace"] = can_nspace
+        can_param["can_nspace"] = can_nspace
         can_param["can_send"] = can_send
         can_param["can_rec"] = can_rec
         """
@@ -333,7 +333,7 @@ class SupportSBL:
 
         Replaced:
         can_param["stub"] = stub
-        can_param["nspace"] = can_nspace
+        can_param["can_nspace"] = can_nspace
         can_param["can_send"] = can_send
         can_param["can_rec"] = can_rec
         """
@@ -345,7 +345,7 @@ class SupportSBL:
                     "mr_extra" : '',
                     "can_send" : can_param["can_send"],
                     "can_rec"  : can_param["can_rec"],
-                    "can_nspace" : can_param["nspace"]
+                    "can_nspace" : can_param["can_nspace"]
                    }
         extra_param = {"purpose" : "Verify Session",
                        "timeout" : 1,
@@ -436,7 +436,7 @@ class SupportSBL:
 
         Replaced:
         can_param["stub"] = stub
-        can_param["nspace"] = can_nspace
+        can_param["can_nspace"] = can_nspace
         can_param["can_send"] = can_send
         can_param["can_rec"] = can_rec
         """
@@ -461,7 +461,7 @@ class SupportSBL:
                     "mr_extra" : '',
                     "can_send" : can_param["can_send"],
                     "can_rec"  : can_param["can_rec"],
-                    "can_nspace" : can_param["nspace"]
+                    "can_nspace" : can_param["can_nspace"]
                    }
         extra_param = {"purpose" : purpose,
                        "timeout" : 1,
@@ -554,7 +554,7 @@ class SupportSBL:
 
         Replaced:
         can_param["stub"] = stub
-        can_param["nspace"] = can_nspace
+        can_param["can_nspace"] = can_nspace
         can_param["can_send"] = can_send
         can_param["can_rec"] = can_rec
         data_param["off"] = off
@@ -579,7 +579,7 @@ class SupportSBL:
                     "mr_extra" : '',
                     "can_send" : can_param["can_send"],
                     "can_rec"  : can_param["can_rec"],
-                    "can_nspace" : can_param["nspace"]
+                    "can_nspace" : can_param["can_nspace"]
                    }
         extra_param = {"purpose" : purpose,
                        "timeout" : 15,
@@ -613,7 +613,7 @@ class SupportSBL:
                         "mr_extra" : '',
                         "can_send" : can_param["can_send"],
                         "can_rec"  : can_param["can_rec"],
-                        "can_nspace" : can_param["nspace"]
+                        "can_nspace" : can_param["can_nspace"]
                        }
             extra_param = {"purpose" : purpose,
                            "timeout" : 15,
@@ -673,7 +673,7 @@ class SupportSBL:
 
         Replaced:
         can_param["stub"] = stub
-        can_param["nspace"] = can_nspace
+        can_param["can_nspace"] = can_nspace
         can_param["can_send"] = can_send
         can_param["can_rec"] = can_rec''
         data_param["block_addr_by"] = block_addr_by
@@ -698,7 +698,7 @@ class SupportSBL:
                     "mr_extra" : '',
                     "can_send" : can_param["can_send"],
                     "can_rec"  : can_param["can_rec"],
-                    "can_nspace" : can_param["nspace"]
+                    "can_nspace" : can_param["can_nspace"]
                    }
         extra_param = {"purpose" : purpose,
                        "timeout" : 0.05,
@@ -722,7 +722,7 @@ class SupportSBL:
 
         Replaced:
         can_param["stub"] = stub
-        can_param["nspace"] = can_nspace
+        can_param["can_nspace"] = can_nspace
         can_param["can_send"] = can_send
         can_param["can_rec"] = can_rec
         data_param["block_len"] = block_len
@@ -753,7 +753,7 @@ class SupportSBL:
                         "mr_extra" : '',
                         "can_send" : can_param["can_send"],
                         "can_rec"  : can_param["can_rec"],
-                        "can_nspace" : can_param["nspace"]
+                        "can_nspace" : can_param["can_nspace"]
                        }
             extra_param = {"purpose" : purpose,
                            "timeout" : 0.02,
@@ -774,7 +774,7 @@ class SupportSBL:
 
         Replaced:
         can_param["stub"] = stub
-        can_param["nspace"] = can_nspace
+        can_param["can_nspace"] = can_nspace
         can_param["can_send"] = can_send
         can_param["can_rec"] = can_rec
         """
@@ -783,7 +783,7 @@ class SupportSBL:
                     "mr_extra" : '',
                     "can_send" : can_param["can_send"],
                     "can_rec"  : can_param["can_rec"],
-                    "can_nspace" : can_param["nspace"]
+                    "can_nspace" : can_param["can_nspace"]
                    }
         extra_param = {"purpose" : purpose,
                        "timeout" : 0.2,
@@ -802,7 +802,7 @@ class SupportSBL:
 
         Replaced:
         can_param["stub"] = stub
-        can_param["nspace"] = can_nspace
+        can_param["can_nspace"] = can_nspace
         can_param["can_send"] = can_send
         can_param["can_rec"] = can_rec
         """
@@ -824,7 +824,7 @@ class SupportSBL:
                     "mr_extra" : '',
                     "can_send" : can_param["can_send"],
                     "can_rec"  : can_param["can_rec"],
-                    "can_nspace" : can_param["nspace"]
+                    "can_nspace" : can_param["can_nspace"]
                    }
         extra_param = {"purpose" : purpose,
                        "timeout" : 2,
@@ -848,7 +848,7 @@ class SupportSBL:
 
         Replaced:
         can_param["stub"] = stub
-        can_param["nspace"] = can_nspace
+        can_param["can_nspace"] = can_nspace
         can_param["can_send"] = can_send
         can_param["can_rec"] = can_rec
         """
@@ -859,7 +859,7 @@ class SupportSBL:
                     "mr_extra" : '',
                     "can_send" : can_param["can_send"],
                     "can_rec"  : can_param["can_rec"],
-                    "can_nspace" : can_param["nspace"]
+                    "can_nspace" : can_param["can_nspace"]
                    }
         extra_param = {"purpose" : purpose,
                        "timeout" : 2,

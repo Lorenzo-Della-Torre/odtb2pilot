@@ -367,12 +367,12 @@ class SupportCAN:
         print("start_heartbeat")
 
         per_param = dict()
-        per_param["per_name"] = 'heartbeat'
-        per_param["per_send"] = True
-        per_param["per_id"] = hb_param["id"]
-        per_param["per_nspace"] = hb_param["nspace"]
-        per_param["per_frame"] = hb_param["frame"]
-        per_param["per_intervall"] = hb_param["intervall"]
+        per_param["name"] = 'heartbeat'
+        per_param["send"] = True
+        per_param["id"] = hb_param["id"]
+        per_param["nspace"] = hb_param["nspace"]
+        per_param["frame"] = hb_param["frame"]
+        per_param["intervall"] = hb_param["intervall"]
 
         self.start_periodic(stub, per_param)
         # Wait for heartbeat to start")

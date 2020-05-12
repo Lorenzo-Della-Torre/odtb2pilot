@@ -76,15 +76,11 @@ class SupportCanHW:
         print("send_FF_CAN")
 
         #print("Send first frame of MF")
-        #print("payload available: ", self.can_mf_send)
-        #print("payload signal:    ", self.can_mf_send[signal_name])
-        #print("first frame signal ", self.can_mf_send[signal_name][1])
         source = common_pb2.ClientId(id="app_identifier")
         signal = common_pb2.SignalId(name=signal_name, namespace=name_space)
         signal_with_payload = network_api_pb2.Signal(id=signal)
         signal_with_payload.raw = self.can_mf_send[signal_name][1][0]
 
-        #print("Signal_with_payload : ", self.can_mf_send[signal_name][1][0].hex().upper())
         publisher_info = network_api_pb2.PublisherConfig(clientId=source,\
             signals=network_api_pb2.Signals(signal=[signal_with_payload]), frequency=freq)
         try:
@@ -103,35 +99,35 @@ class SupportCanHW:
             Subfunction of send_cf_can
         """
         source = common_pb2.ClientId(id="app_identifier")
-        signal = common_pb2.SignalId(name=can_param["signal_name"],
+        signal = common_pb2.SignalId(name=can_param["can_send"],
                                      namespace=can_param["nspace"])
         signal_with_payload = network_api_pb2.Signal(id=signal)
 
         # continue sending as stated in FC frame
         print("continue sending MF message")
         # delay frame sent after FC received as stated if frame_control_delay
-        if self.can_subscribes[can_param["signal_name"]][3] != 0:
+        if self.can_subscribes[can_param["can_send"]][3] != 0:
             print("delay frame after FC as stated in frame_control_delay [ms]:",\
-                self.can_subscribes[can_param["signal_name"]][3])
-            time.sleep(self.can_subscribes[can_param["signal_name"]][3]/1000)
-        while self.can_mf_send[can_param["signal_name"]][0] <\
-            len(self.can_mf_send[can_param["signal_name"]][1]):
+                self.can_subscribes[can_param["can_send"]][3])
+            time.sleep(self.can_subscribes[can_param["can_send"]][3]/1000)
+        while self.can_mf_send[can_param["can_send"]][0] <\
+            len(self.can_mf_send[can_param["can_send"]][1]):
             signal_with_payload.raw = \
-                self.can_mf_send[can_param["signal_name"]][1]\
-                    [self.can_mf_send[can_param["signal_name"]][0]]
+                self.can_mf_send[can_param["can_send"]][1]\
+                    [self.can_mf_send[can_param["can_send"]][0]]
             if self._debug:                            # Not sure how to fix this pylint warning
                 print("Signal_with_payload : ", signal_with_payload.raw.hex().upper()) # pylint: disable=no-member
             publisher_info = network_api_pb2.PublisherConfig(clientId=source,\
                 signals=network_api_pb2.Signals(signal=[signal_with_payload]), frequency=0)
             try:
                 can_param["stub"].PublishSignals(publisher_info)
-                self.can_mf_send[can_param["signal_name"]][0] += 1
+                self.can_mf_send[can_param["can_send"]][0] += 1
                 # wait ms, only 0-127 ms allowed, microseconds 0xF1-0xF9 ignored:
                 time.sleep((separation_time and 0x7F) / 1000)
                 if self._debug:
                     print("Frames sent(CF): ",
-                          self.can_mf_send[can_param["signal_name"]][0], "of ",\
-                              len(self.can_mf_send[can_param["signal_name"]][1]))
+                          self.can_mf_send[can_param["can_send"]][0], "of ",\
+                              len(self.can_mf_send[can_param["can_send"]][1]))
                 block_size -= 1
                 if block_size == 0:
                     break
@@ -210,13 +206,15 @@ class SupportCanHW:
     def __send_mf(self, can_param, padding, padding_byte):
         """
         __send_mf
+
+        
         """
         pl_fcount = 0x21
         mess_length = len(can_param["m_send"])
         pl_work = can_param["m_send"]
 
         # add first frame
-        self.add_canframe_tosend(can_param["signal_name"],\
+        self.add_canframe_tosend(can_param["can_send"],\
             (int(0x1000 | mess_length).to_bytes(2, 'big') + pl_work[0:6]))
         pl_work = pl_work[6:]
         print("Payload stored: ", self.can_mf_send)
@@ -224,16 +222,16 @@ class SupportCanHW:
         while pl_work:
         # still bytes to take
             if len(pl_work) > 7:
-                self.add_canframe_tosend(can_param["signal_name"],
+                self.add_canframe_tosend(can_param["can_send"],
                                          (bytes([pl_fcount]) + pl_work[0:7]))
                 pl_work = pl_work[7:]
                 pl_fcount = (pl_fcount + 1) & 0x2F
             else:
                 if padding:
-                    self.add_canframe_tosend(can_param["signal_name"],\
+                    self.add_canframe_tosend(can_param["can_send"],\
                         self.fill_payload((bytes([pl_fcount]) + pl_work[0:]), padding_byte))
                 else:
-                    self.add_canframe_tosend(can_param["signal_name"],
+                    self.add_canframe_tosend(can_param["can_send"],
                                              bytes([pl_fcount]) + pl_work[0:])
                 pl_work = []
 
@@ -244,18 +242,18 @@ class SupportCanHW:
         """
         mess_length = len(can_param["m_send"])
         if padding:
-            self.add_canframe_tosend(can_param["signal_name"],\
+            self.add_canframe_tosend(can_param["can_send"],\
                 self.fill_payload(bytes([mess_length])\
                 + can_param["m_send"], padding_byte))
         else:
-            self.add_canframe_tosend(can_param["signal_name"], bytes([mess_length])\
+            self.add_canframe_tosend(can_param["can_send"], bytes([mess_length])\
                 + can_param["m_send"])
 
 
     def __print_payload(self, can_param):
         if self._debug:
             print("PayLoad array as hex: : ")
-            for pl_frames in self.can_mf_send[can_param["signal_name"]][1]:
+            for pl_frames in self.can_mf_send[can_param["can_send"]][1]:
                 print(pl_frames.hex().upper())
 
 
@@ -267,22 +265,22 @@ class SupportCanHW:
 
         Replaced:
         can_param["stub"] = stub
-        can_param["signal_name"] = signal_name
-        can_param["nspace"] = namespace
-        can_param["rec_name"] = rec_name
+        can_param["can_send"] = signal_name
+        can_param["can_nspace"] = namespace
+        can_param["can_rec"] = rec_name
         can_param["m_send"] = payload_value
         """
 
-        if can_param["signal_name"] in self.can_mf_send:
-            while self.can_mf_send[can_param["signal_name"]]:
+        if can_param["can_send"] in self.can_mf_send:
+            while self.can_mf_send[can_param["can_send"]]:
                 print("CAN_MF_send: still payload to send. Wait 1sec")
                 time.sleep(1)
         else:
-            self.can_mf_send[can_param["signal_name"]] = []
+            self.can_mf_send[can_param["can_send"]] = []
         #number of frames to send, array of frames to send
-        self.can_mf_send[can_param["signal_name"]] = [0, []]
+        self.can_mf_send[can_param["can_send"]] = [0, []]
         source = common_pb2.ClientId(id="app_identifier")
-        signal = common_pb2.SignalId(name=can_param["signal_name"], namespace=can_param["nspace"])
+        signal = common_pb2.SignalId(name=can_param["can_send"], namespace=can_param["can_nspace"])
         signal_with_payload = network_api_pb2.Signal(id=signal)
 
         # ToDo: test if payload can be sent over CAN(payload less then 4096 bytes) # pylint: disable=fixme
@@ -297,11 +295,11 @@ class SupportCanHW:
         elif mess_length < 4096:
             self.__send_mf(can_param, padding, padding_byte)
         self.__print_payload(can_param)
-        if self.can_mf_send[can_param["signal_name"]][1] == []:
+        if self.can_mf_send[can_param["can_send"]][1] == []:
             print("payload empty: nothing to send")
             # if single_frame:
-        elif len(self.can_mf_send[can_param["signal_name"]][1]) == 1:
-            signal_with_payload.raw = self.can_mf_send[can_param["signal_name"]][1][0]
+        elif len(self.can_mf_send[can_param["can_send"]][1]) == 1:
+            signal_with_payload.raw = self.can_mf_send[can_param["can_send"]][1][0]
             publisher_info = network_api_pb2.PublisherConfig(clientId=source,\
                 signals=network_api_pb2.Signals(signal=[signal_with_payload]), frequency=0)
             try:
@@ -311,15 +309,15 @@ class SupportCanHW:
             #remove payload after it's been sent
             print("remove payload after being sent")
             try:
-                self.can_mf_send.pop(can_param["signal_name"])
+                self.can_mf_send.pop(can_param["can_send"])
             except KeyError:
-                print("Key ", can_param["signal_name"], " not found.")
-        elif len(self.can_mf_send[can_param["signal_name"]][1]) < 0x7ff:
+                print("Key ", can_param["can_send"], " not found.")
+        elif len(self.can_mf_send[can_param["can_send"]][1]) < 0x7ff:
             print("send payload as MF")
             # send payload as MF
 
             #send FirstFrame:
-            self.send_ff_can(can_param["stub"], can_param["signal_name"], can_param["nspace"],
+            self.send_ff_can(can_param["stub"], can_param["can_send"], can_param["can_nspace"],
                              freq=0)
             #send ConsecutiveFrames:
             self.send_cf_can(can_param)
@@ -392,15 +390,13 @@ class SupportCanHW:
         self.can_subscribes[sig][6] = fc_param["auto"]
 
 
-#    def send_fc_frame(self, stub, signal_name, namespace, frame_control_flag, block_size,
-#                      separation_time):
     def send_fc_frame(self, can_param, frame_control_flag, block_size, separation_time):
         """
         Build FlowControl frame and send
 
         can_param["stub"] = stub
-        can_param["signal_name"] = signal_name
-        can_param["nspace"] = namespace
+        can_param["can_send"] = signal_name
+        can_param["can_nspace"] = namespace
         """
         if (frame_control_flag < 48) | (frame_control_flag > 50):
             print("CAN Flowcontrol: Error frame_control_flag: Out_of_range ", frame_control_flag)
@@ -413,5 +409,5 @@ class SupportCanHW:
                     +block_size.to_bytes(1, 'big') \
                     +separation_time.to_bytes(1, 'big') \
                     +b'\x00\x00\x00\x00\x00'
-        self.t_send_signal_hex(can_param["stub"], can_param["signal_name"], can_param["nspace"],
+        self.t_send_signal_hex(can_param["stub"], can_param["can_send"], can_param["can_nspace"],
                                payload)
