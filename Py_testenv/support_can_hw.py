@@ -206,8 +206,6 @@ class SupportCanHW:
     def __send_mf(self, can_param, padding, padding_byte):
         """
         __send_mf
-
-        
         """
         pl_fcount = 0x21
         mess_length = len(can_param["m_send"])
