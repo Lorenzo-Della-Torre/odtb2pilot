@@ -8,6 +8,24 @@ step_1:
 step_2:
         timeout: 1
 step_3:
-        time_to_sleep: 6
+        timeout: 1
 step_4:
+        timeout: 1
+step_5:
+        timeout: 1
+step_6:
+        timeout: 1
+step_7:
+        timeout: 1
+step_8:
+        timeout: 1
+step_9:
+        timeout: 1
+step_10:
+        timeout: 1
+step_11:
+        timeout: 1
+step_12:
+        timeout: 1
+step_13:
         timeout: 1
