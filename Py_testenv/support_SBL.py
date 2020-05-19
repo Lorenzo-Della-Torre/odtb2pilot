@@ -26,7 +26,7 @@ import time
 import logging
 import sys
 
-from support_can import Support_CAN
+from support_can import Support_CAN, CanMFParam
 from support_test_odtb2 import Support_test_ODTB2
 from support_SecAcc import Support_Security_Access
 
@@ -53,17 +53,29 @@ class Support_SBL:
             self._df = []
         else:
             self._df = df
-            
+
     def show_filenames(self):
+        """
+        print filenames used for SWDL
+        """
         print("SBL: ", self._sbl)
         print("ESS: ", self._ess)
         print("DF:  ", self._df)
-    
+
     def get_sbl_filename(self):
+        """
+        return filename used for SBL in SWDL
+        """
         return self._sbl
     def get_ess_filename(self):
+        """
+        return filename used for ESS in SWDL
+        """
         return self._ess
     def get_df_filenames(self):
+        """
+        return filenames used for data in SWDL
+        """
         return self._df
 
     def transfer_data_block(self, offset, data, data_format,\
@@ -216,12 +228,12 @@ class Support_SBL:
                     "can_send" : can_send,\
                     "can_rec"  : can_rec,\
                     "can_nspace" : can_nspace\
-                }
-        extra_param = {"purpose" : "verify RoutineControl start are sent for Check Programming Preconditions",\
-                    "timeout" : 0.05,\
-                    "min_no_messages" : -1,\
-                    "max_no_messages" : -1
-                    }
+                   }
+        extra_param = {"purpose" : "verify RC start sent for Check Prog Precond",\
+                       "timeout" : 0.05,\
+                       "min_no_messages" : -1,\
+                       "max_no_messages" : -1
+                      }
 
         testresult = SUTE.teststep(ts_param,\
                                    step_no, extra_param)
@@ -243,15 +255,31 @@ class Support_SBL:
                     "can_nspace" : can_nspace\
                 }
         extra_param = {"purpose" : "Change to Programming session(02) from default",\
-                    "timeout" : 1,\
-                    "min_no_messages" : -1,\
-                    "max_no_messages" : -1
-                    }
+                       "timeout" : 1,\
+                       "min_no_messages" : -1,\
+                       "max_no_messages" : -1
+                      }
 
         testresult = testresult and SUTE.teststep(ts_param,\
                                                   step_no, extra_param)
         testresult = testresult and SUTE.teststep(ts_param,\
                                                   step_no, extra_param)
+
+        ts_param = {"stub" : stub,\
+                    "m_send" : SC.can_m_send("ReadDataByIdentifier", b'\xF1\x86', ""),\
+                    "mr_extra" : '',\
+                    "can_send" : can_send,\
+                    "can_rec"  : can_rec,\
+                    "can_nspace" : can_nspace\
+                   }
+        extra_param = {"purpose" : "Verify Session after SessionControl to Prog",\
+                       "timeout" : 1,\
+                       "min_no_messages" : 1,\
+                       "max_no_messages" : 1
+                      }
+
+        SUTE.teststep(ts_param,\
+                      step_no, extra_param)
 
         testresult = testresult and self.sbl_activation_prog(stub, can_send, can_rec, can_nspace,\
                                             step_no, purpose)
@@ -301,12 +329,12 @@ class Support_SBL:
                     "can_send" : can_send,\
                     "can_rec"  : can_rec,\
                     "can_nspace" : can_nspace\
-                }
+                   }
         extra_param = {"purpose" : "Verify Session",\
-                    "timeout" : 1,\
-                    "min_no_messages" : -1,\
-                    "max_no_messages" : -1
-                    }
+                       "timeout" : 1,\
+                       "min_no_messages" : -1,\
+                       "max_no_messages" : -1
+                      }
 
         SUTE.teststep(ts_param,\
                       step_no, extra_param)
@@ -410,15 +438,14 @@ class Support_SBL:
         """
 
         # Parameters for FrameControl FC
-        block_size = 0
-        separation_time = 0
-        frame_control_delay = 0 #no wait
-        frame_control_flag = 48 #continue send
-        frame_control_auto = True
-
-        SC.change_MF_FC(can_send, block_size,\
-                        separation_time, frame_control_delay,\
-                        frame_control_flag, frame_control_auto)
+        can_mf_param: CanMFParam = {
+            'block_size' : 0,
+            'separation_time' : 0,
+            'frame_control_delay' : 0, #no wait
+            'frame_control_flag' : 48, #continue send
+            'frame_control_auto' : True
+            }
+        SC.change_MF_FC(can_send, can_mf_param)
 
         ts_param = {"stub" : stub,\
                     "m_send" : SC.can_m_send("RoutineControlRequestSID", b'\x02\x05', b'\x01'),\
@@ -426,12 +453,12 @@ class Support_SBL:
                     "can_send" : can_send,\
                     "can_rec"  : can_rec,\
                     "can_nspace" : can_nspace\
-                }
+                   }
         extra_param = {"purpose" : purpose,\
-                    "timeout" : 1,\
-                    "min_no_messages" : -1,\
-                    "max_no_messages" : -1
-                    }
+                       "timeout" : 1,\
+                       "min_no_messages" : -1,\
+                       "max_no_messages" : -1
+                      }
 
         testresult = SUTE.teststep(ts_param,\
                                    step_no, extra_param)
@@ -510,27 +537,28 @@ class Support_SBL:
         Support function for Routine Flash Erase
         """
         # Parameters for FrameControl FC
-        block_size = 0
-        separation_time = 0
-        frame_control_delay = 0 #no wait
-        frame_control_flag = 48 #continue send
-        frame_control_auto = False
-
-        SC.change_MF_FC(can_send, block_size, separation_time, frame_control_delay,
-                        frame_control_flag, frame_control_auto)
+        can_mf_param: CanMFParam = {
+            'block_size' : 0,
+            'separation_time' : 0,
+            'frame_control_delay' : 0, #no wait
+            'frame_control_flag' : 48, #continue send
+            'frame_control_auto' : False
+            }
+        SC.change_MF_FC(can_send, can_mf_param)
         time.sleep(1)
         ts_param = {"stub" : stub,\
-                    "m_send" : SC.can_m_send("RoutineControlRequestSID", b'\xFF\x00' + erase, b'\x01'),\
+                    "m_send" : SC.can_m_send("RoutineControlRequestSID", b'\xFF\x00'\
+                                             + erase, b'\x01'),\
                     "mr_extra" : '',\
                     "can_send" : can_send,\
                     "can_rec"  : can_rec,\
                     "can_nspace" : can_nspace\
-                }
+                   }
         extra_param = {"purpose" : purpose,\
-                    "timeout" : 15,\
-                    "min_no_messages" : -1,\
-                    "max_no_messages" : -1
-                    }
+                       "timeout" : 15,\
+                       "min_no_messages" : -1,\
+                       "max_no_messages" : -1
+                      }
 
         testresult = SUTE.teststep(ts_param,\
                                    step_no, extra_param)
@@ -548,11 +576,11 @@ class Support_SBL:
             off += 8
             erase = memory_add + memory_size
 
-            SC.change_MF_FC(can_send, block_size, separation_time, frame_control_delay,
-                            frame_control_flag, frame_control_auto)
+            SC.change_MF_FC(can_send, can_mf_param)
             time.sleep(1)
             ts_param = {"stub" : stub,\
-                        "m_send" : SC.can_m_send("RoutineControlRequestSID", b'\xFF\x00' + erase, b'\x01'),\
+                        "m_send" : SC.can_m_send("RoutineControlRequestSID", b'\xFF\x00'\
+                                                 + erase, b'\x01'),\
                         "mr_extra" : '',\
                         "can_send" : can_send,\
                         "can_rec"  : can_rec,\
@@ -617,14 +645,15 @@ class Support_SBL:
         """
         #testresult = True
         # Parameters for FrameControl FC
-        block_size = 0
-        separation_time = 0
-        frame_control_delay = 0 #no wait
-        frame_control_flag = 48 #continue send
-        frame_control_auto = False
 
-        SC.change_MF_FC(can_send, block_size, separation_time, frame_control_delay,
-                        frame_control_flag, frame_control_auto)
+        can_mf_param: CanMFParam = {
+            'block_size' : 0,
+            'separation_time' : 0,
+            'frame_control_delay' : 0, #no wait
+            'frame_control_flag' : 48, #continue send
+            'frame_control_auto' : False
+            }
+        SC.change_MF_FC(can_send, can_mf_param)
 
         ts_param = {"stub" : stub,\
                     "m_send" : b'\x34' + data_format + b'\x44'+ block_addr_by + block_len_by,\
@@ -664,14 +693,14 @@ class Support_SBL:
             i += 1
             ibyte = bytes([i])
             # Parameters for FrameControl FC
-            block_size = 0
-            separation_time = 0
-            frame_control_delay = 0 #no wait
-            frame_control_flag = 48 #continue send
-            frame_control_auto = False
-
-            SC.change_MF_FC(can_send, block_size, separation_time, frame_control_delay,
-                            frame_control_flag, frame_control_auto)
+            can_mf_param: CanMFParam = {
+                'block_size' : 0,
+                'separation_time' : 0,
+                'frame_control_delay' : 0, #no wait
+                'frame_control_flag' : 48, #continue send
+                'frame_control_auto' : False
+                }
+            SC.change_MF_FC(can_send, can_mf_param)
 
             ts_param = {"stub" : stub,\
                         "m_send" : b'\x36' + ibyte + block_data[pad:pad + nbl-2],\
@@ -679,12 +708,12 @@ class Support_SBL:
                         "can_send" : can_send,\
                         "can_rec"  : can_rec,\
                         "can_nspace" : can_nspace\
-                        }
+                       }
             extra_param = {"purpose" : purpose,\
-                        "timeout" : 0.02,\
-                        "min_no_messages" : -1,\
-                        "max_no_messages" : -1
-                        }
+                           "timeout" : 0.02,\
+                           "min_no_messages" : -1,\
+                           "max_no_messages" : -1
+                          }
 
             testresult = SUTE.teststep(ts_param,\
                                        step_no, extra_param)
@@ -707,12 +736,12 @@ class Support_SBL:
                     "can_send" : can_send,\
                     "can_rec"  : can_rec,\
                     "can_nspace" : can_nspace\
-                    }
+                   }
         extra_param = {"purpose" : purpose,\
-                    "timeout" : 0.2,\
-                    "min_no_messages" : 1,\
-                    "max_no_messages" : 1
-                    }
+                       "timeout" : 0.2,\
+                       "min_no_messages" : 1,\
+                       "max_no_messages" : 1
+                      }
 
         testresult = SUTE.teststep(ts_param,\
                                    step_no, extra_param)
@@ -724,27 +753,30 @@ class Support_SBL:
         Support function for Check Memory
         """
         # Parameters for FrameControl FC
-        block_size = 0
-        separation_time = 0
-        frame_control_delay = 0 #no wait
-        frame_control_flag = 48 #continue send
-        frame_control_auto = False
 
-        SC.change_MF_FC(can_send, block_size, separation_time, frame_control_delay,
-                        frame_control_flag, frame_control_auto)
+        can_mf_param: CanMFParam = {
+            'block_size' : 0,
+            'separation_time' : 0,
+            'frame_control_delay' : 0, #no wait
+            'frame_control_flag' : 48, #continue send
+            'frame_control_auto' : False
+            }
+        SC.change_MF_FC(can_send, can_mf_param)
+
         time.sleep(1)
         ts_param = {"stub" : stub,\
-                    "m_send" : SC.can_m_send("RoutineControlRequestSID", b'\x02\x12' + sw_signature1, b'\x01'),\
+                    "m_send" : SC.can_m_send("RoutineControlRequestSID", b'\x02\x12'\
+                                             + sw_signature1, b'\x01'),\
                     "mr_extra" : '',\
                     "can_send" : can_send,\
                     "can_rec"  : can_rec,\
                     "can_nspace" : can_nspace\
-                    }
+                   }
         extra_param = {"purpose" : purpose,\
-                    "timeout" : 2,\
-                    "min_no_messages" : -1,\
-                    "max_no_messages" : -1
-                    }
+                       "timeout" : 2,\
+                       "min_no_messages" : -1,\
+                       "max_no_messages" : -1
+                      }
 
         testresult = SUTE.teststep(ts_param,\
                                    step_no, extra_param)
@@ -762,17 +794,18 @@ class Support_SBL:
         """
 
         ts_param = {"stub" : stub,\
-                    "m_send" : SC.can_m_send("RoutineControlRequestSID", b'\x03\x01' + call, b'\x01'),\
+                    "m_send" : SC.can_m_send("RoutineControlRequestSID",\
+                                             b'\x03\x01' + call, b'\x01'),\
                     "mr_extra" : '',\
                     "can_send" : can_send,\
                     "can_rec"  : can_rec,\
                     "can_nspace" : can_nspace\
-                    }
+                   }
         extra_param = {"purpose" : purpose,\
-                    "timeout" : 2,\
-                    "min_no_messages" : -1,\
-                    "max_no_messages" : -1
-                    }
+                       "timeout" : 2,\
+                       "min_no_messages" : -1,\
+                       "max_no_messages" : -1
+                      }
 
         testresult = SUTE.teststep(ts_param,\
                                    step_no, extra_param)
