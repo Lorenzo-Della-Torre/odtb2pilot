@@ -29,10 +29,10 @@ import os
 import threading
 from threading import Thread
 import sys
-from typing import TypedDict, NewType
-#from typing import Dict, NewType
-import re
+#from typing import TypedDict, NewType
+from typing import Dict, NewType
 import yaml
+import re
 #import random
 import grpc
 #import string
@@ -47,7 +47,8 @@ import common_pb2
 
 #class Can_MF_Param(TypedDict):
 #CANMFPARAMS = NewType('CANMFPARAMS', Dict)
-class CanMFParam(TypedDict):
+#class CanMFParam(TypedDict):
+class CanMFParam(Dict):
     """
         CanMFParam
         Added to allow fixed keys when setting MF parameters for CAN
@@ -766,6 +767,10 @@ class Support_CAN:
 
 
 #change parameters of FC and how FC frame is used
+    #def change_MF_FC(self, sig,\
+    #                 block_size, separation_time,\
+    #                 frame_control_delay, frame_control_flag,\
+    #                 frame_control_auto):
     def change_MF_FC(self, sig, can_mf_param: CanMFParam):
         """
         change_MF_FC
