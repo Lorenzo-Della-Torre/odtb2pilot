@@ -24,8 +24,9 @@
 """
 
 import logging
+import sys
 
-logging.basicConfig(filename='{}.log'.format((__file__)[-3]), format='%(asctime)s - %(message)s',
-                    level=logging.INFO)
+logging.basicConfig(format='%(asctime)s - %(message)s',
+                    stream=sys.stdout, level=logging.DEBUG)
 
 logging.info("Testcase result: Tested implicitly by REQ_12345")
