@@ -222,7 +222,7 @@ def step_7(can_param):
         max_no_messages=-1,
         time_to_sleep=6)
 
-    can_param["m_send"] = SC.can_m_send(serv_["service"], "", "")
+    can_param["m_send"] = SC.can_m_send(serv_["service"], b'', "")
     can_param["mr_extra"] = b''
 
     result = SUTE.teststep(can_param, stepno, param_)
@@ -293,7 +293,7 @@ def step_12(can_param):
         max_no_messages=-1,
         time_to_sleep=6)
 
-    can_param["m_send"] = SC.can_m_send(serv_["service"], "", "")
+    can_param["m_send"] = SC.can_m_send(serv_["service"], b'', "")
     can_param["mr_extra"] = b''
 
     result = SUTE.teststep(can_param, stepno, param_)
