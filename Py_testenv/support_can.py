@@ -29,8 +29,10 @@ import os
 import threading
 from threading import Thread
 import sys
-import yaml
+from typing import TypedDict, NewType
+#from typing import Dict, NewType
 import re
+import yaml
 #import random
 import grpc
 #import string
@@ -42,6 +44,19 @@ import functional_api_pb2_grpc
 import system_api_pb2
 import system_api_pb2_grpc
 import common_pb2
+
+#class Can_MF_Param(TypedDict):
+#CANMFPARAMS = NewType('CANMFPARAMS', Dict)
+class CanMFParam(TypedDict):
+    """
+        CanMFParam
+        Added to allow fixed keys when setting MF parameters for CAN
+    """
+    block_size: int
+    separation_time: int
+    frame_control_delay: int
+    frame_control_flag: bool
+    frame_control_auto: bool
 
 class Support_CAN:
     """
@@ -751,29 +766,34 @@ class Support_CAN:
 
 
 #change parameters of FC and how FC frame is used
-    def change_MF_FC(self, sig, block_size, separation_time, frame_control_delay, frame_control_flag, frame_control_auto):
+    def change_MF_FC(self, sig, can_mf_param: CanMFParam):
         """
         change_MF_FC
         """
-        #print("change_MF_FC")
+        print("change_MF_FC")
+        print("change_MF_FC param:", can_mf_param)
         #global can_subscribes
         #print("can_subscribes ", self.can_subscribes)
-        self.can_subscribes[sig][1] = block_size
-        self.can_subscribes[sig][2] = separation_time
-        self.can_subscribes[sig][3] = frame_control_delay
-        self.can_subscribes[sig][4] = frame_control_flag
-        #self.can_subscribes[sig][5]=frame_control_responses
-        self.can_subscribes[sig][6] = frame_control_auto
+        self.can_subscribes[sig][1] = can_mf_param['block_size']
+        self.can_subscribes[sig][2] = can_mf_param['separation_time']
+        self.can_subscribes[sig][3] = can_mf_param['frame_control_delay']
+        self.can_subscribes[sig][4] = can_mf_param['frame_control_flag']
+        #self.can_subscribes[sig][5]=can_mf_param.frame_control_responses
+        self.can_subscribes[sig][6] = can_mf_param['frame_control_auto']
 
 # build FlowControl frame and send
-    def send_FC_frame(self, stub, signal_name, namespace, frame_control_flag, block_size, separation_time):
+    def send_FC_frame(self, stub,\
+                      signal_name, namespace,\
+                      frame_control_flag, block_size,\
+                      separation_time):
         """
         send_FC_frame
         """
         #print("send_FC_frame")
 
         #print("send_FC_frame parameters: SigName ", signal_name," NSP ",namespace, \
-        #           " frame_control_flag ", frame_control_flag," block_size ",block_size, " separation_time ",separation_time)
+        #           " frame_control_flag ", frame_control_flag," block_size ",\
+        #           block_size, " separation_time ",separation_time)
         #payload=(frame_control_flag << 8) + block_size
         #payload=(payload << 8) + separation_time
         if (frame_control_flag < 48) | (frame_control_flag > 50):
@@ -784,9 +804,12 @@ class Support_CAN:
         if(separation_time > 127) & ((separation_time < 241) | (separation_time > 249)):
             print("CAN Flowcontrol: separationtime out_of_range", separation_time)
         #payload= b'\x30\x00\x00\x00\x00\x00\x00\x00'
-        #print("payload FC ", frame_control_flag +1, "to_bytes ", frame_control_flag.to_bytes(1,'big'))
-        #print("payload block_size ", block_size, " to_bytes ", block_size.to_bytes(1,'big'))
-        #print("payload separation_time ", separation_time, " to_bytes ", separation_time.to_bytes(1,'big'))
+        #print("payload FC ", frame_control_flag +1,\
+        #      "to_bytes ", frame_control_flag.to_bytes(1,'big'))
+        #print("payload block_size ", block_size,\
+        #      " to_bytes ", block_size.to_bytes(1,'big'))
+        #print("payload separation_time ", separation_time,\
+        #      " to_bytes ", separation_time.to_bytes(1,'big'))
 
         payload = frame_control_flag.to_bytes(1, 'big') \
                     +block_size.to_bytes(1, 'big') \
@@ -888,7 +911,7 @@ class Support_CAN:
                     #print("can_mess_updated ", can_mess_updated)
             #print("all can messages : ", self.can_messages)
         return can_mess_updated
-        
+
     def Extract_Parameter_yml(self, *argv, **kwargs):
         """
         Extract requested data from a Parameter dictionary from yaml.
