@@ -29,8 +29,8 @@ import os
 import threading
 from threading import Thread
 import sys
-from typing import TypedDict, NewType
-#from typing import Dict, NewType
+#from typing import TypedDict, NewType
+from typing import Dict, NewType
 import re
 import yaml
 #import random
@@ -47,7 +47,8 @@ import common_pb2
 
 #class Can_MF_Param(TypedDict):
 #CANMFPARAMS = NewType('CANMFPARAMS', Dict)
-class CanMFParam(TypedDict):
+#class CanMFParam(TypedDict):
+class CanMFParam(Dict):
     """
         CanMFParam
         Added to allow fixed keys when setting MF parameters for CAN
