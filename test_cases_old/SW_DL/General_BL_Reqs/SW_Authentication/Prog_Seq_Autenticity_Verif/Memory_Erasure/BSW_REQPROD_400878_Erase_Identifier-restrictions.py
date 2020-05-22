@@ -29,7 +29,7 @@ import sys
 import logging
 
 import ODTB_conf
-from support_can import Support_CAN
+from support_can import Support_CAN, CanMFParam
 from support_test_odtb2 import Support_test_ODTB2
 from support_SBL import Support_SBL
 from support_SecAcc import Support_Security_Access
@@ -41,11 +41,13 @@ SSA = Support_Security_Access()
 
 ERASE = None
 
-def precondition(stub, can_send, can_receive, can_namespace, result):
+def precondition(stub, can_send, can_receive, can_namespace):
     """
     Precondition for test running:
     BECM has to be kept alive: start heartbeat
     """
+    # read VBF param when testscript is s started, if empty take default param
+    SSBL.get_vbf_files()
 
     # start heartbeat, repeat every 0.8 second
     SC.start_heartbeat(stub, "MvcmFront1NMFr", "Front1CANCfg0",
@@ -61,37 +63,41 @@ def precondition(stub, can_send, can_receive, can_namespace, result):
     #record signal we send as well
     SC.subscribe_signal(stub, can_receive, can_send, can_namespace, timeout)
 
-    result = step_0(stub, can_send, can_receive, can_namespace, result)
+    result = step_0(stub, can_send, can_receive, can_namespace)
     logging.info("Precondition testok: %s\n", result)
     return result
 
-def step_0(stub, can_send, can_receive, can_namespace, result):
+def step_0(stub, can_send, can_receive, can_namespace):
     """
     Teststep 0: Complete ECU Part/Serial Number(s)
     """
     stepno = 0
-    purpose = "Complete ECU Part/Serial Number(s)"
-    timeout = 1
-    min_no_messages = -1
-    max_no_messages = -1
-
-    can_m_send = SC.can_m_send("ReadDataByIdentifier", b'\xED\xA0', "")
-    can_mr_extra = ''
-
-    result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-                                      can_receive, can_namespace, stepno, purpose,
-                                      timeout, min_no_messages, max_no_messages)
+    ts_param = {"stub" : stub,\
+                "m_send" : SC.can_m_send("ReadDataByIdentifier", b'\xED\xA0', ""),\
+                "mr_extra" : '',\
+                "can_send" : can_send,\
+                "can_rec"  : can_receive,\
+                "can_nspace" : can_namespace\
+               }
+    extra_param = {"purpose" : "Complete ECU Part/Serial Number(s)",\
+                   "timeout" : 1,\
+                   "min_no_messages" : -1,\
+                   "max_no_messages" : -1
+                  }
+    result = SUTE.teststep(ts_param,\
+                           stepno, extra_param)
     logging.info('%s', SUTE.PP_CombinedDID_EDA0(SC.can_messages[can_receive][0][2], title=''))
     return result
 
-def step_1(stub, can_send, can_receive, can_namespace, result):
+def step_1(stub, can_send, can_receive, can_namespace):
     """
     Teststep 1: Activate SBL
     """
     stepno = 1
     purpose = "Download and Activation of SBL"
-    result = result and SSBL.sbl_activation(stub, can_send, can_receive, can_namespace,
-                                            stepno, purpose)
+    result = SSBL.sbl_activation(stub,
+                                 can_send, can_receive, can_namespace,
+                                 stepno, purpose)
     return result
 
 def step_2():
@@ -102,76 +108,84 @@ def step_2():
     purpose = "ESS files reading"
     global ERASE
     SUTE.print_test_purpose(stepno, purpose)
-    _, _, _, _, _, ERASE = SSBL.read_vbf_file(2)
+    _, _, _, _, _, ERASE = SSBL.read_vbf_file(SSBL.get_ess_filename())
 
-def step_3(stub, can_send, can_receive, can_namespace, result):
+def step_3(stub, can_send, can_receive, can_namespace):
     """
     Teststep 3: Flash Erase for wrong Lenght should be aborted
     """
     stepno = 3
-    purpose = "Flash Erase for wrong Lenght should be aborted"
-    timeout = 15 #wait a second for reply to be send
-    min_no_messages = -1
-    max_no_messages = -1
+    
     # Parameters for FrameControl FC
-    block_size = 0
-    separation_time = 0
-    frame_control_delay = 0 #no wait
-    frame_control_flag = 48 #continue send
-    frame_control_auto = False
+    can_mf_param: CanMFParam = {
+        'block_size' : 0,
+        'separation_time' : 0,
+        'frame_control_delay' : 0, #no wait
+        'frame_control_flag' : 48, #continue send
+        'frame_control_auto' : False
+        }
+    SC.change_MF_FC(can_send, can_mf_param)
 
-    SC.change_MF_FC(can_send, block_size, separation_time, frame_control_delay, frame_control_flag,
-                    frame_control_auto)
-
-    can_m_send = SC.can_m_send("RoutineControlRequestSID", b'\xFF\x00' + ERASE, b'\x01')
-    can_mr_extra = ''
-
-    time.sleep(1)
-    result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-                                      can_receive, can_namespace, stepno, purpose,
-                                      timeout, min_no_messages, max_no_messages)
-
+    ts_param = {"stub" : stub,\
+                "m_send" : SC.can_m_send("RoutineControlRequestSID", b'\xFF\x00' + ERASE, b'\x01'),\
+                "mr_extra" : '',\
+                "can_send" : can_send,\
+                "can_rec"  : can_receive,\
+                "can_nspace" : can_namespace\
+               }
+    extra_param = {"purpose" : "Flash Erase for wrong Lenght should be aborted",\
+                   "timeout" : 15,\
+                   "min_no_messages" : -1,\
+                   "max_no_messages" : -1
+                  }
+    result = SUTE.teststep(ts_param,\
+                           stepno, extra_param)
     result = result and SUTE.test_message(SC.can_messages[can_receive], teststring='7F3131')
 
     #logging.info('%s', SUTE.PP_Decode_7F_response(SC.can_frames[can_receive][0][2]))
     return result
 
-def step_4(stub, can_send, can_receive, can_namespace, result):
+def step_4(stub, can_send, can_receive, can_namespace):
     """
     Teststep 4: Reset
     """
     stepno = 4
-    purpose = "ECU Reset"
-    timeout = 1
-    min_no_messages = -1
-    max_no_messages = -1
-
-    can_m_send = b'\x11\x01'
-    can_mr_extra = ''
-
-    result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-                                      can_receive, can_namespace, stepno, purpose,
-                                      timeout, min_no_messages, max_no_messages)
-
+    ts_param = {"stub" : stub,\
+                "m_send" : b'\x11\x01',\
+                "mr_extra" : '',\
+                "can_send" : can_send,\
+                "can_rec"  : can_receive,\
+                "can_nspace" : can_namespace\
+               }
+    extra_param = {"purpose" : "ECU Reset",\
+                   "timeout" : 1,\
+                   "min_no_messages" : -1,\
+                   "max_no_messages" : -1
+                  }
+    result = SUTE.teststep(ts_param,\
+                           stepno, extra_param)
     result = result and SUTE.test_message(SC.can_messages[can_receive], teststring='025101')
     return result
 
-def step_5(stub, can_send, can_receive, can_namespace, result):
+def step_5(stub, can_send, can_receive, can_namespace):
     """
     Teststep 5: verify session
     """
     stepno = 5
-    purpose = "Verify Default session"
-    timeout = 1
-    min_no_messages = 1
-    max_no_messages = 1
-
-    can_m_send = SC.can_m_send("ReadDataByIdentifier", b'\xF1\x86', "")
-    can_mr_extra = b'\x01'
-
-    result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-                                      can_receive, can_namespace, stepno, purpose,
-                                      timeout, min_no_messages, max_no_messages)
+    ts_param = {"stub" : stub,\
+                "m_send" : SC.can_m_send("ReadDataByIdentifier", b'\xF1\x86', ""),\
+                "mr_extra" : b'\x01',\
+                "can_send" : can_send,\
+                "can_rec"  : can_receive,\
+                "can_nspace" : can_namespace\
+               }
+    extra_param = {"purpose" : "Verify Default session",\
+                   "timeout" : 1,\
+                   "min_no_messages" : 1,\
+                   "max_no_messages" : 1
+                  }
+    result = SUTE.teststep(ts_param,\
+                           stepno, extra_param)
     return result
 
 def run():
@@ -198,7 +212,7 @@ def run():
     ############################################
     # precondition
     ############################################
-    result = precondition(network_stub, can_send, can_receive, can_namespace, result)
+    result = precondition(network_stub, can_send, can_receive, can_namespace)
 
     ############################################
     # teststeps
@@ -206,7 +220,7 @@ def run():
     # step 1:
     # action:
     # result:
-    result = step_1(network_stub, can_send, can_receive, can_namespace, result)
+    result = result and step_1(network_stub, can_send, can_receive, can_namespace)
 
     # step 2:
     # action:
@@ -216,17 +230,17 @@ def run():
     # step 3:
     # action:
     # result:
-    result = step_3(network_stub, can_send, can_receive, can_namespace, result)
+    result = result and step_3(network_stub, can_send, can_receive, can_namespace)
 
     # step 4:
     # action:
     # result:
-    result = step_4(network_stub, can_send, can_receive, can_namespace, result)
+    result = result and step_4(network_stub, can_send, can_receive, can_namespace)
 
     # step 5:
     # action:
     # result:
-    result = step_5(network_stub, can_send, can_receive, can_namespace, result)
+    result = result and step_5(network_stub, can_send, can_receive, can_namespace)
 
     ############################################
     # postCondition
