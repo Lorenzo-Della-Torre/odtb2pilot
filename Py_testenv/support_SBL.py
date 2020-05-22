@@ -25,6 +25,7 @@ import time
 
 import logging
 import sys
+import glob
 
 from support_can import Support_CAN, CanMFParam
 from support_test_odtb2 import Support_test_ODTB2
@@ -78,6 +79,57 @@ class Support_SBL:
         """
         return self._df
 
+    def read_VBF_param(self):
+        """
+        read filenames used for transer as args to testscript
+        """
+        # read arguments for files to DL:
+        f_sbl = ''
+        f_ess = ''
+        f_df = []
+        for f_name in sys.argv:
+            if not f_name.find('.vbf') == -1:
+                print("Filename to DL: ", f_name)
+                if not f_name.find('sbl') == -1:
+                   f_sbl = f_name
+                elif not f_name.find('ess') == -1:
+                    f_ess = f_name
+                else:
+                    f_df.append(f_name)
+        self.__init__(f_sbl, f_ess, f_df)
+        self.show_filenames()
+        time.sleep(10)
+
+    def set_VBF_default_param(self):
+        """
+        read default filenames used for transer when no args were given
+        """
+        f_sbl = ''
+        f_ess = ''
+        f_df = []
+        for f_name in glob.glob("./VBF/*.vbf"):
+            if not f_name.find('.vbf') == -1:
+                print("Filename to DL: ", f_name)
+                if not f_name.find('sbl') == -1:
+                    f_sbl = f_name
+                elif not f_name.find('ess') == -1:
+                    f_ess = f_name
+                else:
+                    f_df.append(f_name)    
+        self.__init__(f_sbl, f_ess, f_df)
+        self.show_filenames()
+        time.sleep(10)
+    
+    def get_vbf_files(self):
+        """
+        read filenames used for transfer to ECU
+        """
+        print ("Length sys.argv: ", len(sys.argv))
+        if not (len(sys.argv) == 1):
+            self.read_VBF_param()
+        else:
+            self.set_VBF_default_param()
+    
     def transfer_data_block(self, offset, data, data_format,\
                             stub, can_send, can_rec, can_nspace,\
                             step_no, purpose):
@@ -147,6 +199,26 @@ class Support_SBL:
                 print("Decompressed block length: {0:08X}".format(len(decompr_data)))
                 testresult = False
         return testresult
+
+    # Support Function for flashing Secondary Bootloader SW
+    def sbl_download_no_check(self, stub, file_n, can_send="", can_rec="", can_nspace="", step_no='',
+                     purpose=""):
+        """
+        SBL Download
+        """
+        testresult = True
+        purpose = "SBL Download"
+        # Read vbf file for SBL download
+        offset, data, sw_signature, call, data_format = self.read_vbf_file_sbl(file_n)
+
+        testresult = testresult and self.transfer_data_block(offset, data, data_format,\
+                                                            stub, can_send, can_rec, can_nspace,\
+                                                            step_no, purpose)
+        #Check memory
+        #testresult = testresult and self.check_memory(stub, can_send, can_rec, can_nspace, step_no,
+        #                                              purpose, sw_signature)
+
+        return testresult, call
 
     # Support Function for flashing Secondary Bootloader SW
     def sbl_download(self, stub, file_n, can_send="", can_rec="", can_nspace="", step_no='',
