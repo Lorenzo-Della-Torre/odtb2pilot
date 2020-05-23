@@ -26,6 +26,8 @@ import time
 import logging
 import sys
 import glob
+from typing import Dict
+#from typing import Dict, NewType
 
 from support_can import Support_CAN, CanMFParam
 from support_test_odtb2 import Support_test_ODTB2
@@ -39,6 +41,34 @@ SSA = Support_Security_Access()
 
 LZSS = LZSS_Encoder()
 
+
+class VbfBlockFormat(Dict):
+    """
+        Parameters used in VBF blocks
+    """
+    offset: int
+    data: int
+    data_format: bytes
+    addr: int
+    len: int
+
+    def vbf_block_init(self, block):
+        """
+            init of VbfBlockFormat with empty values
+        """
+        block['offset'] = 0
+        block['data'] = 0
+        block['data_format'] = b''
+        block['addr'] = 0
+        block['len'] = 0
+
+    def vbf_block_read(self, block):
+        """
+            return block
+        """
+        return block
+
+        
 #class for supporting Secondary Bootloader Download
 class Support_SBL:
     """
