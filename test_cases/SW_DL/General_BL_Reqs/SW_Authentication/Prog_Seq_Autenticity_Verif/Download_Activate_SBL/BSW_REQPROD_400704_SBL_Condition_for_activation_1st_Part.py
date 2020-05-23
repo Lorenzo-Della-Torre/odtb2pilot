@@ -38,7 +38,7 @@ SC = Support_CAN()
 SUTE = Support_test_ODTB2()
 SSBL = Support_SBL()
 SSA = Support_Security_Access()
-    
+
 def precondition(stub, can_send, can_receive, can_namespace):
     """
     Precondition for test running:
@@ -46,7 +46,7 @@ def precondition(stub, can_send, can_receive, can_namespace):
     """
     # read VBF param when testscript is s started, if empty take default param
     SSBL.get_vbf_files()
-    
+
     # start heartbeat, repeat every 0.8 second
     SC.start_heartbeat(stub, "MvcmFront1NMFr", "Front1CANCfg0",
                        b'\x00\x40\xFF\xFF\xFF\xFF\xFF\xFF', 0.4)
@@ -100,7 +100,7 @@ def step_1(stub, can_send, can_receive, can_namespace):
                 "can_rec"  : can_receive,\
                 "can_nspace" : can_namespace\
                }
-    extra_param = {"purpose" : "verify RoutineControl start are sent for Check Programming Preconditions",\
+    extra_param = {"purpose" : "verify RC start is sent to Check Prog Precond",\
                    "timeout" : 1,\
                    "min_no_messages" : -1,\
                    "max_no_messages" : -1
@@ -108,17 +108,6 @@ def step_1(stub, can_send, can_receive, can_namespace):
 
     result = SUTE.teststep(ts_param,\
                            stepno, extra_param)
-    #purpose = "verify RoutineControl start are sent for Check Programming Preconditions"
-    #timeout = 1 #wait a second for reply to be send
-    #min_no_messages = -1
-    #max_no_messages = -1
-
-    #can_m_send = SC.can_m_send("RoutineControlRequestSID", b'\x02\x06', b'\x01')
-    #can_mr_extra = ''
-
-    #result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-    #                                  can_receive, can_namespace, stepno, purpose,
-    #                                  timeout, min_no_messages, max_no_messages)
 
     result = result and SUTE.PP_Decode_Routine_Control_response(SC.can_messages[can_receive][0][2],
                                                                 'Type1,Completed')
@@ -146,21 +135,6 @@ def step_2(stub, can_send, can_receive, can_namespace):
                            stepno, extra_param)
     result = result and SUTE.teststep(ts_param,\
                                       stepno, extra_param)
-    #purpose = "Change to Programming session(01) from default"
-    #timeout = 1
-    #min_no_messages = -1
-    #max_no_messages = -1
-
-    #can_m_send = SC.can_m_send("DiagnosticSessionControl", b'\x02', "")
-    #can_mr_extra = ''
-
-    #result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-    #                                  can_receive, can_namespace, stepno, purpose,
-    #                                  timeout, min_no_messages, max_no_messages)
-
-    #result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-    #                                  can_receive, can_namespace, stepno, purpose,
-    #                                  timeout, min_no_messages, max_no_messages)
     return result
 
 def step_3(stub, can_send, can_receive, can_namespace):
@@ -204,15 +178,6 @@ def step_5(stub, can_send, can_receive, can_namespace, call):
 
     result = SUTE.teststep(ts_param,\
                            stepno, extra_param)
-    #purpose = "SBL activation with correct call"
-    #timeout = 4 #wait a second for reply to be send
-    #min_no_messages = -1
-    #max_no_messages = -1
-    #can_m_send = SC.can_m_send("RoutineControlRequestSID", b'\x03\x01' + call, b'\x01')
-    #can_mr_extra = ''
-    #result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-    #                                  can_receive, can_namespace, stepno, purpose,
-    #                                  timeout, min_no_messages, max_no_messages)
 
     result = result and SUTE.test_message(SC.can_messages[can_receive], teststring='7F3131')
     logging.info(SUTE.PP_Decode_7F_response(SC.can_frames[can_receive][0][2]))
@@ -238,18 +203,6 @@ def step_6(stub, can_send, can_receive, can_namespace):
 
     result = SUTE.teststep(ts_param,\
                            stepno, extra_param)
-    #purpose = "ECU Reset"
-    #timeout = 1
-    #min_no_messages = -1
-    #max_no_messages = -1
-
-    #can_m_send = b'\x11\x01'
-    #can_mr_extra = ''
-
-    #result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-    #                                  can_receive, can_namespace, stepno, purpose,
-    #                                  timeout, min_no_messages, max_no_messages)
-
     result = result and SUTE.test_message(SC.can_messages[can_receive], teststring='025101')
     time.sleep(1)
     return result
@@ -274,17 +227,6 @@ def step_7(stub, can_send, can_receive, can_namespace):
 
     result = SUTE.teststep(ts_param,\
                            stepno, extra_param)
-    #purpose = "Verify Default session"
-    #timeout = 1
-    #min_no_messages = 1
-    #max_no_messages = 1
-
-    #can_m_send = SC.can_m_send("ReadDataByIdentifier", b'\xF1\x86', "")
-    #can_mr_extra = b'\x01'
-
-    #result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-    #                                  can_receive, can_namespace, stepno, purpose,
-    #                                  timeout, min_no_messages, max_no_messages)
     time.sleep(1)
     return result
 
