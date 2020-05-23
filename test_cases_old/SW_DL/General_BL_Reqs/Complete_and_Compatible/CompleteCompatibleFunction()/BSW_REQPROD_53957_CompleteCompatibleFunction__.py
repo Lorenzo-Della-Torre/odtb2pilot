@@ -178,10 +178,14 @@ def step_7(stub, can_send, can_receive, can_namespace):
     stepno = 7
     purpose = "Download SWP1 variant"
     result = True
-    for f_name in glob.glob("./VBF/REQ_53058*.vbf"):
-        result = result and SSBL.sw_part_download(stub, f_name,
-                                                  can_send, can_receive, can_namespace,
-                                                  stepno, purpose)
+    #REQ_53957_32325411XC_SWP1variant.vbf
+    if len(glob.glob("./VBF_Reqprod/REQ_53057*.vbf")) == 0:
+        result = False
+    else:
+        for f_name in glob.glob("./VBF_Reqprod/REQ_53057*.vbf"):
+            result = result and SSBL.sw_part_download(stub, f_name,
+                                                      can_send, can_receive, can_namespace,
+                                                     stepno, purpose)
     return result
 
 def step_8(stub, can_send, can_receive, can_namespace):
