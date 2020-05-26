@@ -107,8 +107,12 @@ def step_2():
     stepno = 2
     purpose = "ESS files reading"
     global ERASE
+    ess_vbf_modified = "./VBF_Reqprod/REQ_400878_ess_32263666_AA_6M_header_modified.vbf"
+    print ("standard ESS: ", SSBL.get_ess_filename())
+    print ("modified ESS: ", ess_vbf_modified)
     SUTE.print_test_purpose(stepno, purpose)
-    _, _, _, _, _, ERASE = SSBL.read_vbf_file(SSBL.get_ess_filename())
+    _, _, _, _, _, ERASE = SSBL.read_vbf_file(ess_vbf_modified)
+
 
 def step_3(stub, can_send, can_receive, can_namespace):
     """
