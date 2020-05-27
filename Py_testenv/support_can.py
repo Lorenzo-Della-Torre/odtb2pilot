@@ -26,19 +26,39 @@ import time
 import threading
 from threading import Thread
 import sys
+from typing import Dict, NewType
+import re
+import yaml
 import grpc
-from support_can_hw import SupportCanHW
+#from support_can_hw import SupportCanHW
+#SC_HW = SupportCanHW()
 sys.path.append('generated')
+
 import network_api_pb2 # pylint: disable=wrong-import-position
 import network_api_pb2_grpc # pylint: disable=wrong-import-position
+import functional_api_pb2
 import functional_api_pb2_grpc # pylint: disable=wrong-import-position
+import system_api_pb2
+import system_api_pb2_grpc
 import common_pb2 # pylint: disable=wrong-import-position
 
-SC_HW = SupportCanHW()
+
+class CanMFParam(Dict):
+    """
+        CanMFParam
+        Added to allow fixed keys when setting MF parameters for CAN
+    """
+    block_size: int
+    separation_time: int
+    frame_control_delay: int
+    frame_control_flag: bool
+    frame_control_auto: bool
+
 
 class SupportCAN:
     # Disable the too-many-public-methods violation. Not sure how to split it
     # pylint: disable=too-many-public-methods
+
     """
         class for supporting sending/receiving CAN frames
     """
@@ -512,6 +532,61 @@ class SupportCAN:
                 can_mess_updated = True
                 self.can_messages[can_rec].append(list(temp_message))
         return can_mess_updated
+
+
+    #change parameters of FC and how FC frame is used
+    def change_MF_FC(self, sig, can_mf_param: CanMFParam):
+        """
+        change_MF_FC
+        """
+        print("change_MF_FC")
+        print("change_MF_FC param:", can_mf_param)
+        #global can_subscribes
+        #print("can_subscribes ", self.can_subscribes)
+        self.can_subscribes[sig][1] = can_mf_param['block_size']
+        self.can_subscribes[sig][2] = can_mf_param['separation_time']
+        self.can_subscribes[sig][3] = can_mf_param['frame_control_delay']
+        self.can_subscribes[sig][4] = can_mf_param['frame_control_flag']
+        #self.can_subscribes[sig][5]=can_mf_param.frame_control_responses
+        self.can_subscribes[sig][6] = can_mf_param['frame_control_auto']
+
+    # build FlowControl frame and send
+    def send_FC_frame(self, stub,\
+                      signal_name, namespace,\
+                      frame_control_flag, block_size,\
+                      separation_time):
+        """
+        send_FC_frame
+        """
+        #print("send_FC_frame")
+
+        #print("send_FC_frame parameters: SigName ", signal_name," NSP ",namespace, \
+        #           " frame_control_flag ", frame_control_flag," block_size ",\
+        #           block_size, " separation_time ",separation_time)
+        #payload=(frame_control_flag << 8) + block_size
+        #payload=(payload << 8) + separation_time
+        if (frame_control_flag < 48) | (frame_control_flag > 50):
+            print("CAN Flowcontrol: Error frame_control_flag: Out_of_range ", frame_control_flag)
+        if block_size > 255:
+            print("CAN Flowcontrol: Blocksize ouf_of_range ", block_size)
+        #if(separation_time < b'\xf1') | (separation_time > b'\xf9'):
+        if(separation_time > 127) & ((separation_time < 241) | (separation_time > 249)):
+            print("CAN Flowcontrol: separationtime out_of_range", separation_time)
+        #payload= b'\x30\x00\x00\x00\x00\x00\x00\x00'
+        #print("payload FC ", frame_control_flag +1,\
+        #      "to_bytes ", frame_control_flag.to_bytes(1,'big'))
+        #print("payload block_size ", block_size,\
+        #      " to_bytes ", block_size.to_bytes(1,'big'))
+        #print("payload separation_time ", separation_time,\
+        #      " to_bytes ", separation_time.to_bytes(1,'big'))
+
+        payload = frame_control_flag.to_bytes(1, 'big') \
+                    +block_size.to_bytes(1, 'big') \
+                    +separation_time.to_bytes(1, 'big') \
+                    +b'\x00\x00\x00\x00\x00'
+        #print("Payload FC frame", payload)
+        self.t_send_signal_hex(stub, signal_name, namespace, payload)
+        #can_messages[signal_name].append(list(payload)) #add to list of sent frames
 
 
     def update_can_messages(self, can_rec):

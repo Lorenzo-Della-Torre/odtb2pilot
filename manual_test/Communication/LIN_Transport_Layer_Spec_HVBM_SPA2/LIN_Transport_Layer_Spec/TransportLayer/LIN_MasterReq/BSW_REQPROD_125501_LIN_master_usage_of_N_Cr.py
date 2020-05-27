@@ -1,11 +1,12 @@
-""" Testscript for a requirement which needs to be tested by code inspection (To be inspected)
+""" Testscript for a requirement which is not applicable for us (Not applicable).
+    For example: Test multiple processors when you only have one.
 
     Testscript  ODTB2 MEPII
     project     BECM basetech MEPII
-    author      USERNAME (firstname surname)
-    date        YYYY-MM-DD
-    version     1.0
-    reqprod     12345
+    author      HWEILER (Hans-Klaus Weiler)
+    date:     2020-05-11
+    version:  1.0
+    reqprod:  125501
 
     Inspired by https://grpc.io/docs/tutorials/basic/python.html
     Copyright 2015 gRPC authors.
@@ -24,9 +25,8 @@
 """
 
 import logging
-import sys
 
-logging.basicConfig(format='%(asctime)s - %(message)s',
-                    stream=sys.stdout, level=logging.DEBUG)
+logging.basicConfig(filename='{}.log'.format((__file__)[:-3]), format='%(asctime)s - %(message)s',
+                    level=logging.INFO)
 
-logging.info("Testcase result: To be inspected")
+logging.info("Testcase result: Not applicable")

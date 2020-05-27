@@ -24,10 +24,13 @@
 import time
 import logging
 import sys
+import glob
+from typing import Dict
+#from typing import Dict, NewType
 
 from support_can_hw import SupportCanHW
 from support_carcom import SupportCARCOM
-from support_can import SupportCAN
+from support_can import SupportCAN, CanMFParam
 from support_test_odtb2 import SupportTestODTB2
 from support_sec_acc import SupportSecurityAccess
 from support_LZSS import LZSS_Encoder
@@ -39,6 +42,35 @@ SUTE = SupportTestODTB2()
 SSA = SupportSecurityAccess()
 LZSS = LZSS_Encoder()
 
+
+class VbfBlockFormat(Dict):
+    """
+        Parameters used in VBF blocks
+    """
+    offset: int
+    data: int
+    data_format: bytes
+    addr: int
+    len: int
+
+    def vbf_block_init(self, block):
+        """
+            init of VbfBlockFormat with empty values
+        """
+        block['offset'] = 0
+        block['data'] = 0
+        block['data_format'] = b''
+        block['addr'] = 0
+        block['len'] = 0
+
+    def vbf_block_read(self, block):
+        """
+            return block
+        """
+        return block
+
+        
+#class for supporting Secondary Bootloader Download
 class SupportSBL:
     # Disable the too-many-public-methods violation. Not sure how to split it
     # pylint: disable=too-many-public-methods
@@ -59,7 +91,7 @@ class SupportSBL:
 
     def show_filenames(self):
         """
-        show_filenames
+        print filenames used for SWDL
         """
         print("SBL: ", self._sbl)
         print("ESS: ", self._ess)
@@ -68,26 +100,80 @@ class SupportSBL:
 
     def get_sbl_filename(self):
         """
-        get_sbl_filename
+        return filename used for SBL in SWDL
         """
         return self._sbl
 
 
     def get_ess_filename(self):
         """
-        get_ess_filename
+        return filename used for ESS in SWDL
         """
         return self._ess
 
 
     def get_df_filenames(self):
         """
-        get_df_filenames
+        return filenames used for data in SWDL
         """
         return self._df
 
 
+    def read_VBF_param(self):
+        """
+        read filenames used for transer as args to testscript
+        """
+        # read arguments for files to DL:
+        f_sbl = ''
+        f_ess = ''
+        f_df = []
+        for f_name in sys.argv:
+            if not f_name.find('.vbf') == -1:
+                print("Filename to DL: ", f_name)
+                if not f_name.find('sbl') == -1:
+                   f_sbl = f_name
+                elif not f_name.find('ess') == -1:
+                    f_ess = f_name
+                else:
+                    f_df.append(f_name)
+        self.__init__(f_sbl, f_ess, f_df)
+        self.show_filenames()
+        time.sleep(10)
+
+    def set_VBF_default_param(self):
+        """
+        read default filenames used for transer when no args were given
+        """
+        f_sbl = ''
+        f_ess = ''
+        f_df = []
+        for f_name in glob.glob("./VBF/*.vbf"):
+            if not f_name.find('.vbf') == -1:
+                print("Filename to DL: ", f_name)
+                if not f_name.find('sbl') == -1:
+                    f_sbl = f_name
+                elif not f_name.find('ess') == -1:
+                    f_ess = f_name
+                else:
+                    f_df.append(f_name)    
+        self.__init__(f_sbl, f_ess, f_df)
+        self.show_filenames()
+        time.sleep(10)
+    
+    def get_vbf_files(self):
+        """
+        read filenames used for transfer to ECU
+        """
+        print ("Length sys.argv: ", len(sys.argv))
+        if not (len(sys.argv) == 1):
+            self.read_VBF_param()
+        else:
+            self.set_VBF_default_param()
+    
     def transfer_data_block(self, data_param, can_param, step_no, purpose):
+    # def transfer_data_block(self, offset, data, data_format,\
+                            # stub, can_send, can_rec, can_nspace,\
+                            # step_no, purpose):
         """
             transfer_data_block
             support function to transfer
@@ -163,6 +249,28 @@ class SupportSBL:
 
 
     # Support Function for flashing Secondary Bootloader SW
+    def sbl_download_no_check(self, stub, file_n, can_send="", can_rec="", can_nspace="", step_no='',
+                     purpose=""):
+        """
+        SBL Download
+        """
+        testresult = True
+        purpose = "SBL Download"
+        # Read vbf file for SBL download
+        offset, data, sw_signature, call, data_format = self.read_vbf_file_sbl(file_n)
+
+        testresult = testresult and self.transfer_data_block(offset, data, data_format,\
+                                                            stub, can_send, can_rec, can_nspace,\
+                                                            step_no, purpose)
+        #Check memory
+        #testresult = testresult and self.check_memory(stub, can_send, can_rec, can_nspace, step_no,
+        #                                              purpose, sw_signature)
+
+        return testresult, call
+
+    # Support Function for flashing Secondary Bootloader SW
+    #def sbl_download(self, stub, file_n, can_send="", can_rec="", can_nspace="", step_no='',
+    #                 purpose=""):
     def sbl_download(self, file_n, can_param, step_no='', purpose=""):
         """
         SBL Download
@@ -291,6 +399,28 @@ class SupportSBL:
                        "max_no_messages" : -1
                       }
 
+        testresult = testresult and SUTE.teststep(ts_param,\
+                                                  step_no, extra_param)
+        testresult = testresult and SUTE.teststep(ts_param,\
+                                                  step_no, extra_param)
+
+        ts_param = {"stub" : can_param["stub"],
+                    "m_send" : S_CARCOM.can_m_send("ReadDataByIdentifier", b'\xF1\x86', ""),\
+                    "mr_extra" : '',
+                    "can_send" : can_param["can_send"],
+                    "can_rec"  : can_param["can_rec"],
+                    "can_nspace" : can_param["can_nspace"]
+                   }
+        extra_param = {"purpose" : "Verify Session after SessionControl to Prog",
+                       "timeout" : 1,
+                       "min_no_messages" : 1,
+                       "max_no_messages" : 1
+                      }
+
+        SUTE.teststep(ts_param, step_no, extra_param)
+
+        testresult = testresult and self.sbl_activation_prog(stub, can_send, can_rec, can_nspace,\
+                                            step_no, purpose)
         testresult = testresult and SUTE.teststep(ts_param, step_no, extra_param)
         testresult = testresult and SUTE.teststep(ts_param, step_no, extra_param)
         testresult = testresult and self.sbl_activation_prog(can_param, step_no, purpose)
@@ -354,8 +484,6 @@ class SupportSBL:
                       }
 
         SUTE.teststep(ts_param, step_no, extra_param)
-
-
         logging.info(SC.can_messages[can_param["can_rec"]])
 
         if SUTE.test_message(SC.can_messages[can_param["can_rec"]], '62F18601')\
@@ -442,16 +570,27 @@ class SupportSBL:
         """
 
         # Parameters for FrameControl FC
-        block_size = 0
-        separation_time = 0
-        frame_control_delay = 0 #no wait
-        frame_control_flag = 48 #continue send
-        frame_control_auto = True
+        can_mf_param: CanMFParam = {
+            'block_size' : 0,
+            'separation_time' : 0,
+            'frame_control_delay' : 0, #no wait
+            'frame_control_flag' : 48, #continue send
+            'frame_control_auto' : True
+            }
+        SC.change_MF_FC(can_send, can_mf_param)
 
-        fc_param = dict()
-        fc_param["delay"] = frame_control_delay
-        fc_param["flag"] = frame_control_flag
-        fc_param["auto"] = frame_control_auto
+        ts_param = {"stub" : stub,\
+                    "m_send" : SC.can_m_send("RoutineControlRequestSID", b'\x02\x05', b'\x01'),\
+                    "mr_extra" : '',\
+                    "can_send" : can_send,\
+                    "can_rec"  : can_rec,\
+                    "can_nspace" : can_nspace\
+                   }
+        extra_param = {"purpose" : purpose,\
+                       "timeout" : 1,\
+                       "min_no_messages" : -1,\
+                       "max_no_messages" : -1
+                      }
 
         SC_HW.change_mf_fc(can_param["can_send"], block_size, separation_time, fc_param)
 
@@ -562,20 +701,18 @@ class SupportSBL:
         data_param["erase"] = erase
         """
         # Parameters for FrameControl FC
-        block_size = 0
-        separation_time = 0
-
-        fc_param = dict()
-        fc_param["delay"] = 0 #no wait
-        fc_param["flag"] = 48 #continue send
-        fc_param["auto"] = False
-
-        SC_HW.change_mf_fc(can_param["can_send"], block_size, separation_time, fc_param)
-
+        can_mf_param: CanMFParam = {
+            'block_size' : 0,
+            'separation_time' : 0,
+            'frame_control_delay' : 0, #no wait
+            'frame_control_flag' : 48, #continue send
+            'frame_control_auto' : False
+            }
+        SC_HW.change_MF_FC(can_send, can_mf_param)
         time.sleep(1)
         ts_param = {"stub" : can_param["stub"],
-                    "m_send" : S_CARCOM.can_m_send("RoutineControlRequestSID",
-                                                   b'\xFF\x00' + data_param["erase"], b'\x01'),
+                    "m_send" : S_CARCOM.can_m_send("RoutineControlRequestSID", b'\xFF\x00'\
+                                             + data_param["erase"], b'\x01'),\
                     "mr_extra" : '',
                     "can_send" : can_param["can_send"],
                     "can_rec"  : can_param["can_rec"],
@@ -682,15 +819,15 @@ class SupportSBL:
         """
         #testresult = True
         # Parameters for FrameControl FC
-        block_size = 0
-        separation_time = 0
 
-        fc_param = dict()
-        fc_param["delay"] = 0 #no wait
-        fc_param["flag"] = 48 #continue send
-        fc_param["auto"] = False
-
-        SC_HW.change_mf_fc(can_param["can_send"], block_size, separation_time, fc_param)
+        can_mf_param: CanMFParam = {
+            'block_size' : 0,
+            'separation_time' : 0,
+            'frame_control_delay' : 0, #no wait
+            'frame_control_flag' : 48, #continue send
+            'frame_control_auto' : False
+            }
+        SC_HW.change_mf_fc(can_send, can_mf_param)
 
         ts_param = {"stub" : can_param["stub"],
                     "m_send" : b'\x34' + data_param["data_format"] + b'\x44'+\
@@ -737,15 +874,15 @@ class SupportSBL:
             i += 1
             ibyte = bytes([i])
             # Parameters for FrameControl FC
-            block_size = 0
-            separation_time = 0
 
-            fc_param = dict()
-            fc_param["delay"] = 0 #no wait
-            fc_param["flag"] = 48 #continue send
-            fc_param["auto"] = False
-
-            SC_HW.change_mf_fc(can_param["can_send"], block_size, separation_time, fc_param)
+            can_mf_param: CanMFParam = {
+                'block_size' : 0,
+                'separation_time' : 0,
+                'frame_control_delay' : 0, #no wait
+                'frame_control_flag' : 48, #continue send
+                'frame_control_auto' : False
+                }
+            SC_HW.change_mf_fc(can_send, can_mf_param)
 
             ts_param = {"stub" : can_param["stub"],
                         "m_send" : b'\x36' + ibyte + data_param["block_data"][pad:pad +\
@@ -807,15 +944,15 @@ class SupportSBL:
         can_param["can_rec"] = can_rec
         """
         # Parameters for FrameControl FC
-        block_size = 0
-        separation_time = 0
 
-        fc_param = dict()
-        fc_param["delay"] = 0 #no wait
-        fc_param["flag"] = 48 #continue send
-        fc_param["auto"] = False
-
-        SC_HW.change_mf_fc(can_param["can_send"], block_size, separation_time, fc_param)
+        can_mf_param: CanMFParam = {
+            'block_size' : 0,
+            'separation_time' : 0,
+            'frame_control_delay' : 0, #no wait
+            'frame_control_flag' : 48, #continue send
+            'frame_control_auto' : False
+            }
+        SC_HW.change_mf_fc(can_param["can_send"], can_mf_param)
 
         time.sleep(1)
         ts_param = {"stub" : can_param["stub"],

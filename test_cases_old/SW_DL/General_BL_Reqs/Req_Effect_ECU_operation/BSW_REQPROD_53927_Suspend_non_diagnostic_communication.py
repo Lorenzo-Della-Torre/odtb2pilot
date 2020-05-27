@@ -40,11 +40,13 @@ SSA = Support_Security_Access()
 WAITING_TIME = 2 #seconds
 MAX_DIFF = 20 #max difference allowed for number of frame non-diagnostic received
 MIN_NON_DIAG = 10 #min number of non-diagnostic frames received allowed
-def precondition(stub, can_send, can_receive, can_namespace, result):
+def precondition(stub, can_send, can_receive, can_namespace):
     """
     Precondition for test running:
     BECM has to be kept alive: start heartbeat
     """
+    # read VBF param when testscript is s started, if empty take default param
+    SSBL.get_vbf_files()
 
     # start heartbeat, repeat every 0.8 second
     SC.start_heartbeat(stub, "MvcmFront1NMFr", "Front1CANCfg0",
@@ -59,31 +61,35 @@ def precondition(stub, can_send, can_receive, can_namespace, result):
     #record signal we send as well
     SC.subscribe_signal(stub, can_receive, can_send, can_namespace, timeout)
 
-    result = step_0(stub, can_send, can_receive, can_namespace, result)
+    result = step_0(stub, can_send, can_receive, can_namespace)
     logging.info("Precondition testok: %s\n", result)
     return result
 
-def step_0(stub, can_send, can_receive, can_namespace, result):
+def step_0(stub, can_send, can_receive, can_namespace):
     """
     Teststep 0: Complete ECU Part/Serial Number(s)
     """
 
-    step_no = 0
-    purpose = "Complete ECU Part/Serial Number(s)"
-    timeout = 5
-    min_no_messages = -1
-    max_no_messages = -1
+    stepno = 0
+    ts_param = {"stub" : stub,\
+                "m_send" : SC.can_m_send("ReadDataByIdentifier", b'\xED\xA0', ""),\
+                "mr_extra" : '',\
+                "can_send" : can_send,\
+                "can_rec"  : can_receive,\
+                "can_nspace" : can_namespace\
+               }
+    extra_param = {"purpose" : "Complete ECU Part/Serial Number(s)",\
+                   "timeout" : 1,\
+                   "min_no_messages" : -1,\
+                   "max_no_messages" : -1
+                  }
 
-    can_m_send = SC.can_m_send("ReadDataByIdentifier", b'\xED\xA0', b'')
-    can_mr_extra = b''
-
-    result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-                                      can_receive, can_namespace, step_no, purpose,
-                                      timeout, min_no_messages, max_no_messages)
+    result = SUTE.teststep(ts_param,\
+                           stepno, extra_param)
     logging.info('%s', SUTE.PP_CombinedDID_EDA0(SC.can_messages[can_receive][0][2], title=''))
     return result
 
-def step_1(stub, can_receive, result):
+def step_1(stub, can_receive):
     """
     Teststep 1: register not diagnostic signal
     """
@@ -110,22 +116,23 @@ def step_1(stub, can_receive, result):
     frame_step1 = len(SC.can_frames[can_rec])
     logging.info("Step %s frames: %s", stepno, SC.can_frames[can_rec])
 
-    result = result and (frame_step1 > MIN_NON_DIAG)
+    result = (frame_step1 > MIN_NON_DIAG)
 
     logging.info("Step %s teststatus: %s", stepno, result)
     return result, frame_step1
 
-def step_2(stub, can_send, can_receive, can_namespace, result):
+def step_2(stub, can_send, can_receive, can_namespace):
     """
     Teststep 2: Activate SBL
     """
     stepno = 2
     purpose = "Download and Activation of SBL"
-    result = result and SSBL.sbl_activation(stub, can_send,
-                                            can_receive, can_namespace, stepno, purpose)
+    result = SSBL.sbl_activation(stub,
+                                 can_send, can_receive, can_namespace,
+                                 stepno, purpose)
     return result
 
-def step_3(can_receive, result):
+def step_3(can_receive):
     """
     Teststep 3: Verify subscribed signal in step 1 is suspended
     """
@@ -143,32 +150,36 @@ def step_3(can_receive, result):
     logging.info("Step %s frames received %s", stepno, len(SC.can_frames[can_rec]))
     logging.info("Step %s frames: %s", stepno, SC.can_frames[can_rec])
 
-    result = result and len(SC.can_frames[can_rec]) == 0
+    result = len(SC.can_frames[can_rec]) == 0
 
     logging.info("Step %s teststatus: %s", stepno, result)
     time.sleep(2)
     return result
 
-def step_4(stub, can_send, can_receive, can_namespace, result):
+def step_4(stub, can_send, can_receive, can_namespace):
     """
     Teststep 4: Change to default session
     """
     stepno = 4
-    purpose = "Change to default session"
-    timeout = 2
-    min_no_messages = 1
-    max_no_messages = 1
+    ts_param = {"stub" : stub,\
+                "m_send" : SC.can_m_send("DiagnosticSessionControl", b'\x01', ""),\
+                "mr_extra" : '',\
+                "can_send" : can_send,\
+                "can_rec"  : can_receive,\
+                "can_nspace" : can_namespace\
+               }
+    extra_param = {"purpose" : "Change to default session",\
+                   "timeout" : 2,\
+                   "min_no_messages" : 1,\
+                   "max_no_messages" : 1
+                  }
 
-    can_m_send = SC.can_m_send("DiagnosticSessionControl", b'\x01', "")
-    can_mr_extra = ''
-
-    result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-                                      can_receive, can_namespace, stepno, purpose,
-                                      timeout, min_no_messages, max_no_messages)
+    result = SUTE.teststep(ts_param,\
+                           stepno, extra_param)
     time.sleep(2)
     return result
 
-def step_5(can_receive, result, frame_step1):
+def step_5(can_receive, frame_step1):
     """
     Teststep 5: Verify subscribed signal in step 1 is received
     """
@@ -186,8 +197,8 @@ def step_5(can_receive, result, frame_step1):
     logging.info("Step %s frames received %s", stepno, len(SC.can_frames[can_rec]))
     logging.info("Step %s frames: %s", stepno, SC.can_frames[can_rec])
 
-    result = result and ((len(SC.can_frames[can_rec]) + MAX_DIFF) > frame_step1 >
-                         (len(SC.can_frames[can_rec]) - MAX_DIFF))
+    result = ((len(SC.can_frames[can_rec]) + MAX_DIFF) > frame_step1 >
+              (len(SC.can_frames[can_rec]) - MAX_DIFF))
 
     logging.info("Step %s teststatus: %s", stepno, result)
     return result
@@ -198,7 +209,6 @@ def run():
     """
 
     logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.DEBUG)
-    result = True
 
     # start logging
     # to be implemented
@@ -216,7 +226,7 @@ def run():
     ############################################
     # precondition
     ############################################
-    result = precondition(network_stub, can_send, can_receive, can_namespace, result)
+    result = precondition(network_stub, can_send, can_receive, can_namespace)
 
     ############################################
     # teststeps
@@ -224,27 +234,28 @@ def run():
     # step 1:
     # action:
     # result:
-    result, frame_step1 = step_1(network_stub, can_receive, result)
+    result2, frame_step1 = step_1(network_stub, can_receive)
+    result = result and result2
 
     # step 2:
     # action:
     # result:
-    result = step_2(network_stub, can_send, can_receive, can_namespace, result)
+    result = result and step_2(network_stub, can_send, can_receive, can_namespace)
 
     # step3:
     # action:
     # result:
-    result = step_3(can_receive, result)
+    result = result and step_3(can_receive)
 
     # step4:
     # action:
     # result:
-    result = step_4(network_stub, can_send, can_receive, can_namespace, result)
+    result = result and step_4(network_stub, can_send, can_receive, can_namespace)
 
     # step5:
     # action:
     # result:
-    result = step_5(can_receive, result, frame_step1)
+    result = result and step_5(can_receive, frame_step1)
 
     ############################################
     # postCondition

@@ -2,10 +2,10 @@
 
     Testscript  ODTB2 MEPII
     project     BECM basetech MEPII
-    author      USERNAME (firstname surname)
-    date        YYYY-MM-DD
+    author      LDELLATO (Lorenzo Della Torre)
+    date        2020-05-07
     version     1.0
-    reqprod     12345
+    reqprod     52243
 
     Inspired by https://grpc.io/docs/tutorials/basic/python.html
     Copyright 2015 gRPC authors.

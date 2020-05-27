@@ -1,11 +1,11 @@
-""" Testscript for a requirement which needs to be tested by code inspection (To be inspected)
+"""  Testscript for an implicitly tested requirement (tested implicitly)
 
     Testscript  ODTB2 MEPII
     project     BECM basetech MEPII
-    author      USERNAME (firstname surname)
-    date        YYYY-MM-DD
+    author      LDELLATO (Lorenzo Della Torre)
+    date        2020-05-20
     version     1.0
-    reqprod     12345
+    reqprod     53975
 
     Inspired by https://grpc.io/docs/tutorials/basic/python.html
     Copyright 2015 gRPC authors.
@@ -29,4 +29,4 @@ import sys
 logging.basicConfig(format='%(asctime)s - %(message)s',
                     stream=sys.stdout, level=logging.DEBUG)
 
-logging.info("Testcase result: To be inspected")
+logging.info("Testcase result: Tested implicitly by REQ_400874 and REQ_397292")
