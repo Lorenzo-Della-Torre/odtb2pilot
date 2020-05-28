@@ -181,21 +181,23 @@ def step_4(stub, can_send, can_receive, can_namespace):
         logging.info("Step %s, result: False\n", stepno)
         logging.info("Step %s RoutineControlRequestSID failed\n", stepno)
     else:
-        logging.info("Step %s RC-request Compl&Comp sent on other CAN\n", stepno)        
+        logging.info("Step %s RC-request Compl&Comp sent on other CAN\n", stepno)
     #verify the message has been sent to the ECU
     result = result and bool(SC.can_frames.get('Vcu1ToBecmFront1DiagReqFrame'))
     if not result:
         logging.info("Step %s Vcu1ToBecmFront1DiagReqFrame received", stepno)
-        logging.info("Step %s %s, frames sent ", stepno, SC.can_frames.get('Vcu1ToBecmFront1DiagReqFrame'))
+        logging.info("Step %s %s, frames sent ",
+                     stepno, SC.can_frames.get('Vcu1ToBecmFront1DiagReqFrame'))
         logging.info("Step %s Was wrong CAN interface used?", stepno)
         logging.info("Step %s Was DBC for sending CAN-frames in place?", stepno)
-        logging.info("Step %s, result: False\n", stepno)
+        logging.info("Step %s result: False\n", stepno)
     #verify no message has been receive
     result = result and len(SC.can_frames[can_receive]) == 0
     if not result:
         logging.info("Step %s Wrong number CAN-frames received", stepno)
-        logging.info("Step %s Number CAN-frames received: %s", stepno, len(SC.can_frames[can_receive]))
-        logging.info("Step %s, result: False\n", stepno)
+        logging.info("Step %s Number CAN-frames received: %s",
+                     stepno, len(SC.can_frames[can_receive]))
+        logging.info("Step %s result: False\n", stepno)
     return result
 
 def step_5(stub, can_send, can_receive, can_namespace):
