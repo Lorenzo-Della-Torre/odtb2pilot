@@ -252,12 +252,12 @@ def run():
     # step 7:
     # action:
     # result: BECM sends positive reply
-    #result = step_7(network_stub, can_send, can_receive, can_namespace, result)
+    result = step_7(network_stub, can_send, can_receive, can_namespace, result)
 
     # step 8:
     # action:
     # result: BECM sends positive reply
-    #result = step_8(network_stub, can_send, can_receive, can_namespace, result)
+    result = step_8(network_stub, can_send, can_receive, can_namespace, result)
 
     # step 9:
     # action:
