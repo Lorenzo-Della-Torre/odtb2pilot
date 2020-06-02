@@ -57,8 +57,6 @@ def step_1(can_p: CanParam):
     """
     stepno = 1
     purpose = "Download and Activation of SBL"
-    #result = SSBL.sbl_activation(stub, can_send, can_receive, can_namespace,\
-    #                             stepno, purpose)
     result = SSBL.sbl_activation(can_p,\
                                  stepno, purpose)
     return result
@@ -106,11 +104,6 @@ def run():
     # to be implemented
 
     # where to connect to signal_broker
-    #network_stub = SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT)
-    #can_send = "Vcu1ToBecmFront1DiagReqFrame"
-    #can_receive = "BecmToVcu1Front1DiagResFrame"
-    #can_namespace = SC.nspace_lookup("Front1CANCfg0")
-
     can_par: CanParam = {
         "netstub" : SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT),\
         "send" : "Vcu1ToBecmFront1DiagReqFrame",\
