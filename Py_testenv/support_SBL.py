@@ -562,19 +562,7 @@ class Support_SBL:
         SC.change_MF_FC(can_p["send"], can_mf_param)
         time.sleep(1)
         
-        cpay: CanPayload = {"m_send" : SC.can_m_send("RoutineControlRequestSID",\
-                                            b'\xFF\x00' + erase, b'\x01'),\
-                            "mr_extra" : ''
-                           }
-        etp: CanTestExtra = {"purpose" : purpose,\
-                             "timeout" : 15,\
-                             "min_no_messages" : -1,\
-                             "max_no_messages" : -1
-                            }
-        testresult = SUTE.teststep(can_p, cpay, stepno, etp)
-        testresult = testresult and (
-            SUTE.PP_Decode_Routine_Control_response(SC.can_messages[can_p["rec"]][0][2],
-                                                    'Type1,Completed'))
+        result = SE31.routinecontrol_requestsid_flash_erase(can_p, erase, stepno)
 
         # Erase Memory
         while data[off + 24 : off + 25] == b'x':
@@ -587,21 +575,8 @@ class Support_SBL:
 
             SC.change_MF_FC(can_p["send"], can_mf_param)
             time.sleep(1)
-            cpay: CanPayload = {"m_send" : SC.can_m_send("RoutineControlRequestSID",\
-                                                         b'\xFF\x00' + erase, b'\x01'),\
-                                                         "mr_extra" : ''
-                               }
-            etp: CanTestExtra = {"purpose" : purpose,\
-                                 "timeout" : 15,\
-                                 "min_no_messages" : -1,\
-                                 "max_no_messages" : -1
-                                }
-            testresult = SUTE.teststep(can_p, cpay, stepno, etp)
-
-            testresult = testresult and (
-                SUTE.PP_Decode_Routine_Control_response(SC.can_messages[can_p["rec"]][0][2],
-                                                        'Type1,Completed'))
-        return testresult
+            result = result and SE31.routinecontrol_requestsid_flash_erase(can_p, erase, stepno)
+        return result
 
     #Extraction of block data from vbf file
     def block_data_extract(self, offset, data):
