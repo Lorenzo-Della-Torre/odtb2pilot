@@ -36,16 +36,15 @@ import binascii
 
 #sys.path.append('generated')
 
-from support_can import Support_CAN
+from support_can import Support_CAN, CanParam, CanPayload, CanTestExtra
 SC = Support_CAN()
-#param_ = dict()
-#can_param = dict()
 
 class Support_test_ODTB2:
     """
     class for supporting sending/receiving CAN frames
     """
 
+    @staticmethod
     def parse_some_args():
         ''' Get the command line input, using the defined flags. '''
         parser = argparse.ArgumentParser(description='Execute testscript')
@@ -56,6 +55,7 @@ class Support_test_ODTB2:
         return ret_args
 
 
+    @staticmethod
     def config(margs):
         ''' Determine which config file to use.
             If we have a config file as input parameter, then use it.
@@ -70,7 +70,8 @@ class Support_test_ODTB2:
         return file_name
 
 
-    def print_test_purpose(self, stepno, purpose):
+    @staticmethod
+    def print_test_purpose(stepno, purpose):
         """
         print_test_purpose
         """
@@ -105,7 +106,9 @@ class Support_test_ODTB2:
         return testresult
 
 
-    def teststep(self, can_param, step_no, param_,
+    #def teststep(self, can_p: CanParam, step_no, param_,
+    #             clear_old_mess=True, wait_max=False):
+    def teststep(self, can_p: CanParam, cpay: CanPayload, step_no, etp: CanTestExtra,
                  clear_old_mess=True, wait_max=False):
         """
         teststep for ODTB2 testenvironment
@@ -144,46 +147,44 @@ class Support_test_ODTB2:
             SC.clear_all_can_frames()
             SC.clear_all_can_messages()
 
-        self.print_test_purpose(step_no, param_["purpose"])
+        self.print_test_purpose(step_no, etp["purpose"])
 
         # wait for messages
         # define answer to expect
         if debug:
             print("build answer can_frames to receive")
-        can_answer = SC.can_receive(can_param["m_send"], can_param["mr_extra"])
+        can_answer = SC.can_receive(cpay["m_send"], cpay["mr_extra"])
         if debug:
             print("can_frames to receive", can_answer)
         # message to send
         wait_start = time.time()
         if debug:
             print("To send:   [", time.time(), ", ",\
-                  can_param["can_send"], ", ",\
-                  (can_param["m_send"]).hex().upper(), "]")
+                  can_p["send"], ", ",\
+                  (cpay["m_send"]).hex().upper(), "]")
         #print("test send CAN_MF: ")
         #SC.t_send_signal_CAN_MF(Param.stub,\
         #                        Param.can_send, Param.can_rec,\
         #                        Param.can_nspace, Param.m_send)
         SC.clear_all_can_messages()
-        SC.t_send_signal_CAN_MF(can_param["stub"],\
-                                can_param["can_send"], can_param["can_rec"],\
-                                can_param["can_nspace"], can_param["m_send"],\
+        SC.t_send_signal_CAN_MF(can_p, cpay["m_send"],\
                                 True, 0x00)
         #wait timeout for getting subscribed data
-        if (wait_max or (param_["max_no_messages"] == -1)):
-            time.sleep(param_["timeout"])
-            SC.update_can_messages(can_param["can_rec"])
+        if (wait_max or (etp["max_no_messages"] == -1)):
+            time.sleep(etp["timeout"])
+            SC.update_can_messages(can_p["rec"])
         else:
-            SC.update_can_messages(can_param["can_rec"])
+            SC.update_can_messages(can_p["rec"])
             #print("len_can_mess: ", (len(SC.can_messages[Param.can_rec])))
             #print("min_no_mess:  ", min_no_messages)
-            while((time.time()-wait_start <= param_["timeout"])
-                  and (len(SC.can_messages[can_param["can_rec"]]) < param_["max_no_messages"])
+            while((time.time()-wait_start <= etp["timeout"])
+                  and (len(SC.can_messages[can_p["rec"]]) < etp["max_no_messages"])
                   #and (not(SC.clear_all_can_messages()
                   #      and SC.update_can_messages(Param.can_rec))
                   #    )
                  ):
                 SC.clear_all_can_messages()
-                SC.update_can_messages(can_param["can_rec"])
+                SC.update_can_messages(can_p["rec"])
                 #print("can_mess_read")
                 #print("can_franes: ", SC.can_frames[Param.can_rec])
                 #print("can_mess:   ", SC.can_messages[Param.can_rec])
@@ -196,53 +197,52 @@ class Support_test_ODTB2:
 
         #print("all can messages : ", SC.can_messages)
         if debug:
-            print("rec can messages : ", SC.can_messages[can_param["can_rec"]])
-        if len(SC.can_messages[can_param["can_rec"]]) < param_["min_no_messages"]:
+            print("rec can messages : ", SC.can_messages[can_p["rec"]])
+        if len(SC.can_messages[can_p["rec"]]) < etp["min_no_messages"]:
             print("Bad: min_no_messages not reached: ",\
-                  len(SC.can_messages[can_param["can_rec"]]))
+                  len(SC.can_messages[can_p["rec"]]))
             testresult = False
-        elif param_["max_no_messages"] >= 0 and\
-                len(SC.can_messages[can_param["can_rec"]]) > param_["max_no_messages"]:
-            print("Bad: max_no_messages ", len(SC.can_messages[can_param["can_rec"]]))
+        elif etp["max_no_messages"] >= 0 and\
+                len(SC.can_messages[can_p["rec"]]) > etp["max_no_messages"]:
+            print("Bad: max_no_messages ", len(SC.can_messages[can_p["rec"]]))
             testresult = False
         else:
             #print("number messages ", len(SC.can_messages[Param.can_rec]))
             #if len(SC.can_messages[Param.can_rec]) > 0:
-            if SC.can_messages[can_param["can_rec"]]:
-                if param_["min_no_messages"] >= 0:
+            if SC.can_messages[can_p["rec"]]:
+                if etp["min_no_messages"] >= 0:
                     testresult = testresult and\
-                        self.test_message(SC.can_messages[can_param["can_rec"]],\
+                        self.test_message(SC.can_messages[can_p["rec"]],\
                                           can_answer.hex().upper())
-        print("Step ", step_no, ": teststatus:", testresult, "\n")
+        print("Step ", step_no, ": result teststep:", testresult, "\n")
         return testresult
 
-    def PP_PartNumber(self, i, title=''):
+    @staticmethod
+    def PP_PartNumber(i, title=''):
         """
         Pretty Print function support for part numbers
         """
         try:
-            y = len(i)
+            len_pn = len(i)
             # a message filled with \xFF is not readable
             if str(i[:8]) == "FFFFFFFF":
                 #raise ValueError("Not readable")
                 return title + i[:8]
             #error handling for messages without space between 4 BCD and 2 ascii
-            if y != 14 or str(i[8:10]) != "20":
+            if len_pn != 14 or str(i[8:10]) != "20":
                 raise ValueError("That is not a part number: ", i)
-            else:
-                #error handling for message without ascii valid
-                j = int(i[10:12], 16)
-                x = int(i[12:14], 16)
-                if (j < 65) | (j > 90) | (x < 65) | (x > 90):
-                    raise ValueError("No valid value to decode: " + i)
-                else:
-                    #fascii = str(binascii.unhexlify(i[8:14]).upper())
-                    #fascii = str(i[0:8]) + fascii[2:5]
-                    #return "{} {}".format(title, fascii)
-                    #fascii = i[0:8] + bytes.fromhex(i[8:14]).decode('utf-8')
-                    return title + i[0:8] + bytes.fromhex(i[8:14]).decode('utf-8')
-        except ValueError as ve:
-            print("{} Error: {}".format(title, ve))
+            #error handling for message without ascii valid
+            asc_1 = int(i[10:12], 16)
+            asc_2 = int(i[12:14], 16)
+            if (asc_1 < 65) | (asc_1 > 90) | (asc_2 < 65) | (asc_2 > 90):
+                raise ValueError("No valid value to decode: " + i)
+            #fascii = str(binascii.unhexlify(i[8:14]).upper())
+            #fascii = str(i[0:8]) + fascii[2:5]
+            #return "{} {}".format(title, fascii)
+            #fascii = i[0:8] + bytes.fromhex(i[8:14]).decode('utf-8')
+            return title + i[0:8] + bytes.fromhex(i[8:14]).decode('utf-8')
+        except ValueError as valu_err:
+            print("{} Error: {}".format(title, valu_err))
             return title + i
 
     def PP_CombinedDID_EDA0(self, message, title=''):
@@ -250,7 +250,23 @@ class Support_test_ODTB2:
         PrettyPrint Combined_DID EDA0:
         """
         pos = message.find('EDA0')
-        retval = ""
+        retval = title
+        if (not message.find('F120', pos) == -1) and (not message.find('F12E', pos) == -1):
+            retval = self.PP_CombinedDID_EDA0_BECM_mode1_mode3(message, "EDA0 for mode1/mode3:\n")
+        elif (not message.find('F121', pos) == -1) and (not message.find('F125', pos) == -1):
+            retval = self.PP_CombinedDID_EDA0_PBL(message, "EDA0 for PBL:\n")
+        elif (not message.find('F121', pos) == -1) and (not message.find('F125', pos) == -1):
+            retval = self.PP_CombinedDID_EDA0_SBL(message, "EDA0 for SBL:\n")
+        else:
+            retval = "Unknown format of EDA0 message'\n"
+        return retval
+
+    def PP_CombinedDID_EDA0_BECM_mode1_mode3(self, message, title=''):
+        """
+        PrettyPrint Combined_DID EDA0:
+        """
+        pos = message.find('EDA0')
+        retval = title
         pos1 = message.find('F120', pos)
         retval = retval + "Application_Diagnostic_Database '"\
                         + self.PP_PartNumber(message[pos1+4: pos1+18], message[pos1:pos1+4]\
@@ -278,7 +294,7 @@ class Support_test_ODTB2:
         PrettyPrint Combined_DID EDA0 for PBL
         """
         pos = message.find('EDA0')
-        retval = ""
+        retval = title
         pos1 = message.find('F121', pos)
         retval = retval + "PBL_Diagnostic_Database_Part_Number '"\
                         + self.PP_PartNumber(message[pos1+4: pos1+18], message[pos1:pos1+4]\
@@ -312,7 +328,7 @@ class Support_test_ODTB2:
         PrettyPrint Combined_DID EDA0 for SBL
         """
         pos = message.find('EDA0')
-        retval = ""
+        retval = title
         pos1 = message.find('F122', pos)
         retval = retval + "SBL_Diagnostic_Database_Part_Number '"\
                         + self.PP_PartNumber(message[pos1+4: pos1+18], message[pos1:pos1+4]\
@@ -345,7 +361,7 @@ class Support_test_ODTB2:
         """
         PrettyPrint DID F12E:
         """
-        retval = ""
+        retval = title
         pos = message.find('F12E')
         # Combined DID F12E:
         retval = retval + "Number of SW part numbers '"\
@@ -367,7 +383,8 @@ class Support_test_ODTB2:
                         + "'\n"
         return retval
 
-    def Extract_DB_DID_ID(self, DB, args):
+    @staticmethod
+    def Extract_DB_DID_ID(d_base_dir, args):
         """
         Extract requested data from a Data Base dictionary.
         """
@@ -378,16 +395,16 @@ class Support_test_ODTB2:
             module = importlib.import_module(args.did_file[:-3])
             parse_did_dict = module.parse_ssdb_dict
         else:
-            DB = DB.replace(" ", "_")
+            d_base_dir = d_base_dir.replace(" ", "_")
             listoffiles = os.listdir('./output')
-            pattern = 'did_from_{}.py'.format(DB)
+            pattern = 'did_from_{}.py'.format(d_base_dir)
             for entry in listoffiles:
                 if fnmatch.fnmatch(entry, pattern):
                     entry = entry[:-3]
                     module = importlib.import_module("output." + entry)
                     parse_did_dict = module.parse_ssdb_dict
 
-            # Extract Service ID from DB
+            # Extract Service ID from database
         if parse_did_dict != {}:
             for key in parse_did_dict.keys():
                 message.append(parse_did_dict[key].get('ID'))
@@ -395,7 +412,8 @@ class Support_test_ODTB2:
         raise Exception("Pattern " + pattern + " not found: "
                         "Insert the dict file of DIDs manually by args")
 
-    def PP_CAN_NRC(self, message):
+    @staticmethod
+    def PP_CAN_NRC(message):
         """
         PrettyPrint to decode negative returncode CAN_NRC
         """
@@ -572,11 +590,12 @@ class Support_test_ODTB2:
         if pos == -1:
             return "no error message: '7F' not found in message "
         service = "Service: " + message[pos+2:pos+4]
-        rc = self.PP_CAN_NRC(message[pos+4:])
-        return "Negative response: " + service + ", " + rc
+        reply_code = self.PP_CAN_NRC(message[pos+4:])
+        return "Negative response: " + service + ", " + reply_code
 
 
-    def PP_Decode_Routine_Control_response(self, message, RTRS=''):
+    @staticmethod
+    def PP_Decode_Routine_Control_response(message, RTRS=''):
         """
         support function for Routine Control
         """
@@ -624,7 +643,8 @@ class Support_test_ODTB2:
         return testresult
 
 
-    def set_security_access_pins(self, Sid):
+    @staticmethod
+    def set_security_access_pins(sec_id):
         """
         Support function for Security Access
         """
@@ -634,7 +654,7 @@ class Support_test_ODTB2:
         #step1: load the challenge bytes, bit by bit, into a 64-bit variable space
         #insert fivefixed bytes and 3 seed
         l_init = 'FFFFFFFFFF'
-        l_init = l_init + Sid[4:6] + Sid[2:4] + Sid[0:2]
+        l_init = l_init + sec_id[4:6] + sec_id[2:4] + sec_id[0:2]
         # Test Pins
         #l_init = '43BB42AA41'
         #l_init = l_init + '8A' + '96' + '4E'
@@ -656,7 +676,7 @@ class Support_test_ODTB2:
             lista1 = lista1[2:]
             # invert position of first bit with the last
             lista = lista1 + lista[:-1]
-            # Xor between last reference list and last Sid arrow
+            # Xor between last reference list and last sec_id arrow
             lista3 = bin(lista[3] != lista1)
             lista3 = lista3[2:]
             #successive Xor between Blast and ....
@@ -693,11 +713,12 @@ class Support_test_ODTB2:
         r_3 = hex(int(r_3, 16) + int("0x200", 16))
         r_3 = r_3[3:]
         #print(r_3)
-        r = hex(int(('0x' + r_1 + r_2 + r_3), 16))
-        #print(r)
-        return bytes.fromhex(r[2:])
+        r_123 = hex(int(('0x' + r_1 + r_2 + r_3), 16))
+        #print(r_123)
+        return bytes.fromhex(r_123[2:])
 
-    def PP_StringTobytes(self, i, num):
+    @staticmethod
+    def PP_StringTobytes(i, num):
         """
         convert DTCstring Number in bytes specifying number of bytes
         """
@@ -707,7 +728,8 @@ class Support_test_ODTB2:
         return bytes.fromhex(i[3:])
 
 
-    def crc16(self, data):
+    @staticmethod
+    def crc16(data):
         """
         crc16
         """
@@ -715,8 +737,8 @@ class Support_test_ODTB2:
         data = bytearray(data)
         # crc initial value
         crc = 0xFFFF
-        for b in data:
-            crc ^= b << 8
+        for bits in data:
+            crc ^= bits << 8
             for _ in range(8):
                 if crc & 0x8000:
                     crc = (crc << 1) ^ mask_crc16_citt
@@ -726,14 +748,20 @@ class Support_test_ODTB2:
 
         return crc
 
-    def CRC32_from_file(self, filename):
+    @staticmethod
+    def CRC32_from_file(filename):
         """
         CRC32_from_file
         """
         buf = (binascii.crc32(filename) & 0xFFFFFFFF)
         return "%08X" % buf
 
-    def read_f(self, filename):
-        with open(filename, 'rb') as f:
-            data = f.read()
+    @staticmethod
+    def read_f(f_path_name):
+        """
+        open file 'filename', read bytewise
+        """
+        print("read_f: File to read: ", f_path_name)
+        with open(f_path_name, 'rb') as f_name:
+            data = f_name.read()
         return data
