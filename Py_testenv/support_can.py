@@ -962,6 +962,8 @@ class Support_CAN:
             ret = b'\x10' + message
         elif name == "ECUResetHardReset":
             ret = b'\x11\x01' + message
+        elif name == "ECUResetHardReset(81)":
+            ret = b'\x11\x81' + message
         elif name == "ClearDiagnosticInformation":
             ret = b'\x14' + message
         elif name == "ReadDTCInfoExtDataRecordByDTCNumber":
