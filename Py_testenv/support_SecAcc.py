@@ -21,13 +21,16 @@
 
 """The Python implementation of the grPC route guide client."""
 
-import time
+#import time
+from support_service27 import SupportService27
 
-from support_can import Support_CAN
+from support_can import Support_CAN, CanParam
 from support_test_odtb2 import Support_test_ODTB2
 
 SC = Support_CAN()
 SUTE = Support_test_ODTB2()
+
+SE27 = SupportService27()
 
 #class for supporting Security Access
 class Support_Security_Access:
@@ -43,9 +46,6 @@ class Support_Security_Access:
         """
         Algorithm to decode the Security Access Pin
         """
-        #iteration variable
-        i = int
-        #fixed_load = 'FFFFFFFFFF'
 
         #step1: load the challenge bytes, bit by bit, into a 64-bit variable space
         #insert fivefixed bytes and 3 seed
@@ -58,7 +58,7 @@ class Support_Security_Access:
         # Test Pins
         #load = '43BB42AA41'
         #load = load + '8A' + '96' + '4E'
-        
+
         #load = (bin(int(load, 16)))
         #load = load[2:]
         load = "{0:064b}".format(int(load, 16))
@@ -68,7 +68,7 @@ class Support_Security_Access:
         #Extension for Test Pins
         #load = '0' + load
         #print(hex(int(load[:8])))
-        
+
         #invert load - not needed loop reverse instead
         #load = load[::-1]
 
@@ -86,167 +86,55 @@ class Support_Security_Access:
             # fix issue: Xor cannot be treated as !=
             #lista1 = bin(lista[-1] != i)
             #lista1 = lista1[2:]
-            if int(lista[-1]) ^ int(i): Xor='1'
-            else: Xor='0'
+            if int(lista[-1]) ^ int(i):
+                x_or = '1'
+            else:
+                x_or = '0'
             # shift right 1 bit, insert XOR-bit as MSB
-            lista = Xor + lista[:-1]
+            lista = x_or + lista[:-1]
             # Now use Xor to do xor on bit 4, 9, 11, 18
             #between last reference list and last Sid arrow
-            
-            lista3= str(int(lista[3]) ^ int(Xor))
-            lista8= str(int(lista[8]) ^ int(Xor))
-            lista11= str(int(lista[11]) ^ int(Xor))
-            lista18= str(int(lista[18]) ^ int(Xor))
-            lista20= str(int(lista[20]) ^ int(Xor))
-            
+            lista3 = str(int(lista[3]) ^ int(x_or))
+            lista8 = str(int(lista[8]) ^ int(x_or))
+            lista11 = str(int(lista[11]) ^ int(x_or))
+            lista18 = str(int(lista[18]) ^ int(x_or))
+            lista20 = str(int(lista[20]) ^ int(x_or))
+
             if self._debug:
                 print("bit: ", i)
-                print("Xor: ", Xor)
-            #lista3 = bin(lista[3] != lista1)
-            #lista3 = lista3[2:]
-            ##successive Xor between Blast and ....
-            #lista8 = bin(lista[8] != lista1)
-            #lista8 = lista8[2:]
-
-            #lista11 = bin(lista[11] != lista1)
-            #lista11 = lista11[2:]
-
-            #lista18 = bin(lista[18] != lista1)
-            #lista18 = lista18[2:]
-
-            #lista20 = bin(lista[20] != lista1)
-            #lista20 = lista20[2:]
-
+                print("Xor: ", x_or)
             lista = lista [:3] + lista3 + lista[4:8] + lista8 + lista[9:11] +\
                  lista11 + lista[12:18] + lista18 + lista[19:20] + lista20 + lista[21:24]
             if self._debug:
                 print("lista: ", lista)
 
         #step4: Generate r_1, r_2, r_3
-        #r_1 = hex(int(lista[12:20], 2))
-        #r_1 = hex(int(r_1, 16) + int("0x200", 16))
-        #r_1 = r_1[3:]
         r_1 = "{0:08b}".format(int(lista[12:20], 2))
         if self._debug:
             print("r_1: ", r_1)
-        #print(r_1)
-        #r_2 = hex(int((lista[8:12] + lista[0:4]), 2))
-        #r_2 = hex(int(r_2, 16) + int("0x200", 16))
-        #r_2 = r_2[3:]
         r_2 = "{0:04b}".format(int(lista[8:12], 2)) + "{0:04b}".format(int(lista[0:4], 2))
         if self._debug:
             print("r_2: ", r_2)
-        #print(r_2)
-        #r_3 = hex(int((lista[20:24] + lista[4:8]), 2))
-        #r_3 = hex(int(r_3, 16) + int("0x200", 16))
-        #r_3 = r_3[3:]
         r_3 = "{0:04b}".format(int(lista[20:24], 2)) + "{0:04b}".format(int(lista[4:8], 2))
         if self._debug:
             print("r_3: ", r_3)
-        #print(r_3)
-        #r_0 = hex(int(('0x' + r_1 + r_2 + r_3), 16) + int("0x2000000", 16))
-        #r_0 = r_0[3:]
         r_0 = r_1 + r_2 + r_3
         if self._debug:
             print("r_0: ", r_0)
-            print("Sec_acc_pins: {0:06x}".format(int(r_0,2)))
-        return bytes.fromhex("{0:06x}".format(int(r_0,2)))
+            print("Sec_acc_pins: {0:06x}".format(int(r_0, 2)))
+        return bytes.fromhex("{0:06x}".format(int(r_0, 2)))
 
-    def pbl_security_access_request_seed(self, stub, can_send, can_rec, can_nspace, step_no, purpose):
-        """
-            Support function: request seed for calculating security access pin
-        """
-        #Security Access request sid
-        testresult = True
-        #timeout = 0.1
-        #timeout = 1
-        #min_no_messages = 1
-        #max_no_messages = 1
-
-        #can_m_send = b'\x27\x01'
-        #can_mr_extra = ''
-
-        ts_param = {"stub" : stub,\
-                    "m_send" : b'\x27\x01',\
-                    "mr_extra" : '',\
-                    "can_send" : can_send,\
-                    "can_rec"  : can_rec,\
-                    "can_nspace" : can_nspace\
-                    }
-        extra_param = {"purpose" : purpose,\
-                    "timeout" : 1,\
-                    "min_no_messages" : -1,\
-                    "max_no_messages" : -1
-                    }
-
-        testresult = SUTE.teststep(ts_param,\
-                                   step_no, extra_param)
-        #testresult = SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-        #                           can_rec, can_nspace, step_no, purpose,
-        #                           timeout, min_no_messages, max_no_messages)
-        seed = SC.can_messages[can_rec][0][2][6:12]
-        return testresult, seed
-
-    def pbl_security_access_send_key(self, stub, payload_value, can_send, can_rec, can_nspace, step_no, purpose):
-        """
-            Support function: request seed for calculating security access pin
-        """
-        #Security Access Send Key
-        #timeout = 0.1
-        #min_no_messages = -1
-        #max_no_messages = -1
-
-        #can_m_send = b'\x27\x02'+ payload_value
-        #can_mr_extra = ''
-
-        ts_param = {"stub" : stub,\
-                    "m_send" : b'\x27\x02'+ payload_value,\
-                    "mr_extra" : '',\
-                    "can_send" : can_send,\
-                    "can_rec"  : can_rec,\
-                    "can_nspace" : can_nspace\
-                    }
-        extra_param = {"purpose" : purpose,\
-                    "timeout" : 0.1,\
-                    "min_no_messages" : -1,\
-                    "max_no_messages" : -1
-                    }
-
-        testresult = SUTE.teststep(ts_param,\
-                                   step_no, extra_param)
-        #testresult = SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-        #                           can_rec, can_nspace, step_no, purpose,
-        #                           timeout, min_no_messages, max_no_messages)
-        testresult = testresult and SUTE.test_message(SC.can_messages[can_rec], '6702')
-        #time.sleep(1)
-        return testresult
-        
     #Support function to activate the Security Access
-    def activation_security_access(self, stub, can_send, can_rec, can_nspace, step_no, purpose):
+    def activation_security_access(self, can_p: CanParam, step_no, purpose):
         """
         Support function to activate the Security Access
         """
         #Security Access request seed
-        testresult, seed = self.pbl_security_access_request_seed(stub, can_send, can_rec,\
-                                                                can_nspace, step_no, purpose)
-        #testresult = True
-        ##timeout = 0.1
-        #timeout = 1
-        #min_no_messages = 1
-        #max_no_messages = 1
+        testresult, seed = SE27.pbl_security_access_request_seed(can_p, step_no, purpose)
 
-        #can_m_send = b'\x27\x01'
-        #can_mr_extra = ''
-
-        #testresult = testresult and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-        #                                          can_rec, can_nspace, step_no, purpose,
-        #                                          timeout, min_no_messages, max_no_messages)
-
-        #r_0 = self.set_security_access_pins(SC.can_messages[can_rec][0][2][6:12])
         fixed_key = 'FFFFFFFFFF'
         r_0 = self.set_security_access_pins(seed, fixed_key)
 
         #Security Access Send Key
-        testresult = testresult and self.pbl_security_access_send_key(stub, r_0, can_send, can_rec,
-                                                                      can_nspace, step_no, purpose)
+        testresult = testresult and SE27.pbl_security_access_send_key(can_p, r_0, step_no, purpose)
         return testresult
