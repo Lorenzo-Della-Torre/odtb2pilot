@@ -386,23 +386,23 @@ def run():
     # step 10:
     # action:
     # result:
-    #result = result and step_10(network_stub, can_send, can_receive, can_namespace)
+    result = result and step_10(network_stub, can_send, can_receive, can_namespace)
 
     # step 11:
     # action:
     # result:
-    #result = result and step_11(network_stub, can_send, can_receive, can_namespace)
+    result = result and step_11(network_stub, can_send, can_receive, can_namespace)
 
     # step 12:
     # action:
     # result:
-    #result = result and step_12(network_stub, can_send, can_receive, can_namespace)
+    result = result and step_12(network_stub, can_send, can_receive, can_namespace)
     time.sleep(1)
 
     # step 13:
     # action:
     # result:
-    #result = step_13(network_stub, can_send, can_receive, can_namespace, result)
+    result = step_13(network_stub, can_send, can_receive, can_namespace, result)
     time.sleep(1)
 
     ############################################

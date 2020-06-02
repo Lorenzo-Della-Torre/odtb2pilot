@@ -305,7 +305,7 @@ def run():
     # step 1:
     # action: verify RoutineControl start is sent for Type 1
     # result: BECM sends positive reply
-    #test_result = step_1(network_stub, can_send, can_receive, can_namespace, test_result)
+    test_result = step_1(network_stub, can_send, can_receive, can_namespace, test_result)
 
     # step 2:
     # action:
