@@ -36,7 +36,7 @@ class SupportCAN:
     """
 
     @classmethod
-    def t_send_gpto_signal_hex(cls, stub, signal_name, namespace, payload_value):
+    def t_send_gpio_signal_hex(cls, stub, signal_name, namespace, payload_value):
         """
         t_send_GPIO_signal_hex
 

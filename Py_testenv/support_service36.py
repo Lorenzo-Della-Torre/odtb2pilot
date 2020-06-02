@@ -1,0 +1,76 @@
+# project:  ODTB2 testenvironment using SignalBroker
+# author:   HWEILER (Hans-Klaus Weiler)
+# date:     2020-06-01
+# version:  1.0
+
+# Initial version:
+# version 1.0:
+#   teststep    Common teststeps moved into support for dedicated service
+#   pep8        coding is changed to confirm to pep8 (some code left, though)
+
+# inspired by https://grpc.io/docs/tutorials/basic/python.html
+
+# Copyright 2015 gRPC authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""The Python implementation of the gRPC route guide client."""
+
+
+from support_can import Support_CAN, CanMFParam, CanParam, CanPayload, CanTestExtra
+from support_test_odtb2 import Support_test_ODTB2
+
+
+SC = Support_CAN()
+SUTE = Support_test_ODTB2()
+
+class SupportService36:
+    """
+    class for supporting Service#36
+    """
+
+    @staticmethod
+    def flash_blocks(nbl, can_p: CanParam, stepno, purpose,
+                     block_len, block_data):
+        """
+        Support function for Transfer Data
+        """
+        pad = 0
+
+        for i in range(int(block_len/(nbl-2))+1):
+
+            pad = (nbl-2)*i
+            i += 1
+            ibyte = bytes([i])
+            # Parameters for FrameControl FC
+            can_mf_param: CanMFParam = {
+                'block_size' : 0,
+                'separation_time' : 0,
+                'frame_control_delay' : 0, #no wait
+                'frame_control_flag' : 48, #continue send
+                'frame_control_auto' : False
+                }
+            SC.change_MF_FC(can_p["send"], can_mf_param)
+
+            cpay: CanPayload = {"m_send" : b'\x36' + ibyte + block_data[pad:pad + nbl-2],\
+                                "mr_extra" : ''
+                               }
+            etp: CanTestExtra = {"purpose" : purpose,\
+                                 "timeout" : 0.2,\
+                                 "min_no_messages" : -1,\
+                                 "max_no_messages" : -1
+                                }
+            result = SUTE.teststep(can_p, cpay, stepno, etp)
+            result = result and SUTE.test_message(SC.can_messages[can_p["rec"]], '76')
+            #print(SC.can_messages[can_receive])
+        return result
