@@ -35,7 +35,9 @@ from support_SecAcc import Support_Security_Access
 
 from support_LZSS import LZSS_Encoder
 
+from support_service10 import SupportService10
 from support_service22 import SupportService22
+from support_service31 import SupportService31
 from support_service34 import SupportService34
 from support_service36 import SupportService36
 from support_service37 import SupportService37
@@ -44,7 +46,9 @@ SUTE = Support_test_ODTB2()
 SSA = Support_Security_Access()
 
 LZSS = LZSS_Encoder()
+SE10 = SupportService10()
 SE22 = SupportService22()
+SE31 = SupportService31()
 SE34 = SupportService34()
 SE36 = SupportService36()
 SE37 = SupportService37()
@@ -60,7 +64,8 @@ class VbfBlockFormat(Dict):
     addr: int
     len: int
 
-    def vbf_block_init(self, block):
+    @staticmethod
+    def vbf_block_init(block):
         """
             init of VbfBlockFormat with empty values
         """
@@ -70,7 +75,8 @@ class VbfBlockFormat(Dict):
         block['addr'] = 0
         block['len'] = 0
 
-    def vbf_block_read(self, block):
+    @staticmethod
+    def vbf_block_read(block):
         """
             return block
         """
@@ -326,69 +332,39 @@ class Support_SBL:
 
         # verify RoutineControlRequest is sent for Type 1
 
-        cpay: CanPayload = {"m_send" : SC.can_m_send("RoutineControlRequestSID",
-                                                     b'\x02\x06', b'\x01'),\
-                            "mr_extra" : ''
-                           }
-        etp: CanTestExtra = {"purpose" : "verify RC start sent for Check Prog Precond",\
-                             "timeout" : 0.05,\
-                             "min_no_messages" : -1,\
-                             "max_no_messages" : -1
-                            }
-        testresult = SUTE.teststep(can_p, cpay, stepno, etp)
-        logging.info(SC.can_messages[can_p["rec"]])
-        testresult = testresult and (
-            SUTE.PP_Decode_Routine_Control_response(SC.can_messages[can_p["rec"]][0][2],
-                                                    'Type1,Completed'))
+        result = SE31.routinecontrol_requestsid_prog_precond(can_p, stepno)
 
         # Change to Programming session
+        # done two times: first request doesn't give reply
+        # second one gives reply with timings, but not in all versions (issue on BECM?)
+        result = SE10.diagnostic_session_control_mode2(can_p)
+        result = SE10.diagnostic_session_control_mode2(can_p)
 
-        cpay: CanPayload = {"m_send" : SC.can_m_send("DiagnosticSessionControl", b'\x02', ""),\
-                            "mr_extra" : ''
-                           }
-        etp: CanTestExtra = {"purpose" : "Change to Programming session(02) from default",\
-                             "timeout" : 1,\
-                             "min_no_messages" : -1,\
-                             "max_no_messages" : -1
-                            }
-        testresult = testresult and SUTE.teststep(can_p, cpay, stepno, etp)
-        testresult = testresult and SUTE.teststep(can_p, cpay, stepno, etp)
-
-        cpay: CanPayload = {"m_send" : SC.can_m_send("ReadDataByIdentifier", b'\xF1\x86', ""),\
-                            "mr_extra" : ''
-                           }
-        etp: CanTestExtra = {"purpose" : "Verify Session after SessionControl to Prog",\
-                             "timeout" : 1,\
-                             "min_no_messages" : 1,\
-                             "max_no_messages" : 1
-                            }
-        SUTE.teststep(can_p, cpay, stepno, etp)
-        testresult = testresult and self.sbl_activation_prog(can_p, stepno, purpose)
-
-        return testresult
+        # Verify Session changed
+        SE22.read_did_f186(can_p, dsession=b'\x02')
+        result = result and self.sbl_activation_prog(can_p, stepno, purpose)
+        return result
 
     # Support Function for Flashing and activate Secondary Bootloader from Programming session
     def sbl_activation_prog(self, can_p: CanParam, stepno='', purpose=""):
         """
         function used for BECM in forced Programming mode
         """
-        testresult = True
 
         # Security Access Request SID
-        testresult = testresult and SSA.activation_security_access(can_p, stepno, purpose)
+        result = SSA.activation_security_access(can_p, stepno, purpose)
 
         # SBL Download
         purpose = 'SBL Download'
         tresult, call = self.sbl_download(can_p, self._sbl,\
                                           stepno, purpose)
-        testresult = testresult and tresult
+        result = result and tresult
 
         # Activate SBL
         purpose = "Activation of SBL"
-        testresult = testresult and self.activate_sbl(can_p,
-                                                      stepno, purpose, call)
-
-        return  testresult
+        result = result and self.activate_sbl(can_p,
+                                              stepno, purpose, call)
+        return result
 
     # Support Function to select Support functions to use for activating SBL based on actual mode
     def sbl_activation(self, can_p: CanParam, stepno='',
@@ -504,23 +480,11 @@ class Support_SBL:
             }
         SC.change_MF_FC(can_p["send"], can_mf_param)
 
-        cpay: CanPayload = {"m_send" : SC.can_m_send("RoutineControlRequestSID",\
-                                            b'\x02\x05', b'\x01'),\
-                            "mr_extra" : ''
-                           }
-        etp: CanTestExtra = {"purpose" : purpose,\
-                             "timeout" : 1,\
-                             "min_no_messages" : -1,\
-                             "max_no_messages" : -1
-                            }
-        testresult = SUTE.teststep(can_p, cpay, stepno, etp)
-        testresult = testresult and (
-            SUTE.PP_Decode_Routine_Control_response(SC.can_messages[can_p["rec"]][0][2],
-                                                    'Type1,Completed'))
-        testresult = testresult and (
+        result = SE31.routinecontrol_requestsid_complete_compatible(can_p, stepno)
+        result = result and (
             self.pp_decode_routine_complete_compatible(SC.can_messages[can_p["rec"]][0][2]))
         logging.info(SC.can_messages[can_p["rec"]][0][2])
-        return testresult
+        return result
 
     #Read and decode vbf files for Secondary Bootloader
     def read_vbf_file_sbl(self, f_path_name):
@@ -597,6 +561,7 @@ class Support_SBL:
             }
         SC.change_MF_FC(can_p["send"], can_mf_param)
         time.sleep(1)
+        
         cpay: CanPayload = {"m_send" : SC.can_m_send("RoutineControlRequestSID",\
                                             b'\xFF\x00' + erase, b'\x01'),\
                             "mr_extra" : ''
