@@ -29,19 +29,19 @@ import logging
 import sys
 from collections import namedtuple
 from yattag import Doc
-from support_test_odtb2 import Support_test_ODTB2
-import ODTB_conf
+from support_test_odtb2 import SupportTestODTB2
+import odtb_conf
 import parameters as parammod
 import BSW_REQPROD_Implement_MEP2_Support_EOL_def_conf as conf
 from output.did_dict import sddb_resp_item_dict
 from output.did_dict import sddb_app_did_dict
 from output.did_dict import app_diag_part_num
-from support_can import Support_CAN
+from support_can import SupportCAN
 
 
 
-SC = Support_CAN()
-SUPPORT_TEST = Support_test_ODTB2()
+SC = SupportCAN()
+SUPPORT_TEST = SupportTestODTB2()
 
 # The different status the test run can have
 PASSED_STATUS = 'PASSED'
@@ -725,7 +725,7 @@ def write_to_file(content, outfile):
 def run():
     ''' run '''
     # Where to connect to signal_broker
-    network_stub = SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT)
+    network_stub = SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT)
     can_send = "Vcu1ToBecmFront1DiagReqFrame"
     can_receive = "BecmToVcu1Front1DiagResFrame"
     can_namespace = SC.nspace_lookup("Front1CANCfg0")

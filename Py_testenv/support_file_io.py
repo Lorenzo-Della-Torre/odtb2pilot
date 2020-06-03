@@ -26,6 +26,7 @@ import os
 import sys
 import re
 import yaml # Not installed? pylint: disable=import-error
+import logging
 
 
 class SupportFileIO:

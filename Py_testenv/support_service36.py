@@ -27,27 +27,28 @@
 """The Python implementation of the gRPC route guide client."""
 
 
-from support_can import Support_CAN, CanMFParam, CanParam, CanPayload, CanTestExtra
-from support_test_odtb2 import Support_test_ODTB2
+from support_can import SupportCAN, CanMFParam, CanParam, CanPayload, CanTestExtra
+from support_test_odtb2 import SupportTestODTB2
 
 
-SC = Support_CAN()
-SUTE = Support_test_ODTB2()
+SC = SupportCAN()
+SUTE = SupportTestODTB2()
 
-class SupportService36:
+class SupportService36: # pylint: disable=too-few-public-methods
     """
     class for supporting Service#36
     """
 
     @staticmethod
-    def flash_blocks(nbl, can_p: CanParam, stepno, purpose,
-                     block_len, block_data):
+    def flash_blocks(nbl, can_p: CanParam, step_no, purpose, data):
+    # def flash_blocks(nbl, can_p: CanParam, stepno, purpose,
+                     # block_len, block_data):
         """
         Support function for Transfer Data
         """
         pad = 0
 
-        for i in range(int(block_len/(nbl-2))+1):
+        for i in range(int(data["len"]/(nbl-2))+1):
 
             pad = (nbl-2)*i
             i += 1
@@ -62,11 +63,12 @@ class SupportService36:
                 }
             SC.change_MF_FC(can_p["send"], can_mf_param)
 
-            cpay: CanPayload = {"m_send" : b'\x36' + ibyte + block_data[pad:pad + nbl-2],\
+            cpay: CanPayload = {"m_send" : b'\x36' + ibyte + data["data"][pad:pad + nbl-2],\
                                 "mr_extra" : ''
                                }
             etp: CanTestExtra = {"purpose" : purpose,\
                                  "timeout" : 0.2,\
+                                 "step_no" : step_no,\
                                  "min_no_messages" : -1,\
                                  "max_no_messages" : -1
                                 }

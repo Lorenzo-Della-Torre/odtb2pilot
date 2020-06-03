@@ -22,31 +22,21 @@
     The Python implementation of the gRPC route guide client.
 """
 
-import time
 import logging
-import os
+import time
 import threading
 from threading import Thread
 import sys
-#from typing import TypedDict, NewType
 from typing import Dict
-import re
-import yaml
 import grpc
-#from support_can_hw import SupportCanHW
-#SC_HW = SupportCanHW()
 sys.path.append('generated')
-
 import network_api_pb2 # pylint: disable=wrong-import-position
 import network_api_pb2_grpc # pylint: disable=wrong-import-position
-#import functional_api_pb2
 import functional_api_pb2_grpc # pylint: disable=wrong-import-position
-#import system_api_pb2
-#import system_api_pb2_grpc
 import common_pb2 # pylint: disable=wrong-import-position
 
 
-class CanMFParam(Dict):
+class CanMFParam(Dict): # pylint: disable=too-few-public-methods,inherit-non-class
     """
         CanMFParam
         Added to allow fixed keys when setting MF parameters for CAN
@@ -58,7 +48,7 @@ class CanMFParam(Dict):
     frame_control_auto: bool
 
 
-class CanParam(Dict):
+class CanParam(Dict): # pylint: disable=too-few-public-methods,inherit-non-class
     """
         CanParam
         All CAN send/receive parameters
@@ -69,7 +59,7 @@ class CanParam(Dict):
     namespace: str
 
 
-class CanTestExtra(Dict):
+class CanTestExtra(Dict): # pylint: disable=too-few-public-methods,inherit-non-class
     """
         CanTestExtra
     """
@@ -80,7 +70,7 @@ class CanTestExtra(Dict):
     max_no_messages: int
 
 
-class CanPayload(Dict):
+class CanPayload(Dict): # pylint: disable=too-few-public-methods,inherit-non-class
     """
         CanPayload
         payload to send,
@@ -89,11 +79,24 @@ class CanPayload(Dict):
     payload: bytes
     extra: bytes
 
-class Support_CAN:
-    # Disable the too-many-public-methods violation. Not sure how to split it
-    # pylint: disable=too-many-public-methods
+
+class PerParam(Dict): # pylint: disable=too-few-public-methods,inherit-non-class
     """
-        class for supporting sending/receiving CAN frames
+        Periodic Parameters
+    """
+    name: str
+    send: bool
+    id: str
+    nspace: str
+    frame: bytes
+    intervall: float
+
+
+class SupportCAN:
+    # Disable the too-many-public-methods violation. Not sure how to split it
+    # pylint: disable=too-many-public-methods,too-many-lines
+    """
+        Class for supporting sending/receiving CAN frames
     """
     # Buffer for receives CAN frames and messages
     can_cf_received = dict()
@@ -103,11 +106,32 @@ class Support_CAN:
     can_periodic = dict()
 
     _heartbeat = False
-    _debug = False
 
     #init array for payload to send
     can_mf_send = dict()
     pl_array = []
+
+    @classmethod
+    def add_pl_length(cls, payload_value):
+        """
+        add_pl_length
+        """
+        payload_value = bytes([len(payload_value)]) + payload_value
+        return payload_value
+
+
+    @classmethod
+    def fill_payload(cls, payload_value, fill_value=0):
+        """
+        fill_payload
+        """
+        logging.debug("Payload to complete: %s", str(payload_value))
+        while len(payload_value) < 8:
+            payload_value = payload_value + bytes([fill_value])
+        logging.debug("New payload: %s", payload_value)
+        return payload_value
+
+
 
     def clear_old_cf_frames(self):
         """
@@ -161,27 +185,19 @@ class Support_CAN:
             "{0:016X}".format(my_signal.signal[0].integer)])
 
 
-    #def subscribe_to_sig(self, can_param, sig, timeout=5):
     def subscribe_to_sig(self, can_p: CanParam, timeout=5):
         """
         Subscribe to signal sig in namespace nsp
-
-        can_p["netstub"] = stub
-        can_p["send"] = send
-        can_p["namespace"] = nsp
         """
-        #time_start=time.time()
         source = common_pb2.ClientId(id="app_identifier")
-        #signal = common_pb2.SignalId(name=sig, namespace=can_param["can_nspace"])
-        signal = common_pb2.SignalId(name=can_p["rec"], namespace=can_p["namespace"])
+        signal = common_pb2.SignalId(name=can_p["receive"], namespace=can_p["namespace"])
         sub_info = network_api_pb2.SubscriberConfig(clientId=source,\
         signals=network_api_pb2.SignalIds(signalId=[signal]), onChange=False)
 
         # add signal to dictionary, empty list of messages
-        self.can_frames[can_p["rec"]] = list()
-        self.can_messages[can_p["rec"]] = list()
-        self.can_cf_received[can_p["rec"]] = list()
-
+        self.can_frames[can_p["receive"]] = list()
+        self.can_messages[can_p["receive"]] = list()
+        self.can_cf_received[can_p["receive"]] = list()
 
         # Frame control handling
         fc_param = dict()
@@ -196,103 +212,57 @@ class Support_CAN:
 
         try:
             if timeout == 0:
-
-                # subscribe_object = can_param["stub"].SubscribeToSignals(sub_info)
-            # else:
-                # subscribe_object = can_param["stub"].SubscribeToSignals(sub_info, timeout)
-            # print("Subscribe to signal ", sig)
-            # self.can_subscribes[sig] =\
-                # [subscribe_object, fc_param["block_size"], fc_param["separation_time"],
-                 # fc_param["delay"], fc_param["flag"], fc_param["responses"], fc_param["auto"]]
-            # for response in subscribe_object:
-                # #if multiframe detected prepare answer and send it
-                # det_mf = response.signal[0].integer>>60
-                # if (det_mf == 1) and (self.can_subscribes[sig][6]):
-                    # # send wanted reply with delay
-                    # time.sleep(self.can_subscribes[sig][3]/1000)
-                    # SC_HW.send_fc_frame(can_param, self.can_subscribes[sig][4],
-                                        # self.can_subscribes[sig][1], self.can_subscribes[sig][2])
-                    # # increment FC responses sent
-                    # self.can_subscribes[sig][5] += 1
-                # #there is a MF to send, and FC received for it:
-                # if (det_mf == 3) and (can_p["send"] in self.can_mf_send and\
-                    # self.can_mf_send[can_p["send"]] == []):
-                    # print("No CF was expected for ", can_p["send"])
-                # self.can_frames[sig].append(self.signal2message(time.time(), response))
-        # except grpc._channel._Rendezvous as err: # pylint: disable=protected-access
-
                 subscribe_object = can_p["netstub"].SubscribeToSignals(sub_info)
             else:
                 subscribe_object = can_p["netstub"].SubscribeToSignals(sub_info, timeout)
-            print("Subscribe to signal ", can_p["rec"])
-            self.can_subscribes[can_p["rec"]] =\
-                [subscribe_object, block_size, separation_time, frame_control_delay,
-                 frame_control_flag, frame_control_responses, frame_control_auto]
+            print("Subscribe to signal ", can_p["receive"])
+            self.can_subscribes[can_p["receive"]] =\
+                [subscribe_object, fc_param["block_size"], fc_param["separation_time"],\
+                fc_param["delay"], fc_param["flag"], fc_param["responses"], fc_param["auto"]]
             #print("list response in sub_info ",\
             #      [can_p["netstub"].SubscribeToSignals(sub_info, timeout)])
             for response in subscribe_object:
                 #if multiframe detected prepare answer and send it
                 det_mf = response.signal[0].integer>>60
-                #print("Test if AUTO_FC[",can_p["rec"],"]: ",self.can_subscribes[can_p["rec"]][6])
-                if (det_mf == 1) and (self.can_subscribes[can_p["rec"]][6]):
+                if (det_mf == 1) and (self.can_subscribes[can_p["receive"]][6]):
                     # send wanted reply with delay
-                    #print("send ", can_p["send"], "NSP: ", can_p["nspace"], "frame_control_flag ",
-                    #       frame_control_flag,
-                    #" block_size ", block_size, " separation_time ", separation_time)
-                    time.sleep(self.can_subscribes[can_p["rec"]][3]/1000)
-                    #self.send_FC_frame(can_p["netstub"], can_p["send"], can_p["nspace"],
-                    #                   frame_control_flag, block_size,
-                    #                   separation_time)
-                    ###print("FC_values: frame_control_delay",self.can_subscribes[can_p["rec"]][4],\
-                    ###         " block_size:", self.can_subscribes[can_p["rec"]][1],\
-                    ###         " TS: ", self.can_subscribes[can_p["rec"]][2])
-                    self.send_FC_frame(can_p["netstub"], can_p["send"], can_p["namespace"],\
-                        self.can_subscribes[can_p["rec"]][4],\
-                        self.can_subscribes[can_p["rec"]][1],\
-                        self.can_subscribes[can_p["rec"]][2])
-                    #print("frame_control_responses ", self.can_subscribes[can_p["rec"]][5])
+                    time.sleep(self.can_subscribes[can_p["receive"]][3]/1000)
+                    self.send_fc_frame(can_p,\
+                        self.can_subscribes[can_p["receive"]][4],\
+                        self.can_subscribes[can_p["receive"]][1],\
+                        self.can_subscribes[can_p["receive"]][2])
+                    #print("frame_control_responses ", self.can_subscribes[can_p["receive"]][5])
                     # increment FC responses sent
-                    self.can_subscribes[can_p["rec"]][5] += 1
-                    #print("frame_control_responses ", self.can_subscribes[can_p["rec"]][5])
+                    self.can_subscribes[can_p["receive"]][5] += 1
+                    #print("frame_control_responses ", self.can_subscribes[can_p["receive"]][5])
                 #there is a MF to send, and FC received for it:
                 if (det_mf == 3) and\
                    (can_p["send"] in self.can_mf_send and self.can_mf_send[can_p["send"]] == []):
                     print("No CF was expected for ", can_p["send"])
-                self.can_frames[can_p["rec"]].append(self.signal2message(time.time(), response))
-                #print("received: ", self.can_frames[can_p["rec"]])
+                self.can_frames[can_p["receive"]].append(self.signal2message(time.time(), response))
+                #print("received: ", self.can_frames[can_p["receive"]])
         except grpc._channel._Rendezvous as err: # pylint: disable=protected-access
             # suppress 'Deadline Exceeded', show other errors
             if not err._state.details == "Deadline Exceeded": # pylint: disable=protected-access
                 print(err)
 
-    #def subscribe_signal(self, stub, can_send, can_rec, can_nspace, timeout):
-    #def subscribe_signal(self, can_param, timeout):
+
     def subscribe_signal(self, can_p: CanParam, timeout):
         """
         subscribe_signal
-
-        can_p["netstub"] = stub
-        can_p["send"] = can_send
-        can_p["rec"] = can_rec
-        can_p["namespace"] = can_nspace
         """
         # start every subscribe as extra thread as subscribe is blocking
-        # thread_1 = Thread(target=self.subscribe_to_sig,
-                  # args=(can_param["stub"], can_p["send"], can_p["rec"],
-                        # can_param["can_nspace"], timeout))
-        thread_1 = Thread(target=self.subscribe_to_sig,\
-                          args=(can_p, timeout))
+        thread_1 = Thread(target=self.subscribe_to_sig, args=(can_p, timeout))
         thread_1.deamon = True
         thread_1.start()
+
 
     def unsubscribe_signal(self, signame):
         """
         unsubscribe_signal
         """
         # start every subscribe as extra thread as subscribe is blocking
-        print("unsubscribe signal:", signame)
-        #print("unsubcribe ", self.can_subscribes[signame][0])
-        #print("received signals available: ", self.can_subscribes)
+        logging.debug("unsubscribe signal: %s", signame)
         self.can_subscribes[signame][0].cancel()
 
 
@@ -307,6 +277,7 @@ class Support_CAN:
         for unsubsc in self.can_subscribes:
             self.unsubscribe_signal(unsubsc)
         time.sleep(5)
+
 
     @classmethod
     def thread_stop(cls):
@@ -325,31 +296,24 @@ class Support_CAN:
             print("thread enumerate ", threading.enumerate())
 
 
-    #def start_periodic(self, stub, per_name, per_send, per_id, per_nspace, per_frame,
-    #                   per_intervall):
     def start_periodic(self, stub, per_param):
         """
         start_periodic
 
         Start a periodic signal: parameters network_stub, send TRUE/FALSE,\
                            name, DBC_name, DBC_namespace, CAN_frame, intervall
-
-        per_param["name"] = per_name
-        per_param["send"] = per_send
-        per_param["id"] = per_id
-        per_param["nspace"] = per_nspace
-        per_param["frame"] = per_frame
-        per_param["intervall"] = per_intervall
         """
-        print("start_sending_periodic: ", per_param["name"])
+        logging.debug("Start_sending_periodic: %s", per_param["name"])
         self.can_periodic[per_param["name"]] = [per_param["send"], per_param["id"],\
             per_param["nspace"], per_param["frame"], per_param["intervall"]]
+
+        logging.debug("self.can_periodic: %s", self.can_periodic)
 
         # start periodic, repeat every per_intervall (ms)
         thread_1 = Thread(target=self.send_periodic, args=(stub, per_param["name"]))
         thread_1.daemon = True
         thread_1.start()
-        print("wait 1sec for periodic signal to start:", per_param["name"])
+        logging.debug("Wait 1sec for periodic signal to start: %s", per_param["name"])
         time.sleep(1)
 
 
@@ -357,14 +321,6 @@ class Support_CAN:
         """
         Update parameter to periodic signal: name, parameters send TRUE/FALSE,
         DBC_name, DBC_namespace, CAN_frame, intervall
-
-        Replaced:
-        per_param["name"] = per_name
-        per_param["send"] = per_send
-        per_param["id"] = per_id
-        per_param["nspace"] = per_nspace
-        per_param["frame"] = per_frame
-        per_param["intervall"] = per_intervall
         """
         if per_param["name"] in self.can_periodic:
             self.can_periodic[per_param["name"]][0] = per_param["send"]
@@ -380,17 +336,16 @@ class Support_CAN:
         """
         Try to send periodic signal: parameters network_stub, name
         """
-        #source = common_pb2.ClientId(id="app_identifier")
         while self.can_periodic[per_name][0]:
             #print("Can_periodic ", self.can_periodic[per_name])
             try:
-                #print("send periodic signal_name: ", self.can_periodic[per_name])
-                SC_HW.t_send_signal_hex(stub, self.can_periodic[per_name][1],\
+                #print("Send periodic signal_name: ", self.can_periodic[per_name])
+                self.t_send_signal_hex(stub, self.can_periodic[per_name][1],\
                     common_pb2.NameSpace(name=self.can_periodic[per_name][2]),\
                                             self.can_periodic[per_name][3])
                 time.sleep(self.can_periodic[per_name][4])
             except grpc._channel._Rendezvous as err: # pylint: disable=protected-access
-                print(err)
+                print("Exception:", err)
 
 
     def stop_periodic(self, per_name):
@@ -398,7 +353,7 @@ class Support_CAN:
         stop_periodic
         """
         if per_name in self.can_periodic:
-            print("stop_periodic ", per_name)
+            logging.debug("stop_periodic %s", per_name)
             per_param = dict()
             per_param["name"] = per_name
             per_param["send"] = False
@@ -420,52 +375,24 @@ class Support_CAN:
             self.stop_periodic(per)
 
 
-    @classmethod
-    def send_burst(cls, stub, burst_param):
+    def send_burst(self, stub, burst_param):
         """
         send_burst
 
         Sends a number of CAN-frames in a row with given intervall.
         That's sometimes needed for waking up MCU or getting frames sent
         withing a certain time intervall.
-
-        Parameters
-        burst_id        Name from CAN-DB for getting CAN ID for burst to be sent
-        burst_namespace Namespace to look for burst-id
-        burst_frame     String containing frame as hex
-        burst_intervall time between frames to send
-        burst_quantity  number of frames to be send as burst
-
-        burst_param["id"] = burst_id
-        burst_param["nspace"] = burst_nspace
-        burst_param["frame"] = burst_frame
-        burst_param["intervall"] = burst_intervall
-        burst_param["quantity"] = burst_quantity
         """
         for _ in range(burst_param["quantity"]):
-            SC_HW.t_send_signal_hex(stub, burst_param["id"], burst_param["nspace"],
-                                    burst_param["frame"])
+            self.t_send_signal_hex(stub, burst_param["id"], burst_param["nspace"],
+                                   burst_param["frame"])
             time.sleep(burst_param["intervall"])
 
 
     def start_heartbeat(self, stub, hb_param):
         """
         start_heartbeat
-
-        hb_param["id"] = hb_id
-        hb_param["nspace"] = hb_nspace
-        hb_param["frame"] = hb_frame
-        hb_param["intervall"] = hb_intervall
-
-        per_param["per_name"]
-        per_param["per_send"]
-        per_param["per_id"]
-        per_param["per_nspace"]
-        per_param["per_frame"]
-        per_param["per_intervall"]
         """
-        print("start_heartbeat")
-
         per_param = dict()
         per_param["name"] = 'heartbeat'
         per_param["send"] = True
@@ -473,11 +400,9 @@ class Support_CAN:
         per_param["nspace"] = hb_param["nspace"]
         per_param["frame"] = hb_param["frame"]
         per_param["intervall"] = hb_param["intervall"]
-
         self.start_periodic(stub, per_param)
         # Wait for heartbeat to start")
         time.sleep(4)
-        print("start_heartbeat end")
 
 
     def stop_heartbeat(self):
@@ -542,11 +467,8 @@ class Support_CAN:
     @classmethod
     def t_send_signal(cls, stub, signal_name, namespace, payload_value):
         """
-        t_send_signal
-
         Send signal on CAN: parameters name_DBC, namespace_DBC, payload
         """
-        #print("t_send signal")
         source = common_pb2.ClientId(id="app_identifier")
 
         signal = common_pb2.SignalId(name=signal_name, namespace=namespace)
@@ -564,8 +486,6 @@ class Support_CAN:
     @classmethod
     def can_receive(cls, can_send, can_extra):
         """
-        can_receive
-
         Add offset \x40 to first byte
         Add can_extra to message
         """
@@ -579,12 +499,13 @@ class Support_CAN:
         # check if receive frame/message can be build
         if can_send and (len(can_send)+len(can_extra) < 7) and (can_send[0] < 192):
             can_ret = bytes([can_send[0]+ 0x40])
-            for count in range(len(can_send)-1):
+            for count in range(len(can_send)-1): # pylint: disable=consider-using-enumerate
                 can_ret = can_ret + bytes([can_send[count+1]])
-            for count in range(len(can_extra)):
+            for count in range(len(can_extra)):  # pylint: disable=consider-using-enumerate
                 can_ret = can_ret + bytes([can_extra[count]])
         #print("payload to receive: ", str(can_ret))
         return can_ret
+
 
     @classmethod
     def __msg_status_2(cls, temp_message, mf_size_remain, i):
@@ -596,19 +517,62 @@ class Support_CAN:
             temp_message[2] = temp_message[2] + i[2][2:16]
             mf_size_remain -= 7
             mf_cf_count = ((mf_cf_count + 1) & 0xF) + 32
+
+
+    def __send_mf(self, can_p: CanParam, cpay, padding, padding_byte):
+        """
+        __send_mf
+        """
+        pl_fcount = 0x21
+        mess_length = len(cpay["payload"])
+        pl_work = cpay["payload"]
+
+        # add first frame
+        self.add_canframe_tosend(can_p["send"],\
+            (int(0x1000 | mess_length).to_bytes(2, 'big') + pl_work[0:6]))
+        pl_work = pl_work[6:]
+        print("Payload stored: ", self.can_mf_send)
+        # add  remaining frames:
+        while pl_work:
+        # still bytes to take
+            if len(pl_work) > 7:
+                self.add_canframe_tosend(can_p["send"],
+                                         (bytes([pl_fcount]) + pl_work[0:7]))
+                pl_work = pl_work[7:]
+                pl_fcount = (pl_fcount + 1) & 0x2F
+            else:
+                if padding:
+                    self.add_canframe_tosend(can_p["send"],\
+                        self.fill_payload((bytes([pl_fcount]) + pl_work[0:]), padding_byte))
+                else:
+                    self.add_canframe_tosend(can_p["send"],
+                                             bytes([pl_fcount]) + pl_work[0:])
+                pl_work = []
+
+
+    def __send_sf(self, can_p: CanParam, cpay, padding, padding_byte):
+        """
+        __send_sf
+        """
+        mess_length = len(cpay["payload"])
+        if padding:
+            self.add_canframe_tosend(can_p["send"],\
+                self.fill_payload(bytes([mess_length])\
+                + cpay["payload"], padding_byte))
         else:
-            temp_message[2] = temp_message[2] + i[2][2:(2+mf_size_remain*2)]
-            mf_size_remain = 0
+            self.add_canframe_tosend(can_p["send"], bytes([mess_length])\
+                + cpay["payload"])
 
 
-    def send_FF_CAN(self, can_p: CanParam, freq=0):
+    def __print_payload(self, can_p: CanParam):
+        logging.debug("PayLoad array as hex: ")
+        for pl_frames in self.can_mf_send[can_p["send"]][1]:
+            logging.debug("%s", pl_frames.hex().upper())
+
+
+    def send_ff_can(self, can_p: CanParam, freq=0):
         """
         send_FF_CAN
-        
-        Replaced:
-        can_p["netstub"] = stub
-        can_p["send"] = signal_name
-        can_p["namespace"] = name_space
         """
         #print("Send first frame of MF")
         source = common_pb2.ClientId(id="app_identifier")
@@ -628,30 +592,27 @@ class Support_CAN:
               "of ", len(self.can_mf_send[can_p["send"]][1]))
 
 
-
-
-    def send_CF_CAN(self, can_p: CanParam, frequency=0, timeout_ms=1000):
-    #def send_cf_can(self, can_param, frequency=0, timeout_ms=1000):
+    def send_cf_can(self, can_p: CanParam, frequency=0, timeout_ms=1000):
         """
         send_CF_CAN
 
         Replaced
-        can_p["send"] = can_param["can_send"] = signal_name
-        can_p["rec"] = can_param["can_rec"] = r_var
+        can_p["send"] = can_p["send"] = signal_name
+        can_p["receive"] = can_p["receive"] = r_var
         """
         time_start = time.time()
         last_frame = '00'
 
         # wait for FC frame to arrive (max 1 sec)
         # take last frame received
-        if self.can_frames[can_p["rec"]]:
-            last_frame = self.can_frames[can_p["rec"]][-1][2]
+        if self.can_frames[can_p["receive"]]:
+            last_frame = self.can_frames[can_p["receive"]][-1][2]
         print("try to get FC frame")
         while ((time.time() - time_start)*1000 < timeout_ms) and (int(last_frame[0:1]) != 3):
-            if self.can_frames[can_p["rec"]] != []:
-                last_frame = self.can_frames[can_p["rec"]][-1][2]
+            if self.can_frames[can_p["receive"]] != []:
+                last_frame = self.can_frames[can_p["receive"]][-1][2]
         #ToDo: if FC timed out: delete message to send # pylint: disable=fixme
-        if self.can_frames[can_p["rec"]] == []:
+        if self.can_frames[can_p["receive"]] == []:
             print("send_CF_CAN: FC timed out, discard rest of message to send")
             self.can_mf_send[can_p["send"]] = []
             return "Error: FC timed out, message discarded"
@@ -664,8 +625,8 @@ class Support_CAN:
             separation_time = int(last_frame[4:6], 16)
 
             # safe CF received for later analysis
-            self.can_cf_received[can_p["rec"]].\
-                append(self.can_frames[can_p["rec"]][0])
+            self.can_cf_received[can_p["receive"]].\
+                append(self.can_frames[can_p["receive"]][0])
 
             if frame_control_flag == 1:
                 # Wait flag - wait for next FC frame
@@ -686,29 +647,22 @@ class Support_CAN:
             print("CAN_CF_RECEIVED: ", self.can_cf_received)
             self.can_mf_send[can_p["send"]] = []
             print("remove CF from received frames:")
-            self.can_frames[can_p["rec"]].pop(0)
+            self.can_frames[can_p["receive"]].pop(0)
             return "OK: MF message sent"
         return "FAIL: MF message failed to send"
 
 
     def add_canframe_tosend(self, signal_name, frame):
         """
-        add_canframe_tosend
-        appends a canframe for MF messages for later sending
+        Appends a canframe for MF messages for later sending
         """
         self.can_mf_send[signal_name][1].append(frame) # SF_Data_Length + payload
 
 
-    def t_send_signal_CAN_MF(self, can_p: CanParam, cpay: CanPayload, padding=True,
-                             padding_byte=0x00):
+    def t_send_signal_can_mf(self, can_p: CanParam, cpay: CanPayload,
+                             padding=True, padding_byte=0x00):
         """
         t_send_signal_CAN_MF
-
-        # Replaced:
-        # can_p["netstub"] = stub
-        # can_p["send"] = signal_name
-        # can_p["namespace"] = namespace
-        # can_p["receive"] = rec_name
         """
         #print("signals to send: ", self.can_mf_send)
         if can_p["send"] in self.can_mf_send:
@@ -721,7 +675,7 @@ class Support_CAN:
         self.can_mf_send[can_p["send"]] = [0, []]
         #print("signals to send: ", self.can_mf_send)
         #print("t_send signal_CAN_MF_hex")
-        #print("send CAN_MF payload ", cpay["payload"])
+        #print("send CAN_MF payload ", payload_value)
         source = common_pb2.ClientId(id="app_identifier")
         signal = common_pb2.SignalId(name=can_p["send"], namespace=can_p["namespace"])
         signal_with_payload = network_api_pb2.Signal(id=signal)
@@ -732,10 +686,10 @@ class Support_CAN:
         mess_length = len(cpay["payload"])
         # if single_frame:
         if mess_length < 8:
-            self.__send_sf(can_p, padding, padding_byte)
+            self.__send_sf(can_p, cpay, padding, padding_byte)
         # if multi_frame:
         elif mess_length < 4096:
-            self.__send_mf(can_p, padding, padding_byte)
+            self.__send_mf(can_p, cpay, padding, padding_byte)
         if self.can_mf_send[can_p["send"]][1] == []:
             print("payload empty: nothing to send")
             # if single_frame:
@@ -769,10 +723,10 @@ class Support_CAN:
             # wait for FC
             # send accordingly
         else:
-            print("Payload doesn't fit in one MF")
+            print("payload doesn't fit in one MF")
 
 
-@classmethod
+    @classmethod
     def t_send_signal_hex(cls, stub, signal_name, namespace, payload_value):
         """
         t_send_signal_hex
@@ -783,10 +737,6 @@ class Support_CAN:
         signal = common_pb2.SignalId(name=signal_name, namespace=namespace)
         signal_with_payload = network_api_pb2.Signal(id=signal)
         signal_with_payload.raw = payload_value
-        #print("\nstub ", stub,
-        #      "\nsignal_name ", signal_name,
-        #      "\nnamespace ", namespace,
-        #      "\nPayload_value ", payload_value)
         publisher_info = network_api_pb2.PublisherConfig(clientId=source,\
                             signals=network_api_pb2.Signals(signal=[signal_with_payload]),\
                                                                     frequency=0)
@@ -796,28 +746,74 @@ class Support_CAN:
             print("Exception", err)
 
 
+    def __send_cf_can_ok(self, can_p: CanParam, separation_time, block_size):
+        """
+            __send_cf_can_ok
 
-    def __check_msg(self, can_rec, temp_message, mf_size_remain):
+            Subfunction of send_cf_can
         """
-        __check_msg
-        """
-        can_mess_updated = False
-        if temp_message:
-            if mf_size_remain == 0:
-                can_mess_updated = True
-                self.can_messages[can_rec].append(list(temp_message))
-        return can_mess_updated
+        source = common_pb2.ClientId(id="app_identifier")
+        signal = common_pb2.SignalId(name=can_p["send"],
+                                     namespace=can_p["namespace"])
+        signal_with_payload = network_api_pb2.Signal(id=signal)
+
+        # continue sending as stated in FC frame
+        print("continue sending MF message")
+        # delay frame sent after FC received as stated if frame_control_delay
+        if self.can_subscribes[can_p["send"]][3] != 0:
+            print("delay frame after FC as stated in frame_control_delay [ms]:",\
+                self.can_subscribes[can_p["send"]][3])
+            time.sleep(self.can_subscribes[can_p["send"]][3]/1000)
+        while self.can_mf_send[can_p["send"]][0] <\
+            len(self.can_mf_send[can_p["send"]][1]):
+            signal_with_payload.raw = \
+                self.can_mf_send[can_p["send"]][1]\
+                    [self.can_mf_send[can_p["send"]][0]]
+            logging.debug("Signal_with_payload : %s", signal_with_payload.raw.hex().upper()) # Not sure how to fix this pylint warning. pylint: disable=no-member
+            publisher_info = network_api_pb2.PublisherConfig(clientId=source,\
+                signals=network_api_pb2.Signals(signal=[signal_with_payload]), frequency=0)
+            try:
+                can_p["netstub"].PublishSignals(publisher_info)
+                self.can_mf_send[can_p["send"]][0] += 1
+                # wait ms, only 0-127 ms allowed, microseconds 0xF1-0xF9 ignored:
+                time.sleep((separation_time and 0x7F) / 1000)
+                logging.debug("Frames sent(CF): %s of %s",
+                              self.can_mf_send[can_p["send"]][0],
+                              len(self.can_mf_send[can_p["send"]][1]))
+                block_size -= 1
+                if block_size == 0:
+                    break
+            except grpc._channel._Rendezvous as err: # pylint: disable=protected-access
+                print(err)
 
 
-    #change parameters of FC and how FC frame is used
-    def change_MF_FC(self, sig, can_mf_param: CanMFParam):
+    def t_send_signal_raw(self, stub, signal_name, namespace, payload_value):
         """
-        change_MF_FC
+        Similar to t_send_signal_hex, but payload is filled with length of payload \
+        and fillbytes to 8 bytes
         """
-        print("change_MF_FC")
-        print("change_MF_FC param:", can_mf_param)
-        #global can_subscribes
-        print("can_subscribes ", self.can_subscribes)
+        #print("t_send signal_raw")
+
+        source = common_pb2.ClientId(id="app_identifier")
+        signal = common_pb2.SignalId(name=signal_name, namespace=namespace)
+        signal_with_payload = network_api_pb2.Signal(id=signal)
+
+        signal_with_payload.raw = self.fill_payload(self.add_pl_length(payload_value)\
+                                                    + payload_value)
+        publisher_info = network_api_pb2.PublisherConfig(
+            clientId=source,\
+            signals=network_api_pb2.Signals(signal=[signal_with_payload]),\
+                                                      frequency=0)
+        try:
+            stub.PublishSignals(publisher_info)
+        except grpc._channel._Rendezvous as err: # pylint: disable=protected-access
+            print(err)
+
+
+    def change_mf_fc(self, sig, can_mf_param: CanMFParam):
+        """
+        change parameters of FC and how FC frame is used
+        """
         self.can_subscribes[sig][1] = can_mf_param['block_size']
         self.can_subscribes[sig][2] = can_mf_param['separation_time']
         self.can_subscribes[sig][3] = can_mf_param['frame_control_delay']
@@ -825,46 +821,47 @@ class Support_CAN:
         #self.can_subscribes[sig][5]=can_mf_param.frame_control_responses
         self.can_subscribes[sig][6] = can_mf_param['frame_control_auto']
 
-    # build FlowControl frame and send
-    def send_FC_frame(self, stub,\
-                      signal_name, namespace,\
-                      frame_control_flag, block_size,\
-                      separation_time):
-        """
-        send_FC_frame
-        """
-        #print("send_FC_frame")
 
-        #print("send_FC_frame parameters: SigName ", signal_name," NSP ",namespace, \
-        #           " frame_control_flag ", frame_control_flag," block_size ",\
-        #           block_size, " separation_time ",separation_time)
-        #payload=(frame_control_flag << 8) + block_size
-        #payload=(payload << 8) + separation_time
+    def send_fc_frame(self, can_p: CanParam, frame_control_flag, block_size, separation_time):
+        """
+        Build FlowControl frame and send
+
+        can_p["netstub"] = stub
+        can_p["send"] = signal_name
+        can_p["namespace"] = namespace
+        """
         if (frame_control_flag < 48) | (frame_control_flag > 50):
             print("CAN Flowcontrol: Error frame_control_flag: Out_of_range ", frame_control_flag)
         if block_size > 255:
             print("CAN Flowcontrol: Blocksize ouf_of_range ", block_size)
-        #if(separation_time < b'\xf1') | (separation_time > b'\xf9'):
         if(separation_time > 127) & ((separation_time < 241) | (separation_time > 249)):
             print("CAN Flowcontrol: separationtime out_of_range", separation_time)
-        #payload= b'\x30\x00\x00\x00\x00\x00\x00\x00'
-        #print("payload FC ", frame_control_flag +1,\
-        #      "to_bytes ", frame_control_flag.to_bytes(1,'big'))
-        #print("payload block_size ", block_size,\
-        #      " to_bytes ", block_size.to_bytes(1,'big'))
-        #print("payload separation_time ", separation_time,\
-        #      " to_bytes ", separation_time.to_bytes(1,'big'))
 
         payload = frame_control_flag.to_bytes(1, 'big') \
                     +block_size.to_bytes(1, 'big') \
                     +separation_time.to_bytes(1, 'big') \
                     +b'\x00\x00\x00\x00\x00'
-        #print("Payload FC frame", payload)
-        self.t_send_signal_hex(stub, signal_name, namespace, payload)
-        #can_messages[signal_name].append(list(payload)) #add to list of sent frames
+        self.t_send_signal_hex(can_p["netstub"], can_p["send"], can_p["namespace"],
+                               payload)
 
 
-    def update_can_messages(self, can_rec):
+    def __update_msg(self, can_rec, temp_message, mf_size_remain):
+        """
+        __update_msg
+        """
+        can_mess_updated = False
+        # don't add empty messages
+        if temp_message:
+            #print("mf_size_remain: ", mf_size_remain)
+            if mf_size_remain == 0:
+                can_mess_updated = True
+                logging.debug("Add messages to can_messages: %s", self.can_messages[can_rec])
+                logging.debug("Messages: %s", list(temp_message))
+                self.can_messages[can_rec].append(list(temp_message))
+        return can_mess_updated
+
+
+    def update_can_messages(self, can_rec): # pylint: disable=too-many-branches
         """
         update list of messages for a given can_rec
 
@@ -880,38 +877,30 @@ class Support_CAN:
         message_status = 0
         mf_cf_count = 0
         mf_mess_size = 0
-        #print("update_can_messages")
         temp_message = [] #empty list as default
 
         #print("records received ", can_rec)
         #print("number of frames ", len(self.can_frames[can_rec]))
         if self.can_frames[can_rec]:
             for i in self.can_frames[can_rec]:
-                #print("whole can_frame : ",i)
-                #print("can frame  ", i[2].upper())
-                #print("test against ", can_answer.hex().upper())
+                logging.debug("Whole can_frame : %s", i)
                 if message_status == 0:
-                    #print("message to handle: ", i[2])
-                    #print("message to handle: ", i[2][0:1])
                     det_mf = int(i[2][0:1], 16)
                     if det_mf == 0:
                         #Single frame message, add frame as message
-                        #can_messages[can_rec].append(i)
                         temp_message = i
                         mf_size_remain = 0
-                        #print("Single frame message received")
+                        logging.debug("Single frame message received")
                     elif det_mf == 1:
                         # First frame of MF-message, change to status=2 consective frames to follow
                         message_status = 2
                         mf_cf_count = 32
                         # get size of message to receive:
-                        #mf_mess_size = (i.integer >> 48) & 0x0FFF
                         mf_mess_size = int(i[2][1:4], 16)
                         #print("update_can_message: message_size ", mf_mess_size)
                         # add first payload
                         #print("update_can_message: whole frame ", i[2])
                         #print("update_can_message firstpayload ", i[2][10:])
-                        #temp_message=i[2][10:]
                         temp_message = i[:]
                         mf_size_remain = mf_mess_size - 6
                         mf_cf_count = ((mf_cf_count + 1) & 0xF) + 32
@@ -925,15 +914,20 @@ class Support_CAN:
                             return can_mess_updated
                         print("MF sent: ", self.can_mf_send)
                         print("FC expected for ", can_rec)
-                        #print("can_frames      ", self.can_frames)
+                        print("can_frames      ", self.can_frames)
                     else:
                         print("Reserved CAN-header")
                 elif message_status == 1:
                     print("message not expected")
                 elif message_status == 2:
-                    self.__msg_status_2(temp_message, mf_size_remain, i)
+                    if mf_size_remain > 7:
+                        temp_message[2] = temp_message[2] + i[2][2:16]
+                        mf_size_remain -= 7
+                        mf_cf_count = ((mf_cf_count + 1) & 0xF) + 32
+                    else:
+                        temp_message[2] = temp_message[2] + i[2][2:(2+mf_size_remain*2)]
+                        mf_size_remain = 0
                 else:
                     print("unexpected message status in can_frames")
-            # don't add empty messages
-            can_mess_updated = self.__check_msg(can_rec, temp_message, mf_size_remain)
+            can_mess_updated = self.__update_msg(can_rec, temp_message, mf_size_remain)
         return can_mess_updated

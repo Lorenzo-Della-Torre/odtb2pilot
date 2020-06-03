@@ -22,6 +22,7 @@
     The Python implementation of the gRPC route guide client.
 """
 
+import logging
 import sys
 import grpc
 sys.path.append('generated')
@@ -42,15 +43,14 @@ class SupportCAN:
 
         Send GPIO message  with raw (hex) payload
         """
-        #print("t_send GPIO signal_hex")
         source = common_pb2.ClientId(id="app_identifier")
         signal = common_pb2.SignalId(name=signal_name, namespace=namespace)
         signal_with_payload = network_api_pb2.Signal(id=signal)
         signal_with_payload.raw = payload_value
-        #print("source: ", source, " signal_with_PL: ",  payload_value)
+        logging.debug("source: %s signal_with_PL: %s", source, payload_value)
         publisher_info = network_api_pb2.PublisherConfig(clientId=source,\
             signals=network_api_pb2.Signals(signal=[signal_with_payload]), frequency=0)
         try:
             stub.PublishSignals(publisher_info)
         except grpc._channel._Rendezvous as err: # pylint: disable=protected-access
-            print(err)
+            logging.error(err)

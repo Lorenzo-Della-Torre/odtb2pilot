@@ -29,14 +29,14 @@
 #import logging
 #from typing import Dict
 
-from support_can import Support_CAN, CanMFParam, CanParam, CanPayload, CanTestExtra
-from support_test_odtb2 import Support_test_ODTB2
+from support_can import SupportCAN, CanMFParam, CanParam, CanPayload, CanTestExtra
+from support_test_odtb2 import SupportTestODTB2
 
 
-SC = Support_CAN()
-SUTE = Support_test_ODTB2()
+SC = SupportCAN()
+SUTE = SupportTestODTB2()
 
-class SupportService34:
+class SupportService34: # pylint: disable=too-few-public-methods
     """
     class for supporting Service#34
     """
@@ -45,9 +45,7 @@ class SupportService34:
     #@classmethod
     #Support function for Request Download
     @staticmethod
-    def request_block_download(can_p: CanParam, stepno, purpose,
-                               block_addr_by, block_len_by,
-                               data_format):
+    def request_block_download(can_p: CanParam, purpose, data):
         """
         Support function for Request Download
         """
@@ -64,8 +62,8 @@ class SupportService34:
             }
         SC.change_MF_FC(can_p["send"], can_mf_param)
 
-        cpay: CanPayload = {"m_send" : b'\x34' + data_format + b'\x44'+\
-                                       block_addr_by + block_len_by,\
+        cpay: CanPayload = {"m_send" : b'\x34' + data["data_format"] + b'\x44'+\
+                                       data["addr"] + data["len"],\
                             "mr_extra" : ''
                            }
         etp: CanTestExtra = {"purpose" : purpose,\

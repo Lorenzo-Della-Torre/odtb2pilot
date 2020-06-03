@@ -36,10 +36,8 @@ import importlib
 import os
 import argparse
 import binascii
-from support_can_hw import SupportCanHW
 
 #sys.path.append('generated')
-
 from support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
 SC = SupportCAN()
 
@@ -118,92 +116,91 @@ class SupportTestODTB2:
         Private send method
 
         can_p["send"]
-        can_p["rec"]
+        can_p["receive"]
         cpay["payload"]
         """
+        wait_max = False
+        if "wait_max" in etp:
+            wait_max = etp["wait_max"]
+
         wait_start = time.time()
         logging.debug("To send:   [%s, %s, %s]", time.time(), can_p["send"],
                       (cpay["payload"]).hex().upper())
         SC.clear_all_can_messages()
-        SC.t_send_signal_can_mf(can_p, True, 0x00) !!!!!!!!!!!!
+        SC.t_send_signal_can_mf(can_p, cpay, True, 0x00)
         #wait timeout for getting subscribed data
         if (wait_max or (etp["max_no_messages"] == -1)):
             time.sleep(etp["timeout"])
-            SC.update_can_messages(can_p["rec"])
+            SC.update_can_messages(can_p["receive"])
         else:
-            SC.update_can_messages(can_p["rec"])
+            SC.update_can_messages(can_p["receive"])
             while((time.time()-wait_start <= etp["timeout"])
-                  and (len(SC.can_messages[can_p["rec"]]) < etp["max_no_messages"])
-                  ):
+                  and (len(SC.can_messages[can_p["receive"]]) < etp["max_no_messages"])):
                 SC.clear_all_can_messages()
-                SC.update_can_messages(can_p["rec"])
+                SC.update_can_messages(can_p["receive"])
 
-    #def teststep(self, can_param, param_, clear_old_mess=True, wait_max=False):
-    def teststep(self, can_p: CanParam, cpay: CanPayload, etp: CanTestExtra)
-                 #step_no, clear_old_mess=True, wait_max=False):
+
+    def teststep(self, can_p: CanParam, cpay: CanPayload, etp: CanTestExtra):
         """
         teststep for ODTB2 testenvironment
 
-        Parameter:
-        cpay["payload"]
-        can_param["mr_extra"]
-        can_p["rec"]
+        step_no          integer    teststep
+        purpose          string     purpose of teststep
+        timeout          float      timeout in seconds
+        min_no_messages  integer    minimum number of messages to expect
+        max_no_messages  integer    maximum number of messages to expect
 
         Optional parameter:
-        param_["step_no"]           integer teststep
-        param_["purpose"]           string  purpose of teststep
-        timeout                     float   timeout in seconds
-        param_["min_no_messages"]   integer minimum number of messages to expect
-        etp["max_no_messages"]   integer maximum number of messages to expect
-        clear_old_mess              bool    clear old messages before doing teststep
-        wait_max                    bool    TRUE: wait until timeout for messages
-                                            FALSE: wait until max_no_messages reached
+        step_no          integer teststep
+        purpose          string  purpose of teststep
+        timeout          float   timeout in seconds
+        min_no_messages  integer minimum number of messages to expect
+        max_no_messages  integer maximum number of messages to expect
+        clear_old_mess   bool    clear old messages before doing teststep
+        wait_max         bool    TRUE: wait until timeout for messages
+                                  FALSE: wait until max_no_messages reached
         Return:
-        testresult                  bool    result of teststep is as expected
+        testresult       bool    result of teststep is as expected
         """
         testresult = True
-        debug = False
 
         SC.clear_old_cf_frames()
 
+        clear_old_mess = True
+        if "clear_old_mess" in etp:
+            clear_old_mess = etp["clear_old_mess"]
+
         if clear_old_mess:
-            if debug:
-                print("clear old messages")
+            logging.debug("Clear old messages")
             SC.clear_all_can_frames()
             SC.clear_all_can_messages()
 
         self.print_test_purpose(etp["step_no"], etp["purpose"])
-
         # wait for messages
         # define answer to expect
-        if debug:
-            print("build answer can_frames to receive")
-        can_answer = SC.can_receive(cpay["payload"], cpay["mr_extra"])
-        if debug:
-            print("can_frames to receive", can_answer)
+        logging.debug("Build answer can_frames to receive")
+        can_answer = SC.can_receive(cpay["payload"], cpay["extra"])
+        logging.debug("CAN frames to receive: %s", can_answer)
 
         # message to send
         self.__send(can_p, etp, cpay)
 
-        if debug:
-            print("rec can messages : ", SC.can_messages[can_p["rec"]])
-        if len(SC.can_messages[can_p["rec"]]) < etp["min_no_messages"]:
-            print("Bad: min_no_messages not reached: ",\
-                  len(SC.can_messages[can_p["rec"]]))
+        logging.debug("Rec can messages: %s", SC.can_messages[can_p["receive"]])
+        if len(SC.can_messages[can_p["receive"]]) < etp["min_no_messages"]:
+            logging.warning("Bad: min_no_messages not reached: %s",
+                            len(SC.can_messages[can_p["receive"]]))
             testresult = False
         elif etp["max_no_messages"] >= 0 and\
-                len(SC.can_messages[can_p["rec"]]) > etp["max_no_messages"]:
-            print("Bad: max_no_messages ", len(SC.can_messages[can_p["rec"]]))
+                len(SC.can_messages[can_p["receive"]]) > etp["max_no_messages"]:
+            logging.warning("Bad: Max_no_messages %s", len(SC.can_messages[can_p["receive"]]))
             testresult = False
         else:
-            #print("number messages ", len(SC.can_messages[Param.can_rec]))
-            #if len(SC.can_messages[Param.can_rec]) > 0:
-            if SC.can_messages[can_p["rec"]]:
+            if SC.can_messages[can_p["receive"]]:
                 if etp["min_no_messages"] >= 0:
                     testresult = testresult and\
-                        self.test_message(SC.can_messages[can_p["rec"]],\
+                        self.test_message(SC.can_messages[can_p["receive"]],\
                                           can_answer.hex().upper())
-        print("Step ", step_no, ": result teststep:", testresult, "\n")
+        logging.info("Step %s: Result teststep: %s", etp["step_no"], testresult)
         return testresult
 
     @classmethod
@@ -239,16 +236,16 @@ class SupportTestODTB2:
         pos = message.find('EDA0')
         retval = title
         if (not message.find('F120', pos) == -1) and (not message.find('F12E', pos) == -1):
-            retval = self.PP_CombinedDID_EDA0_BECM_mode1_mode3(message, "EDA0 for mode1/mode3:\n")
+            retval = self.pp_combined_did_eda0_becm_mode1_mode3(message, "EDA0 for mode1/mode3:\n")
         elif (not message.find('F121', pos) == -1) and (not message.find('F125', pos) == -1):
-            retval = self.PP_CombinedDID_EDA0_PBL(message, "EDA0 for PBL:\n")
+            retval = self.pp_combined_did_eda0_pbl(message, "EDA0 for PBL:\n")
         elif (not message.find('F121', pos) == -1) and (not message.find('F125', pos) == -1):
-            retval = self.PP_CombinedDID_EDA0_SBL(message, "EDA0 for SBL:\n")
+            retval = self.pp_combined_did_eda0_sbl(message, "EDA0 for SBL:\n")
         else:
             retval = "Unknown format of EDA0 message'\n"
         return retval
 
-    def PP_CombinedDID_EDA0_BECM_mode1_mode3(self, message, title=''):
+    def pp_combined_did_eda0_becm_mode1_mode3(self, message, title=''):
         """
         PrettyPrint Combined_DID EDA0:
         """

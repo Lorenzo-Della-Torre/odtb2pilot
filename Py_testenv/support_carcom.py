@@ -22,6 +22,8 @@
     The Python implementation of the gRPC route guide client.
 """
 
+import logging
+
 class SupportCARCOM:
     # Disable the too-few-public-methods violation. I'm sure we will have more methods later.
     # pylint: disable=too-few-public-methods
@@ -44,7 +46,7 @@ class SupportCARCOM:
             "testNotCompletedThisMonitoringCycle": b'\x06',
             "warningIndicatorRequested": b'\x07',
         }
-        return switcher.get(mask, b'') #print("ReadDTC: Supported mask missing.\n")
+        return switcher.get(mask, b'')
 
 
     def can_m_send(self, name, message, mask):
@@ -80,15 +82,21 @@ class SupportCARCOM:
             "RequestUpload": b'\x35'+ message,
             "TransferData": b'\x36'+ message,
             "RequestDownload": b'\x74'+ message,
-            "ReadGenericInformationReportGenericSnapshotByDTCNumber": b'\xAF\x04'\
+            "ReadGenericInformationReportGenericSnapshotByDTCNumber": b'\xAF\x04' + message + mask,
+            "ReadGenericInformationReportGenericSnapshotByDTCNumber(84)": b'\xAF\x84' \
                 + message + mask,
-            "ReadGenericInformationReportGenericSnapshotByDTCNumber(84)": b'\xAF\x84'\
+            "ReadGenericInformationReportGenericExtendedDataByDTCNumber": b'\xAF\x06' \
                 + message + mask,
-            "ReadGenericInformationReportGenericExtendedDataByDTCNumber": b'\xAF\x06'\
-                + message + mask,
-            "ReadGenericInformationReportGenericExtendedDataByDTCNumber(86)": b'\xAF\x86'\
+            "ReadGenericInformationReportGenericExtendedDataByDTCNumber(86)": b'\xAF\x86' \
                 + message + mask,
             "ReadDTCByStatusMask": b'\x19\x02' + self.__read_dtc_by_status_mask(mask),
-            "ReadDTCByStatusMask(82)": b'\x19\x82' + self.__read_dtc_by_status_mask(mask),
+            "ReadDTCByStatusMask(82)": b'\x19\x82' + self.__read_dtc_by_status_mask(mask)
         }
-        return switcher.get(name, b'') #print("You type a wrong name: " + name + "\n")
+        result = switcher.get(name, b'')
+        logging.debug("Name:    [%s]", name)
+        logging.debug("Message: [%s]", message)
+        logging.debug("Mask:    [%s]", mask)
+        logging.debug("Result:  [%s]", result)
+        if result == b'':
+            logging.warning("You typed a wrong name: %s", name)
+        return result
