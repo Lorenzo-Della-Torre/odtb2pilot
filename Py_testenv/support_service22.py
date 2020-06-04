@@ -49,7 +49,8 @@ class SupportService22:
         Read composite DID EDA0: Complete ECU Part/Serial Number(s)
         """
         stepno = 220
-        cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("ReadDataByIdentifier", b'\xED\xA0', ""),\
+        cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("ReadDataByIdentifier",
+                                                             b'\xED\xA0', ""),
                             "extra" : ''
                            }
         etp: CanTestExtra = {"purpose" : "Service22: Complete ECU Part/Serial Number(s)",\
@@ -64,7 +65,7 @@ class SupportService22:
         result = SUTE.teststep(can_p, cpay, stepno, etp)
         if not len(SC.can_messages[can_p["rec"]]) == 0:
             logging.info('%s',\
-                         SUTE.PP_CombinedDID_EDA0(SC.can_messages[can_p["rec"]][0][2],\
+                         SUTE.pp_combined_did_eda0(SC.can_messages[can_p["rec"]][0][2],\
                                                     title='')
                         )
         else:
@@ -80,7 +81,8 @@ class SupportService22:
         Read DID F186: Active Diagnostic Session
         """
         stepno = 221
-        cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("ReadDataByIdentifier", b'\xF1\x86', ""),\
+        cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("ReadDataByIdentifier",
+                                                             b'\xF1\x86', ""),
                             "extra" : dsession
                            }
         etp: CanTestExtra = {"purpose" : "Service22: Active Diagnostic Session",\

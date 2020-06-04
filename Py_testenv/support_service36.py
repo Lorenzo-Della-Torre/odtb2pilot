@@ -72,7 +72,7 @@ class SupportService36: # pylint: disable=too-few-public-methods
                                  "min_no_messages" : -1,\
                                  "max_no_messages" : -1
                                 }
-            result = SUTE.teststep(can_p, cpay, stepno, etp)
+            result = SUTE.teststep(can_p, cpay, etp)
             result = result and SUTE.test_message(SC.can_messages[can_p["rec"]], '76')
             #print(SC.can_messages[can_receive])
         return result

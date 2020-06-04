@@ -71,7 +71,7 @@ class SupportService34: # pylint: disable=too-few-public-methods
                              "min_no_messages" : -1,\
                              "max_no_messages" : -1
                             }
-        testresult = SUTE.teststep(can_p, cpay, stepno, etp)
+        testresult = SUTE.teststep(can_p, cpay, etp)
         testresult = testresult and SUTE.test_message(SC.can_messages[can_p["rec"]], '74')
         nbl = SUTE.PP_StringTobytes(SC.can_frames[can_p["rec"]][0][2][6:10], 4)
         #if self._debug:
