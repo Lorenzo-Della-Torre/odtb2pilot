@@ -28,12 +28,13 @@
 
 import logging
 
-from support_can import Support_CAN, CanParam, CanPayload, CanTestExtra
-from support_test_odtb2 import Support_test_ODTB2
+from support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
+from support_test_odtb2 import SupportTestODTB2
+from support_carcom import SupportCARCOM
 
-
-SC = Support_CAN()
-SUTE = Support_test_ODTB2()
+SC = SupportCAN()
+SUTE = SupportTestODTB2()
+SC_CARCOM = SupportCARCOM()
 
 class SupportService22:
     """
@@ -48,8 +49,9 @@ class SupportService22:
         Read composite DID EDA0: Complete ECU Part/Serial Number(s)
         """
         stepno = 220
-        cpay: CanPayload = {"m_send" : SC.can_m_send("ReadDataByIdentifier", b'\xED\xA0', ""),\
-                            "mr_extra" : ''
+        cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("ReadDataByIdentifier",
+                                                             b'\xED\xA0', ""),
+                            "extra" : ''
                            }
         etp: CanTestExtra = {"purpose" : "Service22: Complete ECU Part/Serial Number(s)",\
                              "timeout" : 1,\
@@ -63,7 +65,7 @@ class SupportService22:
         result = SUTE.teststep(can_p, cpay, stepno, etp)
         if not len(SC.can_messages[can_p["rec"]]) == 0:
             logging.info('%s',\
-                         SUTE.PP_CombinedDID_EDA0(SC.can_messages[can_p["rec"]][0][2],\
+                         SUTE.pp_combined_did_eda0(SC.can_messages[can_p["rec"]][0][2],\
                                                     title='')
                         )
         else:
@@ -79,8 +81,9 @@ class SupportService22:
         Read DID F186: Active Diagnostic Session
         """
         stepno = 221
-        cpay: CanPayload = {"m_send" : SC.can_m_send("ReadDataByIdentifier", b'\xF1\x86', ""),\
-                            "mr_extra" : dsession
+        cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("ReadDataByIdentifier",
+                                                             b'\xF1\x86', ""),
+                            "extra" : dsession
                            }
         etp: CanTestExtra = {"purpose" : "Service22: Active Diagnostic Session",\
                              "timeout" : 1,\

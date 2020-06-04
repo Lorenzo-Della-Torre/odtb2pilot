@@ -28,15 +28,13 @@
 
 import logging
 
-from support_can import Support_CAN, CanParam
-from support_test_odtb2 import Support_test_ODTB2
+from support_can import SupportCAN, CanParam
+from support_test_odtb2 import SupportTestODTB2
 from support_service22 import SupportService22
 
 
-SC = Support_CAN()
-#CP = CanParam()
-#CPAY = CanPayload()
-SUTE = Support_test_ODTB2()
+SC = SupportCAN()
+SUTE = SupportTestODTB2()
 SE22 = SupportService22()
 
 class SupportPrecondition:
@@ -54,23 +52,34 @@ class SupportPrecondition:
         """
 
         # start heartbeat, repeat every 0.8 second
-        SC.start_heartbeat(can_p["netstub"], "MvcmFront1NMFr", "Front1CANCfg0",
-                           b'\x00\x40\xFF\xFF\xFF\xFF\xFF\xFF', 0.4)
+        hb_param = dict()
+        hb_param["id"] = "MvcmFront1NMFr"
+        hb_param["nspace"] = "Front1CANCfg0"
+        hb_param["frame"] = b'\x00\x40\xFF\xFF\xFF\xFF\xFF\xFF'
+        hb_param["intervall"] = 0.4
 
-        SC.start_periodic(can_p["netstub"], "Networkeptalive",
-                          True, "Vcu1ToAllFuncFront1DiagReqFrame",
-                          "Front1CANCfg0", b'\x02\x3E\x80\x00\x00\x00\x00\x00', 1.02)
+        # start heartbeat, repeat every x second
+        SC.start_heartbeat(can_p["netstub"], hb_param)
 
-    #SC.subscribe_signal(stub, can_send, can_receive, can_namespace, timeout)
-    ##record signal we send as well
-    #SC.subscribe_signal(stub, can_receive, can_send, can_namespace, timeout)
+        per_param = {
+            "name" : "Networkeptalive",
+            "send" : True,
+            "id" : "Vcu1ToAllFuncFront1DiagReqFrame",
+            "nspace" : "Front1CANCfg0",
+            "frame" : b'\x02\x3E\x80\x00\x00\x00\x00\x00',
+            "intervall" : 1.02
+            }
+        SC.start_periodic(can_p["netstub"], per_param)
+
+        ##record signal we send as well
+        #SC.subscribe_signal(stub, can_receive, can_send, can_namespace, timeout)
         SC.subscribe_signal(can_p, timeout)
         #record signal we send as well
         can_p2: CanParam = {"netstub": can_p["netstub"],
-                            "send": can_p["rec"],
+                            "send": can_p["receive"],
                             "rec": can_p["send"],
                             "namespace": can_p["namespace"],
-                            "namespace2": can_p["namespace"]
+                            "namespace2": can_p["namespace"] #????
                            }
         SC.subscribe_signal(can_p2, timeout)
 
@@ -78,7 +87,6 @@ class SupportPrecondition:
         logging.info("Precondition testok: %s\n", result)
         return result
 
-    #@classmethod
     @staticmethod
     def precondition_burst(can_p: CanParam, timeout=300):
         """
@@ -91,8 +99,14 @@ class SupportPrecondition:
         #to enter prog
         SC.send_burst(can_p["netstub"], "Vcu1ToAllFuncFront1DiagReqFrame", can_p["namespace"],
                       b'\x02\x10\x82\x00\x00\x00\x00\x00', 0.001, 600)
-        SC.start_heartbeat(can_p["netstub"], "MvcmFront1NMFr", "Front1CANCfg0",
-                           b'\x00\x40\xFF\xFF\xFF\xFF\xFF\xFF', 0.4)
+
+        hb_param = dict()
+        hb_param["id"] = "MvcmFront1NMFr"
+        hb_param["nspace"] = "Front1CANCfg0"
+        hb_param["frame"] = b'\x00\x40\xFF\xFF\xFF\xFF\xFF\xFF'
+        hb_param["intervall"] = 0.4
+
+        SC.start_heartbeat(can_p["netstub"], hb_param)
 
         SC.start_periodic(can_p["netstub"], "Networkeptalive",
                           True, "Vcu1ToAllFuncFront1DiagReqFrame",

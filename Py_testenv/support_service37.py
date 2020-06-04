@@ -27,14 +27,14 @@
 """The Python implementation of the gRPC route guide client."""
 
 
-from support_can import Support_CAN, CanParam, CanPayload, CanTestExtra
-from support_test_odtb2 import Support_test_ODTB2
+from support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
+from support_test_odtb2 import SupportTestODTB2
 
 
-SC = Support_CAN()
-SUTE = Support_test_ODTB2()
+SC = SupportCAN()
+SUTE = SupportTestODTB2()
 
-class SupportService37:
+class SupportService37: # pylint: disable=too-few-public-methods
     """
     class for supporting Service#37
     """

@@ -29,14 +29,15 @@
 #import logging
 import time
 
-from support_can import Support_CAN, CanParam, CanPayload, CanTestExtra
-from support_test_odtb2 import Support_test_ODTB2
+from support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
+from support_test_odtb2 import SupportTestODTB2
+from support_carcom import SupportCARCOM
 
+SC_CARCOM = SupportCARCOM()
+SC = SupportCAN()
+SUTE = SupportTestODTB2()
 
-SC = Support_CAN()
-SUTE = Support_test_ODTB2()
-
-class SupportPostcondition:
+class SupportPostcondition: # pylint: disable=too-few-public-methods
     """
     class for supporting Postcondition
     """
@@ -48,7 +49,7 @@ class SupportPostcondition:
         ecu_hardreset
         """
         stepno = 110
-        cpay: CanPayload = {"m_send" : SC.can_m_send("ECUResetHardReset", b'', b''),\
+        cpay: CanPayload = {"m_send" : SC_CARCOM.can_m_send("ECUResetHardReset", b'', b''),\
                             "mr_extra" : ''
                            }
         etp: CanTestExtra = {"purpose" : "ECU Reset",\
