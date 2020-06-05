@@ -50,22 +50,23 @@ class SupportService22:
         """
         stepno = 220
         cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("ReadDataByIdentifier",
-                                                             b'\xED\xA0', ""),
+                                                             b'\xED\xA0', b''),
                             "extra" : ''
                            }
-        etp: CanTestExtra = {"purpose" : "Service22: Complete ECU Part/Serial Number(s)",\
+        etp: CanTestExtra = {"step_no": stepno,\
+                             "purpose" : "Service22: Complete ECU Part/Serial Number(s)",\
                              "timeout" : 1,\
                              "min_no_messages" : -1,\
                              "max_no_messages" : -1
                             }
 
-    #can_m_send = SC.can_m_send("ReadDataByIdentifier", b'\xED\xA0', "")
+    #can_m_send = SC.can_m_send("ReadDataByIdentifier", b'\xED\xA0', b'')
     #can_mr_extra = ''
 
-        result = SUTE.teststep(can_p, cpay, stepno, etp)
-        if not len(SC.can_messages[can_p["rec"]]) == 0:
+        result = SUTE.teststep(can_p, cpay, etp)
+        if not len(SC.can_messages[can_p["receive"]]) == 0:
             logging.info('%s',\
-                         SUTE.pp_combined_did_eda0(SC.can_messages[can_p["rec"]][0][2],\
+                         SUTE.pp_combined_did_eda0(SC.can_messages[can_p["receive"]][0][2],\
                                                     title='')
                         )
         else:
@@ -82,15 +83,16 @@ class SupportService22:
         """
         stepno = 221
         cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("ReadDataByIdentifier",
-                                                             b'\xF1\x86', ""),
+                                                             b'\xF1\x86', b''),
                             "extra" : dsession
                            }
-        etp: CanTestExtra = {"purpose" : "Service22: Active Diagnostic Session",\
+        etp: CanTestExtra = {"step_no": stepno,\
+                             "purpose" : "Service22: Active Diagnostic Session",\
                              "timeout" : 1,\
                              "min_no_messages" : 1,\
                              "max_no_messages" : 1
                             }
 
-        result = SUTE.teststep(can_p, cpay, stepno, etp)
+        result = SUTE.teststep(can_p, cpay, etp)
         #time.sleep(1)
         return result

@@ -28,7 +28,7 @@
 
 import logging
 
-from support_can import SupportCAN, CanParam
+from support_can import SupportCAN, CanParam, PerParam
 from support_test_odtb2 import SupportTestODTB2
 from support_service22 import SupportService22
 
@@ -52,20 +52,23 @@ class SupportPrecondition:
         """
 
         # start heartbeat, repeat every 0.8 second
-        hb_param = dict()
-        hb_param["id"] = "MvcmFront1NMFr"
-        hb_param["nspace"] = "Front1CANCfg0"
-        hb_param["frame"] = b'\x00\x40\xFF\xFF\xFF\xFF\xFF\xFF'
-        hb_param["intervall"] = 0.4
+        hb_param: PerParam = {
+            "name" : "Heartbeat",
+            "send" : True,
+            "id" : "MvcmFront1NMFr",
+            "nspace" : can_p["namespace"].name,
+            "frame" : b'\x00\x40\xFF\xFF\xFF\xFF\xFF\xFF',
+            "intervall" : 0.4
+            }
 
         # start heartbeat, repeat every x second
         SC.start_heartbeat(can_p["netstub"], hb_param)
 
-        per_param = {
+        per_param: PerParam = {
             "name" : "Networkeptalive",
             "send" : True,
             "id" : "Vcu1ToAllFuncFront1DiagReqFrame",
-            "nspace" : "Front1CANCfg0",
+            "nspace" : can_p["namespace"].name,
             "frame" : b'\x02\x3E\x80\x00\x00\x00\x00\x00',
             "intervall" : 1.02
             }
@@ -77,9 +80,8 @@ class SupportPrecondition:
         #record signal we send as well
         can_p2: CanParam = {"netstub": can_p["netstub"],
                             "send": can_p["receive"],
-                            "rec": can_p["send"],
-                            "namespace": can_p["namespace"],
-                            "namespace2": can_p["namespace"] #????
+                            "receive": can_p["send"],
+                            "namespace": can_p["namespace"]
                            }
         SC.subscribe_signal(can_p2, timeout)
 
@@ -97,34 +99,44 @@ class SupportPrecondition:
 
         #send burst for 10seconds (10000 x 0.01 sec)
         #to enter prog
-        SC.send_burst(can_p["netstub"], "Vcu1ToAllFuncFront1DiagReqFrame", can_p["namespace"],
-                      b'\x02\x10\x82\x00\x00\x00\x00\x00', 0.001, 600)
+        burst_param: PerParam = {
+            "name" : "Burst",
+            "send" : True,
+            "id" : "Vcu1ToAllFuncFront1DiagReqFrame",
+            "nspace" : can_p["namespace"].name,
+            "frame" : b'\x02\x10\x82\x00\x00\x00\x00\x00',
+            "intervall" : 0.001
+            }
+        SC.send_burst(can_p["netstub"], burst_param, 600)
 
-        hb_param = dict()
-        hb_param["id"] = "MvcmFront1NMFr"
-        hb_param["nspace"] = "Front1CANCfg0"
-        hb_param["frame"] = b'\x00\x40\xFF\xFF\xFF\xFF\xFF\xFF'
-        hb_param["intervall"] = 0.4
-
+        hb_param: PerParam = {
+            "name" : "Heartbeat",
+            "send" : True,
+            "id" : "MvcmFront1NMFr",
+            "nspace" : can_p["namespace"].name,
+            "frame" : b'\x00\x40\xFF\xFF\xFF\xFF\xFF\xFF',
+            "intervall" : 0.4
+            }
         SC.start_heartbeat(can_p["netstub"], hb_param)
 
-        SC.start_periodic(can_p["netstub"], "Networkeptalive",
-                          True, "Vcu1ToAllFuncFront1DiagReqFrame",
-                          "Front1CANCfg0", b'\x02\x3E\x80\x00\x00\x00\x00\x00', 1.02)
+        per_param: PerParam = {
+            "name" : "Networkeptalive",
+            "send" : True,
+            "id" : "Vcu1ToAllFuncFront1DiagReqFrame",
+            "nspace" : can_p["namespace"].name,
+            "frame" : b'\x02\x3E\x80\x00\x00\x00\x00\x00',
+            "intervall" : 1.02
+            }
+        SC.start_periodic(can_p["netstub"], per_param)
 
-        SC.send_burst(can_p["netstub"], "Vcu1ToAllFuncFront1DiagReqFrame", can_p["namespace"],
-                      b'\x02\x10\x82\x00\x00\x00\x00\x00', 0.001, 5000)
-        # timeout = more than maxtime script takes
-        #timeout = 1800   #Normally takes about 1000 seconds, give it some extra time"
-        timeout = 3600   #Normally takes about 1000 seconds, give it some extra time"
+        SC.send_burst(can_p["netstub"], burst_param, 5000)
 
         SC.subscribe_signal(can_p, timeout)
         #record signal we send as well
         can_p2: CanParam = {"netstub": can_p["netstub"],
-                            "send": can_p["rec"],
+                            "send": can_p["receive"],
                             "rec": can_p["send"],
                             "namespace": can_p["namespace"],
-                            "namespace2": can_p["namespace"]
                            }
         SC.subscribe_signal(can_p2, timeout)
 

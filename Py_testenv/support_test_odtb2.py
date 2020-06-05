@@ -179,7 +179,7 @@ class SupportTestODTB2:
         # wait for messages
         # define answer to expect
         logging.debug("Build answer can_frames to receive")
-        can_answer = SC.can_receive(cpay["payload"], cpay["extra"])
+        can_answer = SC.can_receive(cpay['payload'], cpay['extra'])
         logging.debug("CAN frames to receive: %s", can_answer)
 
         # message to send

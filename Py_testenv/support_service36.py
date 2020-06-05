@@ -48,7 +48,10 @@ class SupportService36: # pylint: disable=too-few-public-methods
         """
         pad = 0
 
-        for i in range(int(data["len"]/(nbl-2))+1):
+        #print("SE36 flash_blocks -- data: ", data)
+        #print("SE36 flash_blocks -- data[len]: ", data["b_len"])
+
+        for i in range(int(data["b_len"]/(nbl-2))+1):
 
             pad = (nbl-2)*i
             i += 1
@@ -61,18 +64,18 @@ class SupportService36: # pylint: disable=too-few-public-methods
                 'frame_control_flag' : 48, #continue send
                 'frame_control_auto' : False
                 }
-            SC.change_MF_FC(can_p["send"], can_mf_param)
+            SC.change_mf_fc(can_p["send"], can_mf_param)
 
-            cpay: CanPayload = {"m_send" : b'\x36' + ibyte + data["data"][pad:pad + nbl-2],\
-                                "mr_extra" : ''
+            cpay: CanPayload = {"payload" : b'\x36' + ibyte + data["b_data"][pad:pad + nbl-2],\
+                                "extra" : ''
                                }
-            etp: CanTestExtra = {"purpose" : purpose,\
+            etp: CanTestExtra = {"step_no": step_no,\
+                                 "purpose" : purpose,\
                                  "timeout" : 0.2,\
-                                 "step_no" : step_no,\
                                  "min_no_messages" : -1,\
                                  "max_no_messages" : -1
                                 }
             result = SUTE.teststep(can_p, cpay, etp)
-            result = result and SUTE.test_message(SC.can_messages[can_p["rec"]], '76')
+            result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], '76')
             #print(SC.can_messages[can_receive])
         return result

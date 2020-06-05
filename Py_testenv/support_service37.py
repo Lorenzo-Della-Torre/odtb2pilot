@@ -45,13 +45,14 @@ class SupportService37: # pylint: disable=too-few-public-methods
         Support function for Request Transfer Exit
         """
         #testresult = True
-        cpay: CanPayload = {"m_send" : b'\x37',\
-                            "mr_extra" : ''
+        cpay: CanPayload = {"payload": b'\x37',\
+                            "extra": ''
                            }
-        etp: CanTestExtra = {"purpose" : purpose,\
-                             "timeout" : 0.2,\
+        etp: CanTestExtra = {"step_no": stepno,\
+                             "purpose": purpose,\
+                             "timeout": 0.2,\
                              "min_no_messages" : 1,\
                              "max_no_messages" : 1
                             }
-        testresult = SUTE.teststep(can_p, cpay, stepno, etp)
+        testresult = SUTE.teststep(can_p, cpay, etp)
         return testresult

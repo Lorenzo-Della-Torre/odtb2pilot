@@ -21,11 +21,14 @@
 
 """The Python implementation of the grPC route guide client."""
 
-from support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
+from support_service27 import SupportService27
+from support_can import SupportCAN, CanParam
 from support_test_odtb2 import SupportTestODTB2
 
 SC = SupportCAN()
 SUTE = SupportTestODTB2()
+
+SE27 = SupportService27()
 
 #class for supporting Security Access
 class SupportSecurityAccess:
@@ -121,63 +124,16 @@ class SupportSecurityAccess:
             print("Sec_acc_pins: {0:06x}".format(int(r_0, 2)))
         return bytes.fromhex("{0:06x}".format(int(r_0, 2)))
 
-
-    @classmethod
-    def pbl_security_access_request_seed(cls, can_p: CanParam, step_no, purpose):
-        """
-            Support function: request seed for calculating security access pin
-        """
-        cpay: CanPayload = {
-            "payload" : b'\x27\x01',
-            "extra" : ''
-        }
-
-        etp: CanTestExtra = {
-            "step_no" : step_no,
-            "purpose" : purpose,
-            "timeout" : 1,
-            "min_no_messages" : -1,
-            "max_no_messages" : -1
-        }
-
-        testresult = SUTE.teststep(can_p, cpay, etp)
-        seed = SC.can_messages[can_p["receive"]][0][2][6:12]
-        return testresult, seed
-
-
-    @classmethod
-    def pbl_security_access_send_key(cls, can_p: CanParam, payload_value, step_no, purpose):
-        """
-            Support function: request seed for calculating security access pin
-        """
-        cpay: CanPayload = {
-            "payload" : b'\x27\x02'+ payload_value,
-            "extra" : ''
-        }
-
-        etp: CanTestExtra = {
-            "step_no" : step_no,
-            "purpose" : purpose,
-            "timeout" : 0.1,
-            "min_no_messages" : -1,
-            "max_no_messages" : -1
-        }
-
-        testresult = SUTE.teststep(can_p, cpay, etp)
-        testresult = testresult and SUTE.test_message(SC.can_messages[can_p["receive"]], '6702')
-        return testresult
-
-
     def activation_security_access(self, can_p: CanParam, step_no, purpose):
         """
         Support function to activate the Security Access
         """
         #Security Access request seed
-        testresult, seed = self.pbl_security_access_request_seed(can_p, step_no, purpose)
+        testresult, seed = SE27.pbl_security_access_request_seed(can_p, step_no, purpose)
         fixed_key = 'FFFFFFFFFF'
         r_0 = self.set_security_access_pins(seed, fixed_key)
 
         #Security Access Send Key
-        testresult = testresult and self.pbl_security_access_send_key(can_p, r_0,
+        testresult = testresult and SE27.pbl_security_access_send_key(can_p, r_0,
                                                                       step_no, purpose)
         return testresult
