@@ -27,12 +27,13 @@
 """The Python implementation of the gRPC route guide client."""
 
 
+from support_carcom import SupportCARCOM
 from support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
 from support_test_odtb2 import SupportTestODTB2
 
-
 SC = SupportCAN()
 SUTE = SupportTestODTB2()
+S_CARCOM = SupportCARCOM()
 
 class SupportService10:
     """
@@ -42,48 +43,52 @@ class SupportService10:
     @staticmethod
     def diagnostic_session_control(can_p: CanParam,
                                    etp: CanTestExtra,
-                                   stepno='100',
                                    mode=b'\x01'):
         """
         Request session change to 'mode'
         """
-        cpay: CanPayload = {"m_send" : SC.can_m_send("DiagnosticSessionControl", mode, ""),\
-                            "mr_extra" : ''
+        cpay: CanPayload = {"payload" : S_CARCOM.can_m_send("DiagnosticSessionControl", mode, b''),\
+                            "extra" : ''
                            }
-        return SUTE.teststep(can_p, cpay, stepno, etp)
+        if not 'step_no' in etp:
+            etp["step_no"] = 100
+        return SUTE.teststep(can_p, cpay, etp)
 
     @staticmethod
-    def diagnostic_session_control_mode1(can_p: CanParam, stepno='101'):
+    def diagnostic_session_control_mode1(can_p: CanParam, stepno=101):
         """
         Request session change to Mode1
         """
-        etp: CanTestExtra = {"purpose" : "Change to default session(01)",\
+        etp: CanTestExtra = {"step_no": stepno,\
+                             "purpose" : "Change to default session(01)",\
                              "timeout" : 1,\
                              "min_no_messages" : 1,\
                              "max_no_messages" : 1
                             }
-        return SupportService10.diagnostic_session_control(can_p, etp, stepno, b'\x01')
+        return SupportService10.diagnostic_session_control(can_p, etp, b'\x01')
 
     @staticmethod
-    def diagnostic_session_control_mode2(can_p: CanParam, stepno='102'):
+    def diagnostic_session_control_mode2(can_p: CanParam, stepno=102):
         """
         Request session change to Mode2
         """
-        etp: CanTestExtra = {"purpose" : "Change to programming session(02)",\
+        etp: CanTestExtra = {"step_no": stepno,\
+                             "purpose" : "Change to programming session(02)",\
                              "timeout" : 1,\
                              "min_no_messages" : -1,\
                              "max_no_messages" : -1
                             }
-        return SupportService10.diagnostic_session_control(can_p, etp, stepno, b'\x02')
+        return SupportService10.diagnostic_session_control(can_p, etp, b'\x02')
 
     @staticmethod
-    def diagnostic_session_control_mode3(can_p: CanParam, stepno='103'):
+    def diagnostic_session_control_mode3(can_p: CanParam, stepno=103):
         """
         Request session change to Mode2
         """
-        etp: CanTestExtra = {"purpose" : "Change to extended session(03)",\
+        etp: CanTestExtra = {"step_no": stepno,\
+                             "purpose" : "Change to extended session(03)",\
                              "timeout" : 1,\
                              "min_no_messages" : 1,\
                              "max_no_messages" : 1
                             }
-        return SupportService10.diagnostic_session_control(can_p, etp, stepno, b'\x03')
+        return SupportService10.diagnostic_session_control(can_p, etp, b'\x03')

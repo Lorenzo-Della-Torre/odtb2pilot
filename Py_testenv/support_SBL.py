@@ -59,8 +59,11 @@ class VbfBlockFormat(Dict): # pylint: disable=inherit-non-class
     offset: int
     data: int
     data_format: bytes
-    addr: int
+    #addr: int
     len: int
+    b_addr: int
+    b_len: int
+    b_data: bytes
 
 
     @classmethod
@@ -71,8 +74,11 @@ class VbfBlockFormat(Dict): # pylint: disable=inherit-non-class
         block['offset'] = 0
         block['data'] = 0
         block['data_format'] = b''
-        block['addr'] = 0
+        #block['addr'] = 0
         block['len'] = 0
+        block['b_addr'] = 0
+        block['b_len'] = 0
+        block['b_data'] = b''
 
 
     @classmethod
@@ -195,53 +201,52 @@ class SupportSBL:
             stepno, purpose:
                 used for logging purposes
         """
+        result = True
         # Iteration to Download the SBL by blocks
         if self._debug:
             print("offset: ", data["offset"], "len(data): ", len(data["data"]))
         while data["offset"] < len(data["data"]):
             # Extract data block
-            data["offset"], block_data, block_addr, block_len, block_crc16 = (
+            # new offset!
+            data["offset"], data["b_data"], data["b_addr"], data["b_len"], block_crc16 = (
                 self.block_data_extract(data["offset"], data["data"]))
 
-            data["addr"] = block_addr.to_bytes(4, 'big')
-            data["len"] = block_len.to_bytes(4, 'big')
+            #print("FileHeader   CRC calculation CRC16: {0:04X}".format(SUTE.crc16(data["b_data"])))
 
-            #print("FileHeader   CRC calculation CRC16: {0:04X}".format(SUTE.crc16(block_data)))
-
-            #decompress block_data if needed
+            #decompress data["b_data"] if needed
             if self._debug:
                 print("DataFormat block: ", data["data_format"].hex())
             if data["data_format"].hex() == '00':
-                decompr_data = block_data
+                decompr_data = data["b_data"]
             elif data["data_format"].hex() == '10':
                 decompr_data = b''
-                decompr_data = LZSS.decode_barray(block_data)
+                decompr_data = LZSS.decode_barray(data["b_data"])
             else:
                 print("Unknown compression format:", data["data_format"].hex())
 
             if self._debug:
                 print("Header       CRC16 block_data:  {0:04X}".format(block_crc16))
                 print("Decompressed CRC16 calculation: {0:04X}".format(SUTE.crc16(decompr_data)))
-                print("Length block from header:  {0:08X}".format(block_len))
+                print("Length block from header:  {0:08X}".format(data["b_len"]))
                 print("Length block decompressed: {0:08X}".format(len(decompr_data)))
 
             if SUTE.crc16(decompr_data) == block_crc16:
                 # Request Download
-                testresult, nbl = SE34.request_block_download(can_p, purpose, data)
-                #testresult = testresult and testresultt
+                result, nbl = SE34.request_block_download(can_p, purpose, data)
+                #result = result and resultt
                 # Flash blocks to BECM with transfer data service 0x36
-                testresult = testresult and SE36.flash_blocks(nbl, can_p, step_no, purpose, data)
+                result = result and SE36.flash_blocks(nbl, can_p, step_no, purpose, data)
 
                 #Transfer data exit with service 0x37
-                testresult = testresult and SE37.transfer_data_exit(can_p, step_no, purpose)
+                result = result and SE37.transfer_data_exit(can_p, step_no, purpose)
             else:
                 print("CRC doesn't match after decompression")
                 print("Header       CRC16 block_data:  {0:04X}".format(block_crc16))
                 print("Decompressed CRC16 calculation: {0:04X}".format(SUTE.crc16(decompr_data)))
-                print("Header       block length: {0:08X}".format(block_len))
+                print("Header       block length: {0:08X}".format(data["b_len"]))
                 print("Decompressed block length: {0:08X}".format(len(decompr_data)))
-                testresult = False
-        return testresult
+                result = False
+        return result
 
 
     # Support Function for flashing Secondary Bootloader SW
@@ -318,7 +323,7 @@ class SupportSBL:
             data["data_format"], erase = self.read_vbf_file(file_n)
 
         # Erase Memory
-        testresult = self.flash_erase(can_p, stepno, erase, data, off)
+        testresult = self.flash_erase(can_p, stepno, erase, data["data"], off)
         # Iteration to Download the Software by blocks
 
         testresult = testresult and self.transfer_data_block(data, can_p, stepno, purpose)
@@ -635,9 +640,9 @@ class SupportSBL:
         # SC.change_mf_fc(can_param["can_send"], can_mf_param)
 
         # ts_param = {"stub" : can_param["stub"],
-                    # "m_send" : b'\x34' + data_param["data_format"] + b'\x44'+\
+                    # "payload" : b'\x34' + data_param["data_format"] + b'\x44'+\
                     # data_param["block_addr_by"] + data_param["block_len_by"],
-                    # "mr_extra" : '',
+                    # "extra" : '',
                     # "can_send" : can_param["can_send"],
                     # "can_rec"  : can_param["can_rec"],
                     # "can_nspace" : can_param["can_nspace"]
@@ -760,12 +765,12 @@ class SupportSBL:
         SC.change_mf_fc(can_p["send"], can_mf_param)
 
         time.sleep(1)
-        cpay: CanPayload = {"m_send" : S_CARCOM.can_m_send("RoutineControlRequestSID",\
+        cpay: CanPayload = {"payload" : S_CARCOM.can_m_send("RoutineControlRequestSID",\
                                              b'\x02\x12' + sw_signature1, b'\x01'),\
-                            "mr_extra" : ''
+                            "extra" : ''
                            }
-        etp: CanTestExtra = {"purpose" : purpose,\
-                             "step_no" : stepno,\
+        etp: CanTestExtra = {"step_no": stepno,\
+                             "purpose" : purpose,\
                              "timeout" : 2,\
                              "min_no_messages" : -1,\
                              "max_no_messages" : -1
@@ -789,12 +794,12 @@ class SupportSBL:
         can_param["can_send"] = can_send
         can_param["can_rec"] = can_rec
         """
-        cpay: CanPayload = {"m_send" : S_CARCOM.can_m_send("RoutineControlRequestSID",\
+        cpay: CanPayload = {"payload" : S_CARCOM.can_m_send("RoutineControlRequestSID",\
                                              b'\x03\x01' + call, b'\x01'),\
-                            "mr_extra" : ''
+                            "extra" : ''
                            }
-        etp: CanTestExtra = {"purpose" : purpose,\
-                             "step_no" : stepno,\
+        etp: CanTestExtra = {"step_no": stepno,\
+                             "purpose" : purpose,\
                              "timeout" : 2,\
                              "min_no_messages" : -1,\
                              "max_no_messages" : -1

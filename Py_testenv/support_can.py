@@ -375,7 +375,7 @@ class SupportCAN:
             self.stop_periodic(per)
 
 
-    def send_burst(self, stub, burst_param):
+    def send_burst(self, stub, burst_param: PerParam, quantity: int):
         """
         send_burst
 
@@ -383,7 +383,7 @@ class SupportCAN:
         That's sometimes needed for waking up MCU or getting frames sent
         withing a certain time intervall.
         """
-        for _ in range(burst_param["quantity"]):
+        for _ in range(quantity):
             self.t_send_signal_hex(stub, burst_param["id"], burst_param["nspace"],
                                    burst_param["frame"])
             time.sleep(burst_param["intervall"])

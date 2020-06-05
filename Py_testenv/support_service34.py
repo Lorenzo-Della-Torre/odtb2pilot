@@ -45,7 +45,7 @@ class SupportService34: # pylint: disable=too-few-public-methods
     #@classmethod
     #Support function for Request Download
     @staticmethod
-    def request_block_download(can_p: CanParam, purpose, data):
+    def request_block_download(can_p: CanParam, purpose, data, stepno=340):
         """
         Support function for Request Download
         """
@@ -60,22 +60,25 @@ class SupportService34: # pylint: disable=too-few-public-methods
             'frame_control_flag' : 48, #continue send
             'frame_control_auto' : False
             }
-        SC.change_MF_FC(can_p["send"], can_mf_param)
+        SC.change_mf_fc(can_p["send"], can_mf_param)
 
-        cpay: CanPayload = {"m_send" : b'\x34' + data["data_format"] + b'\x44'+\
-                                       data["addr"] + data["len"],\
-                            "mr_extra" : ''
+        addr_b = data["b_addr"].to_bytes(4, 'big')
+        len_b = data["b_len"].to_bytes(4, 'big')
+        cpay: CanPayload = {"payload" : b'\x34' + data["data_format"] + b'\x44'+\
+                                       addr_b + len_b,\
+                            "extra" : ''
                            }
-        etp: CanTestExtra = {"purpose" : purpose,\
+        etp: CanTestExtra = {"step_no": stepno,\
+                             "purpose" : purpose,\
                              "timeout" : 0.05,\
                              "min_no_messages" : -1,\
                              "max_no_messages" : -1
                             }
         testresult = SUTE.teststep(can_p, cpay, etp)
-        testresult = testresult and SUTE.test_message(SC.can_messages[can_p["rec"]], '74')
-        nbl = SUTE.PP_StringTobytes(SC.can_frames[can_p["rec"]][0][2][6:10], 4)
+        testresult = testresult and SUTE.test_message(SC.can_messages[can_p["receive"]], '74')
+        nbl = SUTE.pp_string_to_bytes(SC.can_frames[can_p["receive"]][0][2][6:10], 4)
         #if self._debug:
         #    print("NBL: {}".format(nbl))
-        #nbl = int.from_bytes(SC.can_frames[can_p["rec"]][0][2][6:10])
+        #nbl = int.from_bytes(SC.can_frames[can_p["receive"]][0][2][6:10])
         nbl = int.from_bytes(nbl, 'big')
         return testresult, nbl

@@ -27,11 +27,13 @@
 """The Python implementation of the gRPC route guide client."""
 
 
+from support_carcom import SupportCARCOM
 from support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
 from support_test_odtb2 import SupportTestODTB2
 
 SC = SupportCAN()
 SUTE = SupportTestODTB2()
+S_CARCOM = SupportCARCOM()
 
 class SupportService27:
     """
@@ -44,19 +46,19 @@ class SupportService27:
         """
             Support function: request seed for calculating security access pin
         """
-        #Security Access request sid
 
-        cpay: CanPayload = {"m_send" : b'\x27\x01',\
-                            "mr_extra" : ''
+        cpay: CanPayload = {"payload" : S_CARCOM.can_m_send("SecurityAccessRequestSeed", b'', b''),\
+                            "extra" : ''
                            }
-        etp: CanTestExtra = {"purpose" : purpose,\
+        etp: CanTestExtra = {"step_no": stepno,\
+                             "purpose" : purpose,\
                              "timeout" : 1,\
                              "min_no_messages" : -1,\
                              "max_no_messages" : -1
                             }
-        result = SUTE.teststep(can_p, cpay, stepno, etp)
+        result = SUTE.teststep(can_p, cpay, etp)
 
-        seed = SC.can_messages[can_p["rec"]][0][2][6:12]
+        seed = SC.can_messages[can_p["receive"]][0][2][6:12]
         return result, seed
 
 
@@ -67,15 +69,16 @@ class SupportService27:
             Support function: request seed for calculating security access pin
         """
         #Security Access Send Key
-
-        cpay: CanPayload = {"m_send" : b'\x27\x02'+ payload_value,\
-                            "mr_extra" : ''
+        cpay: CanPayload = {"payload" : S_CARCOM.can_m_send("SecurityAccessSendKey",\
+                                payload_value, b''),\
+                            "extra" : ''
                            }
-        etp: CanTestExtra = {"purpose" : purpose,\
+        etp: CanTestExtra = {"step_no": stepno,\
+                             "purpose" : purpose,\
                              "timeout" : 0.1,\
                              "min_no_messages" : -1,\
                              "max_no_messages" : -1
                             }
-        result = SUTE.teststep(can_p, cpay, stepno, etp)
-        result = result and SUTE.test_message(SC.can_messages[can_p["rec"]], '6702')
+        result = SUTE.teststep(can_p, cpay, etp)
+        result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], '6702')
         return result

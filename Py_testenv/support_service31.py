@@ -27,12 +27,14 @@
 """The Python implementation of the gRPC route guide client."""
 import logging
 
+from support_carcom import SupportCARCOM
 from support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
 from support_test_odtb2 import SupportTestODTB2
 
 
 SC = SupportCAN()
 SUTE = SupportTestODTB2()
+S_CARCOM = SupportCARCOM()
 
 class SupportService31:
     """
@@ -41,86 +43,90 @@ class SupportService31:
 
     @staticmethod
     def routinecontrol_request_sid(can_p: CanParam,
-                                   cpay: CanPayload, etp: CanTestExtra,
-                                   stepno='310'
+                                   cpay: CanPayload, etp: CanTestExtra
                                   ):
         """
         function used for BECM in Default or Extended mode
         """
 
+        if not 'step_no' in etp:
+            etp["step_no"] = 310
         # verify RoutineControlRequest is sent for Type 1
-        result = SUTE.teststep(can_p, cpay, stepno, etp)
-        logging.info(SC.can_messages[can_p["rec"]])
+        result = SUTE.teststep(can_p, cpay, etp)
+        logging.info(SC.can_messages[can_p["receive"]])
         result = result and (
-            SUTE.PP_Decode_Routine_Control_response(SC.can_messages[can_p["rec"]][0][2],
+            SUTE.pp_decode_routine_control_response(SC.can_messages[can_p["receive"]][0][2],
                                                     'Type1,Completed'))
         return result
 
     @staticmethod
-    def routinecontrol_requestsid_prog_precond(can_p: CanParam, stepno='311'):
+    def routinecontrol_requestsid_prog_precond(can_p: CanParam, stepno=311):
         """
         RC request - are programming preconditions fulfilled
         """
         # verify RoutineControlRequest is sent for Type 1
-        cpay: CanPayload = {"m_send" : SC.can_m_send("RoutineControlRequestSID",
-                                                     b'\x02\x06', b'\x01'),\
-                            "mr_extra" : ''
+        cpay: CanPayload = {"payload" : S_CARCOM.can_m_send("RoutineControlRequestSID",
+                                                            b'\x02\x06', b'\x01'),\
+                            "extra" : ''
                            }
-        etp: CanTestExtra = {"purpose" : "verify RC start sent for Check Prog Precond",\
+        etp: CanTestExtra = {"step_no": stepno,\
+                             "purpose" : "verify RC start sent for Check Prog Precond",\
                              "timeout" : 0.05,\
                              "min_no_messages" : -1,\
                              "max_no_messages" : -1
                             }
-        result = SupportService31.routinecontrol_request_sid(can_p, cpay, etp, stepno)
+        result = SupportService31.routinecontrol_request_sid(can_p, cpay, etp)
         #result = SUTE.teststep(can_p, cpay, stepno, etp)
-        #logging.info(SC.can_messages[can_p["rec"]])
+        #logging.info(SC.can_messages[can_p["receive"]])
         #result = result and (
-        #    SUTE.PP_Decode_Routine_Control_response(SC.can_messages[can_p["rec"]][0][2],
+        #    SUTE.pp_decode_routine_control_response(SC.can_messages[can_p["receive"]][0][2],
         #                                            'Type1,Completed'))
         return result
 
     @staticmethod
-    def routinecontrol_requestsid_complete_compatible(can_p: CanParam, stepno='312'):
+    def routinecontrol_requestsid_complete_compatible(can_p: CanParam, stepno=312):
         """
         RC request - are programming preconditions fulfilled
         """
         # verify RoutineControlRequest is sent for Type 1
-        cpay: CanPayload = {"m_send" : SC.can_m_send("RoutineControlRequestSID",\
-                                            b'\x02\x05', b'\x01'),\
-                            "mr_extra" : ''
+        cpay: CanPayload = {"payload" : S_CARCOM.can_m_send("RoutineControlRequestSID",\
+                                                           b'\x02\x05', b'\x01'),\
+                            "extra" : ''
                            }
-        etp: CanTestExtra = {"purpose" : "verify complete and compatible",\
+        etp: CanTestExtra = {"step_no": stepno,\
+                             "purpose" : "verify complete and compatible",\
                              "timeout" : 1,\
                              "min_no_messages" : -1,\
                              "max_no_messages" : -1
                             }
         #testresult = SUTE.teststep(can_p, cpay, stepno, etp)
         #testresult = testresult and (
-        #    SUTE.PP_Decode_Routine_Control_response(SC.can_messages[can_p["rec"]][0][2],
+        #    SUTE.pp_decode_routine_control_response(SC.can_messages[can_p["receive"]][0][2],
         #                                            'Type1,Completed'))
 
-        result = SupportService31.routinecontrol_request_sid(can_p, cpay, etp, stepno)
+        result = SupportService31.routinecontrol_request_sid(can_p, cpay, etp)
         #testresult = SUTE.teststep(can_p, cpay, stepno, etp)
         #testresult = testresult and (
-        #    SUTE.PP_Decode_Routine_Control_response(SC.can_messages[can_p["rec"]][0][2],
+        #    SUTE.pp_decode_routine_control_response(SC.can_messages[can_p["receive"]][0][2],
         #                                            'Type1,Completed'))
         return result
 
 
     @staticmethod
-    def routinecontrol_requestsid_flash_erase(can_p: CanParam, erase, stepno='313'):
+    def routinecontrol_requestsid_flash_erase(can_p: CanParam, erase, stepno=313):
         """
         RC request - flash erase
         """
         # verify RoutineControlRequest is sent for Type 1
-        cpay: CanPayload = {"m_send" : SC.can_m_send("RoutineControlRequestSID",\
-                                            b'\xFF\x00' + erase, b'\x01'),\
-                            "mr_extra" : ''
+        cpay: CanPayload = {"payload" : S_CARCOM.can_m_send("RoutineControlRequestSID",\
+                                                           b'\xFF\x00' + erase, b'\x01'),\
+                            "extra" : ''
                            }
-        etp: CanTestExtra = {"purpose" : "RC flash erase",\
+        etp: CanTestExtra = {"step_no": stepno,\
+                             "purpose" : "RC flash erase",\
                              "timeout" : 15,\
                              "min_no_messages" : -1,\
                              "max_no_messages" : -1
                             }
-        result = SupportService31.routinecontrol_request_sid(can_p, cpay, etp, stepno)
+        result = SupportService31.routinecontrol_request_sid(can_p, cpay, etp)
         return result

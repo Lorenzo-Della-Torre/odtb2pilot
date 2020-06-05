@@ -26,38 +26,52 @@
 
 """The Python implementation of the gRPC route guide client."""
 
-#import logging
+import logging
 import time
+from datetime import datetime
 
-from support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
-from support_test_odtb2 import SupportTestODTB2
+from support_can import SupportCAN, CanParam
 from support_carcom import SupportCARCOM
+from support_service10 import SupportService10
+from support_service22 import SupportService22
 
 SC_CARCOM = SupportCARCOM()
 SC = SupportCAN()
-SUTE = SupportTestODTB2()
+SE10 = SupportService10()
+SE22 = SupportService22()
 
 class SupportPostcondition: # pylint: disable=too-few-public-methods
     """
     class for supporting Postcondition
     """
 
-    #@classmethod
     @staticmethod
-    def ecu_hardreset(can_p: CanParam):
+    def postcondition(can_p: CanParam, starttime, result):
         """
-        ecu_hardreset
+        Precondition for test running:
+        BECM has to be kept alive: start heartbeat
         """
-        stepno = 110
-        cpay: CanPayload = {"m_send" : SC_CARCOM.can_m_send("ECUResetHardReset", b'', b''),\
-                            "mr_extra" : ''
-                           }
-        etp: CanTestExtra = {"purpose" : "ECU Reset",\
-                             "timeout" : 1,\
-                             "min_no_messages" : -1,\
-                             "max_no_messages" : -1
-                            }
-        result = SUTE.teststep(can_p, cpay, stepno, etp)
-        result = result and SUTE.test_message(SC.can_messages[can_p["rec"]], teststring='025101')
-        time.sleep(1)
-        return result
+        logging.info("Postcondition: Display current session, change to mode1 (default)")
+        result = SE22.read_did_f186(can_p) and result
+        SE10.diagnostic_session_control_mode1(can_p)
+        result = SE22.read_did_f186(can_p, b'\x01') and result
+
+        logging.debug("\nTime: %s \n", time.time())
+        logging.info("Testcase end: %s", datetime.now())
+        logging.info("Time needed for testrun (seconds): %s", int(time.time() - starttime))
+
+        logging.info("Do cleanup now...")
+        logging.info("Stop all periodic signals sent")
+        SC.stop_periodic_all()
+
+        # deregister signals
+        SC.unsubscribe_signals()
+        # if threads should remain: try to stop them
+        SC.thread_stop()
+
+        logging.info("Test cleanup end: %s\n", datetime.now())
+
+        if result:
+            logging.info("Testcase result: PASSED")
+        else:
+            logging.info("Testcase result: FAILED")
