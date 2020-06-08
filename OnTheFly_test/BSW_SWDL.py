@@ -32,19 +32,19 @@ import sys
 import logging
 
 import ODTB_conf
-from support_can import Support_CAN, CanParam
-from support_test_odtb2 import Support_test_ODTB2
-from support_SBL import Support_SBL
-from support_SecAcc import Support_Security_Access
+from support_can import SupportCAN, CanParam
+from support_test_odtb2 import SupportTestODTB2
+from support_SBL import SupportSBL
+from support_sec_acc import SupportSecurityAccess
 
 from support_precondition import SupportPrecondition
 from support_service11 import SupportService11
 from support_service22 import SupportService22
 
-SC = Support_CAN()
-SUTE = Support_test_ODTB2()
-SSBL = Support_SBL()
-SSA = Support_Security_Access()
+SC = SupportCAN()
+SUTE = SupportTestODTB2()
+SSBL = SupportSBL()
+SSA = SupportSecurityAccess()
 
 PREC = SupportPrecondition()
 SE11 = SupportService11()
@@ -88,9 +88,9 @@ def step_4(can_p: CanParam):
     Teststep 4: Check Complete And Compatible
     """
     stepno = 4
-    purpose = "verify RoutineControl start are sent for Type 1"
+    #purpose = "verify RoutineControl start are sent for Type 1"
 
-    result = SSBL.check_complete_compatible_routine(can_p, stepno, purpose)
+    result = SSBL.check_complete_compatible_routine(can_p, stepno)
     return result
 
 
@@ -98,16 +98,15 @@ def run():
     """
     Run - Call other functions from here
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.DEBUG)
 
     # start logging
-    # to be implemented
+    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
     # where to connect to signal_broker
     can_par: CanParam = {
         "netstub" : SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT),\
         "send" : "Vcu1ToBecmFront1DiagReqFrame",\
-        "rec" : "BecmToVcu1Front1DiagResFrame",\
+        "receive" : "BecmToVcu1Front1DiagResFrame",\
         "namespace" : SC.nspace_lookup("Front1CANCfg0")
         }
 
