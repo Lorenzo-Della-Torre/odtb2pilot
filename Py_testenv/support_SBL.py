@@ -190,7 +190,8 @@ class SupportSBL:
             self.set_vbf_default_param()
 
 
-    def transfer_data_block(self, data: VbfBlockFormat, can_p: CanParam, step_no, purpose):
+    #def transfer_data_block(self, data: VbfBlockFormat, can_p: CanParam, step_no, purpose):
+    def transfer_data_block(self, data: VbfBlockFormat, can_p: CanParam):
         """
             transfer_data_block
             support function to transfer
@@ -232,13 +233,15 @@ class SupportSBL:
 
             if SUTE.crc16(decompr_data) == block_crc16:
                 # Request Download
-                result, nbl = SE34.request_block_download(can_p, purpose, data)
+                #result, nbl = SE34.request_block_download(can_p, data, step_no, purpose)
+                result, nbl = SE34.request_block_download(can_p, data)
                 #result = result and resultt
                 # Flash blocks to BECM with transfer data service 0x36
-                result = result and SE36.flash_blocks(nbl, can_p, step_no, purpose, data)
-
+                #result = result and SE36.flash_blocks(nbl, can_p, data, step_no, purpose)
+                result = result and SE36.flash_blocks(nbl, can_p, data)
                 #Transfer data exit with service 0x37
-                result = result and SE37.transfer_data_exit(can_p, step_no, purpose)
+                #result = result and SE37.transfer_data_exit(can_p, step_no, purpose)
+                result = result and SE37.transfer_data_exit(can_p)
             else:
                 print("CRC doesn't match after decompression")
                 print("Header       CRC16 block_data:  {0:04X}".format(block_crc16))
@@ -250,71 +253,74 @@ class SupportSBL:
 
 
     # Support Function for flashing Secondary Bootloader SW
-    def sbl_download_no_check(self, can_p: CanParam, file_n, step_no, purpose):
+    #def sbl_download_no_check(self, can_p: CanParam, file_n, step_no,\
+    #                          purpose="SBL Download no check"):
+    def sbl_download_no_check(self, can_p: CanParam, file_n):
         """
         SBL Download
         """
         testresult = True
-        purpose = "SBL Download"
 
         data = dict()
 
         # Read vbf file for SBL download
         data["offset"], data["data"], _, call, data["data_format"] = self.read_vbf_file_sbl(file_n)
 
-        #def transfer_data_block(self, data: VbfBlockFormat, can_p: CanParam, etp: CanTestExtra):
-        #testresult = testresult and self.transfer_data_block(offset, data, data_format,
-        #                                                    can_p, stepno, purpose)
-        testresult = testresult and self.transfer_data_block(data, can_p, step_no, purpose)
+        #testresult = testresult and self.transfer_data_block(data, can_p, step_no, purpose)
+        testresult = testresult and self.transfer_data_block(data, can_p)
         return testresult, call
 
 
     # Support Function for flashing Secondary Bootloader SW
-    def sbl_download(self, can_p: CanParam, file_n, stepno='', purpose=""):
+    def sbl_download(self, can_p: CanParam, file_n, stepno='',\
+                     purpose="SBL Download transfer block"):
         """
         Support Function for flashing Secondary Bootloader SW
         """
-        purpose = "SBL Download"
         data = dict()
 
         # Read vbf file for SBL download
         data["offset"], data["data"], sw_signature, call, data["data_format"] =\
             self.read_vbf_file_sbl(file_n)
 
-        testresult = self.transfer_data_block(data, can_p, stepno, purpose)
+        #testresult = self.transfer_data_block(data, can_p, stepno, purpose)
+        testresult = self.transfer_data_block(data, can_p)
 
         #Check memory
         #testresult = testresult and self.check_memory(can_param, step_no, purpose, sw_signature)
-        testresult = testresult and self.transfer_data_block(data, can_p, stepno, purpose)
+        #testresult = testresult and self.transfer_data_block(data, can_p, stepno, purpose)
+        testresult = testresult and self.transfer_data_block(data, can_p)
         #Check memory
-        testresult = testresult and self.check_memory(can_p, stepno, purpose, sw_signature)
+        testresult = testresult and self.check_memory(can_p, sw_signature, stepno, purpose)
         return testresult, call
 
 
     # Support Function for flashing SW Parts
 
     def sw_part_download(self, can_p: CanParam, file_n, stepno='',
-                         purpose=""):
+                         purpose="sw_part_download filename"):
         """
         Software Download
         """
         print("sw_part_download filename: ", file_n)
-        testresult, sw_signature =\
-            self.sw_part_download_no_check(can_p, file_n, stepno, purpose)
+        #result, sw_signature =\
+        #    self.sw_part_download_no_check(can_p, file_n, stepno, purpose)
+        result, sw_signature = self.sw_part_download_no_check(can_p, file_n, stepno)
 
         # Check memory
-        testresult = testresult and self.check_memory(can_p,
-                                                      stepno, purpose,
-                                                      sw_signature)
-        return testresult
+        result = result and self.check_memory(can_p, sw_signature,
+                                              stepno, purpose
+                                             )
+        return result
 
 
     # Support Function for flashing SW Parts without Check
-    def sw_part_download_no_check(self, can_p: CanParam, file_n, stepno='', purpose=""):
+    #def sw_part_download_no_check(self, can_p: CanParam, file_n, stepno='',\
+    #                              purpose="sw_part_download_no_check"):
+    def sw_part_download_no_check(self, can_p: CanParam, file_n, stepno=''):
         """
         Software Download
         """
-        purpose = "Software Download"
         data = dict()
 
         # Read vbf file for SBL download
@@ -323,15 +329,17 @@ class SupportSBL:
             data["data_format"], erase = self.read_vbf_file(file_n)
 
         # Erase Memory
-        testresult = self.flash_erase(can_p, stepno, erase, data["data"], off)
+        result = self.flash_erase(can_p, erase, data["data"], off, stepno)
         # Iteration to Download the Software by blocks
 
-        testresult = testresult and self.transfer_data_block(data, can_p, stepno, purpose)
-        return testresult, sw_signature
+        #result = result and self.transfer_data_block(data, can_p, stepno, purpose)
+        result = result and self.transfer_data_block(data, can_p)
+        return result, sw_signature
 
 
     # Support Function for Flashing and activate Secondary Bootloader from Default session
-    def sbl_activation_def(self, can_p: CanParam, stepno='', purpose=""):
+    def sbl_activation_def(self, can_p: CanParam, stepno='',\
+                           purpose="sbl_activation_default/ext mode"):
         """
         function used for BECM in Default or Extended mode
         """
@@ -352,7 +360,8 @@ class SupportSBL:
 
 
     # Support Function for Flashing and activate Secondary Bootloader from Programming session
-    def sbl_activation_prog(self, can_p: CanParam, stepno='', purpose=""):
+    def sbl_activation_prog(self, can_p: CanParam, stepno='',\
+                            purpose="sbl_activation_prog"):
         """
         Function used for BECM in forced Programming mode
         """
@@ -360,15 +369,11 @@ class SupportSBL:
         result = SSA.activation_security_access(can_p, stepno, purpose)
 
         # SBL Download
-        purpose = 'SBL Download'
-        tresult, call = self.sbl_download(can_p, self._sbl,\
-                                          stepno, purpose)
+        tresult, call = self.sbl_download(can_p, self._sbl, stepno)
         result = result and tresult
 
         # Activate SBL
-        purpose = "Activation of SBL"
-        result = result and self.activate_sbl(can_p,
-                                              stepno, purpose, call)
+        result = result and self.activate_sbl(can_p, call, stepno)
         return result
 
 
@@ -541,7 +546,7 @@ class SupportSBL:
 
 
     @classmethod
-    def flash_erase(cls, can_p: CanParam, stepno, erase, data, off):
+    def flash_erase(cls, can_p: CanParam, erase, data, off, stepno):
         # Don't have a suitable object for these arguments, need to investigate
         # pylint: disable=too-many-arguments
         """
@@ -743,7 +748,7 @@ class SupportSBL:
 
 
     @classmethod
-    def check_memory(cls, can_p: CanParam, stepno, purpose, sw_signature1):
+    def check_memory(cls, can_p: CanParam, sw_signature1, stepno, purpose):
         """
         Support function for Check Memory
 
@@ -784,7 +789,8 @@ class SupportSBL:
 
 
     @classmethod
-    def activate_sbl(cls, can_p: CanParam, stepno, purpose, call):
+    def activate_sbl(cls, can_p: CanParam, call, stepno,\
+                     purpose="RoutineControl activate_sbl"):
         """
         Support function for Routine Control Activate Secondary Bootloader
 

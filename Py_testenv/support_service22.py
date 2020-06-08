@@ -44,11 +44,10 @@ class SupportService22:
 
     #@classmethod
     @staticmethod
-    def read_did_eda0(can_p: CanParam):
+    def read_did_eda0(can_p: CanParam, stepno=220):
         """
         Read composite DID EDA0: Complete ECU Part/Serial Number(s)
         """
-        stepno = 220
         cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("ReadDataByIdentifier",
                                                              b'\xED\xA0', b''),
                             "extra" : ''
@@ -77,11 +76,10 @@ class SupportService22:
     #@classmethod
     @staticmethod
     #def read_did_f186(self, stub, can_send, can_receive, can_namespace, dsession=b''):
-    def read_did_f186(can_p: CanParam, dsession=b''):
+    def read_did_f186(can_p: CanParam, dsession=b'', stepno=221):
         """
         Read DID F186: Active Diagnostic Session
         """
-        stepno = 221
         cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("ReadDataByIdentifier",
                                                              b'\xF1\x86', b''),
                             "extra" : dsession

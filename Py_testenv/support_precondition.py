@@ -77,6 +77,7 @@ class SupportPrecondition:
         ##record signal we send as well
         #SC.subscribe_signal(stub, can_receive, can_send, can_namespace, timeout)
         SC.subscribe_signal(can_p, timeout)
+        print("precondition can_p2", can_p)
         #record signal we send as well
         can_p2: CanParam = {"netstub": can_p["netstub"],
                             "send": can_p["receive"],
@@ -135,7 +136,7 @@ class SupportPrecondition:
         #record signal we send as well
         can_p2: CanParam = {"netstub": can_p["netstub"],
                             "send": can_p["receive"],
-                            "rec": can_p["send"],
+                            "receive": can_p["send"],
                             "namespace": can_p["namespace"],
                            }
         SC.subscribe_signal(can_p2, timeout)
