@@ -129,7 +129,7 @@ def step_3(can_par):
                           }
 
     SUTE.print_test_purpose(stepno, purpose)
-    SC.change_mf_fc(can_par["rec"], can_mf)
+    SC.change_mf_fc(can_par["receive"], can_mf)
 
 def run():
     """
@@ -144,7 +144,7 @@ def run():
     can_par: CanParam = {
         "netstub" : SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT),\
         "send" : "Vcu1ToBecmFront1DiagReqFrame",\
-        "rec" : "BecmToVcu1Front1DiagResFrame",\
+        "receive" : "BecmToVcu1Front1DiagResFrame",\
         "namespace" : SC.nspace_lookup("Front1CANCfg0")
         }
 
