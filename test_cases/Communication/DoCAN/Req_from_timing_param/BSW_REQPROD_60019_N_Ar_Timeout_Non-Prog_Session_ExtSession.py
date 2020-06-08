@@ -49,7 +49,7 @@ def step_2(can_par):
     """
     Teststep 2: request EDA0 - with FC delay < timeout 1000 ms
     """
-    n_frame = 7
+    n_frame = 11
     can_mf: CanMFParam = {"block_size" : 0,\
                           "separation_time" : 0,\
                           "frame_control_delay" : 950,\
@@ -143,7 +143,7 @@ def run():
     can_par: CanParam = {
         "netstub" : SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT),\
         "send" : "Vcu1ToBecmFront1DiagReqFrame",\
-        "rec" : "BecmToVcu1Front1DiagResFrame",\
+        "receive" : "BecmToVcu1Front1DiagResFrame",\
         "namespace" : SC.nspace_lookup("Front1CANCfg0")
         }
 
