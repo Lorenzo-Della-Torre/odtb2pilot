@@ -25,17 +25,21 @@
 
 from datetime import datetime
 import time
-#import logging
+import logging
 #import os
-#import sys
+import sys
 
 import ODTB_conf
 
-from support_can import Support_CAN
-from support_test_odtb2 import Support_test_ODTB2
-SC = Support_CAN()
-SUTE = Support_test_ODTB2()
+from support_can import SupportCAN, CanParam, PerParam, CanPayload, CanTestExtra
+from support_test_odtb2 import SupportTestODTB2
+from support_carcom import SupportCARCOM
+from support_service22 import SupportService22
 
+SC = SupportCAN()
+SUTE = SupportTestODTB2()
+SC_CARCOM = SupportCARCOM()
+SE22 = SupportService22()
 
 def frames_received(can_receive, timespan):
     """
@@ -51,242 +55,207 @@ def frames_received(can_receive, timespan):
     return n_frames
 
 
-def precondition(stub, can_send, can_receive, can_namespace):
+def precondition(can_p: CanParam, timeout=300):
     """
         precondition for test running:
         BECM has to be kept alive: start heartbeat
     """
 
     # start heartbeat, repeat every 0.8 second
-    SC.start_heartbeat(stub, "EcmFront1NMFr", "Front1CANCfg0",\
-                       b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.8)
+    hb_param: PerParam = {
+        "name" : "Heartbeat",
+        "send" : True,
+        "id" : "EcmFront1NMFr",
+        "nspace" : can_p["namespace"].name,
+        "frame" : b'\x20\x40\x00\xFF\x00\x00\x00\x00',
+        "intervall" : 0.8
+        }
+    # start heartbeat, repeat every x second
+    SC.start_heartbeat(can_p["netstub"], hb_param)
 
-    # timeout = more than maxtime script takes
-    # needed as thread for registered signals won't stop without timeout
-    #timeout = 120   #seconds
-    #timeout = 60   #seconds
-    timeout = 0
-
-    SC.subscribe_signal(stub, can_send, can_receive, can_namespace, timeout)
+    ##record signal we send as well
+    SC.subscribe_signal(can_p, timeout)
     #record signal we send as well
-    SC.subscribe_signal(stub, can_receive, can_send, can_namespace, timeout)
+    can_p2: CanParam = {"netstub": can_p["netstub"],
+                        "send": can_p["receive"],
+                        "receive": can_p["send"],
+                        "namespace": can_p["namespace"]
+                       }
+    SC.subscribe_signal(can_p2, timeout)
 
-#   1305 BecmFront1NMFr: 8 BECM
-#   58 BECMFront1Fr01
-#   278 BECMFront1Fr02
+    #   1305 BecmFront1NMFr: 8 BECM
+    #   58 BECMFront1Fr01
+    #   278 BECMFront1Fr02
     # subscribe to signal activated by NM-frame
-    SC.subscribe_signal(stub, "BECMFront1Fr01", "BECMFront1Fr01", can_namespace, timeout)
+    can_p3: CanParam = {"netstub": can_p["netstub"],
+                        "send": "BECMFront1Fr01",
+                        "receive": "BECMFront1Fr01",
+                        "namespace": can_p["namespace"]
+                       }
+    SC.subscribe_signal(can_p3, timeout)
     print()
-    step_0(stub, can_send, can_receive, can_namespace)
+    result = SE22.read_did_eda0(can_p)
+    logging.info("Precondition testok: %s\n", result)
+    return result
 
-def step_0(stub, can_send, can_receive, can_namespace):
-    """
-        teststep 0: Complete ECU Part/Serial Number(s)
-    """
 
-    stepno = 0
-    ts_param = {"stub" : stub,\
-                "m_send" : SC.can_m_send("ReadDataByIdentifier", b'\xED\xA0', ""),\
-                "mr_extra" : '',\
-                "can_send" : can_send,\
-                "can_rec"  : can_receive,\
-                "can_nspace" : can_namespace\
-               }
-    extra_param = {"purpose" : "Complete ECU Part/Serial Number(s)",\
-                   "timeout" : 5,\
-                   "min_no_messages" : 1,\
-                   "max_no_messages" : 1
-                  }
-
-    testresult = SUTE.teststep(ts_param,\
-                           stepno, extra_param)
-    print(SUTE.PP_CombinedDID_EDA0(SC.can_messages[can_receive][0][2], title=''))
-    return testresult
-
-def step_1(stub, can_send, can_receive, can_namespace):
-    """
-        teststep 1: verify session
-    """
-
-    stepno = 1
-    ts_param = {"stub" : stub,\
-                "m_send" : SC.can_m_send("ReadDataByIdentifier", b'\xF1\x86', ""),\
-                "mr_extra" : b'\x01',\
-                "can_send" : can_send,\
-                "can_rec"  : can_receive,\
-                "can_nspace" : can_namespace\
-               }
-    extra_param = {"purpose" : "Verify default session",\
-                   "timeout" : 0.5,\
-                   "min_no_messages" : 1,\
-                   "max_no_messages" : 1
-                  }
-    return SUTE.teststep(ts_param,\
-                         stepno, extra_param)
-
-def step_2(stub, can_send, can_receive, can_namespace):
+def step_2(can_p: CanParam):
     """
         teststep 2: request DID Counter for number of software resets
     """
 
     stepno = 2
     wait_start = time.time()
-    ts_param = {"stub" : stub,\
-                "m_send" : SC.can_m_send("ReadDataByIdentifier", b'\xD0\x34', b''),\
-                "mr_extra" : '',\
-                "can_send" : can_send,\
-                "can_rec"  : can_receive,\
-                "can_nspace" : can_namespace\
-               }
-    extra_param = {"purpose" : "request DID Counter for number of software resets",\
-                   "timeout" : 0.4,\
-                   "min_no_messages" : 1,\
-                   "max_no_messages" : 1
-                  }
-    testresult = SUTE.teststep(ts_param,\
-                               stepno, extra_param)
-    if not testresult:
-        print("Received frames: ", SC.can_frames[can_receive])
-        print("Received messages: ", SC.can_messages[can_receive])
-        SC.update_can_messages(can_receive)
-        print("can_mess_updated ", SC.can_messages[can_receive])
+
+    cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("ReadDataByIdentifier",
+                                                         b'\xD0\x34', b''),
+                        "extra" : b''
+                       }
+    etp: CanTestExtra = {"step_no": stepno,\
+                         "purpose" : "request DID Counter for number of software resets",\
+                         "timeout" : 0.4,\
+                         "min_no_messages" : 1,\
+                         "max_no_messages" : 1
+                        }
+
+    result = SUTE.teststep(can_p, cpay, etp)
+
+    if not result:
+        print("Received frames: ", SC.can_frames[can_p["receive"]])
+        print("Received messages: ", SC.can_messages[can_p["receive"]])
+        SC.update_can_messages(can_p["receive"])
+        print("can_mess_updated ", SC.can_messages[can_p["receive"]])
     if  frames_received("BECMFront1Fr01", 0.2) < 15:
-        testresult = False
+        result = False
         print("No NM-frames: test failed")
     print("Step", stepno, ": Result within ", "{:7.3f}".format(time.time()-wait_start), "seconds.")
-    return testresult
+    return result
 
-def step_3(stub, can_send, can_receive, can_namespace):
+def step_3(can_p: CanParam):
     """
         teststep 3: request DID SW reset type
     """
 
     stepno = 3
     wait_start = time.time()
-    ts_param = {"stub" : stub,\
-                "m_send" : SC.can_m_send("ReadDataByIdentifier", b'\xDA\xC3', b''),\
-                "mr_extra" : '',\
-                "can_send" : can_send,\
-                "can_rec"  : can_receive,\
-                "can_nspace" : can_namespace\
-               }
-    extra_param = {"purpose" : "request DID SW reset type",\
-                   "timeout" : 0.4,\
-                   "min_no_messages" : 1,\
-                   "max_no_messages" : 1\
-                  }
-    testresult = SUTE.teststep(ts_param,\
-                               stepno, extra_param)
-    if not testresult:
-        print("Received frames: ", SC.can_frames[can_receive])
-        print("Received messages: ", SC.can_messages[can_receive])
-        SC.update_can_messages(can_receive)
-        print("can_mess_updated ", SC.can_messages[can_receive])
+    cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("ReadDataByIdentifier",
+                                                         b'\xDA\xC3', b''),
+                        "extra" : b''
+                       }
+    etp: CanTestExtra = {"step_no": stepno,\
+                         "purpose" : "request DID SW reset type",\
+                         "timeout" : 0.4,\
+                         "min_no_messages" : 1,\
+                         "max_no_messages" : 1
+                        }
+    result = SUTE.teststep(can_p, cpay, etp)
+
+    if not result:
+        print("Received frames: ", SC.can_frames[can_p["receive"]])
+        print("Received messages: ", SC.can_messages[can_p["receive"]])
+        SC.update_can_messages(can_p["receive"])
+        print("can_mess_updated ", SC.can_messages[can_p["receive"]])
     if  frames_received("BECMFront1Fr01", 0.2) < 15:
-        testresult = False
+        result = False
         print("No NM-frames: test failed")
     print("Step", stepno, ": Result within ", "{:7.3f}".format(time.time()-wait_start), "seconds.")
-    return testresult
+    return result
 
 
-def step_4(stub, can_send, can_receive, can_namespace):
+def step_4(can_p: CanParam):
     """
         teststep 4: request DID 5 last reset types
     """
 
     stepno = 4
     wait_start = time.time()
-    ts_param = {"stub" : stub,\
-                "m_send" : SC.can_m_send("ReadDataByIdentifier", b'\xDA\xC6', b''),\
-                "mr_extra" : '',\
-                "can_send" : can_send,\
-                "can_rec"  : can_receive,\
-                "can_nspace" : can_namespace\
-               }
-    extra_param = {"purpose" : "request DID 5 last reset types",\
-                   "timeout" : 0.5,\
-                   "min_no_messages" : 1,\
-                   "max_no_messages" : 1\
-                  }
-    testresult = SUTE.teststep(ts_param,\
-                               stepno, extra_param)
-    if not testresult:
-        print("Received frames: ", SC.can_frames[can_receive])
-        print("Received messages: ", SC.can_messages[can_receive])
-        SC.update_can_messages(can_receive)
-        print("can_mess_updated ", SC.can_messages[can_receive])
+    cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("ReadDataByIdentifier",
+                                                         b'\xDA\xC6', b''),
+                        "extra" : b''
+                       }
+    etp: CanTestExtra = {"step_no": stepno,\
+                         "purpose" : "request DID 5 last reset types",\
+                         "timeout" : 0.5,\
+                         "min_no_messages" : 1,\
+                         "max_no_messages" : 1
+                        }
+    result = SUTE.teststep(can_p, cpay, etp)
+
+    if not result:
+        print("Received frames: ", SC.can_frames[can_p["receive"]])
+        print("Received messages: ", SC.can_messages[can_p["receive"]])
+        SC.update_can_messages(can_p["receive"])
+        print("can_mess_updated ", SC.can_messages[can_p["receive"]])
     if  frames_received("BECMFront1Fr01", 0.2) < 15:
-        testresult = False
+        result = False
         print("No NM-frames: test failed")
     print("Step", stepno, ": Result within ", "{:7.3f}".format(time.time()-wait_start), "seconds.")
-    return testresult
+    return result
 
 
 # teststep 5: request DID 5 last reset types
-def step_5(stub, can_send, can_receive, can_namespace):
+def step_5(can_p: CanParam):
     """
         teststep 5: request DID 5 last reset types
     """
 
     stepno = 5
     wait_start = time.time()
-    ts_param = {"stub" : stub,\
-                "m_send" : SC.can_m_send("ReadDataByIdentifier", b'\xFD\x71', b''),\
-                "mr_extra" : '',\
-                "can_send" : can_send,\
-                "can_rec"  : can_receive,\
-                "can_nspace" : can_namespace\
-               }
-    extra_param = {"purpose" : "request DID 5 last reset types",\
-                   "timeout" : 0.9,\
-                   "min_no_messages" : -1,\
-                   "max_no_messages" : -1\
-                  }
-    testresult = SUTE.teststep(ts_param,\
-                               stepno, extra_param)
-    if not testresult:
-        print("Received frames: ", SC.can_frames[can_receive])
-        print("Received messages: ", SC.can_messages[can_receive])
-        SC.update_can_messages(can_receive)
-        print("can_mess_updated ", SC.can_messages[can_receive])
+    cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("ReadDataByIdentifier",
+                                                         b'\xFD\x71', b''),
+                        "extra" : b''
+                       }
+    etp: CanTestExtra = {"step_no": stepno,\
+                         "purpose" : "Lear special: request DID 5 last reset types",\
+                         "timeout" : 0.9,\
+                         "min_no_messages" : -1,\
+                         "max_no_messages" : -1
+                        }
+    result = SUTE.teststep(can_p, cpay, etp)
+
+    #print("Received messages: ", SC.can_messages[can_p["receive"]])
+    if not result:
+        print("Received frames: ", SC.can_frames[can_p["receive"]])
+        print("Received messages: ", SC.can_messages[can_p["receive"]])
+        SC.update_can_messages(can_p["receive"])
+        print("can_mess_updated ", SC.can_messages[can_p["receive"]])
     if  frames_received("BECMFront1Fr01", 0.2) < 15:
         testresult = False
         print("No NM-frames: test failed")
     print("Step", stepno, ": Result within ", "{:7.3f}".format(time.time()-wait_start), "seconds.")
-    return testresult
+    return result
 
 
-def step_6(stub, can_send, can_receive, can_namespace):
+def step_6(can_p: CanParam):
     """
         teststep 6: request DID 5 last reset types
     """
 
     stepno = 6
     wait_start = time.time()
-    ts_param = {"stub" : stub,\
-                "m_send" : SC.can_m_send("ReadDataByIdentifier", b'\xFD\x72', b''),\
-                "mr_extra" : '',\
-                "can_send" : can_send,\
-                "can_rec"  : can_receive,\
-                "can_nspace" : can_namespace\
-               }
-    extra_param = {"purpose" : "request DID 5 last reset types",\
-                   "timeout" : 0.4,\
-                   "min_no_messages" : -1,\
-                   "max_no_messages" : -1\
-                  }
-    testresult = SUTE.teststep(ts_param,\
-                               stepno, extra_param)
-    if not testresult:
-        print("Received frames: ", SC.can_frames[can_receive])
-        print("Received messages: ", SC.can_messages[can_receive])
-        SC.update_can_messages(can_receive)
-        print("can_mess_updated ", SC.can_messages[can_receive])
+    cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("ReadDataByIdentifier",
+                                                         b'\xFD\x72', b''),
+                        "extra" : b''
+                       }
+    etp: CanTestExtra = {"step_no": stepno,\
+                         "purpose" : "Lear special: request DID 5 last reset types",\
+                         "timeout" : 0.4,\
+                         "min_no_messages" : -1,\
+                         "max_no_messages" : -1
+                        }
+    result = SUTE.teststep(can_p, cpay, etp)
+
+    #print("Received messages: ", SC.can_messages[can_p["receive"]])
+    if not result:
+        print("Received frames: ", SC.can_frames[can_p["receive"]])
+        print("Received messages: ", SC.can_messages[can_p["receive"]])
+        SC.update_can_messages(can_p["receive"])
+        print("can_mess_updated ", SC.can_messages[can_p["receive"]])
     if  frames_received("BECMFront1Fr01", 0.2) < 15:
-        testresult = False
+        result = False
         print("No NM-frames: test failed")
     print("Step", stepno, ": Result within ", "{:7.3f}".format(time.time()-wait_start), "seconds.")
-    return testresult
+    return result
 
 
 
@@ -295,24 +264,28 @@ def run():
         OnTheFly testscript
     """
 
-    #start logging
-    # to be implemented
+    # start logging
+    #logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.DEBUG)
 
     # where to connect to signal_broker
-    network_stub = SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT)
+    can_p: CanParam = {
+        "netstub" : SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT),\
+        "send" : "Vcu1ToBecmFront1DiagReqFrame",\
+        "receive" : "BecmToVcu1Front1DiagResFrame",\
+        "namespace" : SC.nspace_lookup("Front1CANCfg0")
+        }
 
-    can_send = "Vcu1ToBecmFront1DiagReqFrame"
-    can_receive = "BecmToVcu1Front1DiagResFrame"
-    can_namespace = SC.nspace_lookup("Front1CANCfg0")
 
-    print("Testcase start: ", datetime.now())
+    logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
-    print("time ", time.time())
-    print()
+    logging.info("Time: %s \n", time.time())
+
     ############################################
     # precondition
     ############################################
-    precondition(network_stub, can_send, can_receive, can_namespace)
+    # timeout = 0 (run forever)
+    precondition(can_p, 0)
 
     ############################################
     # teststeps
@@ -320,13 +293,14 @@ def run():
     # step 1:
     # action: change BECM to programming
     # result: BECM reports mode
-    testresult = step_1(network_stub, can_send, can_receive, can_namespace)
+    result = SE22.read_did_f186(can_p, dsession=b'\x01')
+    #result = step_1(network_stub, can_send, can_receive, can_namespace)
 
-    while testresult:
+    while result:
         # step2:
         # action: check current session
         # result: BECM reports programmin session
-        testresult = testresult and step_2(network_stub, can_send, can_receive, can_namespace)
+        result = result and step_2(can_p)
 
         #   1305 BecmFront1NMFr: 8 BECM
         #   58 BECMFront1Fr01
@@ -335,27 +309,30 @@ def run():
         # step3:
         # action: send 'hard_reset' to BECM
         # result: BECM acknowledges message
-        testresult = testresult and  step_3(network_stub, can_send, can_receive, can_namespace)
+        result = result and  step_3(can_p)
         #frames_received("BECMFront1Fr01", 0.2)
 
         # step4:
         # action: check current session
         # result: BECM reports default session
-        testresult = testresult and  step_4(network_stub, can_send, can_receive, can_namespace)
+        result = result and  step_4(can_p)
         #frames_received("BECMFront1Fr01", 0.2)
 
-        testresult = testresult and  step_5(network_stub, can_send, can_receive, can_namespace)
+        logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.DEBUG)
+        result = result and  step_5(can_p)
         #frames_received("BECMFront1Fr01", 0.2)
 
-        testresult = testresult and  step_6(network_stub, can_send, can_receive, can_namespace)
+        result = result and  step_6(can_p)
         #frames_received("BECMFront1Fr01", 0.2)
         #time.sleep(10)
+        logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
 
     ############################################
     # postCondition
     ############################################
 
+    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.DEBUG)
     frames_received("BECMFront1Fr01", 0.2)
     frames_received("BECMFront1Fr01", 0.2)
     frames_received("BECMFront1Fr01", 0.2)
@@ -368,8 +345,8 @@ def run():
     frames_received("BECMFront1Fr01", 0.2)
     print()
     print("Redo step5, step6 after error occured")
-    step_5(network_stub, can_send, can_receive, can_namespace)
-    step_6(network_stub, can_send, can_receive, can_namespace)
+    step_5(can_p)
+    step_6(can_p)
     print()
     print("time ", time.time())
     print("Testcase end: ", datetime.now())
@@ -386,7 +363,7 @@ def run():
 
     print("Test cleanup end: ", datetime.now())
     print()
-    if testresult:
+    if result:
         print("Testcase result: PASSED")
     else:
         print("Testcase result: FAILED")
