@@ -40,7 +40,7 @@ class SupportService36: # pylint: disable=too-few-public-methods
     """
 
     @staticmethod
-    def flash_blocks(nbl, can_p: CanParam, step_no, purpose, data):
+    def flash_blocks(nbl, can_p: CanParam, data, stepno=360, purpose="flash block"):
     # def flash_blocks(nbl, can_p: CanParam, stepno, purpose,
                      # block_len, block_data):
         """
@@ -69,7 +69,7 @@ class SupportService36: # pylint: disable=too-few-public-methods
             cpay: CanPayload = {"payload" : b'\x36' + ibyte + data["b_data"][pad:pad + nbl-2],\
                                 "extra" : ''
                                }
-            etp: CanTestExtra = {"step_no": step_no,\
+            etp: CanTestExtra = {"step_no": stepno,\
                                  "purpose" : purpose,\
                                  "timeout" : 0.2,\
                                  "min_no_messages" : -1,\

@@ -42,7 +42,8 @@ class SupportService27:
 
 
     @staticmethod
-    def pbl_security_access_request_seed(can_p: CanParam, stepno, purpose):
+    def pbl_security_access_request_seed(can_p: CanParam, stepno=270,\
+                                         purpose="SecurityAccessRequestSeed"):
         """
             Support function: request seed for calculating security access pin
         """
@@ -64,7 +65,8 @@ class SupportService27:
 
 
     @staticmethod
-    def pbl_security_access_send_key(can_p: CanParam, payload_value, stepno, purpose):
+    def pbl_security_access_send_key(can_p: CanParam, payload_value, stepno=270,\
+                                     purpose="SecurityAccessSendKey"):
         """
             Support function: request seed for calculating security access pin
         """

@@ -40,11 +40,10 @@ class SupportService37: # pylint: disable=too-few-public-methods
     """
 
     @staticmethod
-    def transfer_data_exit(can_p: CanParam, stepno, purpose):
+    def transfer_data_exit(can_p: CanParam, stepno=370, purpose="Request Transfer Exit"):
         """
         Support function for Request Transfer Exit
         """
-        #testresult = True
         cpay: CanPayload = {"payload": b'\x37',\
                             "extra": ''
                            }
@@ -54,5 +53,4 @@ class SupportService37: # pylint: disable=too-few-public-methods
                              "min_no_messages" : 1,\
                              "max_no_messages" : 1
                             }
-        testresult = SUTE.teststep(can_p, cpay, etp)
-        return testresult
+        return SUTE.teststep(can_p, cpay, etp)

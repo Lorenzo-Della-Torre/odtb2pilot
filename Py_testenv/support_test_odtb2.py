@@ -136,7 +136,7 @@ class SupportTestODTB2:
             SC.update_can_messages(can_p["receive"])
             while((time.time()-wait_start <= etp["timeout"])
                   and (len(SC.can_messages[can_p["receive"]]) < etp["max_no_messages"])):
-                SC.clear_all_can_messages()
+                SC.clear_can_message(can_p["receive"])
                 SC.update_can_messages(can_p["receive"])
 
 

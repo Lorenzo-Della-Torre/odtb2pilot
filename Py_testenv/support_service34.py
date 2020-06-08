@@ -45,7 +45,8 @@ class SupportService34: # pylint: disable=too-few-public-methods
     #@classmethod
     #Support function for Request Download
     @staticmethod
-    def request_block_download(can_p: CanParam, purpose, data, stepno=340):
+    def request_block_download(can_p: CanParam, data, stepno=340,
+                               purpose="Request Download of block to ECU"):
         """
         Support function for Request Download
         """
