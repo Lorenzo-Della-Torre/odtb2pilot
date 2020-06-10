@@ -76,7 +76,7 @@ def parse_some_args():
 
 
 def get_file_names_and_results(folder_path):
-    """Return list with all filenames in folder"""
+    """Return list with all filenames in logfolder"""
     res_dict = {}
     # Will take time and date from last file. OK for now.
     f_date = None
@@ -84,7 +84,6 @@ def get_file_names_and_results(folder_path):
     files = [file_name for file_name in listdir(folder_path)
              if (isfile(join(folder_path, file_name)) and file_name.endswith(LOG_FILE_EXT))]
     for file in files:
-        logging.debug("File: %s", file)
         with open(folder_path + '\\' + file, encoding='utf-8') as file_name:
             # Default is NA, incase there is no match
             #print(os.path.getctime(folder_path + '\\' + file))
@@ -157,24 +156,30 @@ def calculate_sum_string(res_counter):
     return str(percent) + '% Passed (' + str(res_counter[PASSED_STATUS]) + '/' + str(total) +')'
 
 
-def get_url_dict():
-    """Create and return a dict with the urls to the different scripts."""
-    # Assumption: this file is in odtb2pilot/autotest, and the scripts are in
-    #              odtb2pilot/"tests_folder"/*/*.py
-    tests_folder = "test_cases_old"
-    gitlab_url_root = \
-        "https://gitlab.cm.volvocars.biz/HWEILER/odtb2pilot/blob/master/test_cases_old"
+def get_key_and_url_comb(folder):
     ret_dict = {}
-    for root, _, files in os.walk("../" + tests_folder):
+    gitlab_url_root = "https://gitlab.cm.volvocars.biz/HWEILER/odtb2pilot/blob/master/" + folder
+    for root, _, files in os.walk("../" + folder):
         for file in files:
             if file.endswith(PY_FILE_EXT):
                 temp_path = os.path.join(root, file)
                 temp_path_fix = temp_path.replace('\\', '/')
                 # Split at first tests_folder in case that name is reused later in the path
-                temp_url = gitlab_url_root + temp_path_fix.split(tests_folder, 1)[1]
+                temp_url = gitlab_url_root + temp_path_fix.split(folder, 1)[1]
                 key_name = file.lower().split(PY_FILE_EXT)[:-1]
                 ret_dict[key_name[0]] = temp_url
-                logging.debug('%s', key_name[0])
+    return ret_dict
+
+
+def get_url_dict():
+    """Create and return a dict with the urls to the different scripts."""
+    # Assumption: this file is in odtb2pilot/autotest, and the scripts are in
+    #              odtb2pilot/"tests_folder"/*/*.py
+    new_tc = get_key_and_url_comb("test_cases")
+    manual_tc = get_key_and_url_comb("manual_test")
+    old_tc = get_key_and_url_comb("test_cases_old")
+    # Add them together
+    ret_dict = {**new_tc, **manual_tc, **old_tc}
     return ret_dict
 
 
