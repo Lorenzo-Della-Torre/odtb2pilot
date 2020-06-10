@@ -157,6 +157,9 @@ def calculate_sum_string(res_counter):
 
 
 def get_key_and_url_comb(folder):
+    """
+    Creates a key and URL dictionary based on the files in the folders
+    """
     ret_dict = {}
     gitlab_url_root = "https://gitlab.cm.volvocars.biz/HWEILER/odtb2pilot/blob/master/" + folder
     for root, _, files in os.walk("../" + folder):
