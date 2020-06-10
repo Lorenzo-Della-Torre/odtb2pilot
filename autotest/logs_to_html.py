@@ -353,7 +353,7 @@ def generate_html(folderinfo_and_result_tuple_list, outfile, verif_d, elektra_d)
                         tot_cov = 0
                     else:
                         tot_cov = (tot_test / tot_req) * 100
-                    line('td', "Total")
+                    line('td', 'Total')
                     line('td', str(tot_req))
                     line('td', str(tot_test))
                     line('td', str(round(tot_cov, AMOUNT_OF_DECIMALS)) + '%')
