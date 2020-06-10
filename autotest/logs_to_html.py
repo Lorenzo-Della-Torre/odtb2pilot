@@ -9,7 +9,6 @@ Usage: python3 visualize_logs.py --logfolder <path_to_logs>
 Output: html file with the results in a table
 """
 
-#import logging
 import argparse
 import logging
 import sys
@@ -23,7 +22,7 @@ import re
 import collections
 import csv
 
-from html import HTML # pylint: disable=no-name-in-module
+from yattag import Doc
 
 RE_DATE_START = re.compile(r'\s*Testcase\s+start:\s+(?P<date>\d+-\d+-\d+)\s+(?P<time>\d+:\d+:\d+)')
 RE_RESULT = re.compile(r'\s*Testcase\s+result:\s+(?P<result>\w+)')
@@ -43,6 +42,8 @@ MISSING_STATUS = 'MISSING'
 # Which color to use for the status
 COLOR_DICT = {PASSED_STATUS:'#94f7a2', FAILED_STATUS:'#f54949', NA_STATUS:'#94c4f7',
               MISSING_STATUS:'WHITE'}
+
+HEADING_LIST = ['', 'REQPROD', 'Test Scripts']
 
 LOG_FILE_EXT = '.log'
 PY_FILE_EXT = '.py'
@@ -73,6 +74,7 @@ def parse_some_args():
     ret_args = parser.parse_args()
     return ret_args
 
+
 def get_file_names_and_results(folder_path):
     """Return list with all filenames in folder"""
     res_dict = {}
@@ -99,11 +101,13 @@ def get_file_names_and_results(folder_path):
             res_dict[test_name] = result
     return res_dict, f_date, f_time
 
+
 def get_folder_time(folder):
     """Return the date and time on same format based on the folder name"""
     temp_time = RE_FOLDER_TIME.match(folder)
     ret_time = temp_time.group('date')
     return ret_time
+
 
 def get_reqprod_links(infile):
     """Return dict of REQPROD number linked to Elektra direct link"""
@@ -122,6 +126,7 @@ def get_reqprod_links(infile):
                 ret_verif_dict[temp_reqprod] = temp_verif
                 ret_links_dict[temp_reqprod] = temp_link
     return ret_verif_dict, ret_links_dict
+
 
 def get_verif(fip_val, swrs_val):
     """Helper function that will compare and return verification method"""
@@ -154,11 +159,11 @@ def calculate_sum_string(res_counter):
 def get_url_dict():
     """Create and return a dict with the urls to the different scripts."""
     # Assumption: this file is in odtb2pilot/autotest, and the scripts are in
-    #              odtb2pilot/testscripts/*/*.py
-    tests_folder = "testscripts"
-    gitlab_url_root = "https://gitlab.cm.volvocars.biz/HWEILER/odtb2pilot/blob/master/testscripts"
+    #              odtb2pilot/"tests_folder"/*/*.py
+    tests_folder = "test_cases_old"
+    gitlab_url_root = "https://gitlab.cm.volvocars.biz/HWEILER/odtb2pilot/blob/master/test_cases"
     ret_dict = {}
-    for root, files in os.walk("../" + tests_folder):
+    for root, _, files in os.walk("../" + tests_folder):
         for file in files:
             if file.endswith(PY_FILE_EXT):
                 temp_path = os.path.join(root, file)
@@ -169,27 +174,34 @@ def get_url_dict():
                 ret_dict[key_name[0]] = temp_url
     return ret_dict
 
-def write_table(folderinfo_and_result_tuple_list, outfile, verif_d, elektra_d): # pylint: disable=too-many-locals, too-many-branches, too-many-statements
-    """Create html table based on the dict"""
-    page = HTML()
+
+def generate_html(folderinfo_and_result_tuple_list, outfile, verif_d, elektra_d): # pylint: disable=too-many-locals, too-many-branches, too-many-statements
+    """
+    Create html table based on the dict
+    """
+    doc, tag, text, line = Doc().ttl()
 
     # Adding some style to this page ;)
     # Example:  Making every other row in a different colour
     #           Customizing padding
     #           Customizing links
-    page.style("table {border-collapse: collapse;}"
-               "table, th, td {border: 1px solid black;}"
-               "th, td {text-align: left;}"
-               "th {background-color: lightgrey; padding: 8px;}"
-               "td {padding: 3px;}"
-               "tr:nth-child(even) {background-color: #e3e3e3;}"
-               "a {color:black; text-decoration: none;}"
-               "#header {background-color: lightgrey; height: 100px; line-height: 100px;"
-               "width: 1000px; text-align:center; vertical-align: middle; border:1px black solid;"
-               "margin:30px; font-size: 50px;}")
+    style = ("table {border-collapse: collapse;}"
+             "table, th, td {border: 1px solid black;}"
+             "th, td {text-align: left;}"
+             "th {background-color: lightgrey; padding: 8px;}"
+             "td {padding: 3px;}"
+             "tr:nth-child(even) {background-color: #e3e3e3;}"
+             "a {color:black; text-decoration: none;}"
+             "#header {background-color: lightgrey; height: 100px; line-height: 100px;"
+             "width: 1000px; text-align:center; vertical-align: middle; border:1px black solid;"
+             "margin:30px; font-size: 50px;}")
 
-    page.div('Test Summary Report', id='header')
-    table = page.table()
+    # Create the urls for the different files in GitLab
+    url_dict = get_url_dict()
+
+    dvm_url_service_level = 'https://c1.confluence.cm.volvocars.biz/display/BSD/VCC+-+UDS+services'
+
+    res_counter_list = list()
     key_set = set()
 
     # Creating set with only "keys", using a set to not get duplicates.
@@ -205,123 +217,136 @@ def write_table(folderinfo_and_result_tuple_list, outfile, verif_d, elektra_d): 
     sorted_key_list = sorted(key_set)
     amount_of_testruns = str(len(folderinfo_and_result_tuple_list))
 
-    # Create the urls for the different files in GitLab
-    url_dict = get_url_dict()
-
-    # Creating header rows
-    table.th("", colspan='3')
-    table.th("TestResult-ODTB2", colspan=amount_of_testruns)
-    table.tr()
-    res_counter_list = list()
-    table.th('')
-    table.th('REQPROD')
-    table.th('Test Scripts')
-    for folderinfo_and_result_tuple in folderinfo_and_result_tuple_list:
-        table.th(folderinfo_and_result_tuple[FOLDER_TIME_IDX])
-        # Adding one counter for each testresult folder
-        res_counter_list.append(collections.Counter())
-    table.tr()
-
     req_set = set()
 
-    dvm_url_service_level = 'https://c1.confluence.cm.volvocars.biz/display/BSD/VCC+-+UDS+services'
+    with tag('html'):
+        with tag('head'):
+            with tag('style'):
+                text(style)
+        with tag('body'):
+            with tag('div', id='header'): # Header box
+                text('Test Summary Report')
+            with tag('table', id='main'):
+                with tag('tr'):
+                    # Heading - First row
+                    line('th', '', colspan='3')
+                    line('th', 'TestResult-ODTB2', colspan=amount_of_testruns)
+                with tag('tr'):
+                    # Heading - Second row
+                    for heading in HEADING_LIST:
+                        line('th', heading)
+                    for folderinfo_and_result_tuple in folderinfo_and_result_tuple_list:
+                        line('th', folderinfo_and_result_tuple[FOLDER_TIME_IDX])
+                        # Adding one counter for each testresult folder
+                        res_counter_list.append(collections.Counter())
 
-    # Iterating over the set of keys (rows) matching it with the dicts representing the testrun
-    # result. Creating the body of the table.
-    # The testcript names are the keys
-    for key in sorted_key_list:
-        # First column - DVM
-        table_cell = table.td()
-        table_cell.a('DVM', href=dvm_url_service_level, target='_blank')
+                # Iterating over the set of keys (rows) matching it with the dicts representing
+                # the testrun result. Creating the body of the table.
+                # The testcript names are the keys
+                for key in sorted_key_list:
+                    with tag('tr'):
+                        # First column - DVM
+                        with tag('td'):
+                            with tag("a", href=dvm_url_service_level, target='_blank'):
+                                text('DVM')
 
-        # Second column - Elektra link
-        elektra_td = table.td()
-        e_match = RE_REQPROD_ID.match(key)
+                        # Second column - REQPROD
+                        e_match = RE_REQPROD_ID.match(key)
+                        if e_match:
+                            e_key = str(e_match.group('reqprod'))
+                            req_set.add(e_key)
+                            with tag('td'):
+                                with tag("a", href=elektra_d[e_key], target='_blank'):
+                                    text(e_key)
 
-        if e_match:
-            e_key = str(e_match.group('reqprod'))
-            elektra_td.a(e_key, href=elektra_d[e_key], target='_blank')
-            req_set.add(e_key)
+                        # Third column
+                        with tag('td'):
+                            with tag("a", href=url_dict[key.lower()], target='_blank'):
+                                text(key)
 
-        # Third column - Creating script URL
-        script_url = url_dict[key.lower()]
+                        # Fourth (fifth, sixth) - Result columns
+                        # Look up in dicts
+                        index = 0
+                        for folderinfo_and_result_tuple in folderinfo_and_result_tuple_list:
+                            folder_name = folderinfo_and_result_tuple[FOLDER_NAME_IDX]
+                            testres_dict = folderinfo_and_result_tuple[TESTRES_DICT_IDX]
+                            result = MISSING_STATUS
+                            if key in testres_dict:
+                                result = testres_dict[key]
+                                res_counter_list[index][result] += 1
+                            index += 1
+                            # Creating URL string
+                            href_string = folder_name + '\\' + key + LOG_FILE_EXT
 
-        script_td = table.td()
-        script_td.a(key, href=script_url, target='_blank')
+                            with tag('td', bgcolor=COLOR_DICT[result]):
+                                with tag("a", href=href_string, target='_blank'):
+                                    text(result)
 
-        # Result columns
-        # Look up in dicts
-        index = 0
-        for folderinfo_and_result_tuple in folderinfo_and_result_tuple_list:
-            folder_name = folderinfo_and_result_tuple[FOLDER_NAME_IDX]
-            testres_dict = folderinfo_and_result_tuple[TESTRES_DICT_IDX]
-            result = MISSING_STATUS
-            if key in testres_dict:
-                result = testres_dict[key]
-                res_counter_list[index][result] += 1
-            index += 1
-            result_td = table.td(bgcolor=COLOR_DICT[result])
-            # Creating URL string
-            href_string = folder_name + '\\' + key + LOG_FILE_EXT
-            result_td.a(result, href=href_string, target='_blank')
-        table.tr()
+                # Sum row
+                with tag('tr'):
+                    line('th', '', colspan='3')
 
-    # Sum row
-    table.th('', colspan='3')
-    for res_counter in res_counter_list:
-        table.th(calculate_sum_string(res_counter))
-    table.tr()
-    page.br()
+                    for res_counter in res_counter_list:
+                        line('th', calculate_sum_string(res_counter))
 
-    # A separate table for the coverage
-    coverage_table = page.table()
+            doc.stag('br')
 
-    # Creating header row
-    coverage_table.th("Verification method")
-    coverage_table.th("Available")
-    coverage_table.th("Covered")
-    coverage_table.th("% covered")
-    coverage_table.tr()
+            # A separate table for the coverage
+            with tag('table', id='main'):
+                with tag('tr'):
+                    # coverage_table = page.table()
 
-    # Counting how many requirements there are of each verification method
-    req_counter = collections.Counter()
-    for req in verif_d:
-        req_counter[verif_d[req]] += 1
+                    # Heading
+                    line('th', "Verification method")
+                    line('th', "Available")
+                    line('th', "Covered")
+                    line('th', "% covered")
 
-    # Counting how many unique requirements we have verified of each verification method
-    tested_counter = collections.Counter()
-    for req in req_set:
-        tested_counter[verif_d[req]] += 1
+                    # Counting how many requirements there are of each verification method
+                    req_counter = collections.Counter()
+                    for req in verif_d:
+                        req_counter[verif_d[req]] += 1
 
-    for each in req_counter:
-        table_cell = coverage_table.td(each)                      # First column
-        table_cell = coverage_table.td(str(req_counter[each]))    # Second column
-        tested_str = ''
-        if tested_counter[each] > 0:
-            tested_str = str(tested_counter[each])
-        table_cell = coverage_table.td(tested_str)                # Third column
+                    # Counting how many unique requirements we have verified of each
+                    # verification method
+                    tested_counter = collections.Counter()
+                    for req in req_set:
+                        tested_counter[verif_d[req]] += 1
 
-        # Calculating the per cent
-        percent = (tested_counter[each] / req_counter[each]) * 100
-        coverage = ''
-        if percent > 0:
-            coverage = str(round(percent, AMOUNT_OF_DECIMALS)) + '%'
-        table_cell = coverage_table.td(coverage)                  # Fourth column
+                for each in req_counter:
+                    with tag('tr'):
+                        line('td', each)                        # First column
+                        line('td', str(req_counter[each]))      # Second column
 
-        coverage_table.tr()
+                        tested_str = ''
+                        if tested_counter[each] > 0:
+                            tested_str = str(tested_counter[each])
+                        line('td', tested_str)                  # Third column
 
+                        # Calculating the per cent
+                        percent = (tested_counter[each] / req_counter[each]) * 100
+                        coverage = ''
+                        if percent > 0:
+                            coverage = str(round(percent, AMOUNT_OF_DECIMALS)) + '%'
+                        line('td', coverage)                    # Fourth column
+
+    doc.stag('br')
+    text(get_current_time())
+    write_to_file(doc.getvalue(), outfile)
+
+
+def get_current_time():
+    ''' Returns current time '''
     now = datetime.now()
     current_time = now.strftime("Generated %Y-%m-%d %H:%M:%S")
-    logging.debug("Current Time = %s", current_time)
-    page.p(current_time)
-
-    write_to_file(page, outfile)
+    return current_time
 
 
 def write_to_file(content, outfile):
     """Write content to outfile"""
     with open(outfile, 'w') as file:
         file.write(str(content))
+
 
 def main(margs):
     """Call other functions from here"""
@@ -344,8 +369,10 @@ def main(margs):
         folderinfo_and_result_tuple_list.append(folderinfo_and_result_tuple)
 
     if margs.req_csv:
+        logging.debug("CSV-file found: %s", margs.req_csv)
         verif_dict, e_link_dict = get_reqprod_links(margs.req_csv)
-    write_table(folderinfo_and_result_tuple_list, margs.html_file, verif_dict, e_link_dict)
+    generate_html(folderinfo_and_result_tuple_list, margs.html_file, verif_dict, e_link_dict)
+    logging.info("Script finished")
 
 
 if __name__ == "__main__":
