@@ -42,6 +42,7 @@ MISSING_STATUS = 'MISSING'
 # Which color to use for the status
 COLOR_DICT = {PASSED_STATUS:'#94f7a2', FAILED_STATUS:'#f54949', NA_STATUS:'#94c4f7',
               MISSING_STATUS:'WHITE'}
+SUM_COLOR = 'DarkGoldenRod'
 
 HEADING_LIST = ['', 'REQPROD', 'Test Scripts']
 
@@ -345,6 +346,17 @@ def generate_html(folderinfo_and_result_tuple_list, outfile, verif_d, elektra_d)
                         if percent > 0:
                             coverage = str(round(percent, AMOUNT_OF_DECIMALS)) + '%'
                         line('td', coverage)                    # Fourth column
+                with tag(f'tr style="background-color:{SUM_COLOR}"'):
+                    tot_req = sum(req_counter.values())
+                    tot_test = sum(tested_counter.values())
+                    if tot_req == 0:
+                        tot_cov = 0
+                    else:
+                        tot_cov = (tot_test / tot_req) * 100
+                    line('td', "Total")
+                    line('td', str(tot_req))
+                    line('td', str(tot_test))
+                    line('td', str(round(tot_cov, AMOUNT_OF_DECIMALS)) + '%')
 
     doc.stag('br') # Line break for some space
     text(get_current_time())
