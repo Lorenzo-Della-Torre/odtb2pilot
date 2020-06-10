@@ -161,7 +161,8 @@ def get_url_dict():
     # Assumption: this file is in odtb2pilot/autotest, and the scripts are in
     #              odtb2pilot/"tests_folder"/*/*.py
     tests_folder = "test_cases_old"
-    gitlab_url_root = "https://gitlab.cm.volvocars.biz/HWEILER/odtb2pilot/blob/master/test_cases_old"
+    gitlab_url_root = \
+        "https://gitlab.cm.volvocars.biz/HWEILER/odtb2pilot/blob/master/test_cases_old"
     ret_dict = {}
     for root, _, files in os.walk("../" + tests_folder):
         for file in files:
