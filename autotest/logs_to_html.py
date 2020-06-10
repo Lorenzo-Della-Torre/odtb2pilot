@@ -68,7 +68,7 @@ def parse_some_args():
     parser.add_argument("--logfolder", help="path to log reports", type=str, action='store',
                         dest='report_folder', nargs='+', required=True,)
     parser.add_argument("--reqcsv", help="csv with the REQPROD keys from Elektra", type=str,
-                        action='store', dest='req_csv',)
+                        action='store', dest='req_csv', required=True,)
     parser.add_argument("--outfile", help="name of outfile html", type=str, action='store',
                         dest='html_file', default='test.html',)
     ret_args = parser.parse_args()
@@ -84,6 +84,7 @@ def get_file_names_and_results(folder_path):
     files = [file_name for file_name in listdir(folder_path)
              if (isfile(join(folder_path, file_name)) and file_name.endswith(LOG_FILE_EXT))]
     for file in files:
+        logging.debug("File: %s", file)
         with open(folder_path + '\\' + file, encoding='utf-8') as file_name:
             # Default is NA, incase there is no match
             #print(os.path.getctime(folder_path + '\\' + file))
@@ -173,6 +174,7 @@ def get_url_dict():
                 temp_url = gitlab_url_root + temp_path_fix.split(tests_folder, 1)[1]
                 key_name = file.lower().split(PY_FILE_EXT)[:-1]
                 ret_dict[key_name[0]] = temp_url
+                logging.debug('%s', key_name[0])
     return ret_dict
 
 
@@ -261,8 +263,13 @@ def generate_html(folderinfo_and_result_tuple_list, outfile, verif_d, elektra_d)
                                     text(e_key)
 
                         # Third column
-                        with tag('td'):
-                            with tag("a", href=url_dict[key.lower()], target='_blank'):
+                        if key.lower() in url_dict:
+                            with tag('td'):
+                                with tag("a", href=url_dict[key.lower()], target='_blank'):
+                                    text(key)
+                        else:
+                            # Blue color if we don't find the matching key
+                            with tag('td', bgcolor='#94c4f7'):
                                 text(key)
 
                         # Fourth (fifth, sixth) - Result columns
