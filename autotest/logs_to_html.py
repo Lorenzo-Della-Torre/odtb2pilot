@@ -161,7 +161,7 @@ def get_url_dict():
     # Assumption: this file is in odtb2pilot/autotest, and the scripts are in
     #              odtb2pilot/"tests_folder"/*/*.py
     tests_folder = "test_cases_old"
-    gitlab_url_root = "https://gitlab.cm.volvocars.biz/HWEILER/odtb2pilot/blob/master/test_cases"
+    gitlab_url_root = "https://gitlab.cm.volvocars.biz/HWEILER/odtb2pilot/blob/master/test_cases_old"
     ret_dict = {}
     for root, _, files in os.walk("../" + tests_folder):
         for file in files:
@@ -289,7 +289,7 @@ def generate_html(folderinfo_and_result_tuple_list, outfile, verif_d, elektra_d)
                     for res_counter in res_counter_list:
                         line('th', calculate_sum_string(res_counter))
 
-            doc.stag('br')
+            doc.stag('br') # Line break for some space
 
             # A separate table for the coverage
             with tag('table', id='main'):
@@ -330,7 +330,7 @@ def generate_html(folderinfo_and_result_tuple_list, outfile, verif_d, elektra_d)
                             coverage = str(round(percent, AMOUNT_OF_DECIMALS)) + '%'
                         line('td', coverage)                    # Fourth column
 
-    doc.stag('br')
+    doc.stag('br') # Line break for some space
     text(get_current_time())
     write_to_file(doc.getvalue(), outfile)
 
