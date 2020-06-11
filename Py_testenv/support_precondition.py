@@ -136,9 +136,7 @@ class SupportPrecondition:
 
         result = SE22.read_did_eda0(can_p)
         logging.info("Precondition testok: %s\n", result)
-        return result
-        
-        
+
     @staticmethod
     def precondition_spa2(can_p: CanParam, timeout=300):
         """
