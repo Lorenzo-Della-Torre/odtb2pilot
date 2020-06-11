@@ -239,10 +239,11 @@ class SupportTestODTB2:
             retval = self.pp_combined_did_eda0_becm_mode1_mode3(message, "EDA0 for mode1/mode3:\n")
         elif (not message.find('F121', pos) == -1) and (not message.find('F125', pos) == -1):
             retval = self.pp_combined_did_eda0_pbl(message, "EDA0 for PBL:\n")
-        elif (not message.find('F121', pos) == -1) and (not message.find('F125', pos) == -1):
+        elif (not message.find('F122', pos) == -1) and (not message.find('F124', pos) == -1):
             retval = self.pp_combined_did_eda0_sbl(message, "EDA0 for SBL:\n")
         else:
             retval = "Unknown format of EDA0 message'\n"
+            print("Message received: ", message)
         return retval
 
     def pp_combined_did_eda0_becm_mode1_mode3(self, message, title=''):

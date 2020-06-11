@@ -811,6 +811,12 @@ class SupportSBL:
                              "max_no_messages" : -1
                             }
         testresult = SUTE.teststep(can_p, cpay, etp)
+        logging.info("support_SBL, activate_sbl: RC ReqSID 0301 sent")
+        logging.info("support_SBL, activate_sbl: Decode RC response")
+        logging.info("support_SBL, activate_sbl: received frames %s",\
+                     SC.can_frames[can_p["receive"]])
+        logging.info("support_SBL, activate_sbl: received messages %s",\
+                     SC.can_messages[can_p["receive"]])
         testresult = testresult and (
             SUTE.pp_decode_routine_control_response(SC.can_messages[can_p["receive"]][0][2],
                                                     'Type1,Completed'))
