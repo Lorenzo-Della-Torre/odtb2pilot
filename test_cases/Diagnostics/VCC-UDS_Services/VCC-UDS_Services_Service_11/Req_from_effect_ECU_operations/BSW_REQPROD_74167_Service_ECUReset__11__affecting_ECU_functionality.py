@@ -31,11 +31,13 @@ import ODTB_conf
 from support_can import SupportCAN, CanParam, CanTestExtra
 from support_test_odtb2 import SupportTestODTB2
 from support_carcom import SupportCARCOM
+from support_file_io import SupportFileIO
 
 from support_precondition import SupportPrecondition
 from support_postcondition import SupportPostcondition
 from support_service11 import SupportService11
 
+SIO = SupportFileIO
 SC = SupportCAN()
 SUTE = SupportTestODTB2()
 SC_CARCOM = SupportCARCOM()
@@ -47,18 +49,23 @@ def step_1(can_par):
     """
     Teststep 1: register another signal
     """
-    etp: CanTestExtra = {"step_no" : 1,\
-                         "purpose" : "register another signal",\
-                         "timeout" : 15,\
-                         "min_no_messages" : -1,\
-                         "max_no_messages" : -1
-                        }
-    can_par_ex: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT),\
-        "send" : "ECMFront1Fr02",\
-        "receive" : "BECMFront1Fr02",\
-        "namespace" : SC.nspace_lookup("Front1CANCfg0")
-        }
+    stepno = 1
+    etp: CanTestExtra = SIO.extract_parameter_yml(
+        "step_{}".format(stepno),
+        step_no=1,
+        purpose="register another signal",
+        timeout=15,
+        min_no_messages=-1,
+        max_no_messages=-1
+        )
+
+    can_par_ex: CanParam = SIO.extract_parameter_yml(
+        "main",
+        netstub=SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT),
+        send="ECMFront1Fr02",
+        receive="BECMFront1Fr02",
+        namespace=SC.nspace_lookup("Front1CANCfg0")
+        )
 
     SC.subscribe_signal(can_par_ex, etp["timeout"])
     time.sleep(1)
@@ -121,12 +128,13 @@ def run():
     # to be implemented
 
     # where to connect to signal_broker
-    can_par: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT),\
-        "send" : "Vcu1ToBecmFront1DiagReqFrame",\
-        "receive" : "BecmToVcu1Front1DiagResFrame",\
-        "namespace" : SC.nspace_lookup("Front1CANCfg0")
-        }
+    can_par: CanParam = SIO.extract_parameter_yml(
+        "main",
+        netstub=SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT),
+        send="Vcu1ToBecmFront1DiagReqFrame",
+        receive="BecmToVcu1Front1DiagResFrame",
+        namespace=SC.nspace_lookup("Front1CANCfg0")
+        )
 
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
@@ -161,7 +169,7 @@ def run():
     # postCondition
     ############################################
 
-    POST.postcondition(can_par, starttime, result)
+    result = POST.postcondition(can_par, starttime, result)
 
 if __name__ == '__main__':
     run()
