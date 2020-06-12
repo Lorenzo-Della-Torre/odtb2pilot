@@ -1,8 +1,8 @@
 # Testscript ODTB2 MEPII
 # project:  BECM basetech MEPII
 # author:   LDELLATO (Lorenzo Della Torre)
-# date:     2020-05-13
-# version:  1.1
+# date:     2020-06-10
+# version:  1.2
 # reqprod:  52286
 # #inspired by https://grpc.io/docs/tutorials/basic/python.html
 # Copyright 2015 gRPC authors.
@@ -27,322 +27,121 @@ import sys
 import logging
 
 import ODTB_conf
-from support_can import Support_CAN
-from support_test_odtb2 import Support_test_ODTB2
-from support_SBL import Support_SBL
-from support_SecAcc import Support_Security_Access
+from support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
+from support_test_odtb2 import SupportTestODTB2
+from support_carcom import SupportCARCOM
+from support_file_io import SupportFileIO
+from support_SBL import SupportSBL
+from support_sec_acc import SupportSecurityAccess
 
-SC = Support_CAN()
-SUTE = Support_test_ODTB2()
-SSBL = Support_SBL()
-SSA = Support_Security_Access()
+from support_precondition import SupportPrecondition
+from support_postcondition import SupportPostcondition
+from support_service10 import SupportService10
+from support_service11 import SupportService11
+from support_service22 import SupportService22
+from support_service31 import SupportService31
+from support_service3e import SupportService3e
 
-def precondition(can_param):
-    """
-    Precondition for test running:
-    BECM has to be kept alive: start heartbeat
-    """
-    # start heartbeat, repeat every 0.8 second
-    SC.start_heartbeat(can_param["stub"], "EcmFront1NMFr", "Front1CANCfg0",
-                       b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.8)
+SIO = SupportFileIO
+SC = SupportCAN()
+S_CARCOM = SupportCARCOM()
+SUTE = SupportTestODTB2()
+SSBL = SupportSBL()
+SSA = SupportSecurityAccess()
 
-    SC.start_periodic(can_param["stub"], "Networkeptalive", True, "Vcu1ToAllFuncFront1DiagReqFrame",
-                      "Front1CANCfg0", b'\x02\x3E\x80\x00\x00\x00\x00\x00', 1.02)
+PREC = SupportPrecondition()
+POST = SupportPostcondition()
+SE10 = SupportService10()
+SE11 = SupportService11()
+SE22 = SupportService22()
+SE31 = SupportService31()
+SE3E = SupportService3e()
 
-    timeout = 1000   #seconds
-    SC.subscribe_signal(can_param["stub"], can_param["can_send"],
-                        can_param["can_rec"], can_param["can_nspace"], timeout)
-    #record signal we send as well
-    SC.subscribe_signal(can_param["stub"], can_param["can_rec"],
-                        can_param["can_send"], can_param["can_nspace"], timeout)
-
-    print()
-    result = step_0(can_param)
-    print("precondition testok:", result, "\n")
-    return result
-
-def step_0(can_param):
-    """
-    Teststep 0: Complete ECU Part/Serial Number(s)
-    """
-    stepno = 0
-    serv_ = SC.Extract_Parameter_yml(
-        "step_{}".format(stepno),
-        service="ReadDataByIdentifier",
-        did=b'\xED\xA0'
-        )
-
-    param_ = SC.Extract_Parameter_yml(
-        "step_{}".format(stepno),
-        timeout=5,
-        purpose="Complete ECU Part/Serial Number(s)",
-        min_no_messages=-1,
-        max_no_messages=-1)
-
-    can_param["m_send"] = SC.can_m_send(serv_["service"], serv_["did"], "")
-    can_param["mr_extra"] = ''
-    result = SUTE.teststep(can_param, stepno, param_)
-    logging.info(SUTE.PP_CombinedDID_EDA0(SC.can_messages[can_param["can_rec"]][0][2], title=''))
-    return result
-
-def step_1(can_param):
-    """
-    Teststep 1: Activate SBL
-    """
-    stepno = 1
-    purpose = "Download and Activation of SBL"
-    result = SSBL.sbl_activation(can_param["stub"], can_param["can_send"],
-                                 can_param["can_rec"], can_param["can_nspace"],
-                                 stepno, purpose)
-    return result
-
-def step_2(can_param):
-    """
-    Teststep 2: ESS Software Part Download
-    """
-    stepno = 2
-    purpose = "ESS Software Part Download"
-    result = SSBL.sw_part_download(can_param["stub"], SSBL.get_ess_filename(),
-                                   can_param["can_send"], can_param["can_rec"],
-                                   can_param["can_nspace"], stepno, purpose)
-    return result
-
-def step_3(can_param):
+def step_3(can_par):
     """
     Teststep 3: Check the Complete and compatible Routine return Not Complete
     """
     stepno = 3
-    purpose = "verify RoutineControl start are sent for Type 1"
-
-    result = SSBL.check_complete_compatible_routine(can_param["stub"], can_param["can_send"],
-                                                    can_param["can_rec"], can_param["can_nspace"],
-                                                    stepno, purpose)
+    purpose = "Check the Complete and compatible Routine return Not Complete"
+    SUTE.print_test_purpose(stepno, purpose)
+    result = SSBL.check_complete_compatible_routine(can_par, stepno)
 
     result = result and (SSBL.pp_decode_routine_complete_compatible\
-                         (SC.can_messages[can_param["can_rec"]][0][2])\
+                         (SC.can_messages[can_par["can_rec"]][0][2])\
                          == 'Not Complete, Compatible')
     return result
 
-def step_4(can_param):
+def step_6(can_par):
     """
-    Teststep 4: verify session
-    """
-    stepno = 4
-    serv_ = SC.Extract_Parameter_yml(
-        "step_{}".format(stepno),
-        service="ReadDataByIdentifier",
-        did=b'\xF1\x22')
-
-    param_ = SC.Extract_Parameter_yml(
-        "step_{}".format(stepno),
-        timeout=1,
-        purpose="Verify Programming session in SBL",
-        min_no_messages=-1,
-        max_no_messages=-1,
-        time_to_sleep=6)
-
-    can_param["m_send"] = SC.can_m_send(serv_["service"], serv_["did"], "")
-    can_param["mr_extra"] = b''
-
-    result = SUTE.teststep(can_param, stepno, param_)
-    result = result and SUTE.test_message(SC.can_messages[can_param["can_rec"]],\
-                                          teststring='62F122')
-    time.sleep(param_["time_to_sleep"])
-    return result
-
-def step_5(can_param):
-    """
-    Teststep 5: verify programming session in PBL (The reset is done from SBL)
-    """
-    stepno = 5
-    serv_ = SC.Extract_Parameter_yml(
-        "step_{}".format(stepno),
-        service="ReadDataByIdentifier",
-        did=b'\xF1\x21'
-        )
-
-    param_ = SC.Extract_Parameter_yml(
-        "step_{}".format(stepno),
-        timeout=1,
-        purpose="Verify Programming session in PBL",
-        min_no_messages=-1,
-        max_no_messages=-1,
-        time_to_sleep=6
-        )
-
-    can_param["m_send"] = SC.can_m_send(serv_["service"], serv_["did"], "")
-    can_param["mr_extra"] = ''
-    result = SUTE.teststep(can_param, stepno, param_)
-    result = result and SUTE.test_message(SC.can_messages[can_param["can_rec"]],\
-                                          teststring='62F121')
-    time.sleep(param_["time_to_sleep"])
-    return result
-
-def step_6(can_param):
-    """
-    Teststep 6: verify programming session in PBL stay in PBL after >5sec sleeping
+    Teststep 6: verify session
     """
     stepno = 6
-    serv_ = SC.Extract_Parameter_yml(
+    cpay: CanPayload = SIO.extract_parameter_yml(
         "step_{}".format(stepno),
-        service="ReadDataByIdentifier",
-        did=b'\xF1\x21'
+        payload=S_CARCOM.can_m_send("ReadDataByIdentifier", b'\xF1\x21', b''),
+        extra=''
         )
 
-    param_ = SC.Extract_Parameter_yml(
+    etp: CanTestExtra = SIO.extract_parameter_yml(
         "step_{}".format(stepno),
+        step_no=6,
         timeout=1,
-        purpose="Verify Programming session in PBL after >5sec sleeping",
+        purpose="Verify Programming session in PBL",
         min_no_messages=-1,
         max_no_messages=-1
         )
 
-    can_param["m_send"] = SC.can_m_send(serv_["service"], serv_["did"], "")
-    can_param["mr_extra"] = ''
-    result = SUTE.teststep(can_param, stepno, param_)
-    result = result and SUTE.test_message(SC.can_messages[can_param["can_rec"]],\
-                                          teststring='62F121')
+    result = SUTE.teststep(can_par, cpay, etp)
+    result = result and SUTE.test_message(SC.can_messages[can_par["receive"]],\
+                                          teststring='F121')
+
     return result
 
-def step_7(can_param):
+def step_8(can_par):
     """
-    Teststep 7: Hard Reset
-    """
-    stepno = 7
-    serv_ = SC.Extract_Parameter_yml(
-        "step_{}".format(stepno),
-        service="ECUResetHardReset"
-        )
-
-    param_ = SC.Extract_Parameter_yml(
-        "step_{}".format(stepno),
-        timeout=1,
-        purpose="Hard Reset",
-        min_no_messages=-1,
-        max_no_messages=-1,
-        time_to_sleep=6)
-
-    can_param["m_send"] = SC.can_m_send(serv_["service"], b'', "")
-    can_param["mr_extra"] = b''
-
-    result = SUTE.teststep(can_param, stepno, param_)
-    return result
-
-def step_8(can_param):
-    """
-    Teststep 8: Activate SBL
+    Teststep 8: verify session
     """
     stepno = 8
-    purpose = "Download and Activation of SBL"
-    result = SSBL.sbl_activation(can_param["stub"], can_param["can_send"],
-                                 can_param["can_rec"], can_param["can_nspace"],
-                                 stepno, purpose)
-    return result
-
-def step_9(can_param):
-    """
-    Teststep 9: ESS Software Part Download
-    """
-    stepno = 9
-    purpose = "ESS Software Part Download"
-    result = SSBL.sw_part_download(can_param["stub"], SSBL.get_ess_filename(),
-                                   can_param["can_send"], can_param["can_rec"],
-                                   can_param["can_nspace"], stepno, purpose)
-    return result
-
-def step_10(can_param):
-    """
-    Teststep 10: Download other SW Parts
-    """
-    stepno = 10
-    purpose = "continue Download SW"
-    for i in SSBL.get_df_filenames():
-
-        result = SSBL.sw_part_download(can_param["stub"], i, can_param["can_send"],
-                                       can_param["can_rec"], can_param["can_nspace"],
-                                       stepno, purpose)
-    return result
-
-def step_11(can_param):
-    """
-    Teststep 11: Check Complete And Compatible
-    """
-    stepno = 11
-    purpose = "verify RoutineControl start are sent for Type 1"
-
-    result = SSBL.check_complete_compatible_routine(can_param["stub"], can_param["can_send"],
-                                                    can_param["can_rec"], can_param["can_nspace"],
-                                                    stepno, purpose)
-    return result
-
-def step_12(can_param):
-    """
-    Teststep 12: Hard Reset
-    """
-    stepno = 12
-    serv_ = SC.Extract_Parameter_yml(
+    cpay: CanPayload = SIO.extract_parameter_yml(
         "step_{}".format(stepno),
-        service="ECUResetHardReset"
+        payload=S_CARCOM.can_m_send("ReadDataByIdentifier", b'\xF1\x21', b''),
+        extra=''
         )
 
-    param_ = SC.Extract_Parameter_yml(
+    etp: CanTestExtra = SIO.extract_parameter_yml(
         "step_{}".format(stepno),
+        step_no=8,
         timeout=1,
-        purpose="Hard Reset",
+        purpose="Verify Programming session in PBL",
         min_no_messages=-1,
-        max_no_messages=-1,
-        time_to_sleep=6)
-
-    can_param["m_send"] = SC.can_m_send(serv_["service"], b'', "")
-    can_param["mr_extra"] = b''
-
-    result = SUTE.teststep(can_param, stepno, param_)
-    return result
-
-def step_13(can_param):
-    """
-    Teststep 13: verify session
-    """
-    stepno = 13
-    serv_ = SC.Extract_Parameter_yml(
-        "step_{}".format(stepno),
-        service="ReadDataByIdentifier",
-        did=b'\xF1\x86'
+        max_no_messages=-1
         )
 
-    param_ = SC.Extract_Parameter_yml(
-        "step_{}".format(stepno),
-        timeout=1,
-        purpose="Verify Default session",
-        min_no_messages=-1,
-        max_no_messages=-1,
-        time_to_sleep=6)
+    result = SUTE.teststep(can_par, cpay, etp)
+    result = result and SUTE.test_message(SC.can_messages[can_par["receive"]],\
+                                          teststring='F121')
 
-    can_param["m_send"] = SC.can_m_send(serv_["service"], serv_["did"], "")
-    can_param["mr_extra"] = b'\x01'
-
-    result = SUTE.teststep(can_param, stepno, param_)
     return result
+
 
 def run():
     """
-    Run
+    Run - Call other functions from here
     """
     logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.DEBUG)
-    result = True
+
     # start logging
     # to be implemented
-    # where to connect to signal_broker
 
-    can_param = SC.Extract_Parameter_yml(
+    # where to connect to signal_broker
+    can_par: CanParam = SIO.extract_parameter_yml(
         "main",
-        can_send="Vcu1ToBecmFront1DiagReqFrame",
-        can_rec="BecmToVcu1Front1DiagResFrame",
-        m_send='',
-        mr_extra=''
+        netstub=SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT),
+        send="Vcu1ToBecmFront1DiagReqFrame",
+        receive="BecmToVcu1Front1DiagResFrame",
+        namespace=SC.nspace_lookup("Front1CANCfg0")
         )
-    can_param.update(stub=SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT))
-    can_param.update(can_nspace=SC.nspace_lookup("Front1CANCfg0"))
+
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
     logging.info("Time: %s \n", time.time())
@@ -364,102 +163,89 @@ def run():
                 f_df.append(f_name)
     SSBL.__init__(f_sbl, f_ess, f_df)
     SSBL.show_filenames()
-    time.sleep(10)
+    time.sleep(4)
 
-    result = result and precondition(can_param)
-
+    timeout = 60
+    result = PREC.precondition(can_par, timeout)
+    if result:
     ############################################
     # teststeps
     ############################################
-    # step 1:
-    # action:
-    # result:
-    result = result and step_1(can_param)
 
-    # step2:
-    # action:
-    # result:
-    result = result and step_2(can_param)
+        # step1:
+        # action:
+        # result:
+        result = result and SSBL.sbl_activation(can_par, 1, "DL and activate SBL")
+        time.sleep(1)
 
-    # step3:
-    # action:
-    # result:
-    result = result and step_3(can_param)
+        # step2:
+        # action:
+        # result:
+        result = result and SSBL.sw_part_download(can_par, SSBL.get_ess_filename(),\
+                                   2, "ESS Software Part Download")
+        time.sleep(1)
 
-    # step4:
-    # action:
-    # result:
-    result = result and step_4(can_param)
+        # step3:
+        # action:
+        # result:
+        result = result and step_3(can_par)
 
-    # step5:
-    # action:
-    # result:
-    result = result and step_5(can_param)
+        # step4:
+        # action: stop sending tester present
+        # result:
+        logging.info("Step 4: stop sending tester present.")
+        SE3E.stop_periodic_tp_zero_suppress_prmib()
 
-    # step6:
-    # action:
-    # result:
-    result = result and step_6(can_param)
+        # step5:
+        # action: don't send a request until timeout occured
+        # result:
+        logging.info("Step 5: Wait longer than timeout for staying in current mode.")
+        logging.info("Step 5: Tester present not sent, no request to ECU.\n")
+        time.sleep(6)
 
-    # step7:
-    # action:
-    # result:
-    result = result and step_7(can_param)
+        # step6:
+        # action: Verify ECU is still in mode prog session
+        # result:
+        result = result and step_6(can_par)
 
-    # step8:
-    # action:
-    # result:
-    result = result and step_8(can_param)
+        # step7:
+        # action: don't send a request until timeout occured
+        # result:
+        logging.info("Step 7: Wait longer than timeout for staying in current mode.")
+        logging.info("Step 7: Tester present not sent, no request to ECU.\n")
+        time.sleep(6)
 
-    # step9:
-    # action:
-    # result:
-    result = result and step_9(can_param)
+        # step8:
+        # action: Verify ECU is still in mode prog session
+        # result:
+        result = result and step_8(can_par)
 
-    # step10:
-    # action:
-    # result:
-    result = result and step_10(can_param)
+        # step9:
+        # action:
+        # result:
+        SE3E.start_periodic_tp_zero_suppress_prmib(can_par,\
+                                              "Vcu1ToAllFuncFront1DiagReqFrame",\
+                                              1.02)
 
-    # step11:
-    # action:
-    # result:
-    result = result and step_11(can_param)
+        # step10:
+        # action:
+        # result:
+        logging.info("Step 10: DL entire software")
+        result = result and SE11.ecu_hardreset(can_par, 10)
+        result = result and SSBL.sbl_activation(can_par, 10, "DL and activate SBL")
+        time.sleep(1)
+        result = result and SSBL.sw_part_download(can_par, SSBL.get_ess_filename(),\
+                                   10, "ESS Software Part Download")
+        for i in SSBL.get_df_filenames():
 
-    # step12:
-    # action:
-    # result:
-    result = result and step_12(can_param)
-
-    # step13:
-    # action:
-    # result:
-    result = result and step_13(can_param)
+            result = result and SSBL.sw_part_download(can_par, i, 10)
+        result = result and SSBL.check_complete_compatible_routine(can_par, 10)
+        result = result and SE11.ecu_hardreset(can_par, 10)
 
     ############################################
     # postCondition
     ############################################
-
-    logging.debug("\nTime: %s \n", time.time())
-    logging.info("Testcase end: %s", datetime.now())
-    logging.info("Time needed for testrun (seconds): %s", int(time.time() - starttime))
-
-    logging.info("Do cleanup now...")
-    logging.info("Stop all periodic signals sent")
-    SC.stop_periodic_all()
-
-    # deregister signals
-    SC.unsubscribe_signals()
-    # if threads should remain: try to stop them
-    SC.thread_stop()
-
-    logging.info("Test cleanup end: %s\n", datetime.now())
-
-    if result:
-        logging.info("Testcase result: PASSED")
-    else:
-        logging.info("Testcase result: FAILED")
-
+    POST.postcondition(can_par, starttime, result)
 
 if __name__ == '__main__':
     run()
