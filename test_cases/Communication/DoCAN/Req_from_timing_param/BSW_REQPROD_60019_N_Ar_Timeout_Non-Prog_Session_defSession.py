@@ -62,7 +62,7 @@ def step_1(can_par):
                         }
     etp: CanTestExtra = {"step_no" : 2,\
                          "purpose" : "request EDA0 - with FC delay < timeout 1000 ms",\
-                         "timeout" : 5,\
+                         "timeout" : 2,\
                          "min_no_messages" : -1,\
                          "max_no_messages" : -1\
                          }
@@ -96,7 +96,7 @@ def step_2(can_par):
                         }
     etp: CanTestExtra = {"step_no" : 3,\
                          "purpose" : "request EDA0 - with FC delay > timeout 1000 ms",\
-                         "timeout" : 5,\
+                         "timeout" : 2,\
                          "min_no_messages" : -1,\
                          "max_no_messages" : -1\
                          }
