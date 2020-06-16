@@ -42,14 +42,18 @@ class SupportFileIO:
         Extract requested data from a Parameter dictionary from yaml.
         """
         # Import Parameters if REQPROD name are compatible
-        pattern_req = re.match(r"\w+_(?P<reqprod>\d{3,})_\w+", sys.argv[0])
+        #pattern_req = re.match(r"\w+_(?P<reqprod>\d{3,})\.\w+", sys.argv[0])
+        FILE_NAME_IDX = 0
+        pattern_req = re.search(r'(?<=BSW_)\w+', sys.argv[FILE_NAME_IDX])
         files = os.listdir('./parameters_yml')
         # intitialize a tuple
         value = dict()
         try:
             for entry in files:
-                entry_req = re.match(r"\w+_(?P<reqprod>\d{3,})\.\w+", entry)
-                if entry_req.group('reqprod') == pattern_req.group('reqprod'):
+                #entry_req = re.match(r"\w+_(?P<reqprod>\d{3,})\.\w+", entry)
+                entry_req = re.search(r'(?<=^)\w+', entry)
+                #if entry_req.group('reqprod') == pattern_req.group('reqprod'):
+                if entry_req.group(0) == pattern_req.group(0):
                     entry_good = entry
             # extract yaml data from directory
             with open('./parameters_yml/' + entry_good) as file:
@@ -60,8 +64,8 @@ class SupportFileIO:
             sys.exit(1)
         for key, arg in kwargs.items():
             # if yaml key return value from yaml file
-            if data[str(argv[0])].get(key) is not None:
-                value[key] = data[str(argv[0])].get(key)
+            if data[str(argv[FILE_NAME_IDX])].get(key) is not None:
+                value[key] = data[str(argv[FILE_NAME_IDX])].get(key)
                 #convert some values to bytes
                 if key in ('mode', 'mask', 'did'):
                     value[key] = bytes(value[key], 'utf-8')
