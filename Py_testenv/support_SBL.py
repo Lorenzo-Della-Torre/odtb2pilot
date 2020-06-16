@@ -234,6 +234,7 @@ class SupportSBL:
             if SUTE.crc16(decompr_data) == block_crc16:
                 # Request Download
                 #result, nbl = SE34.request_block_download(can_p, data, step_no, purpose)
+                result = SE22.read_did_eda0(can_p)
                 result, nbl = SE34.request_block_download(can_p, data)
                 #result = result and resultt
                 # Flash blocks to BECM with transfer data service 0x36

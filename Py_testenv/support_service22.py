@@ -59,9 +59,6 @@ class SupportService22:
                              "max_no_messages" : -1
                             }
 
-    #can_m_send = SC.can_m_send("ReadDataByIdentifier", b'\xED\xA0', b'')
-    #can_mr_extra = ''
-
         result = SUTE.teststep(can_p, cpay, etp)
         if not len(SC.can_messages[can_p["receive"]]) == 0:
             logging.info('%s',\
@@ -70,6 +67,8 @@ class SupportService22:
                         )
         else:
             logging.info('%s', "No messages received for request Read DID EDA0")
+            logging.info("Frames received: %s", SC.can_frames[can_p["receive"]])
+            logging.info("Messages received: %s", SC.can_messages[can_p["receive"]])
             result = False
         return result
 
