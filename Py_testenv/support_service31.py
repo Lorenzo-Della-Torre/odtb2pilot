@@ -25,6 +25,7 @@
 # limitations under the License.
 
 """The Python implementation of the gRPC route guide client."""
+import time
 import logging
 
 from support_carcom import SupportCARCOM
@@ -124,9 +125,32 @@ class SupportService31:
                            }
         etp: CanTestExtra = {"step_no": stepno,\
                              "purpose" : "RC flash erase",\
-                             "timeout" : 15,\
+                             "timeout" : 1,\
                              "min_no_messages" : -1,\
                              "max_no_messages" : -1
                             }
-        result = SupportService31.routinecontrol_request_sid(can_p, cpay, etp)
+        #start flash erase, may take long to erase
+        result = SUTE.teststep(can_p, cpay, etp)
+
+        rc_response = False
+        rc_loop = 0
+        while (not rc_response) and (rc_loop < 15):
+            SC.clear_can_message(can_p["receive"])
+            SC.update_can_messages(can_p["receive"])
+            if len(SC.can_messages[can_p["receive"]]) > 0:
+                for all_mess in SC.can_messages[can_p["receive"]]:
+                    if all_mess[2].find('71') == 2:
+                        logging.info(SC.can_messages[can_p["receive"]])
+                        #try to decode message
+                        result = result and (
+                            SUTE.pp_decode_routine_control_response(all_mess[2],\
+                                'Type1,Completed'))
+                        rc_response = True
+                    elif  all_mess[2].find('7F') == 2:
+                        logging.info(SUTE.pp_decode_7f_response(all_mess[2]))
+                    else:
+                        logging.info(SC.can_messages[can_p["receive"]])
+
+            time.sleep(1)
+            rc_loop += 1
         return result

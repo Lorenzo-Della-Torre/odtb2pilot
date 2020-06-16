@@ -44,7 +44,7 @@ class CanMFParam(Dict): # pylint: disable=too-few-public-methods,inherit-non-cla
     block_size: int
     separation_time: int
     frame_control_delay: int
-    frame_control_flag: bool
+    frame_control_flag: int
     frame_control_auto: bool
 
 
@@ -383,6 +383,7 @@ class SupportCAN:
         That's sometimes needed for waking up MCU or getting frames sent
         withing a certain time intervall.
         """
+        print("SC.send_burst nspace: ", burst_param["nspace"])
         for _ in range(quantity):
             self.t_send_signal_hex(stub, burst_param["id"], burst_param["nspace"],
                                    burst_param["frame"])

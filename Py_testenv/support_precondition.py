@@ -158,7 +158,7 @@ class SupportPrecondition:
         SC.start_heartbeat(can_p["netstub"], hb_param)
 
         #Start testerpresent without reply
-        SE3E.start_periodic_tp_zero_suppress_prmib(can_p)
+        SE3E.start_periodic_tp_zero_suppress_prmib(can_p, 'HvbmdpToAllUdsDiagRequestFrame')
 
         ##record signal we send as well
         #SC.subscribe_signal(stub, can_receive, can_send, can_namespace, timeout)
@@ -175,3 +175,52 @@ class SupportPrecondition:
         result = SE22.read_did_eda0(can_p)
         logging.info("Precondition testok: %s\n", result)
         return result
+
+    @staticmethod
+    def precondition_burst_spa2(can_p: CanParam, timeout=300):
+        """
+        Precondition for test running:
+        BECM has to be kept alive: start heartbeat
+        """
+        # start heartbeat, repeat every 0.8 second
+
+        #send burst for 10seconds (10000 x 0.01 sec)
+        #to enter prog
+        burst_param: PerParam = {
+            "name" : "Burst",
+            "send" : True,
+            "id" : "HvbmdpToAllUdsDiagRequestFrame",
+            "nspace" : can_p["namespace"],
+            "frame" : b'\x02\x10\x82\x00\x00\x00\x00\x00',
+            "intervall" : 0.001
+            }
+        SC.send_burst(can_p["netstub"], burst_param, 600)
+
+        hb_param: PerParam = {
+            "name" : "Heartbeat",
+            "send" : True,
+            "id" : "HvbmdpNmFrame", #SPA1: MvcmFront1NMFr",
+            "nspace" : can_p["namespace"].name,
+            "frame" : b'\x00\x40\xFF\xFF\xFF\xFF\xFF\xFF',
+            "intervall" : 0.4
+            }
+        # start heartbeat, repeat every x second
+        SC.start_heartbeat(can_p["netstub"], hb_param)
+
+        #Start testerpresent without reply
+        SE3E.start_periodic_tp_zero_suppress_prmib(can_p, 'HvbmdpToAllUdsDiagRequestFrame')
+
+
+        SC.send_burst(can_p["netstub"], burst_param, 5000)
+
+        SC.subscribe_signal(can_p, timeout)
+        #record signal we send as well
+        can_p2: CanParam = {"netstub": can_p["netstub"],
+                            "send": can_p["receive"],
+                            "receive": can_p["send"],
+                            "namespace": can_p["namespace"],
+                           }
+        SC.subscribe_signal(can_p2, timeout)
+
+        result = SE22.read_did_eda0(can_p)
+        logging.info("Precondition testok: %s\n", result)
