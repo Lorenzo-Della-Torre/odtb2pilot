@@ -54,7 +54,7 @@ def step_1(can_par):
         "step_{}".format(stepno),
         step_no=1,
         purpose="register another signal",
-        timeout=15,
+        timeout=5,
         min_no_messages=-1,
         max_no_messages=-1
         )
@@ -169,7 +169,7 @@ def run():
     # postCondition
     ############################################
 
-    result = POST.postcondition(can_par, starttime, result)
+    POST.postcondition(can_par, starttime, result)
 
 if __name__ == '__main__':
     run()
