@@ -175,7 +175,7 @@ def run():
     # postCondition
     ############################################
 
-    result = POST.postcondition(can_par, starttime, result)
+    POST.postcondition(can_par, starttime, result)
 
 if __name__ == '__main__':
     run()
