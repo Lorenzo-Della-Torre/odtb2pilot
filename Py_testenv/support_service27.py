@@ -25,15 +25,17 @@
 # limitations under the License.
 
 """The Python implementation of the gRPC route guide client."""
-
+import logging
 
 from support_carcom import SupportCARCOM
 from support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
 from support_test_odtb2 import SupportTestODTB2
+from support_service22 import SupportService22
 
 SC = SupportCAN()
 SUTE = SupportTestODTB2()
 S_CARCOM = SupportCARCOM()
+SE22 = SupportService22()
 
 class SupportService27:
     """
@@ -48,9 +50,28 @@ class SupportService27:
             Support function: request seed for calculating security access pin
         """
 
-        cpay: CanPayload = {"payload" : S_CARCOM.can_m_send("SecurityAccessRequestSeed", b'', b''),\
-                            "extra" : ''
-                           }
+        #different request in mode 1/3 and mode2
+        SE22.read_did_f186(can_p)
+        #SE22.read_did_f186(can_p, dsession=b'')
+        logging.info(SC.can_messages[can_p["receive"]])
+
+        if SUTE.test_message(SC.can_messages[can_p["receive"]], '62F18601')\
+            or SUTE.test_message(SC.can_messages[can_p["receive"]], '62F18603'):
+            cpay: CanPayload =\
+              {"payload" : S_CARCOM.can_m_send("SecurityAccessRequestSeed_mode1_3", b'', b''),\
+               "extra" : ''
+              }
+        elif SUTE.test_message(SC.can_messages[can_p["receive"]], '62F18602'):
+            cpay: CanPayload =\
+                {"payload" : S_CARCOM.can_m_send("SecurityAccessRequestSeed", b'', b''),\
+                 "extra" : ''
+                }
+        else:
+            cpay: CanPayload =\
+                {"payload" : S_CARCOM.can_m_send("SecurityAccessRequestSeed", b'', b''),\
+                 "extra" : ''
+                }
+
         etp: CanTestExtra = {"step_no": stepno,\
                              "purpose" : purpose,\
                              "timeout" : 1,\
@@ -71,10 +92,27 @@ class SupportService27:
             Support function: request seed for calculating security access pin
         """
         #Security Access Send Key
-        cpay: CanPayload = {"payload" : S_CARCOM.can_m_send("SecurityAccessSendKey",\
-                                payload_value, b''),\
-                            "extra" : ''
-                           }
+
+        if SUTE.test_message(SC.can_messages[can_p["receive"]], '62F18601')\
+            or SUTE.test_message(SC.can_messages[can_p["receive"]], '62F18603'):
+            cpay: CanPayload =\
+              {"payload" : S_CARCOM.can_m_send("SecurityAccessSendKey_mode1_3",\
+                    payload_value, b''),\
+               "extra" : ''
+              }
+        elif SUTE.test_message(SC.can_messages[can_p["receive"]], '62F18602'):
+            cpay: CanPayload =\
+                {"payload" : S_CARCOM.can_m_send("SecurityAccessSendKey",\
+                      payload_value, b''),\
+                 "extra" : ''
+                }
+        else:
+            cpay: CanPayload =\
+                {"payload" : S_CARCOM.can_m_send("SecurityAccessSendKey",\
+                      payload_value, b''),\
+                 "extra" : ''
+                }
+
         etp: CanTestExtra = {"step_no": stepno,\
                              "purpose" : purpose,\
                              "timeout" : 0.1,\
