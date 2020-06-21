@@ -65,7 +65,8 @@ def step_2():
     purpose = "1st files reading"
 
     SUTE.print_test_purpose(stepno, purpose)
-    _, _, _, _, _, erase = SSBL.read_vbf_file(SSBL.get_ess_filename())
+    ess_vbf_invalid = "./VBF_Reqprod/REQ_397438_32290520AA_SPA2_ESS_used_as_invalid.vbf"
+    _, _, _, _, _, erase = SSBL.read_vbf_file(ess_vbf_invalid)
     return erase
 
 def step_3(can_par, erase):
@@ -128,23 +129,8 @@ def run():
     ############################################
     # precondition
     ############################################
-    # read arguments for files to DL:
-    f_sbl = ''
-    f_ess = ''
-    f_df = []
-    for f_name in sys.argv:
-        if not f_name.find('.vbf') == -1:
-            logging.info("Filename to DL: %s \n", f_name)
-            if not f_name.find('sbl') == -1:
-                f_sbl = f_name
-            elif not f_name.find('ess') == -1:
-                f_ess = f_name
-            else:
-                f_df.append(f_name)
-    SSBL.__init__(f_sbl, f_ess, f_df)
-    SSBL.show_filenames()
-    time.sleep(4)
-
+    # read VBF param when testscript is s started, if empty take default param
+    SSBL.get_vbf_files()
     timeout = 600
     result = PREC.precondition(can_par, timeout)
     if result:
@@ -167,15 +153,6 @@ def run():
         # action:
         # result:
         result = result and step_3(can_par, erase)
-
-        # read arguments for files to DL(valid ESS):
-        for f_name in sys.argv:
-            if not f_name.find('.vbf') == -1:
-                logging.info("Filename to DL: %s \n", f_name)
-                if not f_name.find('ess_val') == -1:
-                    f_ess = f_name
-        SSBL.__init__(f_sbl, f_ess, f_df)
-        SSBL.show_filenames()
 
         # step4:
         # action:
