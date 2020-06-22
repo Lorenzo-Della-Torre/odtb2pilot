@@ -93,3 +93,39 @@ class SupportService22:
         result = SUTE.teststep(can_p, cpay, etp)
         #time.sleep(1)
         return result
+
+    #@classmethod
+    @staticmethod
+    #def read_did_fd35_pressure_sensor(self, stub, can_send, can_receive, can_namespace, dsession=b''):
+    def read_did_fd35_pressure_sensor(can_p: CanParam, dsession=b'', stepno=222):
+        """
+        Read DID FD35: pressure sensor
+        
+        return: 
+        result: True/False
+        pressure: pressure value as int
+        """
+        cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("ReadDataByIdentifier",
+                                                             b'\xFD\x35', b''),
+                            "extra" : dsession
+                           }
+        etp: CanTestExtra = {"step_no": stepno,\
+                             "purpose" : "Service22: Read Pressure Sensor",\
+                             "timeout" : 1,\
+                             "min_no_messages" : 1,\
+                             "max_no_messages" : 1
+                            }
+
+        result = SUTE.teststep(can_p, cpay, etp)
+        pressure = 0
+        if not len(SC.can_messages[can_p["receive"]]) == 0 and\
+            SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='0562FD35'):                                          
+                press = SC.can_messages[can_p["receive"]][0][2][6:10]
+                pressure = int(press,16)
+                logging.info('Read Pressure Sensor (raw): 0x%s', press)
+                logging.info('Read Pressure Sensor (kPa): %s', pressure)
+        else:
+            logging.info("Could not read pressure sensor (DID FD35)")
+
+        #time.sleep(1)
+        return result, pressure
