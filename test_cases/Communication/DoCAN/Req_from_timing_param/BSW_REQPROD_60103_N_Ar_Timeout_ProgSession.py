@@ -184,7 +184,7 @@ def run():
     # teststeps
     ############################################
     # step1:
-    # action: # Change to extended session
+    # action: # Change to programming session
     # result: BECM reports mode
         result = result and SE10.diagnostic_session_control_mode2(can_par, 1)
 
@@ -205,7 +205,7 @@ def run():
 
     # step5:
     # action: verify current session
-    # result: BECM reports extended session
+    # result: BECM reports programming session
         result = result and SE22.read_did_f186(can_par, dsession=b'\x02')#, 5)
 
     # step6:
