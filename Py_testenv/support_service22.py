@@ -52,10 +52,10 @@ class SupportService22:
                                                              b'\xED\xA0', b''),
                             "extra" : ''
                            }
-        etp: CanTestExtra = {"step_no": stepno,\
-                             "purpose" : "Service22: Complete ECU Part/Serial Number(s)",\
-                             "timeout" : 1,\
-                             "min_no_messages" : -1,\
+        etp: CanTestExtra = {"step_no": stepno,
+                             "purpose" : "Service22: Complete ECU Part/Serial Number(s)",
+                             "timeout" : 1,
+                             "min_no_messages" : -1,
                              "max_no_messages" : -1
                             }
 
@@ -83,10 +83,10 @@ class SupportService22:
                                                              b'\xF1\x86', b''),
                             "extra" : dsession
                            }
-        etp: CanTestExtra = {"step_no": stepno,\
-                             "purpose" : "Service22: Active Diagnostic Session",\
-                             "timeout" : 1,\
-                             "min_no_messages" : 1,\
+        etp: CanTestExtra = {"step_no": stepno,
+                             "purpose" : "Service22: Active Diagnostic Session",
+                             "timeout" : 1,
+                             "min_no_messages" : 1,
                              "max_no_messages" : 1
                             }
 
@@ -108,10 +108,10 @@ class SupportService22:
                                                              b'\xFD\x35', b''),
                             "extra" : dsession
                            }
-        etp: CanTestExtra = {"step_no": stepno,\
-                             "purpose" : "Service22: Read Pressure Sensor FD35",\
-                             "timeout" : 1,\
-                             "min_no_messages" : 1,\
+        etp: CanTestExtra = {"step_no": stepno,
+                             "purpose" : "Service22: Read Pressure Sensor FD35",
+                             "timeout" : 1,
+                             "min_no_messages" : 1,
                              "max_no_messages" : 1
                             }
 
@@ -144,10 +144,10 @@ class SupportService22:
                                                              b'\x4A\x28', b''),
                             "extra" : dsession
                            }
-        etp: CanTestExtra = {"step_no": stepno,\
-                             "purpose" : "Service22: Read Pressure Sensor 4A28",\
-                             "timeout" : 1,\
-                             "min_no_messages" : 1,\
+        etp: CanTestExtra = {"step_no": stepno,
+                             "purpose" : "Service22: Read Pressure Sensor 4A28",
+                             "timeout" : 1,
+                             "min_no_messages" : 1,
                              "max_no_messages" : 1
                             }
 
@@ -177,10 +177,10 @@ class SupportService22:
                                                              b'\xED\xA0', b''),
                             "extra" : ''
                            }
-        etp: CanTestExtra = {"step_no": stepno,\
-                             "purpose" : "Service22: Complete ECU Part/Serial Number(s)",\
-                             "timeout" : 1,\
-                             "min_no_messages" : -1,\
+        etp: CanTestExtra = {"step_no": stepno,
+                             "purpose" : "Service22: Complete ECU Part/Serial Number(s)",
+                             "timeout" : 1,
+                             "min_no_messages" : -1,
                              "max_no_messages" : -1
                             }
 
