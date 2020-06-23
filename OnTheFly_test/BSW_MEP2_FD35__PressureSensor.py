@@ -109,7 +109,7 @@ def run():
     # action:  Request read pressure sensor (DID 4A28)
     # result:
     logging.info("Step 1: Read Pressure Sensor.")
-    result2, pressure = SE22.read_did_4A28_pressure_sensor(can_p, b'', '2')
+    result2, pressure = SE22.read_did_4a28_pressure_sensor(can_p, b'', '2')
     logging.info("Pressure returned: %s \n", pressure)
     print("Step2, received frames: ", SC.can_frames[can_p["receive"]])
     print("Step2, received messages: ", SC.can_messages[can_p["receive"]])
