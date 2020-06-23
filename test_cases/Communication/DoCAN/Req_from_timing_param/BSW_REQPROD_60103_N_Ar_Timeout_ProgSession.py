@@ -31,12 +31,14 @@ import ODTB_conf
 from support_can import SupportCAN, CanParam, CanMFParam, CanPayload, CanTestExtra
 from support_test_odtb2 import SupportTestODTB2
 from support_carcom import SupportCARCOM
+from support_file_io import SupportFileIO
 
 from support_precondition import SupportPrecondition
 from support_postcondition import SupportPostcondition
 from support_service22 import SupportService22
 from support_service10 import SupportService10
 
+SIO = SupportFileIO
 SC = SupportCAN()
 SUTE = SupportTestODTB2()
 SC_CARCOM = SupportCARCOM()
@@ -50,32 +52,40 @@ def step_2(can_par):
     Teststep 2: request EDA0 - with FC delay < timeout 1000 ms
     """
     n_frame = 7
-    can_mf: CanMFParam = {"block_size" : 0,\
-                          "separation_time" : 0,\
-                          "frame_control_delay" : 950,\
-                          "frame_control_flag" : 48,\
-                          "frame_control_auto" : True
-                          }
+    stepno = 2
+    can_mf: CanMFParam = SIO.extract_parameter_yml(
+        "step_{}".format(stepno),
+        block_size=0,
+        separation_time=0,
+        frame_control_delay=950,
+        frame_control_flag=48,
+        frame_control_auto=True
+        )
 
-    cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("ReadDataByIdentifier", b'\xED\xA0', b''),\
-                        "extra" : ''
-                        }
-    etp: CanTestExtra = {"step_no" : 2,\
-                         "purpose" : "request EDA0 - with FC delay < timeout 1000 ms",\
-                         "timeout" : 5,\
-                         "min_no_messages" : -1,\
-                         "max_no_messages" : -1\
-                         }
+    cpay: CanPayload = SIO.extract_parameter_yml(
+        "step_{}".format(stepno),
+        payload=SC_CARCOM.can_m_send("ReadDataByIdentifier", b'\xED\xA0', b''),
+        extra=''
+        )
+
+    etp: CanTestExtra = SIO.extract_parameter_yml(
+        "step_{}".format(stepno),
+        step_no=2,
+        purpose="request EDA0 - with FC delay < timeout 1000 ms",
+        timeout=5,
+        min_no_messages=-1,
+        max_no_messages=-1
+        )
     SC.change_mf_fc(can_par["receive"], can_mf)
     result = SUTE.teststep(can_par, cpay, etp)
 
     result = (len(SC.can_frames[can_par["receive"]]) == n_frame)
     if len(SC.can_frames[can_par["receive"]]) == n_frame:
         logging.info("Timeout due to FC delay: ")
-        logging.info("number of frames received as expected: %s",\
+        logging.info("number of frames received as expected: %s",
                      len(SC.can_frames[can_par["receive"]]))
     else:
-        logging.info("FAIL: Wrong number of frames received. Expeced %s Received: %s",\
+        logging.info("FAIL: Wrong number of frames received. Expeced %s Received: %s",
                      n_frame, len(SC.can_frames[can_par["receive"]]))
     return result
 
@@ -84,32 +94,40 @@ def step_3(can_par):
     Teststep 3: request EDA0 - with FC delay > timeout 1000 ms
     """
     n_frame = 1
-    can_mf: CanMFParam = {"block_size" : 0,\
-                          "separation_time" : 0,\
-                          "frame_control_delay" : 1050,\
-                          "frame_control_flag" : 48,\
-                          "frame_control_auto" : True
-                          }
+    stepno = 3
+    can_mf: CanMFParam = SIO.extract_parameter_yml(
+        "step_{}".format(stepno),
+        block_size=0,
+        separation_time=0,
+        frame_control_delay=1050,
+        frame_control_flag=48,
+        frame_control_auto=True
+        )
 
-    cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("ReadDataByIdentifier", b'\xED\xA0', b''),\
-                        "extra" : ''
-                        }
-    etp: CanTestExtra = {"step_no" : 3,\
-                         "purpose" : "request EDA0 - with FC delay > timeout 1000 ms",\
-                         "timeout" : 5,\
-                         "min_no_messages" : -1,\
-                         "max_no_messages" : -1\
-                         }
+    cpay: CanPayload = SIO.extract_parameter_yml(
+        "step_{}".format(stepno),
+        payload=SC_CARCOM.can_m_send("ReadDataByIdentifier", b'\xED\xA0', b''),
+        extra=''
+        )
+
+    etp: CanTestExtra = SIO.extract_parameter_yml(
+        "step_{}".format(stepno),
+        step_no=3,
+        purpose="request EDA0 - with FC delay > timeout 1000 ms",
+        timeout=5,
+        min_no_messages=-1,
+        max_no_messages=-1
+        )
     SC.change_mf_fc(can_par["receive"], can_mf)
     result = SUTE.teststep(can_par, cpay, etp)
 
     result = (len(SC.can_frames[can_par["receive"]]) == n_frame)
     if len(SC.can_frames[can_par["receive"]]) == n_frame:
         logging.info("Timeout due to FC delay: ")
-        logging.info("number of frames received as expected: %s",\
+        logging.info("number of frames received as expected: %s",
                      len(SC.can_frames[can_par["receive"]]))
     else:
-        logging.info("FAIL: Wrong number of frames received. Expeced %s Received: %s",\
+        logging.info("FAIL: Wrong number of frames received. Expeced %s Received: %s",
                      n_frame, len(SC.can_frames[can_par["receive"]]))
     return result
 
@@ -117,15 +135,18 @@ def step_4(can_par):
     """
     Teststep 4: set back frame_control_delay to default
     """
+
     stepno = 4
     purpose = "set back frame_control_delay to default"
 
-    can_mf: CanMFParam = {"block_size" : 0,\
-                          "separation_time" : 0,\
-                          "frame_control_delay" : 0,\
-                          "frame_control_flag" : 48,\
-                          "frame_control_auto" : True
-                          }
+    can_mf: CanMFParam = SIO.extract_parameter_yml(
+        "step_{}".format(stepno),
+        block_size=0,
+        separation_time=0,
+        frame_control_delay=0,
+        frame_control_flag=48,
+        frame_control_auto=True
+        )
 
     SUTE.print_test_purpose(stepno, purpose)
     SC.change_mf_fc(can_par["receive"], can_mf)
@@ -140,12 +161,13 @@ def run():
     # to be implemented
 
     # where to connect to signal_broker
-    can_par: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT),\
-        "send" : "Vcu1ToBecmFront1DiagReqFrame",\
-        "receive" : "BecmToVcu1Front1DiagResFrame",\
-        "namespace" : SC.nspace_lookup("Front1CANCfg0")
-        }
+    can_par: CanParam = SIO.extract_parameter_yml(
+        "main",
+        netstub=SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT),
+        send="Vcu1ToBecmFront1DiagReqFrame",
+        receive="BecmToVcu1Front1DiagResFrame",
+        namespace=SC.nspace_lookup("Front1CANCfg0")
+        )
 
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
