@@ -63,19 +63,19 @@ def run():
     # start logging
     # to be implemented
 
+    #can_p: CanParam = {
+    #    "netstub" : SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT),\
+    #    "send" : "Vcu1ToBecmFront1DiagReqFrame",\
+    #    "receive" : "BecmToVcu1Front1DiagResFrame",\
+    #    "namespace" : SC.nspace_lookup("Front1CANCfg0")
+    #    }
     # where to connect to signal_broker
     can_p: CanParam = {
         "netstub" : SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT),\
-        "send" : "Vcu1ToBecmFront1DiagReqFrame",\
-        "receive" : "BecmToVcu1Front1DiagResFrame",\
+        "send" : "HvbmdpToHvbmUdsDiagRequestFrame",\
+        "receive" : "HvbmToHvbmdpUdsDiagResponseFrame",\
         "namespace" : SC.nspace_lookup("Front1CANCfg0")
         }
-    #can_p: CanParam = {
-    #    "netstub" : SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT),\
-    #    "send" : "HvbmdpToHvbmUdsDiagRequestFrame",\
-    #    "receive" : "HvbmToHvbmdpUdsDiagResponseFrame",\
-    #    "namespace" : SC.nspace_lookup("Front1CANCfg0")
-    #    }
 
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
@@ -87,8 +87,8 @@ def run():
     # read VBF param when testscript is s started, if empty take default param
     #SSBL.get_vbf_files()
     timeout = 60
-    result = PREC.precondition(can_p, timeout)
-    #result = PREC.precondition_spa2(can_p, timeout)
+    #result = PREC.precondition(can_p, timeout)
+    result = PREC.precondition_spa2(can_p, timeout)
 
 
     ############################################
