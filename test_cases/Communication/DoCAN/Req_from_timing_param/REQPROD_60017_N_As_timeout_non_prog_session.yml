@@ -1,0 +1,17 @@
+main:
+        can_send: Vcu1ToBecmFront1DiagReqFrame
+        can_receive: BecmToVcu1Front1DiagResFrame
+step_1:
+        extra: ''
+step_2:
+        block_size: 0
+step_3:
+        timeout: 2
+step_4:
+        extra: ''
+step_5:
+        block_size: 0
+step_6:
+        timeout: 2
+step_7:
+        block_size: 0
