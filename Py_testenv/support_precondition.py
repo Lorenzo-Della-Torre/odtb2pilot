@@ -97,7 +97,7 @@ class SupportPrecondition:
             "name" : "Burst",
             "send" : True,
             "id" : "Vcu1ToAllFuncFront1DiagReqFrame",
-            "nspace" : can_p["namespace"].name,
+            "nspace" : can_p["namespace"],
             "frame" : b'\x02\x10\x82\x00\x00\x00\x00\x00',
             "intervall" : 0.001
             }
@@ -136,6 +136,7 @@ class SupportPrecondition:
 
         result = SE22.read_did_eda0(can_p)
         logging.info("Precondition testok: %s\n", result)
+        return result
 
     @staticmethod
     def precondition_spa2(can_p: CanParam, timeout=300):
@@ -163,7 +164,6 @@ class SupportPrecondition:
         ##record signal we send as well
         #SC.subscribe_signal(stub, can_receive, can_send, can_namespace, timeout)
         SC.subscribe_signal(can_p, timeout)
-        print("precondition can_p2", can_p)
         #record signal we send as well
         can_p2: CanParam = {"netstub": can_p["netstub"],
                             "send": can_p["receive"],
@@ -224,3 +224,4 @@ class SupportPrecondition:
 
         result = SE22.read_did_eda0(can_p)
         logging.info("Precondition testok: %s\n", result)
+        return result

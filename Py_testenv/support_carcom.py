@@ -82,9 +82,9 @@ class SupportCARCOM:
             "ReadDataBePeriodicIdentifier": b'\x2C'+ mask + message,
             "WriteDataByIdentifier": b'\x2E'+ message,
             "RoutineControlRequestSID": b'\x31'+ mask + message,
+            "RequestDownload": b'\x34'+ message,
             "RequestUpload": b'\x35'+ message,
             "TransferData": b'\x36'+ message,
-            "RequestDownload": b'\x74'+ message,
             "ReadGenericInformationReportGenericSnapshotByDTCNumber": b'\xAF\x04' + message + mask,
             "ReadGenericInformationReportGenericSnapshotByDTCNumber(84)": b'\xAF\x84' \
                 + message + mask,
