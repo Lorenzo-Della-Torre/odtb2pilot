@@ -31,11 +31,13 @@ import logging
 from support_carcom import SupportCARCOM
 from support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
 from support_test_odtb2 import SupportTestODTB2
+from support_service22 import SupportService22
 
 
 SC = SupportCAN()
 SUTE = SupportTestODTB2()
 S_CARCOM = SupportCARCOM()
+SE22 = SupportService22()
 
 class SupportService31:
     """
@@ -119,6 +121,7 @@ class SupportService31:
         RC request - flash erase
         """
         # verify RoutineControlRequest is sent for Type 1
+        result = SE22.read_did_eda0(can_p)
         cpay: CanPayload = {"payload" : S_CARCOM.can_m_send("RoutineControlRequestSID",\
                                                            b'\xFF\x00' + erase, b'\x01'),\
                             "extra" : ''
@@ -131,9 +134,14 @@ class SupportService31:
                             }
         #start flash erase, may take long to erase
         result = SUTE.teststep(can_p, cpay, etp)
-
+        logging.info("SE31 RC FlashErase 0xFF00 %s, result: %s", erase, result)
+        #logging.info("Step {0:d}: result: {1:}\n".format(stepno, result))
+        #logging.info("SE31 RC FlashErase 0xFF00 {0:08x}, result: {1:}".format(erase, result))
+        logging.info("SE31 RC FlashErase 0xFF00 {0:}, result: {1:}".format(erase.hex(), result))
+        
         rc_response = False
         rc_loop = 0
+        logging.info("SE31 RC FlashErase wait max 15sec for flash erased")
         while (not rc_response) and (rc_loop < 15):
             SC.clear_can_message(can_p["receive"])
             SC.update_can_messages(can_p["receive"])
@@ -150,7 +158,9 @@ class SupportService31:
                         logging.info(SUTE.pp_decode_7f_response(all_mess[2]))
                     else:
                         logging.info(SC.can_messages[can_p["receive"]])
-
             time.sleep(1)
             rc_loop += 1
+        if rc_loop == 15:
+            logging.info("SE31 RC FlashErase: No pos reply received in max time")
+            result = False        
         return result

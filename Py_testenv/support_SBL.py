@@ -565,6 +565,7 @@ class SupportSBL:
         time.sleep(1)
 
         result = SE31.routinecontrol_requestsid_flash_erase(can_p, erase, stepno)
+        logging.info("SSBL: flash_erase requestsid, result: %s", result)
 
         # Erase Memory
         while data[off + 24 : off + 25] == b'x':
@@ -578,6 +579,7 @@ class SupportSBL:
             SC.change_mf_fc(can_p["send"], can_mf_param)
             time.sleep(1)
             result = result and SE31.routinecontrol_requestsid_flash_erase(can_p, erase, stepno)
+        logging.info("SSBL: flash_erase EraseMemory, result: %s", result)
         return result
 
 
