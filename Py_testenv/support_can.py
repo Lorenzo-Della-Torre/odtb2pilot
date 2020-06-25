@@ -520,9 +520,9 @@ class SupportCAN:
             mf_cf_count = ((mf_cf_count + 1) & 0xF) + 32
 
 
-    def __send_mf(self, can_p: CanParam, cpay, padding, padding_byte):
+    def send_mf(self, can_p: CanParam, cpay, padding, padding_byte):
         """
-        __send_mf
+        send_mf
         """
         pl_fcount = 0x21
         mess_length = len(cpay["payload"])
@@ -690,7 +690,7 @@ class SupportCAN:
             self.__send_sf(can_p, cpay, padding, padding_byte)
         # if multi_frame:
         elif mess_length < 4096:
-            self.__send_mf(can_p, cpay, padding, padding_byte)
+            self.send_mf(can_p, cpay, padding, padding_byte)
         if self.can_mf_send[can_p["send"]][1] == []:
             print("payload empty: nothing to send")
             # if single_frame:
