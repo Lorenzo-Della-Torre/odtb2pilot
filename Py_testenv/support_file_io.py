@@ -37,7 +37,6 @@ class SupportFileIO:
 
 
     @classmethod
-    #def extract_parameter_yml(cls, key, *argv, **kwargs):
     def extract_parameter_yml(cls, key, *argv):
         """
         Extract requested data from a Parameter dictionary from yaml.
@@ -46,7 +45,7 @@ class SupportFileIO:
         #print("Number file of param: ", len(sys.argv))
         #print("regexpr ", r"\w+_(?P<reqprod>\d{3,})_\w+")
         #print("sys.argv[0]: ", sys.argv[0])
-        
+
         #print("re.match: ", re.match(r"\w+_(?P<reqprod>\d{3,})_\w+", sys.argv[0]))
         #print("re.split: ", re.split(r"(.py)", sys.argv[0])[0] + '.yml')
 
@@ -71,47 +70,49 @@ class SupportFileIO:
         # intitialize a tuple
         #value = dict()
         value = ''
-        if dir_file != '':
-            print("open dir_file: ", dir_file)
-            try:
-                #for entry in files:
-                #    #entry_req = re.match(r"\w+_(?P<reqprod>\d{3,})\.\w+", entry)
-                #    entry_req = re.match(pattern_req, entry)
-                #    if entry_req.group('reqprod') == pattern_req.group('reqprod'):
-                #        entry_good = entry
+        
+        #wanted to have empty file check before try, pylint thinks prog gets to complicated
+        #if dir_file != '':
+        #    print("open dir_file: ", dir_file)
+        try:
+            #for entry in files:
+            #    #entry_req = re.match(r"\w+_(?P<reqprod>\d{3,})\.\w+", entry)
+            #    entry_req = re.match(pattern_req, entry)
+            #    if entry_req.group('reqprod') == pattern_req.group('reqprod'):
+            #        entry_good = entry
 
-                # extract yaml data from directory
-                with open(dir_file) as file:
-                    data = yaml.safe_load(file)
-            except IOError:
-                print("Could not open parameter file for testscript\n")
-                #print("The pattern {} is not present in the directory\n"\
-                #    .format(pattern_req.group('reqprod')))
-                sys.exit(1)
+            # extract yaml data from directory
+            with open(dir_file) as file:
+                data = yaml.safe_load(file)
+        except IOError:
+            print("Could not open parameter file for testscript\n")
+            #print("The pattern {} is not present in the directory\n"\
+            #    .format(pattern_req.group('reqprod')))
+            sys.exit(1)
         #print("YML key", key)
-            for arg in argv:
-                #print("key: ", key)
-                #print("arg: ", arg)
+        for arg in argv:
+            #print("key: ", key)
+            #print("arg: ", arg)
 
-                #dict
-                if isinstance(arg, dict):
-                    for dict_key in arg:
-                        print("search data for ", dict_key)
-                        if data[key].get(dict_key) is not None:
-                            #print("New values in dict",  data[key].get(dict_key))
-                            #print("used dict_key: ", dict_key)
-                            arg[dict_key] = data[key].get(dict_key)
-                            #convert some values to bytes
-                            if dict_key in ('mode', 'mask', 'did'):
-                                arg[dict_key] = bytes(arg[dict_key], 'utf-8')
-                    value = arg
-                #simple types, normal variables
-                ### doesn't work for 'simple' types because of scope
-                ### use return value
-                else:
-                    if data[key].get(arg) is not None:
-                        #print("Sent new value for ", key, "arg: ", arg, "value: ", data[key].get(arg))
-                        value = data[key].get(arg)
-                        #print("New values variable",  data[key].get(arg))
-                        print("new value variable: ", value)
+            #dict
+            if isinstance(arg, dict):
+                for dict_key in arg:
+                    print("search data for ", dict_key)
+                    if data[key].get(dict_key) is not None:
+                        #print("New values in dict",  data[key].get(dict_key))
+                        #print("used dict_key: ", dict_key)
+                        arg[dict_key] = data[key].get(dict_key)
+                        #convert some values to bytes
+                        if dict_key in ('mode', 'mask', 'did'):
+                            arg[dict_key] = bytes(arg[dict_key], 'utf-8')
+                value = arg
+            #simple types, normal variables
+            ### doesn't work for 'simple' types because of scope
+            ### use return value
+            elif data[key].get(arg) is not None:
+                #print("Sent new value for ", key, "arg: ",\
+                #      arg, "value: ", data[key].get(arg))
+                value = data[key].get(arg)
+                #print("New values variable",  data[key].get(arg))
+                print("new value variable: ", value)
         return value

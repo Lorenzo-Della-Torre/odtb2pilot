@@ -136,9 +136,9 @@ class SupportService31:
         result = SUTE.teststep(can_p, cpay, etp)
         logging.info("SE31 RC FlashErase 0xFF00 %s, result: %s", erase, result)
         #logging.info("Step {0:d}: result: {1:}\n".format(stepno, result))
-        #logging.info("SE31 RC FlashErase 0xFF00 {0:08x}, result: {1:}".format(erase, result))
-        logging.info("SE31 RC FlashErase 0xFF00 {0:}, result: {1:}".format(erase.hex(), result))
-        
+        #logging.info("SE31 RC FlashErase 0xFF00 {0:}, result: {1:}".format(erase.hex(), result))
+        logging.info("SE31 RC FlashErase 0xFF00 %s, result: %s", erase.hex(), result)
+
         rc_response = False
         rc_loop = 0
         logging.info("SE31 RC FlashErase wait max 15sec for flash erased")
@@ -162,5 +162,5 @@ class SupportService31:
             rc_loop += 1
         if rc_loop == 15:
             logging.info("SE31 RC FlashErase: No pos reply received in max time")
-            result = False        
+            result = False
         return result
