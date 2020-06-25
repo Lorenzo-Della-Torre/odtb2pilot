@@ -70,7 +70,7 @@ class SupportFileIO:
         # intitialize a tuple
         #value = dict()
         value = ''
-        
+
         #wanted to have empty file check before try, pylint thinks prog gets to complicated
         #if dir_file != '':
         #    print("open dir_file: ", dir_file)
