@@ -53,7 +53,7 @@ def ecu_determination(root, mode):
 
 def parse_xml_did_info(sddb_path, mode):
     """Parse given sddb and return a dict with relevant data."""
-    tree = ET.parse(sddb_path)
+    tree = ET.parse(sddb_path) # pylint: disable=c-extension-no-member
     root = tree.getroot()
     did_dict = dict()
     logging.debug(root.attrib)
@@ -76,7 +76,7 @@ def parse_xml_did_info(sddb_path, mode):
 
 def parse_xml_response_items(sddb_path, mode):
     """Parse given sddb and return a dict with relevant data."""
-    tree = ET.parse(sddb_path)
+    tree = ET.parse(sddb_path) # pylint: disable=c-extension-no-member
     root = tree.getroot()
     logging.debug(root.attrib)
 
@@ -90,8 +90,7 @@ def parse_xml_response_items(sddb_path, mode):
         for did in ecu_app.findall(SERV_22):
             # did.attrib is a dict containing the info we need
             logging.debug('%s', did.attrib["Name"])
-            parent_id = "22"
-            did_key = parent_id + did.attrib["ID"]
+            did_key = "22" + did.attrib["ID"] # 22 Is parent ID
             response_items_dict[did_key] = []
 
             for sddb_resp_item in did.findall(RESP_ITEMS):

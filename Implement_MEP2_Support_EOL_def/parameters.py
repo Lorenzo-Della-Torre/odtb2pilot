@@ -17,8 +17,8 @@ RESP_ITEM_DICT_NAME = 'sddb_resp_item_dict'
 
 # Names for part number variables in OUTPUT_FILE_NAME
 PBL_PART_NUM_NAME = 'pbl_diag_part_num'
-SBL_PART_NUM_NAME= 'sbl_diag_part_num'
-APP_PART_NUM_NAME= 'app_diag_part_num'
+SBL_PART_NUM_NAME = 'sbl_diag_part_num'
+APP_PART_NUM_NAME = 'app_diag_part_num'
 
 DID_TO_GET_PART_NUMBER = 'F120'
 

@@ -34,8 +34,8 @@ import time
 import fnmatch
 import importlib
 import os
-import argparse
 import binascii
+from datetime import datetime
 
 #sys.path.append('generated')
 from support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
@@ -46,33 +46,6 @@ class SupportTestODTB2:
     """
     Class for supporting sending/receiving CAN frames
     """
-
-    @classmethod
-    def parse_some_args(cls):
-        ''' Get the command line input, using the defined flags. '''
-        parser = argparse.ArgumentParser(description='Execute testscript')
-
-        parser.add_argument("--config_file",\
-                            help="Input config file which overrides the default one",
-                            type=str, action='store', dest='conf_file', required=False,)
-        ret_args = parser.parse_args()
-        return ret_args
-
-
-    @classmethod
-    def config(cls, margs):
-        ''' Determine which config file to use.
-            If we have a config file as input parameter, then use it.
-            Otherwise use default config file '''
-        if margs.conf_file:
-            file_name = margs.conf_file
-        else:
-            # Return first path of the script's name.
-            f_name_wo_type = os.path.basename(__file__).split('.')[0]
-            # Add .conf at the end, to show that it is a config file.
-            file_name = f_name_wo_type + '.conf'
-        return file_name
-
 
     @classmethod
     def print_test_purpose(cls, stepno, purpose):
@@ -740,6 +713,7 @@ class SupportTestODTB2:
         #print(r_123)
         return bytes.fromhex(r_123[2:])
 
+
     @classmethod
     def pp_string_to_bytes(cls, i, num):
         """
@@ -768,7 +742,6 @@ class SupportTestODTB2:
                 else:
                     crc = crc << 1
             crc &= 0xffff
-
         return crc
 
 
@@ -790,3 +763,20 @@ class SupportTestODTB2:
         with open(f_path_name, 'rb') as f_name:
             data = f_name.read()
         return data
+
+
+    @staticmethod
+    def get_current_time():
+        ''' Returns current time '''
+        now = datetime.now()
+        current_time = now.strftime("Generated %Y-%m-%d %H:%M:%S")
+        return current_time
+
+
+    @classmethod
+    def add_ws_every_nth_char(cls, payload_in, nth):
+        '''
+        Adds whitespace every n:th character to the supplied string
+        '''
+        result = " ".join(payload_in[i:i+nth] for i in range(0, len(payload_in), nth))
+        return result

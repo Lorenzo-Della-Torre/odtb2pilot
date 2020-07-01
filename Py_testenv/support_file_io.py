@@ -25,6 +25,7 @@
 import os
 import sys
 import re
+import argparse
 import yaml # Not installed? pylint: disable=import-error
 
 
@@ -116,3 +117,36 @@ class SupportFileIO:
                 #print("New values variable",  data[key].get(arg))
                 print("new value variable: ", value)
         return value
+
+    @classmethod
+    def write_to_file(cls, content, outfile):
+        '''Write content to outfile'''
+        with open(outfile, 'w') as file:
+            file.write(str(content))
+
+
+    @classmethod
+    def parse_some_args(cls):
+        ''' Get the command line input, using the defined flags. '''
+        parser = argparse.ArgumentParser(description='Execute testscript')
+
+        parser.add_argument("--config_file",\
+                            help="Input config file which overrides the default one",
+                            type=str, action='store', dest='conf_file', required=False,)
+        ret_args = parser.parse_args()
+        return ret_args
+
+
+    @classmethod
+    def config(cls, margs):
+        ''' Determine which config file to use.
+            If we have a config file as input parameter, then use it.
+            Otherwise use default config file '''
+        if margs.conf_file:
+            file_name = margs.conf_file
+        else:
+            # Return first path of the script's name.
+            f_name_wo_type = os.path.basename(__file__).split('.')[0]
+            # Add .conf at the end, to show that it is a config file.
+            file_name = f_name_wo_type + '.conf'
+        return file_name
