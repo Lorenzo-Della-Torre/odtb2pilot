@@ -1,5 +1,4 @@
-""" Testscript for a requirement which is not applicable for us (Not applicable).
-    For example: Test multiple processors when you only have one.
+""" Testscript for a requirement which needs to be tested by code inspection (To be inspected).
 
     Testscript ODTB2 MEPII
     project:  BECM basetech MEPII
@@ -30,4 +29,4 @@ import sys
 logging.basicConfig(format='%(asctime)s - %(message)s',
                     stream=sys.stdout, level=logging.DEBUG)
 
-logging.info("Testcase result: Not applicable")
+logging.info("Testcase result: To be inspected")
