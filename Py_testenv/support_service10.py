@@ -83,7 +83,7 @@ class SupportService10:
     @staticmethod
     def diagnostic_session_control_mode3(can_p: CanParam, stepno=103):
         """
-        Request session change to Mode2
+        Request session change to Mode3
         """
         etp: CanTestExtra = {"step_no": stepno,\
                              "purpose" : "Change to extended session(03)",\
