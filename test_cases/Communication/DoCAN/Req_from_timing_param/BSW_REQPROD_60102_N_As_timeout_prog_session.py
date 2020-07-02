@@ -361,6 +361,32 @@ def step_12(can_par):
     SUTE.print_test_purpose(stepno, purpose)
     SC.change_mf_fc(can_par["receive"], can_mf)
 
+def step_13(can_par):
+    """
+    Teststep 13: verify session PBL
+    """
+    stepno = 13
+    cpay: CanPayload = SIO.extract_parameter_yml(
+        "step_{}".format(stepno),
+        payload=SC_CARCOM.can_m_send("ReadDataByIdentifier", b'\xF1\x21', b''),
+        extra=''
+        )
+
+    etp: CanTestExtra = SIO.extract_parameter_yml(
+        "step_{}".format(stepno),
+        step_no=8,
+        timeout=1,
+        purpose="Verify Programming session in PBL",
+        min_no_messages=-1,
+        max_no_messages=-1
+        )
+
+    result = SUTE.teststep(can_par, cpay, etp)
+    result = result and SUTE.test_message(SC.can_messages[can_par["receive"]],\
+                                          teststring='F121')
+
+    return result
+
 def run():
     """
     Run - Call other functions from here
@@ -463,7 +489,7 @@ def run():
         # step13:
         # action: verify current session
         # result: BECM reports programming session
-        result = result and SE22.read_did_f186(can_par, dsession=b'\x02')#, 13)
+        result = result and step_13(can_par)
 
     ############################################
     # postCondition
