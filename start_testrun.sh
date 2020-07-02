@@ -37,6 +37,8 @@ do
 	echo "$req_tested $testresult $script2run_log" >>$TESTRUN\/Result.txt
 done <testscripts.lst
 
+$TESTREPO/autotest/logs_to_html.py --logfolder testrun/Testrun_20200702_0359_BECM_BT --reqcsv $TESTREPO/autotest/req_bsw.csv
+
 echo "ToDo:"
 echo "Tests done...parse logfiles for PASS/FAILED"
 echo "add results for implicitly tested requirements"
