@@ -31,10 +31,12 @@ import ODTB_conf
 from support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
 from support_test_odtb2 import SupportTestODTB2
 from support_carcom import SupportCARCOM
+from support_file_io import SupportFileIO
 
 from support_precondition import SupportPrecondition
 from support_postcondition import SupportPostcondition
 
+SIO = SupportFileIO
 SC = SupportCAN()
 SUTE = SupportTestODTB2()
 SC_CARCOM = SupportCARCOM()
@@ -45,15 +47,20 @@ def step_1(can_par):
     """
     Request session change to Mode1
     """
-    cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("DiagnosticSessionControl", b'\x01', b''),\
-                        "extra" : ''
-                        }
-    etp: CanTestExtra = {"step_no" : 1,\
-                         "purpose" : "get P2_server_max",\
-                         "timeout" : 1,\
-                         "min_no_messages" : 1,\
-                         "max_no_messages" : 1
-                         }
+    stepno = 1
+    cpay: CanPayload = SIO.extract_parameter_yml(
+        "step_{}".format(stepno),
+        payload=SC_CARCOM.can_m_send("DiagnosticSessionControl", b'\x01', b''),
+        extra=''
+        )
+    etp: CanTestExtra = SIO.extract_parameter_yml(
+        "step_{}".format(stepno),
+        step_no=1,
+        purpose="get P2_server_max",
+        timeout=1,
+        min_no_messages=1,
+        max_no_messages=1
+        )
     result = SUTE.teststep(can_par, cpay, etp)
     p2_server_max = int(SC.can_messages[can_par["receive"]][0][2][8:10], 16)
     return result, p2_server_max
@@ -62,15 +69,20 @@ def step_2(can_par):
     """
     ecu_hardreset
     """
-    cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("ECUResetHardReset", b'', b''),\
-                        "extra" : ''
-                        }
-    etp: CanTestExtra = {"step_no" : 2,\
-                         "purpose" : "ECU Reset",\
-                         "timeout" : 1,\
-                         "min_no_messages" : -1,\
-                         "max_no_messages" : -1
-                         }
+    stepno = 2
+    cpay: CanPayload = SIO.extract_parameter_yml(
+        "step_{}".format(stepno),
+        payload=SC_CARCOM.can_m_send("ECUResetHardReset", b'', b''),
+        extra=''
+        )
+    etp: CanTestExtra = SIO.extract_parameter_yml(
+        "step_{}".format(stepno),
+        step_no=2,
+        purpose="ECU Reset",
+        timeout=1,
+        min_no_messages=-1,
+        max_no_messages=-1
+        )
     t_1 = time.time()
     result = SUTE.teststep(can_par, cpay, etp)
     result = result and SUTE.test_message(SC.can_messages[can_par["receive"]], teststring='025101')
@@ -102,12 +114,13 @@ def run():
     # to be implemented
 
     # where to connect to signal_broker
-    can_par: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT),\
-        "send" : "Vcu1ToBecmFront1DiagReqFrame",\
-        "receive" : "BecmToVcu1Front1DiagResFrame",\
-        "namespace" : SC.nspace_lookup("Front1CANCfg0")
-        }
+    can_par: CanParam = SIO.extract_parameter_yml(
+        "main",
+        netstub=SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT),
+        send="Vcu1ToBecmFront1DiagReqFrame",
+        receive="BecmToVcu1Front1DiagResFrame",
+        namespace=SC.nspace_lookup("Front1CANCfg0")
+        )
 
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()

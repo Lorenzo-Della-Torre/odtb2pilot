@@ -31,6 +31,7 @@ import ODTB_conf
 from support_can import SupportCAN, CanParam
 from support_test_odtb2 import SupportTestODTB2
 from support_carcom import SupportCARCOM
+from support_file_io import SupportFileIO
 
 from support_precondition import SupportPrecondition
 from support_postcondition import SupportPostcondition
@@ -38,6 +39,7 @@ from support_service22 import SupportService22
 from support_service11 import SupportService11
 from support_service10 import SupportService10
 
+SIO = SupportFileIO
 SC = SupportCAN()
 SUTE = SupportTestODTB2()
 SC_CARCOM = SupportCARCOM()
@@ -57,12 +59,13 @@ def run():
     # to be implemented
 
     # where to connect to signal_broker
-    can_par: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT),\
-        "send" : "Vcu1ToBecmFront1DiagReqFrame",\
-        "receive" : "BecmToVcu1Front1DiagResFrame",\
-        "namespace" : SC.nspace_lookup("Front1CANCfg0")
-        }
+    can_par: CanParam = SIO.extract_parameter_yml(
+        "main",
+        netstub=SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT),
+        send="Vcu1ToBecmFront1DiagReqFrame",
+        receive="BecmToVcu1Front1DiagResFrame",
+        namespace=SC.nspace_lookup("Front1CANCfg0")
+        )
 
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
