@@ -37,7 +37,9 @@ do
 	echo "$req_tested $testresult $script2run_log" >>$TESTRUN\/Result.txt
 done <testscripts.lst
 
-$TESTREPO/autotest/logs_to_html.py --logfolder testrun/Testrun_20200702_0359_BECM_BT --reqcsv $TESTREPO/autotest/req_bsw.csv
+### Running the script to generate a report
+~/Repos/odtb2pilot/autotest/logs_to_html.py --logs ~/testrun --reqcsv ~/Repos/odtb2pilot/autotest/req_bsw.csv
+
 
 echo "ToDo:"
 echo "Tests done...parse logfiles for PASS/FAILED"
@@ -48,4 +50,3 @@ echo ""
 #echo "Test done." >>$TESTRUN\/Result.txt
 date "+Test done. Time: %Y%m%d %H%M" >>$TESTRUN\/Result.txt
 date "+Test done. Time: %Y%m%d %H%M" >>$TESTRUN\/Result.txt
-
