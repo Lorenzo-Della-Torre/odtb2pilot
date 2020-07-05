@@ -65,7 +65,7 @@ def step_1():
         "frame" : b'\x80\xd5\x00\x00\x00\x00\x00\x00',
         "nspace" : "Front1CANCfg0"
     }
-    #SIO.extract_parameter_yml("main", can_par)
+    #SIO.extract_parameter_yml("step_{}".format(stepno), can_par)
     SC.start_periodic(can_par_ex["netstub"], can_par_ex)
 
 def step_4():
@@ -85,7 +85,7 @@ def step_4():
         "frame" : b'\x80\xd6\x00\x00\x00\x00\x00\x00',
         "nspace" : "Front1CANCfg0"
     }
-    #SIO.extract_parameter_yml("main", can_par)
+    #SIO.extract_parameter_yml("step_{}".format(stepno), can_par)
     SC.set_periodic(can_par_ex_2)
 
 def step_5(can_par):
