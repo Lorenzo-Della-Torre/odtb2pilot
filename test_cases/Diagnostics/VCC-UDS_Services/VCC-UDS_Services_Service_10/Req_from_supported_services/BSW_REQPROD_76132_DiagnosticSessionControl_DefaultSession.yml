@@ -1,0 +1,9 @@
+main:
+        can_send: Vcu1ToBecmFront1DiagReqFrame
+        can_receive: BecmToVcu1Front1DiagResFrame
+step_2:
+        timeout: 1
+step_7:
+        timeout: 1
+step_12:
+        timeout: 1
