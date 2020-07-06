@@ -32,9 +32,6 @@ from collections import namedtuple
 from support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
 from support_test_odtb2 import SupportTestODTB2
 from support_carcom import SupportCARCOM
-from output.did_dict import sddb_resp_item_dict
-# from output.did_dict import sddb_app_did_dict
-# from output.did_dict import app_diag_part_num
 
 SC = SupportCAN()
 SC_CARCOM = SupportCARCOM()
@@ -385,86 +382,6 @@ class SupportService22:
 
         did_dict = cls.__read_response(can_par, can_m_send, can_mr_extra, did, timeout)
         return did_dict
-
-
-    @classmethod
-    def scale_data(cls, did_dict_with_result):
-        '''
-        Input  - Takes a dictionary where we store the results from previous test runs
-        Output - Same dictionary as in input. Now with added scaled data.
-
-        For each DID which were tested, look up response items. Scale payload using formula in
-        Response Item.
-        '''
-        formatted_result_value_list = list()
-
-        try:
-            payload = dict()
-            if 'payload' in did_dict_with_result:
-                payload = did_dict_with_result['payload']
-            else:
-                logging.fatal('No payload to Scale!!')
-
-            did_id = did_dict_with_result['ID']
-            key = '22' + did_id
-            logging.debug('Payload = %s (Length = %s)', payload,
-                          did_dict_with_result['payload_length'])
-
-            # For each response item for the dict
-            for resp_item in sddb_resp_item_dict[key]:
-                sub_payload = cls.__get_sub_payload(payload, resp_item['Offset'], resp_item['Size'])
-                logging.debug('==================================')
-                logging.debug('Name = %s', resp_item['Name'])
-                logging.debug('----------------------------------')
-                logging.debug('Payload = %s (Sub payload = %s (Offset = %s Size = %s))', payload,
-                              sub_payload, resp_item['Offset'], resp_item['Size'])
-
-                # Has compare value
-                if 'CompareValue' in resp_item:
-                    compare_value = resp_item['CompareValue']
-                    logging.debug("Compare_value: %s", compare_value)
-
-                    try:
-                        scaled_value = cls.__get_scaled_value(resp_item, sub_payload)
-                        logging.debug("Scaled_value: %s", str(scaled_value))
-
-                        if cls.__compare(scaled_value, compare_value):
-                            logging.debug('Equal! Comparing %s with %s', str(compare_value),
-                                          scaled_value)
-                            # Adding name for easier readability
-                            formatted_result_value = resp_item['Name'] + ': '
-                            # When comparison value exist, the unit is usually something like:
-                            # on/off, open/close, True/False
-                            # Then we just add that value and not the comparison value.
-                            if 'Unit' in resp_item:
-                                formatted_result_value += resp_item['Unit']
-                            # Adding scaled value if no Unit value exists
-                            else:
-                                formatted_result_value += str(scaled_value)
-                            formatted_result_value_list.append(formatted_result_value)
-                            did_dict_with_result['Formula'] = resp_item['Formula']
-                    except RuntimeError as runtime_error:
-                        logging.fatal(runtime_error)
-                    except SyntaxError as syntax_error:
-                        logging.fatal(syntax_error)
-                # Has no compare value
-                else:
-                    logging.debug('No compare value!')
-                    # Adding name for easier readability
-                    formatted_result_value = resp_item['Name'] + ' = '
-                    # Adding scaled data to the result string
-                    formatted_result_value += cls.__get_scaled_value_with_unit(resp_item,
-                                                                               sub_payload)
-                    formatted_result_value_list.append(formatted_result_value)
-                    did_dict_with_result['Formula'] = resp_item['Formula']
-        except RuntimeError as runtime_error:
-            logging.fatal(runtime_error)
-        except KeyError as key_error:
-            logging.fatal(key_error)
-
-        if formatted_result_value_list:
-            did_dict_with_result['formatted_result_value'] = formatted_result_value_list
-        return did_dict_with_result
 
 
     @classmethod
