@@ -8,15 +8,15 @@ else
 	echo "Start automated testrun"
 
 ### token and pass created for tht repo
-	TESTREPO=~/Repos/testbranch/odtb2pilot
+	TESTREPO=~/Repos/odtb2pilot
 	cd $TESTREPO
 	git pull
 	cd ~/testrun
 
-	cp -u $TESTREPO/Py_testenv/*.py ~/projects/signalbroker/doc/grpc/grpc_python/
+	cp -u $TESTREPO/Py_testenv/*.py ~/projects/odtb2/python/
 
 	### GRPC catalog needed for using GRPC in Python scripts
-	export PYTHONPATH=$HOME/projects/signalbroker/doc/grpc/grpc_python
+	export PYTHONPATH=$HOME/projects/odtb2/python
 
 	### Generate catalog for logfiles and list of scripts to run
 	TESTRUN=$(date +Testrun_%Y%m%d_%H%M_BECM_BT)
@@ -24,7 +24,7 @@ else
 	echo "Results of testrun $TESTRUN:" >$TESTRUN\/Result.txt
 
 	### collect all testscripts
-	find $TESTREPO/testscripts -name BSW_REQPROD_*.py >testscripts.lst
+	#find $TESTREPO/testscripts -name BSW_REQPROD_*.py >testscripts.lst
 	find $TESTREPO/test_cases  -name BSW_REQPROD_*.py >>testscripts.lst
 	find $TESTREPO/test_cases_old -name BSW_REQPROD_*.py >>testscripts.lst
 	find $TESTREPO/manual_test -name BSW_REQPROD_*.py >>testscripts.lst
@@ -47,7 +47,10 @@ else
 		echo "$req_tested $testresult $script2run_log" >>$TESTRUN\/Result.txt
 	done <testscripts.lst
 
-	echo
+	# Generate testreport
+	python3 $TESTREPO/autotest/logs_to_html.py --logs ~/testrun --reqcsv ~/Repos/odtb2pilot/autotest/req_bsw.csv --script_folder ~/Repos/odtb2pilot/
+
+    echo
 	echo "ToDo:"
 	echo "Tests done...parse logfiles for PASS/FAILED"
 	echo "add results for implicitly tested requirements"
