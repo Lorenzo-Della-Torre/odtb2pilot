@@ -12,20 +12,19 @@ Output: html file with the results in a table
 import argparse
 import logging
 import sys
-
 import os
 from os import listdir
-from os.path import isfile, join
-
+from os.path import isfile, join, isdir
 from datetime import datetime
 import re
 import collections
 import csv
-
 from yattag import Doc
 
+
 RE_DATE_START = re.compile(r'\s*Testcase\s+start:\s+(?P<date>\d+-\d+-\d+)\s+(?P<time>\d+:\d+:\d+)')
-RE_RESULT = re.compile(r'\s*Testcase\s+result:\s+(?P<result>\w+)')
+RE_RESULT = re.compile(r'.*(?P<result>FAILED|PASSED|To be inspected|tested implicitly|\
+    Tested implicitly|Not applicable).*')
 RE_FOLDER_TIME = re.compile(r'.*Testrun_(?P<date>\d+_\d+)')
 RE_REQPROD_ID = re.compile(r'\s*BSW_REQPROD_(?P<reqprod>\d+)_', flags=re.IGNORECASE)
 # case insensetive
@@ -33,17 +32,34 @@ RE_REQPROD_ID = re.compile(r'\s*BSW_REQPROD_(?P<reqprod>\d+)_', flags=re.IGNOREC
 # When calculating per cent, how many decimals do we want
 AMOUNT_OF_DECIMALS = 1
 
-# The different status the test run can have
+# Report statuses
 NA_STATUS = 'NA'
+NO_RES_STATUS = 'NO RESULT'
+INSPECTION_STATUS = 'INSPECTION'
+IMPLICIT_STATUS = 'IMPLICITLY TESTED'
 PASSED_STATUS = 'PASSED'
 FAILED_STATUS = 'FAILED'
-MISSING_STATUS = 'MISSING'
+MISSING_STATUS = 'MISSING LOG'
+UNKNOWN_STATUS = 'UNKNOWN RESULT'
+
+# Use the keys when regex-matching in log-files
+MATCH_DICT = {'Not applicable': NA_STATUS,
+              'NO RESULT': NO_RES_STATUS,
+              'To be inspected': INSPECTION_STATUS,
+              'tested implicitly': IMPLICIT_STATUS,
+              'Tested implicitly': IMPLICIT_STATUS,
+              'PASSED': PASSED_STATUS,
+              'FAILED': FAILED_STATUS,
+              'MISSING': MISSING_STATUS,
+              'UNKNOWN': UNKNOWN_STATUS}
 
 # Which color to use for the status
-COLOR_DICT = {PASSED_STATUS:'#94f7a2', FAILED_STATUS:'#f54949', NA_STATUS:'#94c4f7',
-              MISSING_STATUS:'WHITE'}
-SUM_COLOR = 'DarkGoldenRod'
+COLOR_DICT = {PASSED_STATUS:'#94f7a2', FAILED_STATUS:'#f54949', NA_STATUS:'DarkSeaGreen',
+              MISSING_STATUS:'WHITE', NO_RES_STATUS:'#94c4f7', INSPECTION_STATUS:'Wheat',
+              IMPLICIT_STATUS:'PaleGreen', UNKNOWN_STATUS: 'BurlyWood'}
 
+BROKEN_URL_COLOR = 'BlanchedAlmond'
+SUM_COLOR = 'DarkGoldenRod'
 HEADING_LIST = ['', 'REQPROD', 'Test Scripts']
 
 LOG_FILE_EXT = '.log'
@@ -67,11 +83,15 @@ def parse_some_args():
     """Get the command line input, using the defined flags."""
     parser = argparse.ArgumentParser(description='Create html table from generated test reports')
     parser.add_argument("--logfolder", help="path to log reports", type=str, action='store',
-                        dest='report_folder', nargs='+', required=True,)
+                        dest='report_folder', nargs='+',)
     parser.add_argument("--reqcsv", help="csv with the REQPROD keys from Elektra", type=str,
-                        action='store', dest='req_csv', required=True,)
+                        action='store', dest='req_csv', default='req_bsw.csv',)
     parser.add_argument("--outfile", help="name of outfile html", type=str, action='store',
-                        dest='html_file', default='test.html',)
+                        dest='html_file', default='report.html',)
+    parser.add_argument("--logs", help="Get the X last testruns from the logfolders",
+                        type=str, action='store', dest='logs', default='testruns',)
+    parser.add_argument("--script_folder", help="Path to testscript folders",
+                        type=str, action='store', dest='script_folder', default='./',)
     ret_args = parser.parse_args()
     return ret_args
 
@@ -84,11 +104,12 @@ def get_file_names_and_results(folder_path):
     f_time = None
     files = [file_name for file_name in listdir(folder_path)
              if (isfile(join(folder_path, file_name)) and file_name.endswith(LOG_FILE_EXT))]
+
     for file in files:
-        with open(folder_path + '\\' + file, encoding='utf-8') as file_name:
-            # Default is NA, incase there is no match
-            #print(os.path.getctime(folder_path + '\\' + file))
-            result = NA_STATUS
+        file_path = os.path.join(folder_path, file)
+        with open(file_path, encoding='utf-8') as file_name:
+            # Default is NO_RES_STATUS, incase there is no match
+            result = NO_RES_STATUS
             for line in file_name:
                 time_match = RE_DATE_START.match(line)
                 result_match = RE_RESULT.match(line)
@@ -99,7 +120,14 @@ def get_file_names_and_results(folder_path):
                     f_time = time_match.group('time')
             # Remove '.log' from name
             test_name = file.split(LOG_FILE_EXT)[:-1][FIRST_PART_IDX]
-            res_dict[test_name] = result
+            logging.debug('%s : %s', test_name, result)
+
+            # Use the key and not the string we are matching with.
+            # Match with 'Tested implicitly by', but show 'IMPLICITLY'
+            if result in MATCH_DICT:
+                res_dict[test_name] = MATCH_DICT[result]
+            else:
+                res_dict[test_name] = UNKNOWN_STATUS
     return res_dict, f_date, f_time
 
 
@@ -157,13 +185,13 @@ def calculate_sum_string(res_counter):
     return str(percent) + '% Passed (' + str(res_counter[PASSED_STATUS]) + '/' + str(total) +')'
 
 
-def get_key_and_url_comb(folder):
+def get_key_and_url_comb(path, folder):
     """
     Creates a key and URL dictionary based on the files in the folders
     """
     ret_dict = {}
     gitlab_url_root = "https://gitlab.cm.volvocars.biz/HWEILER/odtb2pilot/blob/master/" + folder
-    for root, _, files in os.walk("../" + folder):
+    for root, _, files in os.walk(path):
         for file in files:
             if file.endswith(PY_FILE_EXT):
                 temp_path = os.path.join(root, file)
@@ -175,19 +203,19 @@ def get_key_and_url_comb(folder):
     return ret_dict
 
 
-def get_url_dict():
-    """Create and return a dict with the urls to the different scripts."""
-    # Assumption: this file is in odtb2pilot/autotest, and the scripts are in
-    #              odtb2pilot/"tests_folder"/*/*.py
-    new_tc = get_key_and_url_comb("test_cases")
-    manual_tc = get_key_and_url_comb("manual_test")
-    old_tc = get_key_and_url_comb("test_cases_old")
+def get_url_dict(script_folder):
+    '''
+    Create and return a dict with the urls to the different scripts.
+    '''
+    new_tc = get_key_and_url_comb(os.path.join(script_folder, 'test_cases'), 'test_cases')
+    manual_tc = get_key_and_url_comb(os.path.join(script_folder, 'manual_test'), 'manual_test')
+    old_tc = get_key_and_url_comb(os.path.join(script_folder, 'test_cases_old'), 'test_cases_old')
     # Add them together
     ret_dict = {**new_tc, **manual_tc, **old_tc}
     return ret_dict
 
 
-def generate_html(folderinfo_and_result_tuple_list, outfile, verif_d, elektra_d): # pylint: disable=too-many-locals, too-many-branches, too-many-statements
+def generate_html(folderinfo_and_result_tuple_list, outfile, verif_d, elektra_d, script_folder): # pylint: disable=too-many-locals, too-many-branches, too-many-statements
     """
     Create html table based on the dict
     """
@@ -209,8 +237,7 @@ def generate_html(folderinfo_and_result_tuple_list, outfile, verif_d, elektra_d)
              "margin:30px; font-size: 50px;}")
 
     # Create the urls for the different files in GitLab
-    url_dict = get_url_dict()
-
+    url_dict = get_url_dict(script_folder)
     dvm_url_service_level = 'https://c1.confluence.cm.volvocars.biz/display/BSD/VCC+-+UDS+services'
 
     res_counter_list = list()
@@ -271,14 +298,15 @@ def generate_html(folderinfo_and_result_tuple_list, outfile, verif_d, elektra_d)
                                 with tag("a", href=elektra_d[e_key], target='_blank'):
                                     text(e_key)
 
-                        # Third column
+                        # Third column - Script name
                         if key.lower() in url_dict:
                             with tag('td'):
                                 with tag("a", href=url_dict[key.lower()], target='_blank'):
                                     text(key)
                         else:
-                            # Blue color if we don't find the matching key
-                            with tag('td', bgcolor='#94c4f7'):
+                            # Highlight with blue if we don't find the matching URL
+                            #with tag('td', bgcolor=BROKEN_URL_COLOR):
+                            with tag('td'):
                                 text(key)
 
                         # Fourth (fifth, sixth) - Result columns
@@ -294,8 +322,10 @@ def generate_html(folderinfo_and_result_tuple_list, outfile, verif_d, elektra_d)
                             index += 1
                             # Creating URL string
                             href_string = folder_name + '\\' + key + LOG_FILE_EXT
-
-                            with tag('td', bgcolor=COLOR_DICT[result]):
+                            color = COLOR_DICT[MISSING_STATUS]
+                            if result in COLOR_DICT:
+                                color = COLOR_DICT.get(result)
+                            with tag('td', bgcolor=color):
                                 with tag("a", href=href_string, target='_blank'):
                                     text(result)
 
@@ -311,8 +341,6 @@ def generate_html(folderinfo_and_result_tuple_list, outfile, verif_d, elektra_d)
             # A separate table for the coverage
             with tag('table', id='main'):
                 with tag('tr'):
-                    # coverage_table = page.table()
-
                     # Heading
                     line('th', "Verification method")
                     line('th', "Available")
@@ -358,39 +386,95 @@ def generate_html(folderinfo_and_result_tuple_list, outfile, verif_d, elektra_d)
                     line('td', str(tot_test))
                     line('td', str(round(tot_cov, AMOUNT_OF_DECIMALS)) + '%')
 
+            doc.stag('br') # Line break for some space
+
+             # A separate table for the legend (explanation)
+            with tag('table', id='main'):
+                with tag('tr'): # Heading
+                    line('th', "Result")
+                    line('th', "Explanation")
+                with tag('tr'):
+                    line('td', NA_STATUS, bgcolor=COLOR_DICT[NA_STATUS])
+                    line('td', 'Not applicable')
+                with tag('tr'):
+                    line('td', NO_RES_STATUS, bgcolor=COLOR_DICT[NO_RES_STATUS])
+                    line('td', 'Did not reach the end of the script. No status found.')
+                with tag('tr'):
+                    line('td', INSPECTION_STATUS, bgcolor=COLOR_DICT[INSPECTION_STATUS])
+                    line('td', 'Test by inspection')
+                with tag('tr'):
+                    line('td', IMPLICIT_STATUS, bgcolor=COLOR_DICT[IMPLICIT_STATUS])
+                    line('td', 'Implicitly tested by another testscript')
+                with tag('tr'):
+                    line('td', PASSED_STATUS, bgcolor=COLOR_DICT[PASSED_STATUS])
+                    line('td', 'Passed')
+                with tag('tr'):
+                    line('td', FAILED_STATUS, bgcolor=COLOR_DICT[FAILED_STATUS])
+                    line('td', 'Failed')
+                with tag('tr'):
+                    line('td', MISSING_STATUS, bgcolor=COLOR_DICT[MISSING_STATUS])
+                    line('td', 'No log-file found. Either a new test or removed')
+                with tag('tr'):
+                    line('td', UNKNOWN_STATUS, bgcolor=COLOR_DICT[UNKNOWN_STATUS])
+                    line('td', 'Unknown error or status')
+
     doc.stag('br') # Line break for some space
     text(get_current_time())
     write_to_file(doc.getvalue(), outfile)
 
 
 def get_current_time():
-    ''' Returns current time '''
+    '''
+    Returns current time
+    This also exist in support_test_odtb2. Should use that one instead when the python path
+    issue is solved.
+    '''
     now = datetime.now()
     current_time = now.strftime("Generated %Y-%m-%d %H:%M:%S")
     return current_time
 
 
 def write_to_file(content, outfile):
-    """Write content to outfile"""
+    '''
+    Write content to outfile
+    This also exist in support_file_io. Should use that one instead when the python path
+    issue is solved.
+    '''
     with open(outfile, 'w') as file:
         file.write(str(content))
 
 
 def main(margs):
     """Call other functions from here"""
-
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.DEBUG)
+    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
     folderinfo_and_result_tuple_list = []
     verif_dict = {}
     e_link_dict = {}
 
-    folders = margs.report_folder
-    folders.sort(reverse=True)
+    # For 5 latest folders
+    if margs.logs:
+        logging.debug('Input: %s', margs.logs)
+        log_folders = margs.logs
 
+        # Get all testfolders
+        all_test_folders = [file_name for file_name in listdir(log_folders)
+                            if isdir(file_name) and RE_FOLDER_TIME.match(file_name)]
+        all_test_folders.sort(reverse=True)
+        # Pick the 5 newest
+        folders = all_test_folders[:5]
+
+    # For selected folders
+    if margs.report_folder:
+        logging.debug('Input: %s', margs.report_folder)
+        folders = margs.report_folder
+        folders.sort(reverse=True)
+
+    # For each folder
     for folder_name in folders:
         res_dict, _, _ = get_file_names_and_results(folder_name)
         folder_time = get_folder_time(folder_name)
+        logging.debug('Folder time: %s', folder_time)
         # Put all data in a tuple
         folderinfo_and_result_tuple = (folder_time, res_dict, folder_name)
         # And put the tuple in a list
@@ -399,7 +483,8 @@ def main(margs):
     if margs.req_csv:
         logging.debug("CSV-file found: %s", margs.req_csv)
         verif_dict, e_link_dict = get_reqprod_links(margs.req_csv)
-    generate_html(folderinfo_and_result_tuple_list, margs.html_file, verif_dict, e_link_dict)
+    generate_html(folderinfo_and_result_tuple_list, margs.html_file, verif_dict, e_link_dict,
+                  margs.script_folder)
     logging.info("Script finished")
 
 
