@@ -109,8 +109,8 @@ def run():
     # where to connect to signal_broker
     can_p: CanParam = {
         "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        "send" : "Vcu1ToBecmFront1DiagReqFrame",
-        "receive" : "BecmToVcu1Front1DiagResFrame",
+        "send" : "HvbmdpToHvbmUdsDiagRequestFrame",
+        "receive" : "HvbmToHvbmdpUdsDiagResponseFrame",
         "namespace" : SC.nspace_lookup("Front1CANCfg0")
         }
     #print("Current function name: ", inspect.stack()[0][3])
@@ -127,7 +127,7 @@ def run():
     # read VBF param when testscript is s started, if empty take default param
     SSBL.get_vbf_files()
     timeout = 3600
-    result = PREC.precondition_burst(can_p, timeout)
+    result = PREC.precondition_spa2(can_p, timeout)
 
     if result:
         ############################################

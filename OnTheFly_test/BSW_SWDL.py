@@ -30,17 +30,20 @@ import time
 from datetime import datetime
 import sys
 import logging
+import inspect
 
-import ODTB_conf
+import odtb_conf
 from support_can import SupportCAN, CanParam
 from support_test_odtb2 import SupportTestODTB2
 from support_SBL import SupportSBL
 from support_sec_acc import SupportSecurityAccess
+from support_file_io import SupportFileIO
 
 from support_precondition import SupportPrecondition
 from support_service11 import SupportService11
 from support_service22 import SupportService22
 
+SIO = SupportFileIO
 SC = SupportCAN()
 SUTE = SupportTestODTB2()
 SSBL = SupportSBL()
@@ -57,7 +60,7 @@ def step_1(can_p: CanParam):
     """
     stepno = 1
     purpose = "Download and Activation of SBL"
-    result = SSBL.sbl_activation(can_p,\
+    result = SSBL.sbl_activation(can_p,
                                  stepno, purpose)
     return result
 
@@ -67,7 +70,7 @@ def step_2(can_p: CanParam):
     """
     stepno = 2
     purpose = "ESS Software Part Download"
-    result = SSBL.sw_part_download(can_p, SSBL.get_ess_filename(),\
+    result = SSBL.sw_part_download(can_p, SSBL.get_ess_filename(),
                                    stepno, purpose)
     return result
 
@@ -79,7 +82,7 @@ def step_3(can_p: CanParam):
     result = True
     purpose = "continue Download SW"
     for i in SSBL.get_df_filenames():
-
+        result = result and SE22.read_did_eda0(can_p)
         result = result and SSBL.sw_part_download(can_p, i, stepno, purpose)
     return result
 
@@ -101,14 +104,18 @@ def run():
 
     # start logging
     logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+    #logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.DEBUG)
 
     # where to connect to signal_broker
-    can_par: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT),\
-        "send" : "Vcu1ToBecmFront1DiagReqFrame",\
-        "receive" : "BecmToVcu1Front1DiagResFrame",\
+    can_p: CanParam = {
+        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
+        "send" : "Vcu1ToBecmFront1DiagReqFrame",
+        "receive" : "BecmToVcu1Front1DiagResFrame",
         "namespace" : SC.nspace_lookup("Front1CANCfg0")
         }
+    #print("Current function name: ", inspect.stack()[0][3])
+    logging.info("Update parameters for testscript, part: %s", inspect.stack()[0][3])
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
 
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
@@ -117,27 +124,10 @@ def run():
     # precondition
     ############################################
 
-    # read arguments for files to DL:
-    f_sbl = ''
-    f_ess = ''
-    f_df = []
-    for f_name in sys.argv:
-        if not f_name.find('.vbf') == -1:
-            print("Filename to DL: ", f_name)
-            if not f_name.find('sbl') == -1:
-                f_sbl = f_name
-            elif not f_name.find('ess') == -1:
-                f_ess = f_name
-            else:
-                f_df.append(f_name)
-    SSBL.__init__(f_sbl, f_ess, f_df)
-    SSBL.show_filenames()
-    time.sleep(10)
-
     # read VBF param when testscript is s started, if empty take default param
     SSBL.get_vbf_files()
     timeout = 3600
-    result = PREC.precondition(can_par, timeout)
+    result = PREC.precondition(can_p, timeout)
 
     if result:
         ############################################
@@ -150,32 +140,32 @@ def run():
         #extra reset when DL didn't start correct after unfinished SWDL
         #result = result and step_5(network_stub, can_send, can_receive, can_namespace)
 
-        result = result and step_1(can_par)
+        result = result and step_1(can_p)
         #result = step_4(network_stub, can_send, can_receive, can_namespace)
         # step 2:
         # action:
         # result: BECM sends positive reply
-        result = result and step_2(can_par)
+        result = result and step_2(can_p)
 
         # step 3:
         # action:
         # result: BECM sends positive reply
-        result = result and step_3(can_par)
+        result = result and step_3(can_p)
 
         # step 4:
         # action:
         # result: BECM sends positive reply
-        result = result and step_4(can_par)
+        result = result and step_4(can_p)
 
         # step 5:
         # action: ECU reset - Restart with downloaded SW
         # result: ECU accepts reset request
-        result = result and SE11.ecu_hardreset(can_par)
+        result = result and SE11.ecu_hardreset(can_p)
 
         # step 6:
         # action: Check which Mode ECU is in after reset
         # result: All went well. Boot up to Mode 1
-        result = result and SE22.read_did_f186(can_par, dsession=b'\x01')
+        result = result and SE22.read_did_f186(can_p, dsession=b'\x01')
     ############################################
     # postCondition
     ############################################
