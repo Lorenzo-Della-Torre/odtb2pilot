@@ -1,9 +1,11 @@
-Readme logs_to_html.py
+Readme for logs_to_html.py
 
 This is instructions regarding how to run logs_to_html.py which visualizes the testresults in a generated hmtl-file.
 
 Prerequisites
 -------------
+Also check our confluence page for more information: https://c1.confluence.cm.volvocars.biz/pages/viewpage.action?pageId=132843166
+
 You need to have Python 3 installed.
 
 As input you should have one or more folders with log_files, each folder should contain an arbitrary number of log-files.
@@ -41,13 +43,21 @@ optional arguments:
   --script_folder SCRIPT_FOLDER
                         Path to testscript folders'
 
-> Example: python logs_to_html.py --logfolder Testrun_20191118_1558_BECM_BT Testrun_20191118_1606_BECM_BT Testrun_20191118_9999_BECM_BT --reqcsv req_bsw.csv
+> *Example 3 manually selected testruns:*
+> python logs_to_html.py --logfolder Testrun_20191118_1558_BECM_BT Testrun_20191118_1606_BECM_BT Testrun_20191118_9999_BECM_BT --reqcsv req_bsw.csv
 > This example will create a report based on the csv file: req_bsw.csv
 > 								         and the testruns: Testrun_20191118_1558_BECM_BT
 > 													  	   Testrun_20191118_1606_BECM_BT
 > 														   Testrun_20191118_9999_BECM_BT
+> Tip: Don't add --logfolder in front of all folders, it should only be infront of the first.
 
-Tip: Don't add --logfolder in front of all folders, it should only be infront of the first.
+
+> *Example 5 latest logs:*
+> python ~/Repos/odtb2pilot/autotest/logs_to_html.py --logs ~/testrun --reqcsv ~/Repos/odtb2pilot/autotest/req_bsw.csv --script_folder ~/Repos/odtb2pilot/
+> This example will create a report based on the csv file:		~/Repos/odtb2pilot/autotest/req_bsw.csv
+> and the 5 latest testruns located in this folder:				~/testrun
+> and links to the scripts which are located in this folder:	~/Repos/odtb2pilot/
+
 
 Result
 ------
