@@ -3,6 +3,11 @@
 # date:     2019-12-11
 # version:  0.1
 
+# author:   HWEILER (Hans-Klaus Weiler)
+# date:     2020-07-06
+# version:  1.0
+# changes:  parameters in VBF are parsed now
+
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
 
 # Copyright 2015 gRPC authors.
@@ -26,6 +31,7 @@ import logging
 import sys
 import glob
 from typing import Dict
+import traceback
 
 from support_carcom import SupportCARCOM
 from support_can import SupportCAN, CanMFParam, CanParam, CanPayload, CanTestExtra
@@ -38,6 +44,7 @@ from support_service31 import SupportService31
 from support_service34 import SupportService34
 from support_service36 import SupportService36
 from support_service37 import SupportService37
+
 SC = SupportCAN()
 S_CARCOM = SupportCARCOM()
 SUTE = SupportTestODTB2()
@@ -52,33 +59,41 @@ SE36 = SupportService36()
 SE37 = SupportService37()
 
 
-class VbfBlockFormat(Dict): # pylint: disable=inherit-non-class
+class VbfHeader(Dict): # pylint: disable=inherit-non-class
     """
-        Parameters used in VBF blocks
+        Parameters used in VBF header
+        For keywords see Volvo Document 31808832 Rev 015
+        SWRS Versatile Binary Format Specification
     """
-    offset: int
-    data: int
-    data_format: bytes
-    #addr: int
-    len: int
-    b_addr: int
-    b_len: int
-    b_data: bytes
-
+    sw_part_number: str
+    sw_version: str
+    sw_part_type: str
+    data_format_identifier: int
+    ecu_address: int
+    file_checksum: int
+    call: int   #used in SBL
+    erase: list #used in other VBF files
+    verification_block_start: int
+    verification_block_length: int
+    verification_block_root_hash: int
+    sw_signature_dev: int
 
     @classmethod
-    def vbf_block_init(cls, block):
+    def vbf_header_read(cls, vbf_header):
         """
-            init of VbfBlockFormat with empty values
+            return vbf_header
         """
-        block['offset'] = 0
-        block['data'] = 0
-        block['data_format'] = b''
-        #block['addr'] = 0
-        block['len'] = 0
-        block['b_addr'] = 0
-        block['b_len'] = 0
-        block['b_data'] = b''
+        return vbf_header
+
+class VbfBlock(Dict): # pylint: disable=inherit-non-class
+    """
+        Parameters used in VBF blocks
+        For keywords see Volvo Document 31808832 Rev 015
+        SWRS Versatile Binary Format Specification
+    """
+    StartAddress: int
+    Length: int
+    Checksum: int
 
 
     @classmethod
@@ -111,9 +126,9 @@ class SupportSBL:
         """
         print filenames used for SWDL
         """
-        print("SBL: ", self._sbl)
-        print("ESS: ", self._ess)
-        print("DF:  ", self._df)
+        logging.info("SBL:  %s", self._sbl)
+        logging.info("ESS: %s", self._ess)
+        logging.info("DF: %s", self._df)
 
 
     def get_sbl_filename(self):
@@ -147,7 +162,7 @@ class SupportSBL:
         f_df = []
         for f_name in sys.argv:
             if not f_name.find('.vbf') == -1:
-                print("Filename to DL: ", f_name)
+                logging.info("Filename to DL:  %s", f_name)
                 if not f_name.find('sbl') == -1:
                     f_sbl = f_name
                 elif not f_name.find('ess') == -1:
@@ -168,7 +183,7 @@ class SupportSBL:
         f_df = []
         for f_name in glob.glob("./VBF/*.vbf"):
             if not f_name.find('.vbf') == -1:
-                print("Filename to DL: ", f_name)
+                logging.info("Filename to DL:  %s", f_name)
                 if not f_name.find('sbl') == -1:
                     f_sbl = f_name
                 elif not f_name.find('ess') == -1:
@@ -183,15 +198,14 @@ class SupportSBL:
         """
         read filenames used for transfer to ECU
         """
-        print("Length sys.argv: ", len(sys.argv))
+        logging.debug("Length sys.argv:  %s", len(sys.argv))
         if len(sys.argv) != 1:
             self.read_vbf_param()
         else:
             self.set_vbf_default_param()
 
 
-    #def transfer_data_block(self, data: VbfBlockFormat, can_p: CanParam, step_no, purpose):
-    def transfer_data_block(self, data: VbfBlockFormat, can_p: CanParam):
+    def transfer_data_block(self, can_p: CanParam, vbf_header: VbfHeader, vbf_data, vbf_offset):
         """
             transfer_data_block
             support function to transfer
@@ -204,138 +218,121 @@ class SupportSBL:
         """
         result = True
         # Iteration to Download the SBL by blocks
-        if self._debug:
-            print("offset: ", data["offset"], "len(data): ", len(data["data"]))
-        while data["offset"] < len(data["data"]):
+        logging.debug("vbf_offset: %s len(data): %s", vbf_offset, len(vbf_data))
+        while vbf_offset < len(vbf_data):
             # Extract data block
             # new offset!
-            data["offset"], data["b_data"], data["b_addr"], data["b_len"], block_crc16 = (
-                self.block_data_extract(data["offset"], data["data"]))
-
-            #print("FileHeader   CRC calculation CRC16: {0:04X}".format(SUTE.crc16(data["b_data"])))
+            vbf_offset, vbf_block, vbf_block_data = (
+                self.block_data_extract(vbf_data, vbf_offset))
 
             #decompress data["b_data"] if needed
-            if self._debug:
-                print("DataFormat block: ", data["data_format"].hex())
-            if data["data_format"].hex() == '00':
-                decompr_data = data["b_data"]
-            elif data["data_format"].hex() == '10':
+            logging.debug("vbf_header:  %s", vbf_header)
+            logging.debug("data_format_identifier %s", vbf_header['data_format_identifier'])
+            logging.debug("DataFormat block: {0:02X}".format(vbf_header['data_format_identifier']))
+            if vbf_header['data_format_identifier'] == 0: # format '0x00':
+                decompr_data = vbf_block_data
+            elif vbf_header['data_format_identifier'] == 16: # format '0x10':
                 decompr_data = b''
-                decompr_data = LZSS.decode_barray(data["b_data"])
+                decompr_data = LZSS.decode_barray(vbf_block_data)
             else:
-                print("Unknown compression format:", data["data_format"].hex())
+                logging.info("Unknown compression format: {0:02X}".format\
+                             (vbf_header['data_format_identifier']))
 
-            if self._debug:
-                print("Header       CRC16 block_data:  {0:04X}".format(block_crc16))
-                print("Decompressed CRC16 calculation: {0:04X}".format(SUTE.crc16(decompr_data)))
-                print("Length block from header:  {0:08X}".format(data["b_len"]))
-                print("Length block decompressed: {0:08X}".format(len(decompr_data)))
+            logging.debug("Header       CRC16 block_data:  {0:04X}".format(vbf_block['Checksum']))
+            logging.debug("Decompressed CRC16 calculation: {0:04X}".format\
+                            (SUTE.crc16(decompr_data)))
+            logging.debug("Length block from header:  {0:08X}".format(vbf_block['Length']))
+            logging.debug("Length block decompressed: {0:08X}".format(len(decompr_data)))
 
-            if SUTE.crc16(decompr_data) == block_crc16:
+            if SUTE.crc16(decompr_data) == vbf_block['Checksum']:
                 # Request Download
                 #result, nbl = SE34.request_block_download(can_p, data, step_no, purpose)
                 result = SE22.read_did_eda0(can_p)
-                result, nbl = SE34.request_block_download(can_p, data)
-                #result = result and resultt
+                result, nbl = SE34.request_block_download(can_p, vbf_header, vbf_block)
                 # Flash blocks to BECM with transfer data service 0x36
-                #result = result and SE36.flash_blocks(nbl, can_p, data, step_no, purpose)
-                result = result and SE36.flash_blocks(nbl, can_p, data)
+                result = result and SE36.flash_blocks(can_p, vbf_block_data, vbf_block, nbl)
                 #Transfer data exit with service 0x37
-                #result = result and SE37.transfer_data_exit(can_p, step_no, purpose)
                 result = result and SE37.transfer_data_exit(can_p)
             else:
-                print("CRC doesn't match after decompression")
-                print("Header       CRC16 block_data:  {0:04X}".format(block_crc16))
-                print("Decompressed CRC16 calculation: {0:04X}".format(SUTE.crc16(decompr_data)))
-                print("Header       block length: {0:08X}".format(data["b_len"]))
-                print("Decompressed block length: {0:08X}".format(len(decompr_data)))
+                logging.info("CRC doesn't match after decompression")
+                logging.info("Header       CRC16 block_data:  {0:04X}".format\
+                                (vbf_block['Checksum']))
+                logging.info("Decompressed CRC16 calculation: {0:04X}".format\
+                                (SUTE.crc16(decompr_data)))
+                logging.info("Header       block length:  {0:08X}".format(vbf_block['Length']))
+                logging.info("Decompressed block length: {0:08X}".format(len(decompr_data)))
                 result = False
         return result
 
 
-    # Support Function for flashing Secondary Bootloader SW
-    #def sbl_download_no_check(self, can_p: CanParam, file_n, step_no,\
-    #                          purpose="SBL Download no check"):
     def sbl_download_no_check(self, can_p: CanParam, file_n):
         """
+        Support Function for flashing Secondary Bootloader SW
         SBL Download
         """
-        testresult = True
-
-        data = dict()
-
         # Read vbf file for SBL download
-        data["offset"], data["data"], _, call, data["data_format"] = self.read_vbf_file_sbl(file_n)
+        vbf_version, vbf_header, vbf_data, vbf_offset = self.read_vbf_file(file_n)
+        #convert vbf header so values can be used directly
+        self.vbf_header_convert(vbf_header)
+        logging.info("VBF version: %s", vbf_version)
 
-        #testresult = testresult and self.transfer_data_block(data, can_p, step_no, purpose)
-        testresult = testresult and self.transfer_data_block(data, can_p)
-        return testresult, call
+        testresult = self.transfer_data_block(can_p, vbf_header, vbf_data, vbf_offset)
+        return testresult, vbf_header
 
 
-    # Support Function for flashing Secondary Bootloader SW
     def sbl_download(self, can_p: CanParam, file_n, stepno='',\
                      purpose="SBL Download transfer block"):
         """
         Support Function for flashing Secondary Bootloader SW
         """
-        data = dict()
 
         # Read vbf file for SBL download
-        data["offset"], data["data"], sw_signature, call, data["data_format"] =\
-            self.read_vbf_file_sbl(file_n)
+        vbf_version, vbf_header, vbf_data, vbf_offset = self.read_vbf_file(file_n)
+        #convert vbf header so values can be used directly
+        self.vbf_header_convert(vbf_header)
+        logging.info("VBF version: %s", vbf_version)
 
-        #testresult = self.transfer_data_block(data, can_p, stepno, purpose)
-        testresult = self.transfer_data_block(data, can_p)
-
+        testresult = self.transfer_data_block(can_p, vbf_header, vbf_data, vbf_offset)
         #Check memory
-        #testresult = testresult and self.check_memory(can_param, step_no, purpose, sw_signature)
-        #testresult = testresult and self.transfer_data_block(data, can_p, stepno, purpose)
-        testresult = testresult and self.transfer_data_block(data, can_p)
-        #Check memory
-        testresult = testresult and self.check_memory(can_p, sw_signature, stepno, purpose)
-        return testresult, call
+        testresult = testresult and self.check_memory(can_p, vbf_header, stepno, purpose)
+        return testresult, vbf_header
 
-
-    # Support Function for flashing SW Parts
 
     def sw_part_download(self, can_p: CanParam, file_n, stepno='',
                          purpose="sw_part_download filename"):
         """
         Software Download
+        Support Function for flashing SW Parts
         """
-        print("sw_part_download filename: ", file_n)
-        #result, sw_signature =\
-        #    self.sw_part_download_no_check(can_p, file_n, stepno, purpose)
-        result, sw_signature = self.sw_part_download_no_check(can_p, file_n, stepno)
+        logging.info("sw_part_download filename: %s", file_n)
+        result, vbf_header = self.sw_part_download_no_check(can_p, file_n, stepno)
 
         # Check memory
-        result = result and self.check_memory(can_p, sw_signature,
+        result = result and self.check_memory(can_p, vbf_header,
                                               stepno, purpose
                                              )
         return result
 
 
     # Support Function for flashing SW Parts without Check
-    #def sw_part_download_no_check(self, can_p: CanParam, file_n, stepno='',\
-    #                              purpose="sw_part_download_no_check"):
     def sw_part_download_no_check(self, can_p: CanParam, file_n, stepno=''):
         """
         Software Download
         """
-        data = dict()
+        #data = dict()
 
         # Read vbf file for SBL download
-        print("sw_part_download_no_check filename: ", file_n)
-        data["offset"], off, data["data"], sw_signature,\
-            data["data_format"], erase = self.read_vbf_file(file_n)
+        logging.info("sw_part_download_no_check filename: %s", file_n)
+        vbf_version, vbf_header, vbf_data, vbf_offset = self.read_vbf_file(file_n)
+        #convert vbf header so values can be used directly
+        self.vbf_header_convert(vbf_header)
+        logging.info("VBF version: %s", vbf_version)
 
         # Erase Memory
-        result = self.flash_erase(can_p, erase, data["data"], off, stepno)
+        result = self.flash_erase(can_p, vbf_header, stepno)
         # Iteration to Download the Software by blocks
-
-        #result = result and self.transfer_data_block(data, can_p, stepno, purpose)
-        result = result and self.transfer_data_block(data, can_p)
-        return result, sw_signature
+        result = result and self.transfer_data_block(can_p, vbf_header, vbf_data, vbf_offset)
+        return result, vbf_header
 
 
     # Support Function for Flashing and activate Secondary Bootloader from Default session
@@ -370,11 +367,11 @@ class SupportSBL:
         result = SSA.activation_security_access(can_p, stepno, purpose)
 
         # SBL Download
-        tresult, call = self.sbl_download(can_p, self._sbl, stepno)
+        tresult, vbf_sbl_header = self.sbl_download(can_p, self._sbl, stepno)
         result = result and tresult
 
         # Activate SBL
-        result = result and self.activate_sbl(can_p, call, stepno)
+        result = result and self.activate_sbl(can_p, vbf_sbl_header, stepno)
         return result
 
 
@@ -484,36 +481,84 @@ class SupportSBL:
 
 
     @classmethod
-    def read_vbf_file_sbl(cls, f_path_name):
+    def vbf_header_convert(cls, header):
         """
-        Read and decode vbf files for Secondary Bootloader
+        take 'header' as read from vbf file and convert values
+        so they get usable directly in python
         """
-        print("File to read: ", f_path_name)
-        data = SUTE.read_f(f_path_name)
-        find = data.find
-        header_len = find(b'\x3B\x0D\x0A\x7D') + 4
-        #print ('Header length: 0x%04X' % header_len)
-        if header_len < 100:
-            logging.info('Unknown format')
-            sys.exit() #quit(-1)
+        for keys in header:
+            #elements contains a list of elements
+            #convert into a python list
+            if header[keys][0] == '{' and header[keys][-1] == '}':
+                #convert multiple values into python list
+                #logging.debug("Header part: %s: %s", keys, header[keys])
+                cvert = header[keys].replace('{', '[')
+                #logging.debug("Header part 'cvert': %s", cvert)
+                cvert = cvert.replace('}', ']')
+                header[keys] = cvert
 
-        off1 = find(b'sw_signature_dev = 0x') + 21
-        end = find(b';\r\n}')
-        #print(data[off1:end])
-        sw_signature = bytes.fromhex(str(data[off1 : end])[2:-1])
-        #print(sw_signature)
-        off2 = find(b'call = 0x') + 9
-        call = bytes.fromhex(str(data[off2 : off2 + 8])[2:-1])
-        offset = header_len
-        #print data format
-        off3 = find(b'data_format_identifier = 0x') + 27
-        data_format = bytes.fromhex(str(data[off3 : off3+2])[2:-1])
-        logging.info("VBF_data_format %s", str(data_format))
-        #print(SUTE.CRC32_from_file(data[offset:len(data)]))
-        block_address = int.from_bytes(data[offset: offset + 4], 'big')
-        logging.info("VBF_block_adress {0:08X}".format(block_address))
-        return offset, data, sw_signature, call, data_format
+            try:
+                header[keys] = eval(header[keys]) # pylint: disable=eval-used
+            except: # pylint: disable=bare-except
+                traceback.print_exc()
+                logging.info("Oops! Value in header that can't be evaluated")
 
+
+    @classmethod
+    def vbf_cm_filter(cls, cm_str):
+        """
+        vbf_cm_filter
+        filter out comment from string
+        return: input string with comments removed
+        """
+        #logging.info("look for comments starting with '//': ")
+        str_ret = cm_str
+        comm = cm_str.find(b'//')
+        while comm != -1:
+            #comm = cm_str.find(b'//')
+            #if not comm == -1:
+            #logging.info("position comment: %s", comm)
+            #logging.info("found single line comment. Remove upp till cr/eol")
+            comm_end = cm_str.find(b'\r\n', comm)
+            str_ret = cm_str[0:comm] + cm_str[comm_end:]
+            cm_str = str_ret
+            comm = cm_str.find(b'//')
+            #else:
+            #    logging.info("nothing found, do nothing")
+            #    str_ret = cm_str
+        #logging.info("string to return: %s", str_ret)
+        return str_ret
+
+
+    @classmethod
+    def vbf_ws_filtered(cls, p_str):
+        """
+        remove whitespace chars as defined for vbf2.6 in str
+        """
+        # [WS/CM]identifier[WS/CM]=[WS/CM]IdentifierValue[WS/CM];[WS/CM]
+        # WS chars in vbf 2.6
+        w_space = b'\x09\x0A\x0B\x0C\x0D\x20'
+        #logging.debug("vbf_ws_filter - in %s ", p_str)
+        for bchar in w_space:
+            #logging.debug("bchar to check: %s", bchar)
+            #p_str = p_str.replace(bchar, b'')
+            p_str = p_str.replace(bytes([bchar]), b'')
+        #logging.info("vbf_ws_filter - out %s", p_str)
+        return p_str
+
+    @classmethod
+    def vbf_parse(cls, p_str):
+        """
+        parse line for key and argument
+        delimiters: '=' for key/arg
+                    ';' for end of arg
+        """
+        logging.debug("vbf_parse to parse: %s", p_str)
+        vbf_key = p_str[0: p_str.find(b'=')]
+        vbf_nam = p_str[1+p_str.find(b'='):p_str.find(b';')]
+        logging.debug("key found: %s", cls.vbf_ws_filtered(vbf_key))
+        logging.debug("nam found: %s", cls.vbf_ws_filtered(vbf_nam))
+        return (cls.vbf_ws_filtered(vbf_key), cls.vbf_ws_filtered(vbf_nam))
 
     @classmethod
     def read_vbf_file(cls, f_path_name):
@@ -523,31 +568,91 @@ class SupportSBL:
         """
         Read and decode vbf files for Software Parts
         """
-        print("File to read: ", f_path_name)
+        logging.info("File to read: %s", f_path_name)
+        # read to EOF:
         data = SUTE.read_f(f_path_name)
-        find = data.find
-        header_len = find(b'\x3B\x0D\x0A\x7D') + 4
+        #find = data.find
+        vers_pos = data.find(b'vbf_version')
+        if not vers_pos == 0:
+            logging.info("Warning: version not at expected position: %s", vers_pos)
+        #logging.debug("Version vers_pos: %s", vers_pos)
 
-        off = data.find(b'erase = ') + 12
-        memory_add = SUTE.pp_string_to_bytes(str(data[off : off + 8])[2:-1], 4)
-        off += 12
-        memory_size = SUTE.pp_string_to_bytes(str(data[off : off + 8])[2:-1], 4)
-        off += 8
-        off1 = data.find(b'sw_signature_dev = 0x') + 21
-        off2 = data.find(b'data_format_identifier = 0x') + 27
-        end = data.find(b';\r\n}')
-        logging.info(data[off1:end])
-        sw_signature = bytes.fromhex(str(data[off1 : end])[2:-1])
-        data_format = bytes.fromhex(str(data[off2 : off2+2])[2:-1])
-        logging.info(sw_signature)
-        offset = header_len
-        logging.info(SUTE.crc32_from_file(data[offset:len(data)]))
-        erase = memory_add + memory_size
-        return offset, off, data, sw_signature, data_format, erase
+        # look for first semiclon
+        semi_pos = data.find(b';')
+        #logging.debug("position semicolon: %s", semi_pos)
+        if not semi_pos == -1:
+            semi_pos += 1
+        #logging.info("to filter: %s", data[vers_pos:semi_pos])
+
+        # remove CM in string to parse
+        # if no semicolon contained take semicolon in file
+        str_cm_filtered = cls.vbf_cm_filter(data[vers_pos:semi_pos])
+        #logging.debug("str_cm_filtered: %s", str_cm_filtered)
+        while not str_cm_filtered.find(b';'):
+            semi_pos = data.find(b';', semi_pos)
+            str_cm_filtered = cls.vbf_cm_filter(data[vers_pos:semi_pos])
+
+        v_key, v_arg = cls.vbf_parse(str_cm_filtered)
+        #logging.debug("VBF Version read: %s = %s", v_key.decode('utf-8'), v_arg.decode('utf-8'))
+        version = v_arg.decode('utf-8')
+
+        #Start to read header data
+        #store all key, arg in dict
+        header: VbfHeader = {}
+        head_pos = data.find(b'header', semi_pos)
+        #logging.debug("Header head_pos: %s", head_pos)
+        head_pos = data.find(b'{', head_pos) + 1
+
+        #Read next keyword + data,
+        #skip comments
+        #
+        next_scol = data.find(b';', head_pos)
+        next_cbrack = data.find(b'}', head_pos)
+
+        # try to read next keyword
+        str_cm_filtered = cls.vbf_cm_filter(data[head_pos:next_cbrack+1])
+        #logging.debug("str_cm_filtered: %s", str_cm_filtered)
+
+        #only cbrack in buffer: header completely read
+        while not (str_cm_filtered.find(b'}') != -1 and str_cm_filtered.find(b'=') == -1):
+
+        #Read on until next keyword / data pair
+            while str_cm_filtered.find(b';') == -1:
+                #logging.debug("No ';' found anymore, read further.")
+                #logging.debug("Data read: %s %s", data.find(b'}', next_cbrack+1))
+                next_cbrack = data.find(b'}', next_cbrack+1)
+                str_cm_filtered = cls.vbf_cm_filter(data[head_pos:next_cbrack+1])
+
+            # Now I should have next keyword read
+            # filter away white spaces
+            str_filtered = cls.vbf_ws_filtered(str_cm_filtered)
+            #logging.debug("expr WS filtered: %s", str_filtered)
+            v_key, v_arg = cls.vbf_parse(str_filtered)
+            header[v_key.decode('utf-8')] = v_arg.decode('utf-8')
+
+            #continue reading after last ';'
+            head_pos = next_scol + 1
+            next_scol = data.find(b';', head_pos)
+            next_cbrack = data.find(b'}', head_pos)
+            #update buffer to evaluate
+            str_cm_filtered = cls.vbf_cm_filter(data[head_pos:next_cbrack+1])
+
+        data_start = next_cbrack+1
+        logging.debug("vbf_version: %s", version)
+        logging.debug('Header: %s', header)
+        logging.debug("Data_Start: %s", data_start)
+
+        ### optional to add:
+        ### check for not allowed keywords in header
+
+        #return header as dict
+        #current_pos = head_pos
+        # 6.2.1: Header contained in braces '{', '}'
+        return version, header, data, data_start
 
 
     @classmethod
-    def flash_erase(cls, can_p: CanParam, erase, data, off, stepno):
+    def flash_erase(cls, can_p: CanParam, vbf_header, stepno):
         # Don't have a suitable object for these arguments, need to investigate
         # pylint: disable=too-many-arguments
         """
@@ -564,202 +669,59 @@ class SupportSBL:
         SC.change_mf_fc(can_p["send"], can_mf_param)
         time.sleep(1)
 
-        result = SE31.routinecontrol_requestsid_flash_erase(can_p, erase, stepno)
+        result = SE31.routinecontrol_requestsid_flash_erase(can_p, vbf_header, stepno)
         logging.info("SSBL: flash_erase requestsid, result: %s", result)
-
-        # Erase Memory
-        while data[off + 24 : off + 25] == b'x':
-            off += 25
-            memory_add = SUTE.pp_string_to_bytes(str(data[off : off + 8])[2:-1], 4)
-            off += 12
-            memory_size = SUTE.pp_string_to_bytes(str(data[off : off + 8])[2:-1], 4)
-            off += 8
-            erase = memory_add + memory_size
-
-            SC.change_mf_fc(can_p["send"], can_mf_param)
-            time.sleep(1)
-            result = result and SE31.routinecontrol_requestsid_flash_erase(can_p, erase, stepno)
         logging.info("SSBL: flash_erase EraseMemory, result: %s", result)
         return result
 
 
-    def block_data_extract(self, offset, data):
+    def block_data_extract(self, vbf_data, vbf_offset):
         """
         Extraction of block data from vbf file
+        See Volvo Document 31808832 Rev 015
+        Chapter 6.3.3 REQPROD 64727 Data section structure
         """
-        block_addr = int.from_bytes(data[offset: offset + 4], 'big')
-        offset += 4
+        vbf_block: VbfBlock = dict()
+        #Chapter 6.3.3 REQPROD 64727 Data section structure
+        #   4-byte start address, physical addr in ECU memory, range 0x00000000 to 0xFFFFFFFF
+        vbf_block['StartAddress'] = int.from_bytes(vbf_data[vbf_offset: vbf_offset + 4], 'big')
+        vbf_offset += 4
+        logging.debug("block_Startaddress:              {0:08X}".format(vbf_block['StartAddress']))
+        #   4-byte length, number of data bytes in block, range 0x00000001 to 0xFFFFFFFF
+        #   If data compression used: compressed length
+        vbf_block['Length'] = int.from_bytes(vbf_data[vbf_offset: vbf_offset + 4], 'big')
+        vbf_offset += 4
+        logging.debug("block_data_extract - vbf_block('Length') : {0:08X}".format\
+                        (vbf_block['Length']))
+        vbf_block_data = vbf_data[vbf_offset : vbf_offset + vbf_block['Length']]
+        vbf_offset += vbf_block['Length']
+        #   2-byte checksum of data block (excluding Start addr and Length), range 0x0000 to 0xFFFF
+        vbf_block['Checksum'] = int.from_bytes(vbf_data[vbf_offset: vbf_offset + 2], 'big')
         if self._debug:
-            print("block_Startaddress:              {0:08X}".format(block_addr))
-        block_len = int.from_bytes(data[offset: offset + 4], 'big')
-        offset += 4
-        if self._debug:
-            print("block_data_extract - block_len : {0:08X}".format(block_len))
-        block_data = data[offset : offset + block_len]
-        offset += block_len
-        crc16 = int.from_bytes(data[offset: offset + 2], 'big')
-        if self._debug:
-            print("CRC16 in blockdata              {0:04X}".format(crc16))
-        offset += 2
-        return offset, block_data, block_addr, block_len, crc16
+            logging.info("CRC16 in blockdata              {0:04X}".format(vbf_block['Checksum']))
+        vbf_offset += 2
+        return vbf_offset, vbf_block, vbf_block_data
 
-
-    #crc calculation for each block
-    def crc_calculation(self, offset, block_data, block_addr, block_len):
+    @staticmethod
+    def crc_calculation(vbf_offset, vbf_block, vbf_block_data):
         """
         crc calculation for each block
         """
-        if self._debug:
-            print("CRC calculation - offset:     {0:08X}".format(offset))
-            print("CRC calculation - block_data:        ", block_data)
-            print("CRC calculation - block_addr: {0:08X}".format(block_addr))
-            print("CRC calculation - block_len:  {0:04X}".format(block_len))
-        offset += 2
-
-        if self._debug:
-            print("CRC calculation CRC16: {0:04X}".format(SUTE.crc16(block_data)))
+        logging.debug("CRC calculation - offset:     {0:08X}".format(vbf_offset))
+        logging.debug("CRC calculation - block_data: %s", vbf_block_data)
+        logging.debug("CRC calculation - block_addr: {0:08X}".format(vbf_block('StartAddress')))
+        logging.debug("CRC calculation - block_len:  {0:04X}".format(vbf_block('Length')))
+        vbf_offset += 2
+        logging.debug("CRC calculation CRC16: {0:04X}".format(SUTE.crc16(vbf_block_data)))
         crc_res = 'ok'
-        return "Block adr: 0x%X length: 0x%X crc %s" % (block_addr, block_len, crc_res)
-
-    # Moved?
-    # def request_block_download(self, can_param, step_no, purpose, data_param):
-        # """
-        # Support function for Request Download
-
-        # Replaced:
-        # can_param["stub"] = stub
-        # can_param["can_nspace"] = can_nspace
-        # can_param["can_send"] = can_send
-        # can_param["can_rec"] = can_rec''
-        # data_param["block_addr_by"] = block_addr_by
-        # data_param["block_len_by"] = block_len_by
-        # data_param["data_format"] = data_format
-        # """
-        # #testresult = True
-        # # Parameters for FrameControl FC
-
-        # can_mf_param: CanMFParam = {
-            # 'block_size' : 0,
-            # 'separation_time' : 0,
-            # 'frame_control_delay' : 0, #no wait
-            # 'frame_control_flag' : 48, #continue send
-            # 'frame_control_auto' : False
-            # }
-        # SC.change_mf_fc(can_param["can_send"], can_mf_param)
-
-        # ts_param = {"stub" : can_param["stub"],
-                    # "payload" : b'\x34' + data_param["data_format"] + b'\x44'+\
-                    # data_param["block_addr_by"] + data_param["block_len_by"],
-                    # "extra" : '',
-                    # "can_send" : can_param["can_send"],
-                    # "can_rec"  : can_param["can_rec"],
-                    # "can_nspace" : can_param["can_nspace"]
-                   # }
-        # extra_param = {"purpose" : purpose,
-                       # "timeout" : 0.05,
-                       # "min_no_messages" : -1,
-                       # "max_no_messages" : -1
-                      # }
-
-        # testresult = SUTE.teststep(ts_param, step_no, extra_param)
-        # testresult = testresult and SUTE.test_message(SC.can_messages[can_param["can_rec"]], '74')
-        # nbl = SUTE.pp_string_to_bytes(SC.can_frames[can_param["can_rec"]][0][2][6:10], 4)
-        # if self._debug:
-            # print("NBL: {}".format(nbl))
-        # nbl = int.from_bytes(nbl, 'big')
-        # return testresult, nbl
-
-
-    # @classmethod
-    # def flash_blocks(cls, can_param, step_no, purpose, data_param):
-        # """
-        # Support function for Transfer Data
-
-        # Replaced:
-        # can_param["stub"] = stub
-        # can_param["can_nspace"] = can_nspace
-        # can_param["can_send"] = can_send
-        # can_param["can_rec"] = can_rec
-        # data_param["block_len"] = block_len
-        # data_param["block_data"] = block_data
-        # data_param["nbl"] = nbl
-        # """
-
-        # pad = 0
-        # for i in range(int(data_param["block_len"]/(data_param["nbl"]-2))+1):
-
-            # pad = (data_param["nbl"]-2)*i
-            # i += 1
-            # ibyte = bytes([i])
-            # # Parameters for FrameControl FC
-
-            # can_mf_param: CanMFParam = {
-                # 'block_size' : 0,
-                # 'separation_time' : 0,
-                # 'frame_control_delay' : 0, #no wait
-                # 'frame_control_flag' : 48, #continue send
-                # 'frame_control_auto' : False
-                # }
-            # SC.change_mf_fc(can_param["can_send"], can_mf_param)
-
-            # ts_param = {"stub" : can_param["stub"],
-                        # "m_send" : b'\x36' + ibyte + data_param["block_data"][pad:pad +\
-                            # data_param["nbl"]-2],
-                        # "mr_extra" : '',
-                        # "can_send" : can_param["can_send"],
-                        # "can_rec"  : can_param["can_rec"],
-                        # "can_nspace" : can_param["can_nspace"]
-                       # }
-            # extra_param = {"purpose" : purpose,
-                           # "timeout" : 0.02,
-                           # "min_no_messages" : -1,
-                           # "max_no_messages" : -1
-                          # }
-
-            # testresult = SUTE.teststep(ts_param, step_no, extra_param)
-            # testresult = testresult and SUTE.test_message(SC.can_messages[can_param["can_rec"]],
-                                                          # '76')
-        # return testresult
-
-
-    # @classmethod
-    # def transfer_data_exit(cls, can_param, step_no, purpose):
-        # """
-        # Support function for Request Transfer Exit
-
-        # Replaced:
-        # can_param["stub"] = stub
-        # can_param["can_nspace"] = can_nspace
-        # can_param["can_send"] = can_send
-        # can_param["can_rec"] = can_rec
-        # """
-        # ts_param = {"stub" : can_param["stub"],
-                    # "m_send" : b'\x37',
-                    # "mr_extra" : '',
-                    # "can_send" : can_param["can_send"],
-                    # "can_rec"  : can_param["can_rec"],
-                    # "can_nspace" : can_param["can_nspace"]
-                   # }
-        # extra_param = {"purpose" : purpose,
-                       # "timeout" : 0.2,
-                       # "min_no_messages" : 1,
-                       # "max_no_messages" : 1
-                      # }
-
-        # testresult = SUTE.teststep(ts_param, step_no, extra_param)
-        # return testresult
+        return "Block adr: 0x%X length: 0x%X crc %s" % (vbf_block('StartAddress'),\
+               vbf_block('Length'), crc_res)
 
 
     @classmethod
-    def check_memory(cls, can_p: CanParam, sw_signature1, stepno, purpose):
+    def check_memory(cls, can_p: CanParam, vbf_header, stepno, purpose):
         """
         Support function for Check Memory
-
-        Replaced:
-        can_param["stub"] = stub
-        can_param["can_nspace"] = can_nspace
-        can_param["can_send"] = can_send
-        can_param["can_rec"] = can_rec
         """
         # Parameters for FrameControl FC
 
@@ -773,8 +735,13 @@ class SupportSBL:
         SC.change_mf_fc(can_p["send"], can_mf_param)
 
         time.sleep(1)
+        logging.info("SBL CheckMemory: vbf_header %s", vbf_header)
+        # In VBF header sw_signature_dev was stored as hex, Python converts that into int.
+        # It has to be converted to bytes to be used as payload
+        sw_signature = vbf_header['sw_signature_dev'].to_bytes\
+                        ((vbf_header['sw_signature_dev'].bit_length()+7) // 8, 'big')
         cpay: CanPayload = {"payload" : S_CARCOM.can_m_send("RoutineControlRequestSID",\
-                                             b'\x02\x12' + sw_signature1, b'\x01'),\
+                                             b'\x02\x12' + sw_signature, b'\x01'),\
                             "extra" : ''
                            }
         etp: CanTestExtra = {"step_no": stepno,\
@@ -792,17 +759,14 @@ class SupportSBL:
 
 
     @classmethod
-    def activate_sbl(cls, can_p: CanParam, call, stepno,\
+    def activate_sbl(cls, can_p: CanParam, vbf_sbl_header, stepno,\
                      purpose="RoutineControl activate_sbl"):
         """
         Support function for Routine Control Activate Secondary Bootloader
-
-        Replaced:
-        can_param["stub"] = stub
-        can_param["can_nspace"] = can_nspace
-        can_param["can_send"] = can_send
-        can_param["can_rec"] = can_rec
         """
+        # In VBF sbl header call was stored as hex, Python converts that into int.
+        # It has to be converted to bytes to be used as payload
+        call = vbf_sbl_header['call'].to_bytes((vbf_sbl_header['call'].bit_length()+7) // 8, 'big')
         cpay: CanPayload = {"payload" : S_CARCOM.can_m_send("RoutineControlRequestSID",\
                                              b'\x03\x01' + call, b'\x01'),\
                             "extra" : ''

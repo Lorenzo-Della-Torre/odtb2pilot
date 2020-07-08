@@ -26,7 +26,6 @@
 
 """The Python implementation of the gRPC route guide client."""
 
-
 from support_can import SupportCAN, CanMFParam, CanParam, CanPayload, CanTestExtra
 from support_test_odtb2 import SupportTestODTB2
 
@@ -40,18 +39,15 @@ class SupportService36: # pylint: disable=too-few-public-methods
     """
 
     @staticmethod
-    def flash_blocks(nbl, can_p: CanParam, data, stepno=360, purpose="flash block"):
-    # def flash_blocks(nbl, can_p: CanParam, stepno, purpose,
-                     # block_len, block_data):
+    def flash_blocks(can_p: CanParam, vbf_block_data, vbf_block, nbl,
+                     stepno=360, purpose="flash block"):
+        # pylint: disable= too-many-arguments
         """
         Support function for Transfer Data
         """
         pad = 0
 
-        #print("SE36 flash_blocks -- data: ", data)
-        #print("SE36 flash_blocks -- data[len]: ", data["b_len"])
-
-        for i in range(int(data["b_len"]/(nbl-2))+1):
+        for i in range(int(vbf_block['Length']/(nbl-2))+1):
 
             pad = (nbl-2)*i
             i += 1
@@ -66,13 +62,13 @@ class SupportService36: # pylint: disable=too-few-public-methods
                 }
             SC.change_mf_fc(can_p["send"], can_mf_param)
 
-            cpay: CanPayload = {"payload" : b'\x36' + ibyte + data["b_data"][pad:pad + nbl-2],\
+            cpay: CanPayload = {"payload" : b'\x36' + ibyte + vbf_block_data[pad:pad + nbl-2],
                                 "extra" : ''
                                }
-            etp: CanTestExtra = {"step_no": stepno,\
-                                 "purpose" : purpose,\
-                                 "timeout" : 0.2,\
-                                 "min_no_messages" : -1,\
+            etp: CanTestExtra = {"step_no": stepno,
+                                 "purpose" : purpose,
+                                 "timeout" : 0.2,
+                                 "min_no_messages" : -1,
                                  "max_no_messages" : -1
                                 }
             result = SUTE.teststep(can_p, cpay, etp)

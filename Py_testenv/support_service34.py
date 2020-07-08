@@ -26,7 +26,7 @@
 
 """The Python implementation of the gRPC route guide client."""
 
-#import logging
+import logging
 #from typing import Dict
 
 from support_can import SupportCAN, CanMFParam, CanParam, CanPayload, CanTestExtra
@@ -45,7 +45,7 @@ class SupportService34: # pylint: disable=too-few-public-methods
     #@classmethod
     #Support function for Request Download
     @staticmethod
-    def request_block_download(can_p: CanParam, data, stepno=340,
+    def request_block_download(can_p: CanParam, vbf_header, vbf_block, stepno=340,
                                purpose="Request Download of block to ECU"):
         """
         Support function for Request Download
@@ -63,23 +63,29 @@ class SupportService34: # pylint: disable=too-few-public-methods
             }
         SC.change_mf_fc(can_p["send"], can_mf_param)
 
-        addr_b = data["b_addr"].to_bytes(4, 'big')
-        len_b = data["b_len"].to_bytes(4, 'big')
-        cpay: CanPayload = {"payload" : b'\x34' + data["data_format"] + b'\x44'+\
-                                       addr_b + len_b,\
+        addr_b = vbf_block['StartAddress'].to_bytes(4, 'big')
+        len_b = vbf_block['Length'].to_bytes(4, 'big')
+        logging.info("340: Req block DL to ECU:")
+        logging.info("340: Adress: %s", addr_b.hex())
+        logging.info("340: length: %s", len_b.hex())
+        logging.info("340: data_format_identifier {0:02X}".format\
+                        (vbf_header["data_format_identifier"]))
+        cpay: CanPayload = {"payload" : b'\x34' +\
+                                        vbf_header["data_format_identifier"].to_bytes(1, 'big') +\
+                                        b'\x44'+\
+                                        addr_b +\
+                                        len_b,
                             "extra" : ''
                            }
-        etp: CanTestExtra = {"step_no": stepno,\
-                             "purpose" : purpose,\
-                             "timeout" : 0.05,\
-                             "min_no_messages" : -1,\
+        etp: CanTestExtra = {"step_no": stepno,
+                             "purpose" : purpose,
+                             "timeout" : 0.05,
+                             "min_no_messages" : -1,
                              "max_no_messages" : -1
                             }
         testresult = SUTE.teststep(can_p, cpay, etp)
         testresult = testresult and SUTE.test_message(SC.can_messages[can_p["receive"]], '74')
         nbl = SUTE.pp_string_to_bytes(SC.can_frames[can_p["receive"]][0][2][6:10], 4)
-        #if self._debug:
-        #    print("NBL: {}".format(nbl))
-        #nbl = int.from_bytes(SC.can_frames[can_p["receive"]][0][2][6:10])
         nbl = int.from_bytes(nbl, 'big')
+        logging.info("340: nbl received: %s", nbl)
         return testresult, nbl
