@@ -53,12 +53,12 @@ class SupportService11:
         etp: CanTestExtra = {"step_no": stepno,\
                              "purpose" : "ECU Reset",\
                              "timeout" : 1,\
-                             "min_no_messages" : -1,\
-                             "max_no_messages" : -1
+                             "min_no_messages" : 1,\
+                             "max_no_messages" : 1
                             }
         result = SUTE.teststep(can_p, cpay, etp)
-        result = result and SUTE.test_message(SC.can_messages[can_p["receive"]],
-                                              teststring='025101')
+        #result = result and SUTE.test_message(SC.can_messages[can_p["receive"]],
+        #                                      teststring='025101')
         time.sleep(1)
         return result
 
@@ -74,11 +74,49 @@ class SupportService11:
         etp: CanTestExtra = {"step_no": stepno,\
                              "purpose" : "ECU Reset",\
                              "timeout" : 1,\
+                             "min_no_messages" : 1,\
+                             "max_no_messages" : 1
+                            }
+        result = SUTE.teststep(can_p, cpay, etp)
+        #result = result and SUTE.test_message(SC.can_messages[can_p["receive"]],
+        #                                      teststring='025101')
+        time.sleep(5)
+        return result
+
+    @staticmethod
+    def ecu_hardreset_noreply(can_p: CanParam, stepno=110):
+        """
+        ecu_hardreset
+        """
+        cpay: CanPayload = {"payload" : S_CARCOM.can_m_send("ECUResetHardReset_noreply", b'', b''),\
+                            "extra" : ''
+                           }
+        etp: CanTestExtra = {"step_no": stepno,\
+                             "purpose" : "ECU Reset noreply",\
+                             "timeout" : 1,\
                              "min_no_messages" : -1,\
                              "max_no_messages" : -1
                             }
         result = SUTE.teststep(can_p, cpay, etp)
-        result = result and SUTE.test_message(SC.can_messages[can_p["receive"]],
-                                              teststring='025101')
+        result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='')
+        time.sleep(1)
+        return result
+
+    @staticmethod
+    def ecu_hardreset_noreply_5sec_delay(can_p: CanParam, stepno=111):
+        """
+        ecu_hardreset
+        """
+        cpay: CanPayload = {"payload" : S_CARCOM.can_m_send("ECUResetHardReset_noreply", b'', b''),\
+                            "extra" : ''
+                           }
+        etp: CanTestExtra = {"step_no": stepno,\
+                             "purpose" : "ECU Reset",\
+                             "timeout" : 1,\
+                             "min_no_messages" : -1,\
+                             "max_no_messages" : -1
+                            }
+        result = SUTE.teststep(can_p, cpay, etp)
+        result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='')
         time.sleep(5)
         return result

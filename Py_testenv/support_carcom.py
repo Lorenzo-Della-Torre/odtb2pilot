@@ -63,6 +63,7 @@ class SupportCARCOM:
         switcher = {
             "DiagnosticSessionControl": b'\x10' + message,
             "ECUResetHardReset": b'\x11\x01' + message,
+            "ECUResetHardReset_noreply": b'\x11\x81' + message,
             "ClearDiagnosticInformation": b'\x14' + message,
             "ReadDTCInfoExtDataRecordByDTCNumber": b'\x19\x06' + message + mask,
             "ReadDTCInfoExtDataRecordByDTCNumber(86)": b'\x19\x86' + message + mask,
@@ -72,7 +73,7 @@ class SupportCARCOM:
             "ReadDTCInfoSnapshotIdentification(83)": b'\x19\x83',
             "ReadDTCInfoReportSupportedDTC": b'\x19\x0A',
             "ReadDTCInfoReportDTCWithPermanentStatus": b'\x19\x15',
-            "ReadDataByIdentifier": b'\x22'+ message,
+            "ReadDataByIdentifier": b'\x22'+ message + mask,
             "ReadMemoryByAddress": b'\x23'+ mask + message,
             "SecurityAccessRequestSeed": b'\x27\x01'+ mask + message,
             "SecurityAccessRequestSeed_mode1_3": b'\x27\x05'+ mask + message,

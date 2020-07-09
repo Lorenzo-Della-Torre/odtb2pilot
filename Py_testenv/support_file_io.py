@@ -25,7 +25,7 @@
 import os
 import sys
 import re
-import argparse
+import logging
 import yaml # Not installed? pylint: disable=import-error
 
 
@@ -43,23 +43,27 @@ class SupportFileIO:
         Extract requested data from a Parameter dictionary from yaml.
         """
         param_dir = './parameters_yml'
-        #print("Number file of param: ", len(sys.argv))
-        #print("regexpr ", r"\w+_(?P<reqprod>\d{3,})_\w+")
-        #print("sys.argv[0]: ", sys.argv[0])
+        #logging.debug("Number file of param: %s", len(sys.argv))
+        #logging.debug("regexpr %s", r"\w+_(?P<reqprod>\d{3,})_\w+")
+        #logging.debug("sys.argv[0]: %s", sys.argv[0])
 
-        #print("re.match: ", re.match(r"\w+_(?P<reqprod>\d{3,})_\w+", sys.argv[0]))
-        #print("re.split: ", re.split(r"(.py)", sys.argv[0])[0] + '.yml')
+        #logging.debug("re.match: %s %s", re.match(r"\w+_(?P<reqprod>\d{3,})_\w+", sys.argv[0]))
+        #logging.debug("re.split: %s", re.split(r"(.py)", sys.argv[0])[0] + '.yml')
 
         if len(sys.argv) > 1:
             f_name = sys.argv[1]
         else:
             # Import Parameters if REQPROD name matches
-            #pattern_req = re.match(r"\w+_(?P<reqprod>\d{3,})_\w+", sys.argv[0])
-            f_name = re.split(r"(.py)", sys.argv[0])[0] + '.yml'
-        #print("Parameter file: ", f_name)
-        print("Path exists: ", os.path.exists(param_dir))
-        #print("Path         ", param_dir)
-        print("File exists: ", os.path.isfile(param_dir + '/' + f_name))
+            # Remove path from filename
+            f_name_temp = re.split(r"(BSW_)", sys.argv[0])
+            #logging.debug("new f_name: %s", f_name_temp)
+            #logging.debug("new arg to split: %s%s", f_name_temp[1], f_name_temp[2])
+            f_name = re.split(r"(.py)", f_name_temp[1]+f_name_temp[2])[0] + '.yml'
+        #logging.debug("Parameter file: %s", f_name)
+        logging.info("Path exists: %s", os.path.exists(param_dir))
+        #logging.debug("Path         %s", param_dir)
+        logging.info("File exists: %s", os.path.isfile(param_dir + '/' + f_name))
+        #logging.info("File         %s", param_dir + '/' + f_name)
         #try to find matching files in catalog holding parameter files
         if os.path.exists(param_dir) and os.path.isfile(param_dir + '/' + f_name):
             dir_file = param_dir + '/' + f_name
@@ -86,22 +90,26 @@ class SupportFileIO:
             with open(dir_file) as file:
                 data = yaml.safe_load(file)
         except IOError:
-            print("Could not open parameter file for testscript\n")
-            #print("The pattern {} is not present in the directory\n"\
+            logging.info("Could not open parameter file for testscript\n")
+            logging.info("Parameter path: %s", param_dir)
+            logging.info("Parameter file: %s", f_name)
+            #logging.debug("The pattern {:} is not present in the directory\n"\
             #    .format(pattern_req.group('reqprod')))
-            sys.exit(1)
-        #print("YML key", key)
+            #sys.exit(1)
+            #sys.exit is to hard, skip reading parameter, don't exit python
+            return value
+        #logging.debug("YML key", key)
         for arg in argv:
-            #print("key: ", key)
-            #print("arg: ", arg)
+            #logging.debug("key: %s", key)
+            #logging.debug("arg: %s", arg)
 
             #dict
             if isinstance(arg, dict):
                 for dict_key in arg:
-                    print("search data for ", dict_key)
+                    logging.debug("search data for %s", dict_key)
                     if data[key].get(dict_key) is not None:
-                        #print("New values in dict",  data[key].get(dict_key))
-                        #print("used dict_key: ", dict_key)
+                        #logging.debug("New values in dict %s",  data[key].get(dict_key))
+                        #logging.debug("used dict_key: %s", dict_key)
                         arg[dict_key] = data[key].get(dict_key)
                         #convert some values to bytes
                         if dict_key in ('mode', 'mask', 'did'):
@@ -111,42 +119,9 @@ class SupportFileIO:
             ### doesn't work for 'simple' types because of scope
             ### use return value
             elif data[key].get(arg) is not None:
-                #print("Sent new value for ", key, "arg: ",\
-                #      arg, "value: ", data[key].get(arg))
+                #logging.debug("Sent new value for %s arg: %s value: %s", key,\
+                #      arg, data[key].get(arg))
                 value = data[key].get(arg)
-                #print("New values variable",  data[key].get(arg))
-                print("new value variable: ", value)
+                #logging.debug("New values variable %s",  data[key].get(arg))
+                logging.debug("new value variable: %s", value)
         return value
-
-    @classmethod
-    def write_to_file(cls, content, outfile):
-        '''Write content to outfile'''
-        with open(outfile, 'w') as file:
-            file.write(str(content))
-
-
-    @classmethod
-    def parse_some_args(cls):
-        ''' Get the command line input, using the defined flags. '''
-        parser = argparse.ArgumentParser(description='Execute testscript')
-
-        parser.add_argument("--config_file",\
-                            help="Input config file which overrides the default one",
-                            type=str, action='store', dest='conf_file', required=False,)
-        ret_args = parser.parse_args()
-        return ret_args
-
-
-    @classmethod
-    def config(cls, margs):
-        ''' Determine which config file to use.
-            If we have a config file as input parameter, then use it.
-            Otherwise use default config file '''
-        if margs.conf_file:
-            file_name = margs.conf_file
-        else:
-            # Return first path of the script's name.
-            f_name_wo_type = os.path.basename(__file__).split('.')[0]
-            # Add .conf at the end, to show that it is a config file.
-            file_name = f_name_wo_type + '.conf'
-        return file_name

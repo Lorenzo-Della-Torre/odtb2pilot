@@ -27,17 +27,20 @@
 """The Python implementation of the gRPC route guide client."""
 
 import logging
+import inspect
 
 from support_can import SupportCAN, CanParam, PerParam
 from support_test_odtb2 import SupportTestODTB2
 from support_service22 import SupportService22
 from support_service3e import SupportService3e
+from support_file_io import SupportFileIO
 
 
 SC = SupportCAN()
 SUTE = SupportTestODTB2()
 SE22 = SupportService22()
 SE3E = SupportService3e()
+SIO = SupportFileIO
 
 class SupportPrecondition:
     """
@@ -60,17 +63,26 @@ class SupportPrecondition:
             "frame" : b'\x00\x40\xFF\xFF\xFF\xFF\xFF\xFF',
             "intervall" : 0.4
             }
+        logging.debug("Read YML for %s", str(inspect.stack()[0][3]))
+        SIO.extract_parameter_yml(str(inspect.stack()[0][3]), hb_param)
+        logging.debug("hp_param %s", hb_param)
 
         # start heartbeat, repeat every x second
         SC.start_heartbeat(can_p["netstub"], hb_param)
 
         #Start testerpresent without reply
-        SE3E.start_periodic_tp_zero_suppress_prmib(can_p)
+        tp_name = "Vcu1ToAllFuncFront1DiagReqFrame"
+        new_tp_name = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), "tp_name")
+        if new_tp_name != '':
+            tp_name = new_tp_name
+        logging.debug("New tp_name: %s", tp_name)
+        SE3E.start_periodic_tp_zero_suppress_prmib(can_p, tp_name)
+        #SE3E.start_periodic_tp_zero_suppress_prmib(can_p, 'HvbmdpToAllUdsDiagRequestFrame')
 
         ##record signal we send as well
         #SC.subscribe_signal(stub, can_receive, can_send, can_namespace, timeout)
         SC.subscribe_signal(can_p, timeout)
-        print("precondition can_p2", can_p)
+        logging.debug("precondition can_p2 %s", can_p)
         #record signal we send as well
         can_p2: CanParam = {"netstub": can_p["netstub"],
                             "send": can_p["receive"],
