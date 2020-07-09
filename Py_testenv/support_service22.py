@@ -473,7 +473,7 @@ class SupportService22:
 
 
     @classmethod
-    def __get_sub_payload(cls, payload, offset, size):
+    def get_sub_payload(cls, payload, offset, size):
         '''
         Returns the chosen sub part of the payload based on the offset and size
         Payload, offset and size is hexadecimal (16 base)
@@ -491,7 +491,7 @@ class SupportService22:
 
 
     @classmethod
-    def __get_scaled_value(cls, resp_item, sub_payload):
+    def get_scaled_value(cls, resp_item, sub_payload):
         '''
         Input - Response Item with at least formula
                 Value which should converted from raw data
@@ -524,14 +524,14 @@ class SupportService22:
 
 
     @classmethod
-    def __get_scaled_value_with_unit(cls, resp_item, sub_payload):
+    def get_scaled_value_with_unit(cls, resp_item, sub_payload):
         '''
         Input - Response Item with at least formula
                 sub_payload which should converted from raw data
         Returns the string with converted data
         '''
         try:
-            scaled_value = cls.__get_scaled_value(resp_item, sub_payload)
+            scaled_value = cls.get_scaled_value(resp_item, sub_payload)
             unit = str()
             # Extracts the unit value (if it exists)
             if 'Unit' in resp_item:
@@ -604,7 +604,7 @@ class SupportService22:
 
 
     @classmethod
-    def __compare(cls, scaled_value, compare_value):
+    def compare(cls, scaled_value, compare_value):
         '''
         Comparing two values. Returns boolean.
         If the compare value contains '=', then we add an '='
