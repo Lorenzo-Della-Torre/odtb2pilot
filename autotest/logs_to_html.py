@@ -215,7 +215,8 @@ def get_url_dict(script_folder):
     return ret_dict
 
 
-def generate_html(folderinfo_and_result_tuple_list, outfile, verif_d,  # pylint: disable=too-many-locals, too-many-branches, too-many-statements
+# Will break this into smaller functions later, but it is not easy to split the html generation.
+def generate_html(folderinfo_and_result_tuple_list, outfile, verif_d,  # pylint: disable=too-many-locals, too-many-branches, too-many-statements, too-many-arguments
                   elektra_d, script_folder, log_folders):
     """
     Create html table based on the dict
@@ -322,7 +323,8 @@ def generate_html(folderinfo_and_result_tuple_list, outfile, verif_d,  # pylint:
                                 res_counter_list[index][result] += 1
                             index += 1
                             # Creating URL string
-                            href_string = log_folders + '\\' + folder_name + '\\' + key + LOG_FILE_EXT
+                            href_string = (log_folders + '\\' + folder_name + '\\' + key
+                                           + LOG_FILE_EXT)
                             color = COLOR_DICT[MISSING_STATUS]
                             if result in COLOR_DICT:
                                 color = COLOR_DICT.get(result)
