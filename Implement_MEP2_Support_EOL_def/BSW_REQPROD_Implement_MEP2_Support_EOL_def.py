@@ -33,6 +33,7 @@ from support_test_odtb2 import SupportTestODTB2
 import odtb_conf
 import parameters as parammod
 import BSW_REQPROD_Implement_MEP2_Support_EOL_def_conf as conf
+from output.did_dict import sddb_resp_item_dict
 from output.did_dict import sddb_app_did_dict
 from output.did_dict import app_diag_part_num
 from support_can import SupportCAN, CanParam
@@ -169,6 +170,86 @@ def generate_html2(outfile, result_list, pass_or_fail_counter_dict, part_nbr_mat
     SIO.write_to_file(doc.getvalue(), outfile)
 
 
+def scale_data(did_dict_with_result): #pylint: disable=too-many-branches
+    '''
+    Input  - Takes a dictionary where we store the results from previous test runs
+    Output - Same dictionary as in input. Now with added scaled data.
+
+    For each DID which were tested, look up response items. Scale payload using formula in
+    Response Item.
+    '''
+    formatted_result_value_list = list()
+
+    try: #pylint: disable=too-many-nested-blocks
+        payload = dict()
+        if 'payload' in did_dict_with_result:
+            payload = did_dict_with_result['payload']
+        else:
+            logging.fatal('No payload to Scale!!')
+
+        did_id = did_dict_with_result['ID']
+        key = '22' + did_id
+        logging.debug('Payload = %s (Length = %s)', payload,
+                      did_dict_with_result['payload_length'])
+
+        # For each response item for the dict
+        for resp_item in sddb_resp_item_dict[key]:
+            sub_payload = SE22.get_sub_payload(payload, resp_item['Offset'], resp_item['Size'])
+            logging.debug('==================================')
+            logging.debug('Name = %s', resp_item['Name'])
+            logging.debug('----------------------------------')
+            logging.debug('Payload = %s (Sub payload = %s (Offset = %s Size = %s))', payload,
+                          sub_payload, resp_item['Offset'], resp_item['Size'])
+
+            # Has compare value
+            if 'CompareValue' in resp_item:
+                compare_value = resp_item['CompareValue']
+                logging.debug("Compare_value: %s", compare_value)
+
+                try:
+                    scaled_value = SE22.get_scaled_value(resp_item, sub_payload)
+                    logging.debug("Scaled_value: %s", str(scaled_value))
+
+                    if SE22.compare(scaled_value, compare_value):
+                        logging.debug('Equal! Comparing %s with %s', str(compare_value),
+                                      scaled_value)
+                        # Adding name for easier readability
+                        formatted_result_value = resp_item['Name'] + ': '
+                        # When comparison value exist, the unit is usually something like:
+                        # on/off, open/close, True/False
+                        # Then we just add that value and not the comparison value.
+                        if 'Unit' in resp_item:
+                            formatted_result_value += resp_item['Unit']
+                        # Adding scaled value if no Unit value exists
+                        else:
+                            formatted_result_value += str(scaled_value)
+                        formatted_result_value_list.append(formatted_result_value)
+                        did_dict_with_result['Formula'] = resp_item['Formula']
+                except RuntimeError as runtime_error:
+                    logging.fatal(runtime_error)
+                except SyntaxError as syntax_error:
+                    logging.fatal(syntax_error)
+            # Has no compare value
+            else:
+                logging.debug('No compare value!')
+                # Adding name for easier readability
+                formatted_result_value = resp_item['Name'] + ' = '
+                # Adding scaled data to the result string
+                formatted_result_value += SE22.get_scaled_value_with_unit(resp_item,
+                                                                          sub_payload)
+                formatted_result_value_list.append(formatted_result_value)
+                did_dict_with_result['Formula'] = resp_item['Formula']
+    except RuntimeError as runtime_error:
+        logging.fatal(runtime_error)
+    except KeyError as key_error:
+        logging.fatal(key_error)
+
+    if formatted_result_value_list:
+        did_dict_with_result['formatted_result_value'] = formatted_result_value_list
+    return did_dict_with_result
+
+
+
 def run():
     ''' run '''
     # Setup logging
@@ -212,7 +293,7 @@ def run():
 
         # Adding scaled data to the dictionary with the result
         if 'error_message' not in did_dict_with_result:
-            did_dict_with_result = SE22.scale_data(did_dict_with_result)
+            did_dict_with_result = scale_data(did_dict_with_result)
 
         # Summarizing the result
         info_entry, pass_or_fail_counter_dict = SE22.summarize_result(did_dict_with_result,
