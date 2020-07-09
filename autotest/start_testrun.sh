@@ -48,7 +48,7 @@ else
 	done <testscripts.lst
 
 	# Generate testreport
-	python3 $TESTREPO/autotest/logs_to_html.py --logs ~/testrun --reqcsv ~/Repos/odtb2pilot/autotest/req_bsw.csv --script_folder ~/Repos/odtb2pilot/
+	python3 $TESTREPO/autotest/logs_to_html.py --logs ~/testrun --reqcsv ~/Repos/odtb2pilot/autotest/req_bsw.csv --script_folder ~/Repos/odtb2pilot/ --outfile index.html
 
     echo
 	echo "ToDo:"

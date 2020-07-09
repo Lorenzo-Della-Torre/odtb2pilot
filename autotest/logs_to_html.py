@@ -215,7 +215,8 @@ def get_url_dict(script_folder):
     return ret_dict
 
 
-def generate_html(folderinfo_and_result_tuple_list, outfile, verif_d, elektra_d, script_folder): # pylint: disable=too-many-locals, too-many-branches, too-many-statements
+def generate_html(folderinfo_and_result_tuple_list, outfile, verif_d,  # pylint: disable=too-many-locals, too-many-branches, too-many-statements
+                  elektra_d, script_folder, log_folders):
     """
     Create html table based on the dict
     """
@@ -321,7 +322,7 @@ def generate_html(folderinfo_and_result_tuple_list, outfile, verif_d, elektra_d,
                                 res_counter_list[index][result] += 1
                             index += 1
                             # Creating URL string
-                            href_string = folder_name + '\\' + key + LOG_FILE_EXT
+                            href_string = log_folders + '\\' + folder_name + '\\' + key + LOG_FILE_EXT
                             color = COLOR_DICT[MISSING_STATUS]
                             if result in COLOR_DICT:
                                 color = COLOR_DICT.get(result)
@@ -484,7 +485,7 @@ def main(margs):
         logging.debug("CSV-file found: %s", margs.req_csv)
         verif_dict, e_link_dict = get_reqprod_links(margs.req_csv)
     generate_html(folderinfo_and_result_tuple_list, margs.html_file, verif_dict, e_link_dict,
-                  margs.script_folder)
+                  margs.script_folder, log_folders)
     logging.info("Script finished")
 
 
