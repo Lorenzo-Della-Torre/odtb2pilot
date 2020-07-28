@@ -82,13 +82,13 @@ def step_1(can_p, timeout):
     SC.update_can_messages(can_p["receive"])
     #logging.debug("all can messages updated")
     time.sleep(1)
-    #logging.info("Step%s: messages received %s", etp["step_no"],\
+    #logging.info("Step%s: messages received %s", etp["step_no"],
     #             len(SC.can_messages[can_p_ex["receive"]]))
-    #logging.info("Step%s: messages: %s \n", etp["step_no"],\
+    #logging.info("Step%s: messages: %s \n", etp["step_no"],
     #             SC.can_messages[can_p_ex["receive"]])
-    logging.info("Step%s: frames received %s", etp["step_no"],\
+    logging.info("Step%s: frames received %s", etp["step_no"],
                  len(SC.can_frames[can_p_ex["receive"]]))
-    logging.info("Step%s: frames: %s \n", etp["step_no"],\
+    logging.info("Step%s: frames: %s \n", etp["step_no"],
                  SC.can_frames[can_p_ex["receive"]])
 
     result = (len(SC.can_frames[can_p_ex["receive"]]) > 10)
@@ -168,8 +168,7 @@ def run():
     # step2:
     # action:ECU Reset
     # result: BECM reports confirmed message
-        #result = result and SE11.ecu_hardreset(can_p, 2)
-        result = result and SE11.ecu_hardreset_5sec_delay(can_p, 2)
+        result = result and SE11.ecu_hardreset(can_p, 2)
 
     # step3:
     # action: Verify signal is still sent
