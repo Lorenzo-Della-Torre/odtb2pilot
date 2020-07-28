@@ -1,0 +1,10 @@
+precondition:
+        id: "HvbmdpNmFrame"
+        tp_name: "HvbmdpToAllUdsDiagRequestFrame"
+
+run:
+        send: HvbmdpToHvbmUdsDiagRequestFrame
+        receive: HvbmToHvbmdpUdsDiagResponseFrame
+step_1:
+        send: HvbmNmFrame
+        receive: HvbmHvbm1canFrame53_20
