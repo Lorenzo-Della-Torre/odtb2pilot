@@ -5,6 +5,11 @@
 # version:  1.0
 # reqprod:  60017
 
+# author:   HWEILER (Hans-Klaus Weile4r)
+# date:     2020-07-29
+# version:  1.1
+# changes:  YML parameters corrected, error setting FC-delay corrected, step order changed.
+
 # #inspired by https://grpc.io/docs/tutorials/basic/python.html
 # Copyright 2015 gRPC authors.
 #
@@ -26,8 +31,9 @@ import time
 from datetime import datetime
 import sys
 import logging
+import inspect
 
-import ODTB_conf
+import odtb_conf
 
 from support_can import SupportCAN, CanParam, CanMFParam, CanPayload, CanTestExtra
 from support_test_odtb2 import SupportTestODTB2
@@ -50,280 +56,153 @@ POST = SupportPostcondition()
 SE10 = SupportService10()
 SE22 = SupportService22()
 
-def step_2(can_par):
+
+def step_2(can_p):
     """
-    Teststep 2: Send first frame of a multi frame request DIDs
+    Change delay to reply to FF: delay < 1000 ms
     """
-    stepno = 2
-    purpose = "Send first frame of a multi frame request DIDs"
-    result = True
-    cpay: CanPayload = SIO.extract_parameter_yml(
-        "step_{}".format(stepno),
-        payload=SC_CARCOM.can_m_send("ReadDataByIdentifier",
-                                     b'\xDD\x02\xDD\x0A\xDD\x0C\x49\x47', b''),
-        extra=''
-        )
-
-    SC.clear_old_cf_frames()
-    logging.debug("Clear old messages")
-    SC.clear_all_can_frames()
-    SC.clear_all_can_messages()
-
-    SUTE.print_test_purpose(stepno, purpose)
-    # wait for messages
-    # define answer to expect
-    logging.debug("Build answer can_frames to receive")
-    can_answer = SC.can_receive(cpay['payload'], cpay['extra'])
-    logging.debug("CAN frames to receive: %s", can_answer)
-
-    wait_start = time.time()
-    logging.debug("To send:   [%s, %s, %s]", time.time(), can_par["send"],
-                  (cpay["payload"]).hex().upper())
-    SC.clear_all_can_messages()
-
-    #number of frames to send, array of frames to send
-    SC.can_mf_send[can_par["send"]] = [0, []]
-
-    # build array of frames to send:
-    mess_length = len(cpay["payload"])
-
-    # verify multi_frame:
-    result = (8 < mess_length < 4096)
-
-    #send_mf
-    SC.send_mf(can_par, cpay, True, 0x00)
-    result = result and (len(SC.can_mf_send[can_par["send"]][1]) < 0x7ff)
-    print("send payload as MF")
-    # send payload as MF
-
-    #send FirstFrame:
-    SC.send_ff_can(can_par, freq=0)
-
-    logging.info("Step %s: Result teststep: %s \n", stepno, result)
-    return wait_start, can_answer, result
-
-def step_3(can_par):
-    """
-    Teststep 3: send CF with with CF delay < 1000 ms
-    """
-    stepno = 3
+    step_no = 2
     purpose = "send CF with with CF delay < 1000 ms"
     result = True
-    SUTE.print_test_purpose(stepno, purpose)
+    SUTE.print_test_purpose(step_no, purpose)
 
     #change Control Frame parameters
-    can_mf: CanMFParam = SIO.extract_parameter_yml(
-        "step_{}".format(stepno),
-        block_size=0,
-        separation_time=0,
-        frame_control_delay=950,
-        frame_control_flag=48,
-        frame_control_auto=True
-        )
-    SC.change_mf_fc(can_par["send"], can_mf)
-    #send consecutive frame
-    #verify 1st consecutive frame is sent
-    if SC.send_cf_can(can_par) != "OK: MF message sent":
-        result = False
-    logging.info("Step %s: Result teststep: %s \n", stepno, result)
+    can_mf: CanMFParam = {
+        "block_size": 0,
+        "separation_time": 0,
+        "frame_control_delay": 950,
+        "frame_control_flag": 48,
+        "frame_control_auto": False
+        }
+    SC.change_mf_fc(can_p["send"], can_mf)
     return result
 
-def step_4(can_par, wait_start, can_answer):
+def step_3(can_p):
     """
-    Teststep 4: test if all requested DIDs are included in reply
+    Teststep 3: Send multi frame request DIDs with delay in CF < 1000ms
     """
-    stepno = 4
-    etp: CanTestExtra = SIO.extract_parameter_yml(
-        "step_{}".format(stepno),
-        step_no=4,
-        purpose="test if all requested DIDs are included in reply",
-        timeout=2,
-        min_no_messages=-1,
-        max_no_messages=-1
-        )
-    SUTE.print_test_purpose(stepno, etp["purpose"])
+    result = True
+    cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("ReadDataByIdentifier",
+                                                         b'\xDD\x02\xDD\x0A\xDD\x0C\x49\x47', b''),
+                        "extra" : ''
+                       }
 
-    #wait timeout for getting subscribed data
-    if etp["max_no_messages"] == -1:
-        time.sleep(etp["timeout"])
-        SC.update_can_messages(can_par["receive"])
-    else:
-        SC.update_can_messages(can_par["receive"])
-        while((time.time()-wait_start <= etp["timeout"])\
-            and (len(SC.can_messages[can_par["receive"]]) < etp["max_no_messages"])):
-            SC.clear_all_can_messages()
-            SC.update_can_messages(can_par["receive"])
+    etp: CanTestExtra = {"step_no": 3,
+                         "purpose": "Send multi frame request DIDs with delay in CF < 1000ms",
+                         "timeout": 1,
+                         "min_no_messages": -1,
+                         "max_no_messages": -1
+                        }
 
-    logging.debug("Rec can frames: %s", SC.can_frames[can_par["receive"]])
-    if SC.can_frames[can_par["receive"]]:
-        if etp["min_no_messages"] >= 0:
-            result = result and\
-                SUTE.test_message(SC.can_frames[can_par["receive"]],\
-                    can_answer.hex().upper())
-
+    result = SUTE.teststep(can_p, cpay, etp)
     #test if frames contain all the IDs expected
     logging.info("Test if string contains all IDs expected:")
-    result = 'DD02' in SC.can_frames[can_par["receive"]][1][2]
-    result = result and 'DD0A' in SC.can_frames[can_par["receive"]][1][2]
-    result = result and 'DD0C' in SC.can_frames[can_par["receive"]][2][2]
-    result = result and '4947' in SC.can_frames[can_par["receive"]][2][2]
-    logging.info("Step%s teststatus: %s \n", stepno, result)
+    logging.debug("Frames received: %s", SC.can_frames[can_p["receive"]])
+    logging.info("Messages received: %s", SC.can_messages[can_p["receive"]])
+
+    result = result and 'DD02' in SC.can_messages[can_p["receive"]][0][2]
+    if not result:
+        logging.info("Result after test DD02: %s", result)
+    result = result and 'DD0A' in SC.can_messages[can_p["receive"]][0][2]
+    if not result:
+        logging.info("Result after test DD0A: %s", result)
+    result = result and 'DD0C' in SC.can_messages[can_p["receive"]][0][2]
+    if not result:
+        logging.info("Result after test DD0C: %s", result)
+    result = result and '4947' in SC.can_messages[can_p["receive"]][0][2]
+    if not result:
+        logging.info("Result after test 4947: %s", result)
+
+    logging.info("Step%s teststatus: %s \n", etp["step_no"], result)
     logging.info("Step %s: Result teststep: %s \n", etp["step_no"], result)
     return result
 
-def step_5(can_par):
+def step_4(can_p):
     """
-    Teststep 5: Send first frame of a multi frame request DIDs
+    Teststep 4: set FC delay > 1000 ms
     """
-    stepno = 5
-    purpose = "Send first frame of a multi frame request DIDs"
-    result = True
-    cpay: CanPayload = SIO.extract_parameter_yml(
-        "step_{}".format(stepno),
-        payload=SC_CARCOM.can_m_send("ReadDataByIdentifier",
-                                     b'\xDD\x02\xDD\x0A\xDD\x0C\x49\x47', b''),
-        extra=''
-        )
-
-    SC.clear_old_cf_frames()
-    logging.debug("Clear old messages")
-    SC.clear_all_can_frames()
-    SC.clear_all_can_messages()
-
-    SUTE.print_test_purpose(stepno, purpose)
-
-    # wait for messages
-    # define answer to expect
-    logging.debug("Build answer can_frames to receive")
-    can_answer = SC.can_receive(cpay['payload'], cpay['extra'])
-    logging.debug("CAN frames to receive: %s", can_answer)
-
-    wait_start = time.time()
-    logging.debug("To send:   [%s, %s, %s]", time.time(), can_par["send"],
-                  (cpay["payload"]).hex().upper())
-    SC.clear_all_can_messages()
-
-    #number of frames to send, array of frames to send
-    SC.can_mf_send[can_par["send"]] = [0, []]
-
-    # build array of frames to send:
-    mess_length = len(cpay["payload"])
-    # verify multi_frame:
-    result = (8 < mess_length < 4096)
-    #send_mf
-    SC.send_mf(can_par, cpay, True, 0x00)
-    result = result and (len(SC.can_mf_send[can_par["send"]][1]) < 0x7ff)
-    logging.info("send payload as MF")
-    # send payload as MF
-
-    #send FirstFrame:
-    SC.send_ff_can(can_par, freq=0)
-    logging.info("Step %s: Result teststep: %s \n", stepno, result)
-    return wait_start, can_answer, result
-
-def step_6(can_par):
-    """
-    Teststep 6: send CF with with CF delay > 1000 ms
-    """
-    stepno = 6
-    purpose = "send CF with with CF delay > 1000 ms"
+    stepno = 4
+    purpose = "set FC delay > 1000 ms"
     result = True
     SUTE.print_test_purpose(stepno, purpose)
     #change multi frame parameters
-    can_mf: CanMFParam = SIO.extract_parameter_yml(
-        "step_{}".format(stepno),
-        block_size=0,
-        separation_time=0,
-        frame_control_delay=1050,
-        frame_control_flag=48,
-        frame_control_auto=True
-        )
-    SC.change_mf_fc(can_par["send"], can_mf)
-    #send consecutive frame
-    #verify 1st consecutive frame is sent
-    if SC.send_cf_can(can_par) != "OK: MF message sent":
-        result = False
-    logging.info("Step %s: Result teststep: %s \n", stepno, result)
+    can_mf: CanMFParam = {
+        "block_size": 0,
+        "separation_time": 0,
+        "frame_control_delay": 1050,
+        "frame_control_flag": 48,
+        "frame_control_auto": False
+        }
+    SC.change_mf_fc(can_p["send"], can_mf)
     return result
 
-def step_7(can_par, wait_start, can_answer):
+def step_5(can_p):
     """
-    Teststep 7: test if none of the requested DIDs are included in reply
+    Teststep 5: Send multi frame request DIDs with delay in CF < 1000ms
     """
-    stepno = 7
-    etp: CanTestExtra = SIO.extract_parameter_yml(
-        "step_{}".format(stepno),
-        step_no=7,
-        purpose="test if none of the requested DIDs are included in reply",
-        timeout=2,
-        min_no_messages=-1,
-        max_no_messages=-1
-        )
-    SUTE.print_test_purpose(stepno, etp["purpose"])
+    cpay: CanPayload = {
+        "payload": SC_CARCOM.can_m_send("ReadDataByIdentifier",
+                                        b'\xDD\x02\xDD\x0A\xDD\x0C\x49\x47', b''),
+        "extra" : ''
+        }
+    etp: CanTestExtra = {"step_no": 5,
+                         "purpose": "Send multi frame request DIDs with delay in CF > 1000ms",
+                         "timeout": 1,
+                         "min_no_messages": -1,
+                         "max_no_messages": -1
+                        }
+    result = SUTE.teststep(can_p, cpay, etp)
+    logging.info("Result after teststep: %s", result)
+    #test if frames contain all the IDs expected
+    logging.info("Test if request timed out:")
+    logging.debug("Frames received: %s", SC.can_frames[can_p["receive"]])
+    logging.info("Messages received: %s", SC.can_messages[can_p["receive"]])
 
-    #wait timeout for getting subscribed data
-    if etp["max_no_messages"] == -1:
-        time.sleep(etp["timeout"])
-        SC.update_can_messages(can_par["receive"])
-    else:
-        SC.update_can_messages(can_par["receive"])
-        while((time.time()-wait_start <= etp["timeout"])\
-            and (len(SC.can_messages[can_par["receive"]]) < etp["max_no_messages"])):
-            SC.clear_all_can_messages()
-            SC.update_can_messages(can_par["receive"])
+    if not len(SC.can_messages[can_p["receive"]]) == 0:
+        logging.info("Len Mess received: %s", len(SC.can_messages[can_p["receive"]]))
 
-    logging.debug("Rec can frames: %s", SC.can_frames[can_par["receive"]])
-    if SC.can_frames[can_par["receive"]]:
-        if etp["min_no_messages"] >= 0:
-            result = result and\
-                SUTE.test_message(SC.can_frames[can_par["receive"]],\
-                                      can_answer.hex().upper())
-
-    logging.info("verify only Flow Control frame are included in reply:")
-
-    logging.info("verify that 1 reply received: len(frames_received) == 1 : %r",\
-         len(SC.can_frames[can_par["receive"]]) == 1)
-    result = len(SC.can_frames[can_par["receive"]]) == 1
+    logging.info("Step %s: Result teststep: %s \n", etp["step_no"], result)
 
     return result
 
-def step_8(can_par):
+def step_6(can_p):
     """
-    Teststep 8: set back frame_control_delay to default
+    Teststep 6: set back frame_control_delay to default
     """
 
-    stepno = 8
+    stepno = 6
     purpose = "set back frame_control_delay to default"
 
-    can_mf: CanMFParam = SIO.extract_parameter_yml(
-        "step_{}".format(stepno),
-        block_size=0,
-        separation_time=0,
-        frame_control_delay=0,
-        frame_control_flag=48,
-        frame_control_auto=True
-        )
+    can_mf: CanMFParam = {
+        "block_size": 0,
+        "separation_time": 0,
+        "frame_control_delay": 0,
+        "frame_control_flag": 48,
+        "frame_control_auto": False
+        }
 
     SUTE.print_test_purpose(stepno, purpose)
-    SC.change_mf_fc(can_par["receive"], can_mf)
+    SC.change_mf_fc(can_p["receive"], can_mf)
 
 def run():
     """
     Run - Call other functions from here
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.DEBUG)
+    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
     # start logging
     # to be implemented
 
     # where to connect to signal_broker
-    can_par: CanParam = SIO.extract_parameter_yml(
-        "main",
-        netstub=SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT),
-        send="Vcu1ToBecmFront1DiagReqFrame",
-        receive="BecmToVcu1Front1DiagResFrame",
-        namespace=SC.nspace_lookup("Front1CANCfg0")
-        )
+    can_p: CanParam = {
+        'netstub': SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
+        'send': "Vcu1ToBecmFront1DiagReqFrame",
+        'receive': "BecmToVcu1Front1DiagResFrame",
+        'namespace': SC.nspace_lookup("Front1CANCfg0")
+        }
+    #Read YML parameter for current function (get it from stack)
+    logging.debug("Read YML for %s", str(inspect.stack()[0][3]))
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
 
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
@@ -333,64 +212,53 @@ def run():
     # precondition
     ############################################
     timeout = 30
-    result = PREC.precondition(can_par, timeout)
+    result = PREC.precondition(can_p, timeout)
 
     if result:
     ############################################
     # teststeps
     ############################################
+
     # step1:
     # action: # Change to extended session
     # result: BECM reports mode
-        result = result and SE10.diagnostic_session_control_mode3(can_par, 1)
+        result = result and SE10.diagnostic_session_control_mode3(can_p, 1)
 
     # step2:
-    # action:
-    # result: whole message received
-        wait_start, can_answer, result_step_2 = step_2(can_par)
-        result = result and result_step_2
+    # action: change delay for reply to FC frame
+    # result:
+        result = result and step_2(can_p)
 
     # step3:
-    # action: send request with FC_delay > timeout
+    # action: send request with FC_delay < timeout
     # result: whole message received
-        result = result and step_3(can_par)
+        result = result and step_3(can_p)
 
     # step4:
-    # action: send request with FC_delay > timeout
-    # result: whole message received
-        result = result and step_4(can_par, wait_start, can_answer)
+    # action: set FC_delay > timeout
+    # result:
+        result = result and step_4(can_p)
 
     # step5:
-    # action:
-    # result: whole message received
-        wait_start, can_answer, result_step_5 = step_5(can_par)
-        result = result and result_step_5
+    # action: send request with FC_delay > timeout
+    # result: no reply received
+        result = result and step_5(can_p)
 
     # step6:
-    # action: send request with FC_delay > timeout
-    # result: whole message received
-        result = result and step_6(can_par)
+    # action:
+    # result: set back frame_control_delay to default
+        step_6(can_p)
 
     # step7:
-    # action:
-    # result: whole message received
-        result = result and step_7(can_par, wait_start, can_answer)
-
-    # step8:
-    # action:
-    # result: whole message received
-        step_8(can_par)
-
-    # step9:
     # action: verify current session
     # result: BECM reports extended session
-        result = result and SE22.read_did_f186(can_par, dsession=b'\x03')#, 9)
+        result = result and SE22.read_did_f186(can_p, dsession=b'\x03', stepno=7)
 
     ############################################
     # postCondition
     ############################################
 
-    POST.postcondition(can_par, starttime, result)
+    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()
