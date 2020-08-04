@@ -183,7 +183,7 @@ def run():
     # teststeps
     ############################################
     # step1:
-    # action: # Change to programming session
+    # action: Change to programming session
     # result: BECM reports mode
         result = result and SE10.diagnostic_session_control_mode2(can_p, 1)
 
