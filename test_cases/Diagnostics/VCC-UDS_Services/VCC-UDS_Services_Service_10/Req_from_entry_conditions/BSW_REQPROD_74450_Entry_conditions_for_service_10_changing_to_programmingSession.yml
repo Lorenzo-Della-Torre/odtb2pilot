@@ -1,3 +1,0 @@
-main:
-        can_send: Vcu1ToBecmFront1DiagReqFrame
-        can_receive: BecmToVcu1Front1DiagResFrame
