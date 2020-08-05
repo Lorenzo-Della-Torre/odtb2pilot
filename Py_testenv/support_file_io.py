@@ -9,6 +9,11 @@
     changes:  YML parameter uses default dir, YML project default
               YML handles parameters in dict
 
+    author:   hweiler (Hans-Klaus Weiler)
+    date:     2020-08-05
+    version:  1.2
+    changes:  fixed issue when dict key not found
+
     Inspired by https://grpc.io/docs/tutorials/basic/python.html
 
     Copyright 2015 gRPC authors.
@@ -147,7 +152,9 @@ class SupportFileIO:
                 for dict_key in arg:
                     logging.debug("search default data for %s", dict_key)
                     #search in default parameters
-                    if default_par_open and (data_default[key].get(dict_key) is not None):
+                    if default_par_open and\
+                        key in data_default and\
+                        (data_default[key].get(dict_key) is not None):
                         logging.debug("New values in dict %s", data_default[key].get(dict_key))
                         logging.debug("used dict_key: %s", dict_key)
                         arg[dict_key] = data_default[key].get(dict_key)
@@ -156,7 +163,9 @@ class SupportFileIO:
                             arg[dict_key] = bytes(arg[dict_key], 'utf-8')
                     #search in file specific parameters
                     logging.debug("search data for %s", dict_key)
-                    if file_par_open and (data[key].get(dict_key) is not None):
+                    if file_par_open and\
+                        key in data and\
+                        (data[key].get(dict_key) is not None):
                         #logging.debug("New values in dict %s",  data[key].get(dict_key))
                         #logging.debug("used dict_key: %s", dict_key)
                         arg[dict_key] = data[key].get(dict_key)
