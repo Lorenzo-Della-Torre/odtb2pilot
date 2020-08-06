@@ -5,6 +5,11 @@
 # version:  1.1
 # reqprod:  76500
 
+# author:   HWEILER (Hans-Klaus Weiler)
+# date:     2020-08-06
+# version:  1.2
+# changes:  update for YML support
+
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
 
 # Copyright 2015 gRPC authors.
@@ -27,8 +32,9 @@ import time
 from datetime import datetime
 import sys
 import logging
+import inspect
 
-import ODTB_conf
+import odtb_conf
 from support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
 from support_test_odtb2 import SupportTestODTB2
 from support_carcom import SupportCARCOM
@@ -44,74 +50,66 @@ SC_CARCOM = SupportCARCOM()
 PREC = SupportPrecondition()
 POST = SupportPostcondition()
 
-def step_1(can_par):
+def step_1(can_p):
     """
     Teststep 1: verify that DTC info reply positively
     """
-    stepno = 1
-    cpay: CanPayload = SIO.extract_parameter_yml(
-        "step_{}".format(stepno),
-        payload=SC_CARCOM.can_m_send("ReadDTCByStatusMask", b'', b'confirmedDTC'),
-        extra=''
-        )
+    cpay: CanPayload = {
+        "payload": SC_CARCOM.can_m_send("ReadDTCByStatusMask", b'', b'confirmedDTC'),
+        "extra": ''
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    etp: CanTestExtra = {
+        "step_no": 1,
+        "purpose": "verify ReadDTCByStatusMask reply positively",
+        "timeout": 1,
+        "min_no_messages": -1,
+        "max_no_messages": -1
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
 
-    etp: CanTestExtra = SIO.extract_parameter_yml(
-        "step_{}".format(stepno),
-        step_no=1,
-        purpose="verify ReadDTCByStatusMask reply positively",
-        timeout=1,
-        min_no_messages=-1,
-        max_no_messages=-1
-        )
-
-    result = SUTE.teststep(can_par, cpay, etp)
-    result = result and SUTE.test_message(SC.can_messages[can_par["receive"]],
+    result = SUTE.teststep(can_p, cpay, etp)
+    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]],
                                           teststring='5902')
-
     return result
 
-def step_2(can_par):
+def step_2(can_p):
     """
     Teststep 2: verify that Read DTC by Status Mask reply with empty frame
     """
-    stepno = 2
-    cpay: CanPayload = SIO.extract_parameter_yml(
-        "step_{}".format(stepno),
-        payload=SC_CARCOM.can_m_send("ReadDTCByStatusMask(82)", b'', b'confirmedDTC'),
-        extra=''
-        )
+    cpay: CanPayload = {
+        "payload": SC_CARCOM.can_m_send("ReadDTCByStatusMask(82)", b'', b'confirmedDTC'),
+        "extra": ''
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
 
-    etp: CanTestExtra = SIO.extract_parameter_yml(
-        "step_{}".format(stepno),
-        step_no=2,
-        purpose="verify ReadDTCByStatusMask reply empty message",
-        timeout=1,
-        min_no_messages=-1,
-        max_no_messages=-1
-        )
+    etp: CanTestExtra = {
+        "step_no": 2,
+        "purpose": "verify ReadDTCByStatusMask reply empty message",
+        "timeout": 1,
+        "min_no_messages": -1,
+        "max_no_messages": -1
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
 
-    result = SUTE.teststep(can_par, cpay, etp)
-    result = result and not SC.can_messages[can_par["receive"]]
-
+    result = SUTE.teststep(can_p, cpay, etp)
+    result = result and not SC.can_messages[can_p["receive"]]
     return result
 
 def run():
     """
     Run - Call other functions from here
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.DEBUG)
-
-    # start logging
-    # to be implemented
+    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
     # where to connect to signal_broker
-    can_par: CanParam = SIO.extract_parameter_yml(
-        "main",
-        netstub=SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT),
-        send="Vcu1ToBecmFront1DiagReqFrame",
-        receive="BecmToVcu1Front1DiagResFrame",
-        namespace=SC.nspace_lookup("Front1CANCfg0")
-        )
+    can_p: CanParam = {
+        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
+        "send" : "Vcu1ToBecmFront1DiagReqFrame",
+        "receive" : "BecmToVcu1Front1DiagResFrame",
+        "namespace" : SC.nspace_lookup("Front1CANCfg0")
+    }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
 
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
@@ -121,7 +119,7 @@ def run():
     # precondition
     ############################################
     timeout = 30
-    result = PREC.precondition(can_par, timeout)
+    result = PREC.precondition(can_p, timeout)
 
     if result:
     ############################################
@@ -129,20 +127,20 @@ def run():
     ############################################
 
     # step1:
-    # action:
+    # action: request DTC info
     # result: BECM sends positive reply
-        result = result and step_1(can_par)
+        result = result and step_1(can_p)
 
     # step2:
-    # action:
+    # action: Read DTC by Status Mask
     # result: BECM sends positive reply
-        result = result and step_2(can_par)
+        result = result and step_2(can_p)
 
     ############################################
     # postCondition
     ############################################
 
-    POST.postcondition(can_par, starttime, result)
+    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()
