@@ -26,8 +26,9 @@ import time
 from datetime import datetime
 import sys
 import logging
+import inspect
 
-import ODTB_conf
+import odtb_conf
 from support_can import SupportCAN, CanParam, CanTestExtra
 from support_test_odtb2 import SupportTestODTB2
 from support_carcom import SupportCARCOM
@@ -47,47 +48,47 @@ POST = SupportPostcondition()
 SE10 = SupportService10()
 SE22 = SupportService22()
 
-def step_2(can_par):
+def step_2(can_p):
     """
     Teststep 2: Request session change to Mode1 without reply
     """
-    stepno = 2
     etp: CanTestExtra = {
-        "purpose" : "Request session change to Mode1 without reply",
-        "timeout" : 1,
-        "min_no_messages" : -1,
-        "max_no_messages" : -1
+        "step_no": 2,
+        "purpose": "Request session change to Mode1 without reply",
+        "timeout": 1,
+        "min_no_messages": -1,
+        "max_no_messages": -1
     }
-    SIO.extract_parameter_yml("step_{}".format(stepno), etp)
-    return SE10.diagnostic_session_control(can_par, etp, b'\x81')
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    return SE10.diagnostic_session_control(can_p, etp, b'\x81')
 
-def step_7(can_par):
+def step_7(can_p):
     """
     Teststep 7: Request session change to Mode1 without reply
     """
-    stepno = 7
     etp: CanTestExtra = {
-        "purpose" : "Request session change to Mode1 without reply",
-        "timeout" : 1,
-        "min_no_messages" : -1,
-        "max_no_messages" : -1
+        "step_no": 7,
+        "purpose": "Request session change to Mode1 without reply",
+        "timeout": 1,
+        "min_no_messages": -1,
+        "max_no_messages": -1
     }
-    SIO.extract_parameter_yml("step_{}".format(stepno), etp)
-    return SE10.diagnostic_session_control(can_par, etp, b'\x81')
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    return SE10.diagnostic_session_control(can_p, etp, b'\x81')
 
-def step_12(can_par):
+def step_12(can_p):
     """
     Teststep 12: Request session change to Mode1 without reply
     """
-    stepno = 12
     etp: CanTestExtra = {
-        "purpose" : "Request session change to Mode1 without reply",
-        "timeout" : 1,
-        "min_no_messages" : -1,
-        "max_no_messages" : -1
+        "step_no": 12,
+        "purpose": "Request session change to Mode1 without reply",
+        "timeout": 1,
+        "min_no_messages": -1,
+        "max_no_messages": -1
     }
-    SIO.extract_parameter_yml("step_{}".format(stepno), etp)
-    return SE10.diagnostic_session_control(can_par, etp, b'\x81')
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    return SE10.diagnostic_session_control(can_p, etp, b'\x81')
 
 def run():
     """
@@ -99,13 +100,13 @@ def run():
     # to be implemented
 
     # where to connect to signal_broker
-    can_par: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT),
+    can_p: CanParam = {
+        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
         "send" : "Vcu1ToBecmFront1DiagReqFrame",
         "receive" : "BecmToVcu1Front1DiagResFrame",
         "namespace" : SC.nspace_lookup("Front1CANCfg0")
     }
-    SIO.extract_parameter_yml("main", can_par)
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
     logging.info("Time: %s \n", time.time())
@@ -114,7 +115,7 @@ def run():
     # precondition
     ############################################
     timeout = 30
-    result = PREC.precondition(can_par, timeout)
+    result = PREC.precondition(can_p, timeout)
 
     if result:
     ############################################
@@ -123,76 +124,77 @@ def run():
     # step1:
     # action: # Change to default session
     # result: BECM reports mode
-        result = result and SE10.diagnostic_session_control_mode1(can_par, 1)
+        result = result and SE10.diagnostic_session_control_mode1(can_p, 1)
 
     # step2:
     # action: # Change to default session
     # result: BECM reports mode
-        result = result and step_2(can_par)
+        result = result and step_2(can_p)
 
     # step3:
     # action: verify current session
     # result: BECM reports extended session
-        result = result and SE22.read_did_f186(can_par, dsession=b'\x01')#, 3)
+        result = result and SE22.read_did_f186(can_p, dsession=b'\x01', stepno=3)
 
     # step4:
     # action: # Change to Extended session
     # result: BECM reports mode
-        result = result and SE10.diagnostic_session_control_mode3(can_par, 4)
+        result = result and SE10.diagnostic_session_control_mode3(can_p, 4)
 
     # step5:
     # action: # Change to default session
     # result: BECM reports mode
-        result = result and SE10.diagnostic_session_control_mode1(can_par, 5)
+        result = result and SE10.diagnostic_session_control_mode1(can_p, 5)
 
     # step6:
     # action: # Change to Extended session
     # result: BECM reports mode
-        result = result and SE10.diagnostic_session_control_mode3(can_par, 6)
+        result = result and SE10.diagnostic_session_control_mode3(can_p, 6)
 
     # step7:
     # action: # Change to default session
     # result: BECM reports mode
-        result = result and step_7(can_par)
+        result = result and step_7(can_p)
 
     # step8:
     # action: verify current session
     # result: BECM reports extended session
-        result = result and SE22.read_did_f186(can_par, dsession=b'\x01')#, 8)
+        result = result and SE22.read_did_f186(can_p, dsession=b'\x01', stepno=8)
 
     # step9:
     # action: # Change to Programming session
     # result: BECM reports mode
-        SE10.diagnostic_session_control_mode2(can_par, 9)
-        result = result and SE10.diagnostic_session_control_mode2(can_par, 9)
+        SE10.diagnostic_session_control_mode2(can_p, 9)
+        result = result and SE10.diagnostic_session_control_mode2(can_p, 9)
 
     # step10:
     # action: # Change to default session
     # result: BECM reports mode
-        result = result and SE10.diagnostic_session_control_mode1(can_par, 10)
+        result = result and SE10.diagnostic_session_control_mode1(can_p, 10)
 
     # step11:
     # action: # Change to Programming session
     # result: BECM reports mode
-        SE10.diagnostic_session_control_mode2(can_par, 11)
-        SE10.diagnostic_session_control_mode2(can_par, 11)
-        result = result and SE10.diagnostic_session_control_mode2(can_par, 11)
+        SE10.diagnostic_session_control_mode2(can_p, 11)
+        SE10.diagnostic_session_control_mode2(can_p, 11)
+        result = result and SE10.diagnostic_session_control_mode2(can_p, 11)
 
     # step12:
     # action: # Change to default session
     # result: BECM reports mode
-        result = result and step_12(can_par)
-
+        result = result and step_12(can_p)
+        #issue MEP2: needs time to react again after step12
+        #time.sleep(1)
     # step13:
     # action: verify current session
     # result: BECM reports default session
-        result = result and SE22.read_did_f186(can_par, dsession=b'\x01')#, 13)
+        result = result and SE22.read_did_f186(can_p, dsession=b'\x01', stepno=13)
 
     ############################################
     # postCondition
     ############################################
 
-    result = POST.postcondition(can_par, starttime, result)
+    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()
