@@ -26,8 +26,9 @@ import time
 from datetime import datetime
 import sys
 import logging
+import inspect
 
-import ODTB_conf
+import odtb_conf
 from support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
 from support_test_odtb2 import SupportTestODTB2
 from support_carcom import SupportCARCOM
@@ -43,75 +44,71 @@ SC_CARCOM = SupportCARCOM()
 PREC = SupportPrecondition()
 POST = SupportPostcondition()
 
-def step_1(can_par):
+def step_1(can_p):
     """
     Teststep 1: verify ReadDTCInfoSnapshotIdentification reply positively
     """
-    stepno = 1
-    cpay: CanPayload = SIO.extract_parameter_yml(
-        "step_{}".format(stepno),
-        payload=SC_CARCOM.can_m_send("ReadDTCInfoSnapshotIdentification", b'', b''),
-        extra=''
-        )
-    etp: CanTestExtra = SIO.extract_parameter_yml(
-        "step_{}".format(stepno),
-        step_no=1,
-        purpose="verify ReadDTCInfoSnapshotIdentification reply positively",
-        timeout=1,
-        min_no_messages=1,
-        max_no_messages=1
-        )
+    cpay: CanPayload = {
+        "payload": SC_CARCOM.can_m_send("ReadDTCInfoSnapshotIdentification", b'', b''),
+        "extra": ''
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    etp: CanTestExtra = {
+        "step_no": 1,
+        "purpose": "verify ReadDTCInfoSnapshotIdentification reply positively",
+        "timeout": 1,
+        "min_no_messages": 1,
+        "max_no_messages": 1
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
 
-    result = SUTE.teststep(can_par, cpay, etp)
-    result = result and SUTE.test_message(SC.can_messages[can_par["receive"]], teststring='5903')
+    result = SUTE.teststep(can_p, cpay, etp)
+    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='5903')
 
     return result
 
-def step_2(can_par):
+def step_2(can_p):
     """
     Teststep 2: Verify (time receive message – time sending request) < P4_server_max
     """
-    stepno = 2
+    step_no = 2
     purpose = "Verify (time receive message – time sending request) less than P4_server_max"
-    SUTE.print_test_purpose(stepno, purpose)
+    SUTE.print_test_purpose(step_no, purpose)
     # remove the flow control frame response: frame starting with '3'
-    if int(SC.can_frames[can_par["send"]][-1][2][0:1]) == 3:
+    if int(SC.can_frames[can_p["send"]][-1][2][0:1]) == 3:
         logging.info("Remove FC frame")
-        SC.can_frames[can_par["send"]].pop(-1)
-    logging.info("Last Can_frame sent: %s", SC.can_frames[can_par["send"]][-1])
-    logging.info("First CAN_frame received %s", SC.can_frames[can_par["receive"]][0])
+        SC.can_frames[can_p["send"]].pop(-1)
+    logging.info("Last Can_frame sent: %s", SC.can_frames[can_p["send"]][-1])
+    logging.info("First CAN_frame received %s", SC.can_frames[can_p["receive"]][0])
 
     p4_server_max = 500 # milliseconds
     jitter_testenv = 10
 
-    t_rec = 1000 * SC.can_frames[can_par["send"]][-1][0]
-    t_send = 1000 * SC.can_frames[can_par["receive"]][0][0]
+    t_rec = 1000 * SC.can_frames[can_p["send"]][-1][0]
+    t_send = 1000 * SC.can_frames[can_p["receive"]][0][0]
 
     logging.info("Time P4_s_max + jitter %s", p4_server_max + jitter_testenv)
     logging.info("Tdiff: T_send-T_rec  : %s", (t_send-t_rec))
     logging.info("T difference(s): %s", (p4_server_max + jitter_testenv) - (t_send - t_rec))
 
     result = ((t_rec - t_send) < ((p4_server_max + jitter_testenv)/1000))
-    logging.info("Step %s teststatus: %s \n", stepno, result)
+    logging.info("Step %s teststatus: %s \n", step_no, result)
     return result
 
 def run():
     """
     Run - Call other functions from here
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.DEBUG)
-
-    # start logging
-    # to be implemented
+    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
     # where to connect to signal_broker
-    can_par: CanParam = SIO.extract_parameter_yml(
-        "main",
-        netstub=SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT),
-        send="Vcu1ToBecmFront1DiagReqFrame",
-        receive="BecmToVcu1Front1DiagResFrame",
-        namespace=SC.nspace_lookup("Front1CANCfg0")
-        )
+    can_p: CanParam = {
+        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
+        "send" : "Vcu1ToBecmFront1DiagReqFrame",
+        "receive" : "BecmToVcu1Front1DiagResFrame",
+        "namespace" : SC.nspace_lookup("Front1CANCfg0")
+    }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
 
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
@@ -121,7 +118,7 @@ def run():
     # precondition
     ############################################
     timeout = 30
-    result = PREC.precondition(can_par, timeout)
+    result = PREC.precondition(can_p, timeout)
 
     if result:
     ############################################
@@ -131,18 +128,18 @@ def run():
     # step1:
     # action: send ReadDTCInfoSnapshotIdentification signal in default mode
     # result: BECM sends positive reply
-        result = result and step_1(can_par)
+        result = result and step_1(can_p)
 
     # step 2:
     # action: Verify (time receive message – time sending request) < P4_server_max
     # result: positive result
-        result = result and step_2(can_par)
+        result = result and step_2(can_p)
 
     ############################################
     # postCondition
     ############################################
 
-    POST.postcondition(can_par, starttime, result)
+    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()
