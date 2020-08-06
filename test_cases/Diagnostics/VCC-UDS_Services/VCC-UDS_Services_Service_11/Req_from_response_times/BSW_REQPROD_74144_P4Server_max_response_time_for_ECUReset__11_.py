@@ -3,13 +3,20 @@
 # author:   LDELLATO (Lorenzo Della Torre)
 # date:     2020-06-03
 # version:  1.1
-# reqprod:  74114
+# reqprod:  74144
 
 # author:   HWEILER (Hans-Klaus Weiler)
 # date:     2020-07-09
 # version:  1.2
-# reqprod:  74114
+# reqprod:  74144
 # changes:  YML fixed, some timing fixed
+
+# author:   HWEILER (Hans-Klaus Weiler)
+# date:     2020-08-06
+# version:  1.3
+# reqprod:  74144
+# changes:  Copied snippet from 74143 for better calculation of response time
+
 # #inspired by https://grpc.io/docs/tutorials/basic/python.html
 # Copyright 2015 gRPC authors.
 #
@@ -118,26 +125,9 @@ def step_2(can_p):
         'min_no_messages': -1,
         'max_no_messages': -1
         }
-    #t_1 = time.time()
     result = SUTE.teststep(can_p, cpay, etp)
     result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='025101')
-    #t_2 = SC.can_messages[can_p["receive"]][0][0]
     time.sleep(1)
-    #return result, t_1, t_2
-    return result
-
-def step_3(t_1, t_2, p2_server_max):
-    """
-    Verify (time receive message – time sending request) less than P2_server_max
-    """
-    step_no = 3
-    purpose = "Verify (time receive message – time sending request) less than P2_server_max"
-    SUTE.print_test_purpose(step_no, purpose)
-    jitter_testenv = 10
-
-    result = (p2_server_max + jitter_testenv)/1000 > (t_2 - t_1)
-    logging.info("T difference(s): %s \n", float((p2_server_max + 10)/1000 - (t_2 - t_1)))
-    logging.info("Step %s teststatus: %s \n", step_no, result)
     return result
 
 def run():
@@ -146,9 +136,6 @@ def run():
     """
     #logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.DEBUG)
     logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
-
-    # start logging
-    # to be implemented
 
     # where to connect to signal_broker
     logging.info("Connecting to: %s", odtb_conf.ODTB2_DUT)
