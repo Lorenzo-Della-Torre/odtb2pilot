@@ -74,14 +74,14 @@ class SupportFileIO:
             # Remove path from filename
             f_name_temp = re.split(r"(BSW_)", sys.argv[0])
             f_name = re.split(r"(.py)", f_name_temp[1]+f_name_temp[2])[0] + '.yml'
-        logging.info("Path exists: %s", os.path.exists(param_dir))
+        logging.debug("Path exists: %s", os.path.exists(param_dir))
         if os.path.exists(param_dir):
-            logging.info("Path: %s", param_dir)
+            logging.debug("Path: %s", param_dir)
         #logging.debug("Path         %s", param_dir)
-        logging.info("Project default exists: %s", os.path.isfile(param_dir + '/' + proj_default))
+        logging.debug("Project default exists: %s", os.path.isfile(param_dir + '/' + proj_default))
         if os.path.isfile(param_dir + '/' + proj_default):
-            logging.info("Default: %s", (param_dir + '/' + proj_default))
-        logging.info("File exists: %s", os.path.isfile(param_dir + '/' + f_name))
+            logging.debug("Default: %s", (param_dir + '/' + proj_default))
+        logging.debug("File exists: %s", os.path.isfile(param_dir + '/' + f_name))
         if os.path.isfile(param_dir + '/' + f_name):
             logging.info("Parameter file : %s", (param_dir + '/' + f_name))
 
@@ -176,13 +176,17 @@ class SupportFileIO:
             #simple types, normal variables
             ### doesn't work for 'simple' types because of scope
             ### use return value
-            elif default_par_open and (data_default[key].get(arg) is not None):
+            elif default_par_open and\
+                key in data_default and\
+                (data_default[key].get(arg) is not None):
                 #logging.debug("Sent new value for %s arg: %s value: %s", key,\
                 #      arg, data_default[key].get(arg))
                 value = data_default[key].get(arg)
                 #logging.debug("New values variable %s",  data[key].get(arg))
                 logging.debug("new value variable: %s", value)
-            elif file_par_open and (data[key].get(arg) is not None):
+            elif file_par_open and\
+                key in data and\
+                (data[key].get(arg) is not None):
                 #logging.debug("Sent new value for %s arg: %s value: %s", key,\
                 #      arg, data[key].get(arg))
                 value = data[key].get(arg)
