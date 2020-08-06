@@ -94,7 +94,7 @@ def run():
     """
     Run - Call other functions from here
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.DEBUG)
+    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
     # start logging
     # to be implemented
@@ -152,7 +152,7 @@ def run():
         result = result and SE10.diagnostic_session_control_mode3(can_p, 6)
 
     # step7:
-    # action: # Change to default session
+    # action: # Change to default session, no reply
     # result: BECM reports mode
         result = result and step_7(can_p)
 
@@ -180,7 +180,7 @@ def run():
         result = result and SE10.diagnostic_session_control_mode2(can_p, 11)
 
     # step12:
-    # action: # Change to default session
+    # action: # Change to default session, no reply
     # result: BECM reports mode
         result = result and step_12(can_p)
         #issue MEP2: needs time to react again after step12
