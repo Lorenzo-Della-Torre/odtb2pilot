@@ -49,6 +49,41 @@ SC_CARCOM = SupportCARCOM()
 PREC = SupportPrecondition()
 POST = SupportPostcondition()
 
+JITTER_TESTENV = 10
+
+def step_time_measure(can_p, stepno, p2_server_max):
+    """
+    Teststep time_measure:
+    Verify (time receive message – time sending request) less than P2_server_max
+    """
+
+    logging.info("Step %s: Collecting data for calculating time:", stepno)
+    t_1 = SC.can_frames[can_p["send"]][0][0]
+    logging.info("Step %s: Timestamp request sent: %s", stepno, t_1)
+    t_2 = SC.can_frames[can_p["receive"]][0][0]
+    logging.info("Step %s: Timestamp request sent: %s", stepno, t_2)
+    #fetch P2 server max from the received message
+    #p2_server_max = int(SC.can_messages[can_p["receive"]][0][2][8:10], 16)
+    #logging.info("Step %s: P2_server_max: %s",
+    #             stepno,
+    #             int(SC.can_messages[can_p["receive"]][0][2][8:10], 16))
+
+    purpose = "Verify (time receive message – time sending request) less than P2_server_max"
+    SUTE.print_test_purpose(stepno, purpose)
+    result = ((p2_server_max + JITTER_TESTENV)/1000 > (t_2 - t_1))
+    logging.info("Step%s: t2: %s (sec)", stepno, t_2)
+    logging.info("Step%s: t1: %s (sec)", stepno, t_1)
+    logging.info("Step%s: t2-t1: %s (sec)", stepno, (t_2 - t_1))
+    logging.info("P2_server_max: %s (msec)", p2_server_max)
+    logging.info("JITTER_TESTENV: %s (msec)", JITTER_TESTENV)
+    logging.info("P2_server_max + JITTER_TESTENV: %s (msec)", p2_server_max + JITTER_TESTENV)
+    #logging.info("(p2-jitter) / 1000: %s", (p2_server_max + JITTER_TESTENV)/1000)
+
+    #logging.info("T difference(s): %s", (p2_server_max + JITTER_TESTENV)/1000 - (t_2 - t_1))
+    logging.info("Step %s teststatus:%s \n", stepno, result)
+    return result
+
+
 def step_1(can_p):
     """
     Request session change to Mode1
@@ -83,12 +118,13 @@ def step_2(can_p):
         'min_no_messages': -1,
         'max_no_messages': -1
         }
-    t_1 = time.time()
+    #t_1 = time.time()
     result = SUTE.teststep(can_p, cpay, etp)
     result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='025101')
-    t_2 = SC.can_messages[can_p["receive"]][0][0]
+    #t_2 = SC.can_messages[can_p["receive"]][0][0]
     time.sleep(1)
-    return result, t_1, t_2
+    #return result, t_1, t_2
+    return result
 
 def step_3(t_1, t_2, p2_server_max):
     """
@@ -149,12 +185,14 @@ def run():
         # step 2:
         # action: ECU Reset
         # result:
-        result, t_1, t_2 = result and step_2(can_p)
+        #result, t_1, t_2 = result and step_2(can_p)
+        result = result and step_2(can_p)
 
         # step 3:
         # action: Wait for the response message
         # result: (time receive message – time sending request) less than P2_server_max
-        result = result and step_3(t_1, t_2, p2_server_max)
+        #result = result and step_3(t_1, t_2, p2_server_max)
+        result = result and step_time_measure(can_p, stepno=3, p2_server_max=p2_server_max)
 
     ############################################
     # postCondition
