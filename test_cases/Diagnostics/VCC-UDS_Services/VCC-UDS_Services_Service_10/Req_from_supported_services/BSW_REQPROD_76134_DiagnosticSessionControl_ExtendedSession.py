@@ -183,7 +183,7 @@ def run():
     # step7:
     # action: verify current session
     # result: BECM reports extended session
-        result = result and SE22.read_did_f186(can_p, dsession=b'\x03')#, 7)
+        result = result and SE22.read_did_f186(can_p, dsession=b'\x03', stepno=7)
 
     # step8:
     # action: # Change to Programming session from extended
@@ -199,7 +199,7 @@ def run():
     # step10:
     # action: verify current session
     # result: BECM reports programming session
-        result = result and SE22.read_did_f186(can_p, dsession=b'\x02')#, 10)
+        result = result and SE22.read_did_f186(can_p, dsession=b'\x02', stepno=10)
 
     # step11:
     # action: # Change to Extended session without reply
