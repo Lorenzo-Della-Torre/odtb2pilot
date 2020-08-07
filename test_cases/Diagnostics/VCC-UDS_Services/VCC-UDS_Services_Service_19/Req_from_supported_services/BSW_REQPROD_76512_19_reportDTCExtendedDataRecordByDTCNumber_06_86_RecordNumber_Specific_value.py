@@ -70,7 +70,7 @@ def step_1(can_p):
     #extract the dtc number from the first frame received '0'
     #second value '2' on specific position (8:14)
     dtc_number = SUTE.pp_string_to_bytes(SC.can_frames[can_p["receive"]][0][2][8:14], 3)
-    #extract the dtc  extend record number from the second frame received '1'
+    #extract the dtc extended record number from the second frame received '1'
     #second value '2' on specific position (2:4)
     dtc_ext_data_record_number = SUTE.pp_string_to_bytes(
         SC.can_frames[can_p["receive"]][1][2][2:4], 1)
