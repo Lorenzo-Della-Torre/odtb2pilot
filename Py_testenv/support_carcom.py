@@ -36,6 +36,7 @@ class SupportCARCOM:
         """
         __read_dtc_by_status_mask
         """
+        #logging.debug("SCarCom: status_mask: %s", mask)
         switcher = {
             "confirmedDTC": b'\x03',
             "testFailed": b'\x00',
@@ -45,7 +46,16 @@ class SupportCARCOM:
             "testFailedSinceLastClear": b'\x05',
             "testNotCompletedThisMonitoringCycle": b'\x06',
             "warningIndicatorRequested": b'\x07',
+            b'confirmedDTC': b'\x03',
+            b'testFailed': b'\x00',
+            b'testFailedThisMonitoringCycle': b'\x01',
+            b'pendingDTC': b'\x02',
+            b'testNotCompletedSinceLastClear': b'\x04',
+            b'testFailedSinceLastClear': b'\x05',
+            b'testNotCompletedThisMonitoringCycle': b'\x06',
+            b'warningIndicatorRequested': b'\x07',
         }
+        #logging.debug("SCarCom: status_mask switcher: %s", switcher.get(mask, b''))
         return switcher.get(mask, b'')
 
 
@@ -60,6 +70,7 @@ class SupportCARCOM:
             "ReadDataByIentifier"=22
             Etc.....
         """
+        #logging.debug("SCarCom: can_m_send name: %s, message: %s mask: %s", name, message, mask)
         switcher = {
             "DiagnosticSessionControl": b'\x10' + message,
             "ECUResetHardReset": b'\x11\x01' + message,
@@ -96,11 +107,11 @@ class SupportCARCOM:
             "ReadDTCByStatusMask": b'\x19\x02' + self.__read_dtc_by_status_mask(mask),
             "ReadDTCByStatusMask(82)": b'\x19\x82' + self.__read_dtc_by_status_mask(mask)
         }
-        result = switcher.get(name, b'')
-        logging.debug("Name:    [%s]", name)
-        logging.debug("Message: [%s]", message)
-        logging.debug("Mask:    [%s]", mask)
-        logging.debug("Result:  [%s]", result)
-        if result == b'':
+        switched = switcher.get(name, b'')
+        #logging.debug("Name:    [%s]", name)
+        #logging.debug("Message: [%s]", message)
+        #logging.debug("Mask:    [%s]", mask)
+        #logging.debug("Switched:  [%s]", switched)
+        if switched == b'':
             logging.warning("You typed a wrong name: %s", name)
-        return result
+        return switched

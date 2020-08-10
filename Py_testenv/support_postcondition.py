@@ -54,6 +54,8 @@ class SupportPostcondition: # pylint: disable=too-few-public-methods
         logging.info("Postcondition: Display current session, change to mode1 (default)")
         result = SE22.read_did_f186(can_p) and result
         SE10.diagnostic_session_control_mode1(can_p)
+        #if coming from mode2 it may take a bit
+        time.sleep(2)
         result = SE22.read_did_f186(can_p, b'\x01') and result
 
         logging.debug("\nTime: %s \n", time.time())
