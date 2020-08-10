@@ -219,8 +219,7 @@ class SupportCAN:
             self.can_subscribes[can_p["receive"]] =\
                 [subscribe_object, fc_param["block_size"], fc_param["separation_time"],\
                 fc_param["delay"], fc_param["flag"], fc_param["responses"], fc_param["auto"]]
-            #print("list response in sub_info ",\
-            #      [can_p["netstub"].SubscribeToSignals(sub_info, timeout)])
+            logging.debug("Added object %s to subcribe %s", can_p["receive"], self.can_subscribes)
             for response in subscribe_object:
                 #if multiframe detected prepare answer and send it
                 det_mf = response.signal[0].integer>>60

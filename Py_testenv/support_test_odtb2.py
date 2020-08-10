@@ -111,6 +111,7 @@ class SupportTestODTB2:
                   and (len(SC.can_messages[can_p["receive"]]) < etp["max_no_messages"])):
                 SC.clear_can_message(can_p["receive"])
                 SC.update_can_messages(can_p["receive"])
+                time.sleep(0.05) #pause a bit to receive frames in background
 
 
     def teststep(self, can_p: CanParam, cpay: CanPayload, etp: CanTestExtra):
