@@ -27,8 +27,9 @@ import time
 from datetime import datetime
 import sys
 import logging
+import inspect
 
-import ODTB_conf
+import odtb_conf
 from support_can import SupportCAN, CanParam #, CanTestExtra
 from support_test_odtb2 import SupportTestODTB2
 from support_SBL import SupportSBL
@@ -40,7 +41,9 @@ from support_postcondition import SupportPostcondition
 from support_service10 import SupportService10
 from support_service22 import SupportService22
 from support_service3e import SupportService3e
+from support_file_io import SupportFileIO
 
+SIO = SupportFileIO
 SC = SupportCAN()
 S_CARCOM = SupportCARCOM()
 SUTE = SupportTestODTB2()
@@ -65,11 +68,15 @@ def run():
 
     # where to connect to signal_broker
     can_p: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT),\
-        "send" : "Vcu1ToBecmFront1DiagReqFrame",\
-        "receive" : "BecmToVcu1Front1DiagResFrame",\
-        "namespace" : SC.nspace_lookup("Front1CANCfg0")
+        'netstub': SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
+        'send': "Vcu1ToBecmFront1DiagReqFrame",
+        'receive': "BecmToVcu1Front1DiagResFrame",
+        'namespace': SC.nspace_lookup("Front1CANCfg0")
         }
+    #Read YML parameter for current function (get it from stack)
+    logging.debug("Read YML for %s", str(inspect.stack()[0][3]))
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
+
     #can_p: CanParam = {
     #    "netstub" : SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT),\
     #    "send" : "HvbmdpToHvbmUdsDiagRequestFrame",\
@@ -98,7 +105,7 @@ def run():
     # step1:
     # action:  Request read pressure sensor (DID FD35)
     # result:
-    logging.info("Step 1: Read Pressure Sensor.")
+    logging.info("Step 1: Read Pressure Sensor (DID FD35).")
     result2, pressure = SE22.read_did_fd35_pressure_sensor(can_p, b'', '1')
     logging.info("Pressure returned: %s \n", pressure)
     print("Step1, received frames: ", SC.can_frames[can_p["receive"]])
@@ -108,7 +115,7 @@ def run():
     # step2:
     # action:  Request read pressure sensor (DID 4A28)
     # result:
-    logging.info("Step 1: Read Pressure Sensor.")
+    logging.info("Step 2: Read Pressure Sensor (DID 4A28).")
     result2, pressure = SE22.read_did_4a28_pressure_sensor(can_p, b'', '2')
     logging.info("Pressure returned: %s \n", pressure)
     print("Step2, received frames: ", SC.can_frames[can_p["receive"]])
