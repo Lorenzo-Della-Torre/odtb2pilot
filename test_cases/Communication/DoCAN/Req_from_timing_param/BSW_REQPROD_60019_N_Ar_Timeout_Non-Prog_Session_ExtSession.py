@@ -1,9 +1,14 @@
 # Testscript ODTB2 MEPII
 # project:  BECM basetech MEPII
+# author:   hweiler (Hans-Klaus Weiler)
+# date:     2019-05-17
+# version:  1.0
+# reqprod:  60019
+
 # author:   LDELLATO (Lorenzo Della Torre)
 # date:     2020-06-05
 # version:  1.1
-# reqprod:  60019
+# changes:
 
 # author:   HWEILER (Hans-Klaus Weiler)
 # date:     2020-07-30
@@ -58,29 +63,43 @@ def step_2(can_p):
     """
     Teststep 2: request EDA0 - with FC delay < timeout 1000 ms
     """
-    can_mf: CanMFParam = {"block_size" : 0,\
-                          "separation_time" : 0,\
-                          "frame_control_delay" : 950,\
-                          "frame_control_flag" : 48,\
-                          "frame_control_auto" : True
-                          }
+    cpay: CanPayload = {
+        "payload": SC_CARCOM.can_m_send("ReadDataByIdentifier",\
+                                        b'\xED\xA0',\
+                                        b''),
+        "extra": ''
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    etp: CanTestExtra = {
+        "step_no" : 2,
+        "purpose" : "request EDA0 - with FC delay < timeout 1000 ms",
+        "timeout" : 2,
+        "min_no_messages" : -1,
+        "max_no_messages" : -1
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
 
-    cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("ReadDataByIdentifier", b'\xED\xA0', b''),\
-                        "extra" : ''
-                        }
-    etp: CanTestExtra = {"step_no" : 2,\
-                         "purpose" : "request EDA0 - with FC delay < timeout 1000 ms",\
-                         "timeout" : 2,\
-                         "min_no_messages" : -1,\
-                         "max_no_messages" : -1\
-                         }
+    #change Control Frame parameters
+    can_mf: CanMFParam = {
+        "block_size": 0,
+        "separation_time": 0,
+        "frame_control_delay": 950,
+        "frame_control_flag": 48,
+        "frame_control_auto": True
+                                                
+        }
     SC.change_mf_fc(can_p["receive"], can_mf)
     result = SUTE.teststep(can_p, cpay, etp)
 
     logging.info("Messages received: %s", SC.can_messages[can_p["receive"]])
-    if not len(SC.can_messages[can_p["receive"]]) == 1:
-        logging.info("Len Mess received: %s", len(SC.can_messages[can_p["receive"]]))
-
+    result = (len(SC.can_messages[can_p["receive"]]) == 1)
+    if result:
+        logging.info("FC delay < Timeout: ")
+        logging.info("Whole message received as expected: %s",
+                     len(SC.can_messages[can_p["receive"]]))
+    else:
+        logging.info("FAIL: No request reply received. Received frames: %s",
+                     len(SC.can_frames[can_p["receive"]]))
     logging.info("Step %s: Result teststep: %s \n", etp["step_no"], result)
     return result
 
@@ -89,22 +108,29 @@ def step_3(can_p):
     Teststep 3: request EDA0 - with FC delay > timeout 1000 ms
     """
     n_frame = 1
-    can_mf: CanMFParam = {"block_size" : 0,
-                          "separation_time" : 0,
-                          "frame_control_delay" : 1050,
-                          "frame_control_flag" : 48,
-                          "frame_control_auto" : True
-                          }
-
-    cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("ReadDataByIdentifier", b'\xED\xA0', b''),\
-                        "extra" : ''
-                        }
-    etp: CanTestExtra = {"step_no" : 3,
-                         "purpose" : "request EDA0 - with FC delay > timeout 1000 ms",
-                         "timeout" : 2,
-                         "min_no_messages" : -1,
-                         "max_no_messages" : -1
-                         }
+    cpay: CanPayload = {
+        "payload": SC_CARCOM.can_m_send("ReadDataByIdentifier",\
+                                        b'\xED\xA0',\
+                                        b''),
+        "extra": ''
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    etp: CanTestExtra = {
+        "step_no" : 3,
+        "purpose" : "request EDA0 - with FC delay > timeout 1000 ms",
+        "timeout" : 5,
+        "min_no_messages" : -1,
+        "max_no_messages" : -1
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    #change Control Frame parameters
+    can_mf: CanMFParam = {
+        "block_size": 0,
+        "separation_time": 0,
+        "frame_control_delay": 1050,
+        "frame_control_flag": 48,
+        "frame_control_auto": True
+        }
     SC.change_mf_fc(can_p["receive"], can_mf)
     result = SUTE.teststep(can_p, cpay, etp)
 
@@ -122,18 +148,19 @@ def step_4(can_p):
     """
     Teststep 4: set back frame_control_delay to default
     """
-    stepno = 4
+    step_no = 4
     purpose = "set back frame_control_delay to default"
 
-    can_mf: CanMFParam = {"block_size" : 0,
-                          "separation_time" : 0,
-                          "frame_control_delay" : 0,
-                          "frame_control_flag" : 48,
-                          "frame_control_auto" : True
-                          }
-
-    SUTE.print_test_purpose(stepno, purpose)
+    #change Control Frame parameters to default again
+    can_mf: CanMFParam = {
+        "block_size": 0,
+        "separation_time": 0,
+        "frame_control_delay": 0,
+        "frame_control_flag": 48,
+        "frame_control_auto": True
+        }
     SC.change_mf_fc(can_p["receive"], can_mf)
+    SUTE.print_test_purpose(step_no, purpose)
 
 def run():
     """
