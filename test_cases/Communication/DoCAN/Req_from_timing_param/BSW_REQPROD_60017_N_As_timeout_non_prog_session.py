@@ -86,6 +86,7 @@ def step_2(can_p):
                                                          b'\xDD\x02\xDD\x0A\xDD\x0C\x49\x47', b''),
                         "extra" : ''
                        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
 
     etp: CanTestExtra = {"step_no": 2,
                          "purpose": "Send multi frame request DIDs with delay in CF < 1000ms",
@@ -93,6 +94,7 @@ def step_2(can_p):
                          "min_no_messages": -1,
                          "max_no_messages": -1
                         }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
 
     result = SUTE.teststep(can_p, cpay, etp)
     #test if frames contain all the IDs expected
@@ -145,12 +147,14 @@ def step_4(can_p):
                                         b'\xDD\x02\xDD\x0A\xDD\x0C\x49\x47', b''),
         "extra" : ''
         }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
     etp: CanTestExtra = {"step_no": 4,
                          "purpose": "Send multi frame request DIDs with delay in CF > 1000ms",
                          "timeout": 1,
                          "min_no_messages": -1,
                          "max_no_messages": -1
                         }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
     result = SUTE.teststep(can_p, cpay, etp)
     logging.info("Result after teststep: %s", result)
     #test if frames contain all the IDs expected
