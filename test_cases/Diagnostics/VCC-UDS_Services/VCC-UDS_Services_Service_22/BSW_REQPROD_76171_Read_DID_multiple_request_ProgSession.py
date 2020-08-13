@@ -3,14 +3,14 @@
 # author:   hweiler (Hans-Klaus Weiler)
 # date:     2019-05-09
 # version:  1.0
-# reqprod:  76170
+# reqprod:  76171
 
 # author:   HWEILER (Hans-Klaus Weiler)
 # date:     2020-08-13
 # version:  1.1
 # changes:  update for YML support
 
-#inspired by https://grpc.io/docs/tutorials/basic/python.html
+# inspired by https://grpc.io/docs/tutorials/basic/python.html
 
 # Copyright 2015 gRPC authors.
 #
@@ -35,7 +35,7 @@ import logging
 import inspect
 
 import odtb_conf
-from support_can import SupportCAN, CanMFParam, CanParam, CanTestExtra, CanPayload
+from support_can import SupportCAN, CanParam, CanTestExtra, CanPayload
 from support_test_odtb2 import SupportTestODTB2
 from support_carcom import SupportCARCOM
 from support_file_io import SupportFileIO
@@ -53,6 +53,10 @@ POST = SupportPostcondition()
 SE10 = SupportService10()
 SE22 = SupportService22()
 
+
+
+
+# teststep 2: send 1 requests - requires SF to send, MF for reply
 def step_2(can_p):
     """
     Teststep 2: send 1 requests - requires SF to send, MF for reply
@@ -67,22 +71,12 @@ def step_2(can_p):
     etp: CanTestExtra = {
         "step_no" : 2,
         "purpose" : "Send 1 request - requires SF to send",
-        "timeout" : 2,
+        "timeout" : 1,
         "min_no_messages" : -1,
         "max_no_messages" : -1
         }
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
 
-
-    # Parameters for FrameControl FC
-    can_mf_param: CanMFParam = {
-        'block_size' : 0,
-        'separation_time' : 0,
-        'frame_control_delay' : 0, #no wait
-        'frame_control_flag' : 48, #continue send
-        'frame_control_auto' : False
-        }
-    SC.change_mf_fc(can_p["send"], can_mf_param)
     result = SUTE.teststep(can_p, cpay, etp)
     return result
 
@@ -109,9 +103,56 @@ def step_3(can_p):
     return result
 
 
-def step_4(can_p: CanParam): # pylint: disable=too-many-locals
+# teststep 4: send 1 requests - requires SF to send, MF for reply
+def step_4(can_p):
     """
-    Teststep 4: Send several requests at one time - requires SF to send, MF for reply
+    Teststep 4: send 1 requests - requires SF to send, MF for reply
+    """
+    # Parameters for the teststep
+    cpay: CanPayload = {
+        "payload": SC_CARCOM.can_m_send("ReadDataByIdentifier", b'\xF1\x2A', b''),
+        "extra": ''
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    etp: CanTestExtra = {
+        "step_no": 4,
+        "purpose": "send 1 request - requires SF to send",
+        "timeout": 1,
+        "min_no_messages": -1,
+        "max_no_messages": -1
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+
+    result = SUTE.teststep(can_p, cpay, etp)
+    return result
+
+def step_5(can_p):
+    """
+    Teststep 5: test if DIDs are included in reply
+    """
+    step_no = 5
+    purpose = "test if requested DID are included in reply"
+
+    SUTE.print_test_purpose(step_no, purpose)
+
+    time.sleep(1)
+    SC.clear_all_can_messages()
+    logging.debug("All can messages cleared")
+    SC.update_can_messages(can_p["receive"])
+    logging.debug("All can messages updated")
+    logging.debug("Step%s: messages received %s", step_no, len(SC.can_messages[can_p["receive"]]))
+    logging.debug("Step%s: messages: %s\n", step_no, SC.can_messages[can_p["receive"]])
+    logging.debug("Step%s: frames received %s", step_no, len(SC.can_frames[can_p["receive"]]))
+    logging.debug("Step%s: frames: %s\n", step_no, SC.can_frames[can_p["receive"]])
+    logging.info("Test if string contains all IDs expected:")
+    result = SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='F12A')
+    return result
+
+
+# teststep 6: request 2 DID - same DID as requested single before
+def step_6(can_p):
+    """
+    Teststep 6: request 2 DID - same DID as requested single before
     """
     # Parameters for the teststep
     cpay: CanPayload = {
@@ -120,31 +161,23 @@ def step_4(can_p: CanParam): # pylint: disable=too-many-locals
         }
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
     etp: CanTestExtra = {
-        "step_no": 4,
-        "purpose": "Send several requests at one time - requires SF to send",
-        "timeout": 2,
+        "step_no": 6,
+        "purpose": "request 2 DID in one request - same DID as requested single before",
+        "timeout": 1,
         "min_no_messages": -1,
         "max_no_messages": -1
         }
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
 
-    # Parameters for FrameControl FC
-    can_mf_param: CanMFParam = {
-        "block_size": 0,
-        "separation_time": 0,
-        "frame_control_delay": 0, #no wait
-        "frame_control_flag": 48, #continue send
-        "frame_control_auto": False
-        }
-    SC.change_mf_fc(can_p["send"], can_mf_param)
     result = SUTE.teststep(can_p, cpay, etp)
     return result
 
-def step_5(can_p):
+
+def step_7(can_p):
     """
-    Teststep 5:  Verify if number for requests limited in programming session
+    Teststep 7: Verify if number for requests limited in programming session
     """
-    step_no = 5
+    step_no = 7
     purpose = "Verify if number for requests limited in programming session"
 
     SUTE.print_test_purpose(step_no, purpose)
@@ -165,6 +198,60 @@ def step_5(can_p):
     logging.info("Step%s: %s", step_no,
                  SUTE.pp_decode_7f_response(SC.can_frames[can_p["receive"]][0][2]))
     return result
+
+# teststep 8: request combined DID
+def step_8(can_p):
+    """
+    Teststep 8: request combined DID
+    """
+    # Parameters for the teststep
+    cpay: CanPayload = {
+        "payload": SC_CARCOM.can_m_send("ReadDataByIdentifier", b'\xED\xA0', b''),
+        "extra": ''
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    etp: CanTestExtra = {
+        "step_no": 8,
+        "purpose": "request combined DID",
+        "timeout": 1,
+        "min_no_messages": -1,
+        "max_no_messages": -1
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+
+    result = SUTE.teststep(can_p, cpay, etp)
+    return result
+
+
+# teststep 9: verify if combined DID can be requested
+def step_9(can_p):
+    """
+    Teststep 9: verify if combined DID can be requested
+    """
+    step_no = 9
+    purpose = "verify if combined DID can be requested"
+
+    SUTE.print_test_purpose(step_no, purpose)
+
+    time.sleep(1)
+    SC.clear_all_can_messages()
+    logging.debug("all can messages cleared")
+    SC.update_can_messages(can_p["receive"])
+    logging.debug("all can messages updated")
+    logging.debug("Step%s: messages received %s", step_no, len(SC.can_messages[can_p["receive"]]))
+    logging.debug("Step%s: messages: %s\n", step_no, SC.can_messages[can_p["receive"]])
+    logging.debug("Step%s: frames received %s", step_no, len(SC.can_frames[can_p["receive"]]))
+    logging.debug("Step%s: frames: %s\n", step_no, SC.can_frames[can_p["receive"]])
+    logging.info("Test if string contains all IDs expected:")
+
+    result = SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='EDA0')
+    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='F121')
+    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='F12A')
+    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='F12B')
+    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='F18C')
+    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='F125')
+    return result
+
 
 def run():
     """
@@ -197,39 +284,59 @@ def run():
     # teststeps
     ############################################
     # step 1:
-    # action: # Change to Programming session
+    # action: Change to Programming session
     # result: BECM reports mode
         result = result and SE10.diagnostic_session_control_mode2(can_p, 1)
 
     # step2:
-    # action: send 1 request - requires SF to send, MF for reply
-    # result: BECM reports default session
+    # action: send single requests
+    # result:
         result = result and step_2(can_p)
 
-    # step 3: check if DID is included in reply
-    # action: check if expected DID are contained in reply
-    # result: true if all contained, false if not
+    # step3:
+    # action: update received messages, verify if DID contained"
+    # result: verify if DID contained
         result = result and step_3(can_p)
 
     # step4:
-    # action: send several requests at one time - requires SF to send, MF for reply
-    # result: BECM reports default session
+    # action: request another DID
+    # result:
         result = result and step_4(can_p)
 
-    # step 5: check if DIDs are included in reply including those from combined DID
-    # action: check if expected DID are contained in reply
-    # result: true if all contained, false if not
+    # step5:
+    # action: update received messages, verify if DID contained"
+    # result: verify if DID contained
         result = result and step_5(can_p)
 
     # step6:
+    # action: request 2 DID
+    # result:
+        result = result and step_6(can_p)
+
+    # step7:
+    # action: update received messages, verify if DID contained"
+    # result: error message expected, as max DID request exceeded
+        result = result and step_7(can_p)
+
+    # step8:
+    # action: send request containing combined DID
+    # result:
+        result = result and step_8(can_p)
+
+    # step9:
+    # action: update received messages, verify if DID contained"
+    # result: verify if DID contained from combined DID
+        result = result and step_9(can_p)
+
+    # step10:
     # action: verify current session
     # result: BECM reports programming session
-        result = result and SE22.read_did_f186(can_p, dsession=b'\x02', stepno=6)
+        result = result and SE22.read_did_f186(can_p, dsession=b'\x02', stepno=10)
 
-    # step 7:
-    # action: # Change to Default session
+    # step 11:
+    # action: Change to Default session
     # result: BECM reports mode
-        result = result and SE10.diagnostic_session_control_mode1(can_p, 7)
+        result = result and SE10.diagnostic_session_control_mode1(can_p, 11)
         time.sleep(1)
 
     ############################################
