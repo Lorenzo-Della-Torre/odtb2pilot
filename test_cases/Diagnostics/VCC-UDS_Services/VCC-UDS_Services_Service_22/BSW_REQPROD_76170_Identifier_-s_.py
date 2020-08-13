@@ -5,6 +5,11 @@
 # version:  1.0
 # reqprod:  76170
 
+# author:   HWEILER (Hans-Klaus Weiler)
+# date:     2020-08-13
+# version:  1.1
+# changes:  update for YML support
+
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
 
 # Copyright 2015 gRPC authors.
@@ -45,20 +50,25 @@ PREC = SupportPrecondition()
 POST = SupportPostcondition()
 
 
-# teststep 1: send 1 requests - requires SF to send, MF for reply
 def step_1(can_p: CanParam): # pylint: disable=too-many-locals
     """
     Teststep 1: send 1 requests - requires SF to send, MF for reply
     """
 
     # Parameters for the teststep
+    cpay: CanPayload = {
+        "payload": SC_CARCOM.can_m_send("ReadDataByIdentifier", b'\xF1\x20', b''),
+        "extra": ''
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
     etp: CanTestExtra = {
         "step_no" : 1,
         "purpose" : "Send 1 request - requires SF to send",
-        "timeout" : 5,
+        "timeout" : 2,
         "min_no_messages" : -1,
         "max_no_messages" : -1
         }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
 
     # Parameters for FrameControl FC
     can_mf_param: CanMFParam = {
@@ -69,19 +79,14 @@ def step_1(can_p: CanParam): # pylint: disable=too-many-locals
         'frame_control_auto' : False
         }
     SC.change_mf_fc(can_p["send"], can_mf_param)
-
-    cpay: CanPayload = {
-        "payload": SC_CARCOM.can_m_send("ReadDataByIdentifier", b'\xF1\x20', b''),
-        "extra": ''
-        }
-
     result = SUTE.teststep(can_p, cpay, etp)
     return result
 
 
-# teststep 2: test if DIDs are included in reply
-def step_2(can_receive):
-    ''' Step 2 '''
+def step_2(can_p):
+    """
+    Teststep 2: test if DIDs are included in reply
+    """
     stepno = 2
     purpose = "test if requested DID are included in reply"
 
@@ -90,28 +95,35 @@ def step_2(can_receive):
     time.sleep(1)
     SC.clear_all_can_messages()
     logging.debug("All can messages cleared")
-    SC.update_can_messages(can_receive)
+    SC.update_can_messages(can_p["receive"])
     logging.debug("All can messages updated")
-    logging.debug("Step2: messages received %s", len(SC.can_messages[can_receive]))
-    logging.debug("Step2: messages: %s\n", SC.can_messages[can_receive])
-    logging.debug("Step2: frames received %s", len(SC.can_frames[can_receive]))
-    logging.debug("Step2: frames: %s\n", SC.can_frames[can_receive])
+    logging.debug("Step2: messages received %s", len(SC.can_messages[can_p["receive"]]))
+    logging.debug("Step2: messages: %s\n", SC.can_messages[can_p["receive"]])
+    logging.debug("Step2: frames received %s", len(SC.can_frames[can_p["receive"]]))
+    logging.debug("Step2: frames: %s\n", SC.can_frames[can_p["receive"]])
     logging.info("Test if string contains all IDs expected:")
-    result = SUTE.test_message(SC.can_messages[can_receive], teststring='F120')
+    result = SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='F120')
     return result
 
 
-# teststep 3: send several requests at one time - requires SF to send, MF for reply
 def step_3(can_p: CanParam): # pylint: disable=too-many-locals
-    '''' Step 3 '''
+    """
+    Teststep 3: Send several requests at one time - requires SF to send, MF for reply
+    """
     # Parameters for the teststep
+    cpay: CanPayload = {
+        "payload": SC_CARCOM.can_m_send("ReadDataByIdentifier", b'\xF1\x20\xF1\x2A', b''),
+        "extra": ''
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
     etp: CanTestExtra = {
         "step_no": 3,
         "purpose": "Send several requests at one time - requires SF to send",
-        "timeout": 5,
+        "timeout": 2,
         "min_no_messages": -1,
         "max_no_messages": -1
         }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
 
     # Parameters for FrameControl FC
     can_mf_param: CanMFParam = {
@@ -121,41 +133,34 @@ def step_3(can_p: CanParam): # pylint: disable=too-many-locals
         "frame_control_flag": 48, #continue send
         "frame_control_auto": False
         }
-
     SC.change_mf_fc(can_p["send"], can_mf_param)
-
-    cpay: CanPayload = {
-        "payload": SC_CARCOM.can_m_send("ReadDataByIdentifier", b'\xF1\x20\xF1\x2A', b''),
-        "extra": ''
-        }
-
     result = SUTE.teststep(can_p, cpay, etp)
     return result
 
-# teststep 4: test if DIDs are included in reply
-def step_4(can_receive):
-    ''' Step 4 '''
-    stepno = 4
+def step_4(can_p):
+    """
+    Teststep 4:  test if DIDs are included in reply
+    """
+    step_no = 4
     purpose = "test if all requested DIDs are included in reply"
 
-    SUTE.print_test_purpose(stepno, purpose)
+    SUTE.print_test_purpose(step_no, purpose)
 
     time.sleep(1)
     SC.clear_all_can_messages()
     logging.debug("all can messages cleared")
-    SC.update_can_messages(can_receive)
+    SC.update_can_messages(can_p["receive"])
     logging.debug("all can messages updated")
-    logging.debug("Step4: messages received %s", len(SC.can_messages[can_receive]))
-    logging.debug("Step4: messages: %s\n", SC.can_messages[can_receive])
-    logging.debug("Step4: frames received %s", len(SC.can_frames[can_receive]))
-    logging.debug("Step4: frames: %s\n", SC.can_frames[can_receive])
+    logging.debug("Step%s: messages received %s", step_no, len(SC.can_messages[can_p["receive"]]))
+    logging.debug("Step%s: messages: %s\n", step_no, SC.can_messages[can_p["receive"]])
+    logging.debug("Step%s: frames received %s", step_no, len(SC.can_frames[can_p["receive"]]))
+    logging.debug("Step%s: frames: %s\n", step_no, SC.can_frames[can_p["receive"]])
     logging.info("Test if string contains all IDs expected:")
 
-    result = SUTE.test_message(SC.can_messages[can_receive], teststring='F120')
-    result = result and SUTE.test_message(SC.can_messages[can_receive],
+    result = SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='F120')
+    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]],
                                           teststring='F12A')
     return result
-
 
 def run():
     """
@@ -191,14 +196,12 @@ def run():
     # step1:
     # action: send 1 request - requires SF to send, MF for reply
     # result: BECM reports default session
-        logging.debug("step_1 start: %s", datetime.now())
         result = result and step_1(can_p)
-        logging.debug("step_1 end: %s", datetime.now())
 
     # step 2: check if DID is included in reply
     # action: check if expected DID are contained in reply
     # result: true if all contained, false if not
-        result = result and step_2(can_p["receive"])
+        result = result and step_2(can_p)
 
     # step3:
     # action: send several requests at one time - requires SF to send, MF for reply
@@ -208,7 +211,7 @@ def run():
     # step 4: check if DIDs are included in reply including those from combined DID
     # action: check if expected DID are contained in reply
     # result: true if all contained, false if not
-        result = result and step_4(can_p["receive"])
+        result = result and step_4(can_p)
 
     ############################################
     # postCondition
