@@ -5,6 +5,11 @@
 # version:  1.0
 # reqprod:  76170
 
+# author:   HWEILER (Hans-Klaus Weiler)
+# date:     2020-08-13
+# version:  1.1
+# changes:  update for YML support
+
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
 
 # Copyright 2015 gRPC authors.
@@ -23,301 +28,215 @@
 
 """The Python implementation of the gRPC route guide client."""
 
-from datetime import datetime
 import time
-import logging
-import os
+from datetime import datetime
 import sys
+import logging
+import inspect
 
-import ODTB_conf
+import odtb_conf
+from support_can import SupportCAN, CanMFParam, CanParam, CanTestExtra, CanPayload
+from support_test_odtb2 import SupportTestODTB2
+from support_carcom import SupportCARCOM
+from support_file_io import SupportFileIO
+from support_precondition import SupportPrecondition
+from support_postcondition import SupportPostcondition
+from support_service22 import SupportService22
+from support_service10 import SupportService10
 
-from support_can import Support_CAN
-SC = Support_CAN()
+SIO = SupportFileIO
+SC = SupportCAN()
+SUTE = SupportTestODTB2()
+SC_CARCOM = SupportCARCOM()
+PREC = SupportPrecondition()
+POST = SupportPostcondition()
+SE10 = SupportService10()
+SE22 = SupportService22()
 
-from support_test_odtb2 import Support_test_ODTB2
-SuTe = Support_test_ODTB2()
+def step_2(can_p): # pylint: disable=too-many-locals
+    """
+    Teststep 2: send 1 requests - requires SF to send, MF for reply
+    """
 
-# Global variable:
-testresult = True
-
-
-
-# precondition for test running:
-#  BECM has to be kept alive: start heartbeat
-def precondition(stub, s, r, ns):
-    global testresult
-
-    # start heartbeat, repeat every 0.8 second
-    SC.start_heartbeat(stub, "EcmFront1NMFr", "Front1CANCfg0", b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.8)
-
-    time.sleep(4) #wait for ECU startup
-
-    timeout = 40   #seconds
-    SC.subscribe_signal(stub, s, r, ns, timeout)
-    #record signal we send as well
-    SC.subscribe_signal(stub, r, s, ns, timeout)
-
-    print()
-    step_0(stub, s, r, ns)
-
-    print ("precondition testok:", testresult, "\n")
-
-
-# teststep 0: Complete ECU Part/Serial Number(s)
-def step_0(stub, s, r, ns):
-    global testresult
-
-    stepno = 0
-    purpose = "Complete ECU Part/Serial Number(s)"
-    timeout = 5
-    min_no_messages = -1
-    max_no_messages = -1
-
-    can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xED\xA0', "")
-    can_mr_extra = ''
-
-    testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    print(SuTe.PP_CombinedDID_EDA0(SC.can_messages[r][0][2], title=''))
-
-    # teststep 1: Change to Extended session
-def step_1(stub, s, r, ns):
-    global testresult
-
-    stepno = 1
-    purpose = "Change to Extended session"
-    timeout = 1
-    min_no_messages = 1
-    max_no_messages = 1
-
-    can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x03', "")
-    can_mr_extra = ''
-
-    testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-
-
-# teststep 2: send 1 requests - requires SF to send, MF for reply
-def step_2(stub, s, r, ns):
-    global testresult
-
-    stepno = 2
-    purpose = "send 1 request - requires SF to send"
-    timeout = 2 # wait for message to arrive, but don't test (-1)
-    min_no_messages = -1
-    max_no_messages = -1
+    # Parameters for the teststep
+    cpay: CanPayload = {
+        "payload": SC_CARCOM.can_m_send("ReadDataByIdentifier", b'\xF1\x20', b''),
+        "extra": ''
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    etp: CanTestExtra = {
+        "step_no" : 2,
+        "purpose" : "Send 1 request - requires SF to send",
+        "timeout" : 2,
+        "min_no_messages" : -1,
+        "max_no_messages" : -1
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
 
     # Parameters for FrameControl FC
-    block_size=0
-    separation_time=0
-    frame_control_delay = 0 #no wait
-    frame_control_flag = 48 #continue send
-    frame_control_auto = False
-
-    can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xF1\x20', "")
-    can_mr_extra = ''
-
-    SC.change_MF_FC(s, block_size, separation_time, frame_control_delay, frame_control_flag, frame_control_auto)
-
-    testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
+    can_mf_param: CanMFParam = {
+        'block_size' : 0,
+        'separation_time' : 0,
+        'frame_control_delay' : 0, #no wait
+        'frame_control_flag' : 48, #continue send
+        'frame_control_auto' : False
+        }
+    SC.change_mf_fc(can_p["send"], can_mf_param)
+    result = SUTE.teststep(can_p, cpay, etp)
+    return result
 
 
-# teststep 3: test if DIDs are included in reply
-def step_3(stub, s, r, ns):
-    global testresult
-
+def step_3(can_p):
+    """
+    Teststep 3: test if DIDs are included in reply
+    """
     stepno = 3
     purpose = "test if requested DID are included in reply"
 
-    # No normal teststep done,
-    # instead: update CAN messages, verify all serial-numbers received (by checking ID for each serial-number)
-    #teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-
-    SuTe.print_test_purpose(stepno, purpose)
+    SUTE.print_test_purpose(stepno, purpose)
 
     time.sleep(1)
     SC.clear_all_can_messages()
-    print ("all can messages cleared")
-    SC.update_can_messages(r)
-    print ("all can messages updated")
-    print ()
-    print ("Step3: messages received ", len(SC.can_messages[r]))
-    print ("Step3: messages: ", SC.can_messages[r], "\n")
-    print ("Step3: frames received ", len(SC.can_frames[r]))
-    print ("Step3: frames: ", SC.can_frames[r], "\n")
-    print ("Test if string contains all IDs expected:")
+    logging.debug("All can messages cleared")
+    SC.update_can_messages(can_p["receive"])
+    logging.debug("All can messages updated")
+    logging.debug("Step2: messages received %s", len(SC.can_messages[can_p["receive"]]))
+    logging.debug("Step2: messages: %s\n", SC.can_messages[can_p["receive"]])
+    logging.debug("Step2: frames received %s", len(SC.can_frames[can_p["receive"]]))
+    logging.debug("Step2: frames: %s\n", SC.can_frames[can_p["receive"]])
+    logging.info("Test if string contains all IDs expected:")
+    result = SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='F120')
+    return result
 
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='F120')
 
-
-# teststep 4: send several requests at one time - requires SF to send, MF for reply
-def step_4(stub, s, r, ns):
-    global testresult
-
-    stepno = 4
-    purpose = "send several requests at one time - requires SF to send"
-    timeout = 2 # wait for message to arrive, but don't test (-1)
-    min_no_messages = -1
-    max_no_messages = -1
+def step_4(can_p: CanParam): # pylint: disable=too-many-locals
+    """
+    Teststep 4: Send several requests at one time - requires SF to send, MF for reply
+    """
+    # Parameters for the teststep
+    cpay: CanPayload = {
+        "payload": SC_CARCOM.can_m_send("ReadDataByIdentifier", b'\xF1\x20\xF1\x2A', b''),
+        "extra": ''
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    etp: CanTestExtra = {
+        "step_no": 4,
+        "purpose": "Send several requests at one time - requires SF to send",
+        "timeout": 2,
+        "min_no_messages": -1,
+        "max_no_messages": -1
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
 
     # Parameters for FrameControl FC
-    block_size=0
-    separation_time=0
-    frame_control_delay = 0 #no wait
-    frame_control_flag = 48 #continue send
-    frame_control_auto = False
+    can_mf_param: CanMFParam = {
+        "block_size": 0,
+        "separation_time": 0,
+        "frame_control_delay": 0, #no wait
+        "frame_control_flag": 48, #continue send
+        "frame_control_auto": False
+        }
+    SC.change_mf_fc(can_p["send"], can_mf_param)
+    result = SUTE.teststep(can_p, cpay, etp)
+    return result
 
-    can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xF1\x20\xF1\x2A', "")
-    can_mr_extra = ''
-
-    SC.change_MF_FC(s, block_size, separation_time, frame_control_delay, frame_control_flag, frame_control_auto)
-
-    testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-
-
-# teststep 5: test if DIDs are included in reply
-def step_5(stub, s, r, ns):
-    global testresult
-
-    stepno = 5
+def step_5(can_p):
+    """
+    Teststep 5:  test if DIDs are included in reply
+    """
+    step_no = 5
     purpose = "test if all requested DIDs are included in reply"
 
-    # No normal teststep done,
-    # instead: update CAN messages, verify all serial-numbers received (by checking ID for each serial-number)
-    #teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-
-    SuTe.print_test_purpose(stepno, purpose)
+    SUTE.print_test_purpose(step_no, purpose)
 
     time.sleep(1)
     SC.clear_all_can_messages()
-    print ("all can messages cleared")
-    SC.update_can_messages(r)
-    print ("all can messages updated")
-    print ()
-    print ("Step5: messages received ", len(SC.can_messages[r]))
-    print ("Step5: messages: ", SC.can_messages[r], "\n")
-    print ("Step5: frames received ", len(SC.can_frames[r]))
-    print ("Step5: frames: ", SC.can_frames[r], "\n")
-    print ("Test if string contains all IDs expected:")
+    logging.debug("all can messages cleared")
+    SC.update_can_messages(can_p["receive"])
+    logging.debug("all can messages updated")
+    logging.debug("Step%s: messages received %s", step_no, len(SC.can_messages[can_p["receive"]]))
+    logging.debug("Step%s: messages: %s\n", step_no, SC.can_messages[can_p["receive"]])
+    logging.debug("Step%s: frames received %s", step_no, len(SC.can_frames[can_p["receive"]]))
+    logging.debug("Step%s: frames: %s\n", step_no, SC.can_frames[can_p["receive"]])
+    logging.info("Test if string contains all IDs expected:")
 
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='F120')
-    testresult = testresult and SuTe.test_message(SC.can_messages[r], teststring='F12A')
-
-    # teststep 6: verify session
-def step_6(stub, s, r, ns):
-    global testresult
-
-    stepno = 6
-    purpose = "Verify Extended session"
-    timeout = 1
-    min_no_messages = 1
-    max_no_messages = 1
-
-    can_m_send = SC.can_m_send( "ReadDataByIdentifier", b'\xF1\x86', "")
-    can_mr_extra = b'\x03'
-
-    testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    time.sleep(1)
-
-    # teststep 7: Change to Default session
-def step_7(stub, s, r, ns):
-    global testresult
-
-    stepno = 7
-    purpose = "Change to Default session"
-    timeout = 1
-    min_no_messages = 1
-    max_no_messages = 1
-
-    can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x01', "")
-    can_mr_extra = ''
-
-    testresult = testresult and SuTe.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-    time.sleep(1)
+    result = SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='F120')
+    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]],
+                                          teststring='F12A')
+    return result
 
 def run():
-    global testresult
+    """
+    Run - Call other functions from here
+    """
 
-    #start logging
-    # to be implemented
+    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
     # where to connect to signal_broker
-    network_stub = SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT)
+    can_p: CanParam = {
+        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
+        "send" : "Vcu1ToBecmFront1DiagReqFrame",
+        "receive" : "BecmToVcu1Front1DiagResFrame",
+        "namespace" : SC.nspace_lookup("Front1CANCfg0")
+    }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
 
-    can_send = "Vcu1ToBecmFront1DiagReqFrame"
-    can_receive = "BecmToVcu1Front1DiagResFrame"
-    can_namespace = SC.nspace_lookup("Front1CANCfg0")
-
-    print ("Testcase start: ", datetime.now())
+    logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
-    print ("time ", time.time())
-    print()
+    logging.info("Time: %s \n", time.time())
+
     ############################################
     # precondition
     ############################################
-    precondition(network_stub, can_send, can_receive, can_namespace)
+    timeout = 40
+    result = PREC.precondition(can_p, timeout)
 
+    if result:
     ############################################
     # teststeps
     ############################################
+
     # step 1:
     # action: # Change to Extended session
     # result: BECM reports mode
-    step_1(network_stub, can_send, can_receive, can_namespace)
+        result = result and SE10.diagnostic_session_control_mode3(can_p, 1)
 
     # step2:
     # action: send 1 request - requires SF to send, MF for reply
     # result: BECM reports default session
-    step_2(network_stub, can_send, can_receive, can_namespace)
+        result = result and step_2(can_p)
 
     # step 3: check if DID is included in reply
     # action: check if expected DID are contained in reply
     # result: true if all contained, false if not
-    step_3(network_stub, can_send, can_receive, can_namespace)
+        result = result and step_3(can_p)
 
     # step4:
     # action: send several requests at one time - requires SF to send, MF for reply
     # result: BECM reports default session
-    step_4(network_stub, can_send, can_receive, can_namespace)
+        result = result and step_4(can_p)
 
     # step 5: check if DIDs are included in reply including those from combined DID
     # action: check if expected DID are contained in reply
     # result: true if all contained, false if not
-    step_5(network_stub, can_send, can_receive, can_namespace)
+        result = result and step_5(can_p)
 
     # step6:
     # action: verify current session
-    # result: BECM reports programming session
-    step_6(network_stub, can_send, can_receive, can_namespace)
+    # result: BECM reports extended session
+        result = result and SE22.read_did_f186(can_p, dsession=b'\x03', stepno=6)
 
     # step 7:
     # action: # Change to Default session
     # result: BECM reports mode
-    step_7(network_stub, can_send, can_receive, can_namespace)
+        result = result and SE10.diagnostic_session_control_mode1(can_p, 7)
+
 
     ############################################
     # postCondition
     ############################################
 
-    print()
-    print ("time ", time.time())
-    print ("Testcase end: ", datetime.now())
-    print ("Time needed for testrun (seconds): ", int(time.time() - starttime))
-
-    print ("Do cleanup now...")
-    print ("Stop heartbeat sent")
-    SC.stop_heartbeat()
-
-    # deregister signals
-    SC.unsubscribe_signals()
-    # if threads should remain: try to stop them
-    SC.thread_stop()
-
-    print ("Test cleanup end: ", datetime.now())
-    print()
-    if testresult:
-        print ("Testcase result: PASSED")
-    else:
-        print ("Testcase result: FAILED")
-
+    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()
