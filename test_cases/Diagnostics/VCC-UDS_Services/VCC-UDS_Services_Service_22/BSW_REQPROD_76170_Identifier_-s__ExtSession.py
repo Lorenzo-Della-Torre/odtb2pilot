@@ -90,10 +90,10 @@ def step_3(can_p):
     """
     Teststep 3: test if DIDs are included in reply
     """
-    stepno = 3
+    step_no = 3
     purpose = "test if requested DID are included in reply"
 
-    SUTE.print_test_purpose(stepno, purpose)
+    SUTE.print_test_purpose(step_no, purpose)
 
     time.sleep(1)
     SC.clear_all_can_messages()
