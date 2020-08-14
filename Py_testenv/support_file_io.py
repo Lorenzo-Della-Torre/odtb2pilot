@@ -81,7 +81,7 @@ class SupportFileIO:
             f_name_temp = (re.split(r"\\", f_name_temp))[-1]
             logging.debug("SIO split2 '\\': %s", f_name_temp)
 
-            f_name = re.split(r"(.py)", f_name_temp[1]+f_name_temp[2])[0] + '.yml'
+            f_name = re.split(r"(.py)", f_name_temp)[0] + '.yml'
             #logging.info("SIO Split part2:  %s", f_name_temp)
         logging.debug("Path exists: %s", os.path.exists(param_dir))
         if os.path.exists(param_dir):
