@@ -72,8 +72,17 @@ class SupportFileIO:
         else:
             # Import Parameters if REQPROD name matches
             # Remove path from filename
-            f_name_temp = re.split(r"(BSW_)", sys.argv[0])
-            f_name = re.split(r"(.py)", f_name_temp[1]+f_name_temp[2])[0] + '.yml'
+
+            #f_name_temp = re.split(r"(BSW_)", sys.argv[0])
+            #logging.debug("SIO Split part1:  %s", f_name_temp)
+            f_name_temp = (re.split(r"/", sys.argv[0]))[-1]
+            logging.debug("SIO arg to split: %s", sys.argv[0])
+            logging.debug("SIO split1 '/': %s", f_name_temp)
+            f_name_temp = (re.split(r"\\", f_name_temp))[-1]
+            logging.debug("SIO split2 '\\': %s", f_name_temp)
+
+            f_name = re.split(r"(.py)", f_name_temp)[0] + '.yml'
+            #logging.info("SIO Split part2:  %s", f_name_temp)
         logging.debug("Path exists: %s", os.path.exists(param_dir))
         if os.path.exists(param_dir):
             logging.debug("Path: %s", param_dir)

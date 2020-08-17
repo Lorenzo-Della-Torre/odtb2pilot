@@ -29,7 +29,7 @@
 import logging
 #from typing import Dict
 
-from support_can import SupportCAN, CanMFParam, CanParam, CanPayload, CanTestExtra
+from support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
 from support_test_odtb2 import SupportTestODTB2
 
 
@@ -53,15 +53,6 @@ class SupportService34: # pylint: disable=too-few-public-methods
         #testresult = True
         # Parameters for FrameControl FC
         #seed = can_p["send"]
-
-        can_mf_param: CanMFParam = {
-            'block_size' : 0,
-            'separation_time' : 0,
-            'frame_control_delay' : 0, #no wait
-            'frame_control_flag' : 48, #continue send
-            'frame_control_auto' : False
-            }
-        SC.change_mf_fc(can_p["send"], can_mf_param)
 
         addr_b = vbf_block['StartAddress'].to_bytes(4, 'big')
         len_b = vbf_block['Length'].to_bytes(4, 'big')

@@ -50,10 +50,10 @@ class SupportService11:
         cpay: CanPayload = {"payload" : S_CARCOM.can_m_send("ECUResetHardReset", b'', b''),\
                             "extra" : ''
                            }
-        etp: CanTestExtra = {"step_no": stepno,\
-                             "purpose" : "ECU Reset",\
-                             "timeout" : 1,\
-                             "min_no_messages" : 1,\
+        etp: CanTestExtra = {"step_no": stepno,
+                             "purpose" : "ECU Reset",
+                             "timeout" : 1,
+                             "min_no_messages" : 1,
                              "max_no_messages" : 1
                             }
         result = SUTE.teststep(can_p, cpay, etp)
@@ -68,13 +68,13 @@ class SupportService11:
         """
         ecu_hardreset
         """
-        cpay: CanPayload = {"payload" : S_CARCOM.can_m_send("ECUResetHardReset", b'', b''),\
+        cpay: CanPayload = {"payload" : S_CARCOM.can_m_send("ECUResetHardReset", b'', b''),
                             "extra" : ''
                            }
-        etp: CanTestExtra = {"step_no": stepno,\
-                             "purpose" : "ECU Reset",\
-                             "timeout" : 1,\
-                             "min_no_messages" : 1,\
+        etp: CanTestExtra = {"step_no": stepno,
+                             "purpose" : "ECU Reset",
+                             "timeout" : 1,
+                             "min_no_messages" : 1,
                              "max_no_messages" : 1
                             }
         result = SUTE.teststep(can_p, cpay, etp)
@@ -88,13 +88,13 @@ class SupportService11:
         """
         ecu_hardreset
         """
-        cpay: CanPayload = {"payload" : S_CARCOM.can_m_send("ECUResetHardReset_noreply", b'', b''),\
+        cpay: CanPayload = {"payload" : S_CARCOM.can_m_send("ECUResetHardReset_noreply", b'', b''),
                             "extra" : ''
                            }
-        etp: CanTestExtra = {"step_no": stepno,\
-                             "purpose" : "ECU Reset noreply",\
-                             "timeout" : 1,\
-                             "min_no_messages" : -1,\
+        etp: CanTestExtra = {"step_no": stepno,
+                             "purpose" : "ECU Reset noreply",
+                             "timeout" : 1,
+                             "min_no_messages" : -1,
                              "max_no_messages" : -1
                             }
         result = SUTE.teststep(can_p, cpay, etp)
@@ -107,13 +107,13 @@ class SupportService11:
         """
         ecu_hardreset
         """
-        cpay: CanPayload = {"payload" : S_CARCOM.can_m_send("ECUResetHardReset_noreply", b'', b''),\
+        cpay: CanPayload = {"payload" : S_CARCOM.can_m_send("ECUResetHardReset_noreply", b'', b''),
                             "extra" : ''
                            }
-        etp: CanTestExtra = {"step_no": stepno,\
-                             "purpose" : "ECU Reset",\
-                             "timeout" : 1,\
-                             "min_no_messages" : -1,\
+        etp: CanTestExtra = {"step_no": stepno,
+                             "purpose" : "ECU Reset",
+                             "timeout" : 1,
+                             "min_no_messages" : -1,
                              "max_no_messages" : -1
                             }
         result = SUTE.teststep(can_p, cpay, etp)

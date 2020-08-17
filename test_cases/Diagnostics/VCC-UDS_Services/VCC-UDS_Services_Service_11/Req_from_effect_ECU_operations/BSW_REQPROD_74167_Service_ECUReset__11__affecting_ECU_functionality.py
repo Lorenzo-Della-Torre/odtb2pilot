@@ -110,13 +110,13 @@ def step_3(can_p, can_p_ex):
     SC.update_can_messages(can_p["receive"])
     logging.debug("all can messages updated")
     time.sleep(1)
-    logging.debug("Step%s: messages received %s", stepno,\
-                 len(SC.can_messages[can_p_ex["receive"]]))
-    logging.debug("Step%s: messages: %s \n", stepno,\
-                 SC.can_messages[can_p_ex["receive"]])
-    logging.info("Step%s: frames received %s", stepno,\
+    logging.debug("Step%s: messages received %s", stepno,
+                  len(SC.can_messages[can_p_ex["receive"]]))
+    logging.debug("Step%s: messages: %s \n", stepno,
+                  SC.can_messages[can_p_ex["receive"]])
+    logging.info("Step%s: frames received %s", stepno,
                  len(SC.can_frames[can_p_ex["receive"]]))
-    logging.info("Step%s: frames: %s \n", stepno,\
+    logging.info("Step%s: frames: %s \n", stepno,
                  SC.can_frames[can_p_ex["receive"]])
 
     result = (len(SC.can_frames[can_p_ex["receive"]]) > 10)

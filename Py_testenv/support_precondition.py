@@ -28,8 +28,9 @@
 
 import logging
 import inspect
+import time
 
-from support_can import SupportCAN, CanParam, PerParam
+from support_can import SupportCAN, CanParam, PerParam, CanMFParam
 from support_test_odtb2 import SupportTestODTB2
 from support_service22 import SupportService22
 from support_service3e import SupportService3e
@@ -63,6 +64,7 @@ class SupportPrecondition:
             "frame" : b'\x00\x40\xFF\xFF\xFF\xFF\xFF\xFF',
             "intervall" : 0.4
             }
+        #Read current function name from stack:
         logging.debug("Read YML for %s", str(inspect.stack()[0][3]))
         SIO.extract_parameter_yml(str(inspect.stack()[0][3]), hb_param)
         logging.debug("hp_param %s", hb_param)
@@ -72,6 +74,7 @@ class SupportPrecondition:
 
         #Start testerpresent without reply
         tp_name = "Vcu1ToAllFuncFront1DiagReqFrame"
+        #Read current function name from stack:
         new_tp_name = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), "tp_name")
         if new_tp_name != '':
             tp_name = new_tp_name
@@ -90,6 +93,17 @@ class SupportPrecondition:
                             "namespace": can_p["namespace"]
                            }
         SC.subscribe_signal(can_p2, timeout)
+        #Don't generate FC frames for signals we generated:
+        time.sleep(1)
+        can_mf: CanMFParam = {
+            "block_size": 0,
+            "separation_time": 0,
+            "frame_control_delay": 10,
+            "frame_control_flag": 48,
+            "frame_control_auto": False
+            }
+        #SC.change_mf_fc(can_p["send"], can_mf)
+        SC.change_mf_fc(can_p2["receive"], can_mf)
 
         result = SE22.read_did_eda0(can_p)
         logging.info("Precondition testok: %s\n", result)

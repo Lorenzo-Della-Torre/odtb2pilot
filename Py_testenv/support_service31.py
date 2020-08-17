@@ -116,51 +116,57 @@ class SupportService31:
 
 
     @staticmethod
-    def routinecontrol_requestsid_flash_erase(can_p: CanParam, erase, stepno=313):
+    def routinecontrol_requestsid_flash_erase(can_p: CanParam, header, stepno=313):
         """
         RC request - flash erase
         """
-        # verify RoutineControlRequest is sent for Type 1
-        result = SE22.read_did_eda0(can_p)
-        cpay: CanPayload = {"payload" : S_CARCOM.can_m_send("RoutineControlRequestSID",\
-                                                           b'\xFF\x00' + erase, b'\x01'),\
-                            "extra" : ''
-                           }
-        etp: CanTestExtra = {"step_no": stepno,\
-                             "purpose" : "RC flash erase",\
-                             "timeout" : 1,\
-                             "min_no_messages" : -1,\
-                             "max_no_messages" : -1
-                            }
-        #start flash erase, may take long to erase
-        result = SUTE.teststep(can_p, cpay, etp)
-        logging.info("SE31 RC FlashErase 0xFF00 %s, result: %s", erase, result)
-        #logging.info("Step {0:d}: result: {1:}\n".format(stepno, result))
-        #logging.info("SE31 RC FlashErase 0xFF00 {0:}, result: {1:}".format(erase.hex(), result))
-        logging.info("SE31 RC FlashErase 0xFF00 %s, result: %s", erase.hex(), result)
+        #There may be several parts to be erase in VBF-header, loop over them
 
-        rc_response = False
-        rc_loop = 0
-        logging.info("SE31 RC FlashErase wait max 15sec for flash erased")
-        while (not rc_response) and (rc_loop < 15):
-            SC.clear_can_message(can_p["receive"])
-            SC.update_can_messages(can_p["receive"])
-            if len(SC.can_messages[can_p["receive"]]) > 0:
-                for all_mess in SC.can_messages[can_p["receive"]]:
-                    if all_mess[2].find('71') == 2:
-                        logging.info(SC.can_messages[can_p["receive"]])
-                        #try to decode message
-                        result = result and (
-                            SUTE.pp_decode_routine_control_response(all_mess[2],\
-                                'Type1,Completed'))
-                        rc_response = True
-                    elif  all_mess[2].find('7F') == 2:
-                        logging.info(SUTE.pp_decode_7f_response(all_mess[2]))
-                    else:
-                        logging.info(SC.can_messages[can_p["receive"]])
-            time.sleep(1)
-            rc_loop += 1
-        if rc_loop == 15:
-            logging.info("SE31 RC FlashErase: No pos reply received in max time")
-            result = False
+        print("SE31 header: ", header)
+        for erase_el in header['erase']:
+            # verify RoutineControlRequest is sent for Type 1
+            result = SE22.read_did_eda0(can_p)
+            cpay: CanPayload = {"payload" : S_CARCOM.can_m_send("RoutineControlRequestSID",\
+                                                b'\xFF\x00' +\
+                                                erase_el[0].to_bytes(4, byteorder='big') +\
+                                                erase_el[1].to_bytes(4, byteorder='big'), b'\x01'),\
+                                "extra" : ''
+                               }
+            etp: CanTestExtra = {"step_no": stepno,\
+                                 "purpose" : "RC flash erase",\
+                                 "timeout" : 1,\
+                                 "min_no_messages" : -1,\
+                                 "max_no_messages" : -1
+                                }
+            #start flash erase, may take long to erase
+            result = SUTE.teststep(can_p, cpay, etp)
+            logging.info("SE31 RC FlashErase 0xFF00 %s %s, result: %s",
+                         erase_el[0].to_bytes(4, byteorder='big'),
+                         erase_el[1].to_bytes(4, byteorder='big'),
+                         result)
+
+            rc_response = False
+            rc_loop = 0
+            logging.info("SE31 RC FlashErase wait max 15sec for flash erased")
+            while (not rc_response) and (rc_loop < 15):
+                SC.clear_can_message(can_p["receive"])
+                SC.update_can_messages(can_p["receive"])
+                if len(SC.can_messages[can_p["receive"]]) > 0:
+                    for all_mess in SC.can_messages[can_p["receive"]]:
+                        if all_mess[2].find('71') == 2:
+                            logging.info(SC.can_messages[can_p["receive"]])
+                            #try to decode message
+                            result = result and (
+                                SUTE.pp_decode_routine_control_response(all_mess[2],\
+                                    'Type1,Completed'))
+                            rc_response = True
+                        elif  all_mess[2].find('7F') == 2:
+                            logging.info(SUTE.pp_decode_7f_response(all_mess[2]))
+                        else:
+                            logging.info(SC.can_messages[can_p["receive"]])
+                time.sleep(1)
+                rc_loop += 1
+            if rc_loop == 15:
+                logging.info("SE31 RC FlashErase: No pos reply received in max time")
+                result = False
         return result

@@ -26,6 +26,7 @@
 
 """The Python implementation of the gRPC route guide client."""
 
+import logging
 from support_can import SupportCAN, CanMFParam, CanParam, CanPayload, CanTestExtra
 from support_test_odtb2 import SupportTestODTB2
 
@@ -49,6 +50,7 @@ class SupportService36: # pylint: disable=too-few-public-methods
 
         for i in range(int(vbf_block['Length']/(nbl-2))+1):
 
+            logging.info("360 Flash blocks: Block %s of %s", i, int(vbf_block['Length']/(nbl-2)))
             pad = (nbl-2)*i
             i += 1
             ibyte = bytes([i])
@@ -73,5 +75,4 @@ class SupportService36: # pylint: disable=too-few-public-methods
                                 }
             result = SUTE.teststep(can_p, cpay, etp)
             result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], '76')
-            #print(SC.can_messages[can_receive])
         return result
