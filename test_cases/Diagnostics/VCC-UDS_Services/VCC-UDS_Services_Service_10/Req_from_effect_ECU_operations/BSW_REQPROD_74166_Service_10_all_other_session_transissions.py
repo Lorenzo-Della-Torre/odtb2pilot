@@ -26,8 +26,9 @@ import time
 from datetime import datetime
 import sys
 import logging
+import inspect
 
-import ODTB_conf
+import odtb_conf
 from support_can import SupportCAN, CanParam, CanTestExtra
 from support_test_odtb2 import SupportTestODTB2
 from support_carcom import SupportCARCOM
@@ -47,7 +48,7 @@ POST = SupportPostcondition()
 SE10 = SupportService10()
 SE22 = SupportService22()
 
-def step_1(can_par):
+def step_1(can_p):
     """
     Teststep 1: register another signal
     """
@@ -58,39 +59,39 @@ def step_1(can_par):
         "min_no_messages" : -1,
         "max_no_messages" : -1
     }
-    SIO.extract_parameter_yml("step_{}".format(stepno), etp)
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
 
-    can_par_ex: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT),
+    can_p_ex: CanParam = {
+        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
         "send" : "ECMFront1Fr02",
         "receive" : "BECMFront1Fr02",
         "namespace" : SC.nspace_lookup("Front1CANCfg0")
     }
-    SIO.extract_parameter_yml("main", can_par_ex)
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p_ex)
 
-    SC.subscribe_signal(can_par_ex, etp["timeout"])
+    SC.subscribe_signal(can_p_ex, etp["timeout"])
     time.sleep(1)
     SC.clear_all_can_messages()
     logging.info("all can messages cleared")
     SC.clear_all_can_frames()
-    SC.update_can_messages(can_par["receive"])
+    SC.update_can_messages(can_p["receive"])
     logging.info("all can messages updated")
     time.sleep(1)
     logging.info("Step%s: messages received %s", stepno,
-                 len(SC.can_messages[can_par_ex["receive"]]))
+                 len(SC.can_messages[can_p_ex["receive"]]))
     logging.info("Step%s: messages: %s \n", stepno,
-                 SC.can_messages[can_par_ex["receive"]])
+                 SC.can_messages[can_p_ex["receive"]])
     logging.info("Step%s: frames received %s", stepno,
-                 len(SC.can_frames[can_par_ex["receive"]]))
+                 len(SC.can_frames[can_p_ex["receive"]]))
     logging.info("Step%s: frames: %s \n", stepno,
-                 SC.can_frames[can_par_ex["receive"]])
+                 SC.can_frames[can_p_ex["receive"]])
 
-    result = (len(SC.can_frames[can_par_ex["receive"]]) > 10)
+    result = (len(SC.can_frames[can_p_ex["receive"]]) > 10)
 
     logging.info("Step%s teststatus: %s \n", stepno, result)
-    return result, can_par_ex
+    return result, can_p_ex
 
-def step_3(can_par, can_par_ex):
+def step_3(can_p, can_p_ex):
     """
     Teststep 3: Verify subscribed signal is still sent
     """
@@ -101,25 +102,25 @@ def step_3(can_par, can_par_ex):
     SC.clear_all_can_messages()
     logging.info("all can messages cleared")
     SC.clear_all_can_frames()
-    SC.update_can_messages(can_par["receive"])
+    SC.update_can_messages(can_p["receive"])
     logging.info("all can messages updated")
     time.sleep(1)
     logging.info("Step%s: messages received %s", stepno,
-                 len(SC.can_messages[can_par_ex["receive"]]))
+                 len(SC.can_messages[can_p_ex["receive"]]))
     logging.info("Step%s: messages: %s \n", stepno,
-                 SC.can_messages[can_par_ex["receive"]])
+                 SC.can_messages[can_p_ex["receive"]])
     logging.info("Step%s: frames received %s", stepno,
-                 len(SC.can_frames[can_par_ex["receive"]]))
+                 len(SC.can_frames[can_p_ex["receive"]]))
     logging.info("Step%s: frames: %s \n", stepno,
-                 SC.can_frames[can_par_ex["receive"]])
+                 SC.can_frames[can_p_ex["receive"]])
 
-    result = (len(SC.can_frames[can_par_ex["receive"]]) > 10)
+    result = (len(SC.can_frames[can_p_ex["receive"]]) > 10)
 
     logging.info("Step%s teststatus: %s \n", stepno, result)
 
     return result
 
-def step_6(can_par, can_par_ex):
+def step_6(can_p, can_p_ex):
     """
     Teststep 6: Verify subscribed signal is still sent
     """
@@ -130,19 +131,19 @@ def step_6(can_par, can_par_ex):
     SC.clear_all_can_messages()
     logging.info("all can messages cleared")
     SC.clear_all_can_frames()
-    SC.update_can_messages(can_par["receive"])
+    SC.update_can_messages(can_p["receive"])
     logging.info("all can messages updated")
     time.sleep(1)
     logging.info("Step%s: messages received %s", stepno,
-                 len(SC.can_messages[can_par_ex["receive"]]))
+                 len(SC.can_messages[can_p_ex["receive"]]))
     logging.info("Step%s: messages: %s \n", stepno,
-                 SC.can_messages[can_par_ex["receive"]])
+                 SC.can_messages[can_p_ex["receive"]])
     logging.info("Step%s: frames received %s", stepno,
-                 len(SC.can_frames[can_par_ex["receive"]]))
+                 len(SC.can_frames[can_p_ex["receive"]]))
     logging.info("Step%s: frames: %s \n", stepno,
-                 SC.can_frames[can_par_ex["receive"]])
+                 SC.can_frames[can_p_ex["receive"]])
 
-    result = (len(SC.can_frames[can_par_ex["receive"]]) > 10)
+    result = (len(SC.can_frames[can_p_ex["receive"]]) > 10)
 
     logging.info("Step%s teststatus: %s \n", stepno, result)
 
@@ -152,19 +153,20 @@ def run():
     """
     Run - Call other functions from here
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.DEBUG)
+    #logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.DEBUG)
+    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
     # start logging
     # to be implemented
 
     # where to connect to signal_broker
-    can_par: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT),
+    can_p: CanParam = {
+        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
         "send" : "Vcu1ToBecmFront1DiagReqFrame",
         "receive" : "BecmToVcu1Front1DiagResFrame",
         "namespace" : SC.nspace_lookup("Front1CANCfg0")
     }
-    SIO.extract_parameter_yml("main", can_par)
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
     logging.info("Time: %s \n", time.time())
@@ -173,7 +175,7 @@ def run():
     # precondition
     ############################################
     timeout = 30
-    result = PREC.precondition(can_par, timeout)
+    result = PREC.precondition(can_p, timeout)
 
     if result:
     ############################################
@@ -182,38 +184,38 @@ def run():
     # step 1:
     # action: Register not diagnostic message
     # result: BECM send requested signals
-        result, can_par_ex = result and step_1(can_par)
+        result, can_p_ex = result and step_1(can_p)
 
     # step2:
     # action: # Change to extended session
     # result: BECM reports mode
-        result = result and SE10.diagnostic_session_control_mode3(can_par, 2)
+        result = result and SE10.diagnostic_session_control_mode3(can_p, 2)
 
     # step3:
     # action: Verify signal is still sent
     # result: BECM send requested signals
-        result = result and step_3(can_par, can_par_ex)
+        result = result and step_3(can_p, can_p_ex)
 
     # step4:
     # action: verify current session
     # result: BECM reports extended session
-        result = result and SE22.read_did_f186(can_par, dsession=b'\x03')#, 4)
+        result = result and SE22.read_did_f186(can_p, dsession=b'\x03')#, 4)
 
     # step5:
     # action: # Change to default session
     # result: BECM reports mode
-        result = result and SE10.diagnostic_session_control_mode1(can_par, 5)
+        result = result and SE10.diagnostic_session_control_mode1(can_p, 5)
 
     # step6:
     # action: Verify signal is still sent
     # result: BECM send requested signals
-        result = result and step_6(can_par, can_par_ex)
+        result = result and step_6(can_p, can_p_ex)
 
     ############################################
     # postCondition
     ############################################
 
-    result = POST.postcondition(can_par, starttime, result)
+    result = POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()
