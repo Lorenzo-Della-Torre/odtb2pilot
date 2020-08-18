@@ -3,13 +3,20 @@
 # author:   LDELLATO (Lorenzo Della Torre)
 # date:     2020-06-03
 # version:  1.1
-# reqprod:  74114
+# reqprod:  74144
 
 # author:   HWEILER (Hans-Klaus Weiler)
 # date:     2020-07-09
 # version:  1.2
-# reqprod:  74114
+# reqprod:  74144
 # changes:  YML fixed, some timing fixed
+
+# author:   HWEILER (Hans-Klaus Weiler)
+# date:     2020-08-06
+# version:  1.3
+# reqprod:  74144
+# changes:  Copied snippet from 74143 for better calculation of response time
+
 # #inspired by https://grpc.io/docs/tutorials/basic/python.html
 # Copyright 2015 gRPC authors.
 #
@@ -49,6 +56,41 @@ SC_CARCOM = SupportCARCOM()
 PREC = SupportPrecondition()
 POST = SupportPostcondition()
 
+JITTER_TESTENV = 10
+
+def step_time_measure(can_p, stepno, p2_server_max):
+    """
+    Teststep time_measure:
+    Verify (time receive message – time sending request) less than P2_server_max
+    """
+
+    logging.info("Step %s: Collecting data for calculating time:", stepno)
+    t_1 = SC.can_frames[can_p["send"]][0][0]
+    logging.info("Step %s: Timestamp request sent: %s", stepno, t_1)
+    t_2 = SC.can_frames[can_p["receive"]][0][0]
+    logging.info("Step %s: Timestamp request sent: %s", stepno, t_2)
+    #fetch P2 server max from the received message
+    #p2_server_max = int(SC.can_messages[can_p["receive"]][0][2][8:10], 16)
+    #logging.info("Step %s: P2_server_max: %s",
+    #             stepno,
+    #             int(SC.can_messages[can_p["receive"]][0][2][8:10], 16))
+
+    purpose = "Verify (time receive message – time sending request) less than P2_server_max"
+    SUTE.print_test_purpose(stepno, purpose)
+    result = ((p2_server_max + JITTER_TESTENV)/1000 > (t_2 - t_1))
+    logging.info("Step%s: t2: %s (sec)", stepno, t_2)
+    logging.info("Step%s: t1: %s (sec)", stepno, t_1)
+    logging.info("Step%s: t2-t1: %s (sec)", stepno, (t_2 - t_1))
+    logging.info("P2_server_max: %s (msec)", p2_server_max)
+    logging.info("JITTER_TESTENV: %s (msec)", JITTER_TESTENV)
+    logging.info("P2_server_max + JITTER_TESTENV: %s (msec)", p2_server_max + JITTER_TESTENV)
+    #logging.info("(p2-jitter) / 1000: %s", (p2_server_max + JITTER_TESTENV)/1000)
+
+    #logging.info("T difference(s): %s", (p2_server_max + JITTER_TESTENV)/1000 - (t_2 - t_1))
+    logging.info("Step %s teststatus:%s \n", stepno, result)
+    return result
+
+
 def step_1(can_p):
     """
     Request session change to Mode1
@@ -83,25 +125,9 @@ def step_2(can_p):
         'min_no_messages': -1,
         'max_no_messages': -1
         }
-    t_1 = time.time()
     result = SUTE.teststep(can_p, cpay, etp)
     result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='025101')
-    t_2 = SC.can_messages[can_p["receive"]][0][0]
     time.sleep(1)
-    return result, t_1, t_2
-
-def step_3(t_1, t_2, p2_server_max):
-    """
-    Verify (time receive message – time sending request) less than P2_server_max
-    """
-    step_no = 3
-    purpose = "Verify (time receive message – time sending request) less than P2_server_max"
-    SUTE.print_test_purpose(step_no, purpose)
-    jitter_testenv = 10
-
-    result = (p2_server_max + jitter_testenv)/1000 > (t_2 - t_1)
-    logging.info("T difference(s): %s \n", float((p2_server_max + 10)/1000 - (t_2 - t_1)))
-    logging.info("Step %s teststatus: %s \n", step_no, result)
     return result
 
 def run():
@@ -110,9 +136,6 @@ def run():
     """
     #logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.DEBUG)
     logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
-
-    # start logging
-    # to be implemented
 
     # where to connect to signal_broker
     logging.info("Connecting to: %s", odtb_conf.ODTB2_DUT)
@@ -149,12 +172,14 @@ def run():
         # step 2:
         # action: ECU Reset
         # result:
-        result, t_1, t_2 = result and step_2(can_p)
+        #result, t_1, t_2 = result and step_2(can_p)
+        result = result and step_2(can_p)
 
         # step 3:
         # action: Wait for the response message
         # result: (time receive message – time sending request) less than P2_server_max
-        result = result and step_3(t_1, t_2, p2_server_max)
+        #result = result and step_3(t_1, t_2, p2_server_max)
+        result = result and step_time_measure(can_p, stepno=3, p2_server_max=p2_server_max)
 
     ############################################
     # postCondition
