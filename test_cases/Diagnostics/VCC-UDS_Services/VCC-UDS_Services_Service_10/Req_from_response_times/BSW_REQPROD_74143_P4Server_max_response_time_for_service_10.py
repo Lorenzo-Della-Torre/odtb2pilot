@@ -5,6 +5,13 @@
 # version:  1.1
 # reqprod:  74143
 
+# author:   HWEILER (Hans-Klaus Weiler)
+# date:     2020-08-05
+# version:  1.2
+# changes:  Measuring time between function call and reply resulted in too big delay, causing
+#           testscript to fail. Changed to taking timestamp from request/reply instead.
+#           Further update to comply to latest support function. Tested with SPA/MEP2.
+
 # #inspired by https://grpc.io/docs/tutorials/basic/python.html
 # Copyright 2015 gRPC authors.
 #
@@ -26,8 +33,9 @@ import time
 from datetime import datetime
 import sys
 import logging
+import inspect
 
-import ODTB_conf
+import odtb_conf
 
 from support_can import SupportCAN, CanParam
 from support_test_odtb2 import SupportTestODTB2
@@ -52,39 +60,54 @@ SE22 = SupportService22()
 
 JITTER_TESTENV = 10
 
-def step_1(can_par):
+
+def step_time_measure(can_p, stepno):
+    """
+    Teststep time_measure:
+    Verify (time receive message – time sending request) less than P2_server_max
+    """
+
+    logging.info("Step %s: Collecting data for calculating time:", stepno)
+    t_1 = SC.can_frames[can_p["send"]][0][0]
+    logging.info("Step %s: Timestamp request sent: %s", stepno, t_1)
+    t_2 = SC.can_frames[can_p["receive"]][0][0]
+    logging.info("Step %s: Timestamp request sent: %s", stepno, t_2)
+    #fetch P2 server max from the received message
+    p2_server_max = int(SC.can_messages[can_p["receive"]][0][2][8:10], 16)
+    logging.info("Step %s: P2_server_max: %s",
+                 stepno,
+                 int(SC.can_messages[can_p["receive"]][0][2][8:10], 16))
+
+    purpose = "Verify (time receive message – time sending request) less than P2_server_max"
+    SUTE.print_test_purpose(stepno, purpose)
+    result = ((p2_server_max + JITTER_TESTENV)/1000 > (t_2 - t_1))
+    logging.info("Step%s: t2: %s (sec)", stepno, t_2)
+    logging.info("Step%s: t1: %s (sec)", stepno, t_1)
+    logging.info("Step%s: t2-t1: %s (sec)", stepno, (t_2 - t_1))
+    logging.info("P2_server_max: %s (msec)", p2_server_max)
+    logging.info("JITTER_TESTENV: %s (msec)", JITTER_TESTENV)
+    logging.info("P2_server_max + JITTER_TESTENV: %s (msec)", p2_server_max + JITTER_TESTENV)
+    #logging.info("(p2-jitter) / 1000: %s", (p2_server_max + JITTER_TESTENV)/1000)
+
+    #logging.info("T difference(s): %s", (p2_server_max + JITTER_TESTENV)/1000 - (t_2 - t_1))
+    logging.info("Step %s teststatus:%s \n", stepno, result)
+    return result
+
+def step_1(can_p):
     """
     Teststep 1: Read out P2_server_max programming session
     """
     stepno = 1
     purpose = "Read out P2_server_max programming session"
     SUTE.print_test_purpose(stepno, purpose)
-    #time start request
-    t_1 = time.time()
-    result = SE10.diagnostic_session_control_mode2(can_par, stepno)
-    result = result and SE10.diagnostic_session_control_mode2(can_par, stepno)
-    #fetch P2 server max from the received message
-    logging.info(SC.can_frames[can_par["receive"]])
-    p2_server_max = int(SC.can_messages[can_par["receive"]][0][2][8:10], 16)
-    #fetch time stop request and start reply from ECU reply message
-    t_2 = SC.can_messages[can_par["receive"]][0][0]
+    result = SE10.diagnostic_session_control_mode2(can_p, stepno)
+    result = result and SE10.diagnostic_session_control_mode2(can_p, stepno)
+    logging.info(SC.can_frames[can_p["receive"]])
     time.sleep(1)
-    return t_1, t_2, p2_server_max, result
-
-def step_2(t_1, t_2, p2_server_max):
-    """
-    Teststep 2: Verify (time receive message – time sending request) less than P2_server_max
-    """
-    stepno = 2
-    purpose = "Verify (time receive message – time sending request) less than P2_server_max"
-    SUTE.print_test_purpose(stepno, purpose)
-    result = ((p2_server_max + JITTER_TESTENV)/1000 > (t_2 - t_1))
-
-    logging.info("T difference(s): %s", (p2_server_max + JITTER_TESTENV)/1000 - (t_2 - t_1))
-    logging.info("Step %s teststatus:%s \n", stepno, result)
     return result
 
-def step_3(can_par):
+
+def step_3(can_p):
     """
     Teststep 3: Read out P2_server_max default session
     """
@@ -92,30 +115,19 @@ def step_3(can_par):
     purpose = "Read out P2_server_max default session"
     SUTE.print_test_purpose(stepno, purpose)
     #time start request
-    t_1 = time.time()
-    result = SE10.diagnostic_session_control_mode1(can_par, stepno)
+    #t_1 = time.time()
+    result = SE10.diagnostic_session_control_mode1(can_p, stepno)
     #fetch P2 server max from the received message
-    logging.info(SC.can_frames[can_par["receive"]])
-    p2_server_max = int(SC.can_messages[can_par["receive"]][0][2][8:10], 16)
+    logging.info(SC.can_frames[can_p["receive"]])
+    #p2_server_max = int(SC.can_messages[can_p["receive"]][0][2][8:10], 16)
     #fetch time stop request and start reply from ECU reply message
-    t_2 = SC.can_messages[can_par["receive"]][0][0]
+    #t_2 = SC.can_messages[can_p["receive"]][0][0]
     time.sleep(1)
-    return t_1, t_2, p2_server_max, result
-
-def step_4(t_1, t_2, p2_server_max):
-    """
-    Teststep 4: Verify (time receive message – time sending request) less than P2_server_max
-    """
-    stepno = 4
-    purpose = "Verify (time receive message – time sending request) less than P2_server_max"
-    SUTE.print_test_purpose(stepno, purpose)
-    result = ((p2_server_max + JITTER_TESTENV)/1000 > (t_2 - t_1))
-
-    logging.info("T difference(s): %s", (p2_server_max + JITTER_TESTENV)/1000 - (t_2 - t_1))
-    logging.info("Step %s teststatus:%s \n", stepno, result)
+    #return t_1, t_2, p2_server_max, result
     return result
 
-def step_5(can_par):
+
+def step_5(can_p):
     """
     Teststep 5: Read out P2_server_max extended session
     """
@@ -123,30 +135,19 @@ def step_5(can_par):
     purpose = "Read out P2_server_max extended session"
     SUTE.print_test_purpose(stepno, purpose)
     #time start request
-    t_1 = time.time()
-    result = SE10.diagnostic_session_control_mode3(can_par, stepno)
+    #t_1 = time.time()
+    result = SE10.diagnostic_session_control_mode3(can_p, stepno)
     #fetch P2 server max from the received message
-    logging.info(SC.can_frames[can_par["receive"]])
-    p2_server_max = int(SC.can_messages[can_par["receive"]][0][2][8:10], 16)
+    logging.info(SC.can_frames[can_p["receive"]])
+    #p2_server_max = int(SC.can_messages[can_p["receive"]][0][2][8:10], 16)
     #fetch time stop request and start reply from ECU reply message
-    t_2 = SC.can_messages[can_par["receive"]][0][0]
+    #t_2 = SC.can_messages[can_p["receive"]][0][0]
     time.sleep(1)
-    return t_1, t_2, p2_server_max, result
-
-def step_6(t_1, t_2, p2_server_max):
-    """
-    Teststep 6: Verify (time receive message – time sending request) less than P2_server_max
-    """
-    stepno = 6
-    purpose = "Verify (time receive message – time sending request) less than P2_server_max"
-    SUTE.print_test_purpose(stepno, purpose)
-    result = ((p2_server_max + JITTER_TESTENV)/1000 > (t_2 - t_1))
-
-    logging.info("T difference(s): %s", (p2_server_max + JITTER_TESTENV)/1000 - (t_2 - t_1))
-    logging.info("Step %s teststatus:%s \n", stepno, result)
+    #return t_1, t_2, p2_server_max, result
     return result
 
-def step_7(can_par):
+
+def step_7(can_p):
     """
     Teststep 7: Read out P2_server_max default session
     """
@@ -154,27 +155,15 @@ def step_7(can_par):
     purpose = "Read out P2_server_max default session"
     SUTE.print_test_purpose(stepno, purpose)
     #time start request
-    t_1 = time.time()
-    result = SE10.diagnostic_session_control_mode1(can_par, stepno)
+    #t_1 = time.time()
+    result = SE10.diagnostic_session_control_mode1(can_p, stepno)
     #fetch P2 server max from the received message
-    logging.info(SC.can_frames[can_par["receive"]])
-    p2_server_max = int(SC.can_messages[can_par["receive"]][0][2][8:10], 16)
+    logging.info(SC.can_frames[can_p["receive"]])
+    #p2_server_max = int(SC.can_messages[can_p["receive"]][0][2][8:10], 16)
     #fetch time stop request and start reply from ECU reply message
-    t_2 = SC.can_messages[can_par["receive"]][0][0]
+    #t_2 = SC.can_messages[can_p["receive"]][0][0]
     time.sleep(1)
-    return t_1, t_2, p2_server_max, result
-
-def step_8(t_1, t_2, p2_server_max):
-    """
-    Teststep 8: Verify (time receive message – time sending request) less than P2_server_max
-    """
-    stepno = 8
-    purpose = "Verify (time receive message – time sending request) less than P2_server_max"
-    SUTE.print_test_purpose(stepno, purpose)
-    result = ((p2_server_max + JITTER_TESTENV)/1000 > (t_2 - t_1))
-
-    logging.info("T difference(s): %s", (p2_server_max + JITTER_TESTENV)/1000 - (t_2 - t_1))
-    logging.info("Step %s teststatus:%s \n", stepno, result)
+    #return t_1, t_2, p2_server_max, result
     return result
 
 
@@ -188,13 +177,13 @@ def run():
     # to be implemented
 
     # where to connect to signal_broker
-    can_par: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT),
+    can_p: CanParam = {
+        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
         "send" : "Vcu1ToBecmFront1DiagReqFrame",
         "receive" : "BecmToVcu1Front1DiagResFrame",
         "namespace" : SC.nspace_lookup("Front1CANCfg0")
     }
-    SIO.extract_parameter_yml("main", can_par)
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
     logging.info("Time: %s \n", time.time())
@@ -204,7 +193,7 @@ def run():
     ############################################
     timeout = 20
     #timeout = 600
-    result = PREC.precondition(can_par, timeout)
+    result = PREC.precondition(can_p, timeout)
 
     if result:
     ############################################
@@ -213,52 +202,52 @@ def run():
         # step1:
         # action:
         # result:
-        t_1, t_2, p2_server_max, result_step_1 = step_1(can_par)
-        result = result and result_step_1
+        result = step_1(can_p)
 
         # step2:
         # action:
         # result:
-        result = result and step_2(t_1, t_2, p2_server_max)
+        result = result and step_time_measure(can_p, 2)
 
         # step3:
         # action:
         # result:
-        t_1, t_2, p2_server_max, result_step_3 = step_3(can_par)
-        result = result and result_step_3
+        result = result and step_3(can_p)
 
         # step4:
         # action:
         # result:
-        result = result and step_4(t_1, t_2, p2_server_max)
+        result = result and step_time_measure(can_p, 4)
 
         # step5:
         # action:
         # result:
-        t_1, t_2, p2_server_max, result_step_5 = step_5(can_par)
-        result = result and result_step_5
+        result = result and step_5(can_p)
+        #result = result and result_step_5
 
         # step6:
         # action:
         # result:
-        result = result and step_6(t_1, t_2, p2_server_max)
+        result = result and step_time_measure(can_p, 6)
         time.sleep(1)
+
         # step7:
         # action:
         # result:
-        t_1, t_2, p2_server_max, result_step_7 = step_7(can_par)
-        result = result and result_step_7
+        #t_1, t_2, p2_server_max, result_step_7 = step_7(can_p)
+        #result = result and result_step_7
+        result = result and step_7(can_p)
 
         # step8:
         # action:
         # result:
-        result = result and step_8(t_1, t_2, p2_server_max)
+        result = result and step_time_measure(can_p, 8)
 
     ############################################
     # postCondition
     ############################################
 
-    POST.postcondition(can_par, starttime, result)
+    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()
