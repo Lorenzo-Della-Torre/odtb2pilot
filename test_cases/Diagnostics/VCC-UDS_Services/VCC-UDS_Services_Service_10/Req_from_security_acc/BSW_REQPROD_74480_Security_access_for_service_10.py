@@ -26,8 +26,9 @@ import time
 from datetime import datetime
 import sys
 import logging
+import inspect
 
-import ODTB_conf
+import odtb_conf
 from support_can import SupportCAN, CanParam
 from support_test_odtb2 import SupportTestODTB2
 from support_carcom import SupportCARCOM
@@ -51,19 +52,16 @@ def run():
     """
     Run - Call other functions from here
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.DEBUG)
-
-    # start logging
-    # to be implemented
+    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
     # where to connect to signal_broker
-    can_par: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT),
+    can_p: CanParam = {
+        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
         "send" : "Vcu1ToBecmFront1DiagReqFrame",
         "receive" : "BecmToVcu1Front1DiagResFrame",
         "namespace" : SC.nspace_lookup("Front1CANCfg0")
     }
-    SIO.extract_parameter_yml("main", can_par)
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
     logging.info("Time: %s \n", time.time())
@@ -72,7 +70,7 @@ def run():
     # precondition
     ############################################
     timeout = 30
-    result = PREC.precondition(can_par, timeout)
+    result = PREC.precondition(can_p, timeout)
 
     if result:
     ############################################
@@ -81,25 +79,25 @@ def run():
     # step1:
     # action: # Change to extended session
     # result: BECM reports mode
-        result = result and SE10.diagnostic_session_control_mode3(can_par, 1)
+        result = result and SE10.diagnostic_session_control_mode3(can_p, 1)
 
     # step2:
     # action: # Change to programming session from extended
     # result: BECM reports mode
-        SE10.diagnostic_session_control_mode2(can_par, 2)
-        result = result and SE10.diagnostic_session_control_mode2(can_par, 2)
+        SE10.diagnostic_session_control_mode2(can_p, 2)
+        result = result and SE10.diagnostic_session_control_mode2(can_p, 2)
 
     # step3:
     # action: # Change to default session from programming
     # result: BECM reports mode
-        result = result and SE10.diagnostic_session_control_mode1(can_par, 3)
+        result = result and SE10.diagnostic_session_control_mode1(can_p, 3)
         time.sleep(1)
 
     ############################################
     # postCondition
     ############################################
 
-    result = POST.postcondition(can_par, starttime, result)
+    result = POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()
