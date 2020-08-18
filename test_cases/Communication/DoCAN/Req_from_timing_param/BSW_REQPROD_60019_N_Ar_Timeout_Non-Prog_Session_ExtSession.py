@@ -86,7 +86,6 @@ def step_2(can_p):
         "frame_control_delay": 950,
         "frame_control_flag": 48,
         "frame_control_auto": True
-                                                
         }
     SC.change_mf_fc(can_p["receive"], can_mf)
     result = SUTE.teststep(can_p, cpay, etp)
