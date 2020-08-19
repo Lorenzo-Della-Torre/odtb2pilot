@@ -141,7 +141,7 @@ def run():
     # step2:
     # action: Change to Programming session
     # result: positive reply, mode2
-    result = SE10.diagnostic_session_control_mode2(can_p, stepno=5)
+    result = SE10.diagnostic_session_control_mode2(can_p, stepno=2)
 
     # step3:
     # action: verify NRC is sent for Type 1 not implemented in Programming session
