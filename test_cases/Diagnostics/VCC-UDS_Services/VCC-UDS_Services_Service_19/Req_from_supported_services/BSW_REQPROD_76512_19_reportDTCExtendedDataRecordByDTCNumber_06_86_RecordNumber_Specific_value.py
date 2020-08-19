@@ -27,8 +27,9 @@ import time
 from datetime import datetime
 import sys
 import logging
+import inspect
 
-import ODTB_conf
+import odtb_conf
 from support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
 from support_test_odtb2 import SupportTestODTB2
 from support_carcom import SupportCARCOM
@@ -44,101 +45,101 @@ SC_CARCOM = SupportCARCOM()
 PREC = SupportPrecondition()
 POST = SupportPostcondition()
 
-def step_1(can_par):
+def step_1(can_p):
     """
     Teststep 1: vverify that Read DTC Extent Info reply positively
     """
-    stepno = 1
-    cpay: CanPayload = SIO.extract_parameter_yml(
-        "step_{}".format(stepno),
-        payload=SC_CARCOM.can_m_send("ReadDTCInfoExtDataRecordByDTCNumber",
-                                     b'\x0B\x4A\x00', b'\xFF'),
-        extra=''
-        )
-    etp: CanTestExtra = SIO.extract_parameter_yml(
-        "step_{}".format(stepno),
-        step_no=1,
-        purpose="verify that Read DTC Extent Info reply positively",
-        timeout=1,
-        min_no_messages=-1,
-        max_no_messages=-1
-        )
-    result = SUTE.teststep(can_par, cpay, etp)
-    result = result and SUTE.test_message(SC.can_messages[can_par["receive"]],
+    cpay: CanPayload = {
+        "payload": SC_CARCOM.can_m_send("ReadDTCInfoExtDataRecordByDTCNumber",
+                                        b'\x0B\x4A\x00', b'\xFF'),
+        "extra": ''
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    etp: CanTestExtra = {
+        "step_no": 1,
+        "purpose": "verify that Read DTC Extent Info reply positively",
+        "timeout": 1,
+        "min_no_messages": -1,
+        "max_no_messages": -1
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+
+    result = SUTE.teststep(can_p, cpay, etp)
+    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]],
                                           teststring='5906')
     #extract the dtc number from the first frame received '0'
     #second value '2' on specific position (8:14)
-    dtc_number = SUTE.pp_string_to_bytes(SC.can_frames[can_par["receive"]][0][2][8:14], 3)
-    #extract the dtc  extend record number from the second frame received '1'
+    dtc_number = SUTE.pp_string_to_bytes(SC.can_frames[can_p["receive"]][0][2][8:14], 3)
+    #extract the dtc extended record number from the second frame received '1'
     #second value '2' on specific position (2:4)
     dtc_ext_data_record_number = SUTE.pp_string_to_bytes(
-        SC.can_frames[can_par["receive"]][1][2][2:4], 1)
+        SC.can_frames[can_p["receive"]][1][2][2:4], 1)
     return result, dtc_number, dtc_ext_data_record_number
 
-def step_2(can_par, dtc_number, dtc_ext_data_record_number):
+def step_2(can_p, dtc_number, dtc_ext_data_record_number):
     """
     Teststep 2: verify that ExtDataRecordByDTCNumber for specific number reply positively
     """
-    stepno = 2
-    cpay: CanPayload = SIO.extract_parameter_yml(
-        "step_{}".format(stepno),
-        payload=SC_CARCOM.can_m_send("ReadDTCInfoExtDataRecordByDTCNumber",\
-             dtc_number, dtc_ext_data_record_number),
-        extra=''
-        )
-    etp: CanTestExtra = SIO.extract_parameter_yml(
-        "step_{}".format(stepno),
-        step_no=2,
-        purpose="verify that ExtDataRecordByDTCNumber for specific number reply positively",
-        timeout=1,
-        min_no_messages=-1,
-        max_no_messages=-1
-        )
-    result = SUTE.teststep(can_par, cpay, etp)
-    result = result and SUTE.test_message(SC.can_messages[can_par["receive"]],
+    cpay: CanPayload = {
+        "payload": SC_CARCOM.can_m_send("ReadDTCInfoExtDataRecordByDTCNumber",\
+                                        dtc_number, dtc_ext_data_record_number),
+        "extra": ''
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    etp: CanTestExtra = {
+        "step_no": 2,
+        "purpose": "verify that ExtDataRecordByDTCNumber for specific number reply positively",
+        "timeout": 1,
+        "min_no_messages": -1,
+        "max_no_messages": -1
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+
+    result = SUTE.teststep(can_p, cpay, etp)
+    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]],
                                           teststring='5906')
     return result
 
-def step_3(can_par, dtc_number, dtc_ext_data_record_number):
+def step_3(can_p, dtc_number, dtc_ext_data_record_number):
     """
     Teststep 3: verify that ExtDataRecordByDTCNumber reply with empty message
     """
-    stepno = 3
-    cpay: CanPayload = SIO.extract_parameter_yml(
-        "step_{}".format(stepno),
-        payload=SC_CARCOM.can_m_send("ReadDTCInfoExtDataRecordByDTCNumber(86)",
-                                     dtc_number, dtc_ext_data_record_number),
-        extra=''
-        )
-    etp: CanTestExtra = SIO.extract_parameter_yml(
-        "step_{}".format(stepno),
-        step_no=3,
-        purpose="verify that ExtDataRecordByDTCNumber reply with empty message",
-        timeout=1,
-        min_no_messages=-1,
-        max_no_messages=-1
-        )
-    result = SUTE.teststep(can_par, cpay, etp)
-    result = result and not SC.can_messages[can_par["receive"]]
+    cpay: CanPayload = {
+        "payload": SC_CARCOM.can_m_send("ReadDTCInfoExtDataRecordByDTCNumber(86)",
+                                        dtc_number, dtc_ext_data_record_number),
+        "extra": ''
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    etp: CanTestExtra = {
+        "step_no": 3,
+        "purpose": "verify that ExtDataRecordByDTCNumber reply with empty message",
+        "timeout": 1,
+        "min_no_messages": -1,
+        "max_no_messages": -1
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+
+    result = SUTE.teststep(can_p, cpay, etp)
+    result = result and not SC.can_messages[can_p["receive"]]
     return result
 
 def run():
     """
     Run - Call other functions from here
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.DEBUG)
+    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
     # start logging
     # to be implemented
 
     # where to connect to signal_broker
-    can_par: CanParam = SIO.extract_parameter_yml(
-        "main",
-        netstub=SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT),
-        send="Vcu1ToBecmFront1DiagReqFrame",
-        receive="BecmToVcu1Front1DiagResFrame",
-        namespace=SC.nspace_lookup("Front1CANCfg0")
-        )
+    can_p: CanParam = {
+        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
+        "send" : "Vcu1ToBecmFront1DiagReqFrame",
+        "receive" : "BecmToVcu1Front1DiagResFrame",
+        "namespace" : SC.nspace_lookup("Front1CANCfg0")
+    }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
 
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
@@ -148,7 +149,7 @@ def run():
     # precondition
     ############################################
     timeout = 30
-    result = PREC.precondition(can_par, timeout)
+    result = PREC.precondition(can_p, timeout)
 
     if result:
     ############################################
@@ -158,23 +159,23 @@ def run():
     # step1:
     # action:
     # result: BECM sends positive reply
-        resultt, dtc_number, dtc_ext_data_record_number = step_1(can_par)
+        resultt, dtc_number, dtc_ext_data_record_number = step_1(can_p)
         result = result and resultt
     # step2:
     # action:
     # result: BECM sends positive reply
-        result = result and step_2(can_par, dtc_number, dtc_ext_data_record_number)
+        result = result and step_2(can_p, dtc_number, dtc_ext_data_record_number)
 
     # step3:
     # action:
     # result: BECM sends positive reply
-        result = result and step_3(can_par, dtc_number, dtc_ext_data_record_number)
+        result = result and step_3(can_p, dtc_number, dtc_ext_data_record_number)
 
     ############################################
     # postCondition
     ############################################
 
-    POST.postcondition(can_par, starttime, result)
+    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()
