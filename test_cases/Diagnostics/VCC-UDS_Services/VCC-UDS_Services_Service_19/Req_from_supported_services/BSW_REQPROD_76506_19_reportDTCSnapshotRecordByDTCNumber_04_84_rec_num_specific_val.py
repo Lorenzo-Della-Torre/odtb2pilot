@@ -27,8 +27,9 @@ import time
 from datetime import datetime
 import sys
 import logging
+import inspect
 
-import ODTB_conf
+import odtb_conf
 from support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
 from support_test_odtb2 import SupportTestODTB2
 from support_carcom import SupportCARCOM
@@ -44,84 +45,81 @@ SC_CARCOM = SupportCARCOM()
 PREC = SupportPrecondition()
 POST = SupportPostcondition()
 
-def step_1(can_par):
+def step_1(can_p):
     """
     Teststep 1: verify ReadDTCInfoSnapshotIdentification reply positively
     """
-    stepno = 1
-    cpay: CanPayload = SIO.extract_parameter_yml(
-        "step_{}".format(stepno),
-        payload=SC_CARCOM.can_m_send("ReadDTCInfoSnapshotIdentification", b'', b''),
-        extra=''
-        )
-    etp: CanTestExtra = SIO.extract_parameter_yml(
-        "step_{}".format(stepno),
-        step_no=1,
-        purpose="verify ReadDTCInfoSnapshotIdentification reply positively",
-        timeout=1,
-        min_no_messages=-1,
-        max_no_messages=-1
-        )
+    cpay: CanPayload = {
+        "payload": SC_CARCOM.can_m_send("ReadDTCInfoSnapshotIdentification", b'', b''),
+        "extra": ''
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    etp: CanTestExtra = {
+        "step_no": 1,
+        "purpose": "verify ReadDTCInfoSnapshotIdentification reply positively",
+        "timeout": 1,
+        "min_no_messages": -1,
+        "max_no_messages": -1
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
 
-    result = SUTE.teststep(can_par, cpay, etp)
-    result = result and SUTE.test_message(SC.can_messages[can_par["receive"]], teststring='5903')
+    result = SUTE.teststep(can_p, cpay, etp)
+    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='5903')
     #extract the dtc number from the first frame received '0'
     #second value '2' on specific position (8:14)
-    dtc_number = SUTE.pp_string_to_bytes(SC.can_frames[can_par["receive"]][0][2][8:14], 3)
+    dtc_number = SUTE.pp_string_to_bytes(SC.can_frames[can_p["receive"]][0][2][8:14], 3)
     #extract the snapshot record number from the first frame received '0'
     #second value '2' on specific position (14:16)
-    sshot_rec_num = SUTE.pp_string_to_bytes(SC.can_frames[can_par["receive"]][0][2][14:16], 1)
+    sshot_rec_num = SUTE.pp_string_to_bytes(SC.can_frames[can_p["receive"]][0][2][14:16], 1)
 
     return result, dtc_number, sshot_rec_num
 
-def step_2(can_par, dtc_number, sshot_rec_num):
+def step_2(can_p, dtc_number, sshot_rec_num):
     """
     Teststep 2: verify that SnapshotRecordByDTCNumber reply positively
     """
-    stepno = 2
-    cpay: CanPayload = SIO.extract_parameter_yml(
-        "step_{}".format(stepno),
-        payload=SC_CARCOM.can_m_send("ReadDTCInfoSnapshotRecordByDTCNumber",
-                                     dtc_number, sshot_rec_num),
-        extra=''
-        )
-    etp: CanTestExtra = SIO.extract_parameter_yml(
-        "step_{}".format(stepno),
-        step_no=2,
-        purpose="verify that SnapshotRecordByDTCNumber reply positively",
-        timeout=1,
-        min_no_messages=-1,
-        max_no_messages=-1
-        )
+    cpay: CanPayload = {
+        "payload": SC_CARCOM.can_m_send("ReadDTCInfoSnapshotRecordByDTCNumber",
+                                        dtc_number, sshot_rec_num),
+        "extra": ''
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    etp: CanTestExtra = {
+        "step_no": 2,
+        "purpose": "verify that SnapshotRecordByDTCNumber reply positively",
+        "timeout": 1,
+        "min_no_messages": -1,
+        "max_no_messages": -1
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
 
-    result = SUTE.teststep(can_par, cpay, etp)
-    result = result and SUTE.test_message(SC.can_messages[can_par["receive"]],
+    result = SUTE.teststep(can_p, cpay, etp)
+    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]],
                                           teststring='5904')
 
     return result
 
-def step_3(can_par, dtc_number, sshot_rec_num):
+def step_3(can_p, dtc_number, sshot_rec_num):
     """
     Teststep 3: verify that SnapshotRecordByDTCNumber reply with empty frame
     """
-    stepno = 3
-    cpay: CanPayload = SIO.extract_parameter_yml(
-        "step_{}".format(stepno),
-        payload=SC_CARCOM.can_m_send("ReadDTCInfoSnapshotRecordByDTCNumber(84)",
-                                     dtc_number, sshot_rec_num),
-        extra=''
-        )
-    etp: CanTestExtra = SIO.extract_parameter_yml(
-        "step_{}".format(stepno),
-        step_no=3,
-        purpose="verify that SnapshotRecordByDTCNumber reply with empty frame",
-        timeout=1,
-        min_no_messages=-1,
-        max_no_messages=-1
-        )
+    cpay: CanPayload = {
+        "payload": SC_CARCOM.can_m_send("ReadDTCInfoSnapshotRecordByDTCNumber(84)",
+                                        dtc_number, sshot_rec_num),
+        "extra": ''
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    etp: CanTestExtra = {
+        "step_no": 3,
+        "purpose": "verify that SnapshotRecordByDTCNumber reply with empty frame",
+        "timeout": 1,
+        "min_no_messages": -1,
+        "max_no_messages": -1
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
 
-    result = SUTE.teststep(can_par, cpay, etp)
-    result = result and not SC.can_messages[can_par["receive"]]
+    result = SUTE.teststep(can_p, cpay, etp)
+    result = result and not SC.can_messages[can_p["receive"]]
 
     return result
 
@@ -135,13 +133,13 @@ def run():
     # to be implemented
 
     # where to connect to signal_broker
-    can_par: CanParam = SIO.extract_parameter_yml(
-        "main",
-        netstub=SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT),
-        send="Vcu1ToBecmFront1DiagReqFrame",
-        receive="BecmToVcu1Front1DiagResFrame",
-        namespace=SC.nspace_lookup("Front1CANCfg0")
-        )
+    can_p: CanParam = {
+        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
+        "send" : "Vcu1ToBecmFront1DiagReqFrame",
+        "receive" : "BecmToVcu1Front1DiagResFrame",
+        "namespace" : SC.nspace_lookup("Front1CANCfg0")
+    }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
 
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
@@ -151,7 +149,7 @@ def run():
     # precondition
     ############################################
     timeout = 30
-    result = PREC.precondition(can_par, timeout)
+    result = PREC.precondition(can_p, timeout)
 
     if result:
     ############################################
@@ -161,24 +159,24 @@ def run():
     # step1:
     # action:
     # result: BECM sends positive reply
-        result_step_1, dtc_number, sshot_rec_num = step_1(can_par)
+        result_step_1, dtc_number, sshot_rec_num = step_1(can_p)
         result = result and result_step_1
 
     # step2:
     # action:
     # result: BECM sends positive reply
-        result = result and step_2(can_par, dtc_number, sshot_rec_num)
+        result = result and step_2(can_p, dtc_number, sshot_rec_num)
 
     # step3:
     # action:
     # result: BECM sends positive reply
-        result = result and step_3(can_par, dtc_number, sshot_rec_num)
+        result = result and step_3(can_p, dtc_number, sshot_rec_num)
 
     ############################################
     # postCondition
     ############################################
 
-    POST.postcondition(can_par, starttime, result)
+    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()
