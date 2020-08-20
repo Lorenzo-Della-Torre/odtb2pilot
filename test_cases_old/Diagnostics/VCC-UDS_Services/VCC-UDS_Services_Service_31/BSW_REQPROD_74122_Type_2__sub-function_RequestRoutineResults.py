@@ -301,7 +301,7 @@ def run():
     # result: BECM sends positive reply
         result = result and step_5(can_p)
 
-     # step6:
+    # step6:
     # action: send result RoutineControl signal for Type 2 long time
     # result: BECM sends positive reply
         result = result and step_6(can_p)
@@ -319,7 +319,7 @@ def run():
     # step9:
     # action: verify extended session active
     # result: BECM send active mode
-        result = result and SE22.read_did_f186(can_p, dsession=b'\x03', stepno=6)
+        result = result and SE22.read_did_f186(can_p, dsession=b'\x03', stepno=9)
 
     # step 10:
     # action: # Change to Default session
