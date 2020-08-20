@@ -32,7 +32,7 @@ from yattag import Doc
 from support_test_odtb2 import SupportTestODTB2
 import odtb_conf
 import parameters as parammod
-import BSW_REQPROD_Implement_MEP2_Support_EOL_def_conf as conf
+import dids_from_sddb_checker_conf as conf
 from output.did_dict import sddb_resp_item_dict
 from output.did_dict import sddb_app_did_dict
 from output.did_dict import app_diag_part_num
@@ -167,7 +167,22 @@ def generate_html2(outfile, result_list, pass_or_fail_counter_dict, part_nbr_mat
                         line('td', elem.err_msg, klass=ERROR_DICT[error_exist])
                         line('td', elem.payload)
             text(SUPPORT_TEST.get_current_time())
-    SIO.write_to_file(doc.getvalue(), outfile)
+    write_to_file(doc.getvalue(), outfile)
+
+
+def __extract_payload(did_dict_with_result):
+    payload = dict()
+    if 'payload' in did_dict_with_result:
+        payload = did_dict_with_result['payload']
+    else:
+        logging.fatal('No payload to Scale!!')
+    return payload
+
+
+def __create_key(did_dict_with_result):
+    did_id = did_dict_with_result['ID']
+    key = '22' + did_id
+    return key
 
 
 def scale_data(did_dict_with_result): #pylint: disable=too-many-branches
@@ -181,14 +196,9 @@ def scale_data(did_dict_with_result): #pylint: disable=too-many-branches
     formatted_result_value_list = list()
 
     try: #pylint: disable=too-many-nested-blocks
-        payload = dict()
-        if 'payload' in did_dict_with_result:
-            payload = did_dict_with_result['payload']
-        else:
-            logging.fatal('No payload to Scale!!')
+        payload = __extract_payload(did_dict_with_result)
+        key = __create_key(did_dict_with_result)
 
-        did_id = did_dict_with_result['ID']
-        key = '22' + did_id
         logging.debug('Payload = %s (Length = %s)', payload,
                       did_dict_with_result['payload_length'])
 
@@ -235,8 +245,11 @@ def scale_data(did_dict_with_result): #pylint: disable=too-many-branches
                 # Adding name for easier readability
                 formatted_result_value = resp_item['Name'] + ' = '
                 # Adding scaled data to the result string
-                formatted_result_value += SE22.get_scaled_value_with_unit(resp_item,
-                                                                          sub_payload)
+                try:
+                    formatted_result_value += SE22.get_scaled_value_with_unit(resp_item,
+                                                                              sub_payload)
+                except OverflowError as overflow_error:
+                    logging.error(overflow_error)
                 formatted_result_value_list.append(formatted_result_value)
                 did_dict_with_result['Formula'] = resp_item['Formula']
     except RuntimeError as runtime_error:
@@ -249,20 +262,31 @@ def scale_data(did_dict_with_result): #pylint: disable=too-many-branches
     return did_dict_with_result
 
 
+def write_to_file(content, outfile):
+    '''Write content to outfile'''
+    with open(outfile, 'w') as file:
+        file.write(str(content))
+
+
 
 def run():
     ''' run '''
     # Setup logging
     #logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.DEBUG)
+    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
     # Should get the values from an yml-file instead
-    can_par: CanParam = {
+    can_p: CanParam = {
         "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        "send" : "Vcu1ToBecmFront1DiagReqFrame",
-        "receive" : "BecmToVcu1Front1DiagResFrame",
+        "send" : "Vcu1ToBecmFront1DiagReqFrame", #SPA2: "HvbmdpToHvbmUdsDiagRequestFrame",
+        "receive" : "BecmToVcu1Front1DiagResFrame", #SPA2: "HvbmToHvbmdpUdsDiagResponseFrame",
         "namespace" : SC.nspace_lookup("Front1CANCfg0")
     }
+
+    #Read YML parameter for current function (get it from stack)
+    # logging.debug("Read YML for %s", str(inspect.stack()[0][3]))
+    # SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
+
 
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
@@ -271,7 +295,7 @@ def run():
     ############################################
     # precondition
     ############################################
-    result = PREC.precondition(can_par, conf.script_timeout)
+    result = PREC.precondition(can_p, conf.script_timeout)
 
     pass_or_fail_counter_dict = {"Passed": 0, "Failed": 0, "conditionsNotCorrect (22)": 0,
                                  "requestOutOfRange (31)": 0}
@@ -286,7 +310,7 @@ def run():
         did_dict_with_result = did_dict_from_file_values
 
         # Using Service 22 to request a particular DID, returning the result in a dictionary
-        did_dict_from_service_22 = SE22.get_did_info(can_par, did_id, conf.response_timeout)
+        did_dict_from_service_22 = SE22.get_did_info(can_p, did_id, conf.response_timeout)
 
         # Copy info to the did_dict_with_result dictionary from the did_dict
         did_dict_with_result = SE22.adding_info(did_dict_from_service_22, did_dict_with_result)
@@ -311,16 +335,17 @@ def run():
     sddb_cleaned_part_number = app_diag_part_num.replace('_', ' ')
 
     # Comparing the part numbers
-    part_nbr_match, part_nbr_match_msg = comp_part_nbrs(can_par, sddb_cleaned_part_number)
+    part_nbr_match, part_nbr_match_msg = comp_part_nbrs(can_p, sddb_cleaned_part_number)
 
-    file_name = "result_report_%s.html" % app_diag_part_num
+    #file_name = "result_report_%s.html" % app_diag_part_num
+    file_name = "did_report.html"
     generate_html2(file_name, result_list, pass_or_fail_counter_dict, part_nbr_match,
                    part_nbr_match_msg)
 
     ############################################
     # postCondition
     ############################################
-    POST.postcondition(can_par, starttime, result)
+    POST.postcondition(can_p, starttime, result)
 
 
 if __name__ == "__main__":

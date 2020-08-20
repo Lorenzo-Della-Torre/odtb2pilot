@@ -14,7 +14,7 @@ response_timeout = 2
 # Test this amount of DIDs. Example: If equal to 10, the program will only test the first 10 DIDs.
 # This is to speed up during testing.
 # 500 should cover all DIDs
-max_no_of_dids = 5 #400 #215 #155
+max_no_of_dids = 500 #400 #215 #155
 
 # Reserve this time for the full script (seconds)
 # 400 DIDs * 2s = 800s should cover all DIDs
