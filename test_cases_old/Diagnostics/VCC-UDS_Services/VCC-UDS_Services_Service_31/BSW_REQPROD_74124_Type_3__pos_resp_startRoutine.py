@@ -295,7 +295,7 @@ def run():
     # step9:
     # action: Verify Extended session active
     # result: BECM sends active mode
-        result = result and SE22.read_did_f186(can_p, dsession=b'\x03', stepno=6)
+        result = result and SE22.read_did_f186(can_p, dsession=b'\x03', stepno=9)
 
     # step10:
     # action: Change to Default session
