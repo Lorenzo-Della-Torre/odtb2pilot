@@ -234,7 +234,12 @@ def generate_html(folderinfo_and_result_tuple_list, outfile, verif_d,  # pylint:
              "td {padding: 3px;}"
              "tr:nth-child(even) {background-color: #e3e3e3;}"
              "a {color:black; text-decoration: none;}"
-             "#header {background-color: lightgrey; height: 100px; line-height: 100px;"
+             "#did_report {background-color: lightgrey; height: 100px; line-height: 100px;"
+             "float:left; overflow:hidden;"
+             "width: 100px; text-align:center; vertical-align: middle; border:1px black solid;"
+             "margin:30px;}"
+             "#header {background-color: lightgrey; height: 100px; line-height: 100px; float:left;"
+             "overflow:hidden;"
              "width: 1000px; text-align:center; vertical-align: middle; border:1px black solid;"
              "margin:30px; font-size: 50px;}")
 
@@ -267,6 +272,9 @@ def generate_html(folderinfo_and_result_tuple_list, outfile, verif_d,  # pylint:
         with tag('body'):
             with tag('div', id='header'): # Header box
                 text('Test Summary Report')
+            with tag('div', id='did_report'): # DID report box
+                with tag("a", href='did_report.html', target='_blank'):
+                    text('DID_report')
             with tag('table', id='main'):
                 with tag('tr'):
                     # Heading - First row
@@ -454,9 +462,14 @@ def main(margs):
     folderinfo_and_result_tuple_list = []
     verif_dict = {}
     e_link_dict = {}
+    log_folders = ''
 
-    # For 5 latest folders
-    if margs.logs:
+    # For selected folders
+    if margs.report_folder:
+        logging.debug('Input: %s', margs.report_folder)
+        folders = margs.report_folder
+        folders.sort(reverse=True)
+    elif margs.logs: # No selected folder. Pick 5 latest folders
         logging.debug('Input: %s', margs.logs)
         log_folders = margs.logs
 
@@ -466,12 +479,6 @@ def main(margs):
         all_test_folders.sort(reverse=True)
         # Pick the 5 newest
         folders = all_test_folders[:5]
-
-    # For selected folders
-    if margs.report_folder:
-        logging.debug('Input: %s', margs.report_folder)
-        folders = margs.report_folder
-        folders.sort(reverse=True)
 
     # For each folder
     for folder_name in folders:
