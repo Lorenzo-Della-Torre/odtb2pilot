@@ -512,10 +512,10 @@ class SupportService22:
                 return int_result
             except RuntimeError as runtime_error:
                 logging.fatal(runtime_error)
-                raise RuntimeError('Failed parsing formula')
+                raise RuntimeError('Failed parsing formula') from runtime_error
             except SyntaxError as syntax_error:
                 logging.fatal(syntax_error)
-                raise SyntaxError('Failed parsing formula')
+                raise SyntaxError('Failed parsing formula') from syntax_error
         else:
             # If we reach this, then there is no formula.
             # That is an issue, formula should be mandatory
