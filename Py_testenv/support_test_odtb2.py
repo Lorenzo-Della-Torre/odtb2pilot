@@ -52,8 +52,8 @@ class SupportTestODTB2:
         """
         print_test_purpose
         """
-        print("\nStep     ", stepno, ":")
-        print("Purpose: ", purpose)
+        logging.info("Step:    %s", stepno)
+        logging.info("Purpose: %s", purpose)
 
 
     def test_message(self, messagelist, teststring=''):
@@ -64,22 +64,22 @@ class SupportTestODTB2:
 
         #print("Messagelist: ", messagelist)
         if teststring != '' and (messagelist in ('', [])):
-            print("Bad: Empty messagelist, teststring '", teststring, "' not found")
+            logging.warning("Bad: Empty messagelist, teststring '%s' not found", teststring)
             testresult = False
         else:
             for i in messagelist:
             #print("can frame  ", i[2].upper())
             #print("test against ", teststring)
                 if teststring == '':
-                    print("Nothing expected. Received ", i[2].upper())
+                    logging.warning("Nothing expected. Received %s", i[2].upper())
                 elif teststring in i[2].upper():
-                    print("Good: Expected: ", teststring, " received: ", i[2].upper())
+                    logging.debug("Good: Expected: %s received: %s", teststring, i[2].upper())
                     #continue
                 else:
                     testresult = False
-                    print("Bad: Expected: ", teststring, " received: ", i[2].upper())
-                    print("Try to decode error message (7F): \n",
-                          self.pp_decode_7f_response(i[2].upper()))
+                    logging.warning("Bad: Expected: %s received: %s", teststring, i[2].upper())
+                    logging.warning("Try to decode error message (7F):")
+                    logging.warning("%s", self.pp_decode_7f_response(i[2].upper()))
         return testresult
 
 
@@ -199,7 +199,7 @@ class SupportTestODTB2:
                 raise ValueError("No valid value to decode: " + i)
             return title + i[0:8] + bytes.fromhex(i[8:14]).decode('utf-8')
         except ValueError as valu_err:
-            print("{} Error: {}".format(title, valu_err))
+            logging.error("%s Error: %s", title, valu_err)
             return title + i
 
 
@@ -217,7 +217,7 @@ class SupportTestODTB2:
             retval = self.pp_combined_did_eda0_sbl(message, "EDA0 for SBL:\n")
         else:
             retval = "Unknown format of EDA0 message'\n"
-            print("Message received: ", message)
+            logging.warning("Message received: %s", message)
         return retval
 
     def pp_combined_did_eda0_mep2(self, message, title=''):
@@ -235,7 +235,7 @@ class SupportTestODTB2:
             retval = self.pp_combined_did_eda0_sbl(message, "EDA0 for SBL:\n")
         else:
             retval = "Unknown format of EDA0 message'\n"
-            print("Message received: ", message)
+            logging.warning("Message received: %s", message)
         return retval
 
     def pp_combined_did_eda0_becm_mode1_mode3(self, message, title=''):
@@ -619,24 +619,23 @@ class SupportTestODTB2:
         mess_len = len(message)
         if mess_len == 0:
             testresult = False
-            print("PP_Decode_Routine_Control_response: missing message")
+            logging.warning("PP_Decode_Routine_Control_response: Missing message")
         else:
             pos = message.find('71')
             if pos == -1:
                 testresult = False
-                print("no routine control message: '71' not found in message ")
-
+                logging.warning("No routine control message: '71' not found in message ")
             else:
                 routine = message[pos+4:pos+8]
                 r_type = self.__routine_type(message[pos+8:pos+9])
                 r_status = self.__routine_status(message[pos+9:pos+10])
-                print(r_type + " Routine'" + routine + "' " + r_status + "\n")
+                logging.info("%s Routine'%s' %s", r_type, routine, r_status)
         if (r_type + ',' + r_status) == rtrs:
-            print("The response is as expected"+"\n")
+            logging.debug("The response is as expected")
         else:
-            print("error: received " + r_type + ',' + r_status + " expected Type" + rtrs + "\n")
+            logging.warning("Error: received %s,%s expected Type %s", r_type, r_status, rtrs)
             testresult = False
-            print("teststatus:", testresult, "\n")
+            logging.info("teststatus:%s\n", testresult)
         return testresult
 
 
@@ -760,7 +759,7 @@ class SupportTestODTB2:
         """
         open file 'filename', read bytewise
         """
-        print("read_f: File to read: ", f_path_name)
+        logging.debug("Read_f: File to read: %s", f_path_name)
         with open(f_path_name, 'rb') as f_name:
             data = f_name.read()
         return data
