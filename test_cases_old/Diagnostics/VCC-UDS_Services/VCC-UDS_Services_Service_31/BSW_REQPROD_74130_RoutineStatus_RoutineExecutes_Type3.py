@@ -5,6 +5,11 @@
 # version:  1.0
 # reqprod:  74130
 
+# author:   HWEILER (Hans-Klaus Weiler)
+# date:     2020-08-21
+# version:  1.1
+# changes:  update for YML support
+
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
 
 # Copyright 2015 gRPC authors.
@@ -24,267 +29,194 @@
 """The Python implementation of the gRPC route guide client."""
 import time
 from datetime import datetime
-
-import ODTB_conf
-from support_can import Support_CAN
-from support_test_odtb2 import Support_test_ODTB2
-
-SC = Support_CAN()
-SUTE = Support_test_ODTB2()
+import sys
+import logging
+import inspect
 
 
-def precondition(stub, can_send, can_receive, can_namespace, result):
+
+
+
+
+
+
+
+
+
+
+
+
+
+import odtb_conf
+from support_can import SupportCAN, CanParam, CanTestExtra, CanPayload
+from support_test_odtb2 import SupportTestODTB2
+from support_carcom import SupportCARCOM
+from support_file_io import SupportFileIO
+from support_precondition import SupportPrecondition
+from support_postcondition import SupportPostcondition
+from support_service22 import SupportService22
+from support_service10 import SupportService10
+SIO = SupportFileIO
+SC = SupportCAN()
+SUTE = SupportTestODTB2()
+SC_CARCOM = SupportCARCOM()
+PREC = SupportPrecondition()
+POST = SupportPostcondition()
+SE10 = SupportService10()
+SE22 = SupportService22()
+
+
+def step_2(can_p):
     """
-    Precondition for test running:
-    BECM has to be kept alive: start heartbeat
+    Teststep 2: verify RoutineControl start reply positively and
+                routine Type 3 is Currently active
     """
+    cpay: CanPayload = {
+        "payload": SC_CARCOM.can_m_send("RoutineControlRequestSID",
+                                        b'\x40\x1B\x00',
+                                        b'\x01'),
+        "extra": ''
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    etp: CanTestExtra = {
+        "step_no": 2,
+        "purpose": "verify RoutineControl start reply positively and"\
+                   " routine Type 3 is Currently active",
+        "timeout": 1,
+        "min_no_messages": -1,
+        "max_no_messages": -1
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
 
-    # start heartbeat, repeat every 0.8 second
-    SC.start_heartbeat(stub, "EcmFront1NMFr", "Front1CANCfg0",
-                       b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.8)
-
-    timeout = 40   #seconds
-    SC.subscribe_signal(stub, can_send, can_receive, can_namespace, timeout)
-    #record signal we send as well
-    SC.subscribe_signal(stub, can_receive, can_send, can_namespace, timeout)
-
-    print()
-    result = step_0(stub, can_send, can_receive, can_namespace, result)
-
-    print("precondition testok:", result, "\n")
+    result = SUTE.teststep(can_p, cpay, etp)
+    logging.info("Step%s: received: %s", etp["step_no"], SC.can_frames[can_p["receive"]])
+    result = result and\
+             SUTE.pp_decode_routine_control_response(SC.can_frames[can_p["receive"]][0][2],
+                                                     'Type3,Currently active')
     return result
 
-def step_0(stub, can_send, can_receive, can_namespace, result):
+def step_3(can_p):
     """
-    Teststep 0: Complete ECU Part/Serial Number(s)
+    Teststep 3: verify RoutineControl result reply positively in Extended Session
+                and routine Type 3 is running
     """
+    cpay: CanPayload = {
+        "payload": SC_CARCOM.can_m_send("RoutineControlRequestSID",
+                                        b'\x40\x1B',
+                                        b'\x03'),
+        "extra": ''
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    etp: CanTestExtra = {
+        "step_no": 3,
+        "purpose": "verify RoutineControl result reply positively in Extended Session"\
+                   " and routine Type 3 is running",
+        "timeout": 1,
+        "min_no_messages": -1,
+        "max_no_messages": -1
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
 
-    stepno = 0
-    purpose = "Complete ECU Part/Serial Number(s)"
-    timeout = 5
-    min_no_messages = -1
-    max_no_messages = -1
-
-    can_m_send = SC.can_m_send("ReadDataByIdentifier", b'\xED\xA0', "")
-    can_mr_extra = ''
-
-    result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-                                      can_receive, can_namespace, stepno, purpose,
-                                      timeout, min_no_messages, max_no_messages)
-    print(SUTE.PP_CombinedDID_EDA0(SC.can_messages[can_receive][0][2], title=''))
-    return result
-
-
-def step_1(stub, can_send, can_receive, can_namespace, result):
-    """
-    Teststep 1: Change to extended session
-    """
-    stepno = 1
-    purpose = "Change to Extended session"
-    timeout = 1
-    min_no_messages = 1
-    max_no_messages = 1
-
-    can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x03', "")
-    can_mr_extra = ''
-    
-    result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-                                      can_receive, can_namespace, stepno, purpose,
-                                      timeout, min_no_messages, max_no_messages)    
-    return result
-   
-
-def step_2(stub, can_send, can_receive, can_namespace, result):
-    """
-    Teststep 2: verify RoutineControlRequest start is sent for Type 3
-    """
-    stepno = 2
-    purpose = "verify RoutineControl start reply positively and routine Type 3 is Currently active "
-    timeout = 1 #wait a second for reply to be send
-    min_no_messages = -1
-    max_no_messages = -1
-
-    can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\x40\x1B\x00', b'\x01')
-    can_mr_extra = ''
-    
-    result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-                                      can_receive, can_namespace, stepno, purpose,
-                                      timeout, min_no_messages, max_no_messages)
-    
-    result = result and SUTE.PP_Decode_Routine_Control_response(SC.can_frames[can_receive][0][2],'Type3,Currently active')
-
-    return result
-
-def step_3(stub, can_send, can_receive, can_namespace, result):
-    """
-    Teststep 3: verify RoutineControlRequest stop is sent in Extended Session
-    """
-    stepno = 3
-    purpose = "verify RoutineControl result reply positively in Extended Session and routine Type 3 is running"
-    timeout = 1 #wait a second for reply to be send
-    min_no_messages = -1
-    max_no_messages = -1
-
-    can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\x40\x1B', b'\x03')
-    can_mr_extra = ''
-
-    result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-                                      can_receive, can_namespace, stepno, purpose,
-                                      timeout, min_no_messages, max_no_messages)
-    
-    result = result and SUTE.PP_Decode_Routine_Control_response(SC.can_frames[can_receive][0][2],'Type3,Currently active')
-
+    result = SUTE.teststep(can_p, cpay, etp)
+    logging.info("Step%s: received: %s", etp["step_no"], SC.can_frames[can_p["receive"]])
+    result = result and\
+             SUTE.pp_decode_routine_control_response(SC.can_frames[can_p["receive"]][0][2],
+                                                     'Type3,Currently active')
     return result
 
 
-def step_4(stub, can_send, can_receive, can_namespace, result):
+def step_4(can_p):
     """
-    Teststep 4: verify RoutineControlRequest start is sent
+    Teststep 4: erify RoutineControl stop reply positively and routine Type 3 is completed
     """
-    stepno = 4
-    purpose = "verify RoutineControl stop reply positively and routine Type 3 is completed"
-    timeout = 1 #wait a second for reply to be send
-    min_no_messages = -1
-    max_no_messages = -1
+    cpay: CanPayload = {
+        "payload": SC_CARCOM.can_m_send("RoutineControlRequestSID",
+                                        b'\x40\x1B',
+                                        b'\x02'),
+        "extra": ''
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    etp: CanTestExtra = {
+        "step_no": 4,
+        "purpose": "verify RoutineControl stop reply positively and routine Type 3 is completed",
+        "timeout": 1,
+        "min_no_messages": -1,
+        "max_no_messages": -1
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
 
-    can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\x40\x1B', b'\x02')
-    can_mr_extra = ''
-
-    result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-                                      can_receive, can_namespace, stepno, purpose,
-                                      timeout, min_no_messages, max_no_messages)
-    
-    result = result and SUTE.PP_Decode_Routine_Control_response(SC.can_frames[can_receive][0][2],'Type3,Completed')
-
+    result = SUTE.teststep(can_p, cpay, etp)
+    logging.info("Step%s: received: %s", etp["step_no"], SC.can_frames[can_p["receive"]])
+    result = result and\
+             SUTE.pp_decode_routine_control_response(SC.can_frames[can_p["receive"]][0][2],
+                                                     'Type3,Completed')
     return result
-    
-def step_5(stub, can_send, can_receive, can_namespace, result):
-    """
-    # teststep 5: verify Extended session
-    """
-    
-    stepno = 5
-    purpose = "Verify Extended session"
-    timeout = 1
-    min_no_messages = 1
-    max_no_messages = 1
 
-    can_m_send =SC.can_m_send( "ReadDataByIdentifier", b'\xF1\x86', "")
-    can_mr_extra = b'\x03'
-    
-    result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-                                      can_receive, can_namespace, stepno, purpose,
-                                      timeout, min_no_messages, max_no_messages)
-
-    return result
-    
-
-
-def step_6(stub, can_send, can_receive, can_namespace, result):
-    """
-    Teststep 6: Change to default session
-    """
-    stepno = 6
-    purpose = "Change to default session"
-    timeout = 1
-    min_no_messages = 1
-    max_no_messages = 1
-
-    can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x01', "")
-    can_mr_extra = ''
-    
-    result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-                                      can_receive, can_namespace, stepno, purpose,
-                                      timeout, min_no_messages, max_no_messages)
-
-    return result
-    
 
 def run():
     """
-    Run
+    Run - Call other functions from here
     """
 
-    test_result = True
-
-    # start logging
-    # to be implemented
+    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
     # where to connect to signal_broker
-    network_stub = SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT)
+    can_p: CanParam = {
+        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
+        "send" : "Vcu1ToBecmFront1DiagReqFrame",
+        "receive" : "BecmToVcu1Front1DiagResFrame",
+        "namespace" : SC.nspace_lookup("Front1CANCfg0")
+    }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
 
-    can_send = "Vcu1ToBecmFront1DiagReqFrame"
-    can_receive = "BecmToVcu1Front1DiagResFrame"
-    can_namespace = SC.nspace_lookup("Front1CANCfg0")
-
-    print("Testcase start: ", datetime.now())
+    logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
-    print("time ", time.time())
-    print()
+    logging.info("Time: %s \n", time.time())
     ############################################
     # precondition
     ############################################
-    test_result = precondition(network_stub, can_send, can_receive, can_namespace,test_result)
-    
+    timeout = 40
+    result = PREC.precondition(can_p, timeout)
+
+    if result:
     ############################################
     # teststeps
     ############################################
     # step 1:
     # action: change BECM to Extended
     # result: BECM reports mode
-    test_result = step_1(network_stub, can_send, can_receive, can_namespace, test_result)
+        result = result and SE10.diagnostic_session_control_mode3(can_p, 1)
 
     # step2:
     # action: send start RoutineControl signal for Type 3
     # result: BECM sends positive reply
-    test_result = step_2(network_stub, can_send, can_receive, can_namespace, test_result)
-    
+        result = result and step_2(can_p)
+
      # step3:
     # action: send result RoutineControl signal for Type 3
     # result: BECM sends positive reply
-    test_result = step_3(network_stub, can_send, can_receive, can_namespace, test_result)
+        result = result and step_3(can_p)
 
     # step4:
     # action: send stop RoutineControl signal for Type 3
     # result: BECM sends positive reply
-    test_result = step_4(network_stub, can_send, can_receive, can_namespace, test_result)
-    
+        result = result and step_4(can_p)
+
     # step5:
     # action: verify extended session active
     # result: BECM send active mode
-    test_result = step_5(network_stub, can_send, can_receive, can_namespace, test_result)
+        result = result and SE22.read_did_f186(can_p, dsession=b'\x03', stepno=5)
 
     # step 6:
     # action: # Change to Default session
     # result: BECM reports mode
-    test_result = step_6(network_stub, can_send, can_receive, can_namespace, test_result)
+        result = result and SE10.diagnostic_session_control_mode1(can_p, 6)
 
     ############################################
     # postCondition
     ############################################
-            
-    print()
-    print("time ", time.time())
-    print("Testcase end: ", datetime.now())
-    print("Time needed for testrun (seconds): ", int(time.time() - starttime))
 
-    print("Do cleanup now...")
-    print("Stop heartbeat sent")
-    SC.stop_heartbeat()
-    #time.sleep(5)
-    # deregister signals
-    SC.unsubscribe_signals()
-    # if threads should remain: try to stop them
-    SC.thread_stop()
-
-    print("Test cleanup end: ", datetime.now())
-    print()
-    if test_result:
-        print("Testcase result: PASSED")
-    else:
-        print("Testcase result: FAILED")
-
+    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()
-
