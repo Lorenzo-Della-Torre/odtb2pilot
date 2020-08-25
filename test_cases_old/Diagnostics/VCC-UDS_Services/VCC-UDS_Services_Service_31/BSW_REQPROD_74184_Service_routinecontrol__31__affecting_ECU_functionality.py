@@ -5,7 +5,12 @@
 # version:  2.0
 # reqprod:  74184
 
-# #inspired by https://grpc.io/docs/tutorials/basic/python.html
+# author:   HWEILER (Hans-Klaus Weiler)
+# date:     2020-08-24
+# version:  2.1
+# changes:  update for YML support
+
+# inspired by https://grpc.io/docs/tutorials/basic/python.html
 # Copyright 2015 gRPC authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,356 +24,286 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """The Python implementation of the gRPC route guide client."""
 import time
 from datetime import datetime
+import sys
+import logging
+import inspect
 
-import ODTB_conf
-from support_can import Support_CAN
-from support_test_odtb2 import Support_test_ODTB2
+import odtb_conf
+from support_can import SupportCAN, CanParam, CanTestExtra, CanPayload
+from support_test_odtb2 import SupportTestODTB2
+from support_carcom import SupportCARCOM
+from support_file_io import SupportFileIO
+from support_precondition import SupportPrecondition
+from support_postcondition import SupportPostcondition
+from support_service22 import SupportService22
+from support_service10 import SupportService10
+SIO = SupportFileIO
+SC = SupportCAN()
+SUTE = SupportTestODTB2()
+SC_CARCOM = SupportCARCOM()
+PREC = SupportPrecondition()
+POST = SupportPostcondition()
+SE10 = SupportService10()
+SE22 = SupportService22()
 
-SC = Support_CAN()
-SUTE = Support_test_ODTB2()
+WAITING_TIME = 2 #seconds
+MAX_DIFF = 50 #max difference allowed for number of frame non-diagnostic received
+MIN_NON_DIAG = 10 #min number of non-diagnostic frames received allowed
 
-waiting_time = 2 #seconds
-max_diff = 50 #max difference allowed for number of frame non-diagnostic received
-min_non_diag = 10 #min number of non-diagnostic frames received allowed
-def precondition(stub, can_send, can_receive, can_namespace, result):
+def step_2(can_p, timeout):
     """
-    Precondition for test running:
-    BECM has to be kept alive: start heartbeat
+    Teststep 2: register non diagnostic signal
     """
+    #same timeout for signal als for whole testscript
+    etp: CanTestExtra = {
+        'step_no': 2,
+        'purpose': "register another signal",
+        'timeout': timeout,
+        'min_no_messages': -1,
+        'max_no_messages': -1
+        }
 
-    # start heartbeat, repeat every 0.8 second
-    SC.start_heartbeat(stub, "EcmFront1NMFr", "Front1CANCfg0",
-                       b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.8)
+    # fetch any signal sent from BECM when awake
+    can_p_ex: CanParam = {
+        'netstub': SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
+        'send': "ECMFront1Fr02",
+        'receive': "BECMFront1Fr02",
+        'namespace': SC.nspace_lookup("Front1CANCfg0")
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p_ex)
 
-    timeout = 40   #seconds
-    SC.subscribe_signal(stub, can_send, can_receive, can_namespace, timeout)
-    #record signal we send as well
-    SC.subscribe_signal(stub, can_receive, can_send, can_namespace, timeout)
-
-    print()
-    result = step_0(stub, can_send, can_receive, can_namespace, result)
-
-    print("precondition testok:", result, "\n")
-    return result
-
-def step_0(stub, can_send, can_receive, can_namespace, result):
-    """
-    Teststep 0: Complete ECU Part/Serial Number(s)
-    """
-    stepno = 0
-    purpose = "Complete ECU Part/Serial Number(s)"
-    timeout = 5
-    min_no_messages = -1
-    max_no_messages = -1
-
-    can_m_send = SC.can_m_send("ReadDataByIdentifier", b'\xED\xA0', "")
-    can_mr_extra = ''
-
-    result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-                                      can_receive, can_namespace, stepno, purpose,
-                                      timeout, min_no_messages, max_no_messages)
-    print(SUTE.PP_CombinedDID_EDA0(SC.can_messages[can_receive][0][2], title=''))
-    return result
-
-def step_1(stub, can_send, can_receive, can_namespace, result):
-    """
-    Teststep 1: Change to extended session
-    """
-    stepno = 1
-    purpose = "Change to Extended session"
-    timeout = 1
-    min_no_messages = 1
-    max_no_messages = 1
-
-    can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x03', "")
-    can_mr_extra = ''
-    
-    result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-                                      can_receive, can_namespace, stepno, purpose,
-                                      timeout, min_no_messages, max_no_messages)    
-    return result
-    
-
-def step_2(stub, can_send, can_receive, can_namespace, result):
-    """
-    Teststep 2: register not diagnostic signal
-    """
-    global frame_step2
-    stepno = 2
-    purpose = "register another signal"
-    SUTE.print_test_purpose(stepno, purpose)
-    timeout = 40
-
-    can_send = "ECMFront1Fr02"
-    can_rec = "BECMFront1Fr02"
-    can_nspace = SC.nspace_lookup("Front1CANCfg0")
-
-    SC.subscribe_signal(stub, can_send, can_rec, can_nspace, timeout)
+    SC.subscribe_signal(can_p_ex, etp["timeout"])
     time.sleep(1)
     SC.clear_all_can_messages()
-    print ("all can messages cleared")
+    #logging.debug("all can messages cleared")
     SC.clear_all_can_frames()
-    SC.update_can_messages(can_receive)
-    print ("all can messages updated")
-    time.sleep(waiting_time)
-    print ()
-    print ("Step ", stepno, " messages received ", len(SC.can_messages[can_rec]))
-    print ("Step ", stepno, " messages: ", SC.can_messages[can_rec], "\n")
-    print ("Step ", stepno, " frames received ", len(SC.can_frames[can_rec]))
-    frame_step2 = len(SC.can_frames[can_rec])
-    print ("Step ", stepno, " frames: ", SC.can_frames[can_rec], "\n")
-    
-    result = result and (frame_step2 > min_non_diag)
-    
-    print ("Step ", stepno, " teststatus:", result, "\n")
+    SC.update_can_messages(can_p["receive"])
+    #logging.debug("all can messages updated")
+    time.sleep(1)
+    #logging.info("Step%s: messages received %s", etp["step_no"],
+    #             len(SC.can_messages[can_p_ex["receive"]]))
+    #logging.info("Step%s: messages: %s \n", etp["step_no"],
+    #             SC.can_messages[can_p_ex["receive"]])
+    frames_step2 = len(SC.can_frames[can_p_ex["receive"]])
+    logging.info("Step%s: frames received %s", etp["step_no"], frames_step2)
+    logging.info("Step%s: frames: %s \n", etp["step_no"],
+                 SC.can_frames[can_p_ex["receive"]])
 
-    return result
+    result = (len(SC.can_frames[can_p_ex["receive"]]) > 10)
 
-def step_3(stub, can_send, can_receive, can_namespace, result):
+    logging.info("Step%s teststatus: %s \n", etp["step_no"], result)
+    return result, can_p_ex, frames_step2
+
+
+def step_3(can_p):
     """
     Teststep 3: verify RoutineControl start(01) reply Currently active
     """
-    stepno = 3
-    purpose = "verify RoutineControl start(01) is sent in Extended Session"
-    timeout = 1 #wait a second for reply to be send
-    min_no_messages = -1
-    max_no_messages = -1
+    cpay: CanPayload = {
+        "payload": SC_CARCOM.can_m_send("RoutineControlRequestSID",
+                                        b'\x40\x00\x00',
+                                        b'\x01'),
+        "extra": ''
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    etp: CanTestExtra = {
+        "step_no": 3,
+        "purpose": "verify RoutineControl start(01) is sent in Extended Session",
+        "timeout": 1,
+        "min_no_messages": -1,
+        "max_no_messages": -1
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
 
-    can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\x40\x00\x00', b'\x01')
-    can_mr_extra = ''
-    
-    print("can_m_send ",can_m_send)
-
-    result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-                                      can_receive, can_namespace, stepno, purpose,
-                                      timeout, min_no_messages, max_no_messages)
-    
-    result = result and SUTE.PP_Decode_Routine_Control_response(SC.can_frames[can_receive][0][2], "Type3,Currently active")
+    result = SUTE.teststep(can_p, cpay, etp)
+    logging.info("Step%s: can_m_send %s", etp["step_no"], cpay["payload"])
+    logging.info("Step%s: frames received %s", etp["step_no"], SC.can_frames[can_p["receive"]])
+    result = result and\
+             SUTE.pp_decode_routine_control_response(SC.can_frames[can_p["receive"]][0][2],
+                                                     "Type3,Currently active")
+    logging.info("Step %s teststatus:%s \n", etp["step_no"], result)
     return result
 
-def step_4(stub, can_send, can_receive, can_namespace, result):
+def step_4(can_p):
     """
     Teststep 4: verify RoutineControl stop(01) reply Completed
     """
-    stepno = 4
-    purpose = "verify RoutineControl start(01) is sent in Extended Session"
-    timeout = 1 #wait a second for reply to be send
-    min_no_messages = -1
-    max_no_messages = -1
+    cpay: CanPayload = {
+        "payload": SC_CARCOM.can_m_send("RoutineControlRequestSID",
+                                        b'\x40\x00',
+                                        b'\x02'),
+        "extra": ''
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    etp: CanTestExtra = {
+        "step_no": 4,
+        "purpose": "verify RoutineControl start(01) is sent in Extended Session",
+        "timeout": 1,
+        "min_no_messages": -1,
+        "max_no_messages": -1
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
 
-    can_m_send = SC.can_m_send( "RoutineControlRequestSID",b'\x40\x00', b'\x02')
-    can_mr_extra = ''
-    
-    print("can_m_send ",can_m_send)
-
-    result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-                                      can_receive, can_namespace, stepno, purpose,
-                                      timeout, min_no_messages, max_no_messages)
-    
-    result = result and SUTE.PP_Decode_Routine_Control_response(SC.can_frames[can_receive][0][2], "Type3,Completed")
+    logging.info("Step%s: can_m_send %s", etp["step_no"], cpay["payload"])
+    result = SUTE.teststep(can_p, cpay, etp)
+    result = result and\
+             SUTE.pp_decode_routine_control_response(SC.can_frames[can_p["receive"]][0][2],
+                                                     'Type3,Completed')
+    logging.info("Step %s teststatus:%s \n", etp["step_no"], result)
     return result
-    
 
-def step_5(stub, can_send, can_receive, can_namespace, result):
+
+def step_5(can_p, can_p_ex, frames_step2):
     """
-    Teststep 5: verify that while service 22 is cyclically sent non-diagnostic signal is not effected
+    Teststep 5: verify that while service 22 is cyclically sent non-diagnostic signal
+                is not effected
     """
-    global frame_step2
-    stepno = 5
-    purpose = "verify that while service 31 is cyclically sent non-diagnostic signal is not effected"
-    timeout = 1 #wait a second for reply to be send
-    min_no_messages = 1
-    max_no_messages = 1
+    cpay: CanPayload = {
+        "payload": SC_CARCOM.can_m_send("RoutineControlRequestSID",
+                                        b'\x40\x00',
+                                        b'\x03'),
+        "extra": ''
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    etp: CanTestExtra = {
+        "step_no": 5,
+        "purpose": "verify that while service 31 is cyclically sent non-diagnostic signal"\
+                   " is not effected",
+        "timeout": 1,
+        "min_no_messages": 1,
+        "max_no_messages": 1
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    result = SUTE.teststep(can_p, cpay, etp)
+
     number_of_frames_received = 0
     SC.clear_all_can_messages()
-    print ("all can messages cleared")
+    logging.info("Step%s: all can messages cleared", etp["step_no"])
     SC.clear_all_can_frames()
 
-    can_rec = "BECMFront1Fr02"
     now = int(time.time())
-    SC.update_can_messages(can_receive)
-    can_m_send = SC.can_m_send("RoutineControlRequestSID",b'\x40\x00', b'\x03')
-    can_mr_extra = ''
-    
-    while (now + waiting_time > int(time.time())):
-        #SC.t_send_signal_CAN_MF(stub, can_send, can_receive, can_namespace, can_m_send, True, 0x00)
-        result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-                                      can_receive, can_namespace, stepno, purpose,
-                                      timeout, min_no_messages, max_no_messages)
-    print ("Step ", stepno, " frames received: ", len(SC.can_frames[can_rec]))
-    number_of_frames_received = len(SC.can_frames[can_rec])
-    print ("Step ", stepno, " frames received: ", number_of_frames_received)
-    result = result and ((number_of_frames_received + max_diff) > frame_step2 > (number_of_frames_received - max_diff))
-    print ("Step ", stepno, " teststatus:", result, "\n")
+    SC.update_can_messages(can_p["receive"])
+
+    while now + WAITING_TIME > int(time.time()):
+        result = result and SUTE.teststep(can_p, cpay, etp)
+
+    logging.info("Step%s: payload: %s", etp["step_no"], cpay["payload"])
+    logging.info("Step%s: frames received: %s", etp["step_no"], number_of_frames_received)
+    number_of_frames_received = len(SC.can_frames[can_p_ex["receive"]])
+    logging.info("Step%s: frames received: %s", etp["step_no"], number_of_frames_received)
+    result = result and\
+             ((number_of_frames_received + MAX_DIFF) > frames_step2 >\
+              (number_of_frames_received - MAX_DIFF))
+    logging.info("Step %s teststatus: %s\n", etp["step_no"], result)
     return result
 
 
-def step_6(stub, can_send, can_receive, can_namespace, result):
+def step_6(can_p, can_p_ex, frames_step2):
     """
     Teststep 6: Verify subscribed signal in step 1 is still sent
     """
-    global frame_step2
-    stepno = 6
+    step_no = 6
     purpose = "Verify subscribed non-diagnostic signal is still sent as in step 1"
-    SUTE.print_test_purpose(stepno, purpose)
-    can_rec = "BECMFront1Fr02"
+    SUTE.print_test_purpose(step_no, purpose)
+    #can_rec = "BECMFront1Fr02"
     #SC.update_can_messages(r)
     SC.clear_all_can_messages()
-    print ("all can messages cleared")
+    logging.info("Step%s: all can messages cleared", step_no)
     SC.clear_all_can_frames()
-    SC.update_can_messages(can_receive)
-    print ("all can messages updated")
-    time.sleep(waiting_time)
-    print ()
-    print ("Step ", stepno, " frames received ", len(SC.can_frames[can_rec]))
-    print ("Step ", stepno, " frames: ", SC.can_frames[can_rec], "\n")
+    SC.update_can_messages(can_p["receive"])
+    logging.info("Step%s: all can messages updated", step_no)
+    time.sleep(WAITING_TIME)
 
-    result = result and ((len(SC.can_frames[can_rec]) + max_diff) > frame_step2 > (len(SC.can_frames[can_rec]) - max_diff))
+    logging.info("Step%s: frames received %s", step_no, len(SC.can_frames[can_p_ex["receive"]]))
+    logging.info("Step%s: frames: %s\n", step_no, SC.can_frames[can_p_ex["receive"]])
 
-    print ("Step ", stepno, " teststatus:", result, "\n")
+    result = ((len(SC.can_frames[can_p_ex["receive"]]) + MAX_DIFF) >\
+              frames_step2 >\
+              (len(SC.can_frames[can_p_ex["receive"]]) - MAX_DIFF))
 
-    return result   
-
-def step_7(stub, can_send, can_receive, can_namespace, result):
-    """
-    Teststep 7: verify Extended session
-    """
-    
-    stepno = 7
-    purpose = "Verify Extended session"
-    timeout = 1
-    min_no_messages = 1
-    max_no_messages = 1
-
-    can_m_send =SC.can_m_send( "ReadDataByIdentifier", b'\xF1\x86', "")
-    can_mr_extra = b'\x03'
-    
-    result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-                                      can_receive, can_namespace, stepno, purpose,
-                                      timeout, min_no_messages, max_no_messages)
-
-    return result
-    
-def step_8(stub, can_send, can_receive, can_namespace, result):
-    """
-    Teststep 8: Change to default session
-    """
-    stepno = 8
-    purpose = "Change to default session"
-    timeout = 1
-    min_no_messages = 1
-    max_no_messages = 1
-
-    can_m_send = SC.can_m_send( "DiagnosticSessionControl", b'\x01', "")
-    can_mr_extra = ''
-    
-    result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-                                      can_receive, can_namespace, stepno, purpose,
-                                      timeout, min_no_messages, max_no_messages)
-
+    logging.info("Step %s teststatus:%s \n", step_no, result)
     return result
 
 
 def run():
     """
-    Run
+    Run - Call other functions from here
     """
 
-    test_result = True
-
-    # start logging
-    # to be implemented
+    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
     # where to connect to signal_broker
-    network_stub = SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT)
+    can_p: CanParam = {
+        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
+        "send" : "Vcu1ToBecmFront1DiagReqFrame",
+        "receive" : "BecmToVcu1Front1DiagResFrame",
+        "namespace" : SC.nspace_lookup("Front1CANCfg0")
+    }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
 
-    can_send = "Vcu1ToBecmFront1DiagReqFrame"
-    can_receive = "BecmToVcu1Front1DiagResFrame"
-    can_namespace = SC.nspace_lookup("Front1CANCfg0")
-
-    print("Testcase start: ", datetime.now())
+    logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
-    print("time ", time.time())
-    print()
+    logging.info("Time: %s \n", time.time())
+
     ############################################
     # precondition
     ############################################
-    test_result = precondition(network_stub, can_send, can_receive, can_namespace,test_result)
-    
+    timeout = 40
+    result = PREC.precondition(can_p, timeout)
+
+    if result:
     ############################################
     # teststeps
     ############################################
     # step 1:
     # action: change BECM to Extended
     # result: BECM reports mode
-    test_result = step_1(network_stub, can_send, can_receive, can_namespace, test_result)
-    
+        result = result and SE10.diagnostic_session_control_mode3(can_p, 1)
+
     # step 2:
     # action: register a non-diagnostic signal
     # result: BECM send requested signals
-    test_result = step_2(network_stub, can_send, can_receive, can_namespace, test_result)
-
+        result2, can_p_ex, frames_step2 = step_2(can_p, timeout)
+        result = result and result2
     # step3:
-    # action: send start RoutineControl signal 
+    # action: send start RoutineControl signal
     # result: BECM sends positive reply
-    test_result = step_3(network_stub, can_send, can_receive, can_namespace, test_result)
+        result = result and step_3(can_p)
 
     # step4:
     # action: send stop RoutineControl signal in Extended mode
     # result: BECM sends positive reply
-    test_result = step_4(network_stub, can_send, can_receive, can_namespace, test_result)
+        result = result and step_4(can_p)
 
     # step5:
-    # action: send ReadDataByIdentifier cyclically 
+    # action: send ReadDataByIdentifier cyclically
     # result: BECM reports confirmed message
-    test_result = step_5(network_stub, can_send, can_receive, can_namespace, test_result)
+        result = result and step_5(can_p, can_p_ex, frames_step2)
 
     # step6:
     # action: Verify signal is still sent
     # result: BECM send requested signals
-    test_result = step_6(network_stub, can_send, can_receive, can_namespace, test_result)
+        result = result and step_6(can_p, can_p_ex, frames_step2)
 
     # step7:
     # action: Verify Extended session active
     # result: BECM sends active mode
-    test_result = step_7(network_stub, can_send, can_receive, can_namespace, test_result)
+        result = result and SE22.read_did_f186(can_p, dsession=b'\x03', stepno=7)
 
     # step 8:
     # action: change BECM to default
     # result: BECM report mode
-    test_result = step_8(network_stub, can_send, can_receive, can_namespace, test_result)
-    
+        result = result and SE10.diagnostic_session_control_mode1(can_p, 8)
+        #time.sleep(1)
+
     ############################################
     # postCondition
     ############################################
-            
-    print()
-    print ("time ", time.time())
-    print ("Testcase end: ", datetime.now())
-    print ("Time needed for testrun (seconds): ", int(time.time() - starttime))
 
-    print ("Do cleanup now...")
-    print ("Stop all periodic signals sent")
-    #SC.stop_heartbeat()
-    SC.stop_periodic_all()
-    #time.sleep(5)
+    POST.postcondition(can_p, starttime, result)
 
-    # deregister signals
-    SC.unsubscribe_signals()
-    # if threads should remain: try to stop them 
-    SC.thread_stop()
-            
-    print ("Test cleanup end: ", datetime.now())
-    print()
-    if test_result:
-        print ("Testcase result: PASSED")
-    else:
-        print ("Testcase result: FAILED")
-
-    
 if __name__ == '__main__':
     run()
