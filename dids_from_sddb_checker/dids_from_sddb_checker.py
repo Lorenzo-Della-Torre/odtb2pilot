@@ -27,6 +27,7 @@ from datetime import datetime
 import time
 import logging
 import sys
+import inspect
 from collections import namedtuple
 from yattag import Doc
 from support_test_odtb2 import SupportTestODTB2
@@ -284,9 +285,8 @@ def run():
     }
 
     #Read YML parameter for current function (get it from stack)
-    # logging.debug("Read YML for %s", str(inspect.stack()[0][3]))
-    # SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
-
+    logging.debug("Read YML for %s", str(inspect.stack()[0][3]))
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
 
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
