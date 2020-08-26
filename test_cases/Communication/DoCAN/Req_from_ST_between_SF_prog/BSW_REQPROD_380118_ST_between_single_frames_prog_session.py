@@ -1,0 +1,152 @@
+# Testscript ODTB2 MEPII
+# project:  BECM basetech MEPII
+# author:   LDELLATO (Lorenzo Della Torre)
+# date:     2020-08-26
+# version:  1.0
+# reqprod:  380118
+
+#inspired by https://grpc.io/docs/tutorials/basic/python.html
+
+# Copyright 2015 gRPC authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""The Python implementation of the gRPC route guide client."""
+
+import time
+from datetime import datetime
+import sys
+import logging
+import inspect
+
+import odtb_conf
+from support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
+from support_test_odtb2 import SupportTestODTB2
+from support_carcom import SupportCARCOM
+from support_file_io import SupportFileIO
+from support_service10 import SupportService10
+from support_service22 import SupportService22
+
+from support_precondition import SupportPrecondition
+from support_postcondition import SupportPostcondition
+
+SIO = SupportFileIO
+SC = SupportCAN()
+SUTE = SupportTestODTB2()
+SC_CARCOM = SupportCARCOM()
+SE10 = SupportService10()
+SE22 = SupportService22()
+PREC = SupportPrecondition()
+POST = SupportPostcondition()
+
+def step_2(can_p):
+    """
+    Teststep 2: verify that two single frame can be sent with ST = 0
+    """
+    result = True
+
+    cpay: CanPayload = {
+        "payload": b'\x03\x22\xF1\x8C\x00\x00\x00\x00',
+        "extra": ''
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+
+    cpay1: CanPayload = {
+        "payload": b'\x03\x22\xF1\x2B\x00\x00\x00\x00',
+        "extra": ''
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay1)
+
+    etp: CanTestExtra = {"step_no": 2,
+                         "purpose" : "verify that two single frame can be sent with ST = 0",
+                        }
+
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+
+    SC.clear_all_can_messages()
+    SC.clear_all_can_frames()
+
+    #send two SF request consecutively
+    SC.t_send_signal_hex(can_p["netstub"], can_p["send"], can_p["namespace"],
+                         cpay["payload"])
+    SC.t_send_signal_hex(can_p["netstub"], can_p["send"], can_p["namespace"],
+                         cpay1["payload"])
+
+    time.sleep(1)
+    SC.update_can_messages(can_p["receive"])
+    logging.info("Time first request sent: %s \n", SC.can_frames[can_p["send"]][0][0])
+    logging.info("Time second request sent: %s \n", SC.can_frames[can_p["send"]][1][0])
+    logging.info("Time difference between two frame sent: %s \n",
+                 SC.can_frames[can_p["send"]][1][0] - SC.can_frames[can_p["send"]][0][0])
+    logging.info("frames received: %s \n", SC.can_frames[can_p["receive"]])
+    result = result and 'F18C' in SC.can_frames[can_p["receive"]][0][2]
+    result = result and 'F12B' in SC.can_frames[can_p["receive"]][1][2]
+    logging.info("Step %s teststatus:%s \n", etp['step_no'], result)
+    return result
+
+def run():
+    """
+    Run - Call other functions from here
+    """
+    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+
+    # start logging
+    # to be implemented
+
+    # where to connect to signal_broker
+    can_p: CanParam = {
+        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
+        "send" : "Vcu1ToBecmFront1DiagReqFrame",
+        "receive" : "BecmToVcu1Front1DiagResFrame",
+        "namespace" : SC.nspace_lookup("Front1CANCfg0")
+    }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
+
+    logging.info("Testcase start: %s", datetime.now())
+    starttime = time.time()
+    logging.info("Time: %s \n", time.time())
+
+    ############################################
+    # precondition
+    ############################################
+    timeout = 30
+    result = PREC.precondition(can_p, timeout)
+
+    if result:
+    ############################################
+    # teststeps
+    ############################################
+
+    # step1:
+    # action: # Change to programming session
+    # result: BECM reports mode
+        result = result and SE10.diagnostic_session_control_mode2(can_p, 1)
+
+    # step2:
+    # action:
+    # result: BECM sends positive reply
+        result = result and step_2(can_p)
+
+    # step3:
+    # action: verify current session
+    # result: BECM reports programming session
+        result = result and SE22.read_did_f186(can_p, dsession=b'\x02', stepno=3)
+
+    ############################################
+    # postCondition
+    ############################################
+
+    POST.postcondition(can_p, starttime, result)
+
+if __name__ == '__main__':
+    run()
