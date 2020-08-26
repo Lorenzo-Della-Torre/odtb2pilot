@@ -271,9 +271,9 @@ def write_to_file(content, outfile):
 
 def run():
     ''' run '''
-    # Setup logging
-    #logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+    # Setup logging. We don't want this script to generate to many rows in the log-file
+    # so we set it on WARN.
+    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.WARN)
 
     # Should get the values from an yml-file instead
     can_p: CanParam = {
