@@ -177,8 +177,8 @@ class SupportTestODTB2:
         logging.info("Step %s: Result teststep: %s", etp["step_no"], testresult)
         return testresult
 
-    @classmethod
-    def __pp_partnumber(cls, i, title=''):
+    @staticmethod
+    def pp_partnumber(i, title=''):
         """
         Pretty Print function support for part numbers
         """
@@ -246,17 +246,17 @@ class SupportTestODTB2:
         retval = title
         pos1 = message.find('F120', pos)
         retval = retval + "Application_Diagnostic_Database '"\
-                        + self.__pp_partnumber(message[pos1+4: pos1+18], message[pos1:pos1+4]\
+                        + self.pp_partnumber(message[pos1+4: pos1+18], message[pos1:pos1+4]\
                         + ' ')\
                         + "'\n"
         pos1 = message.find('F12A', pos1+18)
         retval = retval + "ECU_Core_Assembly PN            '"\
-                        + self.__pp_partnumber(message[pos1+4: pos1+18], message[pos1:pos1+4]\
+                        + self.pp_partnumber(message[pos1+4: pos1+18], message[pos1:pos1+4]\
                         + ' ')\
                         + "'\n"
         pos1 = message.find('F12B', pos1+18)
         retval = retval + "ECU_Delivery_Assembly PN        '"\
-                        + self.__pp_partnumber(message[pos1+4: pos1+18], message[pos1:pos1+4]\
+                        + self.pp_partnumber(message[pos1+4: pos1+18], message[pos1:pos1+4]\
                         + ' ')\
                         + "'\n"
         # Combined DID F12E:
@@ -275,17 +275,17 @@ class SupportTestODTB2:
         retval = title
         pos1 = message.find('F121', pos)
         retval = retval + "PBL_Diagnostic_Database_Part_Number '"\
-                        + self.__pp_partnumber(message[pos1+4: pos1+18], message[pos1:pos1+4]\
+                        + self.pp_partnumber(message[pos1+4: pos1+18], message[pos1:pos1+4]\
                         + ' ')\
                         + "'\n"
         pos1 = message.find('F12A', pos1+18)
         retval = retval + "ECU_Core_Assembly PN                '"\
-                        + self.__pp_partnumber(message[pos1+4: pos1+18], message[pos1:pos1+4]\
+                        + self.pp_partnumber(message[pos1+4: pos1+18], message[pos1:pos1+4]\
                         + ' ')\
                         + "'\n"
         pos1 = message.find('F12B', pos1+18)
         retval = retval + "ECU_Delivery_Assembly PN            '"\
-                        + self.__pp_partnumber(message[pos1+4: pos1+18], message[pos1:pos1+4]\
+                        + self.pp_partnumber(message[pos1+4: pos1+18], message[pos1:pos1+4]\
                         + ' ')\
                         + "'\n"
         pos1 = message.find('F18C', pos1+18)
@@ -296,7 +296,7 @@ class SupportTestODTB2:
                         + "'\n"
         pos1 = message.find('F125', pos1+12)
         retval = retval + "PBL_Sw_part_Number                  '"\
-                        + self.__pp_partnumber(message[pos1+4: pos1+18], message[pos1:pos1+4]\
+                        + self.pp_partnumber(message[pos1+4: pos1+18], message[pos1:pos1+4]\
                         + ' ')\
                         + "'\n"
         return title + " " + retval
@@ -310,16 +310,16 @@ class SupportTestODTB2:
         retval = title
         pos1 = message.find('F122', pos)
         retval = retval + "SBL_Diagnostic_Database_Part_Number '"\
-                        + self.__pp_partnumber(message[pos1+4: pos1+18], message[pos1:pos1+4]\
+                        + self.pp_partnumber(message[pos1+4: pos1+18], message[pos1:pos1+4]\
                         + ' ')\
                         + "'\n"
         pos1 = message.find('F12A', pos1+18)
         retval = retval + "ECU_Core_Assembly PN                '"\
-                        + self.__pp_partnumber(message[pos1+4: pos1+18], message[pos1:pos1+4]\
+                        + self.pp_partnumber(message[pos1+4: pos1+18], message[pos1:pos1+4]\
                         + ' ')\
                         + "'\n"
         pos1 = message.find('F12B', pos1+18)
-        retval = retval + self.__pp_partnumber(message[pos1+4: pos1+18], message[pos1:pos1+4]\
+        retval = retval + self.pp_partnumber(message[pos1+4: pos1+18], message[pos1:pos1+4]\
                         + ' ')\
                         + "'\n"
         pos1 = message.find('F18C', pos1+18)
@@ -330,7 +330,7 @@ class SupportTestODTB2:
                         + "'\n"
         pos1 = message.find('F124', pos1+12)
         retval = retval + "SBL_Sw_version_Number               '"\
-                        + self.__pp_partnumber(message[pos1+4: pos1+18], message[pos1:pos1+4]\
+                        + self.pp_partnumber(message[pos1+4: pos1+18], message[pos1:pos1+4]\
                         + ' ')\
                         + "'\n"
         return title + " " + retval
@@ -346,19 +346,19 @@ class SupportTestODTB2:
         retval = retval + "Number of SW part numbers '"\
                         + message[pos+4:pos+6] + "'\n"
         retval = retval + "Software Application SWLM '"\
-                        + self.__pp_partnumber(message[pos+6:pos+20])\
+                        + self.pp_partnumber(message[pos+6:pos+20])\
                         + "'\n"
         retval = retval + "Software Application SWP1 '"\
-                        + self.__pp_partnumber(message[pos+20:pos+34])\
+                        + self.pp_partnumber(message[pos+20:pos+34])\
                         + "'\n"
         retval = retval + "Software Application SWP2 '"\
-                        + self.__pp_partnumber(message[pos+34:pos+48])\
+                        + self.pp_partnumber(message[pos+34:pos+48])\
                         + "'\n"
         retval = retval + "Software Application SWCE '"\
-                        + self.__pp_partnumber(message[pos+48:pos+62])\
+                        + self.pp_partnumber(message[pos+48:pos+62])\
                         + "'\n"
         retval = retval + "ECU SW Structure PartNumb '"\
-                        + self.__pp_partnumber(message[pos+62:pos+76])\
+                        + self.pp_partnumber(message[pos+62:pos+76])\
                         + "'\n"
         return title + " " + retval
 
