@@ -27,7 +27,7 @@
 """The Python implementation of the gRPC route guide client."""
 
 import logging
-from support_can import SupportCAN, CanMFParam, CanParam, CanPayload, CanTestExtra
+from support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
 from support_test_odtb2 import SupportTestODTB2
 
 
@@ -54,6 +54,15 @@ class SupportService36: # pylint: disable=too-few-public-methods
             pad = (nbl-2)*i
             i += 1
             ibyte = bytes([i])
+            # Parameters for FrameControl FC
+            #can_mf_param: CanMFParam = {
+            #    'block_size' : 0,
+            #    'separation_time' : 0,
+            #    'frame_control_delay' : 0, #no wait
+            #    'frame_control_flag' : 48, #continue send
+            #    'frame_control_auto' : False
+            #    }
+            #SC.change_mf_fc(can_p["send"], can_mf_param)
 
             cpay: CanPayload = {"payload" : b'\x36' + ibyte + vbf_block_data[pad:pad + nbl-2],
                                 "extra" : ''

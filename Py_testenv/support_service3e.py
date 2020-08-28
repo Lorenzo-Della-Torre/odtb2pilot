@@ -106,10 +106,6 @@ class SupportService3e:
                                "intervall": periodic
                                }
         SC.start_periodic(can_p["netstub"], per_param)
-        #SC.start_periodic(can_p["netstub"], "TesterPresent_periodic",
-        #                  True, can_id,
-        #                  can_p["namespace"].name,\
-        #                  b'\x02\x3E\x80\x00\x00\x00\x00\x00', periodic)
 
     @staticmethod
     def stop_periodic_tp_zero_suppress_prmib():

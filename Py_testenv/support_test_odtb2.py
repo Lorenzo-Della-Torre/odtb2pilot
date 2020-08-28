@@ -11,7 +11,6 @@
 #   pep8        coding is changed to confirm to pep8 (some code left, though)
 
 # inspired by https://grpc.io/docs/tutorials/basic/python.html
-
 # Copyright 2015 gRPC authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -42,7 +41,7 @@ from support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
 SC = SupportCAN()
 
 
-class SupportTestODTB2:
+class SupportTestODTB2: # pylint: disable=too-many-public-methods
     """
     Class for supporting sending/receiving CAN frames
     """

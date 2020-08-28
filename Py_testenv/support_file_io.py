@@ -186,8 +186,8 @@ class SupportFileIO:
                         if not isinstance(newarg, type(arg[dict_key])):
                             logging.debug("Try to get same type via EVAL:")
                             logging.debug("EVAL changes type: %s",
-                                          type(eval(data[key].get(dict_key))))
-                            newarg = eval(newarg)
+                                          type(eval(data[key].get(dict_key)))) # pylint: disable=eval-used
+                            newarg = eval(newarg) # pylint: disable=eval-used
                         #logging.debug("type arg after:  %s", type(newarg))
                         arg[dict_key] = newarg
                         #convert some values to bytes
