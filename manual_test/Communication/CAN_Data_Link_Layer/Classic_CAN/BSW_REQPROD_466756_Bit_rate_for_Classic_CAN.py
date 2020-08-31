@@ -24,10 +24,10 @@
 """
 
 import logging
+import sys
 
-logging.basicConfig(filename='{}.log'.format((__file__)[-3]), format='%(asctime)s - %(message)s',
-                    level=logging.INFO)
+logging.basicConfig(format='%(asctime)s - %(message)s',
+                    stream=sys.stdout, level=logging.INFO)
 
 logging.info("Testcase result: Tested implicitly by any REQPROD requiring CAN communication"
-             "REQPROD_60017_N_As_timeout_non_prog_session for example"
-             )
+             "REQPROD_60017_N_As_timeout_non_prog_session for example")
