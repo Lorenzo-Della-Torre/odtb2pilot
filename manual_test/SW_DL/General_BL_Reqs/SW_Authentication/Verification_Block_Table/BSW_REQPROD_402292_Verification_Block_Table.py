@@ -1,12 +1,9 @@
-""" Testscript for a requirement which is not applicable for us (Not applicable).
-    For example: Test multiple processors when you only have one.
-
-    Testscript  ODTB2 MEPII
-    project     BECM basetech MEPII
-    author      HWEILER (Hans-Klaus Weiler)
-    date:     2020-05-11
+""" Testscript ODTB2 MEPII
+    project:  BECM basetech MEPII
+    author:   LDELLATO (Lorenzo Della Torre)
+    date:     2020-02-12
     version:  1.0
-    reqprod:  125501
+    reqprod:  402292
 
     Inspired by https://grpc.io/docs/tutorials/basic/python.html
     Copyright 2015 gRPC authors.
@@ -15,7 +12,7 @@
     you may not use this file except in compliance with the License.
     You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+        http://www.apache.org/licenses/LICENSE-2.0
 
     Unless required by applicable law or agreed to in writing, software
     distributed under the License is distributed on an "AS IS" BASIS,
@@ -30,4 +27,4 @@ import sys
 logging.basicConfig(format='%(asctime)s - %(message)s',
                     stream=sys.stdout, level=logging.INFO)
 
-logging.info("Testcase result: Not applicable")
+logging.info("Testcase result: To be inspected")
