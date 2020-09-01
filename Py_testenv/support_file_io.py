@@ -39,7 +39,6 @@ import re
 import logging
 import yaml # Not installed? pylint: disable=import-error
 
-
 class SupportFileIO:
     # Disable the too-few-public-methods violation. I'm sure we will have more methods later.
     # pylint: disable=too-few-public-methods
@@ -87,6 +86,7 @@ class SupportFileIO:
         if os.path.exists(param_dir):
             logging.debug("Path: %s", param_dir)
         #logging.debug("Path         %s", param_dir)
+        #logging.debug("Project default: %s", param_dir + '/' + proj_default)
         logging.debug("Project default exists: %s", os.path.isfile(param_dir + '/' + proj_default))
         if os.path.isfile(param_dir + '/' + proj_default):
             logging.debug("Default: %s", (param_dir + '/' + proj_default))
@@ -123,9 +123,10 @@ class SupportFileIO:
                 data_default = yaml.safe_load(file)
                 default_par_open = True
         except IOError:
-            logging.warn("Could not open default parameter file for testscript\n")
+            logging.warn("Could not open default parameter file for project\n")
             logging.info("Parameter path: %s", param_dir)
             logging.info("Parameter default file: %s", proj_default)
+            logging.info("path+Parameter default file: %s", dir_file_default)
             #sys.exit(1)
             #sys.exit is to hard, skip reading parameter, don't exit python
             default_par_open = False
@@ -164,7 +165,9 @@ class SupportFileIO:
                     if default_par_open and\
                         key in data_default and\
                         (data_default[key].get(dict_key) is not None):
-                        logging.debug("New values in dict %s", data_default[key].get(dict_key))
+                        newarg = data_default[key].get(dict_key)
+                        logging.debug("Default-par: New values in dict %s",
+                                      newarg)
                         logging.debug("used dict_key: %s", dict_key)
                         arg[dict_key] = data_default[key].get(dict_key)
                         #convert some values to bytes
@@ -175,9 +178,18 @@ class SupportFileIO:
                     if file_par_open and\
                         key in data and\
                         (data[key].get(dict_key) is not None):
-                        #logging.debug("New values in dict %s",  data[key].get(dict_key))
+                        newarg = data[key].get(dict_key)
+                        logging.debug("File-par: New values in dict %s",
+                                      newarg)
                         #logging.debug("used dict_key: %s", dict_key)
-                        arg[dict_key] = data[key].get(dict_key)
+                        #logging.debug("type arg before: %s", type(arg[dict_key]))
+                        if not isinstance(newarg, type(arg[dict_key])):
+                            logging.debug("Try to get same type via EVAL:")
+                            logging.debug("EVAL changes type: %s",
+                                          type(eval(data[key].get(dict_key)))) # pylint: disable=eval-used
+                            newarg = eval(newarg) # pylint: disable=eval-used
+                        #logging.debug("type arg after:  %s", type(newarg))
+                        arg[dict_key] = newarg
                         #convert some values to bytes
                         if dict_key in ('mode', 'mask', 'did'):
                             arg[dict_key] = bytes(arg[dict_key], 'utf-8')

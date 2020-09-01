@@ -74,7 +74,7 @@ class SupportService31:
                            }
         etp: CanTestExtra = {"step_no": stepno,\
                              "purpose" : "verify RC start sent for Check Prog Precond",\
-                             "timeout" : 0.05,\
+                             "timeout" : 0.2,\
                              "min_no_messages" : -1,\
                              "max_no_messages" : -1
                             }

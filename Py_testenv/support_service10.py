@@ -27,6 +27,7 @@
 """The Python implementation of the gRPC route guide client."""
 
 
+import time
 from support_carcom import SupportCARCOM
 from support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
 from support_test_odtb2 import SupportTestODTB2
@@ -52,7 +53,9 @@ class SupportService10:
                            }
         if not 'step_no' in etp:
             etp["step_no"] = 100
-        return SUTE.teststep(can_p, cpay, etp)
+        result = SUTE.teststep(can_p, cpay, etp)
+        time.sleep(1) #mode change can lead to services are restarted
+        return result
 
     @staticmethod
     def diagnostic_session_control_mode1(can_p: CanParam, stepno=101):

@@ -34,7 +34,7 @@ from typing import Dict
 import traceback
 
 from support_carcom import SupportCARCOM
-from support_can import SupportCAN, CanMFParam, CanParam, CanPayload, CanTestExtra
+from support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
 from support_test_odtb2 import SupportTestODTB2
 from support_sec_acc import SupportSecurityAccess
 from support_LZSS import LzssEncoder
@@ -249,10 +249,19 @@ class SupportSBL:
                 #result, nbl = SE34.request_block_download(can_p, data, step_no, purpose)
                 result = SE22.read_did_eda0(can_p)
                 result, nbl = SE34.request_block_download(can_p, vbf_header, vbf_block)
+                if not result:
+                    logging.info("Support SBL, DL block request failed")
+                    logging.info("DL block request - vbf_header: %s", vbf_header)
                 # Flash blocks to BECM with transfer data service 0x36
                 result = result and SE36.flash_blocks(can_p, vbf_block_data, vbf_block, nbl)
+                if not result:
+                    logging.info("Support SBL, SE36, flash_blocks failed")
+                    logging.info("DL block request - vbf_header: %s", vbf_header)
                 #Transfer data exit with service 0x37
                 result = result and SE37.transfer_data_exit(can_p)
+                if not result:
+                    logging.info("Support SBL, SE37, transfer_data_exit failed")
+                    logging.info("DL block request - vbf_header: %s", vbf_header)
             else:
                 logging.info("CRC doesn't match after decompression")
                 logging.info("Header       CRC16 block_data:  {0:04X}".format\
@@ -463,16 +472,6 @@ class SupportSBL:
         Support function for Routine Complete & Compatible
         """
 
-        # Parameters for FrameControl FC
-        can_mf_param: CanMFParam = {
-            'block_size' : 0,
-            'separation_time' : 0,
-            'frame_control_delay' : 0, #no wait
-            'frame_control_flag' : 48, #continue send
-            'frame_control_auto' : True
-            }
-        SC.change_mf_fc(can_p["send"], can_mf_param)
-
         result = SE31.routinecontrol_requestsid_complete_compatible(can_p, stepno)
         result = result and (
             self.pp_decode_routine_complete_compatible(SC.can_messages[can_p["receive"]][0][2]))
@@ -658,17 +657,6 @@ class SupportSBL:
         """
         Support function for Routine Flash Erase
         """
-        # Parameters for FrameControl FC
-        can_mf_param: CanMFParam = {
-            'block_size' : 0,
-            'separation_time' : 0,
-            'frame_control_delay' : 0, #no wait
-            'frame_control_flag' : 48, #continue send
-            'frame_control_auto' : False
-            }
-        SC.change_mf_fc(can_p["send"], can_mf_param)
-        time.sleep(1)
-
         result = SE31.routinecontrol_requestsid_flash_erase(can_p, vbf_header, stepno)
         logging.info("SSBL: flash_erase requestsid, result: %s", result)
         logging.info("SSBL: flash_erase EraseMemory, result: %s", result)
@@ -723,18 +711,6 @@ class SupportSBL:
         """
         Support function for Check Memory
         """
-        # Parameters for FrameControl FC
-
-        can_mf_param: CanMFParam = {
-            'block_size' : 0,
-            'separation_time' : 0,
-            'frame_control_delay' : 0, #no wait
-            'frame_control_flag' : 48, #continue send
-            'frame_control_auto' : False
-            }
-        SC.change_mf_fc(can_p["send"], can_mf_param)
-
-        time.sleep(1)
         logging.info("SBL CheckMemory: vbf_header %s", vbf_header)
         # In VBF header sw_signature_dev was stored as hex, Python converts that into int.
         # It has to be converted to bytes to be used as payload

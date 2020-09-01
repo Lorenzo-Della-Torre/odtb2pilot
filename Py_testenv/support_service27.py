@@ -51,9 +51,10 @@ class SupportService27:
         """
 
         #different request in mode 1/3 and mode2
+        logging.info("PBL SecAcc req seed: determine current mode")
         SE22.read_did_f186(can_p)
         #SE22.read_did_f186(can_p, dsession=b'')
-        logging.info(SC.can_messages[can_p["receive"]])
+        logging.info("PBL SecAcc req seed: current mode: %s", SC.can_messages[can_p["receive"]])
 
         if SUTE.test_message(SC.can_messages[can_p["receive"]], '62F18601')\
             or SUTE.test_message(SC.can_messages[can_p["receive"]], '62F18603'):
