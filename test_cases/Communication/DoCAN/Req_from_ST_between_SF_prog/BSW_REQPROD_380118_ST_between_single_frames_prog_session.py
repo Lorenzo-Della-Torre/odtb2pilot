@@ -55,17 +55,17 @@ def step_2(can_p):
     """
     result = True
 
-    cpay: CanPayload = {
-        "payload": b'\x03\x22\xF1\x8C\x00\x00\x00\x00',
+    cpay_1: CanPayload = {
+        "payload_1": b'\x03\x22\xF1\x8C\x00\x00\x00\x00',
         "extra": ''
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay_1)
 
-    cpay1: CanPayload = {
-        "payload": b'\x03\x22\xF1\x2B\x00\x00\x00\x00',
+    cpay_2: CanPayload = {
+        "payload_2": b'\x03\x22\xF1\x2B\x00\x00\x00\x00',
         "extra": ''
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay1)
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay_2)
 
     etp: CanTestExtra = {"step_no": 2,
                          "purpose" : "verify that two single frame can be sent with ST = 0",
@@ -78,9 +78,9 @@ def step_2(can_p):
 
     #send two SF request consecutively
     SC.t_send_signal_hex(can_p["netstub"], can_p["send"], can_p["namespace"],
-                         cpay["payload"])
+                         cpay_1["payload_1"])
     SC.t_send_signal_hex(can_p["netstub"], can_p["send"], can_p["namespace"],
-                         cpay1["payload"])
+                         cpay_2["payload_2"])
 
     time.sleep(1)
     SC.update_can_messages(can_p["receive"])
@@ -89,8 +89,50 @@ def step_2(can_p):
     logging.info("Time difference between two frame sent: %s \n",
                  SC.can_frames[can_p["send"]][1][0] - SC.can_frames[can_p["send"]][0][0])
     logging.info("frames received: %s \n", SC.can_frames[can_p["receive"]])
-    result = result and 'F18C' in SC.can_frames[can_p["receive"]][0][2]
-    result = result and 'F12B' in SC.can_frames[can_p["receive"]][1][2]
+    #expected content reply and frame number to compare with from a default requests
+    first_reply_cont = 'F18C'
+    frame_to_comp_first_rep = SC.can_frames[can_p["receive"]][0][2]
+    second_reply_cont = 'F12B'
+    frame_to_comp_second_rep = SC.can_frames[can_p["receive"]][1][2]
+    logging.info("Step%s: first_reply_cont before YML: %s", etp["step_no"], first_reply_cont)
+    logging.info("Step%s: frame_to_comp_first_rep before YML: %s", etp["step_no"],
+                 frame_to_comp_first_rep)
+    logging.info("Step%s: second_reply_cont before YML: %s", etp["step_no"], second_reply_cont)
+    logging.info("Step%s: frame_to_comp_second_rep before YML: %s", etp["step_no"],
+                 frame_to_comp_second_rep)
+
+    # use YML to specifying the expected reply if a different request is sended
+    first_reply_cont_new = SIO.extract_parameter_yml(str(inspect.stack()[0][3]),
+                                                     'first_reply_cont')
+    frame_to_comp_first_rep_new = SIO.extract_parameter_yml(str(inspect.stack()[0][3]),
+                                                            'frame_to_comp_first_rep')
+    second_reply_cont_new = SIO.extract_parameter_yml(str(inspect.stack()[0][3]),
+                                                      'second_reply_cont')
+    frame_to_comp_second_rep_new = SIO.extract_parameter_yml(str(inspect.stack()[0][3]),
+                                                             'frame_to_comp_second_rep')
+
+    # don't set empty value if no replacement was found for first reply:
+    if first_reply_cont_new:
+        first_reply_cont = first_reply_cont_new
+        frame_to_comp_first_rep = frame_to_comp_first_rep_new
+    else:
+        logging.info("Step%s first_reply_cont_new is empty. Discard.", etp["step_no"])
+    logging.info("Step%s: first_reply_cont after YML: %s", etp["step_no"], first_reply_cont)
+    logging.info("Step%s: frame_to_comp_first_rep after YML: %s", etp["step_no"],
+                 frame_to_comp_first_rep)
+
+    # don't set empty value if no replacement was found for second reply:
+    if second_reply_cont_new:
+        second_reply_cont = second_reply_cont_new
+        frame_to_comp_second_rep = frame_to_comp_second_rep_new
+    else:
+        logging.info("Step%s second_reply_cont_new is empty. Discard.", etp["step_no"])
+    logging.info("Step%s: second_reply_cont after YML: %s", etp["step_no"], second_reply_cont)
+    logging.info("Step%s: frame_to_comp_second_rep after YML: %s", etp["step_no"],
+                 frame_to_comp_second_rep)
+
+    result = result and first_reply_cont in frame_to_comp_first_rep
+    result = result and second_reply_cont in frame_to_comp_second_rep
     logging.info("Step %s teststatus:%s \n", etp['step_no'], result)
     return result
 
@@ -133,8 +175,8 @@ def run():
         result = result and SE10.diagnostic_session_control_mode2(can_p, 1)
 
     # step2:
-    # action:
-    # result: BECM sends positive reply
+    # action: send two single frames requests consecutively
+    # result: BECM sends positive reply for both reqests
         result = result and step_2(can_p)
 
     # step3:
