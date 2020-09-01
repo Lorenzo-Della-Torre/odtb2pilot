@@ -65,9 +65,20 @@ def step_1(can_p):
 
     result = SUTE.teststep(can_p, cpay, etp)
 
-    #verify received message is filled with 0 up to 8 bytes
+    #verify received message from default request is filled with 0 up to 8 bytes
+    res_padded_frame = '62F18601000000'
+    logging.info("Step%s: reply padded frame before YML: %s", etp["step_no"], res_padded_frame)
+    #use YML to specify the expected frame if different request is sended
+    res_padded_frame_new = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'res_padded_frame')
+    # don't set empty value if no replacement was found:
+    if res_padded_frame_new:
+        res_padded_frame = res_padded_frame_new
+    else:
+        logging.info("Step%s padded_frame_new is empty. Discard.", etp["step_no"])
+    logging.info("Step%s: padded_frame after YML: %s", etp["step_no"], res_padded_frame)
+
     result = result and SUTE.test_message(SC.can_messages[can_p["receive"]],
-                                          teststring='62F18601000000')
+                                          teststring=res_padded_frame)
 
     return result
 
@@ -92,10 +103,22 @@ def step_2(can_p):
 
     result = SUTE.teststep(can_p, cpay, etp)
 
-    #the reply to FD00 request is 12 bytes so the last frame should be filled with 5 bytes of 0
+    #the reply to default FD00 request is 12 bytes so the last frame should be filled
+    #with 5 bytes of 0
+    last_frame_padding = '0000000000'
+    logging.info("Step%s: last_frame_padding before YML: %s", etp["step_no"], last_frame_padding)
+    # use YML to specifying the expected padding if a different request is sended
+    last_frame_padding_new = SIO.extract_parameter_yml(str(inspect.stack()[0][3]),
+                                                       'last_frame_padding')
+    # don't set empty value if no replacement was found:
+    if last_frame_padding_new:
+        last_frame_padding = last_frame_padding_new
+    else:
+        logging.info("Step%s last_frame_padding_new is empty. Discard.", etp["step_no"])
+    logging.info("Step%s: last_frame_padding after YML: %s", etp["step_no"], last_frame_padding)
     result = result and SUTE.test_message([SC.can_frames[can_p["receive"]]
                                            [len(SC.can_frames[can_p["receive"]])-1]],
-                                          teststring='0000000000')
+                                          teststring=last_frame_padding)
 
     return result
 
@@ -134,13 +157,13 @@ def run():
     ############################################
 
     # step1:
-    # action:
-    # result: BECM sends positive reply
+    # action: Send request requiring SF to reply.
+    # result: BECM replies with Single Frame.
         result = result and step_1(can_p)
 
     # step2:
-    # action:
-    # result: BECM sends positive reply
+    # action: Send request requiring MF to reply.
+    # result: BECM replies with Multi Frame.
         result = result and step_2(can_p)
 
     ############################################
