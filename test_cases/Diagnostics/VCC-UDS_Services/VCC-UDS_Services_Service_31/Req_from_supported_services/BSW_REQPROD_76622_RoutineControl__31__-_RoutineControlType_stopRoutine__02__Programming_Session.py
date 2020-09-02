@@ -34,6 +34,7 @@ import sys
 import logging
 import inspect
 
+
 import odtb_conf
 from support_can import SupportCAN, CanParam, CanTestExtra, CanPayload
 from support_test_odtb2 import SupportTestODTB2
@@ -52,13 +53,15 @@ POST = SupportPostcondition()
 SE10 = SupportService10()
 SE22 = SupportService22()
 
+
+# teststep 2: verify RoutineControlRequest start is sent
 def step_2(can_p):
     """
     Teststep 2: verify RoutineControlRequest start is sent
     """
     cpay: CanPayload = {
         "payload": SC_CARCOM.can_m_send("RoutineControlRequestSID",
-                                        b'\x40\x11\x08\x00',
+                                        b'\x03\x01',
                                         b'\x01'),
         "extra": ''
         }
@@ -72,8 +75,7 @@ def step_2(can_p):
         }
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
 
-    payload_reply = '057101401132'
-    routine_response = 'Type3,Currently active'
+    payload_reply = '7F3133'
 
     payload_reply_new = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'payload_reply')
     # don't set empty value if no replacement was found:
@@ -83,49 +85,38 @@ def step_2(can_p):
         logging.info("Step%s payload_reply_new is empty. Discard.", etp["step_no"])
     logging.info("Step%s: payload_reply after YML: %s", etp["step_no"], payload_reply)
 
-    routine_response_new = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'routine_response')
-    # don't set empty value if no replacement was found:
-    if routine_response_new:
-        routine_response = routine_response_new
-    else:
-        logging.info("Step%s routine_response_new is empty. Discard.", etp["step_no"])
-    logging.info("Step%s: routine_response after YML: %s", etp["step_no"], routine_response)
-
     result = SUTE.teststep(can_p, cpay, etp)
-
     result = result and\
              SUTE.test_message(SC.can_messages[can_p["receive"]], teststring=payload_reply)
-    result = result and\
-             SUTE.pp_decode_routine_control_response(SC.can_frames[can_p["receive"]][0][2],
-                                                     routine_response)
-    logging.info("Step %s teststatus:%s \n", etp["step_no"], result)
+
+    logging.info("Step %s, neg reply: %s",
+                 etp["step_no"],
+                 SUTE.pp_decode_7f_response(SC.can_frames[can_p["receive"]][0][2]))
     return result
 
+# teststep 3: verify RoutineControlRequest stop is sent in Programming Session
 def step_3(can_p):
     """
-    Teststep 3: verify RoutineControlRequest stop is sent in Extended Session
+    Teststep 3: verify RoutineControlRequest stop is sent in Programming Session
     """
     cpay: CanPayload = {
         "payload": SC_CARCOM.can_m_send("RoutineControlRequestSID",
-                                        b'\x40\x11',
+                                        b'\x03\x01',
                                         b'\x02'),
         "extra": ''
         }
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
     etp: CanTestExtra = {
         "step_no": 3,
-        "purpose": "verify RoutineControl stop reply positively in Extended Session",
+        "purpose": "verify RoutineControl stop reply positively in Programming Session",
         "timeout": 1,
-        "min_no_messages": 1,
-        "max_no_messages": 1
+        "min_no_messages": -1,
+        "max_no_messages": -1
         }
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
 
     result = SUTE.teststep(can_p, cpay, etp)
-
-    payload_reply = '057102401130'
-    routine_response = 'Type3,Completed'
-
+    payload_reply = '7F3133'
     payload_reply_new = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'payload_reply')
     # don't set empty value if no replacement was found:
     if payload_reply_new:
@@ -133,23 +124,13 @@ def step_3(can_p):
     else:
         logging.info("Step%s payload_reply_new is empty. Discard.", etp["step_no"])
     logging.info("Step%s: payload_reply after YML: %s", etp["step_no"], payload_reply)
-
-    routine_response_new = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'routine_response')
-    # don't set empty value if no replacement was found:
-    if routine_response_new:
-        routine_response = routine_response_new
-    else:
-        logging.info("Step%s routine_response_new is empty. Discard.", etp["step_no"])
-    logging.info("Step%s: routine_response after YML: %s", etp["step_no"], routine_response)
-
-    logging.info("Step%s: routine_response: %s", etp["step_no"], SC.can_messages[can_p["receive"]])
     result = result and\
              SUTE.test_message(SC.can_messages[can_p["receive"]], teststring=payload_reply)
-    result = result and\
-             SUTE.pp_decode_routine_control_response(SC.can_frames[can_p["receive"]][0][2],
-                                                     routine_response)
-    logging.info("Step %s teststatus:%s \n", etp["step_no"], result)
+    logging.info("Step %s, neg reply: %s",
+                 etp["step_no"],
+                 SUTE.pp_decode_7f_response(SC.can_frames[can_p["receive"]][0][2]))
     return result
+
 
 def run():
     """
@@ -182,9 +163,9 @@ def run():
     # teststeps
     ############################################
     # step 1:
-    # action: change BECM to Extended
+    # action: change BECM to Mode2 - programming
     # result: BECM reports mode
-        result = result and SE10.diagnostic_session_control_mode3(can_p, 1)
+        result = result and SE10.diagnostic_session_control_mode2(can_p, stepno=1)
 
     # step2:
     # action: send start RoutineControl signal
@@ -199,14 +180,14 @@ def run():
         result = result and step_3(can_p)
 
     # step4:
-    # action: # action: Verify BECM in Extended session
+    # action: Verify BECM in Programming session
     # result: BECM reports mode
-        result = result and SE22.read_did_f186(can_p, dsession=b'\x03', stepno=4)
+        result = result and SE22.read_did_f186(can_p, dsession=b'\x02', stepno=4)
 
     # step5:
     # action: change BECM to default
     # result: BECM reports mode
-        result = result and SE10.diagnostic_session_control_mode1(can_p, 4)
+        result = result and SE10.diagnostic_session_control_mode1(can_p, stepno=5)
 
     ############################################
     # postCondition
