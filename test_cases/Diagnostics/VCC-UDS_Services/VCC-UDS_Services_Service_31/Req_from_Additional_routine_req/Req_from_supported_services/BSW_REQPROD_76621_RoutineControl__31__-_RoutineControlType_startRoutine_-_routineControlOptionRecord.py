@@ -79,7 +79,7 @@ def step_2(can_p):
 
     payload_reply = '71014011'
     routine_response = 'Type3,Currently active'
-    
+
     payload_reply_new = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'payload_reply')
     # don't set empty value if no replacement was found:
     if payload_reply_new:
@@ -87,7 +87,7 @@ def step_2(can_p):
     else:
         logging.info("Step%s payload_reply_new is empty. Discard.", etp["step_no"])
     logging.info("Step%s: payload_reply after YML: %s", etp["step_no"], payload_reply)
-    
+
     routine_response_new = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'routine_response')
     # don't set empty value if no replacement was found:
     if routine_response_new:
