@@ -14,6 +14,7 @@ export PYTHONPATH=$HOME/projects/odtb2/python
 #pip3 install lxml
 #sudo apt-get install libxml2-dev libxslt-dev
 #python3 $TESTREPO/dids_from_sddb_checker/parse_sddb.py --sddb 32290001_AD.sddb
-echo "Start generate did report"
+echo
+echo "Generate did report - Start"
 python3 $TESTREPO/dids_from_sddb_checker/dids_from_sddb_checker.py
-echo "Generate did report done"
+echo "Generate did report - Done"

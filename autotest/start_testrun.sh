@@ -24,4 +24,6 @@ else
 	# Generate did report
 	./generate_did_report.sh
 
+	echo
+	echo "All scripts executed. All html reports generated"
 fi
