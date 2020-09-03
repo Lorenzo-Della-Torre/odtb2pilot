@@ -1,17 +1,16 @@
 # Testscript ODTB2 MEPII
 # project:  BECM basetech MEPII
 # author:   LDELLATO (Lorenzo Della Torre)
-# date:     2019-09-19
+# date:     2019-06-17
 # version:  1.0
-# reqprod:  74130
+# reqprod:  74160
 
 # author:   HWEILER (Hans-Klaus Weiler)
-# date:     2020-08-21
+# date:     2020-08-24
 # version:  1.1
 # changes:  update for YML support
 
-#inspired by https://grpc.io/docs/tutorials/basic/python.html
-
+# inspired by https://grpc.io/docs/tutorials/basic/python.html
 # Copyright 2015 gRPC authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,26 +25,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+
 """The Python implementation of the gRPC route guide client."""
+
 import time
 from datetime import datetime
 import sys
 import logging
 import inspect
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 import odtb_conf
 from support_can import SupportCAN, CanParam, CanTestExtra, CanPayload
@@ -65,91 +53,88 @@ POST = SupportPostcondition()
 SE10 = SupportService10()
 SE22 = SupportService22()
 
+JITTER_TESTENV = 10
+P4_SERVER_MAX = 200 # mseconds
 
+def step_time_measure(can_p, stepno, p_server_max):
+    """
+    Teststep time_measure:
+    Verify (time receive message – time sending request) less than P_server_max
+    """
+
+    logging.info("Step %s: Collecting data for calculating time:", stepno)
+    t_1 = SC.can_frames[can_p["send"]][0][0]
+    logging.info("Step %s: Timestamp request sent: %s", stepno, t_1)
+    t_2 = SC.can_frames[can_p["receive"]][0][0]
+    logging.info("Step %s: Timestamp request sent: %s", stepno, t_2)
+    purpose = "Verify (time receive message – time sending request) less than P_server_max"
+    SUTE.print_test_purpose(stepno, purpose)
+    result = ((p_server_max + JITTER_TESTENV)/1000 > (t_2 - t_1))
+    logging.info("Step%s: t2: %s (sec)", stepno, t_2)
+    logging.info("Step%s: t1: %s (sec)", stepno, t_1)
+    logging.info("Step%s: t2-t1: %s (sec)", stepno, (t_2 - t_1))
+    logging.info("P_server_max: %s (msec)", p_server_max)
+    logging.info("JITTER_TESTENV: %s (msec)", JITTER_TESTENV)
+    logging.info("P_server_max + JITTER_TESTENV: %s (msec)", p_server_max + JITTER_TESTENV)
+    logging.info("Step %s teststatus:%s \n", stepno, result)
+    return result
+
+
+# teststep 2: verify RoutineControl start reply positively and routine Type 3 is running
 def step_2(can_p):
     """
-    Teststep 2: verify RoutineControl start reply positively and
-                routine Type 3 is Currently active
+    Teststep 2: verify RoutineControl start reply positively and routine Type 3 is running
     """
     cpay: CanPayload = {
         "payload": SC_CARCOM.can_m_send("RoutineControlRequestSID",
-                                        b'\x40\x1B\x00',
+                                        b'\xDC\x00',
                                         b'\x01'),
         "extra": ''
         }
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
     etp: CanTestExtra = {
         "step_no": 2,
-        "purpose": "verify RoutineControl start reply positively and"\
-                   " routine Type 3 is Currently active",
+        "purpose": "verify RoutineControl start reply positively and routine Type 3 is running",
         "timeout": 1,
-        "min_no_messages": -1,
-        "max_no_messages": -1
+        "min_no_messages": 1,
+        "max_no_messages": 1
         }
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
 
+    #T1=time.time()
     result = SUTE.teststep(can_p, cpay, etp)
-    logging.info("Step%s: received: %s", etp["step_no"], SC.can_frames[can_p["receive"]])
-    result = result and\
-             SUTE.pp_decode_routine_control_response(SC.can_frames[can_p["receive"]][0][2],
-                                                     'Type3,Currently active')
-    return result
-
-def step_3(can_p):
-    """
-    Teststep 3: verify RoutineControl result reply positively in Extended Session
-                and routine Type 3 is running
-    """
-    cpay: CanPayload = {
-        "payload": SC_CARCOM.can_m_send("RoutineControlRequestSID",
-                                        b'\x40\x1B',
-                                        b'\x03'),
-        "extra": ''
-        }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
-    etp: CanTestExtra = {
-        "step_no": 3,
-        "purpose": "verify RoutineControl result reply positively in Extended Session"\
-                   " and routine Type 3 is running",
-        "timeout": 1,
-        "min_no_messages": -1,
-        "max_no_messages": -1
-        }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
-
-    result = SUTE.teststep(can_p, cpay, etp)
-    logging.info("Step%s: received: %s", etp["step_no"], SC.can_frames[can_p["receive"]])
-    result = result and\
-             SUTE.pp_decode_routine_control_response(SC.can_frames[can_p["receive"]][0][2],
-                                                     'Type3,Currently active')
+    #T2 = SC.can_messages[r][0][0]
     return result
 
 
+# teststep 4: verify RoutineControl start reply positively and routine Type 2 is completed
 def step_4(can_p):
     """
-    Teststep 4: erify RoutineControl stop reply positively and routine Type 3 is completed
+    Teststep 4: verify RoutineControl start reply positively and routine Type 2 is completed
     """
     cpay: CanPayload = {
         "payload": SC_CARCOM.can_m_send("RoutineControlRequestSID",
-                                        b'\x40\x1B',
-                                        b'\x02'),
+                                        b'\xDC\x10',
+                                        b'\x01'),
         "extra": ''
         }
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
     etp: CanTestExtra = {
         "step_no": 4,
-        "purpose": "verify RoutineControl stop reply positively and routine Type 3 is completed",
+        "purpose": "verify RoutineControl start reply positively and routine Type 3 is completed",
         "timeout": 1,
-        "min_no_messages": -1,
-        "max_no_messages": -1
+        "min_no_messages": 1,
+        "max_no_messages": 1
         }
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
 
+    #T1=time.time()
     result = SUTE.teststep(can_p, cpay, etp)
-    logging.info("Step%s: received: %s", etp["step_no"], SC.can_frames[can_p["receive"]])
+
+    #T2 = SC.can_messages[r][0][0]
     result = result and\
              SUTE.pp_decode_routine_control_response(SC.can_frames[can_p["receive"]][0][2],
-                                                     'Type3,Completed')
+                                                     'Type2,Completed')
     return result
 
 
@@ -172,10 +157,11 @@ def run():
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
     logging.info("Time: %s \n", time.time())
+
     ############################################
     # precondition
     ############################################
-    timeout = 40
+    timeout = 60
     result = PREC.precondition(can_p, timeout)
 
     if result:
@@ -183,34 +169,41 @@ def run():
     # teststeps
     ############################################
     # step 1:
-    # action: change BECM to Extended
-    # result: BECM reports mode
-        result = result and SE10.diagnostic_session_control_mode3(can_p, 1)
+    # action:Change to extended session
+    # result: BECM report mode
+        result = result and SE10.diagnostic_session_control_mode3(can_p, stepno=1)
 
-    # step2:
-    # action: send start RoutineControl signal for Type 3
-    # result: BECM sends positive reply
+    # step 2:
+    # action:
+    # result:
         result = result and step_2(can_p)
 
-     # step3:
-    # action: send result RoutineControl signal for Type 3
-    # result: BECM sends positive reply
-        result = result and step_3(can_p)
+    # step 3:
+    # Verify (time receive message – time sending request) less than P4_server_max
+    # action: Wait for the response message
+    # result: (time receive message – time sending request) less than P4_server_max
+        result = result and step_time_measure(can_p, stepno=3, p_server_max=P4_SERVER_MAX)
 
-    # step4:
-    # action: send stop RoutineControl signal for Type 3
-    # result: BECM sends positive reply
+    # step 2:
+    # action:
+    # result:
         result = result and step_4(can_p)
 
-    # step5:
-    # action: verify extended session active
-    # result: BECM send active mode
-        result = result and SE22.read_did_f186(can_p, dsession=b'\x03', stepno=5)
+    # step 5:
+    # action: Wait for the response message
+    # result: (time receive message – time sending request) less than P4_server_max
+        result = result and step_time_measure(can_p, stepno=5, p_server_max=P4_SERVER_MAX)
 
-    # step 6:
-    # action: # Change to Default session
-    # result: BECM reports mode
-        result = result and SE10.diagnostic_session_control_mode1(can_p, 6)
+    # step6:
+    # action: Verify Extended session active
+    # result: BECM sends active mode
+        result = result and SE22.read_did_f186(can_p, dsession=b'\x03', stepno=6)
+
+    # step 7:
+    # action: change BECM to default
+    # result: BECM report mode
+        result = result and SE10.diagnostic_session_control_mode1(can_p, stepno=7)
+        #time.sleep(1)
 
     ############################################
     # postCondition

@@ -261,7 +261,7 @@ def run():
     # step 1:
     # action: change BECM to Extended
     # result: BECM reports mode
-        result = result and SE10.diagnostic_session_control_mode3(can_p, 1)
+        result = result and SE10.diagnostic_session_control_mode3(can_p, stepno=1)
 
     # step 2:
     # action: register a non-diagnostic signal
@@ -296,7 +296,7 @@ def run():
     # step 8:
     # action: change BECM to default
     # result: BECM report mode
-        result = result and SE10.diagnostic_session_control_mode1(can_p, 8)
+        result = result and SE10.diagnostic_session_control_mode1(can_p, stepno=8)
         #time.sleep(1)
 
     ############################################
