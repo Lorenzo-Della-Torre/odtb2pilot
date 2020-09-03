@@ -25,9 +25,10 @@ import time
 from datetime import datetime
 import sys
 import logging
+import inspect
 
-import ODTB_conf
-from support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
+import odtb_conf
+from support_can import SupportCAN, CanParam
 from support_test_odtb2 import SupportTestODTB2
 from support_carcom import SupportCARCOM
 from support_file_io import SupportFileIO
@@ -53,116 +54,50 @@ SE10 = SupportService10()
 SE22 = SupportService22()
 SE3E = SupportService3e()
 
-def step_2(can_par):
-    """
-    Teststep 2: verify session
-    """
-    stepno = 2
-    cpay: CanPayload = SIO.extract_parameter_yml(
-        "step_{}".format(stepno),
-        payload=S_CARCOM.can_m_send("ReadDataByIdentifier", b'\xF1\x22', b''),
-        extra=''
-        )
-
-    etp: CanTestExtra = SIO.extract_parameter_yml(
-        "step_{}".format(stepno),
-        step_no=2,
-        timeout=1,
-        purpose="Verify Programming session in SBL",
-        min_no_messages=-1,
-        max_no_messages=-1
-        )
-
-    result = SUTE.teststep(can_par, cpay, etp)
-    result = result and SUTE.test_message(SC.can_messages[can_par["receive"]],\
-                                          teststring='F122')
-
-    return result
-
-def step_5(can_par):
-    """
-    Teststep 5: verify session
-    """
-    stepno = 5
-    cpay: CanPayload = SIO.extract_parameter_yml(
-        "step_{}".format(stepno),
-        payload=S_CARCOM.can_m_send("ReadDataByIdentifier", b'\xF1\x22', b''),
-        extra=''
-        )
-
-    etp: CanTestExtra = SIO.extract_parameter_yml(
-        "step_{}".format(stepno),
-        step_no=5,
-        timeout=1,
-        purpose="Verify Programming session in SBL",
-        min_no_messages=-1,
-        max_no_messages=-1
-        )
-
-    result = SUTE.teststep(can_par, cpay, etp)
-    result = result and SUTE.test_message(SC.can_messages[can_par["receive"]],\
-                                          teststring='F122')
-
-    return result
-
 def run():
     """
     Run - Call other functions from here
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.DEBUG)
+    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
     # start logging
     # to be implemented
 
     # where to connect to signal_broker
-    can_par: CanParam = SIO.extract_parameter_yml(
-        "main",
-        netstub=SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT),
-        send="Vcu1ToBecmFront1DiagReqFrame",
-        receive="BecmToVcu1Front1DiagResFrame",
-        namespace=SC.nspace_lookup("Front1CANCfg0")
-        )
-
+    can_p: CanParam = {
+        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
+        "send" : "Vcu1ToBecmFront1DiagReqFrame",
+        "receive" : "BecmToVcu1Front1DiagResFrame",
+        "namespace" : SC.nspace_lookup("Front1CANCfg0")
+    }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
     logging.info("Time: %s \n", time.time())
     ############################################
     # precondition
     ############################################
-    # read arguments for files to DL:
-    f_sbl = ''
-    f_ess = ''
-    f_df = []
-    for f_name in sys.argv:
-        if not f_name.find('.vbf') == -1:
-            logging.info("Filename to DL: %s \n", f_name)
-            if not f_name.find('sbl') == -1:
-                f_sbl = f_name
-            elif not f_name.find('ess') == -1:
-                f_ess = f_name
-            else:
-                f_df.append(f_name)
-    SSBL.__init__(f_sbl, f_ess, f_df)
-    SSBL.show_filenames()
+    # read VBF param when testscript is s started, if empty take default param
+    SSBL.get_vbf_files()
     time.sleep(4)
 
     timeout = 500
-    result = PREC.precondition(can_par, timeout)
+    result = PREC.precondition(can_p, timeout)
     if result:
     ############################################
     # teststeps
     ############################################
 
         # step1:
-        # action:
-        # result:
-        result = result and SSBL.sbl_activation(can_par, 1, "DL and activate SBL")
+        # action: DL and activation of SBL
+        # result: ECU sends positive reply
+        result = result and SSBL.sbl_activation(can_p, stepno=1, purpose="DL and activate SBL")
         time.sleep(1)
 
         # step2:
-        # action:
-        # result:
-        result = result and step_2(can_par)
+        # action: Verify ECU in SBL
+        # result: ECU sends positive reply
+        result = result and SE22.verify_sbl_session(can_p, stepno=2)
 
         # step3:
         # action: stop sending tester present
@@ -178,9 +113,9 @@ def run():
         time.sleep(4)
 
         # step5:
-        # action:
-        # result:
-        result = result and step_5(can_par)
+        # action: Verify ECU is still in SBL
+        # result: ECU sends positive reply
+        result = result and SE22.verify_sbl_session(can_p, stepno=5)
 
         # step6:
         # action: wait longher than timeout
@@ -190,14 +125,14 @@ def run():
         time.sleep(6)
 
         # step7:
-        # action:
-        # result:
-        result = result and SE22.read_did_f186(can_par, b'\x01', '7')
+        # action: Verify ECU change to default session
+        # result: ECU sends positive reply
+        result = result and SE22.read_did_f186(can_p, b'\x01', stepno=7)
 
     ############################################
     # postCondition
     ############################################
-    POST.postcondition(can_par, starttime, result)
+    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()
