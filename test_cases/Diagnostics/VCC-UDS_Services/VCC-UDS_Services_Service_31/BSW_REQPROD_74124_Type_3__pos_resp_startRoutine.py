@@ -31,8 +31,6 @@ from datetime import datetime
 import sys
 import logging
 import inspect
-
-
 import odtb_conf
 from support_can import SupportCAN, CanParam, CanTestExtra, CanPayload, PerParam
 from support_test_odtb2 import SupportTestODTB2
@@ -260,7 +258,7 @@ def run():
     # step 2:
     # action:change BECM to Extended session
     # result: BECM reply with mode
-        result = result and SE10.diagnostic_session_control_mode3(can_p, 2)
+        result = result and SE10.diagnostic_session_control_mode3(can_p, stepno=2)
 
     # step3:
     # action: send periodic signal vehicle velocity > 3km/h
@@ -300,7 +298,7 @@ def run():
     # step10:
     # action: Change to Default session
     # result: BECM reports mode
-        result = result and SE10.diagnostic_session_control_mode1(can_p, 10)
+        result = result and SE10.diagnostic_session_control_mode1(can_p, stepno=10)
 
     ############################################
     # postCondition

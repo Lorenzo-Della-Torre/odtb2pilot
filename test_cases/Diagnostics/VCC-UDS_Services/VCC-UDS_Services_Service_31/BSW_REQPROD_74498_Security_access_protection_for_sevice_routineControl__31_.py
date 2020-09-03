@@ -1,12 +1,12 @@
 # Testscript ODTB2 MEPII
 # project:  BECM basetech MEPII
 # author:   LDELLATO (Lorenzo Della Torre)
-# date:     2019-05-31
+# date:     2019-06-17
 # version:  1.0
-# reqprod:  74126
+# reqprod:  74498
 
 # author:   HWEILER (Hans-Klaus Weiler)
-# date:     2020-08-21
+# date:     2020-08-25
 # version:  1.1
 # changes:  update for YML support
 
@@ -27,13 +27,12 @@
 # limitations under the License.
 
 """The Python implementation of the gRPC route guide client."""
+
 import time
 from datetime import datetime
 import sys
 import logging
 import inspect
-
-
 import odtb_conf
 from support_can import SupportCAN, CanParam, CanTestExtra, CanPayload
 from support_test_odtb2 import SupportTestODTB2
@@ -53,115 +52,95 @@ SE10 = SupportService10()
 SE22 = SupportService22()
 
 
-def step_2(can_p):
-    """
-    Teststep 2: verify RoutineControlRequest type3 gives expected reply
-    """
 
+def step_1(can_p):
+    """
+    Teststep 1: verify RoutineControlRequest start service is allowed without security access
+    """
     cpay: CanPayload = {
         "payload": SC_CARCOM.can_m_send("RoutineControlRequestSID",
-                                        b'\xDC\x00',
+                                        b'\x02\x06',
                                         b'\x01'),
         "extra": ''
         }
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
     etp: CanTestExtra = {
-        "step_no": 2,
-        "purpose": "verify RoutineControl start reply positively and routine Type 3 is running",
+        "step_no": 1,
+        "purpose": "verify RoutineControl start service is allowed without security access",
         "timeout": 1,
-        "min_no_messages": -1,
-        "max_no_messages": -1
+        "min_no_messages": 1,
+        "max_no_messages": 1
         }
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
 
     result = SUTE.teststep(can_p, cpay, etp)
-    logging.info("Step%s: received: %s", etp["step_no"], SC.can_frames[can_p["receive"]])
+    logging.info("Step%s: can_m_send %s", etp["step_no"], cpay["payload"])
+    logging.info("Step%s: frames received %s", etp["step_no"], SC.can_frames[can_p["receive"]])
+
     result = result and\
              SUTE.pp_decode_routine_control_response(SC.can_frames[can_p["receive"]][0][2],
-                                                     "Type3,Currently active")
+                                                     'Type1,Completed')
+    logging.info("Step %s teststatus:%s \n", etp["step_no"], result)
     return result
+
 
 def step_3(can_p):
     """
-    Teststep 3: verify Routine Type 3 is still running
+    Teststep 3: verify RoutineControlRequest start service is allowed without security access
     """
     cpay: CanPayload = {
         "payload": SC_CARCOM.can_m_send("RoutineControlRequestSID",
-                                        b'\xDC\x00',
-                                        b'\x03'),
+                                        b'\x02\x06',
+                                        b'\x01'),
         "extra": ''
         }
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
     etp: CanTestExtra = {
         "step_no": 3,
-        "purpose": "verify RoutineControl result reply positively in Extended Session"\
-                   " and routine is still running",
+        "purpose": "verify RoutineControl start service is allowed without security access"\
+                   " and routine Type 1 is completed",
         "timeout": 1,
-        "min_no_messages": -1,
-        "max_no_messages": -1
+        "min_no_messages": 1,
+        "max_no_messages": 1
         }
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
 
     result = SUTE.teststep(can_p, cpay, etp)
+    logging.info("Step%s: can_m_send %s", etp["step_no"], cpay["payload"])
+    logging.info("Step%s: frames received %s", etp["step_no"], SC.can_frames[can_p["receive"]])
+
     result = result and\
              SUTE.pp_decode_routine_control_response(SC.can_frames[can_p["receive"]][0][2],
-                                                     "Type3,Currently active")
+                                                     'Type1,Completed')
+    logging.info("Step %s teststatus:%s \n", etp["step_no"], result)
     return result
 
-# teststep 4: verify RoutineControlRequest stop result is completed in Extended Session
-def step_4(can_p):
-    """
-    Teststep 4: verify RoutineControlRequest stop result is completed in Extended Session
-    """
-    cpay: CanPayload = {
-        "payload": SC_CARCOM.can_m_send("RoutineControlRequestSID",
-                                        b'\xDC\x00',
-                                        b'\x02'),
-        "extra": ''
-        }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
-    etp: CanTestExtra = {
-        "step_no": 4,
-        "purpose": "verify RoutineControl stop reply positively in Extended Session"\
-                   " and routine is Completed",
-        "timeout": 1,
-        "min_no_messages": -1,
-        "max_no_messages": -1
-        }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
 
-    result = SUTE.teststep(can_p, cpay, etp)
-    result = result and\
-             SUTE.pp_decode_routine_control_response(SC.can_frames[can_p["receive"]][0][2],
-                                                     "Type3,Completed")
-    return result
-
-# teststep 5: verify Routine Type 3 is completed
 def step_5(can_p):
     """
-    Teststep 5: verify Routine Type 3 is completed
+    Teststep 5: verify RoutineControlRequest start service is not allowed without security access
     """
     cpay: CanPayload = {
         "payload": SC_CARCOM.can_m_send("RoutineControlRequestSID",
-                                        b'\xDC\x00',
-                                        b'\x03'),
+                                        b'\x03\x01',
+                                        b'\x01'),
         "extra": ''
         }
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
     etp: CanTestExtra = {
         "step_no": 5,
-        "purpose": "erify RoutineControl result reply positively in Extended Session"\
-                   " and routine is completed",
+        "purpose": "verify RoutineControl start service is not allowed without security access",
         "timeout": 1,
         "min_no_messages": -1,
         "max_no_messages": -1
         }
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
-
     result = SUTE.teststep(can_p, cpay, etp)
+
+    print(SUTE.pp_decode_7f_response(SC.can_messages[can_p["receive"]][0][2]))
     result = result and\
-             SUTE.pp_decode_routine_control_response(SC.can_frames[can_p["receive"]][0][2],
-                                                     "Type3,Completed")
+             SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='7F3133')
+    time.sleep(1)
     return result
 
 def run():
@@ -170,6 +149,7 @@ def run():
     """
 
     logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+
     # where to connect to signal_broker
     can_p: CanParam = {
         "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
@@ -194,40 +174,34 @@ def run():
     # teststeps
     ############################################
     # step 1:
-    # action: change BECM to Extended
-    # result: BECM reports mode
-        result = result and SE10.diagnostic_session_control_mode3(can_p, 1)
+    # action: verify RC Request start service is allowed without security access
+    # result:
+        result = result and step_1(can_p)
 
     # step2:
-    # action: send start RoutineControl signal
-    # result: BECM sends positive reply
-        result = result and step_2(can_p)
-
+    # action: change to extended session
+    # result:
+        result = result and SE10.diagnostic_session_control_mode3(can_p, stepno=2)
     # step3:
-    # action: send Result RoutineControl signal
-    # result: BECM sends positive reply
+    # action: verify RoutineControlRequest start service is allowed without security access
+    # result:
         result = result and step_3(can_p)
 
     # step4:
-    # action: send stop RoutineControl signal in Extended mode
+    # action: change to prog session
     # result: BECM sends positive reply
-        result = result and step_4(can_p)
+        result = result and SE10.diagnostic_session_control_mode2(can_p, stepno=4)
 
     # step5:
-    # action: send Result RoutineControl signal
-    # result: BECM sends positive reply
+    # action: verify RoutineControlRequest start service is not allowed without security access
+    # result:
         result = result and step_5(can_p)
 
     # step6:
-    # action: # action: Verify BECM in Extended session
-    # result: BECM reports mode
-        result = result and SE22.read_did_f186(can_p, dsession=b'\x03', stepno=6)
-
-    # step7:
-    # action: change BECM to default
-    # result: BECM reports mode
-        result = result and SE10.diagnostic_session_control_mode1(can_p, 7)
-
+    # action: Change to default session
+    # result:
+        result = result and SE10.diagnostic_session_control_mode1(can_p, stepno=6)
+        time.sleep(1)
     ############################################
     # postCondition
     ############################################

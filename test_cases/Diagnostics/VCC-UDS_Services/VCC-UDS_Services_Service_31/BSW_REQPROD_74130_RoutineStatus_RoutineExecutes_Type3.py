@@ -32,11 +32,6 @@ from datetime import datetime
 import sys
 import logging
 import inspect
-
-
-
-
-
 import odtb_conf
 from support_can import SupportCAN, CanParam, CanTestExtra, CanPayload
 from support_test_odtb2 import SupportTestODTB2
@@ -56,16 +51,14 @@ SE10 = SupportService10()
 SE22 = SupportService22()
 
 
-
-
-
 def step_2(can_p):
     """
-    Teststep 2: verify RoutineControl start reply positively and routine Type 2 is Currently active
+    Teststep 2: verify RoutineControl start reply positively and
+                routine Type 3 is Currently active
     """
     cpay: CanPayload = {
         "payload": SC_CARCOM.can_m_send("RoutineControlRequestSID",
-                                        b'\xDC\x11',
+                                        b'\x40\x1B\x00',
                                         b'\x01'),
         "extra": ''
         }
@@ -73,7 +66,7 @@ def step_2(can_p):
     etp: CanTestExtra = {
         "step_no": 2,
         "purpose": "verify RoutineControl start reply positively and"\
-                   "routine Type 2 is Currently active",
+                   " routine Type 3 is Currently active",
         "timeout": 1,
         "min_no_messages": -1,
         "max_no_messages": -1
@@ -84,17 +77,17 @@ def step_2(can_p):
     logging.info("Step%s: received: %s", etp["step_no"], SC.can_frames[can_p["receive"]])
     result = result and\
              SUTE.pp_decode_routine_control_response(SC.can_frames[can_p["receive"]][0][2],
-                                                     'Type2,Currently active')
+                                                     'Type3,Currently active')
     return result
-
 
 def step_3(can_p):
     """
-    Teststep 3: verify RoutineControlRequest stop is sent in Extended Session
+    Teststep 3: verify RoutineControl result reply positively in Extended Session
+                and routine Type 3 is running
     """
     cpay: CanPayload = {
         "payload": SC_CARCOM.can_m_send("RoutineControlRequestSID",
-                                        b'\xDC\x11',
+                                        b'\x40\x1B',
                                         b'\x03'),
         "extra": ''
         }
@@ -102,7 +95,7 @@ def step_3(can_p):
     etp: CanTestExtra = {
         "step_no": 3,
         "purpose": "verify RoutineControl result reply positively in Extended Session"\
-                   " and routine Type 2 is running",
+                   " and routine Type 3 is running",
         "timeout": 1,
         "min_no_messages": -1,
         "max_no_messages": -1
@@ -113,7 +106,35 @@ def step_3(can_p):
     logging.info("Step%s: received: %s", etp["step_no"], SC.can_frames[can_p["receive"]])
     result = result and\
              SUTE.pp_decode_routine_control_response(SC.can_frames[can_p["receive"]][0][2],
-                                                     'Type2,Currently active')
+                                                     'Type3,Currently active')
+    return result
+
+
+def step_4(can_p):
+    """
+    Teststep 4: erify RoutineControl stop reply positively and routine Type 3 is completed
+    """
+    cpay: CanPayload = {
+        "payload": SC_CARCOM.can_m_send("RoutineControlRequestSID",
+                                        b'\x40\x1B',
+                                        b'\x02'),
+        "extra": ''
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    etp: CanTestExtra = {
+        "step_no": 4,
+        "purpose": "verify RoutineControl stop reply positively and routine Type 3 is completed",
+        "timeout": 1,
+        "min_no_messages": -1,
+        "max_no_messages": -1
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+
+    result = SUTE.teststep(can_p, cpay, etp)
+    logging.info("Step%s: received: %s", etp["step_no"], SC.can_frames[can_p["receive"]])
+    result = result and\
+             SUTE.pp_decode_routine_control_response(SC.can_frames[can_p["receive"]][0][2],
+                                                     'Type3,Completed')
     return result
 
 
@@ -136,7 +157,6 @@ def run():
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
     logging.info("Time: %s \n", time.time())
-
     ############################################
     # precondition
     ############################################
@@ -150,27 +170,32 @@ def run():
     # step 1:
     # action: change BECM to Extended
     # result: BECM reports mode
-        result = result and SE10.diagnostic_session_control_mode3(can_p, 1)
+        result = result and SE10.diagnostic_session_control_mode3(can_p, stepno=1)
 
     # step2:
-    # action: send start RoutineControl signal for Type 2
+    # action: send start RoutineControl signal for Type 3
     # result: BECM sends positive reply
         result = result and step_2(can_p)
 
      # step3:
-    # action: send result RoutineControl signal for Type 2
+    # action: send result RoutineControl signal for Type 3
     # result: BECM sends positive reply
         result = result and step_3(can_p)
 
     # step4:
+    # action: send stop RoutineControl signal for Type 3
+    # result: BECM sends positive reply
+        result = result and step_4(can_p)
+
+    # step5:
     # action: verify extended session active
     # result: BECM send active mode
-        result = result and SE22.read_did_f186(can_p, dsession=b'\x03', stepno=4)
+        result = result and SE22.read_did_f186(can_p, dsession=b'\x03', stepno=5)
 
-    # step 5:
+    # step 6:
     # action: # Change to Default session
     # result: BECM reports mode
-        result = result and SE10.diagnostic_session_control_mode1(can_p, 5)
+        result = result and SE10.diagnostic_session_control_mode1(can_p, stepno=6)
 
     ############################################
     # postCondition
