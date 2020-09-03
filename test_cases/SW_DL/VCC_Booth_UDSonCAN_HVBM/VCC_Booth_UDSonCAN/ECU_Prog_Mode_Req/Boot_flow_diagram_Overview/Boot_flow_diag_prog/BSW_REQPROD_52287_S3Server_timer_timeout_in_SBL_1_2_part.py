@@ -1,9 +1,9 @@
 # Testscript ODTB2 MEPII
 # project:  BECM basetech MEPII
 # author:   LDELLATO (Lorenzo Della Torre)
-# date:     2020-06-10
+# date:     2020-08-28
 # version:  1.2
-# reqprod:  52286
+# reqprod:  52287
 # #inspired by https://grpc.io/docs/tutorials/basic/python.html
 # Copyright 2015 gRPC authors.
 #
@@ -25,9 +25,10 @@ import time
 from datetime import datetime
 import sys
 import logging
+import inspect
 
-import ODTB_conf
-from support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
+import odtb_conf
+from support_can import SupportCAN, CanParam, CanTestExtra
 from support_test_odtb2 import SupportTestODTB2
 from support_carcom import SupportCARCOM
 from support_file_io import SupportFileIO
@@ -55,111 +56,74 @@ SE11 = SupportService11()
 SE22 = SupportService22()
 SE3E = SupportService3e()
 
-def step_3(can_par):
+def step_3(can_p):
     """
     Teststep 3: Check the Complete and compatible Routine return Not Complete
     """
-    stepno = 3
-    purpose = "Check the Complete and compatible Routine return Not Complete"
-    SUTE.print_test_purpose(stepno, purpose)
-    result = SSBL.check_complete_compatible_routine(can_par, stepno)
+    etp: CanTestExtra = {
+        "step_no" : 3,
+        "purpose" : "Check the Complete and compatible Routine return Not Complete"
+    }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
 
-    result = result and (SSBL.pp_decode_routine_complete_compatible\
-                         (SC.can_messages[can_par["can_rec"]][0][2])\
+    SUTE.print_test_purpose(etp["step_no"], etp["purpose"])
+    result = SSBL.check_complete_compatible_routine(can_p, etp["step_no"])
+
+    result = result and (SSBL.pp_decode_routine_complete_compatible
+                         (SC.can_messages[can_p["receive"]][0][2])
                          == 'Not Complete, Compatible')
-    return result
-
-def step_6(can_par):
-    """
-    Teststep 6: verify we are in PBL
-    """
-    stepno = 6
-    cpay: CanPayload = SIO.extract_parameter_yml(
-        "step_{}".format(stepno),
-        payload=S_CARCOM.can_m_send("ReadDataByIdentifier", b'\xF1\x22', b''),
-        extra=''
-        )
-
-    etp: CanTestExtra = SIO.extract_parameter_yml(
-        "step_{}".format(stepno),
-        step_no=6,
-        timeout=1,
-        purpose="Verify Programming session in PBL",
-        min_no_messages=-1,
-        max_no_messages=-1
-        )
-
-    result = SUTE.teststep(can_par, cpay, etp)
-    result = result and SUTE.test_message(SC.can_messages[can_par["receive"]],\
-                                          teststring='F121')
-
     return result
 
 def run():
     """
     Run - Call other functions from here
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.DEBUG)
+    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
     # start logging
     # to be implemented
 
     # where to connect to signal_broker
-    can_par: CanParam = SIO.extract_parameter_yml(
-        "main",
-        netstub=SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT),
-        send="Vcu1ToBecmFront1DiagReqFrame",
-        receive="BecmToVcu1Front1DiagResFrame",
-        namespace=SC.nspace_lookup("Front1CANCfg0")
-        )
-
+    can_p: CanParam = {
+        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
+        "send" : "Vcu1ToBecmFront1DiagReqFrame",
+        "receive" : "BecmToVcu1Front1DiagResFrame",
+        "namespace" : SC.nspace_lookup("Front1CANCfg0")
+    }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
     logging.info("Time: %s \n", time.time())
     ############################################
     # precondition
     ############################################
-    # read arguments for files to DL:
-    f_sbl = ''
-    f_ess = ''
-    f_df = []
-    for f_name in sys.argv:
-        if not f_name.find('.vbf') == -1:
-            logging.info("Filename to DL: %s \n", f_name)
-            if not f_name.find('sbl') == -1:
-                f_sbl = f_name
-            elif not f_name.find('ess') == -1:
-                f_ess = f_name
-            else:
-                f_df.append(f_name)
-    SSBL.__init__(f_sbl, f_ess, f_df)
-    SSBL.show_filenames()
-    time.sleep(4)
+    # read VBF param when testscript is s started, if empty take default param
+    SSBL.get_vbf_files()
+    timeout = 2000
+    result = PREC.precondition(can_p, timeout)
 
-    timeout = 60
-    result = PREC.precondition(can_par, timeout)
     if result:
     ############################################
     # teststeps
     ############################################
 
         # step1:
-        # action:
-        # result:
-        result = result and SSBL.sbl_activation(can_par, 1, "DL and activate SBL")
+        # action: DL and activate SBL
+        # result: ECU sends positive reply
+        result = result and SSBL.sbl_activation(can_p, stepno=1, purpose="DL and activate SBL")
         time.sleep(1)
 
         # step2:
-        # action:
-        # result:
-        result = result and SSBL.sw_part_download(can_par, SSBL.get_ess_filename(),\
-                                   2, "ESS Software Part Download")
+        # action: download ESS Software Part
+        # result: ECU sends positive reply
+        result = result and SSBL.sw_part_download(can_p, SSBL.get_ess_filename(),
+                                                  stepno=2, purpose="ESS Software Part Download")
         time.sleep(1)
 
         # step3:
-        # action:
-        # result:
-        result = result and step_3(can_par)
+        # action:RoutineControl Request SID: startRoutine (01) Check Complete And Compatible
+        # result:ECU sends positive reply:“Not Complete, Compatible”
+        result = result and step_3(can_p)
 
         # step4:
         # action: stop sending tester present
@@ -175,35 +139,39 @@ def run():
         time.sleep(6)
 
         # step6:
-        # action:
-        # result:
-        result = result and step_6(can_par)
+        # action: Verify ECU is still in mode prog session
+        # result: ECU sends positive reply
+        result = result and SE22.verify_pbl_session(can_p, stepno=6)
 
         # step7:
-        # action:
+        # action: Restart sending Tester present
         # result:
-        SE3E.start_periodic_tp_zero_suppress_prmib(can_par,\
-                                              "Vcu1ToAllFuncFront1DiagReqFrame",\
-                                              1.02)
+        SE3E.start_periodic_tp_zero_suppress_prmib(can_p,
+                                                   "Vcu1ToAllFuncFront1DiagReqFrame",
+                                                   1.02)
 
         # step8:
-        # action:
-        # result:
+        # action: Download the entire Software
+        # result: ECU sends positive reply
         logging.info("Step 8: DL entire software")
-        result = result and SSBL.sbl_activation(can_par, 8, "DL and activate SBL")
+        result = result and SE11.ecu_hardreset(can_p, stepno=8)
+        result = result and SSBL.sbl_activation(can_p, stepno=8, purpose="DL and activate SBL")
         time.sleep(1)
-        result = result and SSBL.sw_part_download(can_par, SSBL.get_ess_filename(),\
-            8, "ESS Software Part Download")
-        for i in SSBL.get_df_filenames():
+        result = result and SSBL.sw_part_download(can_p, SSBL.get_ess_filename(),
+                                                  stepno=8,
+                                                  purpose="ESS Software Part Download")
 
-            result = result and SSBL.sw_part_download(can_par, i, 8)
-        result = result and SSBL.check_complete_compatible_routine(can_par, 8)
-        result = result and SE11.ecu_hardreset(can_par, 8)
+        #Download the remnants Software Parts
+        for swp in SSBL.get_df_filenames():
+
+            result = result and SSBL.sw_part_download(can_p, swp, stepno=8)
+        result = result and SSBL.check_complete_compatible_routine(can_p, stepno=8)
+        result = result and SE11.ecu_hardreset(can_p, stepno=8)
 
     ############################################
     # postCondition
     ############################################
-    POST.postcondition(can_par, starttime, result)
+    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()
