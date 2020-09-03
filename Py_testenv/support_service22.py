@@ -196,6 +196,54 @@ class SupportService22:
             result = False
         return result
 
+    @staticmethod
+    def verify_pbl_session(can_p: CanParam, stepno=220):
+        """
+        Verify ECU in Primary Bootloader Session
+        """
+
+        cpay: CanPayload = {
+            "payload":SC_CARCOM.can_m_send("ReadDataByIdentifier", b'\xF1\x21', b''),
+            "extra":''
+            }
+
+        etp: CanTestExtra = {"step_no": stepno,
+            "purpose" : "Verify Programming session in PBL",
+            "timeout" : 1,
+            "min_no_messages" : -1,
+            "max_no_messages" : -1
+            }
+
+        result = SUPPORT_TEST.teststep(can_p, cpay, etp)
+        result = result and SUPPORT_TEST.test_message(SC.can_messages[can_p["receive"]],
+                                                  teststring='F121')
+
+        return result
+
+    @staticmethod
+    def verify_sbl_session(can_p: CanParam, stepno=220):
+        """
+        Verify ECU in Secondary Bootloader Session
+        """
+
+        cpay: CanPayload = {
+            "payload":SC_CARCOM.can_m_send("ReadDataByIdentifier", b'\xF1\x22', b''),
+            "extra":''
+            }
+
+        etp: CanTestExtra = {"step_no": stepno,
+            "purpose" : "Verify Programming session in SBL",
+            "timeout" : 1,
+            "min_no_messages" : -1,
+            "max_no_messages" : -1
+            }
+
+        result = SUPPORT_TEST.teststep(can_p, cpay, etp)
+        result = result and SUPPORT_TEST.test_message(SC.can_messages[can_p["receive"]],
+                                                  teststring='F122')
+
+        return result
+
     @classmethod
     def __pp_frame_info(cls, msg, did_struct, frame, size, sid):
         ''' Pretty print the frame information '''

@@ -25,8 +25,9 @@ import time
 from datetime import datetime
 import sys
 import logging
+import inspect
 
-import ODTB_conf
+import odtb_conf
 from support_can import SupportCAN, CanParam #, CanTestExtra
 from support_test_odtb2 import SupportTestODTB2
 from support_carcom import SupportCARCOM
@@ -41,7 +42,7 @@ from support_service3e import SupportService3e
 
 SIO = SupportFileIO
 SC = SupportCAN()
-S_CARCOM = SupportCARCOM()
+SC_CARCOM = SupportCARCOM()
 SUTE = SupportTestODTB2()
 
 PREC = SupportPrecondition()
@@ -55,20 +56,19 @@ def run():
     """
     Run - Call other functions from here
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.DEBUG)
+    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
     # start logging
     # to be implemented
 
     # where to connect to signal_broker
-    can_par: CanParam = SIO.extract_parameter_yml(
-        "main",
-        netstub=SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT),
-        send="Vcu1ToBecmFront1DiagReqFrame",
-        receive="BecmToVcu1Front1DiagResFrame",
-        namespace=SC.nspace_lookup("Front1CANCfg0")
-        )
-
+    can_p: CanParam = {
+        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
+        "send" : "Vcu1ToBecmFront1DiagReqFrame",
+        "receive" : "BecmToVcu1Front1DiagResFrame",
+        "namespace" : SC.nspace_lookup("Front1CANCfg0")
+    }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
     logging.info("Time: %s \n", time.time())
@@ -76,57 +76,57 @@ def run():
     # precondition
     ############################################
     timeout = 60
-    result = PREC.precondition(can_par, timeout)
+    result = PREC.precondition(can_p, timeout)
     SE3E.stop_periodic_tp_zero_suppress_prmib()
     if result:
     ############################################
     # teststeps
     ############################################
         # step 1:
-        # action: Verify default session
-        # result:
-        result = result and SE31.routinecontrol_requestsid_prog_precond(can_par, '1')
+        # action: Verify programming preconditions
+        # result: ECU sends positive reply
+        result = result and SE31.routinecontrol_requestsid_prog_precond(can_p, stepno=1)
 
         # step2:
-        # action:
-        # result:
-        result = result and SE10.diagnostic_session_control_mode2(can_par, '2')
+        # action: Change to programming session
+        # result: ECU sends positive reply
+        result = result and SE10.diagnostic_session_control_mode2(can_p, stepno=2)
 
         # step3:
-        # action:
-        # result:
+        # action: Verify ECU in programming session
+        # result: ECU sends positive reply
         time.sleep(1)
-        result = result and SE22.read_did_f186(can_par, b'\x02', '3')
+        result = result and SE22.read_did_f186(can_p, b'\x02', stepno=3)
 
         # step4:
         # action: don't send a request until timeout occured
         # result:
-        logging.info("Step 4: Wait shorter than timeout for staying in current mode.")
+        logging.info("\n Step 4: Wait shorter than timeout for staying in current mode.")
         logging.info("Step 4: No request to ECU.\n")
         time.sleep(4)
 
         # step5:
         # action: Verify ECU is still in mode prog session
-        # result:
-        result = result and SE22.read_did_f186(can_par, b'\x02', '5')
+        # result: ECU sends positive reply
+        result = result and SE22.read_did_f186(can_p, b'\x02', stepno=5)
 
         # step6:
         # action: wait longer than timeout
         # result:
-        logging.info("Step 6: Wait longer than timeout for staying in current mode.")
+        logging.info("\n Step 6: Wait longer than timeout for staying in current mode.")
         logging.info("Step 6: No request to ECU as before.")
         time.sleep(6)
 
         # step7:
         # action: verify ECU changed to default
-        # result:
+        # result: ECU sends positive reply
         time.sleep(1)
-        result = result and SE22.read_did_f186(can_par, b'\x01', '7')
+        result = result and SE22.read_did_f186(can_p, b'\x01', stepno=7)
 
     ############################################
     # postCondition
     ############################################
-    POST.postcondition(can_par, starttime, result)
+    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()
