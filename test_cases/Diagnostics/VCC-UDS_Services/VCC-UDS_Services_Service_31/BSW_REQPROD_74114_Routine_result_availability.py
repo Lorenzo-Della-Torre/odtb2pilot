@@ -32,8 +32,6 @@ from datetime import datetime
 import sys
 import logging
 import inspect
-
-
 import odtb_conf
 from support_can import SupportCAN, CanParam, CanTestExtra, CanPayload
 from support_test_odtb2 import SupportTestODTB2
@@ -76,9 +74,8 @@ def step_2(can_p):
     result = SUTE.teststep(can_p, cpay, etp)
     result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='7F3124')
 
-    print(SUTE.pp_decode_7f_response(SC.can_frames[can_p["receive"]][0][2]))
-
-    print("This routine conrol is not active")
+    logging.info('%s', SUTE.pp_decode_7f_response(SC.can_frames[can_p["receive"]][0][2]))
+    logging.info("This routine conrol is not active")
     return result
 
 def step_3(can_p):
@@ -220,7 +217,7 @@ def run():
     # step 1:
     # action: change BECM to Extended
     # result: BECM reports mode
-        result = result and SE10.diagnostic_session_control_mode3(can_p, 1)
+        result = result and SE10.diagnostic_session_control_mode3(can_p, stepno=1)
 
     # step2:
     # action: send Result RoutineControl signal
@@ -250,12 +247,12 @@ def run():
     # step 7:
     # action: change BECM to default
     # result: BECM reports mode
-        result = result and SE10.diagnostic_session_control_mode1(can_p, 7)
+        result = result and SE10.diagnostic_session_control_mode1(can_p, stepno=7)
 
     # step 8:
     # action: change BECM to Extended
     # result: BECM reports mode
-        result = result and SE10.diagnostic_session_control_mode3(can_p, 8)
+        result = result and SE10.diagnostic_session_control_mode3(can_p, stepno=8)
 
     # step9:
     # action: send Result RoutineControl signal
@@ -265,7 +262,7 @@ def run():
     # step 10:
     # action: change BECM to default
     # result: BECM reports mode
-        result = result and SE10.diagnostic_session_control_mode1(can_p, 10)
+        result = result and SE10.diagnostic_session_control_mode1(can_p, stepno=10)
 
     ############################################
     # postCondition

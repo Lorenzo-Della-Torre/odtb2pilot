@@ -32,8 +32,6 @@ from datetime import datetime
 import sys
 import logging
 import inspect
-
-
 import odtb_conf
 from support_can import SupportCAN, CanParam, CanTestExtra, CanPayload
 from support_test_odtb2 import SupportTestODTB2
@@ -279,7 +277,7 @@ def run():
     # step 1:
     # action: change BECM to Extended
     # result: BECM reports mode
-        result = result and SE10.diagnostic_session_control_mode3(can_p, 1)
+        result = result and SE10.diagnostic_session_control_mode3(can_p, stepno=1)
 
     # step2:
     # action: send start RoutineControl signal for Type 2
@@ -324,7 +322,7 @@ def run():
     # step 10:
     # action: # Change to Default session
     # result: BECM reports mode
-        result = result and SE10.diagnostic_session_control_mode1(can_p, 10)
+        result = result and SE10.diagnostic_session_control_mode1(can_p, stepno=10)
 
     ############################################
     # postCondition
