@@ -185,7 +185,7 @@ def run():
     # step 1:
     # action: change BECM to Programming
     # result: BECM reports mode
-        result = result and SE10.diagnostic_session_control_mode2(can_p, 1)
+        result = result and SE10.diagnostic_session_control_mode2(can_p, stepno=1)
 
     # step 2:
     # action: send ReadDataByIdentifier signal in extended mode
@@ -215,7 +215,7 @@ def run():
     # step 7:
     # action: # Change to Default session
     # result: BECM reports mode
-        result = result and SE10.diagnostic_session_control_mode1(can_p, 7)
+        result = result and SE10.diagnostic_session_control_mode1(can_p, stepno=7)
         time.sleep(1)
 
     ############################################
