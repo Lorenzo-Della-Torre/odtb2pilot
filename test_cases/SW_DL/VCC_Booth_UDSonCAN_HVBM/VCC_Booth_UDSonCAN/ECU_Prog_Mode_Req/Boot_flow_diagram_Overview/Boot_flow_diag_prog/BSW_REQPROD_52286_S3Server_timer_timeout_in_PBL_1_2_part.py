@@ -2,8 +2,14 @@
 # project:  BECM basetech MEPII
 # author:   LDELLATO (Lorenzo Della Torre)
 # date:     2020-06-10
-# version:  1.2
+# version:  1.0
 # reqprod:  52286
+
+# author:   LDELLATO (Lorenzo Della Torre)
+# date:     2020-09-15
+# version:  1.1
+# reqprod:  52286
+
 # #inspired by https://grpc.io/docs/tutorials/basic/python.html
 # Copyright 2015 gRPC authors.
 #
@@ -158,10 +164,11 @@ def run():
         result = result and SE22.verify_pbl_session(can_p, stepno=8)
 
         # step9:
-        # action: Restart sending Tester present
+        # action:
         # result:
         SE3E.start_periodic_tp_zero_suppress_prmib(can_p,
-                                                   "Vcu1ToAllFuncFront1DiagReqFrame",
+                                                   SIO.extract_parameter_yml("precondition",
+                                                                             "tp_name"),
                                                    1.02)
 
         # step10:
