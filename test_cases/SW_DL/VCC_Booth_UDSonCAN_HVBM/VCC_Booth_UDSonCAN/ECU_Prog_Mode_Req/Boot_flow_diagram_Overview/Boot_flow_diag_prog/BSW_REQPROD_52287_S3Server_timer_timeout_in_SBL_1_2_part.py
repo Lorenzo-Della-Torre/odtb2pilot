@@ -144,10 +144,11 @@ def run():
         result = result and SE22.verify_pbl_session(can_p, stepno=6)
 
         # step7:
-        # action: Restart sending Tester present
+        # action:
         # result:
         SE3E.start_periodic_tp_zero_suppress_prmib(can_p,
-                                                   "Vcu1ToAllFuncFront1DiagReqFrame",
+                                                   SIO.extract_parameter_yml("precondition",
+                                                                             "tp_name"),
                                                    1.02)
 
         # step8:

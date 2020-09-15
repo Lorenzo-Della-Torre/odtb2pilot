@@ -1,0 +1,7 @@
+precondition:
+        id: "MvcmFront1NMFr"
+        tp_name: "Vcu1ToAllFuncFront1DiagReqFrame"
+
+run:
+        send: Vcu1ToBecmFront1DiagReqFrame
+        receive: BecmToVcu1Front1DiagResFrame
