@@ -29,7 +29,7 @@ sys.path.append('generated')
 import network_api_pb2 # pylint: disable=wrong-import-position
 import common_pb2 # pylint: disable=wrong-import-position
 
-class SupportCAN:
+class SupportRpiGpio:
     # Disable the too-few-public-methods violation. I'm sure we will have more methods later.
     # pylint: disable=too-few-public-methods
     """
