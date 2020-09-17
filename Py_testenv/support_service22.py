@@ -195,7 +195,7 @@ class SupportService22:
             logging.info("Messages received: %s", SC.can_messages[can_p["receive"]])
             result = False
         return result
-        
+
     #@classmethod
     @staticmethod
     def verify_pbl_session(can_p: CanParam, stepno=224):
@@ -217,17 +217,17 @@ class SupportService22:
         result = SUPPORT_TEST.teststep(can_p, cpay, etp)
         #verify Primary Bootloader Diagnostic Database Part number
         #is included in the response message from EDA0 request
-        result = not (SC.can_messages[can_p["receive"]][0][2]).find('F121') == -1,
-                                                        
+        result = not (SC.can_messages[can_p["receive"]][0][2]).find('F121') == -1
+
         return result
-        
+
     #@classmethod
     @staticmethod
     def verify_sbl_session(can_p: CanParam, stepno=225):
         """
         Verify ECU in Secondary Bootloader Session
         """
-        cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("ReadDataByIdentifier", 
+        cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("ReadDataByIdentifier",
                                                              b'\xF1\x22', b''),
                             "extra":''
                            }
