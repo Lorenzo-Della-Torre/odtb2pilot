@@ -195,52 +195,53 @@ class SupportService22:
             logging.info("Messages received: %s", SC.can_messages[can_p["receive"]])
             result = False
         return result
-
+        
+    #@classmethod
     @staticmethod
-    def verify_pbl_session(can_p: CanParam, stepno=220):
+    def verify_pbl_session(can_p: CanParam, stepno=224):
         """
         Verify ECU in Primary Bootloader Session
         """
 
-        cpay: CanPayload = {
-            "payload":SC_CARCOM.can_m_send("ReadDataByIdentifier", b'\xF1\x21', b''),
-            "extra":''
-            }
-
+        cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("ReadDataByIdentifier",
+                                                             b'\xED\xA0', b''),
+                            "extra" : ''
+                           }
         etp: CanTestExtra = {"step_no": stepno,
-            "purpose" : "Verify Programming session in PBL",
-            "timeout" : 1,
-            "min_no_messages" : -1,
-            "max_no_messages" : -1
-            }
+                             "purpose" : "Service22: Complete ECU Part/Serial Number(s)",
+                             "timeout" : 1,
+                             "min_no_messages" : -1,
+                             "max_no_messages" : -1
+                            }
 
         result = SUPPORT_TEST.teststep(can_p, cpay, etp)
-        result = result and SUPPORT_TEST.test_message(SC.can_messages[can_p["receive"]],
-                                                  teststring='F121')
-
+        #verify Primary Bootloader Diagnostic Database Part number
+        #is included in the response message from EDA0 request
+        result = not (SC.can_messages[can_p["receive"]][0][2]).find('F121') == -1,
+                                                        
         return result
-
+        
+    #@classmethod
     @staticmethod
-    def verify_sbl_session(can_p: CanParam, stepno=220):
+    def verify_sbl_session(can_p: CanParam, stepno=225):
         """
         Verify ECU in Secondary Bootloader Session
         """
+        cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("ReadDataByIdentifier", 
+                                                             b'\xF1\x22', b''),
+                            "extra":''
+                           }
 
-        cpay: CanPayload = {
-            "payload":SC_CARCOM.can_m_send("ReadDataByIdentifier", b'\xF1\x22', b''),
-            "extra":''
-            }
-
-        etp: CanTestExtra = {"step_no": stepno,
-            "purpose" : "Verify Programming session in SBL",
-            "timeout" : 1,
-            "min_no_messages" : -1,
-            "max_no_messages" : -1
-            }
+        etp: CanTestExtra = {"step_no" : stepno,
+                             "purpose" : "Verify Programming session in SBL",
+                             "timeout" : 1,
+                             "min_no_messages" : -1,
+                             "max_no_messages" : -1
+                            }
 
         result = SUPPORT_TEST.teststep(can_p, cpay, etp)
         result = result and SUPPORT_TEST.test_message(SC.can_messages[can_p["receive"]],
-                                                  teststring='F122')
+                                                      teststring='F122')
 
         return result
 
