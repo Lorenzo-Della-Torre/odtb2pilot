@@ -5,6 +5,11 @@
 # version:  1.0
 # reqprod:  53973
 
+# author:   LDELLATO (Lorenzo Della Torre)
+# date:     2020-09-16
+# version:  1.1
+# reqprod:  53973
+
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
 
 # Copyright 2015 gRPC authors.
