@@ -5,6 +5,11 @@
 # version:  1.0
 # reqprod:  53957
 
+# author:   LDELLATO (Lorenzo Della Torre)
+# date:     2020-09-16
+# version:  1.1
+# reqprod:  53957
+
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
 
 # Copyright 2015 gRPC authors.
@@ -25,332 +30,155 @@
 
 import time
 from datetime import datetime
+import sys
+import logging
+import inspect
 import glob
 
-import ODTB_conf
-from support_can import Support_CAN
-from support_test_odtb2 import Support_test_ODTB2
-from support_SBL import Support_SBL
-from support_SecAcc import Support_Security_Access
+import odtb_conf
+from support_can import SupportCAN, CanParam
+from support_test_odtb2 import SupportTestODTB2
+from support_carcom import SupportCARCOM
+from support_file_io import SupportFileIO
+from support_SBL import SupportSBL
+from support_sec_acc import SupportSecurityAccess
 
-SC = Support_CAN()
-SUTE = Support_test_ODTB2()
-SSBL = Support_SBL()
-SSA = Support_Security_Access()
+from support_precondition import SupportPrecondition
+from support_postcondition import SupportPostcondition
+from support_service10 import SupportService10
+from support_service11 import SupportService11
+from support_service22 import SupportService22
+from support_service31 import SupportService31
 
-def precondition(stub, can_send, can_receive, can_namespace):
-    """
-    Precondition for test running:
-    BECM has to be kept alive: start heartbeat
-    """
-    # read VBF param when testscript is s started, if empty take default param
-    SSBL.get_vbf_files()
+SIO = SupportFileIO
+SC = SupportCAN()
+S_CARCOM = SupportCARCOM()
+SUTE = SupportTestODTB2()
+SSBL = SupportSBL()
+SSA = SupportSecurityAccess()
 
-    # start heartbeat, repeat every 0.8 second
-    SC.start_heartbeat(stub, "MvcmFront1NMFr", "Front1CANCfg0",\
-                       b'\x00\x40\xFF\xFF\xFF\xFF\xFF\xFF', 0.4)
+PREC = SupportPrecondition()
+POST = SupportPostcondition()
+SE10 = SupportService10()
+SE11 = SupportService11()
+SE22 = SupportService22()
+SE31 = SupportService31()
 
-    SC.start_periodic(stub, "Networkeptalive", True,\
-                      "Vcu1ToAllFuncFront1DiagReqFrame", "Front1CANCfg0",\
-                      b'\x02\x3E\x80\x00\x00\x00\x00\x00', 1.02)
-
-    # timeout = more than maxtime script takes
-    timeout = 2000  #seconds"
-
-
-    SC.subscribe_signal(stub, can_send, can_receive, can_namespace, timeout)
-    #record signal we send as well
-    SC.subscribe_signal(stub, can_receive, can_send, can_namespace, timeout)
-
-    print()
-    result = step_0(stub, can_send, can_receive, can_namespace)
-
-    print("precondition testok:", result, "\n")
-    return result
-
-def step_0(stub, can_send, can_receive, can_namespace):
-    """
-    Teststep 0: Complete ECU Part/Serial Number(s)
-    """
-    stepno = 0
-    ts_param = {"stub" : stub,\
-                "m_send" : SC.can_m_send("ReadDataByIdentifier", b'\xED\xA0', ""),\
-                "mr_extra" : '',\
-                "can_send" : can_send,\
-                "can_rec"  : can_receive,\
-                "can_nspace" : can_namespace\
-               }
-    extra_param = {"purpose" : "Complete ECU Part/Serial Number(s)",\
-                   "timeout" : 1,\
-                   "min_no_messages" : -1,\
-                   "max_no_messages" : -1
-                  }
-
-    result = SUTE.teststep(ts_param,\
-                           stepno, extra_param)
-    print(SUTE.PP_CombinedDID_EDA0(SC.can_messages[can_receive][0][2], title=''))
-    time.sleep(1)
-    return result
-
-def step_1(stub, can_send, can_receive, can_namespace):
-    """
-    Teststep 1: Activate SBL
-    """
-    stepno = 1
-    purpose = "Download and Activation of SBL"
-    result = SSBL.sbl_activation(stub, can_send,
-                                 can_receive, can_namespace, stepno, purpose)
-    return result
-
-def step_2(stub, can_send, can_receive, can_namespace):
-    """
-    Teststep 2: ESS Software Part Download
-    """
-    stepno = 2
-    purpose = "ESS Software Part Download"
-    result = SSBL.sw_part_download(stub, SSBL.get_ess_filename(),
-                                   can_send, can_receive, can_namespace,
-                                   stepno, purpose)
-    return result
-
-def step_3(stub, can_send, can_receive, can_namespace):
-    """
-    Teststep 3: Download other SW Parts
-    """
-    stepno = 3
-    purpose = "continue Download SW"
-    result = True
-    for i in SSBL.get_df_filenames():
-        result = result and SSBL.sw_part_download(stub, i, can_send, can_receive,
-                                                  can_namespace, stepno, purpose)
-    return result
-
-def step_4(stub, can_send, can_receive, can_namespace):
-    """
-    Teststep 4: Check Complete And Compatible
-    """
-    stepno = 4
-    purpose = "verify RoutineControl start are sent for Type 1"
-
-    result = SSBL.check_complete_compatible_routine(stub, can_send, can_receive,
-                                                    can_namespace, stepno, purpose)
-    result = result and SUTE.test_message(SC.can_messages[can_receive], 'Complete, Compatible')
-    return result
-
-def step_5(stub, can_send, can_receive, can_namespace):
-    """
-    Teststep 5: Reset
-    """
-    stepno = 5
-    ts_param = {"stub" : stub,\
-                "m_send" : SC.can_m_send("ECUResetHardReset", b'', b''),\
-                "mr_extra" : '',\
-                "can_send" : can_send,\
-                "can_rec"  : can_receive,\
-                "can_nspace" : can_namespace\
-               }
-    extra_param = {"purpose" : "ECU Reset",\
-                   "timeout" : 1,\
-                   "min_no_messages" : -1,\
-                   "max_no_messages" : -1
-                  }
-
-    result = SUTE.teststep(ts_param,\
-                           stepno, extra_param)
-    result = result and SUTE.test_message(SC.can_messages[can_receive], teststring='025101')
-    time.sleep(1)
-    return result
-
-def step_6(stub, can_send, can_receive, can_namespace):
-    """
-    Teststep 6: Activate SBL
-    """
-    stepno = 6
-    purpose = "Download and Activation of SBL"
-    result = SSBL.sbl_activation(stub, can_send,
-                                 can_receive, can_namespace, stepno, purpose)
-    return result
-
-def step_7(stub, can_send, can_receive, can_namespace):
+def step_7(can_p):
     """
     Teststep 7: Download Different SW Parts variant
     """
     stepno = 7
     purpose = "Download SWP1 variant"
     result = True
+    #by default we get files from VBF_Reqprod directory
     #REQ_53957_32325411XC_SWP1variant.vbf
-    if len(glob.glob("./VBF_Reqprod/REQ_53057*.vbf")) == 0:
+    variant = "./VBF_Reqprod/REQ_53957*.vbf"
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), variant)
+    if not glob.glob(variant):
         result = False
     else:
-        for f_name in glob.glob("./VBF_Reqprod/REQ_53057*.vbf"):
-            result = result and SSBL.sw_part_download(stub, f_name,
-                                                      can_send, can_receive, can_namespace,
-                                                     stepno, purpose)
+        for f_name in glob.glob(variant):
+            result = result and SSBL.sw_part_download(can_p, f_name,
+                                                      stepno, purpose)
     return result
 
-def step_8(stub, can_send, can_receive, can_namespace):
-    """
-    Teststep 8: Check Complete And Compatible
-    """
-    stepno = 8
-    purpose = "verify RoutineControl start are sent for Type 1"
-
-    result = SSBL.check_complete_compatible_routine(stub, can_send, can_receive,
-                                                    can_namespace, stepno, purpose)
-    result = result and SUTE.test_message(SC.can_messages[can_receive], 'Complete, Compatible')
-    return result
-
-def step_9(stub, can_send, can_receive, can_namespace):
-    """
-    Teststep 9: Reset
-    """
-    stepno = 9
-    ts_param = {"stub" : stub,\
-                "m_send" : SC.can_m_send("ECUResetHardReset", b'', b''),\
-                "mr_extra" : '',\
-                "can_send" : can_send,\
-                "can_rec"  : can_receive,\
-                "can_nspace" : can_namespace\
-               }
-    extra_param = {"purpose" : "ECU Reset",\
-                   "timeout" : 1,\
-                   "min_no_messages" : -1,\
-                   "max_no_messages" : -1
-                  }
-    result = SUTE.teststep(ts_param,\
-                           stepno, extra_param)
-    result = result and SUTE.test_message(SC.can_messages[can_receive], teststring='025101')
-    time.sleep(1)
-    return result
-
-def step_10(stub, can_send, can_receive, can_namespace):
-    """
-    Teststep 10: verify session
-    """
-    stepno = 10
-    ts_param = {"stub" : stub,\
-                "m_send" : SC.can_m_send("ReadDataByIdentifier", b'\xF1\x86', ""),\
-                "mr_extra" : '',\
-                "can_send" : can_send,\
-                "can_rec"  : can_receive,\
-                "can_nspace" : can_namespace\
-               }
-    extra_param = {"purpose" : "Verify Default session",\
-                   "timeout" : 1,\
-                   "min_no_messages" : 1,\
-                   "max_no_messages" : 1
-                  }
-    result = SUTE.teststep(ts_param,\
-                           stepno, extra_param)
-    time.sleep(1)
-    return result
 
 def run():
     """
-    Run
+    Run - Call other functions from here
     """
-
-    #test_result = True
+    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
     # start logging
     # to be implemented
 
     # where to connect to signal_broker
-    network_stub = SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT)
-
-    can_send = "Vcu1ToBecmFront1DiagReqFrame"
-    can_receive = "BecmToVcu1Front1DiagResFrame"
-    can_namespace = SC.nspace_lookup("Front1CANCfg0")
-
-    print("Testcase start: ", datetime.now())
+    can_p: CanParam = {
+        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
+        "send" : "Vcu1ToBecmFront1DiagReqFrame",
+        "receive" : "BecmToVcu1Front1DiagResFrame",
+        "namespace" : SC.nspace_lookup("Front1CANCfg0")
+    }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
+    logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
-    print("time ", time.time())
-    print()
+    logging.info("Time: %s \n", time.time())
     ############################################
     # precondition
     ############################################
-    result = precondition(network_stub, can_send, can_receive, can_namespace)
+    # read VBF param when testscript is s started, if empty take default param
+    SSBL.get_vbf_files()
+    timeout = 2000
+    result = PREC.precondition(can_p, timeout)
 
+    if result:
     ############################################
     # teststeps
     ############################################
-    # step 1:
-    # action: verify RoutineControl start is sent for Type 1
-    # result: BECM sends positive reply
-    test_result = result and step_1(network_stub, can_send, can_receive, can_namespace)
 
-    # step 2:
-    # action:
-    # result: BECM sends positive reply
-    test_result = result and step_2(network_stub, can_send, can_receive, can_namespace)
+        # step1:
+        # action: DL and activate SBL
+        # result: ECU sends positive reply
+        result = result and SSBL.sbl_activation(can_p, stepno=1, purpose="DL and activate SBL")
+        time.sleep(1)
 
-    # step 3:
-    # action:
-    # result: BECM sends positive reply
-    test_result = result and step_3(network_stub, can_send, can_receive, can_namespace)
 
-    # step 4:
-    # action:
-    # result: BECM sends positive reply
-    test_result = result and step_4(network_stub, can_send, can_receive, can_namespace)
+        # step2:
+        # action: download ESS Software Part
+        # result: ECU sends positive reply
+        result = result and SSBL.sw_part_download(can_p, SSBL.get_ess_filename(),\
+                                   stepno=2, purpose="ESS Software Part Download")
+        time.sleep(1)
 
-    # step 5:
-    # action:
-    # result: BECM sends positive reply
-    test_result = result and step_5(network_stub, can_send, can_receive, can_namespace)
+        # step3:
+        # action: Download the remnants Software Parts
+        # result: ECU sends positive reply
+        for swp in SSBL.get_df_filenames():
 
-    # step 6:
-    # action:
-    # result: BECM sends positive reply
-    test_result = result and step_6(network_stub, can_send, can_receive, can_namespace)
+            result = result and SSBL.sw_part_download(can_p, swp, stepno=3)
 
-    # step 7:
-    # action:
-    # result: BECM sends positive reply
-    test_result = result and step_7(network_stub, can_send, can_receive, can_namespace)
+        # step4:
+        # action: Check Complete and Compatible
+        # result: ECU sends "Complete and Compatible" reply
+        result = result and SSBL.check_complete_compatible_routine(can_p, stepno=4)
 
-    # step 8:
-    # action:
-    # result: BECM sends positive reply
-    test_result = result and step_8(network_stub, can_send, can_receive, can_namespace)
+        # step5:
+        # action: Hard Reset
+        # result: ECU sends positive reply
+        result = result and SE11.ecu_hardreset(can_p, stepno=5)
 
-    # step 9:
-    # action:
-    # result: BECM sends positive reply
-    test_result = result and step_9(network_stub, can_send, can_receive, can_namespace)
+        # step6:
+        # action: DL and activate SBL
+        # result: ECU sends positive reply
+        result = result and SSBL.sbl_activation(can_p, stepno=6, purpose="DL and activate SBL")
+        time.sleep(1)
 
-    # step 10:
-    # action:
-    # result: BECM sends positive reply
-    test_result = result and step_10(network_stub, can_send, can_receive, can_namespace)
+        # step7:
+        # action: Download Different SW Parts variant
+        # result: ECU sends positive reply
+        result = result and step_7(can_p)
+
+        # step8:
+        # action: Check Complete and Compatible
+        # result: ECU sends "Complete and Compatible" reply
+        result = result and SSBL.check_complete_compatible_routine(can_p, stepno=8)
+
+        # step9:
+        # action: Hard Reset
+        # result: ECU sends positive reply
+        result = result and SE11.ecu_hardreset(can_p, stepno=9)
+
+        # step10:
+        # action: verify ECU in default session
+        # result: ECU sends positive reply
+        result = result and SE10.diagnostic_session_control_mode1(can_p, stepno=10)
 
     ############################################
     # postCondition
     ############################################
 
-    print()
-    print("time ", time.time())
-    print("Testcase end: ", datetime.now())
-    print("Time needed for testrun (seconds): ", int(time.time() - starttime))
-
-    print("Do cleanup now...")
-    print("Stop all periodic signals sent")
-    #SC.stop_heartbeat()
-    SC.stop_periodic_all()
-    #time.sleep(5)
-
-    # deregister signals
-    SC.unsubscribe_signals()
-    # if threads should remain: try to stop them
-    SC.thread_stop()
-
-    print("Test cleanup end: ", datetime.now())
-    print()
-    if test_result:
-        print("Testcase result: PASSED")
-    else:
-        print("Testcase result: FAILED")
-
+    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()
