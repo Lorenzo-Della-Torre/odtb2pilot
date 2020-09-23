@@ -56,7 +56,7 @@ class SupportService22:
                             "extra" : ''
                            }
         etp: CanTestExtra = {"step_no": stepno,
-                             "purpose" : "verify current session is PBL",
+                             "purpose" : "Service22: Complete ECU Part/Serial Number(s)",
                              "timeout" : 1,
                              "min_no_messages" : -1,
                              "max_no_messages" : -1
@@ -208,7 +208,7 @@ class SupportService22:
                             "extra" : ''
                            }
         etp: CanTestExtra = {"step_no": stepno,
-                             "purpose" : "Service22: Complete ECU Part/Serial Number(s)",
+                             "purpose" : "verify current session is PBL",
                              "timeout" : 1,
                              "min_no_messages" : -1,
                              "max_no_messages" : -1
