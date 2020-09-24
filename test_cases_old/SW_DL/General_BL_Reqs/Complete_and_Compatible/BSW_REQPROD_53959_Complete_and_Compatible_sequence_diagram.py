@@ -159,9 +159,6 @@ def run():
     """
     logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
-    # start logging
-    # to be implemented
-
     # where to connect to signal_broker
     can_p: CanParam = {
         "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
