@@ -299,7 +299,7 @@ def run():
         # step16:
         # action: verify ECU in default session
         # result: ECU sends positive reply
-        result = result and SE10.diagnostic_session_control_mode1(can_p, stepno=16)
+        result = result and SE22.read_did_f186(can_p, b'\x01', stepno=16)
 
     ############################################
     # postCondition
