@@ -84,7 +84,6 @@ def step_2():
     else:
         for f_name in glob.glob(ess_modif_header):
             _, vbf_header, _, _ = SSBL.read_vbf_file(f_name)
-    print(vbf_header)
     return result, vbf_header
 
 def step_3(can_p, vbf_header):
@@ -94,7 +93,6 @@ def step_3(can_p, vbf_header):
 
     SSBL.vbf_header_convert(vbf_header)
     #There may be several parts to be erase in VBF-header, loop over them
-    print("SE31 header: ", vbf_header)
     for erase_el in vbf_header['erase']:
     # verify RoutineControlRequest is sent for Type 1
         result = SE22.read_did_eda0(can_p)
