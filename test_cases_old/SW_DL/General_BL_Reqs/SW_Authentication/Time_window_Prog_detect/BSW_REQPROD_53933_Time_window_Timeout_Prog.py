@@ -76,10 +76,10 @@ def step_1(can_p):
     SUTE.print_test_purpose(stepno, purpose)
     time.sleep(1)
     result = True
-    print("Relais1 on")
+    logging.info("Relais1 on")
     SGPIO.t_send_gpio_signal_hex(can_p["netstub"], "Relais1", SC.nspace_lookup("RpiGPIO"), b'\x00')
     time.sleep(3)
-    print("Relais1 off")
+    logging.info("Relais1 off")
     SGPIO.t_send_gpio_signal_hex(can_p["netstub"], "Relais1", SC.nspace_lookup("RpiGPIO"), b'\x01')
     return result
 
@@ -118,10 +118,10 @@ def step_4(can_p):
     SUTE.print_test_purpose(stepno, purpose)
     time.sleep(1)
     result = True
-    print("Relais1 on")
+    logging.info("Relais1 on")
     SGPIO.t_send_gpio_signal_hex(can_p["netstub"], "Relais1", SC.nspace_lookup("RpiGPIO"), b'\x00')
     time.sleep(3)
-    print("Relais1 off")
+    logging.info("Relais1 off")
     SGPIO.t_send_gpio_signal_hex(can_p["netstub"], "Relais1", SC.nspace_lookup("RpiGPIO"), b'\x01')
     return result
 
