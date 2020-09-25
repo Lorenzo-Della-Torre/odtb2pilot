@@ -144,7 +144,7 @@ def run():
     ############################################
     # read VBF param when testscript is s started, if empty take default param
     SSBL.get_vbf_files()
-    timeout = 200
+    timeout = 90
     result = PREC.precondition(can_p, timeout)
 
     if result:
