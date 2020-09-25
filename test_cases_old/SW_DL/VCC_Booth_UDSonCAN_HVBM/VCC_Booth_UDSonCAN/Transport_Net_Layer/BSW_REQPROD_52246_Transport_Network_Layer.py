@@ -5,6 +5,11 @@
 # version:  1.0
 # reqprod:  52246
 
+# author:   LDELLATO (Lorenzo Della Torre)
+# date:     2020-09-25
+# version:  1.1
+# reqprod:  52246
+
 # #inspired by https://grpc.io/docs/tutorials/basic/python.html
 # Copyright 2015 gRPC authors.
 #
@@ -26,179 +31,63 @@ import time
 from datetime import datetime
 import sys
 import logging
-import argparse
+import inspect
 
-import ODTB_conf
-from support_can import Support_CAN
-from support_test_odtb2 import Support_test_ODTB2
-from support_SecAcc import Support_Security_Access
-from support_SBL import Support_SBL
+import odtb_conf
+from support_can import SupportCAN, CanParam, CanTestExtra, CanPayload
+from support_test_odtb2 import SupportTestODTB2
+from support_carcom import SupportCARCOM
+from support_file_io import SupportFileIO
+from support_SBL import SupportSBL
+from support_sec_acc import SupportSecurityAccess
+from support_rpi_gpio import SupportRpiGpio
 
-SC = Support_CAN()
-SUTE = Support_test_ODTB2()
-SSA = Support_Security_Access()
-SSBL = Support_SBL()
+from support_precondition import SupportPrecondition
+from support_postcondition import SupportPostcondition
+from support_service10 import SupportService10
+from support_service11 import SupportService11
+from support_service22 import SupportService22
+from support_service31 import SupportService31
 
-def precondition(stub, can_send, can_receive, can_namespace, result):
-    """
-    Precondition for test running:
-    BECM has to be kept alive: start heartbeat
-    """
+SIO = SupportFileIO
+SC = SupportCAN()
+S_CARCOM = SupportCARCOM()
+SUTE = SupportTestODTB2()
+SSBL = SupportSBL()
+SSA = SupportSecurityAccess()
+SGPIO = SupportRpiGpio()
 
-    # start heartbeat, repeat every 0.8 second
-    SC.start_heartbeat(stub, "MvcmFront1NMFr", "Front1CANCfg0",
-                       b'\x2F\x40\xFF\xFF\xFF\xFF\xFF\xFF', 0.5)
+PREC = SupportPrecondition()
+POST = SupportPostcondition()
+SE10 = SupportService10()
+SE11 = SupportService11()
+SE22 = SupportService22()
+SE31 = SupportService31()
 
-    SC.start_periodic(stub, "Networkeptalive", True, "Vcu1ToAllFuncFront1DiagReqFrame",
-                      "Front1CANCfg0", b'\x02\x3E\x80\x00\x00\x00\x00\x00', 2.0)
-
-    # timeout = more than maxtime script takes (seconds)
-    timeout = 50
-    SC.subscribe_signal(stub, can_send, can_receive, can_namespace, timeout)
-    #record signal we send as well
-    SC.subscribe_signal(stub, can_receive, can_send, can_namespace, timeout)
-
-    result = step_0(stub, can_send, can_receive, can_namespace, result)
-    logging.info("Precondition testok: %s\n", result)
-    return result
-
-def step_0(stub, can_send, can_receive, can_namespace, result):
-    """
-    Teststep 0: Complete ECU Part/Serial Number(s)
-    """
-
-    step_no = 0
-    purpose = "Complete ECU Part/Serial Number(s)"
-    timeout = 5
-    min_no_messages = -1
-    max_no_messages = -1
-
-    can_m_send = SC.can_m_send("ReadDataByIdentifier", b'\xED\xA0', "")
-    can_mr_extra = ''
-
-    result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-                                      can_receive, can_namespace, step_no, purpose,
-                                      timeout, min_no_messages, max_no_messages)
-    logging.info('%s', SUTE.PP_CombinedDID_EDA0(SC.can_messages[can_receive][0][2], title=''))
-    return result
-
-def step_1(stub, can_send, can_receive, can_namespace, result):
-    """
-    Teststep 1: verify Programming Preconditions are fulfilled
-    """
-    stepno = 1
-    purpose = "verify RoutineControl start are sent for Check Programming Preconditions"
-    timeout = 1 #wait a second for reply to be send
-    min_no_messages = -1
-    max_no_messages = -1
-
-    can_m_send = SC.can_m_send("RoutineControlRequestSID", b'\x02\x06', b'\x01')
-    can_mr_extra = ''
-
-    result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-                                      can_receive, can_namespace, stepno, purpose,
-                                      timeout, min_no_messages, max_no_messages)
-
-    result = result and SUTE.PP_Decode_Routine_Control_response(SC.can_messages[can_receive][0][2],
-                                                                'Type1,Completed')
-    return result
-
-def step_2(stub, can_send, can_receive, can_namespace, result):
-    """
-    Teststep 2: Change to Programming session
-    """
-    stepno = 2
-    purpose = "Change to Programming session(01) from default"
-    timeout = 1
-    min_no_messages = -1
-    max_no_messages = -1
-
-    can_m_send = SC.can_m_send("DiagnosticSessionControl", b'\x02', "")
-    can_mr_extra = ''
-
-    result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-                                      can_receive, can_namespace, stepno, purpose,
-                                      timeout, min_no_messages, max_no_messages)
-
-    result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-                                      can_receive, can_namespace, stepno, purpose,
-                                      timeout, min_no_messages, max_no_messages)
-    return result
-
-def step_3(stub, can_send, can_receive, can_namespace, result):
-    """
-    Teststep 3: Security Access Request SID
-    """
-    stepno = 3
-    purpose = "Security Access Request SID"
-    result = result and SSA.activation_security_access(stub, can_send, can_receive,
-                                                       can_namespace, stepno, purpose)
-    return result
-
-def step_4(stub, can_send, can_receive, can_namespace, result):
+def step_4(can_p):
     '''
     Teststep 4: verify service 22 is implemented in PBL
     '''
-    stepno = 4
-    purpose = "verify service 22 is implemented in PBL"
-    timeout = 5 # wait for message to arrive, but don't test (-1)
-    min_no_messages = 1
-    max_no_messages = 1
-    # Parameters for FrameControl FC
-    block_size = 0
-    separation_time = 0
-    frame_control_delay = 0 #no wait
-    frame_control_flag = 48 #continue send
-    frame_control_auto = False
 
-    can_m_send = SC.can_m_send("ReadDataByIdentifier", b'\xF1\x2A', "")
-    can_mr_extra = ''
+    cpay: CanPayload = {"payload" : S_CARCOM.can_m_send("ReadDataByIdentifier", b'\xF1\x2A', b''),
+                        "extra" : ''
+                       }
 
-    SC.change_MF_FC(can_send, block_size, separation_time, frame_control_delay,
-                    frame_control_flag, frame_control_auto)
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
 
-    result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send, can_receive,
-                                      can_namespace, stepno, purpose, timeout, min_no_messages,
-                                      max_no_messages)
+    etp: CanTestExtra = {"step_no": 4,
+                         "purpose" : "verify service 22 is implemented in PBL",
+                         "timeout" : 1,
+                         "min_no_messages" : -1,
+                         "max_no_messages" : -1
+                        }
 
-    return result
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
 
-def step_5(stub, can_send, can_receive, can_namespace, result):
-    """
-    Teststep 5: Reset
-    """
-    stepno = 5
-    purpose = "ECU Reset"
-    timeout = 1
-    min_no_messages = -1
-    max_no_messages = -1
+    result = SUTE.teststep(can_p, cpay, etp)
+    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]],
+                                          teststring='62F12A')
 
-    can_m_send = b'\x11\x01'
-    can_mr_extra = ''
-
-    result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-                                      can_receive, can_namespace, stepno, purpose,
-                                      timeout, min_no_messages, max_no_messages)
-
-    result = result and SUTE.test_message(SC.can_messages[can_receive], teststring='025101')
-    return result
-
-def step_6(stub, can_send, can_receive, can_namespace, result):
-    """
-    Teststep 6: verify session
-    """
-    stepno = 6
-    purpose = "Verify Default session"
-    timeout = 1
-    min_no_messages = 1
-    max_no_messages = 1
-
-    can_m_send = SC.can_m_send("ReadDataByIdentifier", b'\xF1\x86', "")
-    can_mr_extra = b'\x01'
-
-    result = result and SUTE.teststep(stub, can_m_send, can_mr_extra, can_send,
-                                      can_receive, can_namespace, stepno, purpose,
-                                      timeout, min_no_messages, max_no_messages)
     return result
 
 
@@ -206,84 +95,68 @@ def run():
     """
     Run - Call other functions from here
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.DEBUG)
-    result = True
-
-    # start logging
-    # to be implemented
+    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
     # where to connect to signal_broker
-    network_stub = SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT)
-
-    can_send = "Vcu1ToBecmFront1DiagReqFrame"
-    can_receive = "BecmToVcu1Front1DiagResFrame"
-    can_namespace = SC.nspace_lookup("Front1CANCfg0")
-
+    can_p: CanParam = {
+        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
+        "send" : "Vcu1ToBecmFront1DiagReqFrame",
+        "receive" : "BecmToVcu1Front1DiagResFrame",
+        "namespace" : SC.nspace_lookup("Front1CANCfg0")
+    }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
     logging.info("Time: %s \n", time.time())
-
     ############################################
     # precondition
     ############################################
-    result = precondition(network_stub, can_send, can_receive, can_namespace, result)
+    timeout = 60
+    result = PREC.precondition(can_p, timeout)
 
+    if result:
     ############################################
     # teststeps
     ############################################
-    # step 1:
-    # action:
-    # result:
-    result = step_1(network_stub, can_send, can_receive, can_namespace, result)
 
-    # step 2:
-    # action:
-    # result:
-    result = step_2(network_stub, can_send, can_receive, can_namespace, result)
+        # step 1:
+        # action: Verify programming preconditions
+        # result: ECU sends positive reply
+        result = result and SE31.routinecontrol_requestsid_prog_precond(can_p, stepno=1)
+        time.sleep(1)
 
-    # step 3:
-    # action:
-    # result:
-    result = step_3(network_stub, can_send, can_receive, can_namespace, result)
+        # step 2:
+        # action: Change to programming session
+        # result: ECU sends positive reply
+        result = result and SE10.diagnostic_session_control_mode2(can_p, stepno=2)
 
-    # step 4:
-    # action:
-    # result:
-    result = step_4(network_stub, can_send, can_receive, can_namespace, result)
+        # step 3:
+        # action: Security Access Request SID
+        # result: ECU sends positive reply
+        result = result and SSA.activation_security_access(can_p, 3,
+                                                           "Security Access Request SID")
 
-    # step 5:
-    # action:
-    # result:
-    result = step_5(network_stub, can_send, can_receive, can_namespace, result)
+        # step 4:
+        # action: verify service 22 is implemented in PBL
+        # result: ECU sends positive reply
+        result = result and step_4(can_p)
 
-    # step 6:
-    # action:
-    # result:
-    result = step_6(network_stub, can_send, can_receive, can_namespace, result)
+        # step 5:
+        # action: Hard Reset
+        # result: ECU sends positive reply
+        result = result and SE11.ecu_hardreset(can_p, stepno=5)
+        time.sleep(1)
+
+        # step 6:
+        # action: verify ECU in default session
+        # result: ECU sends positive reply
+        result = result and SE22.read_did_f186(can_p, b'\x01', stepno=6)
 
     ############################################
     # postCondition
     ############################################
 
-    logging.debug("\nTime: %s \n", time.time())
-    logging.info("Testcase end: %s", datetime.now())
-    logging.info("Time needed for testrun (seconds): %s", int(time.time() - starttime))
-
-    logging.info("Do cleanup now...")
-    logging.info("Stop all periodic signals sent")
-    SC.stop_periodic_all()
-
-    # deregister signals
-    SC.unsubscribe_signals()
-    # if threads should remain: try to stop them
-    SC.thread_stop()
-
-    logging.info("Test cleanup end: %s\n", datetime.now())
-
-    if result:
-        logging.info("Testcase result: PASSED")
-    else:
-        logging.info("Testcase result: FAILED")
+    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()
