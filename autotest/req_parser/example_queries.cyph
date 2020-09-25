@@ -1,0 +1,18 @@
+//cypher
+
+
+// From REQPROD to top
+MATCH (a:REQPROD)
+WHERE a.ID="53975"
+RETURN (a)-[*]->()
+
+// clear the db
+MATCH (n)
+DETACH DELETE n
+
+// get all REQPRODs under a particular REQ-SET
+MATCH (d:REQPROD)
+MATCH (a:REQ_SET)
+WHERE a.UUID="ID7AD6F4B5937C47C1B907D68EEBEB9375"
+MATCH (a)<-[*]-(d)
+RETURN (d)
