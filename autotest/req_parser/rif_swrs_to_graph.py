@@ -6,7 +6,7 @@
 import logging
 import argparse
 # pip install lxml
-from lxml import etree as ET
+from lxml import etree as ET # pylint: disable=c-extension-no-member
 import openpyxl
 from neo4j import GraphDatabase
 
@@ -32,7 +32,7 @@ def parse_some_args():
     """Get the command line input, using the defined flags."""
     parser = argparse.ArgumentParser(description=
         'Parse Elektra rif export, and give result on preffered format.')
-    parser.add_argument("--elektra", help="Elektra rif export, xml-file", 
+    parser.add_argument("--elektra", help="Elektra rif export, xml-file",
         type=str, action='store', dest='rif', required=True)
     parser.add_argument("--out", help="Name of the generated file",
         dest='out', default= OUTFOLDER + 'gen_swrs_out.xlsx')
@@ -77,6 +77,7 @@ def get_spec_dict(root):
 
 def get_spec_obj_dict(root, type_dict):
     """ Parse and get data for the special objects """
+    # pylint: disable=too-many-locals
     SPECOBJS = root.find('rif:SPEC-OBJECTS', NS)
 
     # Get the IDs for the spec types we are interested in
@@ -129,7 +130,7 @@ def get_hierarchy_dict(root, hier_info_dict):
     """ Extract how nodes are linked into a hierarchy """
     # The structure is children inside children nodes...
     # Keep track of each node's parent? Then traverse the tree?
-    # Parent identifier, so each node shall have info: Parent-ID, ownID, 
+    # Parent identifier, so each node shall have info: Parent-ID, ownID,
     #  (and any attributes of interest)
     # Own identifier is found in other nodes that are already parsed (else those most be created)
     rel_dict = {}
@@ -190,6 +191,7 @@ def parse_rif_to_dicts(rif_path):
 
 def write_xlsx_out(filepath, sp_dict, spobj_dict, child_to_parent_dict):
     """ Put data in a csv file which can be opened in Excel """
+    # pylint: disable=too-many-locals
     TYPE_LIST = ["REQPROD", "REQ", "REQ-SET", "FOLDER"]
     # Need to add info about own ID, and parent's ID (if existing)
 
@@ -234,7 +236,7 @@ def create_col_names(sp_dict, TYPE_LIST):
     col_list = ["Class", "ID", "Revision", "Variant", "Name"]
     name_set = set()
     for elektra_type in TYPE_LIST:
-        for tup_text, tup_id in sp_dict[elektra_type][ATTRIB]:
+        for tup_text, _ in sp_dict[elektra_type][ATTRIB]:
             name_set.add(tup_text)
     # If class exists, then first. Also add the own+parent id columns
     # Remove default col_list entries from the set
@@ -246,36 +248,6 @@ def create_col_names(sp_dict, TYPE_LIST):
     col_list.append(PARENT_ID)
 
     return col_list
-
-def namedtuple2xlsx(filepath, tup_list):
-    """Create new excel file containing the named tuples"""
-    # This file can be used for furter investigation of changes
-
-    wb = openpyxl.Workbook()
-
-    #ws = wb.create_sheet("DTC matrix differences")
-    ws = wb.active
-    ws.title = "DTC matrix differences"
-
-    # Take heading name from the tuple
-    # Excel starts index 1, that's why enumerate starts at 1
-    for cnt, field in enumerate(tup_list[0]._fields, 1):
-        heading_cell = ws.cell(row=FIRSTLINE, column=cnt)
-        heading_cell.style = 'Headline 1'
-        heading_cell.value = field
-
-    # add info when this script was run
-    data_cell = ws.cell(row=FIRSTLINE, column=DATECOL)
-    data_cell.value = "Script run: " + str(datetime.datetime.now())
-
-    # Add the data from the list of named tuples
-    for l_cnt, line in enumerate(tup_list, 1):
-        for f_cnt, field in enumerate(line, 1):
-            data_cell = ws.cell(row=FIRSTLINE+l_cnt, column=f_cnt)
-            data_cell.value = field
-
-    wb.save(filepath)
-    LOGGER.info("Written to file %s", filepath)
 
 ###### Neo4j stuff ######
 def neo_fix(node_dict, c2p_dict, neousr, neopw):
