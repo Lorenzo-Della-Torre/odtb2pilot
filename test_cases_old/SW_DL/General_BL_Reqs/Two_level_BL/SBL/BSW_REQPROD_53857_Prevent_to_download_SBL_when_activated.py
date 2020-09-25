@@ -76,7 +76,6 @@ def step_7():
 
     SUTE.print_test_purpose(stepno, purpose)
     _, vbf_header, data, data_start = SSBL.read_vbf_file(SSBL.get_sbl_filename())
-    print(vbf_header)
     return vbf_header, data, data_start
 
 def step_8(data, data_start):
