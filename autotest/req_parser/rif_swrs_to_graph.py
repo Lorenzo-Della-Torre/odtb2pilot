@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # VCC 2020-07-16
-# Find out if there is a good way to group requirements, given the SWRS
+""" Find out if there is a good way to group requirements, given the SWRS """
 
 import logging
 import argparse
@@ -30,9 +30,16 @@ FIRSTLINE = 1
 
 def parse_some_args():
     """Get the command line input, using the defined flags."""
-    parser = argparse.ArgumentParser(description='Parse Elektra rif export, and give result on preffered format.')
-    parser.add_argument("--elektra", help="Elektra rif export, xml-file", type=str, action='store', dest='rif', required=True)
-    parser.add_argument("--out", help="Name of the generated file", dest='out', default= OUTFOLDER + 'gen_swrs_out.xlsx')
+    parser = argparse.ArgumentParser(description=
+        'Parse Elektra rif export, and give result on preffered format.')
+    parser.add_argument("--elektra", help="Elektra rif export, xml-file", 
+        type=str, action='store', dest='rif', required=True)
+    parser.add_argument("--out", help="Name of the generated file",
+        dest='out', default= OUTFOLDER + 'gen_swrs_out.xlsx')
+    parser.add_argument("--neoname", help="Username for graph db.", type=str,
+        dest='neoname', default='neo4j')
+    parser.add_argument("--neopw", help="Password for graph db.", type=str,
+        dest='neopw', default='1234')
     ret_args = parser.parse_args()
     return ret_args
 
@@ -41,16 +48,16 @@ def get_spec_dict(root):
     SPECTYPES = root.find('rif:SPEC-TYPES', NS)
 
     spec_dict = {}
-    id_to_name_dict = {}
 
     for spectype in SPECTYPES:
         tmp_dict = {}
         spec_long_name = spectype.find('rif:LONG-NAME', NS).text
-        LOGGER.info(f'Spec name: {spec_long_name}')
+        LOGGER.info('Spec name: %s', spec_long_name)
         spec_identifier = spectype.find('rif:IDENTIFIER', NS).text
         # Find all attribute def as well
         tmp_attrib_list = []
-        for attrib_node in spectype.find('rif:SPEC-ATTRIBUTES', NS).findall('rif:ATTRIBUTE-DEFINITION-SIMPLE', NS):
+        for attrib_node in spectype.find('rif:SPEC-ATTRIBUTES', NS).\
+                findall('rif:ATTRIBUTE-DEFINITION-SIMPLE', NS):
             datatype_string = attrib_node.find('rif:LONG-NAME', NS).text
             datatype_identifier = attrib_node.find('rif:IDENTIFIER', NS).text
             tmp_attrib_list.append((datatype_string,datatype_identifier))
@@ -89,13 +96,14 @@ def get_spec_obj_dict(root, type_dict):
     spec_obj_dict = {}
 
     for specobj in SPECOBJS:
-        if specobj.find('rif:TYPE/rif:SPEC-TYPE-REF', NS) == None:
+        if specobj.find('rif:TYPE/rif:SPEC-TYPE-REF', NS) is None:
             LOGGER.info("Spec object without a type!")
             continue
 
         spectype_id = specobj.find('rif:TYPE/rif:SPEC-TYPE-REF', NS).text
         if spectype_id == REQPROD_ID:
-            reqprod_dict, obj_id = get_obj_data(specobj, type_dict['REQPROD'][ATTRIB])
+            reqprod_dict, obj_id = get_obj_data(specobj, \
+                type_dict['REQPROD'][ATTRIB])
             tmp_reqprod_dict[obj_id] = reqprod_dict
 
         elif spectype_id == REQSET_ID:
@@ -114,7 +122,6 @@ def get_spec_obj_dict(root, type_dict):
     spec_obj_dict['REQ-SET'] = tmp_reqset_dict
     spec_obj_dict['REQ'] = tmp_req_dict
     spec_obj_dict['FOLDER'] = tmp_folder_dict
-    #print(spec_obj_dict)
 
     return spec_obj_dict
 
@@ -122,11 +129,12 @@ def get_hierarchy_dict(root, hier_info_dict):
     """ Extract how nodes are linked into a hierarchy """
     # The structure is children inside children nodes...
     # Keep track of each node's parent? Then traverse the tree?
-    # Parent identifier, so each node shall have info: Parent-ID, ownID, (and any attributes of interest)
+    # Parent identifier, so each node shall have info: Parent-ID, ownID, 
+    #  (and any attributes of interest)
     # Own identifier is found in other nodes that are already parsed (else those most be created)
     rel_dict = {}
     HIER_ROOT = root.find('.//rif:SPEC-HIERARCHY-ROOT', NS)
-    # Add check if the number is the same? Not necessary for now, assume generated data is correct...
+    # Add check if the number is the same? Not necessary for now, assume generated data is correct.
     HIER_ID = hier_info_dict[ID]
     LOGGER.warning(HIER_ID)
     # Keep it simple, optimize later. Find Children, and use xpath to get ID of parent.
@@ -138,7 +146,7 @@ def get_hierarchy_dict(root, hier_info_dict):
         #parent_id = child_node.find('../../rif:IDENTIFIER', NS).text
         parent_id = "Maaaan"
         parent_id_cand = child_node.find('../../rif:OBJECT/rif:SPEC-OBJECT-REF', NS)
-        if parent_id_cand != None:
+        if parent_id_cand is not None:
             parent_id = parent_id_cand.text
         #LOGGER.info(f'Child {child_id} has parent {parent_id}')
         rel_dict[child_id] = parent_id
@@ -192,7 +200,6 @@ def write_xlsx_out(filepath, sp_dict, spobj_dict, child_to_parent_dict):
     ws.title = "SWRS info"
 
     LOGGER.info("In the writing phase...")
-    print(sp_dict["REQPROD"])
     for col_cnt, col_name in enumerate(col_names, 1):
         heading_cell = ws.cell(row=FIRSTLINE, column=col_cnt)
         heading_cell.style = 'Headline 1'
@@ -219,12 +226,9 @@ def write_xlsx_out(filepath, sp_dict, spobj_dict, child_to_parent_dict):
                 data_cell = ws.cell(row=excel_line_cnt, column=col_cnt)
                 data_cell.value = write_cell
 
-
-    print(child_to_parent_dict)
     wb.save(filepath)
-    LOGGER.info(f"Written to file {filepath}")
+    LOGGER.info("Written to file %s", filepath)
 
-    return
 def create_col_names(sp_dict, TYPE_LIST):
     """ Return the column names """
     col_list = ["Class", "ID", "Revision", "Variant", "Name"]
@@ -232,12 +236,10 @@ def create_col_names(sp_dict, TYPE_LIST):
     for elektra_type in TYPE_LIST:
         for tup_text, tup_id in sp_dict[elektra_type][ATTRIB]:
             name_set.add(tup_text)
-    print(name_set)
     # If class exists, then first. Also add the own+parent id columns
     # Remove default col_list entries from the set
     for elem in col_list:
         name_set.discard(elem)
-    print(name_set)
     col_list.extend(name_set)
     # add the UUIDs
     col_list.append(OWN_ID)
@@ -273,27 +275,23 @@ def namedtuple2xlsx(filepath, tup_list):
             data_cell.value = field
 
     wb.save(filepath)
-    LOGGER.info(f"Written to file {filepath}")   
+    LOGGER.info("Written to file %s", filepath)
 
 ###### Neo4j stuff ######
-def sendToGraph(a_dict, b_dict, c2p_dict):
-    """ Setup the graph """
-    neo_fix(b_dict, c2p_dict)
-    return
-
-def neo_fix(node_dict, c2p_dict):
+def neo_fix(node_dict, c2p_dict, neousr, neopw):
     """ Interact with the graph db """
     uri = "bolt://localhost:7687"
-    driver = GraphDatabase.driver(uri, auth=("neo4j", "1234"))
+    driver = GraphDatabase.driver(uri, auth=(neousr, neopw))
 
     def create_elektranode(tx, el_type, attr):
         tx.run(f"MERGE (a:{wash_char(el_type)} {{ {attr} }})")
 
     def create_elektrarel(tx, node, rel, other):
-        tx.run(f"MATCH (a {{UUID: '{node}'}})\nMATCH (b {{UUID: '{other}'}})\nMERGE (a)-[r:{rel}]->(b)")
+        tx.run\
+        (f"MATCH (a {{UUID: '{node}'}})\nMATCH (b {{UUID: '{other}'}})\nMERGE (a)-[r:{rel}]->(b)")
 
     for el_type in node_dict:
-        print(el_type)
+        LOGGER.info('Neo4j working with %s', el_type)
         for obj in node_dict[el_type]:
             with driver.session() as session:
                 attrib_str = get_attib_str(node_dict[el_type][obj], obj)
@@ -323,7 +321,7 @@ def main(margs):
     # Need to set the graph adding here as well.
     # Must have FOLDER in order to create the tree structure.
     write_xlsx_out(margs.out, sp_dict, spobj_dict, child_to_parent_dict)
-    sendToGraph(sp_dict, spobj_dict, child_to_parent_dict)
+    neo_fix(spobj_dict, child_to_parent_dict, margs.neoname, margs.neopw)
 
 if __name__ == "__main__":
     # Boilerplate to launch the main function with the command line arguments.
