@@ -174,6 +174,7 @@ def run():
         # action: Hard Reset
         # result: ECU sends positive reply
         result = result and SE11.ecu_hardreset(can_p, stepno=4)
+        time.sleep(1)
 
         # step5:
         # action: verify ECU in default session
