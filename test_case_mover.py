@@ -5,18 +5,19 @@
 import shutil
 import os
 
-SRC_FOLDER = "test_cases"
-DEST_FOLDER = ""
+SRC_FOLDER = "temp1"
+DEST_FOLDER = "temp2"
 
 def move_subfiles_to_flat(src_folder, dest_folder):
     """ Find and move all python files from given parent directory """
     cnt = 0
+    listOfFiles = []
     for root, dirs, files in os.walk(src_folder):
-        for file in files:
-            if file.endswith(".py"):
-                print(file)
-                cnt += 1
-    print(f'There were {cnt} files in da folder!!')
+        listOfFiles += [os.path.join(root, file) for file in files if file.endswith(".py")]
+    print(f'list of files: {listOfFiles}')
+
+    for full_path in listOfFiles:
+        shutil.move(full_path, DEST_FOLDER)
 
 
 if __name__ == "__main__":
