@@ -55,7 +55,7 @@ SE10 = SupportService10()
 SE22 = SupportService22()
 SSA = SupportSecurityAccess()
 
-    
+
 def step_2(can_p):
     """
     Teststep 2: send RoutineControlRequest start for Type 2
@@ -69,7 +69,8 @@ def step_2(can_p):
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
     etp: CanTestExtra = {
         "step_no": 2,
-        "purpose": "verify RoutineControl RequestRoutinestart (01) reply with security access denied in Programming session",
+        "purpose": "verify RoutineControl RequestRoutinestart (01) reply with"\
+                   " security access denied in Programming session",
         "timeout": 1,
         "min_no_messages": -1,
         "max_no_messages": -1
@@ -87,7 +88,8 @@ def step_2(can_p):
         logging.info("Step%s payload_reply_new is empty. Discard.", etp["step_no"])
     logging.info("Step%s: payload_reply after YML: %s", etp["step_no"], payload_reply)
 
-    #routine_response_new = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'routine_response')
+    #routine_response_new = SIO.extract_parameter_yml(str(inspect.stack()[0][3]),\
+    #                                                 'routine_response')
     ## don't set empty value if no replacement was found:
     #if routine_response_new:
     #    routine_response = routine_response_new
@@ -123,7 +125,8 @@ def step_3(can_p):
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
     etp: CanTestExtra = {
         "step_no": 3,
-        "purpose": "verify RoutineControl RequestRoutineResult (03) reply with security access denied in Programming session",
+        "purpose": "verify RoutineControl RequestRoutineResult (03) reply with"\
+                   "security access denied in Programming session",
         "timeout": 1,
         "min_no_messages": -1,
         "max_no_messages": -1
@@ -145,7 +148,8 @@ def step_3(can_p):
     ###     defined in Carcom for default session
     ### Leave the code in for future changes
 
-    #routine_response_new = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'routine_response')
+    #routine_response_new = SIO.extract_parameter_yml(str(inspect.stack()[0][3]),\
+    #                                                 'routine_response')
     ## don't set empty value if no replacement was found:
     #if routine_response_new:
     #    routine_response = routine_response_new
@@ -167,7 +171,7 @@ def step_3(can_p):
     #                                                 routine_response)
     logging.info("Step %s teststatus:%s \n", etp["step_no"], result)
     return result
-    
+
 def step_5(can_p):
     """
     Teststep 5: send RoutineControlRequest start for Type 2
@@ -181,7 +185,8 @@ def step_5(can_p):
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
     etp: CanTestExtra = {
         "step_no": 5,
-        "purpose": "verify RoutineControl RequestRoutinestart (01) reply with security access denied in Programming session",
+        "purpose": "verify RoutineControl RequestRoutinestart (01) reply with"\
+                   "security access denied in Programming session",
         "timeout": 1,
         "min_no_messages": -1,
         "max_no_messages": -1
@@ -233,7 +238,8 @@ def step_6(can_p):
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
     etp: CanTestExtra = {
         "step_no": 6,
-        "purpose": "verify RoutineControl RequestRoutineResult (03) reply with security access denied in Programming session",
+        "purpose": "verify RoutineControl RequestRoutineResult (03) reply with"\
+                   " security access denied in Programming session",
         "timeout": 1,
         "min_no_messages": -1,
         "max_no_messages": -1
@@ -256,7 +262,8 @@ def step_6(can_p):
     ###     defined in Carcom for default session
     ### Leave the code in for future changes
 
-    #routine_response_new = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'routine_response')
+    #routine_response_new = SIO.extract_parameter_yml(str(inspect.stack()[0][3]),\
+    #                                                 'routine_response')
     ## don't set empty value if no replacement was found:
     #if routine_response_new:
     #    routine_response = routine_response_new
@@ -270,7 +277,7 @@ def step_6(can_p):
 
     result = result and\
              SUTE.test_message(SC.can_messages[can_p["receive"]], teststring=payload_reply)
-                    
+
     if result:
         logging.info("Decoded 7F response: %s",
                      SUTE.pp_decode_7f_response(SC.can_messages[can_p["receive"]][0][2].upper()))
@@ -314,7 +321,7 @@ def run():
     # action: change BECM to Programming
     # result: BECM send mode
         result = result and SE10.diagnostic_session_control_mode2(can_p, 1)
-    
+
     # step2:
     # action: send start RoutineControl signal in Programming Session
     # result: BECM sends no reply or out of Range or Security Access Denied
@@ -327,8 +334,10 @@ def run():
 
     # step4:
     # action: Acivate Security Access
-        result = result and SSA.activation_security_access(can_p, 4, 'activate SecAccess')
-    
+        result = result and SSA.activation_security_access(can_p,\
+                                                           step_no=4,\
+                                                           purpose='activate SecAccess')
+
     # step5:
     # action: send start RoutineControl signal in Programming Session
     # result: BECM sends no reply or out of Range or Security Access Denied
@@ -343,17 +352,17 @@ def run():
     # action: Verify Programming session active
     # result: BECM sends active mode
         result = result and SE22.read_did_f186(can_p, dsession=b'\x02', stepno=7)
-    
+
     # step 8:
     # action: change BECM to default
     # result: BECM report mode
         result = result and SE10.diagnostic_session_control_mode1(can_p, 8)
-   
+
     ############################################
     # postCondition
     ############################################
-            
+
     POST.postcondition(can_p, starttime, result)
-    
+
 if __name__ == '__main__':
     run()

@@ -290,7 +290,7 @@ def run():
     # step 1:
     # action: change BECM to extended session
     # result: BECM send mode
-        result = result and SE10.diagnostic_session_control_mode3(can_p, 1)
+        result = result and SE10.diagnostic_session_control_mode3(can_p, stepno=1)
 
     # step2:
     # action: send start RoutineControl signal in Programming Session
@@ -320,7 +320,7 @@ def run():
     # step 7:
     # action: change BECM to default
     # result: BECM report mode
-        result = result and SE10.diagnostic_session_control_mode1(can_p, 7)
+        result = result and SE10.diagnostic_session_control_mode1(can_p, stepno=7)
 
     ############################################
     # postCondition
