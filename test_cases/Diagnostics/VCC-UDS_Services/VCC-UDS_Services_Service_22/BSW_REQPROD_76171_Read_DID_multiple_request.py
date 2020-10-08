@@ -216,7 +216,7 @@ def step_6(can_p):
 
 def step_7(can_p):
     """
-    Teststep 8: send 10 requests at one time - those with most bytes in return
+    Teststep 7: send 10 requests at one time - those with most bytes in return
     """
 
     # Parameters for the teststep

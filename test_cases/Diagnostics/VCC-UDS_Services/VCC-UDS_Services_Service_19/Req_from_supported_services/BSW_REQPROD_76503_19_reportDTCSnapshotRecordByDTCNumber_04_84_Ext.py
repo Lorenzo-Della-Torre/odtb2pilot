@@ -60,7 +60,7 @@ def step_2(can_p):
         }
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
     etp: CanTestExtra = {
-        "step_no": 1,
+        "step_no": 2,
         "purpose": "verify that SnapshotRecordByDTCNumber reply positively",
         "timeout": 1,
         "min_no_messages": -1,
@@ -85,7 +85,7 @@ def step_3(can_p):
         }
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
     etp: CanTestExtra = {
-        "step_no": 2,
+        "step_no": 3,
         "purpose": "verify that SnapshotRecordByDTCNumber reply with empty frame",
         "timeout": 1,
         "min_no_messages": -1,

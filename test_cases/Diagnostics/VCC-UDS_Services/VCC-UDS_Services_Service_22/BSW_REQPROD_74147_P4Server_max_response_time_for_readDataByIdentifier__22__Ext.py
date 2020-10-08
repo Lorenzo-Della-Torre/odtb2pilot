@@ -177,7 +177,7 @@ def step_7(can_p, p4_server_max, jitter_testenv):
     """
     Teststep 7: Verify (time receive message – time sending request) < P4_server_max
     """
-    step_no = 6
+    step_no = 7
     purpose = "Verify (time receive message – time sending request) less than P4_server_max"
     SUTE.print_test_purpose(step_no, purpose)
     # remove the flow control frame response: frame starting with '3'
