@@ -277,7 +277,7 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
         retval = retval + "ECU Serial Number         '" + message[144:152] + "'\n"
         return title + " " + retval
 
-    def combined_did_eda0_becm_mode1_mode3(self, message, title=''):
+    def combined_did_eda0_becm_mode1_mode3(self, message):
         """
         Combined_DID EDA0. This function is for returning the actual values.
         Not pretty print them.
@@ -288,8 +288,6 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
             'f12b': '',
             'serial': ''
         }
-
-        pos = message.find('EDA0')
         pos1 = message.find('F120')
         eda0_dict_wo_f12e["f120"] = self.pp_partnumber(message[pos1+4: pos1+18], '')
 
