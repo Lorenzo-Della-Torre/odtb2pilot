@@ -225,7 +225,7 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
         pos = 0
         retval = title
         if (not message.find('F120', pos) == -1) and (not message.find('F12E', pos) == -1):
-            retval = self.combined_did_eda0_becm_mode1_mode3(message, "EDA0 for mode1/mode3:\n")
+            retval = self.combined_did_eda0_becm_mode1_mode3(message)
         else:
             retval = "Unknown format of EDA0 message'\n"
             logging.warning("Message received: %s", message)
