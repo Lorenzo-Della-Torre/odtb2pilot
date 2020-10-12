@@ -57,6 +57,10 @@ PASSED_STATUS = 'PASSED'
 FAILED_STATUS = 'FAILED'
 PART_NUMBER_STRING_LENGTH = 14
 
+COMPLETE_ECU_PART_SERIAL_NRS_DID = 'EDA0'
+PART_NUMBER_DID = 'F120'
+GIT_HASH_DID = 'F1F2'
+
 MATCH_DICT = {True:'match', False:'no_match'}
 ERROR_DICT = {True:'error', False:''}
 HEADING_LIST = ['DID', 'Name', 'Correct SID', 'Correct DID', 'Correct size', 'Scaled values',
@@ -64,8 +68,16 @@ HEADING_LIST = ['DID', 'Name', 'Correct SID', 'Correct DID', 'Correct size', 'Sc
 
 Infoentry = namedtuple('Infoentry', 'did name c_sid c_did c_size scal_val_list err_msg payload')
 
+def get_git_hash(can_p):
+    '''
+    Getting the git hash from the ECU (DID F1F2)
+    '''
+    did_dict = SE22.get_did_info(can_p, GIT_HASH_DID,
+                                 conf.response_timeout)
+    git_hash = did_dict.get('payload', '')
+    return git_hash
 
-def comp_part_nbrs(can_par, sddb_cleaned_part_number):
+def comp_part_nbrs(can_p, sddb_cleaned_part_number):
     '''
     Testing so that the Application Diagnostic Database Part Number is correct (matching)
     It is stored in DID F120 and we match with the sddb part number
@@ -74,21 +86,23 @@ def comp_part_nbrs(can_par, sddb_cleaned_part_number):
     match = False
     try:
         # Get diagnostic part number from ECU (using service 22)
-        did_dict = SE22.get_did_info(can_par, parammod.DID_TO_GET_PART_NUMBER,
+        did_dict = SE22.get_did_info(can_p, PART_NUMBER_DID,
                                      conf.response_timeout)
+        ecu_diag_part_num_full = ''
         if 'payload' in did_dict:
             ecu_diag_part_num_full = did_dict['payload']
 
             # Checking length
-            if len(ecu_diag_part_num_full) != PART_NUMBER_STRING_LENGTH:
-                raise RuntimeError('ECU Diagnostic Part Number is to short!')
-
-            # Extracting the last part of diagnostic part nummer (AA, AB, ...)
-            ecu_diag_part_num_version_hex = ecu_diag_part_num_full[8:PART_NUMBER_STRING_LENGTH]
-            # Decoding from hex to ASCII
-            ecu_diag_part_num_version = bytearray.fromhex(ecu_diag_part_num_version_hex).decode()
-            # Putting it back together to complete string again
-            ecu_diag_part_num_full = ecu_diag_part_num_full[0:8] + ecu_diag_part_num_version
+            if len(ecu_diag_part_num_full) == PART_NUMBER_STRING_LENGTH:
+                # Extracting the last part of diagnostic part nummer (AA, AB, ...)
+                ecu_diag_part_num_vers_hex = ecu_diag_part_num_full[8:PART_NUMBER_STRING_LENGTH]
+                # Decoding from hex to ASCII
+                ecu_diag_part_num_version = bytearray.fromhex(ecu_diag_part_num_vers_hex).decode()
+                # Putting it back together to complete string again
+                ecu_diag_part_num_full = ecu_diag_part_num_full[0:8] + ecu_diag_part_num_version
+            else:
+                #raise RuntimeError('ECU Diagnostic Part Number is to short!')
+                logging.warning('ECU Diagnostic Part Number is to short!')
 
             # Comparing part numbers
             if sddb_cleaned_part_number == ecu_diag_part_num_full:
@@ -109,7 +123,7 @@ def comp_part_nbrs(can_par, sddb_cleaned_part_number):
     return match, message
 
 
-def generate_html2(outfile, result_list, pass_or_fail_counter_dict, part_nbr_match,
+def generate_html2(result_list, pass_or_fail_counter_dict, part_nbr_match,
                    part_nbr_match_msg):
     """Create html table based on the dict"""
     # Used for for selecting style class
@@ -133,7 +147,6 @@ def generate_html2(outfile, result_list, pass_or_fail_counter_dict, part_nbr_mat
              ".borderless, #scal_val {border-style: none; border: 0px;}"
              ".no_wrap, #scal_val {white-space: nowrap;}"
              "")
-
     with tag('html'):
         with tag('head'):
             with tag('style'):
@@ -168,6 +181,7 @@ def generate_html2(outfile, result_list, pass_or_fail_counter_dict, part_nbr_mat
                         line('td', elem.err_msg, klass=ERROR_DICT[error_exist])
                         line('td', elem.payload)
             text(SUPPORT_TEST.get_current_time())
+    outfile = "did_report.html"
     write_to_file(doc.getvalue(), outfile)
 
 
@@ -269,8 +283,25 @@ def write_to_file(content, outfile):
         file.write(str(content))
 
 
+def write_data(head, data, mode):
+    """Write data to a json file."""
+    path = '%s/%s.py' % (parammod.OUTPUT_FOLDER, parammod.OUTPUT_TESTRUN_DATA_FN)
+    with open(path, mode) as file:
+        logging.debug('Writing data to %s', path)
+        head = "\n" + head + " = "
+        data_str = '"' + str(data) + '"'
+        file.write(head + data_str)
 
-def run():
+
+def get_did_eda0(can_p):
+    '''  Returns content from DID EDA0 Request '''
+    did_dict = SE22.get_did_info(can_p, COMPLETE_ECU_PART_SERIAL_NRS_DID,
+                                 conf.response_timeout)
+    message = did_dict.get('payload', '')
+    eda0_dict = SUPPORT_TEST.get_combined_did_eda0(message, title='')
+    return eda0_dict
+
+def run(): # pylint: disable=too-many-locals
     ''' run '''
     # Setup logging. We don't want this script to generate to many rows in the log-file
     # so we set it on WARN.
@@ -336,10 +367,22 @@ def run():
 
     # Comparing the part numbers
     part_nbr_match, part_nbr_match_msg = comp_part_nbrs(can_p, sddb_cleaned_part_number)
+    eda0_dict = get_did_eda0(can_p)
 
-    #file_name = "result_report_%s.html" % app_diag_part_num
-    file_name = "did_report.html"
-    generate_html2(file_name, result_list, pass_or_fail_counter_dict, part_nbr_match,
+    # File used to write the data in. This data is used by the logs_to_html script.
+    def_val = '-'
+    write_data(parammod.GIT_HASH, get_git_hash(can_p), 'w+')
+    write_data(parammod.F120, eda0_dict.get('f120', def_val), 'a+')
+    write_data(parammod.F12A, eda0_dict.get('f12a', def_val), 'a+')
+    write_data(parammod.F12B, eda0_dict.get('f12b', def_val), 'a+')
+    write_data(parammod.SERIAL, eda0_dict.get('serial', def_val), 'a+')
+    write_data(parammod.SWCE, eda0_dict.get('swce', def_val), 'a+')
+    write_data(parammod.SWLM, eda0_dict.get('swlm', def_val), 'a+')
+    write_data(parammod.SWP1, eda0_dict.get('swp1', def_val), 'a+')
+    write_data(parammod.SWP2, eda0_dict.get('swp2', def_val), 'a+')
+    write_data(parammod.STRUCTURE_PN, eda0_dict.get('structure_pn', def_val), 'a+')
+
+    generate_html2(result_list, pass_or_fail_counter_dict, part_nbr_match,
                    part_nbr_match_msg)
 
     ############################################
