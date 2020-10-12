@@ -1,0 +1,11 @@
+precondition:
+        frame : b'\x1A\x40\xFF\xFF\xFF\xFF\xFF\xFF'
+        
+precondition_burst:
+        id: "HvbmdpNmFrame"
+        tp_name: "HvbmdpToAllUdsDiagRequestFrame"
+        id_burst: "HvbmdpToAllUdsDiagRequestFrame"
+        frame : b'\x1A\x40\xFF\xFF\xFF\xFF\xFF\xFF'
+run:
+        send: HvbmdpToHvbmUdsDiagRequestFrame
+        receive: HvbmToHvbmdpUdsDiagResponseFrame

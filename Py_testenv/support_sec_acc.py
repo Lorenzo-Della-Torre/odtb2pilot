@@ -57,7 +57,10 @@ class SupportSecurityAccess:
         #step1: load the challenge bytes, bit by bit, into a 64-bit variable space
         #insert fivefixed bytes and 3 seed
         # set LoadChallengeBits: fixed_load + forrandom_seed
-        load = fixed_load + sid[4:6] + sid[2:4] + sid[0:2]
+        #change bit order so it matches SecAccess algorithm:
+        load = fixed_load[8:10] + fixed_load[6:8] + fixed_load[4:6] +\
+               fixed_load[2:4] + fixed_load[0:2] +\
+               sid[4:6] + sid[2:4] + sid[0:2]
         if self._debug:
             print("SecAccess fixed_load ", fixed_load)
             print("SecAccess sid ", sid)

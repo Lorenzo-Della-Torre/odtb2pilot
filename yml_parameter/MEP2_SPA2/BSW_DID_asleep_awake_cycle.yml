@@ -1,0 +1,46 @@
+precondition:
+        id: "HvbmdpNmFrame"
+        frame: b'\x00\x40\xFF\xFF\xFF\xFF\xFF\xFF'
+        intervall : 0.8
+        tp_name: "HvbmdpToAllUdsDiagRequestFrame"
+
+precondition_extra:
+        send: HvbmNmFrame
+        receive: HvbmHvbm1canFrame53_20
+
+run:
+        send: HvbmdpToHvbmUdsDiagRequestFrame
+        receive: HvbmToHvbmdpUdsDiagResponseFrame
+        numofframe: 7
+        
+step_2:
+        payload: b'\x22\xED\xA0'
+        hb_frame : "HvbmHvbm1canFrame53_20"
+step_3:
+        payload: b'\x22\xED\xA0'
+
+step_4:
+        payload: b'\x22\xED\xA0'
+step_5:
+        payload: b'\x22\xED\xA0'
+step_6:
+        payload: b'\x22\xED\xA0'
+        hb_frame : "HvbmHvbm1canFrame53_20"
+
+step_7:
+        hb_frame : "HvbmHvbm1canFrame53_20"
+
+step_8:
+        hb_frame : "HvbmHvbm1canFrame53_20"
+
+step_9:
+        id: "HvbmdpNmFrame"
+        frame: b'\x20\x40\x00\xFF\x00\x00\x00\x00'
+        intervall : 0.8
+        payload: SC_CARCOM.can_m_send("ReadDataByIdentifier",
+                                      b'\xED\xA0', b'\xF1\x20')
+
+step_10:
+        id: "HvbmdpNmFrame"
+        frame: b'\x20\x40\x00\xFF\x00\x00\x00\x00'
+        intervall : 0.8

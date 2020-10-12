@@ -87,7 +87,7 @@ def step_3(can_p: CanParam):
     Request all PBL DIDs in SDDB for ECU
     '''
     #stepno = 3
-    step4_result = True
+    step3_result = True
 
     pass_or_fail_counter_dict = {"Passed": 0, "Failed": 0, "conditionsNotCorrect (22)": 0,
                                  "requestOutOfRange (31)": 0}
@@ -140,9 +140,9 @@ def step_3(can_p: CanParam):
         logging.debug('DID: %s, c_did: %s, c_sid: %s, c_size: %s, err_msg: %s',
                       result.did, result.c_did, result.c_sid, result.c_size,
                       result.err_msg)
-        while step4_result:
-            step4_result = result.err_msg and result.c_did and result.c_sid and result.c_size
-    return step4_result
+        while step3_result:
+            step3_result = result.err_msg and result.c_did and result.c_sid and result.c_size
+    return step3_result
 
 
 def run():
