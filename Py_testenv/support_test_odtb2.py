@@ -201,7 +201,6 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
             logging.error("%s Error: %s", title, valu_err)
             return title + i
 
-
     def pp_combined_did_eda0(self, message, title=''):
         """
         PrettyPrint Combined_DID EDA0:
@@ -214,6 +213,19 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
             retval = self.pp_combined_did_eda0_pbl(message, "EDA0 for PBL:\n")
         elif (not message.find('F122', pos) == -1) and (not message.find('F124', pos) == -1):
             retval = self.pp_combined_did_eda0_sbl(message, "EDA0 for SBL:\n")
+        else:
+            retval = "Unknown format of EDA0 message'\n"
+            logging.warning("Message received: %s", message)
+        return retval
+
+    def get_combined_did_eda0(self, message, title=''):
+        """
+        PrettyPrint Combined_DID EDA0:
+        """
+        pos = 0
+        retval = title
+        if (not message.find('F120', pos) == -1) and (not message.find('F12E', pos) == -1):
+            retval = self.combined_did_eda0_becm_mode1_mode3(message)
         else:
             retval = "Unknown format of EDA0 message'\n"
             logging.warning("Message received: %s", message)
@@ -265,6 +277,36 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
         retval = retval + "ECU Serial Number         '" + message[144:152] + "'\n"
         return title + " " + retval
 
+    def combined_did_eda0_becm_mode1_mode3(self, message):
+        """
+        Combined_DID EDA0. This function is for returning the actual values.
+        Not pretty print them.
+        """
+        eda0_dict_wo_f12e: dict = {
+            'f120': '',
+            'f12a': '',
+            'f12b': '',
+            'serial': ''
+        }
+        pos1 = message.find('F120')
+        eda0_dict_wo_f12e["f120"] = self.pp_partnumber(message[pos1+4: pos1+18], '')
+
+        pos1 = message.find('F12A', pos1+18)
+        eda0_dict_wo_f12e["f12a"] = self.pp_partnumber(message[pos1+4: pos1+18], '')
+
+        pos1 = message.find('F12B', pos1+18)
+        eda0_dict_wo_f12e["f12b"] = self.pp_partnumber(message[pos1+4: pos1+18], '')
+
+        # Combined DID F12E:
+        f12e_dict = self.get_did_f12e(message[(message.find('F12E', pos1+18))
+                                                   :(message.find('F12E', pos1+18)+76)])
+        ## ECU serial:
+        pos1 = message.find('F18C', pos1+18)
+        eda0_dict_wo_f12e["serial"] = message[pos1+4: pos1+18]
+
+        # Combining the dicts
+        eda0_dict = {**eda0_dict_wo_f12e, **f12e_dict}
+        return eda0_dict
 
     def pp_combined_did_eda0_pbl(self, message, title=''):
         """
@@ -334,6 +376,28 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
                         + "'\n"
         return title + " " + retval
 
+    def get_did_f12e(self, message):
+        """
+        Returns DID F12E content in a dict.
+        """
+
+        f12e_dict: dict = {
+            'amount': '',
+            'swlm': '',
+            'swp1': '',
+            'swp2': '',
+            'swce': '',
+            'structure_pn': ''
+        }
+
+        pos = message.find('F12E')
+        f12e_dict["amount"] = message[pos+4:pos+6]
+        f12e_dict["swlm"] = self.pp_partnumber(message[pos+6:pos+20])
+        f12e_dict["swp1"] = self.pp_partnumber(message[pos+20:pos+34])
+        f12e_dict["swp2"] = self.pp_partnumber(message[pos+34:pos+48])
+        f12e_dict["swce"] = self.pp_partnumber(message[pos+48:pos+62])
+        f12e_dict["structure_pn"] = self.pp_partnumber(message[pos+62:pos+76])
+        return f12e_dict
 
     def pp_did_f12e(self, message, title=''):
         """
