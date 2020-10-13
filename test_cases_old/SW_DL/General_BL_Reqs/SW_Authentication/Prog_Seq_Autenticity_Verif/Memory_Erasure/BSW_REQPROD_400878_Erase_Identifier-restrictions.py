@@ -8,7 +8,7 @@
 # author:   LDELLATO (Lorenzo Della Torre)
 # date:     2020-09-21
 # version:  1.1
-# reqprod:  400878
+# reqprod:  update for YML support
 
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
 
