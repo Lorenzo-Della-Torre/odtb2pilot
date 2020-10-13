@@ -1,6 +1,7 @@
 # Ignore these file types
 *.log
 *.pyc
+*.py~
 *.vbf
 *.html
 *.sddb

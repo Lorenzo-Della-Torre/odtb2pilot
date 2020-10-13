@@ -5,8 +5,8 @@
 import shutil
 import os
 
-SRC_FOLDER = "temp1"
-DEST_FOLDER = "temp2"
+SRC_FOLDER = "test_cases"
+DEST_FOLDER = "test_folder"
 
 def move_subfiles_to_flat(src_folder, dest_folder):
     """ Find and move all python files from given parent directory """
