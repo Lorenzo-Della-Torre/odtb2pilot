@@ -84,6 +84,7 @@ def step_2():
     else:
         for f_name in glob.glob(ess_modif_header):
             _, vbf_header, _, _ = SSBL.read_vbf_file(f_name)
+    logging.info('%s',vbf_header)
     return result, vbf_header
 
 def step_3(can_p, vbf_header):
