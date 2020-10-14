@@ -129,19 +129,7 @@ def step_5(can_p, vbf_header_original):
                          "max_no_messages" : -1
                         }
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
-
-    #change Control Frame parameters
-    can_mf: CanMFParam = {
-        "block_size": 0,
-        "separation_time": 0,
-        "frame_control_delay": 0, #no wait
-        "frame_control_flag": 48, #continue send
-        "frame_control_auto": False
-        }
-
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_mf)
-
-    SC.change_mf_fc(can_p["receive"], can_mf)
+    
     result = SUTE.teststep(can_p, cpay, etp)
 
     result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='7F31')
@@ -196,7 +184,8 @@ def step_10(can_p):
     result = SSBL.check_complete_compatible_routine(can_p, etp["step_no"])
     result = result and (SSBL.pp_decode_routine_complete_compatible
                          (SC.can_messages[can_p["receive"]][0][2])
-                         == 'Complete, Not Compatible')
+                            == 'Complete, Compatible')
+    
     return result
     
 def run():
