@@ -181,7 +181,7 @@ def step_8(can_p, vbf_header_original):
                          == 'The verification is passed')
     logging.info(SSBL.pp_decode_routine_check_memory(SC.can_messages[can_p["receive"]][0][2]))
     return result
-
+'''
 def step_10(can_p):
     """
     Teststep 10: Check the Complete and compatible Routine return Complete Not Compatible
@@ -198,7 +198,7 @@ def step_10(can_p):
                          (SC.can_messages[can_p["receive"]][0][2])
                          == 'Complete, Not Compatible')
     return result
-
+    '''
 def run():
     """
     Run - Call other functions from here
@@ -297,7 +297,8 @@ def run():
         # step10:
         # action: Check Complete and Compatible
         # result: ECU sends "Complete and Compatible" reply
-        result = result and step_10(can_p)
+        #result = result and step_10(can_p)
+        result = result and SSBL.check_complete_compatible_routine(can_p, stepno=10)
 
         # step11:
         # action: Hard Reset
