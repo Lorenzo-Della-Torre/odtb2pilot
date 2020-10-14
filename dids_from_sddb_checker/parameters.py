@@ -8,6 +8,19 @@
 # Output information
 OUTPUT_FILE_NAME = 'did_dict'
 OUTPUT_FOLDER = 'output/'
+OUTPUT_TESTRUN_DATA_FN = "testrun_data"
+
+PART_NBR = "part_nbr"
+GIT_HASH = "git_hash"
+F120 = "f120"
+F12A = "f12a"
+F12B = "f12b"
+SERIAL = "serial"
+SWCE = "swce"
+SWLM = "swlm"
+SWP1 = "swp1"
+SWP2 = "swp2"
+STRUCTURE_PN = "structure_pn"
 
 # Names for dict variables in OUTPUT_FILE_NAME
 PBL_DICT_NAME = 'sddb_pbl_did_dict'
@@ -19,8 +32,6 @@ RESP_ITEM_DICT_NAME = 'sddb_resp_item_dict'
 PBL_PART_NUM_NAME = 'pbl_diag_part_num'
 SBL_PART_NUM_NAME = 'sbl_diag_part_num'
 APP_PART_NUM_NAME = 'app_diag_part_num'
-
-DID_TO_GET_PART_NUMBER = 'F120'
 
 SDDB_INDATA_TYPE = {
     '01' : 'UnSigned',
