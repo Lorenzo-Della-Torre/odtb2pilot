@@ -84,7 +84,7 @@ def step_3(can_p):
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
 
     etp: CanTestExtra = {
-        "step_no": 2,
+        "step_no": 3,
         "purpose": "verify ReadDTCByStatusMask reply empty message",
         "timeout": 1,
         "min_no_messages": -1,
