@@ -6,6 +6,9 @@
 	cd $TESTREPO
 	cd ~/testrun
 
+	# Copying files from Py_testenv to projects/odtb2/python/ where it can be found
+	cp -u $TESTREPO/Py_testenv/*.py ~/projects/odtb2/python/
+
 	### GRPC catalog needed for using GRPC in Python scripts
 	export PYTHONPATH=$HOME/projects/odtb2/python
 
