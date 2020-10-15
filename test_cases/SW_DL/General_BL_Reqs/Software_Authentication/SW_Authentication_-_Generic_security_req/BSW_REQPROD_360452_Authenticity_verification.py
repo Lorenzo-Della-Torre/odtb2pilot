@@ -188,7 +188,7 @@ def run():
         # step 6:
         # action: Check Complete And Compatible messages differ before and after Check Memory
         # result: BECM sends positive reply
-        result = result and step_6(res_before_check_memory, res_after_check_memory)
+        result = result and step_6(res_after_check_memory, res_before_check_memory)
 
         # step7:
         # action: Download the remnants Software Parts
