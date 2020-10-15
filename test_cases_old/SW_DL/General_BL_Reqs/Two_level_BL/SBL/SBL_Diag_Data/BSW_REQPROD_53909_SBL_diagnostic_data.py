@@ -162,7 +162,7 @@ def step_3(can_receive):
 
 def step_4(stub, can_send, can_receive, can_namespace):
     '''
-    Send several requests at one time - requires SF to send, MF for reply
+    Test step 4: Send several requests at one time - requires SF to send, MF for reply
     '''
     stepno = 4
 
@@ -193,7 +193,7 @@ def step_4(stub, can_send, can_receive, can_namespace):
 
 def step_5(can_receive):
     '''
-    Verify if number for requests limited in programming session
+    Test step 5: Verify if number for requests limited in programming session
     '''
     stepno = 5
     purpose = "Verify if number for requests limited in programming session"

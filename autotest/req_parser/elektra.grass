@@ -1,0 +1,15 @@
+{
+    "node.REQPROD":{
+        "color": "hotpink"
+    },
+	"node.FOLDER":{
+        "caption": "{Object_Heading}",
+        "color": "cyan"
+    },
+    "node.REQ_SET":{
+    	"color": "magenta"
+    },
+    "node.REQ":{
+    	"color": "lime"
+    }
+}

@@ -5,6 +5,11 @@
 # version:  1.0
 # reqprod:  400878
 
+# author:   LDELLATO (Lorenzo Della Torre)
+# date:     2020-09-21
+# version:  1.1
+# reqprod:  update for YML support
+
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
 
 # Copyright 2015 gRPC authors.
@@ -27,248 +32,161 @@ import time
 from datetime import datetime
 import sys
 import logging
+import inspect
+import glob
 
-import ODTB_conf
-from support_can import Support_CAN, CanMFParam
-from support_test_odtb2 import Support_test_ODTB2
-from support_SBL import Support_SBL
-from support_SecAcc import Support_Security_Access
+import odtb_conf
+from support_can import SupportCAN, CanParam, CanTestExtra, CanPayload
+from support_test_odtb2 import SupportTestODTB2
+from support_carcom import SupportCARCOM
+from support_file_io import SupportFileIO
+from support_SBL import SupportSBL
+from support_sec_acc import SupportSecurityAccess
 
-SC = Support_CAN()
-SUTE = Support_test_ODTB2()
-SSBL = Support_SBL()
-SSA = Support_Security_Access()
+from support_precondition import SupportPrecondition
+from support_postcondition import SupportPostcondition
+from support_service10 import SupportService10
+from support_service11 import SupportService11
+from support_service22 import SupportService22
+from support_service31 import SupportService31
+from support_service34 import SupportService34
 
-ERASE = None
+SIO = SupportFileIO
+SC = SupportCAN()
+S_CARCOM = SupportCARCOM()
+SUTE = SupportTestODTB2()
+SSBL = SupportSBL()
+SSA = SupportSecurityAccess()
 
-def precondition(stub, can_send, can_receive, can_namespace):
-    """
-    Precondition for test running:
-    BECM has to be kept alive: start heartbeat
-    """
-    # read VBF param when testscript is s started, if empty take default param
-    SSBL.get_vbf_files()
-
-    # start heartbeat, repeat every 0.8 second
-    SC.start_heartbeat(stub, "MvcmFront1NMFr", "Front1CANCfg0",
-                       b'\x00\x40\xFF\xFF\xFF\xFF\xFF\xFF', 0.4)
-
-    SC.start_periodic(stub, "Networkeptalive", True, "Vcu1ToAllFuncFront1DiagReqFrame",
-                      "Front1CANCfg0", b'\x02\x3E\x80\x00\x00\x00\x00\x00', 1.02)
-
-    # timeout = more than maxtime script takes
-    timeout = 90   #seconds"
-
-    SC.subscribe_signal(stub, can_send, can_receive, can_namespace, timeout)
-    #record signal we send as well
-    SC.subscribe_signal(stub, can_receive, can_send, can_namespace, timeout)
-
-    result = step_0(stub, can_send, can_receive, can_namespace)
-    logging.info("Precondition testok: %s\n", result)
-    return result
-
-def step_0(stub, can_send, can_receive, can_namespace):
-    """
-    Teststep 0: Complete ECU Part/Serial Number(s)
-    """
-    stepno = 0
-    ts_param = {"stub" : stub,\
-                "m_send" : SC.can_m_send("ReadDataByIdentifier", b'\xED\xA0', ""),\
-                "mr_extra" : '',\
-                "can_send" : can_send,\
-                "can_rec"  : can_receive,\
-                "can_nspace" : can_namespace\
-               }
-    extra_param = {"purpose" : "Complete ECU Part/Serial Number(s)",\
-                   "timeout" : 1,\
-                   "min_no_messages" : -1,\
-                   "max_no_messages" : -1
-                  }
-    result = SUTE.teststep(ts_param,\
-                           stepno, extra_param)
-    logging.info('%s', SUTE.PP_CombinedDID_EDA0(SC.can_messages[can_receive][0][2], title=''))
-    return result
-
-def step_1(stub, can_send, can_receive, can_namespace):
-    """
-    Teststep 1: Activate SBL
-    """
-    stepno = 1
-    purpose = "Download and Activation of SBL"
-    result = SSBL.sbl_activation(stub,
-                                 can_send, can_receive, can_namespace,
-                                 stepno, purpose)
-    return result
+PREC = SupportPrecondition()
+POST = SupportPostcondition()
+SE10 = SupportService10()
+SE11 = SupportService11()
+SE22 = SupportService22()
+SE31 = SupportService31()
+SE34 = SupportService34()
 
 def step_2():
     """
-    Teststep 2: Read VBF files for ESS
+    Teststep 2: Read VBF files for ESS file (1st Logical Block)
     """
     stepno = 2
-    purpose = "ESS files reading"
-    global ERASE
-    ess_vbf_modified = "./VBF_Reqprod/REQ_400878_ess_32263666_AA_6M_header_modified.vbf"
-    print ("standard ESS: ", SSBL.get_ess_filename())
-    print ("modified ESS: ", ess_vbf_modified)
+    purpose = "1st files reading"
+    result = True
     SUTE.print_test_purpose(stepno, purpose)
-    _, _, _, _, _, ERASE = SSBL.read_vbf_file(ess_vbf_modified)
+    #REQ_53973_SIGCFG_compatible_with current release
+    #by default we get files from VBF_Reqprod directory
+    #REQ_400878_ess_32263666_AA_6M_header_modified.vbf
+    ess_modif_header = "./VBF_Reqprod/REQ_400878*.vbf"
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), ess_modif_header)
+    if not glob.glob(ess_modif_header):
+        result = False
+    else:
+        for f_name in glob.glob(ess_modif_header):
+            _, vbf_header, _, _ = SSBL.read_vbf_file(f_name)
+    logging.info('%s',vbf_header)
+    return result, vbf_header
 
-
-def step_3(stub, can_send, can_receive, can_namespace):
+def step_3(can_p, vbf_header):
     """
     Teststep 3: Flash Erase for wrong Lenght should be aborted
     """
-    stepno = 3
-    
-    # Parameters for FrameControl FC
-    can_mf_param: CanMFParam = {
-        'block_size' : 0,
-        'separation_time' : 0,
-        'frame_control_delay' : 0, #no wait
-        'frame_control_flag' : 48, #continue send
-        'frame_control_auto' : False
-        }
-    SC.change_MF_FC(can_send, can_mf_param)
 
-    ts_param = {"stub" : stub,\
-                "m_send" : SC.can_m_send("RoutineControlRequestSID", b'\xFF\x00' + ERASE, b'\x01'),\
-                "mr_extra" : '',\
-                "can_send" : can_send,\
-                "can_rec"  : can_receive,\
-                "can_nspace" : can_namespace\
-               }
-    extra_param = {"purpose" : "Flash Erase for wrong Lenght should be aborted",\
-                   "timeout" : 15,\
-                   "min_no_messages" : -1,\
-                   "max_no_messages" : -1
-                  }
-    result = SUTE.teststep(ts_param,\
-                           stepno, extra_param)
-    result = result and SUTE.test_message(SC.can_messages[can_receive], teststring='7F3131')
+    SSBL.vbf_header_convert(vbf_header)
+    #There may be several parts to be erase in VBF-header, loop over them
+    for erase_el in vbf_header['erase']:
+    # verify RoutineControlRequest is sent for Type 1
+        result = SE22.read_did_eda0(can_p)
+        cpay: CanPayload = {"payload" : S_CARCOM.can_m_send("RoutineControlRequestSID",\
+                                            b'\xFF\x00' +\
+                                            erase_el[0].to_bytes(4, byteorder='big') +\
+                                            erase_el[1].to_bytes(4, byteorder='big'), b'\x01'),\
+                            "extra" : ''
+                           }
+        etp: CanTestExtra = {"step_no": 3,
+                             "purpose" : "RC flash erase",
+                             "timeout" : 1,
+                             "min_no_messages" : -1,
+                             "max_no_messages" : -1
+                            }
+        #start flash erase, may take long to erase
+        result = SUTE.teststep(can_p, cpay, etp)
+        logging.info("SE31 RC FlashErase 0xFF00 %s %s, result: %s",
+                     erase_el[0].to_bytes(4, byteorder='big'),
+                     erase_el[1].to_bytes(4, byteorder='big'),
+                     result)
 
-    #logging.info('%s', SUTE.PP_Decode_7F_response(SC.can_frames[can_receive][0][2]))
+    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='7F3131')
+
+    logging.info('%s', SUTE.pp_decode_7f_response(SC.can_frames[can_p["receive"]][0][2]))
+
     return result
 
-def step_4(stub, can_send, can_receive, can_namespace):
-    """
-    Teststep 4: Reset
-    """
-    stepno = 4
-    ts_param = {"stub" : stub,\
-                "m_send" : b'\x11\x01',\
-                "mr_extra" : '',\
-                "can_send" : can_send,\
-                "can_rec"  : can_receive,\
-                "can_nspace" : can_namespace\
-               }
-    extra_param = {"purpose" : "ECU Reset",\
-                   "timeout" : 1,\
-                   "min_no_messages" : -1,\
-                   "max_no_messages" : -1
-                  }
-    result = SUTE.teststep(ts_param,\
-                           stepno, extra_param)
-    result = result and SUTE.test_message(SC.can_messages[can_receive], teststring='025101')
-    return result
-
-def step_5(stub, can_send, can_receive, can_namespace):
-    """
-    Teststep 5: verify session
-    """
-    stepno = 5
-    ts_param = {"stub" : stub,\
-                "m_send" : SC.can_m_send("ReadDataByIdentifier", b'\xF1\x86', ""),\
-                "mr_extra" : b'\x01',\
-                "can_send" : can_send,\
-                "can_rec"  : can_receive,\
-                "can_nspace" : can_namespace\
-               }
-    extra_param = {"purpose" : "Verify Default session",\
-                   "timeout" : 1,\
-                   "min_no_messages" : 1,\
-                   "max_no_messages" : 1
-                  }
-    result = SUTE.teststep(ts_param,\
-                           stepno, extra_param)
-    return result
 
 def run():
     """
     Run - Call other functions from here
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.DEBUG)
-    result = True
-
-    # start logging
-    # to be implemented
+    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
     # where to connect to signal_broker
-    network_stub = SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT)
-
-    can_send = "Vcu1ToBecmFront1DiagReqFrame"
-    can_receive = "BecmToVcu1Front1DiagResFrame"
-    can_namespace = SC.nspace_lookup("Front1CANCfg0")
-
+    can_p: CanParam = {
+        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
+        "send" : "Vcu1ToBecmFront1DiagReqFrame",
+        "receive" : "BecmToVcu1Front1DiagResFrame",
+        "namespace" : SC.nspace_lookup("Front1CANCfg0")
+    }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
     logging.info("Time: %s \n", time.time())
-
     ############################################
     # precondition
     ############################################
-    result = precondition(network_stub, can_send, can_receive, can_namespace)
+    # read VBF param when testscript is s started, if empty take default param
+    SSBL.get_vbf_files()
+    timeout = 90
+    result = PREC.precondition(can_p, timeout)
 
+    if result:
     ############################################
     # teststeps
     ############################################
-    # step 1:
-    # action:
-    # result:
-    result = result and step_1(network_stub, can_send, can_receive, can_namespace)
 
-    # step 2:
-    # action:
-    # result:
-    step_2()
+        # step1:
+        # action: DL and activate SBL
+        # result: ECU sends positive reply
+        result = result and SSBL.sbl_activation(can_p, stepno=1,
+                                                purpose="DL and activate SBL")
+        time.sleep(1)
 
-    # step 3:
-    # action:
-    # result:
-    result = result and step_3(network_stub, can_send, can_receive, can_namespace)
+        # step 2:
+        # action: Read VBF files for ESS file (1st Logical Block)
+        # result:
+        result_step2, vbf_header = step_2()
+        result = result and result_step2
 
-    # step 4:
-    # action:
-    # result:
-    result = result and step_4(network_stub, can_send, can_receive, can_namespace)
+        # step 3:
+        # action: Flash Erase for wrong Lenght should be aborted
+        # result: ECU reply with NRC
+        result = result and step_3(can_p, vbf_header)
 
-    # step 5:
-    # action:
-    # result:
-    result = result and step_5(network_stub, can_send, can_receive, can_namespace)
+        # step4:
+        # action: Hard Reset
+        # result: ECU sends positive reply
+        result = result and SE11.ecu_hardreset(can_p, stepno=4)
+        time.sleep(1)
+
+        # step5:
+        # action: verify ECU in default session
+        # result: ECU sends positive reply
+        result = result and SE22.read_did_f186(can_p, b'\x01', stepno=5)
 
     ############################################
     # postCondition
     ############################################
 
-    logging.debug("\nTime: %s \n", time.time())
-    logging.info("Testcase end: %s", datetime.now())
-    logging.info("Time needed for testrun (seconds): %s", int(time.time() - starttime))
-
-    logging.info("Do cleanup now...")
-    logging.info("Stop all periodic signals sent")
-    SC.stop_periodic_all()
-
-    # deregister signals
-    SC.unsubscribe_signals()
-    # if threads should remain: try to stop them
-    SC.thread_stop()
-
-    logging.info("Test cleanup end: %s\n", datetime.now())
-
-    if result:
-        logging.info("Testcase result: PASSED")
-    else:
-        logging.info("Testcase result: FAILED")
+    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()

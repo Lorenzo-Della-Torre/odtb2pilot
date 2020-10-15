@@ -8,6 +8,16 @@
 # version:  1.0
 # changes:  parameters in VBF are parsed now
 
+# author:   HWEILER (Hans-Klaus Weiler)
+# date:     2020-10-08
+# version:  1.1
+# changes:  update for fit comments added in VBF
+
+# author:   HWEILER (Hans-Klaus Weiler)
+# date:     2020-10-15
+# version:  1.2
+# changes:  update better handling of ECU-mode when activating SBL
+
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
 
 # Copyright 2015 gRPC authors.
@@ -65,18 +75,23 @@ class VbfHeader(Dict): # pylint: disable=inherit-non-class
         For keywords see Volvo Document 31808832 Rev 015
         SWRS Versatile Binary Format Specification
     """
+    description: list
     sw_part_number: str
     sw_version: str
     sw_part_type: str
+    sw_current_part_number: str
+    sw_current_version: str
     data_format_identifier: int
     ecu_address: int
-    file_checksum: int
-    call: int   #used in SBL
     erase: list #used in other VBF files
+    call: int   #used in SBL
+    verification_block_root_hash: int
     verification_block_start: int
     verification_block_length: int
-    verification_block_root_hash: int
     sw_signature_dev: int
+    sw_signature: int
+    parameter_settings: list
+    file_checksum: int
 
     @classmethod
     def vbf_header_read(cls, vbf_header):
@@ -126,10 +141,24 @@ class SupportSBL:
         """
         print filenames used for SWDL
         """
+        result = True
+        if (len(self._sbl) == 0) or (len(self._ess) == 0) or (len(self._df) == 0):
+            logging.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            logging.info("!!!!! VBF files not as expected / incomplete! !!!!!")
+            logging.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            logging.info("len SBL: %s", len(self._sbl))
+            logging.info("len ESS: %s", len(self._ess))
+            logging.info("len DF: %s", len(self._df))
+
         logging.info("SBL:  %s", self._sbl)
         logging.info("ESS: %s", self._ess)
         logging.info("DF: %s", self._df)
-
+        if (len(self._sbl) == 0) or (len(self._ess) == 0) or (len(self._df) == 0):
+            logging.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            logging.info("!!!!! VBF files not as expected / incomplete! !!!!!")
+            logging.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            result = False
+        return result
 
     def get_sbl_filename(self):
         """
@@ -152,7 +181,7 @@ class SupportSBL:
         return self._df
 
 
-    def read_vbf_param(self):
+    def read_vbf_param(self, f_names):
         """
         read filenames used for transer as args to testscript
         """
@@ -160,49 +189,40 @@ class SupportSBL:
         f_sbl = ''
         f_ess = ''
         f_df = []
-        for f_name in sys.argv:
+        for f_name in f_names:
             if not f_name.find('.vbf') == -1:
                 logging.info("Filename to DL:  %s", f_name)
-                if not f_name.find('sbl') == -1:
+
+                vbf_version, vbf_header, _, _ = self.read_vbf_file(f_name)
+                self.vbf_header_convert(vbf_header)
+                logging.debug("VBF version: %s", vbf_version)
+                logging.debug('VBF_header: %s', vbf_header)
+
+                if vbf_header["sw_part_type"] == 'SBL':
                     f_sbl = f_name
-                elif not f_name.find('ess') == -1:
+                elif vbf_header["sw_part_type"] == 'ESS':
                     f_ess = f_name
                 else:
                     f_df.append(f_name)
         self.__init__(f_sbl, f_ess, f_df)
-        self.show_filenames()
-        time.sleep(10)
+        result = self.show_filenames()
+        #time.sleep(10)
+        return result
 
-
-    def set_vbf_default_param(self):
-        """
-        read default filenames used for transer when no args were given
-        """
-        f_sbl = ''
-        f_ess = ''
-        f_df = []
-        for f_name in glob.glob("./VBF/*.vbf"):
-            if not f_name.find('.vbf') == -1:
-                logging.info("Filename to DL:  %s", f_name)
-                if not f_name.find('sbl') == -1:
-                    f_sbl = f_name
-                elif not f_name.find('ess') == -1:
-                    f_ess = f_name
-                else:
-                    f_df.append(f_name)
-        self.__init__(f_sbl, f_ess, f_df)
-        self.show_filenames()
-        time.sleep(10)
 
     def get_vbf_files(self):
         """
         read filenames used for transfer to ECU
+        sets filenames found in dict vbf_header
         """
         logging.debug("Length sys.argv:  %s", len(sys.argv))
         if len(sys.argv) != 1:
-            self.read_vbf_param()
+            f_names = sys.argv
         else:
-            self.set_vbf_default_param()
+            f_names = glob.glob("./VBF/*.vbf")
+
+        result = self.read_vbf_param(f_names)
+        return result
 
 
     def transfer_data_block(self, can_p: CanParam, vbf_header: VbfHeader, vbf_data, vbf_offset):
@@ -372,15 +392,24 @@ class SupportSBL:
         """
         Function used for BECM in forced Programming mode
         """
-        # Security Access Request SID
-        result = SSA.activation_security_access(can_p, stepno, purpose)
+        result = SE22.read_did_eda0(can_p)
 
-        # SBL Download
-        tresult, vbf_sbl_header = self.sbl_download(can_p, self._sbl, stepno)
-        result = result and tresult
+        message = SC.can_messages[can_p["receive"]][0][2]
+        pos = message.find('EDA0')
+        if (not message.find('F121', pos) == -1) and (not message.find('F125', pos) == -1):
+            # Security Access Request SID
+            result = result and SSA.activation_security_access(can_p, stepno, purpose)
 
-        # Activate SBL
-        result = result and self.activate_sbl(can_p, vbf_sbl_header, stepno)
+            # SBL Download
+            tresult, vbf_sbl_header = self.sbl_download(can_p, self._sbl, stepno)
+            result = result and tresult
+
+            # Activate SBL
+            result = result and self.activate_sbl(can_p, vbf_sbl_header, stepno)
+        elif (not message.find('F122', pos) == -1) and (not message.find('F124', pos) == -1):
+            logging.info("SBL already active. Don't take any actions")
+        else:
+            logging.warning("ECU does not seem to be in PROG mode: %s", message)
         return result
 
 
@@ -389,21 +418,27 @@ class SupportSBL:
         """
         Function used to activate the Secondary Bootloader
         """
-        testresult = True
+        result = True
 
         # verify session
         SE22.read_did_f186(can_p, dsession=b'')
-        logging.info(SC.can_messages[can_p["receive"]])
-
-        if SUTE.test_message(SC.can_messages[can_p["receive"]], '62F18601')\
-            or SUTE.test_message(SC.can_messages[can_p["receive"]], '62F18603'):
-            testresult = self.sbl_activation_def(can_p, stepno, purpose)
-        elif SUTE.test_message(SC.can_messages[can_p["receive"]], '62F18602'):
-            testresult = self.sbl_activation_prog(can_p, stepno, purpose)
+        if not len(SC.can_messages[can_p["receive"]]) == 1:
+            logging.info("Not expected number of messages received")
+            result = False
         else:
-            logging.info("error message: %s\n", SC.can_messages[can_p["receive"]])
+            rec_messages = SC.can_messages[can_p["receive"]][0][2].upper()
+
+        #if mode1/mode3 change to mode2 (prog), then dl/activate SBL
+        #if mode2 already dl/activate SBL direct
+            if ('62F18601' in rec_messages) or ('62F18603' in rec_messages):
+                result = self.sbl_activation_def(can_p, stepno, purpose)
+            elif '62F18602' in rec_messages:
+                result = self.sbl_activation_prog(can_p, stepno, purpose)
+            else:
+                logging.info("error message: %s\n", SC.can_messages[can_p["receive"]])
+                result = False
         time.sleep(0.1)
-        return testresult
+        return result
 
 
 #------------------------------Support Support SWDL Functions-------------------------------
@@ -485,6 +520,8 @@ class SupportSBL:
         take 'header' as read from vbf file and convert values
         so they get usable directly in python
         """
+        logging.debug("vbf_header_convert:")
+        logging.debug("Header before convert: %s", header)
         for keys in header:
             #elements contains a list of elements
             #convert into a python list
@@ -501,6 +538,7 @@ class SupportSBL:
             except: # pylint: disable=bare-except
                 traceback.print_exc()
                 logging.info("Oops! Value in header that can't be evaluated")
+        logging.debug("Header after convert: %s", header)
 
 
     @classmethod
@@ -518,7 +556,8 @@ class SupportSBL:
             #if not comm == -1:
             #logging.info("position comment: %s", comm)
             #logging.info("found single line comment. Remove upp till cr/eol")
-            comm_end = cm_str.find(b'\r\n', comm)
+            #comment line ends with LF (REQ 64698)
+            comm_end = cm_str.find(b'\n', comm)
             str_ret = cm_str[0:comm] + cm_str[comm_end:]
             cm_str = str_ret
             comm = cm_str.find(b'//')
@@ -560,6 +599,55 @@ class SupportSBL:
         return (cls.vbf_ws_filtered(vbf_key), cls.vbf_ws_filtered(vbf_nam))
 
     @classmethod
+    def read_vbf_header_filtered(cls, data, start_pos):
+        """
+        starts reading data from start_pos
+        continous reading until next closing bracker cbrack
+        return: data_filtererd: data until next closing bracket, without comments
+                start_pos: position in data reached
+        """
+
+        data_filtered = b''
+        next_cbrack = data.find(b'}', start_pos)
+
+        ## C-style comment in header data before next closing bracket
+        #next_comm_start = data.find(b'/*', data_header)
+        #if not next_comm_start == -1:
+        #    next_comm_stop = data.find[b'*/', next_comm_start+2]
+        #    next_scol = data.find(b';', next_comm_stop +2 )
+        #    next_cbrack = data.find(b'}', next_comm_stop + 2)
+        #    data_header = data[start_pos, next_comm_start] + data[next_comm_stop +2, next_cbrack]
+        #    header_pos = next_cbrack
+        #    next_comm_start = data.find[next_comm_stop +2, next_cbrack]
+
+
+        # C++ style comment in header data before next closing bracket
+        next_comm_line = data.find(b'//', start_pos, next_cbrack +1)
+
+        #filter out comment(s),
+        while not next_comm_line == -1:
+            #read until comment:
+            data_filtered = data_filtered + data[start_pos:next_comm_line]
+            start_pos = next_comm_line + 2
+
+            #now filter out comment, set new start_pos for searching
+            next_comm_stop = data.find(b'\n', next_comm_line)
+            start_pos = next_comm_stop +1
+            #look for next semicolon / cbracket after comment / comment line
+            #next_scol = data.find(b';', next_comm_stop +1)
+            next_cbrack = data.find(b'}', next_comm_stop +1)
+            next_comm_line = data.find(b'//', start_pos, next_cbrack +1)
+
+        #no more comment lines, add data until cbrack
+        data_filtered = data_filtered + data[start_pos:next_cbrack +1]
+        start_pos = next_cbrack +1
+
+        #look if more comments in buffer
+        next_comm_line = data.find(b'//', start_pos +1, next_cbrack)
+        return data_filtered, start_pos
+
+
+    @classmethod
     def read_vbf_file(cls, f_path_name):
         # Disable too-many-locals violations in this function.
         # Should be rewritten, maybe using regexp
@@ -570,23 +658,21 @@ class SupportSBL:
         logging.info("File to read: %s", f_path_name)
         # read to EOF:
         data = SUTE.read_f(f_path_name)
-        #find = data.find
         vers_pos = data.find(b'vbf_version')
         if not vers_pos == 0:
             logging.info("Warning: version not at expected position: %s", vers_pos)
         #logging.debug("Version vers_pos: %s", vers_pos)
 
-        # look for first semiclon
+        # look for first semicolon
         semi_pos = data.find(b';')
-        #logging.debug("position semicolon: %s", semi_pos)
         if not semi_pos == -1:
             semi_pos += 1
-        #logging.info("to filter: %s", data[vers_pos:semi_pos])
+        logging.debug("to filter: %s", data[vers_pos:semi_pos])
 
         # remove CM in string to parse
         # if no semicolon contained take semicolon in file
         str_cm_filtered = cls.vbf_cm_filter(data[vers_pos:semi_pos])
-        #logging.debug("str_cm_filtered: %s", str_cm_filtered)
+        logging.debug("str_cm_filtered: %s", str_cm_filtered)
         while not str_cm_filtered.find(b';'):
             semi_pos = data.find(b';', semi_pos)
             str_cm_filtered = cls.vbf_cm_filter(data[vers_pos:semi_pos])
@@ -595,58 +681,49 @@ class SupportSBL:
         #logging.debug("VBF Version read: %s = %s", v_key.decode('utf-8'), v_arg.decode('utf-8'))
         version = v_arg.decode('utf-8')
 
+        logging.debug("Now starting to read Header")
         #Start to read header data
         #store all key, arg in dict
         header: VbfHeader = {}
         head_pos = data.find(b'header', semi_pos)
-        #logging.debug("Header head_pos: %s", head_pos)
+        logging.debug("Header head_pos: %s", head_pos)
+
         head_pos = data.find(b'{', head_pos) + 1
 
-        #Read next keyword + data,
-        #skip comments
-        #
-        next_scol = data.find(b';', head_pos)
-        next_cbrack = data.find(b'}', head_pos)
-
-        # try to read next keyword
-        str_cm_filtered = cls.vbf_cm_filter(data[head_pos:next_cbrack+1])
-        #logging.debug("str_cm_filtered: %s", str_cm_filtered)
+        # header data without comments, position where to continue reading
+        data_filtered, head_pos = cls.read_vbf_header_filtered(data, head_pos)
 
         #only cbrack in buffer: header completely read
-        while not (str_cm_filtered.find(b'}') != -1 and str_cm_filtered.find(b'=') == -1):
+        while not (data_filtered.find(b'}') != -1 and data_filtered.find(b'=') == -1):
 
         #Read on until next keyword / data pair
-            while str_cm_filtered.find(b';') == -1:
+            while data_filtered.find(b';') == -1:
                 #logging.debug("No ';' found anymore, read further.")
                 #logging.debug("Data read: %s %s", data.find(b'}', next_cbrack+1))
-                next_cbrack = data.find(b'}', next_cbrack+1)
-                str_cm_filtered = cls.vbf_cm_filter(data[head_pos:next_cbrack+1])
+
+                #fill up data_filtered
+                data_filtered2, head_pos = cls.read_vbf_header_filtered(data, head_pos)
+                data_filtered = data_filtered + data_filtered2
 
             # Now I should have next keyword read
             # filter away white spaces
-            str_filtered = cls.vbf_ws_filtered(str_cm_filtered)
-            #logging.debug("expr WS filtered: %s", str_filtered)
+            str_filtered = cls.vbf_ws_filtered(data_filtered)
+            logging.debug("expr WS filtered: %s", str_filtered)
             v_key, v_arg = cls.vbf_parse(str_filtered)
             header[v_key.decode('utf-8')] = v_arg.decode('utf-8')
 
-            #continue reading after last ';'
-            head_pos = next_scol + 1
-            next_scol = data.find(b';', head_pos)
-            next_cbrack = data.find(b'}', head_pos)
-            #update buffer to evaluate
-            str_cm_filtered = cls.vbf_cm_filter(data[head_pos:next_cbrack+1])
+            data_filtered = data_filtered[data_filtered.find(b';')+1:]
 
-        data_start = next_cbrack+1
-        logging.debug("vbf_version: %s", version)
-        logging.debug('Header: %s', header)
-        logging.debug("Data_Start: %s", data_start)
+
+        # header read now, start data
+        data_start = head_pos
+        logging.info("vbf_version: %s", version)
+        logging.info('Header: %s', header)
+        logging.info("Data_Start: %s", data_start)
 
         ### optional to add:
         ### check for not allowed keywords in header
 
-        #return header as dict
-        #current_pos = head_pos
-        # 6.2.1: Header contained in braces '{', '}'
         return version, header, data, data_start
 
 
