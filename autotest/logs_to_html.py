@@ -9,6 +9,7 @@ Usage: python3 visualize_logs.py --logfolder <path_to_logs>
 Output: html file with the results in a table
 """
 
+import traceback
 import argparse
 import logging
 import sys
@@ -251,8 +252,8 @@ def get_git_revision_hash():
     message = ''
     try:
         message = subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode('ascii').strip()
-    except: # pylint: disable=bare-except
-        logging.error('get_git_revision_hash error')
+    except Exception as _: # pylint: disable=broad-except
+        logging.error(traceback.format_exc())
         message = 'Error'
     return message
 
