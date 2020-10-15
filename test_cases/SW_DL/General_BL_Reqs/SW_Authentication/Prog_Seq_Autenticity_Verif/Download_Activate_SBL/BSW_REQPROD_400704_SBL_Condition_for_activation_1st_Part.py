@@ -67,7 +67,7 @@ SE3E = SupportService3e()
 
 def step_5(can_p, call):
     """
-    Teststep 5: SBL activation with correct call
+    Teststep 5: Send RoutineControl Request SID startRoutine (01), Activate Secondary Boot-loader
     """
     call = call.to_bytes((call.bit_length()+7) // 8, 'big')
     cpay: CanPayload = {
@@ -111,6 +111,7 @@ def run():
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
     logging.info("Time: %s \n", time.time())
+
     ############################################
     # precondition
     ############################################
@@ -125,42 +126,43 @@ def run():
     # teststeps
     ############################################
         # step 1:
-        # action: Verify default session
-        # result:
+        # action: Verify if preconditions to programming are fulfilled.
+        # result: ECU sends positive reply if successful.
         result = result and SE31.routinecontrol_requestsid_prog_precond(can_p, 1)
 
         # step2:
-        # action:
-        # result:
+        # action: Change to programming session (02) to be able to enter the PBL.
+        # result: ECU sends positive reply if successful.
         result = result and SE10.diagnostic_session_control_mode2(can_p, 2)
 
         # step 3:
-        # action:
-        # result:
+        # action: Request Security Access to be able to unlock the server(s)
+        #         and run the primary bootloader.
+        # result: Positive reply from support function if Security Access to server is activated.
         result = result and SSA.activation_security_access(can_p, 3,
                                                            "Security Access Request SID")
 
         # step4:
-        # action:
-        # result:
+        # action: Flash the SBL without Check Memory (without verification).
+        # result: Positive reply from support function if DL of SBL ok.
         result_dl, vbf_header = SSBL.sbl_download_no_check(can_p, SSBL.get_sbl_filename())
+        result = result and result_dl
         time.sleep(1)
 
-        result = result and result_dl
-
         # step 5:
-        # action:
-        # result:
+        # action: Send RoutineControl Request SID startRoutine (01) Activate Secondary Boot-loader.
+        # result: ECU sends NRC reply after RoutineControl request is sent.
         result = result and step_5(can_p, vbf_header['call'])
 
         # step 6:
-        # action:
-        # result:
+        # action: Reset the ECU with positive response(01)
+        # result: ECU sends positive reply if successful.
         result = result and SE11.ecu_hardreset(can_p, 6)
+        time.sleep(1)
 
         # step 7:
-        # action:
-        # result:
+        # action: Verify ECU is in default session (01).
+        # result: ECU sends requested DID with current session.
         result = result and SE22.read_did_f186(can_p, b'\x01', stepno=7)
 
     ############################################

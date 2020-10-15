@@ -82,9 +82,9 @@ def step_2():
 
 def step_3(can_p):
     """
-    Teststep 8: set FC delay > 1000 ms
+    Teststep 3: set FC delay > 1000 ms
     """
-    stepno = 8
+    stepno = 3
     purpose = "set FC delay > 1000 ms"
     result = True
     SUTE.print_test_purpose(stepno, purpose)
@@ -102,9 +102,9 @@ def step_3(can_p):
 
 def step_4(can_p, vbf_header):
     """
-    Teststep 7: Send MF request
+    Teststep 4: Send MF request
     """
-    stepno = 7
+    stepno = 4
 
     #Take first element of list to erase
     erase_el = vbf_header["erase"][0]
@@ -138,9 +138,9 @@ def step_4(can_p, vbf_header):
 
 def step_5(can_p):
     """
-    Teststep 4: send CF with with CF delay < 1000 ms
+    Teststep 5: send CF with with CF delay < 1000 ms
     """
-    stepno = 4
+    stepno = 5
     purpose = "set FC delay < 1000 ms"
     result = True
     SUTE.print_test_purpose(stepno, purpose)
@@ -172,7 +172,7 @@ def step_6(can_p, vbf_header):
 
 def step_7(can_p):
     """
-    Teststep 6: verify session SBL
+    Teststep 7: verify session SBL
     """
     result = SE22.read_did_eda0(can_p, stepno=7)
     logging.info("Complete Part/serial received: %s", SC.can_messages[can_p["receive"]])

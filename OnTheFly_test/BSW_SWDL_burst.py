@@ -91,7 +91,6 @@ def step_4(can_p: CanParam):
     Teststep 4: Check Complete And Compatible
     """
     stepno = 4
-    #purpose = "verify RoutineControl start are sent for Type 1"
 
     result = SSBL.check_complete_compatible_routine(can_p, stepno)
     return result
@@ -134,33 +133,29 @@ def run():
         # teststeps
         ############################################
         # step 1:
-        # action: verify RoutineControl start is sent for Type 1
-        # result: BECM sends positive reply
-
-        #extra reset when DL didn't start correct after unfinished SWDL
-        #result = result and step_5(network_stub, can_send, can_receive, can_namespace)
-
+        # action: download and activate SBL
+        # result:
         result = result and step_1(can_p)
-        #result = step_4(network_stub, can_send, can_receive, can_namespace)
+
         # step 2:
-        # action:
-        # result: BECM sends positive reply
+        # action: ESS Software Part Download
+        # result:
         result = result and step_2(can_p)
 
         # step 3:
-        # action:
-        # result: BECM sends positive reply
+        # action: Download other SW Parts
+        # result:
         result = result and step_3(can_p)
 
         # step 4:
-        # action:
-        # result: BECM sends positive reply
+        # action: Check Complete And Compatible
+        # result:
         result = result and step_4(can_p)
 
         # step 5:
         # action: ECU reset - Restart with downloaded SW
         # result: ECU accepts reset request
-        result = result and SE11.ecu_hardreset(can_p)
+        result = result and SE11.ecu_hardreset_5sec_delay(can_p)
 
         # step 6:
         # action: Check which Mode ECU is in after reset

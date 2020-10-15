@@ -65,7 +65,7 @@ def step_2(can_p):
         }
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
     etp: CanTestExtra = {
-        "step_no": 1,
+        "step_no": 2,
         "purpose": "verify ReadDTCInfoExtDataRecordByDTCNumber reply positively",
         "timeout": 1,
         "min_no_messages": -1,
