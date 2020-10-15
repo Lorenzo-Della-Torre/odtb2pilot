@@ -123,10 +123,10 @@ def run():
     # precondition
     ############################################
 
-    # read VBF param when testscript is s started, if empty take default param
-    SSBL.get_vbf_files()
+    # read VBF param when tget_vbf_filesestscript is s started, if empty take default param
+    result = SSBL.get_vbf_files()
     timeout = 3600
-    result = PREC.precondition(can_p, timeout)
+    result = result and PREC.precondition(can_p, timeout)
 
     if result:
         ############################################
