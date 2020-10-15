@@ -79,11 +79,6 @@ class SupportService31:
                              "max_no_messages" : -1
                             }
         result = SupportService31.routinecontrol_request_sid(can_p, cpay, etp)
-        #result = SUTE.teststep(can_p, cpay, stepno, etp)
-        #logging.info(SC.can_messages[can_p["receive"]])
-        #result = result and (
-        #    SUTE.pp_decode_routine_control_response(SC.can_messages[can_p["receive"]][0][2],
-        #                                            'Type1,Completed'))
         return result
 
     @staticmethod
@@ -102,16 +97,7 @@ class SupportService31:
                              "min_no_messages" : -1,\
                              "max_no_messages" : -1
                             }
-        #testresult = SUTE.teststep(can_p, cpay, stepno, etp)
-        #testresult = testresult and (
-        #    SUTE.pp_decode_routine_control_response(SC.can_messages[can_p["receive"]][0][2],
-        #                                            'Type1,Completed'))
-
         result = SupportService31.routinecontrol_request_sid(can_p, cpay, etp)
-        #testresult = SUTE.teststep(can_p, cpay, stepno, etp)
-        #testresult = testresult and (
-        #    SUTE.pp_decode_routine_control_response(SC.can_messages[can_p["receive"]][0][2],
-        #                                            'Type1,Completed'))
         return result
 
 
