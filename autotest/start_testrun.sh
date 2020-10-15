@@ -13,17 +13,15 @@ else
 	git pull
 	cd ~/testrun
 
-	cp -u $TESTREPO/Py_testenv/*.py ~/projects/odtb2/python/
-
 	# Execute test scripts
 	./auto_testscript.sh
+
+	# Generate did report
+	./generate_did_report.sh
 	
 	# Generate log report
 	./generate_log_report.sh
 	
-	# Generate did report
-	./generate_did_report.sh
-
 	echo
 	echo "All scripts executed. All html reports generated"
 fi
