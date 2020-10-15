@@ -9,6 +9,7 @@ Usage: python3 visualize_logs.py --logfolder <path_to_logs>
 Output: html file with the results in a table
 """
 
+import traceback
 import argparse
 import logging
 import sys
@@ -248,7 +249,13 @@ def get_url_dict(script_folder):
 
 def get_git_revision_hash():
     ''' Returns git revision hash '''
-    return subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode('ascii').strip()
+    message = ''
+    try:
+        message = subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode('ascii').strip()
+    except Exception as _: # pylint: disable=broad-except
+        logging.error(traceback.format_exc())
+        message = 'Error'
+    return message
 
 # Will break this into smaller functions later, but it is not easy to split the html generation.
 def generate_html(folderinfo_and_result_tuple_list, outfile, verif_d,  # pylint: disable=too-many-locals, too-many-branches, too-many-statements, too-many-arguments
@@ -318,12 +325,14 @@ def generate_html(folderinfo_and_result_tuple_list, outfile, verif_d,  # pylint:
 
             doc.stag('br') # Line break for some space
 
+            # One counter for each test suite
+            for _ in folderinfo_and_result_tuple_list:
+                res_counter_list.append(collections.Counter())
+
             # For the legend (explanation) and the summarization
             for key in sorted_key_list:
                 index = 0
                 for folderinfo_and_result_tuple in folderinfo_and_result_tuple_list:
-                    # Adding one counter for each testresult folder
-                    res_counter_list.append(collections.Counter())
                     testres_dict = folderinfo_and_result_tuple[TESTRES_DICT_IDX]
                     result = MISSING_STATUS # Default
                     if key in testres_dict:
@@ -483,7 +492,6 @@ def generate_html(folderinfo_and_result_tuple_list, outfile, verif_d,  # pylint:
                 # Sum row
                 with tag('tr'):
                     line('th', '', colspan='3')
-
                     for res_counter in res_counter_list:
                         line('th', calculate_sum_string(res_counter))
 
