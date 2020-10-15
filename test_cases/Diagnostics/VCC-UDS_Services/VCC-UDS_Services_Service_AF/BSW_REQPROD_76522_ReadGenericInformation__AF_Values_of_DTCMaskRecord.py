@@ -1,12 +1,11 @@
-# Testscript ODTB2 MEPII
+﻿# Testscript ODTB2 MEPII
 # project:  BECM basetech MEPII
-# author:   LDELLATO (Lorenzo Della Torre)
-# date:     2020-05-09
-# version:  1.1
-# reqprod:  76500
+# author:   J-ASSAR1 (Joel Assarsson)
+# date:     2020-10-09
+# version:  2.0
+# reqprod:  76522
 
-#inspired by https://grpc.io/docs/tutorials/basic/python.html
-
+# #inspired by https://grpc.io/docs/tutorials/basic/python.html
 # Copyright 2015 gRPC authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,45 +21,67 @@
 # limitations under the License.
 
 """The Python implementation of the gRPC route guide client."""
-
-import time
 from datetime import datetime
-import sys
+import time
 import logging
+import sys
 import inspect
-
 import odtb_conf
-from support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
+from support_can import SupportCAN, CanParam, CanTestExtra, CanPayload
 from support_test_odtb2 import SupportTestODTB2
-from support_carcom import SupportCARCOM
-from support_file_io import SupportFileIO
-
 from support_precondition import SupportPrecondition
 from support_postcondition import SupportPostcondition
-from support_service22 import SupportService22
-from support_service10 import SupportService10
+from support_file_io import SupportFileIO
+from support_carcom import SupportCARCOM
 
-SIO = SupportFileIO
 SC = SupportCAN()
 SUTE = SupportTestODTB2()
 SC_CARCOM = SupportCARCOM()
 PREC = SupportPrecondition()
 POST = SupportPostcondition()
-SE10 = SupportService10()
-SE22 = SupportService22()
+SIO = SupportFileIO
+
+
+def step_1(can_p):
+    """
+    Teststep 1: Request report Generic Snapshot By DTC Number
+    """
+    # Using 0AA600 for testing
+    cpay: CanPayload = {
+        "payload": SC_CARCOM.can_m_send("ReadGenericInformationReportGenericSnapshotByDTCNumber",
+                                        b'\x0A\xA6\x00',
+                                        b'\xFF'),
+        "extra": ''
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    etp: CanTestExtra = {
+        "step_no": 1,
+        "purpose": "Request report Generic Snapshot By DTC Number",
+        "timeout": 1,
+        "min_no_messages": -1,
+        "max_no_messages": -1
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+
+    result = SUTE.teststep(can_p, cpay, etp)
+    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='EF04')
+    return result
+
 
 def step_2(can_p):
     """
-    Teststep 2: verify that DTC info reply positively
+    Teststep 2: Request report Generic Snapshot By DTC Number for all DTCs
     """
     cpay: CanPayload = {
-        "payload": SC_CARCOM.can_m_send("ReadDTCByStatusMask", b'', b'confirmedDTC'),
+        "payload": SC_CARCOM.can_m_send("ReadGenericInformationReportGenericSnapshotByDTCNumber",
+                                        b'\xFF\xFF\xFF',
+                                        b'\xFF'),
         "extra": ''
         }
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
     etp: CanTestExtra = {
         "step_no": 2,
-        "purpose": "verify ReadDTCByStatusMask reply positively",
+        "purpose": "Request report Generic Snapshot By DTC Number for all DTCs",
         "timeout": 1,
         "min_no_messages": -1,
         "max_no_messages": -1
@@ -68,33 +89,9 @@ def step_2(can_p):
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
 
     result = SUTE.teststep(can_p, cpay, etp)
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]],
-                                          teststring='5902')
-
+    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='EF04')
     return result
 
-def step_3(can_p):
-    """
-    Teststep 3: verify that Read DTC by Status Mask reply with empty frame
-    """
-    cpay: CanPayload = {
-        "payload": SC_CARCOM.can_m_send("ReadDTCByStatusMask(82)", b'', b'confirmedDTC'),
-        "extra": ''
-        }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
-
-    etp: CanTestExtra = {
-        "step_no": 3,
-        "purpose": "verify ReadDTCByStatusMask reply empty message",
-        "timeout": 1,
-        "min_no_messages": -1,
-        "max_no_messages": -1
-        }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
-
-    result = SUTE.teststep(can_p, cpay, etp)
-    result = result and not SC.can_messages[can_p["receive"]]
-    return result
 
 def run():
     """
@@ -118,37 +115,27 @@ def run():
     ############################################
     # precondition
     ############################################
-    timeout = 30
+    timeout = 40
     result = PREC.precondition(can_p, timeout)
 
     if result:
-    ############################################
-    # teststeps
-    ############################################
-    # step1:
-    # action: # Change to extended session
-    # result: BECM reports mode
-        result = result and SE10.diagnostic_session_control_mode3(can_p, 1)
 
-    # step2:
-    # action:
-    # result: BECM sends positive reply
+        ############################################
+        # teststeps
+        ############################################
+        # step 1:
+        # action: Request report Generic Snapshot By DTC Number
+        # result: BECM reply positively
+        result = result and step_1(can_p)
+
+        # step 2:
+        # action: Request report Generic Snapshot By DTC Number for all DTCs
+        # result: BECM reply positively
         result = result and step_2(can_p)
-
-    # step3:
-    # action:
-    # result: BECM sends positive reply
-        result = result and step_3(can_p)
-
-    # step4:
-    # action: verify current session
-    # result: BECM reports extended session
-        result = result and SE22.read_did_f186(can_p, dsession=b'\x03', stepno=4)
 
     ############################################
     # postCondition
     ############################################
-
     POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':

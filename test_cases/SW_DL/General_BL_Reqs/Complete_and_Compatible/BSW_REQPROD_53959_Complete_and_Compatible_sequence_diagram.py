@@ -83,7 +83,7 @@ def step_3(can_p):
 
 def step_4(can_p):
     """
-    Teststep 3: Check the Complete and compatible Routine return Not Complete
+    Teststep 4: Check the Complete and compatible Routine return Not Complete
     """
     etp: CanTestExtra = {
         "step_no" : 4,

@@ -177,7 +177,7 @@ def step_5(can_p):
 
 def step_6(can_p, p4_server_max, jitter_testenv):
     """
-    Teststep 4: Verify (time receive message – time sending request) < P4_server_max
+    Teststep 6: Verify (time receive message – time sending request) < P4_server_max
     """
     step_no = 6
     purpose = "Verify (time receive message – time sending request) less than P4_server_max"

@@ -191,7 +191,7 @@ def step_4(stub, can_send, can_receive, can_namespace, result):
 
 def step_5(margs):
     """
-    Teststep 1: Extract all DID from Data Base
+    Teststep 5: Extract all DID from Data Base
     """
     stepno = 5
     purpose = "Extract all DID from Data Base"
