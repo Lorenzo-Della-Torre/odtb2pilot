@@ -4,9 +4,9 @@
 # date:     2020-01-15
 # version:  1.0
 # reqprod:  400894
-
-# author:   LDELLATO (Lorenzo Della Torre)
-# date:     2020-09-22
+# Changes: update for YML support
+# author:   J-ADSJO
+# date:     2020-10-14
 # version:  1.1
 # reqprod:  400894
 
@@ -70,9 +70,9 @@ def step_3():
     Teststep 3: Read VBF files for 1st SWP file (1st Logical Block)
     """
     stepno = 3
-    purpose = "1st files reading"
-
+    purpose = "Read VBF files for 1st SWP file (1st Logical Block)"
     SUTE.print_test_purpose(stepno, purpose)
+
     data_files = SSBL.get_df_filenames()
     _, vbf_header, data, data_start = SSBL.read_vbf_file(data_files[0])
     return vbf_header, data, data_start
@@ -83,21 +83,19 @@ def step_4(data, data_start):
     """
     stepno = 4
     purpose = "Extract data for the 1st data block from 1st file"
-
     SUTE.print_test_purpose(stepno, purpose)
 
     _, block_by_1, _ = SSBL.block_data_extract(data, data_start)
     return block_by_1
 
-def step_5(can_p, block_by_1,
-           vbf_header):
+def step_5(can_p, block_by_1, vbf_header):
     """
     Teststep 5: Request Download the 1st data block (1nd Logical Block)
     """
     stepno = 5
     purpose = "Request Download the 1st data block (1nd Logical Block)"
-
     SUTE.print_test_purpose(stepno, purpose)
+
     SSBL.vbf_header_convert(vbf_header)
     result, _ = SE34.request_block_download(can_p, vbf_header, block_by_1, stepno,
                                             purpose)
@@ -108,9 +106,9 @@ def step_6():
     Teststep 6: Read VBF files for 2nd SWP file (1st Logical Block)
     """
     stepno = 6
-    purpose = "1st files reading"
-
+    purpose = "Read VBF files for 2nd SWP file (1st Logical Block)"
     SUTE.print_test_purpose(stepno, purpose)
+
     data_files = SSBL.get_df_filenames()
     _, vbf_header, data, data_start = SSBL.read_vbf_file(data_files[1])
     return vbf_header, data, data_start
@@ -120,18 +118,21 @@ def step_7(data, data_start):
     Teststep 7: Extract data for the 1st data block from 2nd SWP
     """
     stepno = 7
-    purpose = "Extract data for the 1st data block from 2nd file"
-
+    purpose = "Extract data for the 1st data block from 2nd SWP"
     SUTE.print_test_purpose(stepno, purpose)
 
     _, block_by_2, _ = SSBL.block_data_extract(data, data_start)
     return block_by_2
 
-def step_8(can_p, block_by_2,
-           vbf_header):
+def step_8(can_p, block_by_2, vbf_header):
     """
-    Teststep 8: Request Download the 1st data block (2nd Logical Block)
+    Teststep 8: Request Download the 1st data block (2nd Logical Block) is rejected
+    
+    stepno = 8
+    purpose = "Request Download the 1st data block (2nd Logical Block) is rejected"
+    SUTE.print_test_purpose(stepno, purpose)
     """
+
     SSBL.vbf_header_convert(vbf_header)
     addr_b = block_by_2['StartAddress'].to_bytes(4, 'big')
     len_b = block_by_2['Length'].to_bytes(4, 'big')
@@ -145,29 +146,20 @@ def step_8(can_p, block_by_2,
                        }
 
     etp: CanTestExtra = {"step_no": 8,
-                         "purpose" : "Request Download the 1st data block",
+                         "purpose" : "Request Download the 1st data block (2nd Logical Block) is rejected",
                          "timeout" : 0.05,
                          "min_no_messages" : -1,
                          "max_no_messages" : -1
                         }
-
-    #change Control Frame parameters
-    can_mf: CanMFParam = {
-        "block_size": 0,
-        "separation_time": 0,
-        "frame_control_delay": 0, #no wait
-        "frame_control_flag": 48, #continue send
-        "frame_control_auto": False
-        }
-
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_mf)
-
-    SC.change_mf_fc(can_p["receive"], can_mf)
+    
+    
     result = SUTE.teststep(can_p, cpay, etp)
 
     result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='7F3431')
+    #result = SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='7F3431')
 
     logging.info('%s', SUTE.pp_decode_7f_response(SC.can_frames[can_p["receive"]][0][2]))
+    
     return result
 
 def run():
@@ -206,6 +198,10 @@ def run():
         # step1:
         # action: DL and activate SBL
         # result: ECU sends positive reply
+        stepno = 1
+        purpose = "DL and activate SBL"
+        SUTE.print_test_purpose(stepno, purpose)
+ 
         result = result and SSBL.sbl_activation(can_p, stepno=1,
                                                 purpose="DL and activate SBL")
         time.sleep(1)
@@ -213,6 +209,10 @@ def run():
         # step2:
         # action: download ESS Software Part
         # result: ECU sends positive reply
+        stepno = 2
+        purpose = "Download ESS Software Part"
+        SUTE.print_test_purpose(stepno, purpose)
+
         result = result and SSBL.sw_part_download(can_p, SSBL.get_ess_filename(),\
                                    stepno=2, purpose="ESS Software Part Download")
         time.sleep(1)
