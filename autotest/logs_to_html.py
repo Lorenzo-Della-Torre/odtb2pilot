@@ -283,6 +283,7 @@ def generate_html(folderinfo_and_result_tuple_list, outfile, verif_d,  # pylint:
              "width: 10%; text-align:center; vertical-align: middle; border:1px black solid;"
              "margin:30px;}"
              "#meta_data {float:left;margin:30px;}"
+             ".ecu_git_hash {max-width:300px;overflow-wrap:break-word;text-align: right;}"
              "#legend {float:left;margin:30px;}"
              "#title {background-color: lightgrey; height: 100px; line-height: 100px; float:left;"
              "overflow:hidden;"
@@ -384,7 +385,7 @@ def generate_html(folderinfo_and_result_tuple_list, outfile, verif_d,  # pylint:
                             text(git_revision_hash)
                     with tag('tr'):
                         line('td', 'ECU GIT Hash')
-                        with tag('td', klass='number'):
+                        with tag('td', klass='ecu_git_hash'):
                             text(td.git_hash)
                     with tag('tr'):
                         line('td', 'Application Diagnostic Database Part Number')
