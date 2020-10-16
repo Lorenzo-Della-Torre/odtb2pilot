@@ -4,14 +4,17 @@
 # date:     2019-05-16
 # version:  1.0
 # reqprod:  76670
-
+#
 # author:   t-kumara(Tanujaluru)
 # date:     2020-10-08
 # version:  1.1
 # reqprod:  update for YML Support
-
-
-
+#
+## author:  J-ASSAR1 (Joel Assarsson)
+# date:     2020-10-16
+# version:  1.2
+# reqprod:  76519
+#
 # #inspired by https://grpc.io/docs/tutorials/basic/python.html
 # Copyright 2015 gRPC authors.
 #
@@ -34,14 +37,12 @@ from datetime import datetime
 import sys
 import logging
 import inspect
-import os
 
 import odtb_conf
-from support_can import SupportCAN, CanParam, CanTestExtra
+from support_can import SupportCAN, CanParam, CanTestExtra, CanPayload
 from support_test_odtb2 import SupportTestODTB2
 from support_carcom import SupportCARCOM
 from support_file_io import SupportFileIO
-
 from support_precondition import SupportPrecondition
 from support_postcondition import SupportPostcondition
 from support_service10 import SupportService10
@@ -56,7 +57,6 @@ POST = SupportPostcondition()
 SE10 = SupportService10()
 SE22 = SupportService22()
 
-# teststep 1: Request Diagnostic Information for “All groups” (‘FFFFFF’)
 
 def step_2(can_p):
     """
@@ -71,7 +71,8 @@ def step_2(can_p):
         }
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
     etp: CanTestExtra = {"step_no": 2,
-                         "purpose" : "Get Generic Snapshot by DTC Number for “All groups” (‘FFFFFF’)",
+                         "purpose" : "Get Generic Snapshot by DTC Number for “All groups” "
+                                    +"(‘FFFFFF’)",
                          "timeout" : 2,
                          "min_no_messages" : -1,
                          "max_no_messages" : -1
@@ -85,19 +86,20 @@ def step_2(can_p):
 
 def step_3(can_p):
     """
-    teststep 3:Get Generic Snapshot by DTC Number for “All groups” (‘FFFFFF’) and suppressPosRspMsgIndicationBit = True
+    teststep 3:Get Generic Snapshot by DTC Number for “All groups”
+    (‘FFFFFF’) and suppressPosRspMsgIndicationBit = True
     """
-  
-
     cpay: CanPayload = {
-        "payload" : SC_CARCOM.can_m_send("ReadGenericInformationReportGenericSnapshotByDTCNumber(84)",
-                                                         b'\xFF\xFF\xFF',\
-                                                         b'\xFF'),
+        "payload" : SC_CARCOM.can_m_send(   \
+                            "ReadGenericInformationReportGenericSnapshotByDTCNumber(84)",
+                            b'\xFF\xFF\xFF',\
+                            b'\xFF'),
          "extra" : ''
          }
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
     etp: CanTestExtra = {"step_no": 3,
-                         "purpose" : "Get Generic Snapshot by DTC Number for “All groups” (‘FFFFFF’) and suppressPosRspMsgIndicationBit = True",
+                         "purpose" : "Get Generic Snapshot by DTC Number for “All groups”"\
+                                    + "(‘FFFFFF’) and suppressPosRspMsgIndicationBit = True",
                          "timeout" : 2,
                          "min_no_messages" : 0,
                          "max_no_messages" : 0
@@ -111,10 +113,8 @@ def step_4(can_p):
     """
     teststep 3:Verify Extended session
     """
-  
-
     cpay: CanPayload = {
-        "payload" : SC_CARCOM.can_m_send("ReadDataByIdentifier", b'\xF1\x86', ""),
+        "payload" : SC_CARCOM.can_m_send("ReadDataByIdentifier", b'\xF1\x86', b''),
         "extra" : b'\x03'
         }
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
@@ -133,7 +133,6 @@ def run():
     """
     Run - Call other functions from here
     """
-    
     logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
     # where to connect to signal_broker
     can_p: CanParam = {
@@ -156,38 +155,35 @@ def run():
     timeout = 60
     result = PREC.precondition(can_p, timeout)
 
-    
     if result:
-    ############################################
-    # teststeps
-    ############################################
-    # step 1:
-    # action: change to extended session
-    # result: BECM report Mode
+
+        ############################################
+        # teststeps
+        ############################################
+        # step 1:
+        # action: change to extended session
+        # result: BECM report Mode
         result = result and SE10.diagnostic_session_control_mode3(can_p,1)
 
-    # step 2:
-    # action: Request report Generic Snapshot By DTC Number
-    # result: BECM reply positively
+        # step 2:
+        # action: Request report Generic Snapshot By DTC Number
+        # result: BECM reply positively
         result = result and step_2(can_p)
-             
-    # step 3:
-    # action: Get Generic Snapshot by DTC Number for “All groups” (‘FFFFFF’) 
-    # result: BECM  -NO reply 
+
+        # step 3:
+        # action: Get Generic Snapshot by DTC Number for “All groups” (‘FFFFFF’)
+        # result: BECM  -NO reply
         result = result and step_3(can_p)
 
-    # step 4:
-    # action: Verify Extended session active 
-    # result: BECM sends active mode 
+        # step 4:
+        # action: Verify Extended session active
+        # result: BECM sends active mode
         result = result and step_4(can_p)
-    
-   
-    # step 5:
-    # action: Change BECM to Default
-    # result: BECM sends active Mode 
+
+        # step 5:
+        # action: Change BECM to Default
+        # result: BECM sends active Mode
         result = result and SE10.diagnostic_session_control_mode1(can_p,4)
-
-
 
     ############################################
     # postCondition
@@ -197,4 +193,3 @@ def run():
 
 if __name__ == '__main__':
     run()
-
