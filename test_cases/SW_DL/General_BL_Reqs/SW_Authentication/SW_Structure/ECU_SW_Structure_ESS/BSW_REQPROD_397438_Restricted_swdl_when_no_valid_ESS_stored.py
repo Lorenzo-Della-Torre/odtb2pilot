@@ -178,7 +178,7 @@ def run():
         # step 7:
         # action: # ECU Reset
         # result: ECU sends positive reply
-        result = result and SE11.ecu_hardreset(can_p, stepno=7)
+        result = result and SE11.ecu_hardreset_5sec_delay(can_p, stepno=7)
 
         # step8:
         # action: verify current session
