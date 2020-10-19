@@ -8,7 +8,7 @@
 # Output information
 OUTPUT_FILE_NAME = 'did_dict'
 OUTPUT_FOLDER = 'output/'
-OUTPUT_TESTRUN_DATA_FN = "testrun_data"
+OUTPUT_TESTRUN_DATA_FN = "testrun_data.py"
 
 PART_NBR = "part_nbr"
 GIT_HASH = "git_hash"

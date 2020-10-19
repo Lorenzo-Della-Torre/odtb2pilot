@@ -4,12 +4,17 @@
 # date:     2020-06-10
 # version:  1.0
 # reqprod:  52286
-
+#
 # author:   LDELLATO (Lorenzo Della Torre)
 # date:     2020-09-15
 # version:  1.1
 # reqprod:  52286
-
+#
+# author:   J-ASSAR1 (Joel Assarsson)
+# date:     2020-10-16
+# version:  1.2
+# reqprod:  52286
+#
 # #inspired by https://grpc.io/docs/tutorials/basic/python.html
 # Copyright 2015 gRPC authors.
 #
@@ -185,6 +190,7 @@ def run():
             result = result and SSBL.sw_part_download(can_p, i, stepno=10)
         result = result and SSBL.check_complete_compatible_routine(can_p, stepno=10)
         result = result and SE11.ecu_hardreset(can_p, stepno=10)
+        time.sleep(1)
 
     ############################################
     # postCondition
