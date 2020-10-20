@@ -4,17 +4,28 @@
 ### token and pass created for tht repo
 	TESTREPO=~/Repos/odtb2pilot
 	cd $TESTREPO
-	cd ~/testrun
 
-	# Copying files from Py_testenv to projects/odtb2/python/ where it can be found
-	cp -u $TESTREPO/Py_testenv/*.py ~/projects/odtb2/python/
+	cd ~/testrun
+	[ ! -d VBF ] && mkdir VBF
+	rm -f VBF/*
+	cp ~/delivery/*.vbf VBF
+
+	[ ! -d VBF_Reqprod ] && mkdir VBF_Reqprod
+	rm -f VBF_Reqprod/*
+	cp $TESTREPO/autotest/VBF_Reqprod_SPA/* VBF_Reqprod
+
+	[ ! -d parameters_yml ] && mkdir parameters_yml
+	rm -f parameters_yml/*
+	cp $TESTREPO/yml_parameter/MEP2_SPA1/* parameters_yml
 
 	### GRPC catalog needed for using GRPC in Python scripts
-	export PYTHONPATH=$HOME/projects/odtb2/python
+	# set PYTHONPATH in .bashrc
+	# export PYTHONPATH=/home/ci/Repos/odtb2pilot/Py_testenv/:.
+	#old: export PYTHONPATH=$HOME/projects/odtb2/python
 
 	### Generate catalog for logfiles and list of scripts to run
 	TESTRUN=$(date +Testrun_%Y%m%d_%H%M_BECM_BT)
-	mkdir $TESTRUN
+	[ ! -d $TESTRUN ] && mkdir $TESTRUN
 	echo "Results of testrun $TESTRUN:" >$TESTRUN\/Result.txt
 
 	### collect all testscripts
