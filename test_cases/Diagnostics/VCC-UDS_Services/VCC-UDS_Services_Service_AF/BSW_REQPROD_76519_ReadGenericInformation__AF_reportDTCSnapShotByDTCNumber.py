@@ -139,11 +139,7 @@ def run():
         ############################################
         # teststeps
         ############################################
-        # step 1:
-        # action: change to default session
-        # result: BECM report Mode
-        result = result and SE10.diagnostic_session_control_mode1(can_p,1)
-
+        
         # step 2:
         # action: Request report Generic Snapshot By DTC Number
         # result: BECM reply positively
@@ -153,11 +149,6 @@ def run():
         # action: Get Generic Snapshot by DTC Number for “All groups” (‘FFFFFF’)
         # result: BECM  -NO reply
         result = result and step_3(can_p)
-
-        # step 4:
-        # action: Change BECM to Default
-        # result: BECM sends active Mode
-        result = result and SE10.diagnostic_session_control_mode1(can_p,4)
 
     ############################################
     # postCondition
