@@ -139,7 +139,7 @@ def run():
         ############################################
         # teststeps
         ############################################
-        
+
         # step 2:
         # action: Request report Generic Snapshot By DTC Number
         # result: BECM reply positively
