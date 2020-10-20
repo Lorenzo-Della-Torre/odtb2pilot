@@ -526,7 +526,8 @@ class SupportSBL:
                 header[keys] = cvert
 
             try:
-                header[keys] = eval(header[keys]) # pylint: disable=eval-used
+                if keys != 'sw_part_type':
+                    header[keys] = eval(header[keys]) # pylint: disable=eval-used
             except: # pylint: disable=bare-except
                 traceback.print_exc()
                 logging.info("Oops! Value in header that can't be evaluated")
