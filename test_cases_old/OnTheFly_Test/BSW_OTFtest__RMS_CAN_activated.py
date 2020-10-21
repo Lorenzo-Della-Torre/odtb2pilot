@@ -1,8 +1,8 @@
 # Testscript ODTB2 MEPII
 # project:  BECM basetech MEPII
-# author:   LDELLATO (Lorenzo Della Torre)
-# date:     2019-09-04
-# version:  1.0
+# author:   G-HERMA6 (Gunnar Hermansson)
+# date:     2020-10-21
+# version:  2.0
 # reqprod:  none
 
 
@@ -24,167 +24,100 @@
 
 """The Python implementation of the gRPC route guide client."""
 
-
-
-import time
 from datetime import datetime
+import logging
+import inspect
+import sys
+import time
 
-import ODTB_conf
-from support_can import Support_CAN
-from support_test_odtb2 import Support_test_ODTB2
+from support_precondition import SupportPrecondition
+from support_postcondition import SupportPostcondition
+from support_can import SupportCAN, CanParam
+from support_file_io import SupportFileIO
+from support_test_odtb2 import SupportTestODTB2
 
-SC = Support_CAN()
-SUTE = Support_test_ODTB2()
+import odtb_conf
 
-
-# Global variable:
-
-
-def precondition(stub, can_send, can_receive, can_namespace, result):
-    """
-    Precondition for test running:
-    BECM has to be kept alive: start heartbeat
-    """
-
-    # start heartbeat, repeat every 0.8 second
-    SC.start_heartbeat(stub, "EcmFront1NMFr", "Front1CANCfg0",
-                       b'\x20\x40\x00\xFF\x00\x00\x00\x00', 0.8)
-    time.sleep(4) #wait for ECU startup
-
-    timeout = 60   #seconds
-    SC.subscribe_signal(stub, can_send, can_receive, can_namespace, timeout)
-    #record signal we send as well
-    SC.subscribe_signal(stub, can_receive, can_send, can_namespace, timeout)
-
-    print()
-    result = step_0(stub, can_send, can_receive, can_namespace, result)
-
-    print("precondition testok:", result, "\n")
-    return result
+PREC = SupportPrecondition()
+POST = SupportPostcondition()
+SC = SupportCAN()
+SIO = SupportFileIO()
+SUTE = SupportTestODTB2()
 
 
-def step_0(stub, can_send, can_receive, can_namespace, result):
-    """
-    Teststep 0: Complete ECU Part/Serial Number(can_send)
-    """
-
-    stepno = 0
-    purpose = "Complete ECU Part/Serial Number(can_send)"
-    timeout = 5
-    min_no_messages = 1
-    max_no_messages = 1
-
-    can_m_send = SC.can_m_send("ReadDataByIdentifier", b'\xED\xA0', "")
-    can_mr_extra = ''
-
-    result = result and SUTE.teststep(stub, can_m_send, can_mr_extra,
-                                      can_send, can_receive, can_namespace,
-                                      stepno, purpose, timeout,
-                                      min_no_messages, max_no_messages)
-    print(SUTE.PP_CombinedDID_EDA0(SC.can_messages[can_receive][0][2], title=''))
-    return result
-
-
-def step_1(stub, can_send, can_receive, can_namespace, result):
+def step_1(can_p, can_receive, can_namespace):
     """
     Teststep 1: register RMS signal
     """
-
     stepno = 1
     purpose = "register RMS signal"
     SUTE.print_test_purpose(stepno, purpose)
-    timeout = 60
-    #min_no_messages = -1
-    #max_no_messages = -1
 
-    #can_receive = "BecmRmsCanFr03"
-    #can_nspace = SC.nspace_lookup(can_namespace)
-    #can_nspace = SC.nspace_lookup("BecmRmsCanFr1")
+    can_p: CanParam = {
+        "netstub" : can_p['netstub'],
+        "send" : can_p['send'],
+        "receive" : can_receive,
+        "namespace" : can_namespace,
+    }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
 
-    SC.subscribe_signal(stub, can_send, can_receive, can_namespace, timeout)
+    SC.subscribe_signal(can_p, timeout=60)
     time.sleep(1)
-    #SC.clear_all_can_messages()
-    print("all can messages cleared")
-    #SC.clear_all_can_frames()
-    SC.update_can_messages(can_receive)
-    print("all can messages updated")
+
+    result = SC.update_can_messages(can_receive)
+    logging.info("All CAN messages updated")
+
     time.sleep(10)
-    print()
-    print("Step1: messages received ", len(SC.can_messages[can_receive]))
-    print("Step1: messages: ", SC.can_messages[can_receive], "\n")
-    print("Step1: frames received ", len(SC.can_frames[can_receive]))
-    print("Step1: frames: ", SC.can_frames[can_receive], "\n")
+    logging.info("Step %s: %s messages received", stepno, len(SC.can_messages[can_receive]))
+    logging.info("Step %s: messages: %s", stepno, SC.can_messages[can_receive])
+    logging.info("Step %s: %s frames received", stepno, len(SC.can_frames[can_receive]))
+    logging.info("Step %s: frames: %s", stepno, SC.can_frames[can_receive])
 
-    result = result and (len(SC.can_frames[can_receive]) > 10)
+    result = result and len(SC.can_frames[can_receive]) > 10
 
-    print("Step ", stepno, " teststatus:", result, "\n")
+    logging.info("Step %s teststatus: %s", stepno, result)
+
     return result
-
 
 
 def run():
     """
-    Run
+    Run - Call other functions from here
     """
+    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
-    test_result = True
+    can_p: CanParam = {
+        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
+        "send" : "Vcu1ToBecmFront1DiagReqFrame",
+        "receive" : "BecmToVcu1Front1DiagResFrame",
+        "namespace" : SC.nspace_lookup("Front1CANCfg0")
+    }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
 
-    #start logging
-    # to be implemented
-
-    # where to connect to signal_broker
-    network_stub = SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT)
-
-    can_send = "Vcu1ToBecmFront1DiagReqFrame"
-    can_receive = "BecmToVcu1Front1DiagResFrame"
-    can_namespace = SC.nspace_lookup("Front1CANCfg0")
-
-    print("Testcase start: ", datetime.now())
+    logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
-    print("time ", time.time())
-    print()
+    logging.info("Time: %s \n", time.time())
+
     ############################################
     # precondition
     ############################################
-    test_result = precondition(network_stub, can_send, can_receive, can_namespace, test_result)
+    result = PREC.precondition(can_p, timeout=60)
 
-    ############################################
-    # teststeps
-    ############################################
-    # step 1:
-    # action: Register RMS message
-    # result: BECM send requested signals
-    #test_result = step_1(network_stub, can_send, can_receive, can_namespace, test_result)
-    test_result = step_1(network_stub, can_send,
-                         "BecmRmsCanFr03", SC.nspace_lookup("BecmRmsCanFr1"),
-                         test_result)
-
+    if result:
+        ############################################
+        # teststeps
+        ############################################
+        # step 1:
+        # action: Register RMS message
+        # result: BECM send requested signals
+        result = result and step_1(can_p,
+                                   can_receive="BecmRmsCanFr03",
+                                   can_namespace=SC.nspace_lookup("BecmRmsCanFr1"))
 
     ############################################
     # postCondition
     ############################################
-    print()
-    print("time ", time.time())
-    print("Testcase end: ", datetime.now())
-    print("Time needed for testrun (seconds): ", int(time.time() - starttime))
-
-    print("Do cleanup now...")
-    print("Stop all periodic signals sent")
-    #SC.stop_heartbeat()
-    SC.stop_periodic_all()
-    #time.sleep(5)
-
-    # deregister signals
-    SC.unsubscribe_signals()
-    # if threads should remain: try to stop them
-    SC.thread_stop()
-
-    print("Test cleanup end: ", datetime.now())
-    print()
-    if test_result:
-        print("Testcase result: PASSED")
-    else:
-        print("Testcase result: FAILED")
+    POST.postcondition(can_p, starttime, result)
 
 
 if __name__ == '__main__':
