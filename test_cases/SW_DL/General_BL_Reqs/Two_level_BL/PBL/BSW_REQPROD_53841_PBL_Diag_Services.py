@@ -1,8 +1,8 @@
 # Testscript ODTB2 MEPII
 # project:  BECM basetech MEPII
-# author:   FJANSSO8 (Fredrik Jansson)
-# date:     2020-06-23
-# version:  1.0
+# author:   J-ASSAR1 (Joel Assarsson)
+# date:     2020-10-22
+# version:  2.1
 # reqprod:  53841
 
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
@@ -27,6 +27,8 @@ import time
 from datetime import datetime
 import sys
 import logging
+import inspect
+
 import odtb_conf
 from support_can import SupportCAN, CanParam
 from support_test_odtb2 import SupportTestODTB2
@@ -47,7 +49,6 @@ POST = SupportPostcondition()
 SE10 = SupportService10()
 SE22 = SupportService22()
 
-
 # For each each DID, wait this time for the response. If you wait to short time you might not get
 # the full message (payload). The unit is seconds. 2s should cover even the biggest payloads.
 RESPONSE_TIMEOUT = 2
@@ -55,46 +56,31 @@ RESPONSE_TIMEOUT = 2
 # Test this amount of DIDs. Example: If equal to 10, the program will only test the first 10 DIDs.
 # This is to speed up during testing.
 # 500 should cover all DIDs
-MAX_NO_OF_DIDS = 15 #400 #215 #155
+MAX_NO_OF_DIDS = 500
 
 # Reserve this time for the full script (seconds)
-# 400 DIDs * 2s = 800s should cover all DIDs
-SCRIPT_TIMEOUT = MAX_NO_OF_DIDS * RESPONSE_TIMEOUT + 15 #800
+SCRIPT_TIMEOUT = MAX_NO_OF_DIDS * RESPONSE_TIMEOUT + 15
 
 
-def step_1(can_p: CanParam):
-    '''
-    Change to programming session (02) - enter PBL
-    '''
-    stepno = 1
-    result = SE10.diagnostic_session_control_mode2(can_p, stepno)
-    return result
-
-
-def step_2(can_p: CanParam):
-    '''
-    Request complete ECU part/serial number: Request Read_Data By Identifier
-    '''
-    stepno = 2
-    result = SE22.read_did_eda0(can_p, stepno)
-    return result
-
-
-def step_3(can_p: CanParam):
+def step_3(can_p):
     '''
     Test service #22:
     Verify diagnostic service complies to SDDB
     Request all PBL DIDs in SDDB for ECU
     '''
-    #stepno = 3
-    step3_result = True
-
+    stepno = 3
     pass_or_fail_counter_dict = {"Passed": 0, "Failed": 0, "conditionsNotCorrect (22)": 0,
                                  "requestOutOfRange (31)": 0}
     result_list = list()
-    did_counter = 1 # Used when we don't want to run through all tests
+    did_counter = 0
+    stepresult = len(sddb_pbl_did_dict) > 0
+    logging.info("Step %s: DID:s in dictionary: %s", stepno, len(sddb_pbl_did_dict))
 
     for did_dict_from_file_values in sddb_pbl_did_dict.values():
+        did_counter += 1
+        if did_counter > MAX_NO_OF_DIDS:
+            logging.info("MAX_NO_OF_DIDS reached: %s", MAX_NO_OF_DIDS)
+            break
         logging.debug('DID counter: %s', str(did_counter))
 
         did_id = did_dict_from_file_values['ID']
@@ -106,20 +92,16 @@ def step_3(can_p: CanParam):
         # Copy info to the did_dict_with_result dictionary from the did_dict
         did_dict_with_result = SE22.adding_info(did_dict_from_service_22, did_dict_with_result)
 
-        # Adding scaled data to the dictionary with the result
-        if 'error_message' not in did_dict_with_result:
-            did_dict_with_result = SE22.scale_data(did_dict_with_result)
-
         # Summarizing the result
         info_entry, pass_or_fail_counter_dict = SE22.summarize_result(did_dict_with_result,
                                                                       pass_or_fail_counter_dict,
                                                                       did_id)
+
         # Add the results
         result_list.append(info_entry)
 
-        # If any of the tests failed. Quit immediately
+        # If any of the tests failed. Quit immediately unless debugging.
         if not(info_entry.c_did and info_entry.c_sid and info_entry.c_size):
-            logging.info('\n')
             logging.info('----------------------')
             logging.info('Testing DID %s failed.', info_entry.did)
             logging.info('----------------------')
@@ -128,28 +110,25 @@ def step_3(can_p: CanParam):
             logging.info('Size correct: %s', info_entry.c_size)
             logging.info('Error message: %s', info_entry.err_msg)
             logging.info('---------------------------------------')
-            logging.info('\n')
-            return False
+            if not logging.getLogger("master").isEnabledFor(logging.DEBUG):
+                return False
 
-        if did_counter >= MAX_NO_OF_DIDS:
-            break
-
-        did_counter += 1
-
+    logging.debug("Step %s: DID:s checked: %s", stepno, did_counter)
     for result in result_list:
         logging.debug('DID: %s, c_did: %s, c_sid: %s, c_size: %s, err_msg: %s',
                       result.did, result.c_did, result.c_sid, result.c_size,
                       result.err_msg)
-        while step3_result:
-            step3_result = result.err_msg and result.c_did and result.c_sid and result.c_size
-    return step3_result
+        stepresult = stepresult and result.c_did and result.c_sid and result.c_size \
+                                and not result.err_msg
+
+    logging.info("Step %s: Result teststep: %s\n", stepno, stepresult)
+    return stepresult
 
 
 def run():
     """
     Run - Call other functions from here
     """
-    #logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.DEBUG)
     logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
     # Where to connect to signal_broker
@@ -160,6 +139,7 @@ def run():
         "receive" : "BecmToVcu1Front1DiagResFrame",
         "namespace" : SC.nspace_lookup("Front1CANCfg0")
     }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
 
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
@@ -170,12 +150,33 @@ def run():
     ############################################
     result = PREC.precondition(can_p, SCRIPT_TIMEOUT)
 
-    ############################################
-    # teststeps
-    ############################################
-    result = result and step_1(can_p)
-    result = result and step_2(can_p)
-    result = result and step_3(can_p)
+    #result = result and len(sddb_pbl_did_dict) > 0
+    logging.info("Result: %s", result)
+    if result:
+
+        ############################################
+        # teststeps
+        ############################################
+        # step 1:
+        # action: Change to programming session (02) - enter PBL
+        # result: ECU reports session
+        result = result and SE10.diagnostic_session_control_mode2(can_p, stepno=1)
+
+        # step 2:
+        # action: Request DID EDA0
+        # result: ECU responds with DID EDA0
+        result = result and SE22.read_did_eda0(can_p, stepno=2)
+
+        # step 3:
+        # action: Request all DID:s in dictionary (or until limit is reached)
+        # result: ECU responds with DID:s
+        result = result and step_3(can_p)
+
+        # step 4:
+        # action: Change to default session
+        # result: ECU reports session
+        result = result and SE10.diagnostic_session_control_mode1(can_p, stepno=4)
+        time.sleep(1)
 
     ############################################
     # postCondition
