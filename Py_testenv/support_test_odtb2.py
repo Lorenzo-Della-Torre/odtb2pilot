@@ -226,10 +226,18 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
         retval = title
         if (not message.find('F120', pos) == -1) and (not message.find('F12E', pos) == -1):
             retval = self.combined_did_eda0_becm_mode1_mode3(message)
-        else:
-            retval = "Unknown format of EDA0 message'\n"
-            logging.warning("Message received: %s", message)
-        return retval
+            return retval
+
+        retval = "Unknown format of EDA0 message'\n"
+        logging.warning("%s Message received: %s", retval, message)
+
+        eda0_dict_wo_f12e: dict = {
+            'f120': 'Error',
+            'f12a': 'Error',
+            'f12b': 'Error',
+            'serial': 'Error'
+        }
+        return eda0_dict_wo_f12e
 
     def pp_combined_did_eda0_mep2(self, message, title=''):
         """
