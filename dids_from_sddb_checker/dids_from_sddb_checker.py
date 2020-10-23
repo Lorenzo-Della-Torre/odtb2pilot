@@ -24,6 +24,7 @@
 """The Python implementation of the gRPC route guide client."""
 
 from datetime import datetime
+import traceback
 import os
 import time
 import logging
@@ -73,10 +74,16 @@ def get_git_hash(can_p):
     '''
     Getting the git hash from the ECU (DID F1F2)
     '''
-    did_dict = SE22.get_did_info(can_p, GIT_HASH_DID,
-                                 conf.response_timeout)
-    git_hash = did_dict.get('payload', '')
-    return git_hash
+    ascii_git_hash = ''
+    try:
+        did_dict = SE22.get_did_info(can_p, GIT_HASH_DID, conf.response_timeout)
+        git_hash = did_dict.get('payload', '')
+        git_hash_stripped = git_hash.rstrip("0") # Removing trailing zeros
+        ascii_git_hash = bytearray.fromhex(git_hash_stripped).decode() # decode from hex to ASCII
+    except Exception as _: # pylint: disable=broad-except
+        logging.error(traceback.format_exc())
+        ascii_git_hash = 'Error'
+    return ascii_git_hash
 
 def comp_part_nbrs(can_p, sddb_cleaned_part_number):
     '''
