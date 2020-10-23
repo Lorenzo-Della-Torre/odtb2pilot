@@ -4,8 +4,8 @@
 # date:     2019-12-16
 # version:  1.0
 
-# author:   LDELLATO
-# date:     2020-09-25
+# author:   J-ADSJO
+# date:     2020-10-23
 # version:  1.1
 
 # #inspired by https://grpc.io/docs/tutorials/basic/python.html
@@ -114,7 +114,7 @@ def step_4(can_p, did_list):
     '''
 
     etp: CanTestExtra = {"step_no": 4,
-                         "purpose" : "Test if all DIDs in DB are present in SW PBL",
+                         "purpose" : "Test if all DIDs in DB are present in SW SBL",
                          "timeout" : 1, # wait for message to arrive, but don't test (-1)
                          "min_no_messages" : -1,
                          "max_no_messages" : -1
