@@ -3,6 +3,11 @@
 # author:   FJANSSO8 (Fredrik Jansson)
 # date:     2019-12-16
 # version:  1.0
+
+# author:   J-ADSJO
+# date:     2020-10-23
+# version:  1.1
+
 # #inspired by https://grpc.io/docs/tutorials/basic/python.html
 # Copyright 2015 gRPC authors.
 #
@@ -24,378 +29,212 @@ import time
 from datetime import datetime
 import sys
 import logging
+import inspect
+import argparse
 
-import ODTB_conf
-from support_can import Support_CAN, CanMFParam
-from support_test_odtb2 import Support_test_ODTB2
-from support_SBL import Support_SBL
-from support_SecAcc import Support_Security_Access
+import odtb_conf
+from support_can import SupportCAN, CanParam, CanTestExtra, CanPayload
+from support_test_odtb2 import SupportTestODTB2
+from support_carcom import SupportCARCOM
+from support_file_io import SupportFileIO
+from support_SBL import SupportSBL
+from support_sec_acc import SupportSecurityAccess
+from support_rpi_gpio import SupportRpiGpio
 
-SC = Support_CAN()
-SUTE = Support_test_ODTB2()
-SSBL = Support_SBL()
-SSA = Support_Security_Access()
+from support_precondition import SupportPrecondition
+from support_postcondition import SupportPostcondition
+from support_service10 import SupportService10
+from support_service11 import SupportService11
+from support_service22 import SupportService22
+from support_service31 import SupportService31
 
+SIO = SupportFileIO
+SC = SupportCAN()
+S_CARCOM = SupportCARCOM()
+SUTE = SupportTestODTB2()
+SSBL = SupportSBL()
+SSA = SupportSecurityAccess()
+SGPIO = SupportRpiGpio()
 
-def precondition(stub, can_send, can_receive, can_namespace):
+PREC = SupportPrecondition()
+POST = SupportPostcondition()
+SE10 = SupportService10()
+SE11 = SupportService11()
+SE22 = SupportService22()
+SE31 = SupportService31()
+
+def parse_some_args():
+    """Get the command line input, using the defined flags."""
+    parser = argparse.ArgumentParser(description='Check format of DID file')
+    parser.add_argument("--did_file", help="DID-File", type=str, action='store',
+                        dest='did_file', required=False,)
+    ret_args = parser.parse_args()
+    return ret_args
+
+def step_2(can_p):
+    '''
+    Teststep 2: Extract SWP Number for SBL
+    '''
+
+    cpay: CanPayload = {"payload" : S_CARCOM.can_m_send("ReadDataByIdentifier",
+                                                        b'\xF1\x22', b''),
+                        "extra" : ''
+                       }
+
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+
+    etp: CanTestExtra = {"step_no": 2,
+                         "purpose" : "Extract SWP Number for SBL",
+                         "timeout" : 5,
+                         "min_no_messages" : -1,
+                         "max_no_messages" : -1
+                        }
+
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+
+    result = SUTE.teststep(can_p, cpay, etp)
+    logging.info("SBL part number: %s", SC.can_messages[can_p["receive"]])
+    logging.info("Step 2: %s", SUTE.pp_partnumber(SC.can_messages[can_p["receive"]][0][2][10:]))
+    db_number = SUTE.pp_partnumber(SC.can_messages[can_p["receive"]][0][2][10:])
+    return result, db_number
+
+def step_3(margs, db_number):
     """
-    Precondition for test running:
-    BECM has to be kept alive: start heartbeat
+    Teststep 3: Extract all DID from Data Base
     """
-    # read VBF param when testscript is s started, if empty take default param
-    SSBL.get_vbf_files()
-
-    # start heartbeat, repeat every 0.8 second
-    SC.start_heartbeat(stub, "MvcmFront1NMFr", "Front1CANCfg0",
-                       b'\x2F\x40\xFF\xFF\xFF\xFF\xFF\xFF', 0.5)
-
-    SC.start_periodic(stub, "Networkeptalive", True, "Vcu1ToAllFuncFront1DiagReqFrame",
-                      "Front1CANCfg0", b'\x02\x3E\x80\x00\x00\x00\x00\x00', 2.0)
-
-    # timeout = more than maxtime script takes (seconds)
-    timeout = 100
-    SC.subscribe_signal(stub, can_send, can_receive, can_namespace, timeout)
-    #record signal we send as well
-    SC.subscribe_signal(stub, can_receive, can_send, can_namespace, timeout)
-
-    result = step_0(stub, can_send, can_receive, can_namespace)
-    logging.info("Precondition testok: %s\n", result)
-    return result
-
-def step_0(stub, can_send, can_receive, can_namespace):
-    """
-    Teststep 0: Complete ECU Part/Serial Number(s)
-    """
-
-    stepno = 0
-    ts_param = {"stub" : stub,\
-                "m_send" : SC.can_m_send("ReadDataByIdentifier", b'\xED\xA0', ""),\
-                "mr_extra" : '',\
-                "can_send" : can_send,\
-                "can_rec"  : can_receive,\
-                "can_nspace" : can_namespace\
-               }
-    extra_param = {"purpose" : "Complete ECU Part/Serial Number(s)",\
-                   "timeout" : 1,\
-                   "min_no_messages" : -1,\
-                   "max_no_messages" : -1
-                  }
-
-    result = SUTE.teststep(ts_param,\
-                           stepno, extra_param)
-    logging.info('%s', SUTE.PP_CombinedDID_EDA0(SC.can_messages[can_receive][0][2], title=''))
-    return result
-
-
-def step_1(stub, can_send, can_receive, can_namespace):
-    '''
-    Test step 1: Download and activate Secondary Boot Loader
-    '''
-
-    stepno = 1
-    purpose = "Download and activate Secondary Boot Loader"
-    result = SSBL.sbl_activation(stub,\
-                                 can_send, can_receive, can_namespace,\
-                                 stepno, purpose)
-    return result
-
-
-def step_2(stub, can_send, can_receive, can_namespace):
-    '''
-    Test step 2: Send 1 requests - requires SF to send, MF for reply
-    '''
-    stepno = 2
-
-    # Parameters for FrameControl FC
-    can_mf_param: CanMFParam = {
-        'block_size' : 0,
-        'separation_time' : 0,
-        'frame_control_delay' : 0, #no wait
-        'frame_control_flag' : 48, #continue send
-        'frame_control_auto' : False
-        }
-    SC.change_MF_FC(can_send, can_mf_param)
-
-    ts_param = {"stub" : stub,\
-                "m_send" : SC.can_m_send("ReadDataByIdentifier", b'\xF1\x22', ""),\
-                "mr_extra" : '',\
-                "can_send" : can_send,\
-                "can_rec"  : can_receive,\
-                "can_nspace" : can_namespace\
-               }
-    extra_param = {"purpose" : "Send 1 request - requires SF to send",\
-                   "timeout" : 5,\
-                   "min_no_messages" : -1,\
-                   "max_no_messages" : -1
-                  }
-
-    return SUTE.teststep(ts_param, stepno, extra_param)
-
-
-def step_3(can_receive):
-    '''
-    Test step 3: Test if DIDs are included in reply. In our test case we request Complete
-    ECU Part/Serial Number
-    '''
     stepno = 3
-    purpose = "Test if requested DID are included in reply"
+    purpose = "Extract all DID from Data Base"
     SUTE.print_test_purpose(stepno, purpose)
+    did_list = SUTE.extract_db_did_id(db_number, margs)
+    return did_list
 
-    time.sleep(1)
-    SC.clear_all_can_messages()
-    logging.info("All can messages cleared")
-    SC.update_can_messages(can_receive)
-    logging.info("All can messages updated")
-    logging.info("Step 3: messages received %s", len(SC.can_messages[can_receive]))
-    logging.info("Step 3: messages: %s", SC.can_messages[can_receive])
-    logging.info("Step 3: frames received %s", len(SC.can_frames[can_receive]))
-    logging.info("Step 3: frames: %s", SC.can_frames[can_receive])
-
-    sbl_diagnostic_db_part_number = SC.can_frames[can_receive][0][2].upper()
-    logging.debug('Secondary Bootloader Diagnostic Database Part Number: %s',
-                  sbl_diagnostic_db_part_number)
-    logging.info("Test if string contains all IDs expected:")
-
-    return SUTE.test_message(SC.can_messages[can_receive], teststring='F122'),\
-                             sbl_diagnostic_db_part_number
-
-
-def step_4(stub, can_send, can_receive, can_namespace):
+def step_4(can_p, did_list):
     '''
-    Test step 4: Send several requests at one time - requires SF to send, MF for reply
+    Teststep 4: Test if all DIDs in DB are present in SW SBL
     '''
-    stepno = 4
 
-    # Parameters for FrameControl FC
-    can_mf_param: CanMFParam = {
-        'block_size' : 0,
-        'separation_time' : 0,
-        'frame_control_delay' : 0, #no wait
-        'frame_control_flag' : 48, #continue send
-        'frame_control_auto' : False
-        }
-    SC.change_MF_FC(can_send, can_mf_param)
+    etp: CanTestExtra = {"step_no": 4,
+                         "purpose" : "Test if all DIDs in DB are present in SW SBL",
+                         "timeout" : 1, # wait for message to arrive, but don't test (-1)
+                         "min_no_messages" : -1,
+                         "max_no_messages" : -1
+                        }
 
-    ts_param = {"stub" : stub,\
-                "m_send" : SC.can_m_send("ReadDataByIdentifier", b'\xF1\x21\xF1\x2A', ""),\
-                "mr_extra" : '',\
-                "can_send" : can_send,\
-                "can_rec"  : can_receive,\
-                "can_nspace" : can_namespace\
-               }
-    extra_param = {"purpose" : "Send several requests at one time - requires SF to send",\
-                   "timeout" : 1,\
-                   "min_no_messages" : -1,\
-                   "max_no_messages" : -1
-                  }
-    return SUTE.teststep(ts_param, stepno, extra_param)
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
 
+    for did in did_list:
+        cpay: CanPayload = {"payload" : S_CARCOM.can_m_send("ReadDataByIdentifier",
+                                                            bytes.fromhex(did), b''),
+                            "extra" : ''
+                           }
 
-def step_5(can_receive):
-    '''
-    Test step 5: Verify if number for requests limited in programming session
-    '''
-    stepno = 5
-    purpose = "Verify if number for requests limited in programming session"
+        SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
 
-    # No normal teststep done, instead: update CAN messages, verify all serial-numbers received
-    # (by checking ID for each serial-number)
-    SUTE.print_test_purpose(stepno, purpose)
+        result = SUTE.teststep(can_p, cpay, etp)
 
-    time.sleep(1)
-    SC.clear_all_can_messages()
-    logging.info("All can messages cleared")
-    SC.update_can_messages(can_receive)
-    logging.info("All can messages updated")
-    logging.info("Step5: Messages received %s", len(SC.can_messages[can_receive]))
-    logging.info("Step5: Messages: %s \n", SC.can_messages[can_receive])
-    logging.info("Step5: Frames received %s", len(SC.can_frames[can_receive]))
-    logging.info("Step5: Frames: %s \n", SC.can_frames[can_receive])
-    logging.info("Test if string contains all IDs expected:")
-
-    result = SUTE.test_message(SC.can_messages[can_receive],\
-                               teststring='037F223100000000')
-    logging.debug(SUTE.PP_Decode_7F_response(SC.can_frames[can_receive][0][2]))
     return result
 
-
-def step_6(stub, can_send, can_receive, can_namespace):
+def step_5(can_p):
     '''
-    Test step 6: Verify that we are still on SBL reading out the same SW serial number as in step 3
-                 Send 1 requests - requires SF to send, MF for reply
+    Teststep 5: Test if DIDs not in DB return Error message
     '''
-    stepno = 6
 
-    # Parameters for FrameControl FC
-    can_mf_param: CanMFParam = {
-        'block_size' : 0,
-        'separation_time' : 0,
-        'frame_control_delay' : 0, #no wait
-        'frame_control_flag' : 48, #continue send
-        'frame_control_auto' : False
-        }
-    SC.change_MF_FC(can_send, can_mf_param)
+    cpay: CanPayload = {"payload" : S_CARCOM.can_m_send("ReadDataByIdentifier",
+                                                        b'\xF1\x02', b''),
+                        "extra" : ''
+                       }
 
-    ts_param = {"stub" : stub,\
-                "m_send" : SC.can_m_send("ReadDataByIdentifier", b'\xF1\x22', ""),\
-                "mr_extra" : '',\
-                "can_send" : can_send,\
-                "can_rec"  : can_receive,\
-                "can_nspace" : can_namespace\
-               }
-    extra_param = {"purpose" : "Send 1 requests - requires SF to send, MF for reply",\
-                   "timeout" : 5,\
-                   "min_no_messages" : -1,\
-                   "max_no_messages" : -1
-                  }
-    return SUTE.teststep(ts_param, stepno, extra_param)
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
 
+    etp: CanTestExtra = {"step_no": 5,
+                         "purpose" : "Test if DIDs not in DB return Error message",
+                         "timeout" : 1, # wait for message to arrive, but don't test (-1)
+                         "min_no_messages" : -1,
+                         "max_no_messages" : -1
+                        }
 
-def step_7(can_receive, sbl_diagnostic_db_part_number):
-    '''
-    Test step 7: Verify that we are still on SBL reading out the same SW serial number as in step 3
-                 Test if DIDs are included in reply. In our test case we request Complete
-                 ECU Part/Serial Number
-    '''
-    stepno = 7
-    purpose = "Verify that we are still on SBL reading out the same SW serial number as in step 3"
-    SUTE.print_test_purpose(stepno, purpose)
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
 
-    time.sleep(1)
-    SC.clear_all_can_messages()
-    logging.info("All can messages cleared")
-    SC.update_can_messages(can_receive)
-    logging.info("All can messages updated")
-    logging.info("Step 7: messages received %s", len(SC.can_messages[can_receive]))
-    logging.info("Step 7: messages: %s", SC.can_messages[can_receive])
-    logging.info("Step 7: frames received %s", len(SC.can_frames[can_receive]))
-    logging.info("Step 7: frames: %s", SC.can_frames[can_receive])
-    new_sbl_diagnostic_db_part_number = SC.can_frames[can_receive][0][2].upper()
+    result = SUTE.teststep(can_p, cpay, etp)
 
-    # Is it still the same Secondary Bootloader Diagnostic Database Part Number?
-    result = sbl_diagnostic_db_part_number == new_sbl_diagnostic_db_part_number
+    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='7F2231')
+    #logging.info('%s', SUTE.PP_Decode_7F_response(SC.can_frames[can_receive][0][2]))
     return result
 
-
-def step_8(stub, can_send, can_receive, can_namespace):
-    '''
-    Step 8: Change to Default session
-    '''
-
-    stepno = 8
-    ts_param = {"stub" : stub,\
-                "m_send" : SC.can_m_send("DiagnosticSessionControl", b'\x01', ""),\
-                "mr_extra" : '',\
-                "can_send" : can_send,\
-                "can_rec"  : can_receive,\
-                "can_nspace" : can_namespace\
-               }
-    extra_param = {"purpose" : "Change to Default session",\
-                   "timeout" : 1,\
-                   "min_no_messages" : 1,\
-                   "max_no_messages" : 1
-                  }
-    return SUTE.teststep(ts_param, stepno, extra_param)
-
-
-def run():
+def run(margs):
     """
     Run - Call other functions from here
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.DEBUG)
-
-    # start logging
-    # to be implemented
+    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
     # where to connect to signal_broker
-    network_stub = SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT)
-
-    can_send = "Vcu1ToBecmFront1DiagReqFrame"
-    can_receive = "BecmToVcu1Front1DiagResFrame"
-    can_namespace = SC.nspace_lookup("Front1CANCfg0")
-
+    can_p: CanParam = {
+        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
+        "send" : "Vcu1ToBecmFront1DiagReqFrame",
+        "receive" : "BecmToVcu1Front1DiagResFrame",
+        "namespace" : SC.nspace_lookup("Front1CANCfg0")
+    }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
     logging.info("Time: %s \n", time.time())
-
     ############################################
     # precondition
     ############################################
-    result = precondition(network_stub, can_send, can_receive, can_namespace)
+    # read VBF param when testscript is s started, if empty take default param
+    SSBL.get_vbf_files()
+    timeout = 100
+    result = PREC.precondition(can_p, timeout)
 
+    if result:
     ############################################
     # teststeps
     ############################################
-    # step 1:
-    # action: Support function used to activate the secondary Bootloader
-    # result: BECM sends positive reply
-    result = result and step_1(network_stub, can_send, can_receive, can_namespace)
+        # step 1:
+        # action: DL and activate SBL
+        # result: ECU sends positive reply
+        result = result and SSBL.sbl_activation(can_p, stepno=1,
+                                                purpose="DL and activate SBL")
+        time.sleep(1)
 
-    # step 2:
-    # action: Send 1 requests - requires SF to send, MF for reply.
-    #         In our test case we request Complete ECU Part/Serial Number
-    # result: BECM sends positive reply
-    result = result and step_2(network_stub, can_send, can_receive, can_namespace)
+        # step 2:
+        # action: Extract SWP Number for SBL
+        # result: ECU sends positive reply
+        result_step2, db_number = result and step_2(can_p)
+        result = result and result_step2
 
-    # step 3:
-    # action: Test if DIDs are included in reply. In our test case we request
-    #         Complete ECU Part/Serial Number
-    # result: BECM sends positive reply
-    result2, sbl_diagnostic_db_part_number = step_3(can_receive)
-    result = result and result2
-    # step 4: Verify if number for requests limited in programming session
-    # action: Send several requests at one time - requires SF to send, MF for reply
-    # result:
-    result = result and step_4(network_stub, can_send, can_receive, can_namespace)
+        # step 3:
+        # action: Extract all DID from Data Base
+        # result:
+        did_list = step_3(margs, db_number)
 
-    # step 5: Verify if number for requests limited in programming session
-    # action: Check if expected DID are contained in reply
-    # result: True if all contained, false if not
-    result = result and step_5(can_receive)
+        # step 4:
+        # action: Test if all DIDs in DB are present in SW SBL
+        # result: ECU sends positive reply
+        result = result and step_4(can_p, did_list)
 
-    # step 6: Verify that we are still on SBL reading out the same SW serial number as in step 3
-    # action: Send 1 requests - requires SF to send, MF for reply.
-    #         In our test case we request Complete ECU Part/Serial Number
-    # result:
-    result = result and step_6(network_stub, can_send, can_receive, can_namespace)
-    time.sleep(1)
+        # step 5:
+        # action: Test if DIDs not in DB return Error message
+        # result: ECU sends positive reply
+        result = step_5(can_p)
 
-    # step 7:
-    # action: Verify that we are still on SBL reading out the same SW serial number as in step 3
-    # result: BECM reports mode
-    result = result and step_7(can_receive, sbl_diagnostic_db_part_number)
-    time.sleep(1)
+        # step 6:
+        # action: Hard Reset
+        # result: ECU sends positive reply
+        result = result and SE11.ecu_hardreset(can_p, stepno=6)
+        time.sleep(1)
 
-    # step 8:
-    # action: Change to Default session
-    # result: BECM reports mode
-    result = result and step_8(network_stub, can_send, can_receive, can_namespace)
-    time.sleep(1)
+        # step 7:
+        # action: verify ECU in default session
+        # result: ECU sends positive reply
+        result = result and SE22.read_did_f186(can_p, b'\x01', stepno=7)
 
     ############################################
     # postCondition
     ############################################
 
-    logging.debug("\nTime: %s \n", time.time())
-    logging.info("Testcase end: %s", datetime.now())
-    logging.info("Time needed for testrun (seconds): %s", int(time.time() - starttime))
-
-    logging.info("Do cleanup now...")
-    logging.info("Stop all periodic signals sent")
-    SC.stop_periodic_all()
-
-    # deregister signals
-    SC.unsubscribe_signals()
-    # if threads should remain: try to stop them
-    SC.thread_stop()
-
-    logging.info("Test cleanup end: %s\n", datetime.now())
-
-    if result:
-        logging.info("Testcase result: PASSED")
-    else:
-        logging.info("Testcase result: FAILED")
-
+    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
-    run()
+    ARGS = parse_some_args()
+    run(ARGS)
