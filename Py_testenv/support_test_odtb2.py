@@ -35,6 +35,7 @@ import importlib
 import os
 import binascii
 from datetime import datetime
+import string
 
 #sys.path.append('generated')
 from support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
@@ -177,29 +178,82 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
         return testresult
 
     @staticmethod
+    def validate_ecu_serial_number_record(ecu_serial_number_record: str) -> bool:
+        """
+        Validate a ECU serial number record
+
+        A ECU serial number record is 4 bytes long
+
+        It contains up to 8 digits coded in BCD, right justified, 0-padded.
+        """
+
+        # Validate 4 bytes of data (8 character hex string)
+        result = len(ecu_serial_number_record) == 8
+
+        # Validate BCD coding in 4 bytes (8 nibbles), right justified, 0 padded
+        result = result and all(nibble in string.digits for nibble in ecu_serial_number_record)
+
+        return result
+
+    @staticmethod
+    def pp_ecu_serial_number(i, title=''):
+        """
+        Pretty Print function support for ECU serial numbers
+        """
+        if not SupportTestODTB2.validate_ecu_serial_number_record(i):
+            logging.error("Error: Invalid ECU serial number: %s %s", i, title)
+
+        return title + i
+
+    @staticmethod
+    def validate_part_number_record(part_number_record: str) -> bool:
+        """
+        Validate a part number record
+
+        A part number record is 7 bytes long
+
+        The first 4 bytes contain the part number:
+        Up to 8 digits coded in BCD, right justified, 0-padded.
+
+        Last 3 bytes contain the version suffix:
+        3 ASCII encoded uppercase letters or spaces.
+        The version suffix can start with 0, 1 or 2 spaces before the letters.
+        """
+
+        # Validate 7 bytes of data (14 character hex string)
+        result = len(part_number_record) == 14
+
+        if result:
+            # First 4 bytes is part number, rest is version suffix
+            part_number, version_suffix_hex = part_number_record[:8], part_number_record[8:]
+
+            # Validate BCD coding in first 4 bytes (8 nibbles), right justified, 0 padded
+            result = result and all(nibble in string.digits for nibble in part_number)
+
+            # Validate version suffix
+            suffix_chars = [chr(byte) for byte in bytes.fromhex(version_suffix_hex)]
+            valid_chars = ' ' + string.ascii_uppercase
+            result = result and all((char in valid_chars) for char in suffix_chars)
+
+            # If middle character is space then the first must also be space
+            if suffix_chars[1] == ' ':
+                result = result and suffix_chars[0] == ' '
+
+            # Last suffix character can not be space
+            result = result and suffix_chars[2] != ' '
+
+        return result
+
+    @staticmethod
     def pp_partnumber(i, title=''):
         """
         Pretty Print function support for part numbers
         """
-        try:
-            len_pn = len(i)
-
-            # a message filled with \xFF is not readable
-            if str(i[:8]) == "FFFFFFFF":
-                #raise ValueError("Not readable")
-                return title + i[:8]
-            #error handling for messages without space between 4 BCD and 2 ascii
-            if len_pn != 14 or str(i[8:10]) != "20":
-                raise ValueError("That is not a part number: ", i)
-            #error handling for message without ascii valid
-            asc_1 = int(i[10:12], 16)
-            asc_2 = int(i[12:14], 16)
-            if (asc_1 < 65) | (asc_1 > 90) | (asc_2 < 65) | (asc_2 > 90):
-                raise ValueError("No valid value to decode: " + i)
-            return title + i[0:8] + bytes.fromhex(i[8:14]).decode('utf-8')
-        except ValueError as valu_err:
-            logging.error("%s Error: %s", title, valu_err)
+        if not SupportTestODTB2.validate_part_number_record(i):
+            logging.error("Error: Invalid part number: %s %s", i, title)
             return title + i
+
+        return title + i[0:8] + bytes.fromhex(i[8:14]).decode('utf-8')
 
     def pp_combined_did_eda0(self, message, title=''):
         """
@@ -226,10 +280,18 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
         retval = title
         if (not message.find('F120', pos) == -1) and (not message.find('F12E', pos) == -1):
             retval = self.combined_did_eda0_becm_mode1_mode3(message)
-        else:
-            retval = "Unknown format of EDA0 message'\n"
-            logging.warning("Message received: %s", message)
-        return retval
+            return retval
+
+        retval = "Unknown format of EDA0 message'\n"
+        logging.warning("%s Message received: %s", retval, message)
+
+        eda0_dict_wo_f12e: dict = {
+            'f120': 'Error',
+            'f12a': 'Error',
+            'f12b': 'Error',
+            'serial': 'Error'
+        }
+        return eda0_dict_wo_f12e
 
     def pp_combined_did_eda0_mep2(self, message, title=''):
         """
@@ -274,7 +336,8 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
         retval = retval + self.pp_did_f12e(message[(message.find('F12E', pos1+18))
                                                    :(message.find('F12E', pos1+18)+76)])
         ## ECU serial:
-        retval = retval + "ECU Serial Number         '" + message[144:152] + "'\n"
+        retval = retval + "ECU Serial Number         '"\
+                        + self.pp_ecu_serial_number(message[144:152]) + "'\n"
         return title + " " + retval
 
     def combined_did_eda0_becm_mode1_mode3(self, message):
@@ -289,20 +352,20 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
             'serial': ''
         }
         pos1 = message.find('F120')
-        eda0_dict_wo_f12e["f120"] = self.pp_partnumber(message[pos1+4: pos1+18], '')
+        eda0_dict_wo_f12e["f120"] = self.pp_partnumber(message[pos1+4: pos1+18])
 
         pos1 = message.find('F12A', pos1+18)
-        eda0_dict_wo_f12e["f12a"] = self.pp_partnumber(message[pos1+4: pos1+18], '')
+        eda0_dict_wo_f12e["f12a"] = self.pp_partnumber(message[pos1+4: pos1+18])
 
         pos1 = message.find('F12B', pos1+18)
-        eda0_dict_wo_f12e["f12b"] = self.pp_partnumber(message[pos1+4: pos1+18], '')
+        eda0_dict_wo_f12e["f12b"] = self.pp_partnumber(message[pos1+4: pos1+18])
 
         # Combined DID F12E:
         f12e_dict = self.get_did_f12e(message[(message.find('F12E', pos1+18))
                                                    :(message.find('F12E', pos1+18)+76)])
         ## ECU serial:
         pos1 = message.find('F18C', pos1+18)
-        eda0_dict_wo_f12e["serial"] = message[pos1+4: pos1+18]
+        eda0_dict_wo_f12e["serial"] = self.pp_ecu_serial_number(message[pos1+4: pos1+18])
 
         # Combining the dicts
         eda0_dict = {**eda0_dict_wo_f12e, **f12e_dict}
@@ -331,9 +394,8 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
                         + "'\n"
         pos1 = message.find('F18C', pos1+18)
         retval = retval + "ECU_Serial_Number                   '"\
-                        + message[pos1:pos1+4]\
-                        + ' '\
-                        + message[pos1+4: pos1+12]\
+                        + self.pp_ecu_serial_number(message[pos1+4: pos1+12], message[pos1:pos1+4]\
+                        + ' ')\
                         + "'\n"
         pos1 = message.find('F125', pos1+12)
         retval = retval + "PBL_Sw_part_Number                  '"\
@@ -365,9 +427,8 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
                         + "'\n"
         pos1 = message.find('F18C', pos1+18)
         retval = retval + "ECU_Serial_Number                   '"\
-                        + message[pos1:pos1+4]\
-                        + ' '\
-                        + message[pos1+4: pos1+12]\
+                        + self.pp_ecu_serial_number(message[pos1+4: pos1+12], message[pos1:pos1+4]\
+                        + ' ')\
                         + "'\n"
         pos1 = message.find('F124', pos1+12)
         retval = retval + "SBL_Sw_version_Number               '"\

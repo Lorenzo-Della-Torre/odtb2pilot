@@ -1,8 +1,8 @@
 # Testscript ODTB2 MEPII
 # project:  BECM basetech MEPII
-# author:   LDELLATO (Lorenzo Della Torre)
-# date:     2020-08-28
-# version:  1.2
+# author:   J-ASSAR1 (Joel Assarsson)
+# date:     2020-10-16
+# version:  1.3
 # reqprod:  52287
 # #inspired by https://grpc.io/docs/tutorials/basic/python.html
 # Copyright 2015 gRPC authors.
@@ -168,6 +168,7 @@ def run():
             result = result and SSBL.sw_part_download(can_p, swp, stepno=8)
         result = result and SSBL.check_complete_compatible_routine(can_p, stepno=8)
         result = result and SE11.ecu_hardreset(can_p, stepno=8)
+        time.sleep(1)
 
     ############################################
     # postCondition

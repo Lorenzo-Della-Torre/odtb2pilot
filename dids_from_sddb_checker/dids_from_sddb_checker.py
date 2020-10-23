@@ -24,6 +24,8 @@
 """The Python implementation of the gRPC route guide client."""
 
 from datetime import datetime
+import traceback
+import os
 import time
 import logging
 import sys
@@ -72,10 +74,16 @@ def get_git_hash(can_p):
     '''
     Getting the git hash from the ECU (DID F1F2)
     '''
-    did_dict = SE22.get_did_info(can_p, GIT_HASH_DID,
-                                 conf.response_timeout)
-    git_hash = did_dict.get('payload', '')
-    return git_hash
+    ascii_git_hash = ''
+    try:
+        did_dict = SE22.get_did_info(can_p, GIT_HASH_DID, conf.response_timeout)
+        git_hash = did_dict.get('payload', '')
+        git_hash_stripped = git_hash.rstrip("0") # Removing trailing zeros
+        ascii_git_hash = bytearray.fromhex(git_hash_stripped).decode() # decode from hex to ASCII
+    except Exception as _: # pylint: disable=broad-except
+        logging.error(traceback.format_exc())
+        ascii_git_hash = 'Error'
+    return ascii_git_hash
 
 def comp_part_nbrs(can_p, sddb_cleaned_part_number):
     '''
@@ -278,16 +286,19 @@ def scale_data(did_dict_with_result): #pylint: disable=too-many-branches
 
 
 def write_to_file(content, outfile):
-    '''Write content to outfile'''
+    ''' Write content to outfile '''
     with open(outfile, 'w') as file:
         file.write(str(content))
 
+def create_folder(folder):
+    """If folder does not exisists, then it will be created."""
+    if not os.path.isdir(folder):
+        os.makedirs(folder)
 
 def write_data(head, data, mode):
-    """Write data to a json file."""
-    path = '%s/%s.py' % (parammod.OUTPUT_FOLDER, parammod.OUTPUT_TESTRUN_DATA_FN)
-    with open(path, mode) as file:
-        logging.debug('Writing data to %s', path)
+    ''' Write content to outfile '''
+    new_path = os.path.join(parammod.OUTPUT_FOLDER, parammod.OUTPUT_TESTRUN_DATA_FN)
+    with open(new_path, mode) as file:
         head = "\n" + head + " = "
         data_str = '"' + str(data) + '"'
         file.write(head + data_str)
@@ -300,6 +311,7 @@ def get_did_eda0(can_p):
     message = did_dict.get('payload', '')
     eda0_dict = SUPPORT_TEST.get_combined_did_eda0(message, title='')
     return eda0_dict
+
 
 def run(): # pylint: disable=too-many-locals
     ''' run '''
@@ -369,6 +381,8 @@ def run(): # pylint: disable=too-many-locals
     part_nbr_match, part_nbr_match_msg = comp_part_nbrs(can_p, sddb_cleaned_part_number)
     eda0_dict = get_did_eda0(can_p)
 
+    # Create output folder if it doesn't exist
+    create_folder(parammod.OUTPUT_FOLDER)
     # File used to write the data in. This data is used by the logs_to_html script.
     def_val = '-'
     write_data(parammod.GIT_HASH, get_git_hash(can_p), 'w+')

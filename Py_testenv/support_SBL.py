@@ -13,6 +13,11 @@
 # version:  1.1
 # changes:  update for fit comments added in VBF
 
+# author:   HWEILER (Hans-Klaus Weiler)
+# date:     2020-10-15
+# version:  1.2
+# changes:  update better handling of ECU-mode when activating SBL
+
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
 
 # Copyright 2015 gRPC authors.
@@ -136,10 +141,24 @@ class SupportSBL:
         """
         print filenames used for SWDL
         """
+        result = True
+        if (len(self._sbl) == 0) or (len(self._ess) == 0) or (len(self._df) == 0):
+            logging.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            logging.info("!!!!! VBF files not as expected / incomplete! !!!!!")
+            logging.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            logging.info("len SBL: %s", len(self._sbl))
+            logging.info("len ESS: %s", len(self._ess))
+            logging.info("len DF: %s", len(self._df))
+
         logging.info("SBL:  %s", self._sbl)
         logging.info("ESS: %s", self._ess)
         logging.info("DF: %s", self._df)
-
+        if (len(self._sbl) == 0) or (len(self._ess) == 0) or (len(self._df) == 0):
+            logging.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            logging.info("!!!!! VBF files not as expected / incomplete! !!!!!")
+            logging.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            result = False
+        return result
 
     def get_sbl_filename(self):
         """
@@ -162,7 +181,7 @@ class SupportSBL:
         return self._df
 
 
-    def read_vbf_param(self):
+    def read_vbf_param(self, f_names):
         """
         read filenames used for transer as args to testscript
         """
@@ -170,7 +189,7 @@ class SupportSBL:
         f_sbl = ''
         f_ess = ''
         f_df = []
-        for f_name in sys.argv:
+        for f_name in f_names:
             if not f_name.find('.vbf') == -1:
                 logging.info("Filename to DL:  %s", f_name)
 
@@ -186,50 +205,24 @@ class SupportSBL:
                 else:
                     f_df.append(f_name)
         self.__init__(f_sbl, f_ess, f_df)
-        self.show_filenames()
-        time.sleep(10)
+        result = self.show_filenames()
+        #time.sleep(10)
+        return result
 
-
-    def set_vbf_default_param(self):
-        """
-        read default filenames used for transer when no args were given
-        """
-        f_sbl = ''
-        f_ess = ''
-        f_df = []
-        for f_name in glob.glob("./VBF/*.vbf"):
-            if not f_name.find('.vbf') == -1:
-                logging.info("Filename to DL:  %s", f_name)
-                # check type of VBF-file:
-
-                # Read vbf file for SBL download
-                #vbf_version, vbf_header, vbf_data, vbf_offset = self.read_vbf_file(file_n)
-                vbf_version, vbf_header, _, _ = self.read_vbf_file(f_name)
-                logging.debug('VBF_header before convert: %s', vbf_header)
-                #convert vbf header so values can be used directly
-                self.vbf_header_convert(vbf_header)
-                logging.debug("VBF version: %s", vbf_version)
-                logging.debug('VBF_header: %s', vbf_header)
-
-                if vbf_header["sw_part_type"] == 'SBL':
-                    f_sbl = f_name
-                elif vbf_header["sw_part_type"] == 'ESS':
-                    f_ess = f_name
-                else:
-                    f_df.append(f_name)
-        self.__init__(f_sbl, f_ess, f_df)
-        self.show_filenames()
-        time.sleep(10)
 
     def get_vbf_files(self):
         """
         read filenames used for transfer to ECU
+        sets filenames found in dict vbf_header
         """
         logging.debug("Length sys.argv:  %s", len(sys.argv))
         if len(sys.argv) != 1:
-            self.read_vbf_param()
+            f_names = sys.argv
         else:
-            self.set_vbf_default_param()
+            f_names = glob.glob("./VBF/*.vbf")
+
+        result = self.read_vbf_param(f_names)
+        return result
 
 
     def transfer_data_block(self, can_p: CanParam, vbf_header: VbfHeader, vbf_data, vbf_offset):
@@ -399,15 +392,24 @@ class SupportSBL:
         """
         Function used for BECM in forced Programming mode
         """
-        # Security Access Request SID
-        result = SSA.activation_security_access(can_p, stepno, purpose)
+        result = SE22.read_did_eda0(can_p)
 
-        # SBL Download
-        tresult, vbf_sbl_header = self.sbl_download(can_p, self._sbl, stepno)
-        result = result and tresult
+        message = SC.can_messages[can_p["receive"]][0][2]
+        pos = message.find('EDA0')
+        if (not message.find('F121', pos) == -1) and (not message.find('F125', pos) == -1):
+            # Security Access Request SID
+            result = result and SSA.activation_security_access(can_p, stepno, purpose)
 
-        # Activate SBL
-        result = result and self.activate_sbl(can_p, vbf_sbl_header, stepno)
+            # SBL Download
+            tresult, vbf_sbl_header = self.sbl_download(can_p, self._sbl, stepno)
+            result = result and tresult
+
+            # Activate SBL
+            result = result and self.activate_sbl(can_p, vbf_sbl_header, stepno)
+        elif (not message.find('F122', pos) == -1) and (not message.find('F124', pos) == -1):
+            logging.info("SBL already active. Don't take any actions")
+        else:
+            logging.warning("ECU does not seem to be in PROG mode: %s", message)
         return result
 
 
@@ -416,21 +418,27 @@ class SupportSBL:
         """
         Function used to activate the Secondary Bootloader
         """
-        testresult = True
+        result = True
 
         # verify session
         SE22.read_did_f186(can_p, dsession=b'')
-        logging.info(SC.can_messages[can_p["receive"]])
-
-        if SUTE.test_message(SC.can_messages[can_p["receive"]], '62F18601')\
-            or SUTE.test_message(SC.can_messages[can_p["receive"]], '62F18603'):
-            testresult = self.sbl_activation_def(can_p, stepno, purpose)
-        elif SUTE.test_message(SC.can_messages[can_p["receive"]], '62F18602'):
-            testresult = self.sbl_activation_prog(can_p, stepno, purpose)
+        if not len(SC.can_messages[can_p["receive"]]) == 1:
+            logging.info("Not expected number of messages received")
+            result = False
         else:
-            logging.info("error message: %s\n", SC.can_messages[can_p["receive"]])
+            rec_messages = SC.can_messages[can_p["receive"]][0][2].upper()
+
+        #if mode1/mode3 change to mode2 (prog), then dl/activate SBL
+        #if mode2 already dl/activate SBL direct
+            if ('62F18601' in rec_messages) or ('62F18603' in rec_messages):
+                result = self.sbl_activation_def(can_p, stepno, purpose)
+            elif '62F18602' in rec_messages:
+                result = self.sbl_activation_prog(can_p, stepno, purpose)
+            else:
+                logging.info("error message: %s\n", SC.can_messages[can_p["receive"]])
+                result = False
         time.sleep(0.1)
-        return testresult
+        return result
 
 
 #------------------------------Support Support SWDL Functions-------------------------------
