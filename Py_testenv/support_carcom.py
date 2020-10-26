@@ -3,6 +3,10 @@
     date:     2020-05-12
     version:  1.0
 
+    author:   j-assar1 (Joel Assarsson)
+    date:     2020-10-23
+    version:  1.1
+
     Inspired by https://grpc.io/docs/tutorials/basic/python.html
 
     Copyright 2015 gRPC authors.
@@ -90,8 +94,8 @@ class SupportCARCOM:
             "SecurityAccessRequestSeed_mode1_3": b'\x27\x05'+ mask + message,
             "SecurityAccessSendKey": b'\x27\x02'+ mask + message,
             "SecurityAccessSendKey_mode1_3": b'\x27\x06'+ mask + message,
-            "DynamicallyDefineDataIdentifier": b'\x2A'+ mask + message,
-            "ReadDataBePeriodicIdentifier": b'\x2C'+ mask + message,
+            "ReadDataByPeriodicIdentifier": b'\x2A'+ mask + message,
+            "DynamicallyDefineDataIdentifier": b'\x2C'+ mask + message,
             "WriteDataByIdentifier": b'\x2E'+ message,
             "RoutineControlRequestSID": b'\x31'+ mask + message,
             "RequestDownload": b'\x34'+ message,
