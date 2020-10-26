@@ -65,9 +65,11 @@ class SupportPrecondition:
             "intervall" : 0.4
             }
         #Read current function name from stack:
-        logging.debug("Read YML for %s", str(inspect.stack()[0][3]))
+        #logging.debug("hb_param before %s", hb_param)
+        #logging.debug("Type frame: %s", type(hb_param["frame"]))
+        #logging.debug("Read YML for %s", str(inspect.stack()[0][3]))
         SIO.extract_parameter_yml(str(inspect.stack()[0][3]), hb_param)
-        logging.debug("hp_param %s", hb_param)
+        logging.debug("hb_param %s", hb_param)
 
         # start heartbeat, repeat every x second
         SC.start_heartbeat(can_p["netstub"], hb_param)
@@ -78,7 +80,7 @@ class SupportPrecondition:
         new_tp_name = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), "tp_name")
         if new_tp_name != '':
             tp_name = new_tp_name
-        logging.debug("New tp_name: %s", tp_name)
+        #logging.debug("New tp_name: %s", tp_name)
         SE3E.start_periodic_tp_zero_suppress_prmib(can_p, tp_name)
 
         ##record signal we send as well
@@ -106,6 +108,7 @@ class SupportPrecondition:
         SC.change_mf_fc(can_p2["receive"], can_mf)
 
         result = SE22.read_did_eda0(can_p)
+        result = SE22.read_did_pbl_pn(can_p)
         logging.info("Precondition testok: %s\n", result)
         return result
 
