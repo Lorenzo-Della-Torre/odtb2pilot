@@ -50,7 +50,8 @@ class SupportService36: # pylint: disable=too-few-public-methods
 
         for i in range(int(vbf_block['Length']/(nbl-2))+1):
 
-            logging.info("360 Flash blocks: Block %s of %s", i, int(vbf_block['Length']/(nbl-2)))
+            logging.info("360 Flash blocks: Block %s of %s",
+                         1+i, 1+int(vbf_block['Length']/(nbl-2)))
             pad = (nbl-2)*i
             i += 1
             ibyte = bytes([i])
