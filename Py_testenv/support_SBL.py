@@ -374,6 +374,8 @@ class SupportSBL:
         # verify RoutineControlRequest is sent for Type 1
         result = SE31.routinecontrol_requestsid_prog_precond(can_p, stepno)
 
+        #result = SE22.read_did_appl_dppn(can_p)
+        result = SE22.read_did_pbl_pn(can_p)
         # Change to Programming session
         # done two times: first request doesn't give reply
         # second one gives reply with timings, but not in all versions (issue on BECM?)
@@ -831,7 +833,7 @@ class SupportSBL:
                              "max_no_messages" : -1
                             }
         testresult = SUTE.teststep(can_p, cpay, etp)
-        logging.info("support_SBL, activate_sbl: RC ReqSID 0301 sent")
+        logging.info("support_SBL, activate_sbl: RC ReqSID 0301 %s sent", call)
         logging.info("support_SBL, activate_sbl: Decode RC response")
         logging.info("support_SBL, activate_sbl: received frames %s",\
                      SC.can_frames[can_p["receive"]])
