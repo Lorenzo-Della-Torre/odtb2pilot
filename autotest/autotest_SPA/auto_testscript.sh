@@ -1,10 +1,5 @@
 #!/bin/bash
 
-
-### token and pass created for tht repo
-	TESTREPO=~/Repos/odtb2pilot
-	cd $TESTREPO
-
 	cd ~/testrun
 	[ ! -d VBF ] && mkdir VBF
 	rm -f VBF/*
@@ -38,7 +33,7 @@
 	do
 		echo $line | sed -E "s/(.*BSW_REQPROD)(.*)(\.py)/python3 \1\2\3 >$TESTRUN\/BSW_REQPROD\2.log/"
 		script2run_log=$(echo $line | sed -E "s/(.*BSW_REQPROD)(.*)(\.py)/BSW_REQPROD\2.log/")
-		python3 ~/$TESTREPO/autotest/BSW_ECU_restore_SWDL.py
+		python3 $TESTREPO/autotest/BSW_ECU_restore_SWDL.py
 		python3 $line >$TESTRUN/$script2run_log
 		### add REQ_NR, scriptresult, filename to result
 		req_tested=$(echo $line | sed -E "s/(.*BSW_REQPROD_)([0-9]*)(_.*)/\2/")
