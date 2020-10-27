@@ -1,5 +1,8 @@
 #!/bin/bash
 
+### token and pass created for tht repo
+    TESTREPO=~/Repos/odtb2pilot
+
 	cd ~/testrun
 	[ ! -d VBF ] && mkdir VBF
 	rm -f VBF/*
