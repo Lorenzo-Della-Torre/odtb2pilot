@@ -196,6 +196,68 @@ class SupportService22:
             result = False
         return result
 
+    @staticmethod
+    def read_did_appl_dbpn(can_p: CanParam, stepno=220):
+        """
+        Read applicaytion database part numbert
+        """
+        cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("ReadDataByIdentifier",
+                                                             b'\xF1\x20', b''),
+                            "extra" : ''
+                           }
+        etp: CanTestExtra = {"step_no": stepno,
+                             "purpose" : "Service22: Application Diagnostic Database Part Number",
+                             "timeout" : 1,
+                             "min_no_messages" : -1,
+                             "max_no_messages" : -1
+                            }
+
+        result = SUPPORT_TEST.teststep(can_p, cpay, etp)
+        if SC.can_messages[can_p["receive"]]:
+            logging.info("Messages received: %s", SC.can_messages[can_p["receive"]])
+            message = SC.can_messages[can_p["receive"]][0][2]
+            pos1 = message.find('F120')
+            logging.info('Part number (F120) %s',
+                         SUPPORT_TEST.pp_partnumber(message[pos1+4: pos1+18],\
+                                                    message[pos1:pos1+4] + ' '))
+        else:
+            logging.info('%s', "No messages received for request Read DID F125")
+            logging.info("Frames received: %s", SC.can_frames[can_p["receive"]])
+            logging.info("Messages received: %s", SC.can_messages[can_p["receive"]])
+            result = False
+        return result
+
+    @staticmethod
+    def read_did_pbl_pn(can_p: CanParam, stepno=220):
+        """
+        Read primary bootloader part number
+        """
+        cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("ReadDataByIdentifier",
+                                                             b'\xF1\x25', b''),
+                            "extra" : ''
+                           }
+        etp: CanTestExtra = {"step_no": stepno,
+                             "purpose" : "Service22: Primary Bootloader Software Part Number",
+                             "timeout" : 1,
+                             "min_no_messages" : -1,
+                             "max_no_messages" : -1
+                            }
+
+        result = SUPPORT_TEST.teststep(can_p, cpay, etp)
+        if SC.can_messages[can_p["receive"]]:
+            logging.info("Messages received: %s", SC.can_messages[can_p["receive"]])
+            message = SC.can_messages[can_p["receive"]][0][2]
+            pos1 = message.find('F125')
+            logging.info('Part number (F125) %s',
+                         SUPPORT_TEST.pp_partnumber(message[pos1+4: pos1+18],\
+                                                    message[pos1:pos1+4] + ' '))
+        else:
+            logging.info('%s', "No messages received for request Read DID F125")
+            logging.info("Frames received: %s", SC.can_frames[can_p["receive"]])
+            logging.info("Messages received: %s", SC.can_messages[can_p["receive"]])
+            result = False
+        return result
+
     #@classmethod
     @staticmethod
     def verify_pbl_session(can_p: CanParam, stepno=224):

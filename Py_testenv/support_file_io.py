@@ -158,31 +158,50 @@ class SupportFileIO:
             #logging.debug("arg: %s", arg)
 
             #dict
+            logging.debug("Dict to modify: %s", arg)
             if isinstance(arg, dict):
                 for dict_key in arg:
-                    logging.debug("search default data for %s", dict_key)
+                    logging.info("search project parameter data for %s %s", key, dict_key)
+
                     #search in default parameters
                     if default_par_open and\
                         key in data_default and\
                         (data_default[key].get(dict_key) is not None):
+                        #logging.debug("Default data for newarg %s",\
+                        #              data_default[key].get(dict_key))
                         newarg = data_default[key].get(dict_key)
-                        logging.debug("Default-par: New values in dict %s",
-                                      newarg)
-                        logging.debug("used dict_key: %s", dict_key)
-                        arg[dict_key] = data_default[key].get(dict_key)
+                        logging.debug("Default-par: New values for %s: %s",
+                                      dict_key, newarg)
+                        logging.debug("type before replace: %s" , type(arg[dict_key]))
+                        logging.debug("type after replace: %s" , type(newarg))
+
+                        if not isinstance(newarg, type(arg[dict_key])):
+                            logging.debug("Try to get same type via EVAL:")
+                            logging.debug("EVAL changes type: %s",
+                                          type(eval(data[key].get(dict_key)))) # pylint: disable=eval-used
+                            newarg = eval(newarg) # pylint: disable=eval-used
+
+                        #arg[dict_key] = data_default[key].get(dict_key)
+                        arg[dict_key] = newarg
+
                         #convert some values to bytes
                         if dict_key in ('mode', 'mask', 'did'):
+                            logging.debug("type before convert: %s" , arg[dict_key])
                             arg[dict_key] = bytes(arg[dict_key], 'utf-8')
+                            logging.debug("type after convert type: %s" , arg[dict_key])
+
                     #search in file specific parameters
-                    logging.debug("search data for %s", dict_key)
+                    logging.info("search file parameter data for %s %s", key, dict_key)
                     if file_par_open and\
                         key in data and\
                         (data[key].get(dict_key) is not None):
                         newarg = data[key].get(dict_key)
-                        logging.debug("File-par: New values in dict %s",
-                                      newarg)
-                        #logging.debug("used dict_key: %s", dict_key)
-                        #logging.debug("type arg before: %s", type(arg[dict_key]))
+                        logging.debug("File-par: Old values in dict %s = %s",
+                                      dict_key, arg[dict_key])
+                        logging.debug("File-par: New values in dict %s = %s",
+                                      dict_key, newarg)
+                        logging.debug("type arg before: %s", type(arg[dict_key]))
+                        logging.debug("type arg read: %s", type(newarg))
                         if not isinstance(newarg, type(arg[dict_key])):
                             logging.debug("Try to get same type via EVAL:")
                             logging.debug("EVAL changes type: %s",
