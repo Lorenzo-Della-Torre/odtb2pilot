@@ -7,6 +7,7 @@
 	[ ! -d VBF ] && mkdir VBF
 	rm -f VBF/*
 	cp ~/delivery/*.vbf VBF
+	cp ~/SBL/*.vbf VBF
 
 	[ ! -d VBF_Reqprod ] && mkdir VBF_Reqprod
 	rm -f VBF_Reqprod/*
