@@ -25,10 +25,8 @@
 
 import time
 from datetime import datetime
-import sys
 import logging
 import inspect
-import glob
 import odtb_conf
 from support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
 from support_test_odtb2 import SupportTestODTB2
