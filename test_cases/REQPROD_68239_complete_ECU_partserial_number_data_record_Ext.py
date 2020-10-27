@@ -26,10 +26,8 @@
 
 import time
 from datetime import datetime
-import sys
 import logging
 import inspect
-import glob
 import odtb_conf
 from support_can import SupportCAN, CanParam,CanPayload, CanTestExtra
 from support_test_odtb2 import SupportTestODTB2
@@ -52,21 +50,21 @@ POST = SupportPostcondition()
 SE22 = SupportService22()
 SE10 = SupportService10()
 
-def verify_ecu_partnumbers(can_p,dict,did,result):
+def verify_ecu_partnumbers(can_p,dic,did,result):
     '''
     Verify the ECU Part Serial Numbers
     '''
     if did == 'F120' :
-        logging.info("Diagnostic Part Number :%s", dict[did.lower()])
+        logging.info("Diagnostic Part Number :%s", dic[did.lower()])
         result = result and SUTE.test_message(SC.can_messages[can_p['receive']],teststring='F120')
     elif  did == 'F12A' :
-        logging.info("ECU Core Part Number : %s", dict[did.lower()])
+        logging.info("ECU Core Part Number : %s", dic[did.lower()])
         result = result and SUTE.test_message(SC.can_messages[can_p['receive']],teststring='F12A')
     elif  did == 'F12B' :
-        logging.info("ECU Delivery Assembly Part Number : %s", dict[did.lower()])
+        logging.info("ECU Delivery Assembly Part Number : %s", dic[did.lower()])
         result = result and SUTE.test_message(SC.can_messages[can_p['receive']],teststring='F12B')
     elif  did == 'F18C' :
-        logging.info("ECU  Serial Number :%s",dict["serial"])
+        logging.info("ECU  Serial Number :%s",dic["serial"])
         result = result and SUTE.test_message(SC.can_messages[can_p['receive']],teststring='F18C')
     return result
 
