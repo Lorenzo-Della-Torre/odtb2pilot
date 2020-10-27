@@ -114,7 +114,7 @@ def step(can_p,did, stepno):
     result = verify_ecu_partnumbers(can_p, response, did,result)
     return  result
 
-def step_SBL(can_p,did,stepno):
+def step_sbl(can_p,did,stepno):
     '''
     ReadDataByIdentifier {did} and verify the response with partnumberts
     '''
@@ -207,23 +207,23 @@ def run():
         # step 11:
         # action: Request Diagnostic Part Number
         # result: BECM reply positively
-        result = result and step_SBL(can_p,'F122',stepno=11)
+        result = result and step_sbl(can_p,'F122',stepno=11)
         # step 12:
         # action: Request ECU Core Assembly Part Number
         # result: BECM reply positively
-        result = result and step_SBL(can_p,'F12A',stepno=12)
+        result = result and step_sbl(can_p,'F12A',stepno=12)
         # step 13:
         # action: Request Delivery Core Assembly Part Number
         # result: BECM reply positively
-        result = result and step_SBL(can_p,'F12B',stepno=13)
+        result = result and step_sbl(can_p,'F12B',stepno=13)
         # step 14:
         # action: Request ECU Serial Number
         # result: BECM reply positively
-        result = result and step_SBL(can_p,'F18C',stepno=14)
+        result = result and step_sbl(can_p,'F18C',stepno=14)
         # step 15:
         # action: Request Software Part Number
         # result: BECM reply positively
-        result = result and step_SBL(can_p,'F124',stepno=15)
+        result = result and step_sbl(can_p,'F124',stepno=15)
         # step 16:
         # action: Change to Default Session
         # result: BECM reply positively
