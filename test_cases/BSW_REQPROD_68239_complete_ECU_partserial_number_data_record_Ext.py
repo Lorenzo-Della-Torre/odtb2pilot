@@ -26,6 +26,7 @@
 
 import time
 from datetime import datetime
+import sys
 import logging
 import inspect
 import odtb_conf
@@ -98,7 +99,7 @@ def step_7(can_p):
         "payload": S_CARCOM.can_m_send( "ReadDataByIdentifier", b'\xED\xA0', b""),
         "extra": b'',
     }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
     etp: CanTestExtra = {
         "step_no": 5,
         "purpose": "Request ECU parts/erial number ",
