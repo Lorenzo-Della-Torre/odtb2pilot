@@ -93,7 +93,7 @@ def verify_ecu_partnumbers(can_p,response,did,result):
         result = result and SUTE.test_message(SC.can_messages[can_p['receive']],teststring='F125')
     return result
 
-def step_1(can_p,did, stepno):
+def step(can_p,did, stepno):
     '''
     Read Complete ECU Part Serial Number data record
     '''
@@ -103,21 +103,19 @@ def step_1(can_p,did, stepno):
     }
     etp : CanTestExtra = {
         "step_no": stepno,
-        "purpose": f' ECU part/serial number : {did}',
+        "purpose": f' ECU part/serial number in PBL: {did}',
         "timeout": 1,
         "min_no_messages": -1,
         "max_no_messages": -1,
     }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
     result = SUTE.teststep(can_p,cpay, etp)
     response =  SC.can_messages[can_p['receive']][0][2]
     logging.info("Complete ECU Serial Part Number in PBL : %s",\
                             SC.can_messages[can_p["receive"]][0][2])
     result = verify_ecu_partnumbers(can_p, response, did,result)
-    #result  = result and SUTE.test_message(SC.can_messages[can_p["receive"]],teststring=did)
     return  result
 
-def step_2(can_p,did,stepno):
+def step_SBL(can_p,did,stepno):
     '''
     ReadDataByIdentifier {did} and verify the response with partnumberts
     '''
@@ -126,19 +124,16 @@ def step_2(can_p,did,stepno):
                         "extra" : ''
     }
     etp: CanTestExtra = {"step_no": stepno,
-                        "purpose" : 'ReadDataByIdentifier  and '
-                        " verify reply correct part number with BCD and ASCII",
+                        "purpose" : f' ECU part/serial number in SBL: {did}',
                         "timeout" : 1,
                         "min_no_messages" : -1,
                         "max_no_messages" : -1
     }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
     result = SUTE.teststep(can_p, cpay, etp)
     res = SC.can_messages[can_p['receive']][0][2]
     logging.info("Complete ECU Serial Part Number in SBL : %s",\
                             SC.can_messages[can_p["receive"]][0][2])
     result = verify_ecu_partnumbers(can_p, res, did,result )
-    #result  =  result and SUTE.test_message(SC.can_messages[can_p["receive"]],teststring=did)
     return result
 
 def run():
@@ -170,7 +165,7 @@ def run():
     # teststeps
     ############################################
         # step 1:
-        # action: Changesession to Programming
+        # action: Change session to Programming
         # result: BECM reply positively
         result = result and SE10.diagnostic_session_control_mode2(can_p,1)
         time.sleep(2)
@@ -179,25 +174,25 @@ def run():
         # result: BECM reply positively
         result = result and SE22.verify_pbl_session(can_p,2)
         # step 3:
-        # action: Request 0xF121 identifier
+        # action: Request Diagnostic Part Number
         # result: BECM reply positively
-        result = result and step_1(can_p, 'F121',stepno=3)
+        result = result and step(can_p, 'F121',stepno=3)
         # step 4:
-        # action: Verify Identifier 0xF12A
+        # action: Request ECU Core Assembly Part Number
         # result: BECM reply positively
-        result = result and step_1(can_p, 'F12A',stepno=4)
+        result = result and step(can_p, 'F12A',stepno=4)
         # step 5:
-        # action: Verify Identifier 0xF12B
+        # action: Request Delivery Core Assembly Part Number
         # result: BECM reply positively
-        result = result and step_1(can_p, 'F12B',stepno=5)
+        result = result and step(can_p, 'F12B',stepno=5)
         # step 6:
-        # action: Verify Identifier 0xF18C
+        # action: Request ECU Serial Number
         # result: BECM reply positively
-        result = result and step_1(can_p, 'F18C',stepno=6)
+        result = result and step(can_p, 'F18C',stepno=6)
         # step 7:
-        # action: Verify Identifier 0xF125
+        # action: Request ECU Software Part Number
         # result: BECM reply positively
-        result = result and step_1(can_p, 'F125',stepno=7)
+        result = result and step(can_p, 'F125',stepno=7)
         # step 8:
         # action: Change ECU to Default Session
         # result: BECM reply positively
@@ -211,29 +206,29 @@ def run():
         # result: BECM reply positively
         result = result and SE22.verify_sbl_session(can_p,10)
         # step 11:
-        # action: Verify Identifier 0xF122
+        # action: Request Diagnostic Part Number
         # result: BECM reply positively
-        result = result and step_2(can_p,'F122',stepno=11)
+        result = result and step_SBL(can_p,'F122',stepno=11)
         # step 12:
-        # action: Verify Identifier 0xF12A
+        # action: Request ECU Core Assembly Part Number
         # result: BECM reply positively
-        result = result and step_2(can_p,'F12A',stepno=12)
+        result = result and step_SBL(can_p,'F12A',stepno=12)
         # step 13:
-        # action: Verify Identifier 0xF12B
+        # action: Request Delivery Core Assembly Part Number
         # result: BECM reply positively
-        result = result and step_2(can_p,'F12B',stepno=11)
-        # step 12:
-        # action: Verify Identifier 0xF18C
-        # result: BECM reply positively
-        result = result and step_2(can_p,'F18C',stepno=13)
+        result = result and step_SBL(can_p,'F12B',stepno=13)
         # step 14:
-        # action: Verify Identifier 0xF125
+        # action: Request ECU Serial Number
         # result: BECM reply positively
-        result = result and step_2(can_p,'F124',stepno=14)
+        result = result and step_SBL(can_p,'F18C',stepno=14)
         # step 15:
+        # action: Request Software Part Number
+        # result: BECM reply positively
+        result = result and step_SBL(can_p,'F124',stepno=15)
+        # step 16:
         # action: Change to Default Session
         # result: BECM reply positively
-        result = result and SE10.diagnostic_session_control_mode1(can_p,15)
+        result = result and SE10.diagnostic_session_control_mode1(can_p,16)
     ############################################
     # postCondition
     ############################################

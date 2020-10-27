@@ -1,3 +1,4 @@
+
 # Testscript ODTB2 MEPII
 # project: BECM basetech MEPII
 # author:  T-kumara (Tanuj Kumar Aluru)
@@ -91,7 +92,7 @@ def step(can_p,did,stepno):
     result = verify_ecu_partnumbers(can_p,dic,did,result )
     return  result
 
-def step_5(can_p):
+def step_7(can_p):
     '''
     Verify F12E identifier
     '''
@@ -99,7 +100,7 @@ def step_5(can_p):
         "payload": S_CARCOM.can_m_send( "ReadDataByIdentifier", b'\xED\xA0', b""),
         "extra": b'',
     }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
     etp: CanTestExtra = {
         "step_no": 5,
         "purpose": "Request ECU parts/erial number ",
@@ -114,12 +115,11 @@ def step_5(can_p):
     logging.info("Software part Number :%s",f12e_dict)
     result = result and SUTE.test_message(SC.can_messages[can_p['receive']], teststring='F12E')
     return  result
-
 def run():
     """
     Run - Call other functions from here
     """
-    #logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
     # where to connect to signal_broker
     can_p: CanParam = {
@@ -143,32 +143,45 @@ def run():
     ############################################
     # teststeps
     ############################################
-
         # step 1:
         # action: Request Diagnostic Database Part number
         # result: BECM reply positively
-        result = result and step(can_p,"F120", stepno=1)
+        result = result and SE10.diagnostic_session_control_mode3(can_p,1)
+
+        # step 2:
+        # action: Verify Active Diagnostic Session
+        # result: BECM reply positively
+        result = result and SE22.read_did_f186(can_p,b'\x03')
 
         # step 3:
+        # action: Request Diagnostic Database Part number
+        # result: BECM reply positively
+        result = result and step(can_p,"F120", stepno=3)
+
+        # step 4:
         # action: Request ECU Core Assembly Part Number
         # result: BECM reply positively
-        result = result and step(can_p,"F12A", stepno=2)
-
-        # step 4:
-        # action: Request ECU Delivery Assembly Part Number
-        # result: BECM reply positively
-        result = result and step(can_p,"F12B", stepno=3)
-
-        # step 4:
-        # action: Request ECU Serial Number
-        # result: BECM reply positively
-        result = result and step(can_p,"F18C", stepno=4)
+        result = result and step(can_p,"F12A", stepno=4)
 
         # step 5:
+        # action: Request ECU Delivery Assembly Part Number
+        # result: BECM reply positively
+        result = result and step(can_p,"F12B", stepno=5)
+
+        # step 6:
+        # action: Request ECU Serial Number
+        # result: BECM reply positively
+        result = result and step(can_p,"F18C", stepno=6)
+
+        # step 7:
         # action: Request Software Part Number
         # result: BECM reply positively
-        result = result and step_5(can_p)
+        result = result and step_7(can_p)
 
+        # step 8:
+        # action: Change active session to Default
+        # result: BECM reply positively
+        result = result and SE10.diagnostic_session_control_mode1(can_p,1)
     ############################################
     # postCondition
     ############################################
