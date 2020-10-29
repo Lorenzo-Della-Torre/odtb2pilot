@@ -107,8 +107,17 @@ class SupportPrecondition:
         #SC.change_mf_fc(can_p["send"], can_mf)
         SC.change_mf_fc(can_p2["receive"], can_mf)
 
-        result = SE22.read_did_eda0(can_p)
-        result = SE22.read_did_pbl_pn(can_p)
+        #pn_sn_list=[['F120', 'PN'],\
+        #            ['F12A', 'PN'],\
+        #            ['F12B', 'PN'],\
+        #            ['F18C', 'SN'],\
+        #            ['F12E', 'PN']]
+        pn_sn_list = []
+        SIO.extract_parameter_yml(str(inspect.stack()[0][3]), pn_sn_list)
+
+        result = SE22.read_did_eda0(can_p, pn_sn_list)
+        logging.info("Precondition EDA0: %s\n", result)
+        result = SE22.read_did_pbl_pn(can_p) and result
         logging.info("Precondition testok: %s\n", result)
         return result
 
