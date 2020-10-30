@@ -2,6 +2,10 @@
 
 ### token and pass created for tht repo
     TESTREPO=~/Repos/odtb2pilot
+    echo variables used in testrun:
+	echo TESTREPO: $TESTREPO
+	echo PYTHONPATH: $PYTHONPATH
+	echo PATH: $PATH
 
 	cd ~/testrun
 	[ ! -d VBF ] && mkdir VBF
@@ -16,11 +20,6 @@
 	[ ! -d parameters_yml ] && mkdir parameters_yml
 	rm -f parameters_yml/*
 	cp $TESTREPO/yml_parameter/MEP2_SPA2/* parameters_yml
-
-	### GRPC catalog needed for using GRPC in Python scripts
-	# set PYTHONPATH in .bashrc
-	# export PYTHONPATH=/home/ci/Repos/odtb2pilot/Py_testenv/:.
-	#old: export PYTHONPATH=$HOME/projects/odtb2/python
 
 	### Generate catalog for logfiles and list of scripts to run
 	TESTRUN=$(date +Testrun_%Y%m%d_%H%M_BECM_BT)
