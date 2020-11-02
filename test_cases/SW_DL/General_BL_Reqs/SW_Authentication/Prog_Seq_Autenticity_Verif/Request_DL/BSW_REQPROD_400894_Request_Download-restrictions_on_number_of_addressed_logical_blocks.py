@@ -115,8 +115,7 @@ def step_5(can_p, block_by_1, vbf_header):
     SUTE.print_test_purpose(stepno, purpose)
 
     SSBL.vbf_header_convert(vbf_header)
-    result, _ = SE34.request_block_download(can_p, vbf_header, block_by_1, stepno,
-                                            purpose)
+    result, _ = SE34.request_block_download(can_p, vbf_header, block_by_1, stepno, purpose)
     return result
 
 def step_6():
@@ -166,29 +165,30 @@ def step_8(can_p, block_by_2, vbf_header):
     Teststep 8: Request Download, the 1st data block (2nd Logical Block) is rejected
     """
     SSBL.vbf_header_convert(vbf_header)
-    addr_b = block_by_2['StartAddress'].to_bytes(4, 'big')
-    len_b = block_by_2['Length'].to_bytes(4, 'big')
-    cpay: CanPayload = {"payload" : b'\x34' +\
-                                    vbf_header["data_format_identifier"].to_bytes(1, 'big') +\
-                                    b'\x44'+\
-                                    addr_b +\
-                                    len_b,
-                        "extra" : ''
-                       }
+
+    cpay: CanPayload = {
+        "payload": b'\x34' +\
+            vbf_header["data_format_identifier"].to_bytes(1, 'big') +\
+            b'\x44' +\
+            block_by_2['StartAddress'].to_bytes(4, 'big') +\
+            block_by_2['Length'].to_bytes(4, 'big'),
+        "extra": '',
+    }
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
-    etp: CanTestExtra = {"step_no": 8,
-                         "purpose" : "Request Download, "
-                                    +"the 1st data block (2nd Logical Block) is rejected",
-                         "timeout" : 0.05,
-                         "min_no_messages" : -1,
-                         "max_no_messages" : -1
-                        }
+
+    etp: CanTestExtra = {
+        "step_no": 8,
+        "purpose": "Request Download, the 1st data block (2nd Logical Block) is rejected",
+        "timeout": 0.05,
+        "min_no_messages": -1,
+        "max_no_messages": -1,
+    }
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
 
     result = SUTE.teststep(can_p, cpay, etp)
     result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='7F3431')
     logging.info('Step %s, received message: %s', etp["step_no"],
-        SUTE.pp_decode_7f_response(SC.can_frames[can_p["receive"]][0][2]))
+                 SUTE.pp_decode_7f_response(SC.can_frames[can_p["receive"]][0][2]))
     return result
 
 def run():
@@ -229,8 +229,8 @@ def run():
         # step 2:
         # action: download ESS Software Part
         # result: ECU sends positive reply
-        result = result and SSBL.sw_part_download(can_p, SSBL.get_ess_filename(),
-                                                    stepno=2, purpose="ESS Software Part Download")
+        result = result and SSBL.sw_part_download(can_p, SSBL.get_ess_filename(), stepno=2,
+                                                  purpose="ESS Software Part Download")
         time.sleep(1)
 
         # step 3:
