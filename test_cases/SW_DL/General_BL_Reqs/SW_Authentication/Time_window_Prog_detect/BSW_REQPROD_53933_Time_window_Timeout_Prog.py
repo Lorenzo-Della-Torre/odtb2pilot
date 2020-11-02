@@ -34,7 +34,6 @@ import sys
 import logging
 import inspect
 
-import odtb_conf
 from support_can import SupportCAN, CanParam, PerParam
 from support_test_odtb2 import SupportTestODTB2
 from support_carcom import SupportCARCOM
@@ -50,6 +49,8 @@ from support_service11 import SupportService11
 from support_service22 import SupportService22
 from support_service31 import SupportService31
 from support_service34 import SupportService34
+
+import odtb_conf
 
 SIO = SupportFileIO
 SC = SupportCAN()
@@ -185,7 +186,7 @@ def run():
         # step2:
         # action: Send burst Diagnostic Session Control Programming Session with
         # periodicity of 10ms for 40 ms window
-        # result: 
+        # result:
         step_2(can_p)
 
         # step3:
@@ -195,13 +196,13 @@ def run():
 
         # step4:
         # action: Switch the ECU off and on
-        # result: 
+        # result:
         result = result and step_4(can_p)
 
         # step5:
         # action: Send burst Diagnostic Session Control Programming Session with
         # periodicity of 1ms for 40 ms window
-        # result: 
+        # result:
         step_5(can_p)
 
         # step6:

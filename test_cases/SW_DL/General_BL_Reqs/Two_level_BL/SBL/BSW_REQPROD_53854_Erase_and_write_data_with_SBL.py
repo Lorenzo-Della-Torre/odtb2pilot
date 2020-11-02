@@ -1,14 +1,14 @@
 # Testscript ODTB2 MEPII
 # project:  BECM basetech MEPII
 # author:   LDELLATO (Lorenzo Della Torre)
-# date:     2020-01-14
+# date:     2020-01-08
 # version:  1.1
-# reqprod:  53857
+# reqprod:  53854
 
 # author:   LDELLATO (Lorenzo Della Torre)
 # date:     2020-09-23
 # version:  1.2
-# reqprod:  53857
+# reqprod:  53854
 
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
 
@@ -34,7 +34,6 @@ import sys
 import logging
 import inspect
 
-import odtb_conf
 from support_can import SupportCAN, CanParam, CanTestExtra, CanPayload, CanMFParam
 from support_test_odtb2 import SupportTestODTB2
 from support_carcom import SupportCARCOM
@@ -49,7 +48,8 @@ from support_service10 import SupportService10
 from support_service11 import SupportService11
 from support_service22 import SupportService22
 from support_service31 import SupportService31
-from support_service34 import SupportService34
+
+import odtb_conf
 
 SIO = SupportFileIO
 SC = SupportCAN()
@@ -65,57 +65,31 @@ SE10 = SupportService10()
 SE11 = SupportService11()
 SE22 = SupportService22()
 SE31 = SupportService31()
-SE34 = SupportService34()
 
-def step_7():
+def step_4(can_p):
     """
-    Teststep 7: Read VBF files for SBL file (1st Logical Block)
+    Teststep 4:Flash Erase in PBL reply with Aborted
     """
-    stepno = 7
-    purpose = "SBL files reading"
+    #memory address of PBL: PBL start with the address 80000000 for all ECU
+    memory_add = SUTE.pp_string_to_bytes(str('80000000'), 4)
+    #memory size to erase
+    memory_size = SUTE.pp_string_to_bytes(str('0000C000'), 4)
 
-    SUTE.print_test_purpose(stepno, purpose)
-    _, vbf_header, data, data_start = SSBL.read_vbf_file(SSBL.get_sbl_filename())
-    return vbf_header, data, data_start
+    erase = memory_add + memory_size
 
-def step_8(data, data_start):
-    """
-    Teststep 8: Extract data for SBL
-    """
-    stepno = 8
-    purpose = "EXtract data for SBL"
-
-    SUTE.print_test_purpose(stepno, purpose)
-
-    _, block_by, _ = SSBL.block_data_extract(data, data_start)
-    return block_by
-
-def step_9(can_p, block_by,
-           vbf_header):
-    """
-    Teststep 9: Request Download the 1st data block (SBL)
-    """
-    SSBL.vbf_header_convert(vbf_header)
-    addr_b = block_by['StartAddress'].to_bytes(4, 'big')
-    len_b = block_by['Length'].to_bytes(4, 'big')
-
-    cpay: CanPayload = {"payload" : b'\x34' +\
-                                    vbf_header["data_format_identifier"].to_bytes(1, 'big') +\
-                                    b'\x44'+\
-                                    addr_b +\
-                                    len_b,
+    cpay: CanPayload = {"payload" : S_CARCOM.can_m_send("RoutineControlRequestSID", b'\xFF\x00' +
+                                                        erase, b'\x01'),
                         "extra" : ''
                        }
-                       
+
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
 
-    etp: CanTestExtra = {"step_no": 9,
-                         "purpose" : "Request Download the 1st data block",
-                         "timeout" : 0.05,
+    etp: CanTestExtra = {"step_no" : 4,
+                         "purpose" : "Flash Erase Routine reply Aborted in PBL",
+                         "timeout" : 1,
                          "min_no_messages" : -1,
                          "max_no_messages" : -1
                         }
-                        
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
 
     #change Control Frame parameters
@@ -130,11 +104,58 @@ def step_9(can_p, block_by,
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_mf)
 
     SC.change_mf_fc(can_p["receive"], can_mf)
+    time.sleep(1)
     result = SUTE.teststep(can_p, cpay, etp)
+    result = result and SUTE.pp_decode_routine_control_response(SC.can_frames
+                                                                [can_p["receive"]][0][2],
+                                                                'Type1,Aborted')
 
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='7F3431')
+    return result
 
-    logging.info('%s', SUTE.pp_decode_7f_response(SC.can_frames[can_p["receive"]][0][2]))
+
+def step_7(can_p):
+    """
+    Teststep 7:Flash Erase of PBL memory address is not allowed
+    """
+
+    #memory address of PBL: PBL start with the address 80000000 for all ECU
+    memory_add = SUTE.pp_string_to_bytes(str('80000000'), 4)
+    #memory size to erase
+    memory_size = SUTE.pp_string_to_bytes(str('0000C000'), 4)
+
+    erase = memory_add + memory_size
+
+    cpay: CanPayload = {"payload" : S_CARCOM.can_m_send("RoutineControlRequestSID", b'\xFF\x00' +
+                                                        erase, b'\x01'),
+                        "extra" : ''
+                       }
+
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+
+    etp: CanTestExtra = {"step_no" : 7,
+                         "purpose" : "Flash Erase of PBL memory address is not allowed",
+                         "timeout" : 1,
+                         "min_no_messages" : -1,
+                         "max_no_messages" : -1
+                        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+
+    #change Control Frame parameters
+    can_mf: CanMFParam = {
+        "block_size": 0,
+        "separation_time": 0,
+        "frame_control_delay": 0, #no wait
+        "frame_control_flag": 48, #continue send
+        "frame_control_auto": False
+        }
+
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_mf)
+
+    SC.change_mf_fc(can_p["receive"], can_mf)
+    time.sleep(1)
+    result = SUTE.teststep(can_p, cpay, etp)
+    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='7F3131')
+    print(SUTE.pp_decode_7f_response(SC.can_frames[can_p["receive"]][0][2]))
     return result
 
 def run():
@@ -159,7 +180,7 @@ def run():
     ############################################
     # read VBF param when testscript is s started, if empty take default param
     SSBL.get_vbf_files()
-    timeout = 300
+    timeout = 500
     result = PREC.precondition(can_p, timeout)
 
     if result:
@@ -183,14 +204,11 @@ def run():
         # result: ECU sends positive reply
         result = result and SSA.activation_security_access(can_p, 3,
                                                            "Security Access Request SID")
+
         # step 4:
-        # action: SBL Download
+        # action: Flash Erase in PBL reply with Aborted
         # result: BECM sends positive reply
-        logging.info("step_4: SBL Download")
-        result_step4, _ = SSBL.sbl_download(can_p, SSBL.get_sbl_filename(),
-                                            stepno=4)
-        result = result and result_step4
-        time.sleep(1)
+        result = result and step_4(can_p)
 
         # step 5:
         # action: SBL Download
@@ -208,43 +226,19 @@ def run():
         result = result and SSBL.activate_sbl(can_p, vbf_sbl_header, stepno=6)
 
         # step 7:
-        # action: Read VBF files for SBL
-        # result:
-        vbf_header, data, data_start = step_7()
+        # action: Flash Erase of PBL memory address is not allowed
+        # result: BECM sends positive reply
+        result = result and step_7(can_p)
 
-        # step 8:
-        # action: Extract data for the 1st data block from SBL
-        # result:
-        block_by = step_8(data, data_start)
-
-        # step 9:
-        # action: Verify request Download the 1st data block (SBL) is rejected
-        # result: ECU sends NRC reply
-        result = result and step_9(can_p, block_by, vbf_header)
-
-        # step10:
+        # step8:
         # action: Hard Reset
         # result: ECU sends positive reply
-        result = result and SE11.ecu_hardreset(can_p, stepno=10)
-        time.sleep(1)
+        result = result and SE11.ecu_hardreset(can_p, stepno=8)
 
-        # step11:
-        # action: DL and activate SBL
-        # result: ECU sends positive reply
-        result = result and SSBL.sbl_activation(can_p, stepno=11,
-                                                purpose="DL and activate SBL")
-        time.sleep(1)
-
-        # step12:
-        # action: Hard Reset
-        # result: ECU sends positive reply
-        result = result and SE11.ecu_hardreset(can_p, stepno=12)
-        time.sleep(1)
-
-        # step13:
+        # step9:
         # action: verify ECU in default session
         # result: ECU sends positive reply
-        result = result and SE22.read_did_f186(can_p, b'\x01', stepno=13)
+        result = result and SE22.read_did_f186(can_p, b'\x01', stepno=9)
 
     ############################################
     # postCondition
