@@ -2,7 +2,7 @@
 
 ### token and pass created for tht repo
     TESTREPO=~/Repos/odtb2pilot
-	PYTHONPATH=~/Repos/odtb2pilot/Py_testenv/:.
+	export PYTHONPATH=~/Repos/odtb2pilot/Py_testenv/:.
     echo variables used in testrun:
 	echo TESTREPO: $TESTREPO
 	echo PYTHONPATH: $PYTHONPATH
