@@ -35,7 +35,7 @@ import logging
 import inspect
 
 import odtb_conf
-from support_can import SupportCAN, CanParam, CanTestExtra, CanPayload, CanMFParam
+from support_can import SupportCAN, CanParam, CanTestExtra, CanPayload
 from support_test_odtb2 import SupportTestODTB2
 from support_carcom import SupportCARCOM
 from support_file_io import SupportFileIO
@@ -72,17 +72,17 @@ def step_3(can_p, vbf_header):
     """
     stepno = 3
     purpose = "1st Check Memory with verification failed"
-    #modify the sw signature removing the last two number and replacing with 16 by default
-    #Python converted the sw signature to int
+    # modify the sw signature removing the last two number and replacing with 16 by default
+    # Python converted the sw signature to int
     vbf_header["sw_signature_dev"] = int(str(vbf_header["sw_signature_dev"])[:-2]+ '16')
 
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), vbf_header["sw_signature_dev"])
 
-    result = SSBL.check_memory(can_p, vbf_header,
-                               stepno, purpose)
-    result = result and (SSBL.pp_decode_routine_check_memory
-                         (SC.can_messages[can_p["receive"]][0][2])
-                         == 'The signed data could not be authenticated')
+    result = SSBL.check_memory(can_p, vbf_header, stepno, purpose)
+    result = result and (
+        SSBL.pp_decode_routine_check_memory(SC.can_messages[can_p["receive"]][0][2])
+        == 'The signed data could not be authenticated'
+    )
     logging.info(SSBL.pp_decode_routine_check_memory(SC.can_messages[can_p["receive"]][0][2]))
     return result
 
@@ -92,17 +92,17 @@ def step_4(can_p, vbf_header):
     """
     stepno = 4
     purpose = "2nd Check Memory with verification failed"
-    #modify the sw signature removing the last two number and replacing with 14 by default
-    #Python converted the sw signature to int
+    # modify the sw signature removing the last two number and replacing with 14 by default
+    # Python converted the sw signature to int
     vbf_header["sw_signature_dev"] = int(str(vbf_header["sw_signature_dev"])[:-2]+ '14')
 
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), vbf_header["sw_signature_dev"])
 
-    result = SSBL.check_memory(can_p, vbf_header,
-                               stepno, purpose)
-    result = result and (SSBL.pp_decode_routine_check_memory
-                         (SC.can_messages[can_p["receive"]][0][2])
-                         == 'The signed data could not be authenticated')
+    result = SSBL.check_memory(can_p, vbf_header, stepno, purpose)
+    result = result and (
+        SSBL.pp_decode_routine_check_memory(SC.can_messages[can_p["receive"]][0][2])
+        == 'The signed data could not be authenticated'
+    )
     logging.info(SSBL.pp_decode_routine_check_memory(SC.can_messages[can_p["receive"]][0][2]))
     return result
 
@@ -112,24 +112,27 @@ def step_5(can_p, vbf_header_original):
     """
     # In VBF header sw_signature_dev was stored as hex, Python converts that into int.
     # It has to be converted to bytes to be used as payload
-    sw_signature = vbf_header_original['sw_signature_dev'].to_bytes\
-                        ((vbf_header_original['sw_signature_dev'].bit_length()+7) // 8, 'big')
+    sw_signature = vbf_header_original['sw_signature_dev'].to_bytes(
+        (vbf_header_original['sw_signature_dev'].bit_length()+7) // 8, 'big'
+    )
 
-    cpay: CanPayload = {"payload" : S_CARCOM.can_m_send("RoutineControlRequestSID",
-                                                        b'\x02\x12' + sw_signature, b'\x01'),
-                        "extra" : ''
-                       }
-
+    cpay: CanPayload = {
+        "payload": S_CARCOM.can_m_send(
+            "RoutineControlRequestSID", b'\x02\x12' + sw_signature, b'\x01'
+        ),
+        "extra": '',
+    }
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
 
-    etp: CanTestExtra = {"step_no" : 5,
-                         "purpose" : "3rd Check memory with Negative Response",
-                         "timeout" : 2,
-                         "min_no_messages" : -1,
-                         "max_no_messages" : -1
-                        }
+    etp: CanTestExtra = {
+        "step_no": 5,
+        "purpose": "3rd Check memory with Negative Response",
+        "timeout": 2,
+        "min_no_messages": -1,
+        "max_no_messages": -1,
+    }
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
-    
+
     result = SUTE.teststep(can_p, cpay, etp)
 
     result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='7F31')
@@ -140,19 +143,18 @@ def step_7(can_p, vbf_header):
     """
     Teststep 7: 1st Check memory with verification failed
     """
-    stepno = 7
-    purpose = "1st Check Memory with verification failed"
-    #modify the sw signature removing the last two number and replacing with 16 by default
-    #Python converted the sw signature to int
+    # modify the sw signature removing the last two number and replacing with 16 by default
+    # Python converted the sw signature to int
     vbf_header["sw_signature_dev"] = int(str(vbf_header["sw_signature_dev"])[:-2]+ '16')
 
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), vbf_header["sw_signature_dev"])
 
-    result = SSBL.check_memory(can_p, vbf_header,
-                               stepno, purpose)
-    result = result and (SSBL.pp_decode_routine_check_memory
-                         (SC.can_messages[can_p["receive"]][0][2])
-                         == 'The signed data could not be authenticated')
+    result = SSBL.check_memory(can_p, vbf_header, stepno=7,
+                               purpose="1st Check Memory with verification failed")
+    result = result and (
+        SSBL.pp_decode_routine_check_memory(SC.can_messages[can_p["receive"]][0][2])
+        == 'The signed data could not be authenticated'
+    )
     logging.info(SSBL.pp_decode_routine_check_memory(SC.can_messages[can_p["receive"]][0][2]))
     return result
 
@@ -160,13 +162,12 @@ def step_8(can_p, vbf_header_original):
     """
     Teststep 8: 2nd Check memory with verification positive
     """
-    stepno = 8
-    purpose = "2nd Check memory with verification positive"
-    result = SSBL.check_memory(can_p, vbf_header_original,
-                               stepno, purpose)
-    result = result and (SSBL.pp_decode_routine_check_memory
-                         (SC.can_messages[can_p["receive"]][0][2])
-                         == 'The verification is passed')
+    result = SSBL.check_memory(can_p, vbf_header_original, stepno=8,
+                               purpose="2nd Check memory with verification positive")
+    result = result and (
+        SSBL.pp_decode_routine_check_memory(SC.can_messages[can_p["receive"]][0][2])
+        == 'The verification is passed'
+    )
     logging.info(SSBL.pp_decode_routine_check_memory(SC.can_messages[can_p["receive"]][0][2]))
     return result
 
@@ -175,36 +176,35 @@ def step_10(can_p):
     Teststep 10: Check the Complete and compatible Routine return Complete Not Compatible
     """
     etp: CanTestExtra = {
-        "step_no" : 10,
-        "purpose" : "Check the Complete and compatible Routine return Complete not Compatible"
+        "step_no": 10,
+        "purpose": "Check the Complete and compatible Routine return Complete not Compatible",
     }
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
 
     SUTE.print_test_purpose(etp["step_no"], etp["purpose"])
     result = SSBL.check_complete_compatible_routine(can_p, etp["step_no"])
-    result = result and (SSBL.pp_decode_routine_complete_compatible
-                         (SC.can_messages[can_p["receive"]][0][2])
-                            == 'Complete, Compatible')
-    
+    result = result and (
+        SSBL.pp_decode_routine_complete_compatible(SC.can_messages[can_p["receive"]][0][2])
+        == 'Complete, Compatible'
+    )
+
     return result
-    
+
 def run():
     """
     Run - Call other functions from here
     """
     logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
-    # start logging
-    # to be implemented
-
     # where to connect to signal_broker
     can_p: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        "send" : "Vcu1ToBecmFront1DiagReqFrame",
-        "receive" : "BecmToVcu1Front1DiagResFrame",
-        "namespace" : SC.nspace_lookup("Front1CANCfg0")
+        "netstub": SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
+        "send": "Vcu1ToBecmFront1DiagReqFrame",
+        "receive": "BecmToVcu1Front1DiagResFrame",
+        "namespace": SC.nspace_lookup("Front1CANCfg0")
     }
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
+
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
     logging.info("Time: %s \n", time.time())
@@ -213,22 +213,20 @@ def run():
     ############################################
     # read VBF param when testscript is s started, if empty take default param
     SSBL.get_vbf_files()
-    timeout = 1500
-    result = PREC.precondition(can_p, timeout)
+    result = PREC.precondition(can_p, timeout=1500)
 
     if result:
     ############################################
     # teststeps
     ############################################
 
-        # step1:
+        # step 1:
         # action: DL and activate SBL
         # result: ECU sends positive reply
-        result = result and SSBL.sbl_activation(can_p, stepno=1,\
-                                                purpose="DL and activate SBL")
+        result = result and SSBL.sbl_activation(can_p, stepno=1, purpose="DL and activate SBL")
         time.sleep(1)
 
-        # step2:
+        # step 2:
         # action: download ESS Software Part no check
         # result: ECU sends positive reply
         logging.info("ESS Software Part Download no check")
@@ -236,7 +234,7 @@ def run():
                                                                   stepno=2)
         result = result and result_step2
         time.sleep(1)
-        #save original sw signature for step 5 and step8
+        # save original sw signature for step 5 and step 8
         original_sw_signature = vbf_header["sw_signature_dev"]
 
         # step 3:
@@ -255,19 +253,17 @@ def run():
         vbf_header["sw_signature_dev"] = original_sw_signature
         result = result and step_5(can_p, vbf_header)
 
-        # step6:
+        # step 6:
         # action: download ESS Software Part
         # result: ECU sends positive reply
         logging.info("Step_6: ESS Software Part Download no check")
-        result = result and SSBL.sw_part_download_no_check(can_p, SSBL.get_ess_filename(),
-                                                           stepno=6)
+        result = result and SSBL.sw_part_download_no_check(can_p, SSBL.get_ess_filename(), stepno=6)
         time.sleep(1)
 
         # step 7:
         # action: 1st Check memory with verification failed
         # result: BECM sends positive reply
         result = result and step_7(can_p, vbf_header)
-        #time.sleep(1)
 
         # step 8:
         # action: 2nd Check memory with verification positive
@@ -275,26 +271,25 @@ def run():
         vbf_header["sw_signature_dev"] = original_sw_signature
         result = result and step_8(can_p, vbf_header)
 
-        # step9:
+        # step 9:
         # action: Download the remnants Software Parts
         # result: ECU sends positive reply
-        #Download the remnants Software Parts
+        # Download the remnants Software Parts
         for swp in SSBL.get_df_filenames():
-
             result = result and SSBL.sw_part_download(can_p, swp, stepno=9)
 
-        # step10:
+        # step 10:
         # action: Check Complete and Compatible
         # result: ECU sends "Complete and Compatible" reply
         result = result and step_10(can_p)
 
-        # step11:
+        # step 11:
         # action: Hard Reset
         # result: ECU sends positive reply
         result = result and SE11.ecu_hardreset(can_p, stepno=11)
         time.sleep(1)
 
-        # step12:
+        # step 12:
         # action: verify ECU in default session
         # result: ECU sends positive reply
         result = result and SE10.diagnostic_session_control_mode1(can_p, stepno=12)
