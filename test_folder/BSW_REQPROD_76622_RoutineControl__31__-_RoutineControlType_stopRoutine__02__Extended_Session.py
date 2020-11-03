@@ -34,15 +34,15 @@ import sys
 import logging
 import inspect
 
-import odtb_conf
-from support_can import SupportCAN, CanParam, CanTestExtra, CanPayload
-from support_test_odtb2 import SupportTestODTB2
-from support_carcom import SupportCARCOM
-from support_file_io import SupportFileIO
-from support_precondition import SupportPrecondition
-from support_postcondition import SupportPostcondition
-from support_service22 import SupportService22
-from support_service10 import SupportService10
+import parameters.odtb_conf
+from supportfunctions.support_can import SupportCAN, CanParam, CanTestExtra, CanPayload
+from supportfunctions.support_test_odtb2 import SupportTestODTB2
+from supportfunctions.support_carcom import SupportCARCOM
+from supportfunctions.support_file_io import SupportFileIO
+from supportfunctions.support_precondition import SupportPrecondition
+from supportfunctions.support_postcondition import SupportPostcondition
+from supportfunctions.support_service22 import SupportService22
+from supportfunctions.support_service10 import SupportService10
 SIO = SupportFileIO
 SC = SupportCAN()
 SUTE = SupportTestODTB2()
