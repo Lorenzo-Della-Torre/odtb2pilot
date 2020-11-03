@@ -35,7 +35,6 @@ import logging
 import inspect
 import argparse
 
-import odtb_conf
 from support_can import SupportCAN, CanParam, CanTestExtra, CanPayload
 from support_test_odtb2 import SupportTestODTB2
 from support_carcom import SupportCARCOM
@@ -50,6 +49,22 @@ from support_service10 import SupportService10
 from support_service11 import SupportService11
 from support_service22 import SupportService22
 from support_service31 import SupportService31
+from output.did_dict import sddb_pbl_did_dict
+from output.did_dict import pbl_diag_part_num
+
+import odtb_conf
+
+# For each each DID, wait this time for the response. If you wait to short time you might not get
+# the full message (payload). The unit is seconds. 2s should cover even the biggest payloads.
+RESPONSE_TIMEOUT = 2
+
+# Test this amount of DIDs. Example: If equal to 10, the program will only test the first 10 DIDs.
+# This is to speed up during testing.
+# 500 should cover all DIDs
+MAX_NO_OF_DIDS = 500
+
+# Reserve this time for the full script (seconds)
+SCRIPT_TIMEOUT = MAX_NO_OF_DIDS * RESPONSE_TIMEOUT + 15
 
 SIO = SupportFileIO
 SC = SupportCAN()
@@ -76,7 +91,7 @@ def parse_some_args():
 
 def step_4(can_p):
     '''
-    Teststep 4: Extract SWP Number for PBL
+    Teststep 4: Extract DB Part Number for PBL
     '''
     cpay: CanPayload = {"payload" : S_CARCOM.can_m_send("ReadDataByIdentifier",
                                                         b'\xF1\x21', b''),
@@ -86,7 +101,7 @@ def step_4(can_p):
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
 
     etp: CanTestExtra = {"step_no": 4,
-                         "purpose" : "Extract SWP Number for PBL",
+                         "purpose" : "Extract DB Part Number for PBL",
                          "timeout" : 5,
                          "min_no_messages" : -1,
                          "max_no_messages" : -1
@@ -95,49 +110,105 @@ def step_4(can_p):
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
 
     result = SUTE.teststep(can_p, cpay, etp)
+    logging.info("PBL DB part number: %s", SC.can_messages[can_p["receive"]])
     logging.info("Step 4: %s", SUTE.pp_partnumber(SC.can_messages[can_p["receive"]][0][2][10:]))
-    db_number = SUTE.pp_partnumber(SC.can_messages[can_p["receive"]][0][2][10:])
-    return result, db_number
+    pbl_part_number = SUTE.pp_partnumber(SC.can_messages[can_p["receive"]][0][2][10:])
+    return result, pbl_part_number
 
-def step_5(margs, db_number):
+def step_5(pbl_part_number):
     """
-    Teststep 5: Extract all DID from Data Base
+    Teststep 5: Compare PBL DB Part Numbers from Data Base and PBL
     """
     stepno = 5
-    purpose = "Extract all DID from Data Base"
+    purpose = "Compare PBL DB Part Numbers from Data Base and PBL"
     SUTE.print_test_purpose(stepno, purpose)
-    did_list = SUTE.extract_db_did_id(db_number, margs)
-    return did_list
 
-def step_6(can_p, did_list):
-    '''
-    Teststep 6: Test if all DIDs in DB are present in SW PBL
-    '''
-    etp: CanTestExtra = {"step_no": 6,
-                         "purpose" : "Test if all DIDs in DB are present in SW PBL",
-                         "timeout" : 1, # wait for message to arrive, but don't test (-1)
-                         "min_no_messages" : -1,
-                         "max_no_messages" : -1
-                        }
-
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
-
-    for did in did_list:
-        cpay: CanPayload = {"payload" : S_CARCOM.can_m_send("ReadDataByIdentifier",
-                                                            bytes.fromhex(did), b''),
-                            "extra" : ''
-                           }
-
-        SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
-
-        result = SUTE.teststep(can_p, cpay, etp)
+    pbl_part_number = pbl_part_number.replace(" ", "_")
+    logging.info("pbl_diag_part_num: %s", pbl_diag_part_num)
+    logging.info("pbl_part_number: %s", pbl_part_number)
+    result = bool(pbl_diag_part_num == pbl_part_number)
+    if result:
+        logging.info('PBL DB Part Numbers are equal! Continue')
+    else:
+        logging.info('PBL DB Part Numbers are NOT equal! Test FAILS')
 
     return result
+
+def step_6(can_p):
+    '''
+    Teststep 6: Test if all DIDs in DB are present in SW PBL
+                Test service #22:
+                Verify diagnostic service complies to SDDB
+                Request all PBL DIDs in SDDB for ECU
+    '''
+    stepno = 6
+    purpose = "Test if all DIDs in DB are present in SW SBL"
+    SUTE.print_test_purpose(stepno, purpose)
+
+    pass_or_fail_counter_dict = {"Passed": 0, "Failed": 0, "conditionsNotCorrect (22)": 0,
+                                 "requestOutOfRange (31)": 0}
+    result_list = list()
+    did_counter = 0
+    stepresult = len(sddb_pbl_did_dict) > 0
+    logging.info("Step %s: DID:s in dictionary: %s", stepno, len(sddb_pbl_did_dict))
+
+    for did_dict_from_file_values in sddb_pbl_did_dict.values():
+        did_counter += 1
+        if did_counter > MAX_NO_OF_DIDS:
+            logging.info("MAX_NO_OF_DIDS reached: %s", MAX_NO_OF_DIDS)
+            break
+
+        logging.debug('DID counter: %s', str(did_counter))
+
+        did_id = did_dict_from_file_values['ID']
+        did_dict_with_result = did_dict_from_file_values
+        logging.info(did_dict_with_result)
+
+        # Using Service 22 to request a particular DID, returning the result in a dictionary
+        did_dict_from_service_22 = SE22.get_did_info(can_p, did_id, RESPONSE_TIMEOUT)
+
+        # Copy info to the did_dict_with_result dictionary from the did_dict
+        did_dict_with_result = SE22.adding_info(did_dict_from_service_22, did_dict_with_result)
+
+        # Summarizing the result
+        info_entry, pass_or_fail_counter_dict = SE22.summarize_result(did_dict_with_result,
+                                                                      pass_or_fail_counter_dict,
+                                                                      did_id)
+
+        # Add the results
+        result_list.append(info_entry)
+
+        # If any of the tests failed. Quit immediately unless debugging.
+        if not(info_entry.c_did and info_entry.c_sid and info_entry.c_size):
+            logging.info('----------------------')
+            logging.info('Testing DID %s failed.', info_entry.did)
+            logging.info('----------------------')
+            logging.info('DID correct: %s', info_entry.c_did)
+            logging.info('SID correct: %s', info_entry.c_sid)
+            logging.info('Size correct: %s', info_entry.c_size)
+            logging.info('Error message: %s', info_entry.err_msg)
+            logging.info('---------------------------------------')
+            #if not logging.getLogger("master").isEnabledFor(logging.DEBUG):
+            #    return False
+
+    logging.info("Step %s: DID:s checked: %s", stepno, did_counter)
+
+    for result in result_list:
+        logging.debug('DID: %s, c_did: %s, c_sid: %s, c_size: %s, err_msg: %s',
+                      result.did, result.c_did, result.c_sid, result.c_size,
+                      result.err_msg)
+        stepresult = stepresult and result.c_did and result.c_sid and result.c_size \
+                                and not result.err_msg
+
+    logging.info("Step %s: Result teststep: %s\n", stepno, stepresult)
+
+    return stepresult
 
 def step_7(can_p):
     '''
     Teststep 7: Test if DIDs not in DB return Error message
     '''
+
     cpay: CanPayload = {"payload" : S_CARCOM.can_m_send("ReadDataByIdentifier",
                                                         b'\xF1\x02', b''),
                         "extra" : ''
@@ -160,7 +231,7 @@ def step_7(can_p):
     #logging.info('%s', SUTE.PP_Decode_7F_response(SC.can_frames[can_receive][0][2]))
     return result
 
-def run(margs):
+def run():
     """
     Run - Call other functions from here
     """
@@ -182,13 +253,14 @@ def run(margs):
     ############################################
     # read VBF param when testscript is s started, if empty take default param
     SSBL.get_vbf_files()
-    timeout = 50
+    timeout = 500
     result = PREC.precondition(can_p, timeout)
 
     if result:
     ############################################
     # teststeps
     ############################################
+
 
         # step 1:
         # action: Verify programming preconditions
@@ -200,44 +272,52 @@ def run(margs):
         # action: Change to programming session
         # result: ECU sends positive reply
         result = result and SE10.diagnostic_session_control_mode2(can_p, stepno=2)
+        time.sleep(1)
 
         # step 3:
         # action: Security Access Request SID
         # result: ECU sends positive reply
         result = result and SSA.activation_security_access(can_p, 3,
                                                            "Security Access Request SID")
+        time.sleep(1)
 
         # step 4:
         # action: Extract SWP Number for PBL
         # result: ECU sends positive reply
-        result_step4, db_number = result and step_4(can_p)
+        result_step4, pbl_part_number = step_4(can_p)
         result = result and result_step4
 
         # step 5:
-        # action: Extract all DID from Data Base
-        # result:
-        did_list = step_5(margs, db_number)
+        # action: Compare the PBL Part Numbers from Data Base and PBL
+        # result: The Part Numbers shall be equal
+        result = result and step_5(pbl_part_number)
 
         # step 6:
         # action: Test if all DIDs in DB are present in SW PBL
-        # result: ECU sends positive reply
-        result = result and step_6(can_p, did_list)
+        # result: All DIDs shall be implemented as described in SDDB
+        #         The test will fail if not correct response
+        #         but keep the result separate and reset/end Testcase
+        result = result and step_6(can_p)
 
         # step 7:
         # action: Test if DIDs not in DB return Error message
-        # result: ECU sends positive reply
-        result = step_7(can_p)
+        # result: ECU sends negative reply
+        #         The test will fail if not negative response
+        #         but keep the result separate and reset/end Testcase
+        result = result and step_7(can_p)
 
         # step 8:
         # action: Hard Reset
         # result: ECU sends positive reply
-        result = result and SE11.ecu_hardreset(can_p, stepno=8)
-        time.sleep(1)
+        result_8 = SE11.ecu_hardreset(can_p, stepno=8)
+        time.sleep(5)
+        result = result and result_8
 
         # step 9:
         # action: verify ECU in default session
         # result: ECU sends positive reply
         result = result and SE22.read_did_f186(can_p, b'\x01', stepno=9)
+
 
     ############################################
     # postCondition
@@ -246,5 +326,4 @@ def run(margs):
     POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
-    ARGS = parse_some_args()
-    run(ARGS)
+    run()
