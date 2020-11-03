@@ -190,9 +190,13 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
 
         # Validate 4 bytes of data (8 character hex string)
         result = len(ecu_serial_number_record) == 8
+        if not result:
+            logging.info("validate SN failed - wrong length: %s", len(ecu_serial_number_record))
 
         # Validate BCD coding in 4 bytes (8 nibbles), right justified, 0 padded
         result = result and all(nibble in string.digits for nibble in ecu_serial_number_record)
+        if not result:
+            logging.info("validate SN failed - wrong BCD part: %s", ecu_serial_number_record)
 
         return result
 
@@ -223,6 +227,8 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
 
         # Validate 7 bytes of data (14 character hex string)
         result = len(part_number_record) == 14
+        if not result:
+            logging.info("validate PN failed - wrong length: %s", len(part_number_record))
 
         if result:
             # First 4 bytes is part number, rest is version suffix
@@ -230,6 +236,8 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
 
             # Validate BCD coding in first 4 bytes (8 nibbles), right justified, 0 padded
             result = result and all(nibble in string.digits for nibble in part_number)
+            if not result:
+                logging.info("validate PN failed - BCD part: %s", part_number_record)
 
             # Validate version suffix
             suffix_chars = [chr(byte) for byte in bytes.fromhex(version_suffix_hex)]
@@ -242,7 +250,8 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
 
             # Last suffix character can not be space
             result = result and suffix_chars[2] != ' '
-
+            if not result:
+                logging.info("validate PN failed - suffix part: %s", part_number_record)
         return result
 
     def validate_combined_did_eda0(self, rec_message, pn_sn_list) -> bool:
@@ -270,6 +279,7 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
                 logging.warning("Unclear position of id in combined did response: %s %s",
                                 pos_first,
                                 pos_last)
+        logging.info("Validate PN/SN - pos_list generated: %s", pos_list)
         if -1 in pos_list:
             logging.info("Validate PN/SN: Not all IDs found in reply.")
             logging.info("Validate PN/SN: Search for %s", pn_sn_list)
@@ -293,11 +303,15 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
                         pos_end = sorted(pos_list)[next_pos]
                     else:
                         pos_end = -1
+                logging.info("rec_message: %s", rec_message)
+                logging.info("rec_message: pos_first %s", pos_first)
+                logging.info("rec_message: pos_end   %s", pos_end)
                 if pos_end != -1:
                     record = rec_message[pos_first: pos_end]
                 else:
                     record = rec_message[pos_first:]
 
+                logging.info("rec_message: to check %s", record)
                 if pn_sn[1] == 'PN':
                     result = self.validate_part_number_record(record)
                 elif pn_sn[1] == 'SN':

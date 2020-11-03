@@ -113,7 +113,7 @@ class SupportPrecondition:
         #            ['F18C', 'SN'],\
         #            ['F12E', 'PN']]
         pn_sn_list = []
-        SIO.extract_parameter_yml(str(inspect.stack()[0][3]), pn_sn_list)
+        SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'pn_sn_list')
 
         result = SE22.read_did_eda0(can_p, pn_sn_list)
         logging.info("Precondition EDA0: %s\n", result)

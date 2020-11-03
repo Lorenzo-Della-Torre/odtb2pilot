@@ -74,7 +74,7 @@ class SupportService22:
         #            ['F12B', 'PN'],\
         #            ['F18C', 'SN'],\
         #            ['F12E', 'PN']]
-        SIO.extract_parameter_yml(str(inspect.stack()[0][3]), pn_sn_list)
+        SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'pn_sn_list')
 
         result = SUPPORT_TEST.teststep(can_p, cpay, etp)
         if SC.can_messages[can_p["receive"]]:
