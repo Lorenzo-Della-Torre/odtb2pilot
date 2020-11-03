@@ -10,7 +10,7 @@ from neo4j import GraphDatabase
 SRC_FOLDER = "test_cases"
 DEST_FOLDER = "test_folder"
 
-NEO4J = True
+NEO4J = False
 
 def neo_funz(py_files):
     """ add script file to db, and link it to REQPROD (if any) """
@@ -55,8 +55,8 @@ def move_subfiles_to_flat(src_folder, dest_folder):
     print(f'list of files: {listOfFiles}')
 
     for full_path in listOfFiles:
-        #shutil.move(full_path, DEST_FOLDER)
-        continue
+        shutil.move(full_path, DEST_FOLDER)
+        #continue
     # add to the graph db here instead; it will be cool.
     if NEO4J:
         neo_funz(listOfFiles)
