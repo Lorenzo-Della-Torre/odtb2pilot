@@ -21,10 +21,10 @@ import re
 
 
 # Regular Expressions
-RE_FILE_NAME = re.compile('(?P<file_name_sw_part_number>\d{8})\s*(?P<file_name_sw_version>\w+)')
-RE_SW_PART_NUMBER = re.compile('\s*sw_part_number\s*=\s*"?(?P<sw_part_number>\w*)')
-RE_SW_VERSION = re.compile('\s*sw_version\s*=\s*"?(?P<sw_version>\w*)')
-RE_SW_PART_TYPE = re.compile('\s*sw_part_type\s*=\s*(?P<sw_part_type>\w*)')
+RE_FILE_NAME = re.compile(r'(?P<file_name_sw_part_number>\d{8})\s*(?P<file_name_sw_version>\w+)')
+RE_SW_PART_NUMBER = re.compile(r'\s*sw_part_number\s*=\s*"?(?P<sw_part_number>\w*)')
+RE_SW_VERSION = re.compile(r'\s*sw_version\s*=\s*"?(?P<sw_version>\w*)')
+RE_SW_PART_TYPE = re.compile(r'\s*sw_part_type\s*=\s*(?P<sw_part_type>\w*)')
 
 ### Code ###
 def parse_some_args():
@@ -49,7 +49,6 @@ def validate_vbf_name(infile):
     sw_part_number = None
     sw_version = None
     sw_part_type = None
-    UNSUPPORTED_PART_TYPES = ['SBL', 'ESS']
 
     # Open file
     with open(infile, encoding="ascii", errors="surrogateescape") as vbf_file:
@@ -80,11 +79,6 @@ def validate_vbf_name(infile):
     else:
         # Did not find the necessary header information to make the comparison
         logging.fatal('\nDid not find the necessary header information to make the comparison')
-        return False
-
-    # Some VBF files are not supported
-    if sw_part_type in UNSUPPORTED_PART_TYPES:
-        logging.fatal('\nSW_PART_TYPE: %s Not supported!', sw_part_type)
         return False
 
     # Compare
