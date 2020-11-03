@@ -49,7 +49,7 @@ from supportfunctions.support_service31 import SupportService31
 from output.did_dict import sddb_sbl_did_dict
 from output.did_dict import sbl_diag_part_num
 
-import parameters.odtb_conf
+import parameters.odtb_conf as odtb_conf
 
 SIO = SupportFileIO
 SC = SupportCAN()

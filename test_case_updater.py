@@ -22,7 +22,9 @@ def get_module_file(mod_folder):
     # odtb_conf file is special, 
     # could do another loop if need
     ODTB_CONF_NAME = 'odtb_conf'
+    ODTB_FIX_NAME = f'{CONF_FOLDER}.{ODTB_CONF_NAME}'
     mod_name_dict[ODTB_CONF_NAME] = f"{CONF_FOLDER}.{ODTB_CONF_NAME}"
+    mod_name_dict[ODTB_FIX_NAME] = f"{ODTB_FIX_NAME} as {ODTB_CONF_NAME}"
 
     for file in os.listdir(mod_folder):
         if file.endswith(".py"):
@@ -45,7 +47,7 @@ def dashrepl(matchobj):
 
 def update_files_incl(test_folder, mod_dict):
     """ Modify exisiting scripts to do correct imports """
-    re_import = re.compile(r"import\s+(\w+)")
+    re_import = re.compile(r"import\s+([\w\.]+)")
     re_from = re.compile(r"from\s+(\w+)")
     for file in os.listdir(test_folder):
         if file.endswith(".py"):
@@ -62,7 +64,7 @@ def update_files_incl(test_folder, mod_dict):
                 if match_import:
                     #print(line)
                     replace_name = replacer_func(match_import.group(1), mod_dict)
-                    tmp_str = re.sub(r'(import\s+)(\w+)(.*)', r'\1' + replace_name + r'\3', line)
+                    tmp_str = re.sub(r'(import\s+)([\w\.]+)(.*)', r'\1' + replace_name + r'\3', line)
                     #print(tmp_str)
 
                 elif match_from:

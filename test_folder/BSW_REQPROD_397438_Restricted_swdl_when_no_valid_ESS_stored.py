@@ -34,7 +34,7 @@ import sys
 import logging
 import inspect
 
-import parameters.odtb_conf
+import parameters.odtb_conf as odtb_conf
 
 from supportfunctions.support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
