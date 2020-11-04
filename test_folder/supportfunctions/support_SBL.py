@@ -43,17 +43,17 @@ import glob
 from typing import Dict
 import traceback
 
-from support_carcom import SupportCARCOM
-from support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
-from support_test_odtb2 import SupportTestODTB2
-from support_sec_acc import SupportSecurityAccess
-from support_LZSS import LzssEncoder
-from support_service10 import SupportService10
-from support_service22 import SupportService22
-from support_service31 import SupportService31
-from support_service34 import SupportService34
-from support_service36 import SupportService36
-from support_service37 import SupportService37
+from supportfunctions.support_carcom import SupportCARCOM
+from supportfunctions.support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
+from supportfunctions.support_test_odtb2 import SupportTestODTB2
+from supportfunctions.support_sec_acc import SupportSecurityAccess
+from supportfunctions.support_LZSS import LzssEncoder
+from supportfunctions.support_service10 import SupportService10
+from supportfunctions.support_service22 import SupportService22
+from supportfunctions.support_service31 import SupportService31
+from supportfunctions.support_service34 import SupportService34
+from supportfunctions.support_service36 import SupportService36
+from supportfunctions.support_service37 import SupportService37
 
 SC = SupportCAN()
 S_CARCOM = SupportCARCOM()

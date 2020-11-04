@@ -30,11 +30,11 @@ import logging
 import inspect
 import time
 
-from support_can import SupportCAN, CanParam, PerParam, CanMFParam
-from support_test_odtb2 import SupportTestODTB2
-from support_service22 import SupportService22
-from support_service3e import SupportService3e
-from support_file_io import SupportFileIO
+from supportfunctions.support_can import SupportCAN, CanParam, PerParam, CanMFParam
+from supportfunctions.support_test_odtb2 import SupportTestODTB2
+from supportfunctions.support_service22 import SupportService22
+from supportfunctions.support_service3e import SupportService3e
+from supportfunctions.support_file_io import SupportFileIO
 
 
 SC = SupportCAN()

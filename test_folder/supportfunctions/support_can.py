@@ -30,10 +30,10 @@ import sys
 from typing import Dict
 import grpc
 sys.path.append('generated')
-import network_api_pb2 # pylint: disable=wrong-import-position
-import network_api_pb2_grpc # pylint: disable=wrong-import-position
-import functional_api_pb2_grpc # pylint: disable=wrong-import-position
-import common_pb2 # pylint: disable=wrong-import-position
+import protogenerated.network_api_pb2 as network_api_pb2 # pylint: disable=wrong-import-position
+import protogenerated.network_api_pb2_grpc as network_api_pb2_grpc # pylint: disable=wrong-import-position
+import protogenerated.functional_api_pb2_grpc as functional_api_pb2_grpc # pylint: disable=wrong-import-position
+import protogenerated.common_pb2 as common_pb2 # pylint: disable=wrong-import-position
 
 
 class CanMFParam(Dict): # pylint: disable=too-few-public-methods,inherit-non-class

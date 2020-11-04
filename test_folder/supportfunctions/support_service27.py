@@ -27,10 +27,10 @@
 """The Python implementation of the gRPC route guide client."""
 import logging
 
-from support_carcom import SupportCARCOM
-from support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
-from support_test_odtb2 import SupportTestODTB2
-from support_service22 import SupportService22
+from supportfunctions.support_carcom import SupportCARCOM
+from supportfunctions.support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
+from supportfunctions.support_test_odtb2 import SupportTestODTB2
+from supportfunctions.support_service22 import SupportService22
 
 SC = SupportCAN()
 SUTE = SupportTestODTB2()

@@ -21,9 +21,9 @@
 
 """The Python implementation of the grPC route guide client."""
 
-from support_service27 import SupportService27
-from support_can import SupportCAN, CanParam
-from support_test_odtb2 import SupportTestODTB2
+from supportfunctions.support_service27 import SupportService27
+from supportfunctions.support_can import SupportCAN, CanParam
+from supportfunctions.support_test_odtb2 import SupportTestODTB2
 
 SC = SupportCAN()
 SUTE = SupportTestODTB2()

@@ -30,10 +30,10 @@ import logging
 import inspect
 import time
 from collections import namedtuple
-from support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
-from support_test_odtb2 import SupportTestODTB2
-from support_carcom import SupportCARCOM
-from support_file_io import SupportFileIO
+from supportfunctions.support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
+from supportfunctions.support_test_odtb2 import SupportTestODTB2
+from supportfunctions.support_carcom import SupportCARCOM
+from supportfunctions.support_file_io import SupportFileIO
 
 SC = SupportCAN()
 SC_CARCOM = SupportCARCOM()

@@ -30,10 +30,10 @@ import logging
 import time
 from datetime import datetime
 
-from support_can import SupportCAN, CanParam
-from support_carcom import SupportCARCOM
-from support_service10 import SupportService10
-from support_service22 import SupportService22
+from supportfunctions.support_can import SupportCAN, CanParam
+from supportfunctions.support_carcom import SupportCARCOM
+from supportfunctions.support_service10 import SupportService10
+from supportfunctions.support_service22 import SupportService22
 
 SC_CARCOM = SupportCARCOM()
 SC = SupportCAN()

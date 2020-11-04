@@ -22,8 +22,8 @@
 """The Python implementation of the grPC route guide client."""
 
 import io
-import lzss_bitio
-from lzss_helpers import CircularBuffer, Reference, SmartOpener
+import supportfunctions.lzss_bitio
+from supportfunctions.lzss_helpers import CircularBuffer, Reference, SmartOpener
 
 class LzssEncoder():
     """

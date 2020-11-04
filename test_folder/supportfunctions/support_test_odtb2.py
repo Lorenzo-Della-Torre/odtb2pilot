@@ -38,7 +38,7 @@ from datetime import datetime
 import string
 
 #sys.path.append('generated')
-from support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
+from supportfunctions.support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
 SC = SupportCAN()
 
 
