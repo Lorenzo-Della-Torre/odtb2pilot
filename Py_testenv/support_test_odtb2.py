@@ -336,6 +336,7 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
 
 
     def validate_combined_did_eda0(self, rec_message, pn_sn_list) -> bool:
+    # pylint: disable=too-many-statements
         """
         Validate a combined part/serial number
 
@@ -348,59 +349,60 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
         #iterate through rec_message, find identifiers from pn_sn_list.
         result = True
         pos_list = []
-        for pn_sn in pn_sn_list:
-            logging.debug("Val DID EDA0: looking for %s", pn_sn[0])
-            pos_first = rec_message.find(pn_sn[0])
-            pos_last = rec_message.rfind(pn_sn[0])
-            logging.debug("Val DID EDA0: pos_first %s", pos_first)
-            logging.debug("Val DID EDA0: pos_last  %s", pos_last)
-            if pos_first == pos_last:
-                pos_list.append(pos_first)
+        if pn_sn_list:
+            for pn_sn in pn_sn_list:
+                logging.debug("Val DID EDA0: looking for %s", pn_sn[0])
+                pos_first = rec_message.find(pn_sn[0])
+                pos_last = rec_message.rfind(pn_sn[0])
+                logging.debug("Val DID EDA0: pos_first %s", pos_first)
+                logging.debug("Val DID EDA0: pos_last  %s", pos_last)
+                if pos_first == pos_last:
+                    pos_list.append(pos_first)
+                else:
+                    logging.warning("Unclear position of id in combined did response: %s %s",
+                                    pos_first,
+                                    pos_last)
+            logging.info("Validate PN/SN - pos_list generated: %s", pos_list)
+            if -1 in pos_list:
+                logging.info("Validate PN/SN: Not all IDs found in reply.")
+                logging.info("Validate PN/SN: Search for %s", pn_sn_list)
+                logging.info("Validate DID EDA0: pos_list %s", pos_list)
+                result = False
             else:
-                logging.warning("Unclear position of id in combined did response: %s %s",
-                                pos_first,
-                                pos_last)
-        logging.info("Validate PN/SN - pos_list generated: %s", pos_list)
-        if -1 in pos_list:
-            logging.info("Validate PN/SN: Not all IDs found in reply.")
-            logging.info("Validate PN/SN: Search for %s", pn_sn_list)
-            logging.info("Validate DID EDA0: pos_list %s", pos_list)
-            result = False
-        else:
-            logging.info("Validate PN/SN: All IDs found in reply. Validate format.")
-            #is there an index following? -1 if not
-            logging.info("Validate DID EDA0: rec_message %s", rec_message)
-            logging.info("Validate DID EDA0: pn_sn_list  %s", pn_sn_list)
-            for idx, pn_sn in enumerate(pn_sn_list):
-                pos_end = -1
-                logging.debug("Val DID EDA0: idx  %s", idx)
-                pos_start = pos_list[idx]
-                logging.debug("Val DID EDA0: pos_start  %s", pos_start)
-                # -1: index not found
-                if not pos_start == -1:
-                    next_pos = sorted(pos_list).index(pos_start) +1
-                    logging.debug("Val DID EDA0: next_pos  %s", next_pos)
-                    if not next_pos >= len(pos_list):
-                        pos_end = sorted(pos_list)[next_pos]
+                logging.info("Validate PN/SN: All IDs found in reply. Validate format.")
+                #is there an index following? -1 if not
+                logging.info("Validate DID EDA0: rec_message %s", rec_message)
+                logging.info("Validate DID EDA0: pn_sn_list  %s", pn_sn_list)
+                for idx, pn_sn in enumerate(pn_sn_list):
+                    pos_end = -1
+                    logging.debug("Val DID EDA0: idx  %s", idx)
+                    pos_start = pos_list[idx]
+                    logging.debug("Val DID EDA0: pos_start  %s", pos_start)
+                    # -1: index not found
+                    if not pos_start == -1:
+                        next_pos = sorted(pos_list).index(pos_start) +1
+                        logging.debug("Val DID EDA0: next_pos  %s", next_pos)
+                        if not next_pos >= len(pos_list):
+                            pos_end = sorted(pos_list)[next_pos]
+                        else:
+                            pos_end = -1
+                    logging.debug("rec_message: %s", rec_message)
+                    logging.debug("rec_message: pos_start %s", pos_start)
+                    logging.debug("rec_message: pos_end   %s", pos_end)
+                    if pos_end != -1:
+                        record = rec_message[pos_start+4: pos_end]
                     else:
-                        pos_end = -1
-                logging.debug("rec_message: %s", rec_message)
-                logging.debug("rec_message: pos_start %s", pos_start)
-                logging.debug("rec_message: pos_end   %s", pos_end)
-                if pos_end != -1:
-                    record = rec_message[pos_start+4: pos_end]
-                else:
-                    record = rec_message[pos_start+4:]
+                        record = rec_message[pos_start+4:]
 
-                logging.debug("rec_message: to check %s", record)
-                if pn_sn[1] == 'PN':
-                    result = self.validate_part_number_records(record)
-                elif pn_sn[1] == 'SN':
-                    result = self.validate_serial_number_records(record)
-                elif pn_sn[1] == 'VIDCV':
-                    logging.info("Vendor ID, cluster version not validated   %s", record)
-                else:
-                    result = False
+                    logging.debug("rec_message: to check %s", record)
+                    if pn_sn[1] == 'PN':
+                        result = self.validate_part_number_records(record)
+                    elif pn_sn[1] == 'SN':
+                        result = self.validate_serial_number_records(record)
+                    elif pn_sn[1] == 'VIDCV':
+                        logging.info("Vendor ID, cluster version not validated   %s", record)
+                    else:
+                        result = False
         logging.debug("Validate PN/SN: result %s.", result)
         return result
 
