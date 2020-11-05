@@ -51,7 +51,7 @@ class SupportService22:
 
     @staticmethod
     def read_did_eda0(can_p: CanParam,\
-                      pn_sn_list=[], stepno=220): # pylint: disable=dangerous-default-value
+                      pn_sn_list=None, stepno=220):
         """
         Read composite DID EDA0: Complete ECU Part/Serial Number(s)
         """
@@ -73,7 +73,8 @@ class SupportService22:
         #            ['F12A', 'PN'],\
         #            ['F12B', 'PN'],\
         #            ['F18C', 'SN'],\
-        #            ['F12E', 'PN']]
+        #            ['F12E', 'PN'],\
+        #            ['F126', 'VIDCV']]
         SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'pn_sn_list')
 
         result = SUPPORT_TEST.teststep(can_p, cpay, etp)
