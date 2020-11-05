@@ -43,7 +43,7 @@ SC = SupportCAN()
 
 
 class SupportTestODTB2: # pylint: disable=too-many-public-methods
-    # pylint: disable=too-many-branches
+    # pylint: disable=too-many-branches, too-many-lines
     """
     Class for supporting sending/receiving CAN frames
     """
@@ -179,7 +179,7 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
         return testresult
 
     @staticmethod
-    def validate_ecu_serial_number_record(ecu_serial_number_record: str) -> bool:
+    def validate_serial_number_record(ecu_serial_number_record: str) -> bool:
         """
         Validate a ECU serial number record
 
@@ -200,12 +200,52 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
 
         return result
 
+    def validate_serial_number_records(self, sn_records: str) -> bool:
+        """
+        Validate several serial number records
+
+        A record with several serial numbers starts with
+        1 byte containing number of serial numbers to follow
+        several serial number records each 4 bytes long
+        """
+
+        # Figure out if sn_records contains one ore more serial numbers
+        #
+        result = True
+        sn_len = len(sn_records)
+        logging.debug("validate SN records: len sn_records %s", sn_len)
+        if sn_len == 8:
+        #    4 bytes of data (8 character hex string)
+            sn_num = 1
+            sn_rec = sn_records
+        elif sn_len > 8:
+            sn_num = int(sn_records[0:2], 16)
+            sn_rec = sn_records[2:]
+        else:
+            result = False
+        if result:
+            logging.debug("Validate SN records -  Number of SN: %s", sn_num)
+        else:
+            logging.debug("Validate SN records -  invalid number of SN")
+
+        if result:
+            for sn_count in range(0, sn_num):
+                sn_rec2 = sn_rec[sn_count*8:]
+                if len(sn_rec2) > 8:
+                    sn_rec2 = sn_rec2[0:8]
+                result = result and self.validate_serial_number_record(sn_rec2)
+                if result:
+                    logging.info("Validate SN record ok: %s", sn_rec2)
+                else:
+                    logging.info("Validate SN record fail: %s", sn_rec2)
+        return result
+
     @staticmethod
     def pp_ecu_serial_number(i, title=''):
         """
         Pretty Print function support for ECU serial numbers
         """
-        if not SupportTestODTB2.validate_ecu_serial_number_record(i):
+        if not SupportTestODTB2.validate_serial_number_record(i):
             logging.error("Error: Invalid ECU serial number: %s %s", title, i)
 
         return title + i
@@ -253,6 +293,47 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
             if not result:
                 logging.info("validate PN failed - suffix part: %s", part_number_record)
         return result
+
+
+    def validate_part_number_records(self, pn_records: str) -> bool:
+        """
+        Validate part number records
+
+        A record with several part numbers starts with
+        1 byte containing number of part numbers to follow
+        several part number records each 7 bytes long
+        """
+
+        # Figure out if sn_records contains one ore more serial numbers
+        #
+        result = True
+        pn_len = len(pn_records)
+        logging.debug("validate PN records: len pn_records %s", pn_len)
+        if pn_len == 14: #7bytes of data - 14 char hex string
+            pn_num = 1
+            pn_rec = pn_records
+        elif pn_len > 14:
+            pn_num = int(pn_records[0:2], 16)
+            pn_rec = pn_records[2:]
+        else:
+            result = False
+        if result:
+            logging.debug("Validate PN records -  Number of PN: %s", pn_num)
+        else:
+            logging.debug("Validate PN records -  invalid number of PN")
+
+        if result:
+            for pn_count in range(0, pn_num):
+                pn_rec2 = pn_rec[pn_count*14:]
+                if len(pn_rec2) > 14:
+                    pn_rec2 = pn_rec2[0:14]
+                result = result and self.validate_part_number_record(pn_rec2)
+                if result:
+                    logging.info("Validate PN record ok: %s", pn_rec2)
+                else:
+                    logging.info("Validate PN record fail: %s", pn_rec2)
+        return result
+
 
     def validate_combined_did_eda0(self, rec_message, pn_sn_list) -> bool:
         """
@@ -303,19 +384,21 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
                         pos_end = sorted(pos_list)[next_pos]
                     else:
                         pos_end = -1
-                logging.info("rec_message: %s", rec_message)
-                logging.info("rec_message: pos_first %s", pos_first)
-                logging.info("rec_message: pos_end   %s", pos_end)
+                logging.debug("rec_message: %s", rec_message)
+                logging.debug("rec_message: pos_start %s", pos_start)
+                logging.debug("rec_message: pos_end   %s", pos_end)
                 if pos_end != -1:
-                    record = rec_message[pos_first: pos_end]
+                    record = rec_message[pos_start+4: pos_end]
                 else:
-                    record = rec_message[pos_first:]
+                    record = rec_message[pos_start+4:]
 
-                logging.info("rec_message: to check %s", record)
+                logging.debug("rec_message: to check %s", record)
                 if pn_sn[1] == 'PN':
-                    result = self.validate_part_number_record(record)
+                    result = self.validate_part_number_records(record)
                 elif pn_sn[1] == 'SN':
-                    result = self.validate_ecu_serial_number_record(record)
+                    result = self.validate_serial_number_records(record)
+                elif pn_sn[1] == 'VIDCV':
+                    logging.info("Vendor ID, cluster version not validated   %s", record)
                 else:
                     result = False
         logging.debug("Validate PN/SN: result %s.", result)
