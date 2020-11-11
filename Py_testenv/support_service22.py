@@ -27,15 +27,18 @@
 """The Python implementation of the gRPC route guide client."""
 
 import logging
+import inspect
 import time
 from collections import namedtuple
 from support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
 from support_test_odtb2 import SupportTestODTB2
 from support_carcom import SupportCARCOM
+from support_file_io import SupportFileIO
 
 SC = SupportCAN()
 SC_CARCOM = SupportCARCOM()
 SUPPORT_TEST = SupportTestODTB2()
+SIO = SupportFileIO
 
 Infoentry = namedtuple('Infoentry', 'did name c_sid c_did c_size scal_val_list err_msg payload')
 
@@ -47,7 +50,8 @@ class SupportService22:
     """
 
     @staticmethod
-    def read_did_eda0(can_p: CanParam, stepno=220):
+    def read_did_eda0(can_p: CanParam,\
+                      pn_sn_list=None, stepno=220):
         """
         Read composite DID EDA0: Complete ECU Part/Serial Number(s)
         """
@@ -55,17 +59,35 @@ class SupportService22:
                                                              b'\xED\xA0', b''),
                             "extra" : ''
                            }
+        SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+
         etp: CanTestExtra = {"step_no": stepno,
                              "purpose" : "Service22: Complete ECU Part/Serial Number(s)",
                              "timeout" : 1,
                              "min_no_messages" : -1,
                              "max_no_messages" : -1
                             }
+        SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+
+        #pn_sn_list=[['F120', 'PN'],\
+        #            ['F12A', 'PN'],\
+        #            ['F12B', 'PN'],\
+        #            ['F18C', 'SN'],\
+        #            ['F12E', 'PN'],\
+        #            ['F126', 'VIDCV']]
+        SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'pn_sn_list')
 
         result = SUPPORT_TEST.teststep(can_p, cpay, etp)
         if SC.can_messages[can_p["receive"]]:
+            rec_message = SC.can_messages[can_p["receive"]][0][2]
+            if pn_sn_list != []:
+                logging.debug("S220: validate reply contains PN/SN: %s", pn_sn_list)
+                result = result and\
+                     SUPPORT_TEST.validate_combined_did_eda0(rec_message,
+                                                             pn_sn_list,
+                                                            )
             logging.info('%s',
-                         SUPPORT_TEST.pp_combined_did_eda0(SC.can_messages[can_p["receive"]][0][2],
+                         SUPPORT_TEST.pp_combined_did_eda0(rec_message,
                                                            title=''))
         else:
             logging.info('%s', "No messages received for request Read DID EDA0")

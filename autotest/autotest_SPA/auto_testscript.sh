@@ -1,14 +1,18 @@
 #!/bin/bash
 
-
 ### token and pass created for tht repo
-	TESTREPO=~/Repos/odtb2pilot
-	cd $TESTREPO
+    TESTREPO=~/Repos/odtb2pilot
+	export PYTHONPATH=~/Repos/odtb2pilot/Py_testenv/:.
+    echo variables used in testrun:
+	echo TESTREPO: $TESTREPO
+	echo PYTHONPATH: $PYTHONPATH
+	echo PATH: $PATH
 
 	cd ~/testrun
 	[ ! -d VBF ] && mkdir VBF
 	rm -f VBF/*
 	cp ~/delivery/*.vbf VBF
+	cp ~/SBL/*.vbf VBF
 
 	[ ! -d VBF_Reqprod ] && mkdir VBF_Reqprod
 	rm -f VBF_Reqprod/*
@@ -17,11 +21,6 @@
 	[ ! -d parameters_yml ] && mkdir parameters_yml
 	rm -f parameters_yml/*
 	cp $TESTREPO/yml_parameter/MEP2_SPA1/* parameters_yml
-
-	### GRPC catalog needed for using GRPC in Python scripts
-	# set PYTHONPATH in .bashrc
-	# export PYTHONPATH=/home/ci/Repos/odtb2pilot/Py_testenv/:.
-	#old: export PYTHONPATH=$HOME/projects/odtb2/python
 
 	### Generate catalog for logfiles and list of scripts to run
 	TESTRUN=$(date +Testrun_%Y%m%d_%H%M_BECM_BT)
@@ -38,7 +37,7 @@
 	do
 		echo $line | sed -E "s/(.*BSW_REQPROD)(.*)(\.py)/python3 \1\2\3 >$TESTRUN\/BSW_REQPROD\2.log/"
 		script2run_log=$(echo $line | sed -E "s/(.*BSW_REQPROD)(.*)(\.py)/BSW_REQPROD\2.log/")
-		python3 ~/$TESTREPO/autotest/BSW_ECU_restore_SWDL.py
+		python3 $TESTREPO/autotest/BSW_ECU_restore_SWDL.py
 		python3 $line >$TESTRUN/$script2run_log
 		### add REQ_NR, scriptresult, filename to result
 		req_tested=$(echo $line | sed -E "s/(.*BSW_REQPROD_)([0-9]*)(_.*)/\2/")

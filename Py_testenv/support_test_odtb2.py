@@ -43,6 +43,7 @@ SC = SupportCAN()
 
 
 class SupportTestODTB2: # pylint: disable=too-many-public-methods
+    # pylint: disable=too-many-branches, too-many-lines
     """
     Class for supporting sending/receiving CAN frames
     """
@@ -178,7 +179,7 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
         return testresult
 
     @staticmethod
-    def validate_ecu_serial_number_record(ecu_serial_number_record: str) -> bool:
+    def validate_serial_number_record(ecu_serial_number_record: str) -> bool:
         """
         Validate a ECU serial number record
 
@@ -189,10 +190,54 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
 
         # Validate 4 bytes of data (8 character hex string)
         result = len(ecu_serial_number_record) == 8
+        if not result:
+            logging.info("validate SN failed - wrong length: %s", len(ecu_serial_number_record))
 
         # Validate BCD coding in 4 bytes (8 nibbles), right justified, 0 padded
         result = result and all(nibble in string.digits for nibble in ecu_serial_number_record)
+        if not result:
+            logging.info("validate SN failed - wrong BCD part: %s", ecu_serial_number_record)
 
+        return result
+
+    def validate_serial_number_records(self, sn_records: str) -> bool:
+        """
+        Validate several serial number records
+
+        A record with several serial numbers starts with
+        1 byte containing number of serial numbers to follow
+        several serial number records each 4 bytes long
+        """
+
+        # Figure out if sn_records contains one ore more serial numbers
+        #
+        result = True
+        sn_len = len(sn_records)
+        logging.debug("validate SN records: len sn_records %s", sn_len)
+        if sn_len == 8:
+        #    4 bytes of data (8 character hex string)
+            sn_num = 1
+            sn_rec = sn_records
+        elif sn_len > 8:
+            sn_num = int(sn_records[0:2], 16)
+            sn_rec = sn_records[2:]
+        else:
+            result = False
+        if result:
+            logging.debug("Validate SN records -  Number of SN: %s", sn_num)
+        else:
+            logging.debug("Validate SN records -  invalid number of SN")
+
+        if result:
+            for sn_count in range(0, sn_num):
+                sn_rec2 = sn_rec[sn_count*8:]
+                if len(sn_rec2) > 8:
+                    sn_rec2 = sn_rec2[0:8]
+                result = result and self.validate_serial_number_record(sn_rec2)
+                if result:
+                    logging.info("Validate SN record ok: %s", sn_rec2)
+                else:
+                    logging.info("Validate SN record fail: %s", sn_rec2)
         return result
 
     @staticmethod
@@ -200,13 +245,13 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
         """
         Pretty Print function support for ECU serial numbers
         """
-        if not SupportTestODTB2.validate_ecu_serial_number_record(i):
-            logging.error("Error: Invalid ECU serial number: %s %s", i, title)
+        if not SupportTestODTB2.validate_serial_number_record(i):
+            logging.error("Error: Invalid ECU serial number: %s %s", title, i)
 
         return title + i
 
-    @staticmethod
-    def validate_part_number_record(part_number_record: str) -> bool:
+    @classmethod
+    def validate_part_number_record(cls, part_number_record: str) -> bool:
         """
         Validate a part number record
 
@@ -222,6 +267,8 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
 
         # Validate 7 bytes of data (14 character hex string)
         result = len(part_number_record) == 14
+        if not result:
+            logging.info("validate PN failed - wrong length: %s", len(part_number_record))
 
         if result:
             # First 4 bytes is part number, rest is version suffix
@@ -229,6 +276,8 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
 
             # Validate BCD coding in first 4 bytes (8 nibbles), right justified, 0 padded
             result = result and all(nibble in string.digits for nibble in part_number)
+            if not result:
+                logging.info("validate PN failed - BCD part: %s", part_number_record)
 
             # Validate version suffix
             suffix_chars = [chr(byte) for byte in bytes.fromhex(version_suffix_hex)]
@@ -241,7 +290,120 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
 
             # Last suffix character can not be space
             result = result and suffix_chars[2] != ' '
+            if not result:
+                logging.info("validate PN failed - suffix part: %s", part_number_record)
+        return result
 
+
+    def validate_part_number_records(self, pn_records: str) -> bool:
+        """
+        Validate part number records
+
+        A record with several part numbers starts with
+        1 byte containing number of part numbers to follow
+        several part number records each 7 bytes long
+        """
+
+        # Figure out if sn_records contains one ore more serial numbers
+        #
+        result = True
+        pn_len = len(pn_records)
+        logging.debug("validate PN records: len pn_records %s", pn_len)
+        if pn_len == 14: #7bytes of data - 14 char hex string
+            pn_num = 1
+            pn_rec = pn_records
+        elif pn_len > 14:
+            pn_num = int(pn_records[0:2], 16)
+            pn_rec = pn_records[2:]
+        else:
+            result = False
+        if result:
+            logging.debug("Validate PN records -  Number of PN: %s", pn_num)
+        else:
+            logging.debug("Validate PN records -  invalid number of PN")
+
+        if result:
+            for pn_count in range(0, pn_num):
+                pn_rec2 = pn_rec[pn_count*14:]
+                if len(pn_rec2) > 14:
+                    pn_rec2 = pn_rec2[0:14]
+                result = result and self.validate_part_number_record(pn_rec2)
+                if result:
+                    logging.info("Validate PN record ok: %s", pn_rec2)
+                else:
+                    logging.info("Validate PN record fail: %s", pn_rec2)
+        return result
+
+
+    def validate_combined_did_eda0(self, rec_message, pn_sn_list) -> bool:
+    # pylint: disable=too-many-statements
+        """
+        Validate a combined part/serial number
+
+        A combined part/serial number contains several records of part/serial numbers.
+        Which records are contained depends on ECU mode and may change for different projects.
+
+        pn_sn_list contains identifiers to check for and which kind of info the contain.
+        """
+
+        #iterate through rec_message, find identifiers from pn_sn_list.
+        result = True
+        pos_list = []
+        if pn_sn_list:
+            for pn_sn in pn_sn_list:
+                logging.debug("Val DID EDA0: looking for %s", pn_sn[0])
+                pos_first = rec_message.find(pn_sn[0])
+                pos_last = rec_message.rfind(pn_sn[0])
+                logging.debug("Val DID EDA0: pos_first %s", pos_first)
+                logging.debug("Val DID EDA0: pos_last  %s", pos_last)
+                if pos_first == pos_last:
+                    pos_list.append(pos_first)
+                else:
+                    logging.warning("Unclear position of id in combined did response: %s %s",
+                                    pos_first,
+                                    pos_last)
+            logging.info("Validate PN/SN - pos_list generated: %s", pos_list)
+            if -1 in pos_list:
+                logging.info("Validate PN/SN: Not all IDs found in reply.")
+                logging.info("Validate PN/SN: Search for %s", pn_sn_list)
+                logging.info("Validate DID EDA0: pos_list %s", pos_list)
+                result = False
+            else:
+                logging.info("Validate PN/SN: All IDs found in reply. Validate format.")
+                #is there an index following? -1 if not
+                logging.info("Validate DID EDA0: rec_message %s", rec_message)
+                logging.info("Validate DID EDA0: pn_sn_list  %s", pn_sn_list)
+                for idx, pn_sn in enumerate(pn_sn_list):
+                    pos_end = -1
+                    logging.debug("Val DID EDA0: idx  %s", idx)
+                    pos_start = pos_list[idx]
+                    logging.debug("Val DID EDA0: pos_start  %s", pos_start)
+                    # -1: index not found
+                    if not pos_start == -1:
+                        next_pos = sorted(pos_list).index(pos_start) +1
+                        logging.debug("Val DID EDA0: next_pos  %s", next_pos)
+                        if not next_pos >= len(pos_list):
+                            pos_end = sorted(pos_list)[next_pos]
+                        else:
+                            pos_end = -1
+                    logging.debug("rec_message: %s", rec_message)
+                    logging.debug("rec_message: pos_start %s", pos_start)
+                    logging.debug("rec_message: pos_end   %s", pos_end)
+                    if pos_end != -1:
+                        record = rec_message[pos_start+4: pos_end]
+                    else:
+                        record = rec_message[pos_start+4:]
+
+                    logging.debug("rec_message: to check %s", record)
+                    if pn_sn[1] == 'PN':
+                        result = self.validate_part_number_records(record)
+                    elif pn_sn[1] == 'SN':
+                        result = self.validate_serial_number_records(record)
+                    elif pn_sn[1] == 'VIDCV':
+                        logging.info("Vendor ID, cluster version not validated   %s", record)
+                    else:
+                        result = False
+        logging.debug("Validate PN/SN: result %s.", result)
         return result
 
     @staticmethod
@@ -250,7 +412,7 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
         Pretty Print function support for part numbers
         """
         if not SupportTestODTB2.validate_part_number_record(i):
-            logging.error("Error: Invalid part number: %s %s", i, title)
+            logging.error("Error: Invalid part number: %s %s", title, i)
             return title + i
 
         return title + i[0:8] + bytes.fromhex(i[8:14]).decode('utf-8')
@@ -362,7 +524,7 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
 
         # Combined DID F12E:
         f12e_dict = self.get_did_f12e(message[(message.find('F12E', pos1+18))
-                                                   :(message.find('F12E', pos1+18)+76)])
+                                              :(message.find('F12E', pos1+18)+76)])
         ## ECU serial:
         pos1 = message.find('F18C', pos1+18)
         eda0_dict_wo_f12e["serial"] = self.pp_ecu_serial_number(message[pos1+4: pos1+18])

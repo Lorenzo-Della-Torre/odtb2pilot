@@ -61,8 +61,10 @@ def step_1(can_p: CanParam):
     """
     Teststep 1: Check mode ECU is in, try to change to mode1
     """
+    swdl_needed = False
+
     logging.info("ECU restore: Display current session, try to change to mode1 (default)")
-    result = SE22.read_did_f186(can_p)
+    SE22.read_did_f186(can_p)
     logging.info("ECU restore: Mode when starting script: %s", SC.can_messages[can_p["receive"]])
     if SC.can_messages[can_p["receive"]] == -1:
         logging.info("ECU restore: No reply from ECU.")
@@ -71,19 +73,19 @@ def step_1(can_p: CanParam):
         SE10.diagnostic_session_control_mode1(can_p)
         #if coming from mode2 it may take a bit
         time.sleep(2)
-        result = SE22.read_did_f186(can_p)
+        SE22.read_did_f186(can_p)
 
     if SC.can_messages[can_p["receive"]] == -1:
         logging.info("ECU restore: No reply from ECU.")
-        result = False
+        swdl_needed = True
     elif SC.can_messages[can_p["receive"]][0][2].find('62F18601') == -1:
         logging.info("Could not change ECU to default mode.")
-        result = False
-    if result:
-        logging.info ("ECU restore: Everything seems to be fine. ECU in default mode.")
-    else:
+        swdl_needed = True
+    if swdl_needed:
         logging.info ("ECU restore: Could not switch ECU to mode1. Will try to reflash ECU.")
-    return result
+    else:
+        logging.info ("ECU restore: Everything seems to be fine. ECU in default mode.")
+    return swdl_needed
 
 def step_2(can_p: CanParam):
     """
@@ -166,9 +168,9 @@ def run():
         # step 1:
         # action: try to switch ECU to default mode
         # result: True if succeed.
-        result = result and step_1(can_p)
+        swdl_needed = step_1(can_p)
 
-        if not result:
+        if swdl_needed:
         # step 2:
         # action: download and activate SBL
         # result:

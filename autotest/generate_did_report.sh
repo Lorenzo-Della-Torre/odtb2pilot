@@ -2,6 +2,7 @@
 
 ### token and pass created for tht repo
 TESTREPO=~/Repos/odtb2pilot
+export PYTHONPATH=~/Repos/odtb2pilot/Py_testenv/:.
 cd $TESTREPO
 cd ~/testrun
 
@@ -9,7 +10,7 @@ cd ~/testrun
 cp -u $TESTREPO/Py_testenv/*.py ~/projects/odtb2/python/
 
 ### GRPC catalog needed for using GRPC in Python scripts
-export PYTHONPATH=$HOME/projects/odtb2/python
+#export PYTHONPATH=$HOME/projects/odtb2/python
 
 # Generate DID report
 # Needed for parse_sddb. At the moment it is simpler to provide the result from parse_sddb.

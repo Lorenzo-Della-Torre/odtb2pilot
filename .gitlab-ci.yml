@@ -16,9 +16,7 @@ relaxed_pylint_analysis:
   stage: Static Analysis Part 1
   allow_failure: true
   script:
-  #- find ./Py_testenv/ -type f -name "*.py" | xargs pylint -d duplicate-code || true
-  - find ./test_cases_old/ -type f -name "*.py" | xargs pylint --module-rgx="BSW_REQPROD_\d*_.*" -d duplicate-code || true
-  #- find ./test_cases/ -type f -name "*.py" | xargs pylint --module-rgx="BSW_REQPROD_\d*_.*" -d R0801 || true
+  - find ./OnTheFly_test/ -type f -name "*.py" | xargs pylint -d duplicate-code,import-error,invalid-name || true
 
 strict_pylint_analysis:
   stage: Static Analysis Part 2
