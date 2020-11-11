@@ -50,49 +50,8 @@ POST = SupportPostcondition()
 SE22 = SupportService22()
 SE10 = SupportService10()
 
-def verify_ecu_partnumbers(can_p,response,did,result):
-    '''
-    Verify the ECU Part Serial Numbers
-    '''
-    if did == 'F121' :
-        pos = response.find('F121')
-        print(pos)
-        partnumber = SUTE.pp_partnumber(response[pos+4: pos+18])
-        logging.info("Diagnostic  Part Number :%s", partnumber)
-        result = result and SUTE.test_message(SC.can_messages[can_p['receive']],teststring='F121')
-    elif  did == 'F12A' :
-        pos = response.find('F12A')
-        partnumber = SUTE.pp_partnumber(response[pos+4: pos+18])
-        logging.info("ECU Core Assembly Part Number :%s", partnumber)
-        result = result and SUTE.test_message(SC.can_messages[can_p['receive']],teststring='F12A')
-    elif  did == 'F12B' :
-        pos = response.find('F12B')
-        partnumber = SUTE.pp_partnumber(response[pos+4: pos+18])
-        logging.info("ECU Delivery Part Number :%s", partnumber)
-        result = result and SUTE.test_message(SC.can_messages[can_p['receive']],teststring='F12B')
-    elif  did == 'F18C' :
-        pos = response.find('F18C')
-        partnumber = SUTE.pp_partnumber(response[pos+4: pos+18])
-        logging.info("ECU Serial Part Number: %s", partnumber)
-        result = result and SUTE.test_message(SC.can_messages[can_p['receive']],teststring='F18C')
-    elif  did == 'F122' :
-        pos = response.find('F122')
-        partnumber = result and SUTE.pp_partnumber(response[pos+4: pos+18])
-        logging.info("Diagnostic Part Number: %s",  partnumber)
-        result = SUTE.test_message(SC.can_messages[can_p['receive']],teststring='F122')
-    elif  did == 'F124' :
-        pos = response.find('F124')
-        partnumber = SUTE.pp_partnumber(response[pos+4: pos+18])
-        logging.info( "Software Part Number: %s", partnumber)
-        result = result and SUTE.test_message(SC.can_messages[can_p['receive']],teststring='F124')
-    else :
-        pos = response.find('F125')
-        partnumber = SUTE.pp_partnumber(response[pos+4: pos+18])
-        logging.info("Software  Part Number: %s", partnumber)
-        result = result and SUTE.test_message(SC.can_messages[can_p['receive']],teststring='F125')
-    return result
 
-def step(can_p,did, stepno):
+def step(can_p, stepno):
     '''
     Read Complete ECU Part Serial Number data record
     '''
@@ -102,19 +61,20 @@ def step(can_p,did, stepno):
     }
     etp : CanTestExtra = {
         "step_no": stepno,
-        "purpose": f' ECU part/serial number in PBL: {did}',
+        "purpose": 'ECU part/serial number in PBL',
         "timeout": 1,
         "min_no_messages": -1,
         "max_no_messages": -1,
     }
     result = SUTE.teststep(can_p,cpay, etp)
-    response =  SC.can_messages[can_p['receive']][0][2]
     logging.info("Complete ECU Serial Part Number in PBL : %s",\
                             SC.can_messages[can_p["receive"]][0][2])
-    result = verify_ecu_partnumbers(can_p, response, did,result)
+    rec_message = SC.can_messages[can_p['receive']][0][2]
+    pn_sn = [['F121', 'PN'],['F12A', 'PN'],['F12B', 'PN'],['F18C', 'SN'],['F125', 'PN']]
+    result = result and SUTE.validate_combined_did_eda0(rec_message,pn_sn)
     return  result
 
-def step_sbl(can_p,did,stepno):
+def step_sbl(can_p, stepno):
     '''
     ReadDataByIdentifier {did} and verify the response with partnumberts
     '''
@@ -123,16 +83,17 @@ def step_sbl(can_p,did,stepno):
                         "extra" : ''
     }
     etp: CanTestExtra = {"step_no": stepno,
-                        "purpose" : f' ECU part/serial number in SBL: {did}',
+                        "purpose" : 'ECU part/serial number in SBL',
                         "timeout" : 1,
                         "min_no_messages" : -1,
                         "max_no_messages" : -1
     }
     result = SUTE.teststep(can_p, cpay, etp)
-    res = SC.can_messages[can_p['receive']][0][2]
     logging.info("Complete ECU Serial Part Number in SBL : %s",\
                             SC.can_messages[can_p["receive"]][0][2])
-    result = verify_ecu_partnumbers(can_p, res, did,result )
+    rec_message = SC.can_messages[can_p['receive']][0][2]
+    pn_sn = [['F122', 'PN'],['F12A', 'PN'],['F12B', 'PN'],['F18C', 'SN'],['F124', 'PN']]
+    result = result and SUTE.validate_combined_did_eda0(rec_message,pn_sn)
     return result
 
 def run():
@@ -168,66 +129,41 @@ def run():
         # result: BECM reply positively
         result = result and SE10.diagnostic_session_control_mode2(can_p,1)
         time.sleep(2)
+
         # step 2 :
         # action: Verify Programming Session
         # result: BECM reply positively
         result = result and SE22.verify_pbl_session(can_p,2)
+
         # step 3:
         # action: Request Diagnostic Part Number
         # result: BECM reply positively
-        result = result and step(can_p, 'F121',stepno=3)
+        result = result and step(can_p,stepno=3)
+
         # step 4:
-        # action: Request ECU Core Assembly Part Number
-        # result: BECM reply positively
-        result = result and step(can_p, 'F12A',stepno=4)
-        # step 5:
-        # action: Request Delivery Core Assembly Part Number
-        # result: BECM reply positively
-        result = result and step(can_p, 'F12B',stepno=5)
-        # step 6:
-        # action: Request ECU Serial Number
-        # result: BECM reply positively
-        result = result and step(can_p, 'F18C',stepno=6)
-        # step 7:
-        # action: Request ECU Software Part Number
-        # result: BECM reply positively
-        result = result and step(can_p, 'F125',stepno=7)
-        # step 8:
         # action: Change ECU to Default Session
         # result: BECM reply positively
-        result = result and SE10.diagnostic_session_control_mode1(can_p,8)
-        # step 9:
+        result = result and SE10.diagnostic_session_control_mode1(can_p,4)
+
+        # step 5:
         # action: Active DL and SBL
         # result: BECM reply positively
         result = result and SSBL.sbl_activation(can_p,9,"DL and activate SBL")
-        # step 10:
+
+        # step 6:
         # action: Verify SBL session
         # result: BECM reply positively
         result = result and SE22.verify_sbl_session(can_p,10)
-        # step 11:
-        # action: Request Diagnostic Part Number
+
+        # step 7:
+        # action: Verify the ECU Part/Serial Number
         # result: BECM reply positively
-        result = result and step_sbl(can_p,'F122',stepno=11)
-        # step 12:
-        # action: Request ECU Core Assembly Part Number
-        # result: BECM reply positively
-        result = result and step_sbl(can_p,'F12A',stepno=12)
-        # step 13:
-        # action: Request Delivery Core Assembly Part Number
-        # result: BECM reply positively
-        result = result and step_sbl(can_p,'F12B',stepno=13)
-        # step 14:
-        # action: Request ECU Serial Number
-        # result: BECM reply positively
-        result = result and step_sbl(can_p,'F18C',stepno=14)
-        # step 15:
-        # action: Request Software Part Number
-        # result: BECM reply positively
-        result = result and step_sbl(can_p,'F124',stepno=15)
-        # step 16:
+        result = result and step_sbl(can_p,stepno=7)
+
+        # step 8:
         # action: Change to Default Session
         # result: BECM reply positively
-        result = result and SE10.diagnostic_session_control_mode1(can_p,16)
+        result = result and SE10.diagnostic_session_control_mode1(can_p,8)
     ############################################
     # postCondition
     ############################################

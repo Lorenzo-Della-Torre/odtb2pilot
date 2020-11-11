@@ -1,3 +1,4 @@
+
 # Testscript ODTB2 MEPII
 # project: BECM basetech MEPII
 # author:  T-kumara (Tanuj Kumar Aluru)
@@ -25,9 +26,10 @@
 
 import time
 from datetime import datetime
+import sys
 import logging
 import inspect
-import odtb_conf
+
 from support_can import SupportCAN, CanParam,CanPayload, CanTestExtra
 from support_test_odtb2 import SupportTestODTB2
 from support_carcom import SupportCARCOM
@@ -37,6 +39,7 @@ from support_precondition import SupportPrecondition
 from support_postcondition import SupportPostcondition
 from support_service22 import SupportService22
 from support_service10 import SupportService10
+import odtb_conf
 
 SIO = SupportFileIO
 SC = SupportCAN()
@@ -49,25 +52,7 @@ POST = SupportPostcondition()
 SE22 = SupportService22()
 SE10 = SupportService10()
 
-def verify_ecu_partnumbers(can_p,dic,did,result):
-    '''
-    Verify the ECU Part Serial Numbers
-    '''
-    if did == 'F120' :
-        logging.info("Diagnostic Part Number :%s", dic[did.lower()])
-        result = result and SUTE.test_message(SC.can_messages[can_p['receive']],teststring='F120')
-    elif  did == 'F12A' :
-        logging.info("ECU Core Part Number : %s", dic[did.lower()])
-        result = result and SUTE.test_message(SC.can_messages[can_p['receive']],teststring='F12A')
-    elif  did == 'F12B' :
-        logging.info("ECU Delivery Assembly Part Number : %s", dic[did.lower()])
-        result = result and SUTE.test_message(SC.can_messages[can_p['receive']],teststring='F12B')
-    elif  did == 'F18C' :
-        logging.info("ECU  Serial Number :%s",dic["serial"])
-        result = result and SUTE.test_message(SC.can_messages[can_p['receive']],teststring='F18C')
-    return result
-
-def step(can_p,did,stepno):
+def step(can_p,stepno):
     '''
     Read Complete ECU Part Serial Number data record
     '''
@@ -85,39 +70,16 @@ def step(can_p,did,stepno):
     }
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
     result = SUTE.teststep(can_p,cpay, etp)
-    dic = SUTE.combined_did_eda0_becm_mode1_mode3(SC.can_messages[can_p['receive']][0][2])
-    result = verify_ecu_partnumbers(can_p,dic,did,result )
-    return  result
-
-def step_5(can_p):
-    '''
-    Verify F12E identifier
-    '''
-    cpay: CanPayload = {
-        "payload": S_CARCOM.can_m_send( "ReadDataByIdentifier", b'\xED\xA0', b""),
-        "extra": b'',
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
-    etp: CanTestExtra = {
-        "step_no": 5,
-        "purpose": "Request ECU parts/erial number ",
-        "timeout": 1,
-        "min_no_messages": -1,
-        "max_no_messages": -1,
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
-    result = SUTE.teststep(can_p,cpay, etp)
-    message = SC.can_messages[can_p['receive']][0][2]
-    f12e_dict = SUTE.pp_did_f12e(message, title='')
-    logging.info("Software part Number :%s",f12e_dict)
-    result = result and SUTE.test_message(SC.can_messages[can_p['receive']], teststring='F12E')
+    rec_message = SC.can_messages[can_p['receive']][0][2]
+    pn_sn = [['F120', 'PN'],['F12A', 'PN'],['F12B', 'PN'],['F18C', 'SN'],['F12E', 'PN']]
+    result = SUTE.validate_combined_did_eda0(rec_message,pn_sn)
     return  result
 
 def run():
     """
     Run - Call other functions from here
     """
-    #logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
     # where to connect to signal_broker
     can_p: CanParam = {
@@ -143,29 +105,9 @@ def run():
     ############################################
 
         # step 1:
-        # action: Request Diagnostic Database Part number
+        # action: Verify the Part/Serial Numbers
         # result: BECM reply positively
-        result = result and step(can_p,"F120", stepno=1)
-
-        # step 3:
-        # action: Request ECU Core Assembly Part Number
-        # result: BECM reply positively
-        result = result and step(can_p,"F12A", stepno=2)
-
-        # step 4:
-        # action: Request ECU Delivery Assembly Part Number
-        # result: BECM reply positively
-        result = result and step(can_p,"F12B", stepno=3)
-
-        # step 4:
-        # action: Request ECU Serial Number
-        # result: BECM reply positively
-        result = result and step(can_p,"F18C", stepno=4)
-
-        # step 5:
-        # action: Request Software Part Number
-        # result: BECM reply positively
-        result = result and step_5(can_p)
+        result = result and step(can_p, stepno=1)
 
     ############################################
     # postCondition
