@@ -111,12 +111,12 @@ def run():
         # step 2:
         # action: Verify the Part/Serial Numbers
         # result: BECM reply positively
-        result = result and step(can_p, stepno=1)
+        result = result and step(can_p, stepno=2)
 
         # step 3:
         # action: Request Diagnostic Session Control Default
         # result: BECM reply positively
-        result = result and SE10.diagnostic_session_control_mode1(can_p,1)
+        result = result and SE10.diagnostic_session_control_mode1(can_p,3)
     ############################################
     # postCondition
     ############################################
