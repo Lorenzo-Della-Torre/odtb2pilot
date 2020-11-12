@@ -53,7 +53,7 @@ SE10 = SupportService10()
 
 def step_3(can_p):
     '''
-    Validate ECU Part/Serial Numbers 
+    Validate ECU Part/Serial Numbers
     '''
     cpay: CanPayload = {
         "payload": S_CARCOM.can_m_send( "ReadDataByIdentifier", b'\xED\xA0', b""),

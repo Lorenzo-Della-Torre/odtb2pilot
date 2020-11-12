@@ -51,7 +51,7 @@ SE22 = SupportService22()
 SE10 = SupportService10()
 
 
-def step_3(can_p, stepno):
+def step_3(can_p):
     '''
     Validate ECU Part/Serial Numbers in PBL Session
     '''
@@ -74,7 +74,7 @@ def step_3(can_p, stepno):
     result = result and SUTE.validate_combined_did_eda0(rec_message,pn_sn)
     return  result
 
-def step_7(can_p, stepno):
+def step_7(can_p):
     '''
     Validate ECU Part/Serial Numbers in SBL Session
     '''
@@ -136,7 +136,7 @@ def run():
         result = result and SE22.verify_pbl_session(can_p,2)
 
         # step 3:
-        # action: Validate PN/SN Numbers in PBL 
+        # action: Validate PN/SN Numbers in PBL
         # result: BECM reply positively
         result = result and step_3(can_p)
 
