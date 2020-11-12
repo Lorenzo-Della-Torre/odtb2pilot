@@ -1,4 +1,3 @@
-
 # Testscript ODTB2 MEPII
 # project: BECM basetech MEPII
 # author:  T-kumara (Tanuj Kumar Aluru)
@@ -52,9 +51,9 @@ POST = SupportPostcondition()
 SE22 = SupportService22()
 SE10 = SupportService10()
 
-def step(can_p,stepno):
+def step_3(can_p):
     '''
-    Read Complete ECU Part Serial Number data record
+    Validate ECU Part/Serial Numbers 
     '''
     cpay: CanPayload = {
         "payload": S_CARCOM.can_m_send( "ReadDataByIdentifier", b'\xED\xA0', b""),
@@ -62,8 +61,8 @@ def step(can_p,stepno):
     }
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
     etp: CanTestExtra = {
-        "step_no": stepno,
-        "purpose": "Request EDA0 - Complete ECU part/serial number ",
+        "step_no": 3,
+        "purpose": "Validate ECU part/serial numbers ",
         "timeout": 1,
         "min_no_messages": -1,
         "max_no_messages": -1,
@@ -115,9 +114,9 @@ def run():
 
 
         # step 3:
-        # action: Verify the Part/Serial Numbers
+        # action: Validate ECU Part/Serial Numbers
         # result: BECM reply positively
-        result = result and step(can_p, stepno=3)
+        result = result and step_3(can_p)
 
         # step 4:
         # action: Request Diagnostic Session Control Default
