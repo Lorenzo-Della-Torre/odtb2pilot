@@ -148,12 +148,12 @@ def run():
         # step 5:
         # action: Active DL and SBL
         # result: BECM reply positively
-        result = result and SSBL.sbl_activation(can_p,9,"DL and activate SBL")
+        result = result and SSBL.sbl_activation(can_p,5,"DL and activate SBL")
 
         # step 6:
         # action: Verify SBL session
         # result: BECM reply positively
-        result = result and SE22.verify_sbl_session(can_p,10)
+        result = result and SE22.verify_sbl_session(can_p,6)
 
         # step 7:
         # action: Validate PN/SN Numbers in SBL
