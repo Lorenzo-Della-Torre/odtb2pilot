@@ -51,17 +51,17 @@ SE22 = SupportService22()
 SE10 = SupportService10()
 
 
-def step(can_p, stepno):
+def step_3(can_p, stepno):
     '''
-    Read Complete ECU Part Serial Number data record
+    Validate ECU Part/Serial Numbers in PBL Session
     '''
     cpay : CanPayload = {
         "payload": S_CARCOM.can_m_send( "ReadDataByIdentifier", b'\xED\xA0', b""),
         "extra": b'',
     }
     etp : CanTestExtra = {
-        "step_no": stepno,
-        "purpose": 'ECU part/serial number in PBL',
+        "step_no": 3,
+        "purpose": 'Validate formats of ECU PN/SN numbesrs in PBL',
         "timeout": 1,
         "min_no_messages": -1,
         "max_no_messages": -1,
@@ -74,16 +74,16 @@ def step(can_p, stepno):
     result = result and SUTE.validate_combined_did_eda0(rec_message,pn_sn)
     return  result
 
-def step_sbl(can_p, stepno):
+def step_7(can_p, stepno):
     '''
-    ReadDataByIdentifier {did} and verify the response with partnumberts
+    Validate ECU Part/Serial Numbers in SBL Session
     '''
     cpay : CanPayload = {"payload" : S_CARCOM.can_m_send("ReadDataByIdentifier",
                                                              b'\xED\xA0', b''),
                         "extra" : ''
     }
-    etp: CanTestExtra = {"step_no": stepno,
-                        "purpose" : 'ECU part/serial number in SBL',
+    etp: CanTestExtra = {"step_no": 7,
+                        "purpose" : 'Validate formats of ECU PN/SN numbers in SBL',
                         "timeout" : 1,
                         "min_no_messages" : -1,
                         "max_no_messages" : -1
@@ -136,9 +136,9 @@ def run():
         result = result and SE22.verify_pbl_session(can_p,2)
 
         # step 3:
-        # action: Request Diagnostic Part Number
+        # action: Validate PN/SN Numbers in PBL 
         # result: BECM reply positively
-        result = result and step(can_p,stepno=3)
+        result = result and step_3(can_p)
 
         # step 4:
         # action: Change ECU to Default Session
@@ -156,9 +156,9 @@ def run():
         result = result and SE22.verify_sbl_session(can_p,10)
 
         # step 7:
-        # action: Verify the ECU Part/Serial Number
+        # action: Validate PN/SN Numbers in SBL
         # result: BECM reply positively
-        result = result and step_sbl(can_p,stepno=7)
+        result = result and step_7(can_p)
 
         # step 8:
         # action: Change to Default Session
