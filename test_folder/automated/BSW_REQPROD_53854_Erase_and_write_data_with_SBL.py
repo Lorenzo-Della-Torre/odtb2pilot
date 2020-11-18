@@ -49,7 +49,7 @@ from supportfunctions.support_service11 import SupportService11
 from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_service31 import SupportService31
 
-import parameters.odtb_conf as odtb_conf
+import odtb_conf
 
 SIO = SupportFileIO
 SC = SupportCAN()

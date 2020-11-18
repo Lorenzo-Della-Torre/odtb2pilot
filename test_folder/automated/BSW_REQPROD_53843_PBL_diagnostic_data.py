@@ -52,7 +52,7 @@ from supportfunctions.support_service31 import SupportService31
 from output.did_dict import sddb_pbl_did_dict
 from output.did_dict import pbl_diag_part_num
 
-import parameters.odtb_conf as odtb_conf
+import odtb_conf
 
 # For each each DID, wait this time for the response. If you wait to short time you might not get
 # the full message (payload). The unit is seconds. 2s should cover even the biggest payloads.

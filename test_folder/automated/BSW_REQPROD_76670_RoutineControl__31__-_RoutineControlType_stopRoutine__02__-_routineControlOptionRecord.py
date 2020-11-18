@@ -43,7 +43,7 @@ from supportfunctions.support_postcondition import SupportPostcondition
 from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_service10 import SupportService10
 
-import parameters.odtb_conf as odtb_conf
+import odtb_conf
 
 SIO = SupportFileIO
 SC = SupportCAN()

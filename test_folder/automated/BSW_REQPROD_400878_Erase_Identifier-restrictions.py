@@ -36,7 +36,7 @@ import logging
 import inspect
 import glob
 
-import parameters.odtb_conf as odtb_conf
+import odtb_conf
 from supportfunctions.support_can import SupportCAN, CanParam, CanTestExtra, CanPayload
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
 from supportfunctions.support_carcom import SupportCARCOM

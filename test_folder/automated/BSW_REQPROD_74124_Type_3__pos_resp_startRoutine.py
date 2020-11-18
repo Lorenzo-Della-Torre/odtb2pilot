@@ -31,7 +31,7 @@ from datetime import datetime
 import sys
 import logging
 import inspect
-import parameters.odtb_conf as odtb_conf
+import odtb_conf
 from supportfunctions.support_can import SupportCAN, CanParam, CanTestExtra, CanPayload, PerParam
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
 from supportfunctions.support_carcom import SupportCARCOM

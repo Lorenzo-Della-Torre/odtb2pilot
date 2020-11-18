@@ -37,7 +37,7 @@ from supportfunctions.support_postcondition import SupportPostcondition
 from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
 
-import parameters.odtb_conf as odtb_conf
+import odtb_conf
 
 SC = SupportCAN()
 SC_CARCOM = SupportCARCOM()

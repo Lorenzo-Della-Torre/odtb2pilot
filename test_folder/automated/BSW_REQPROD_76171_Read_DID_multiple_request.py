@@ -40,7 +40,7 @@ from supportfunctions.support_carcom import SupportCARCOM
 from supportfunctions.support_file_io import SupportFileIO
 from supportfunctions.support_precondition import SupportPrecondition
 from supportfunctions.support_postcondition import SupportPostcondition
-import parameters.odtb_conf as odtb_conf
+import odtb_conf
 
 SIO = SupportFileIO
 SC = SupportCAN()
