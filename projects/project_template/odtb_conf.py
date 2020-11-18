@@ -7,4 +7,5 @@
 """
 
 ODTB2_DUT = 'bsw-piXXX.dhcp.nordic.volvocars.net'
+#ODTB2_DUT = 'put_your_dns_name_here'
 ODTB2_PORT = '50051'

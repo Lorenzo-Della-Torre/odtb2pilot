@@ -1,14 +1,9 @@
 # Testscript ODTB2 MEPII
 # project:  BECM basetech MEPII
 # author:   LDELLATO (Lorenzo Della Torre)
-# date:     2020-06-25
+# date:     2020-08-21
 # version:  1.0
-# reqprod:  60102
-
-# author:   HWEILER (Hans-Klaus Weiler)
-# date:     2020-08-04
-# version:  1.1
-# changes:  update support function, YML
+# reqprod:  60012
 
 # #inspired by https://grpc.io/docs/tutorials/basic/python.html
 # Copyright 2015 gRPC authors.
@@ -29,13 +24,14 @@
 
 import time
 from datetime import datetime
+import os
 import sys
 import logging
 import inspect
 
 import parameters.odtb_conf as odtb_conf
 
-from supportfunctions.support_can import SupportCAN, CanParam, CanMFParam, CanPayload, CanTestExtra
+from supportfunctions.support_can import SupportCAN, CanParam
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
 from supportfunctions.support_carcom import SupportCARCOM
 from supportfunctions.support_file_io import SupportFileIO
@@ -64,6 +60,7 @@ SE10 = SupportService10()
 SE22 = SupportService22()
 SE31 = SupportService31()
 SE34 = SupportService34()
+
 def step_2():
     """
     Teststep 2: Read VBF files for ESS file (1st Logical Block)
@@ -72,138 +69,45 @@ def step_2():
     purpose = "1st files reading"
 
     SUTE.print_test_purpose(stepno, purpose)
+    odtb_proj_param = os.environ.get('ODTBPROJPARAM')
+    if odtb_proj_param is None:
+        odtb_proj_param = '.'
+
     #ess_vbf_invalid = "./VBF_Reqprod/REQ_397438_32290520AA_SPA2_ESS_used_as_invalid.vbf"
-    ess_vbf_invalid = "./VBF_Reqprod/REQ_60102_ess_different_project.vbf"
+    ess_vbf_invalid = odtb_proj_param + "/VBF_Reqprod/REQ_60012_ess_different_project.vbf"
     SSBL.get_ess_filename()
     _, vbf_header, _, _ = SSBL.read_vbf_file(ess_vbf_invalid)
     SSBL.vbf_header_convert(vbf_header)
     #logging.info(erase)
     return vbf_header
 
-def step_3(can_p):
+def step_3(can_p, vbf_header):
     """
-    Teststep 3: set FC delay > 1000 ms
-    """
-    stepno = 3
-    purpose = "set FC delay > 1000 ms"
-    result = True
-    SUTE.print_test_purpose(stepno, purpose)
-
-    #change Control Frame parameters
-    can_mf: CanMFParam = {
-        "block_size": 0,
-        "separation_time": 0,
-        "frame_control_delay": 1050,
-        "frame_control_flag": 48,
-        "frame_control_auto": False
-        }
-    SC.change_mf_fc(can_p["send"], can_mf)
-    return result
-
-def step_4(can_p, vbf_header):
-    """
-    Teststep 4: Send MF request
-    """
-    stepno = 4
-
-    #Take first element of list to erase
-    erase_el = vbf_header["erase"][0]
-    cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("RoutineControlRequestSID",\
-                                                         b'\xFF\x00' +\
-                                                         erase_el[0].to_bytes(4, byteorder='big') +\
-                                                         erase_el[1].to_bytes(4, byteorder='big'),
-                                                         b'\x01'),\
-                        "extra" : ''
-                       }
-    etp: CanTestExtra = {"step_no": stepno,\
-                         "purpose" : "Send MF request",\
-                         "timeout" : 1,\
-                         "min_no_messages" : -1,\
-                         "max_no_messages" : -1
-                        }
-    #start flash erase, may take long to erase
-    result = SUTE.teststep(can_p, cpay, etp)
-
-    logging.info("Result after request: %s", result)
-    #test if frames contain all the IDs expected
-    logging.info("Test if request timed out:")
-    logging.debug("Frames received: %s", SC.can_frames[can_p["receive"]])
-    logging.info("Messages received: %s", SC.can_messages[can_p["receive"]])
-
-    if not len(SC.can_messages[can_p["receive"]]) == 0:
-        logging.info("Len Mess received: %s", len(SC.can_messages[can_p["receive"]]))
-
-    logging.info("Step %s: Result teststep: %s \n", stepno, result)
-    return result
-
-def step_5(can_p):
-    """
-    Teststep 5: send CF with with CF delay < 1000 ms
-    """
-    stepno = 5
-    purpose = "set FC delay < 1000 ms"
-    result = True
-    SUTE.print_test_purpose(stepno, purpose)
-
-    #change Control Frame parameters
-    can_mf: CanMFParam = {
-        "block_size": 0,
-        "separation_time": 0,
-        "frame_control_delay": 950,
-        "frame_control_flag": 48,
-        "frame_control_auto": False
-        }
-    SC.change_mf_fc(can_p["send"], can_mf)
-    return result
-
-def step_6(can_p, vbf_header):
-    """
-    Teststep 6: Send first frame of a multi frame request
+    Teststep 3: Send first frame of a multi frame request verify ST is 0
     """
 
     # routine should give negative result as fault ESS was used
-    result = not SE31.routinecontrol_requestsid_flash_erase(can_p, vbf_header, stepno=6)
+    result = not SE31.routinecontrol_requestsid_flash_erase(can_p, vbf_header, stepno=3)
 
     result = SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='7F3131')
     logging.info('%s', SUTE.pp_decode_7f_response(SC.can_frames[can_p["receive"]][0][2]))
     logging.info("Result after request: %s", result)
+
+    logging.info("Control Frame from Server: %s", SC.can_cf_received[can_p["receive"]][0][2])
+
+    #test if ST is 0 ms: get ST from saved Control Frame
+    result = result and (int(SC.can_cf_received[can_p["receive"]][0][2][4:6], 16) == 0)
+    if int(SC.can_cf_received[can_p["receive"]][0][2][4:6], 16) == 0:
+        logging.info("ST is 0 ms")
+    else:
+        logging.info("ST is not 0 ms")
     return result
 
-
-def step_7(can_p):
+def step_4(can_p):
     """
-    Teststep 7: verify session SBL
+    Teststep 4: verify session SBL
     """
-    result = SE22.read_did_eda0(can_p, stepno=7)
-    logging.info("Complete Part/serial received: %s", SC.can_messages[can_p["receive"]])
-
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]],\
-                                          teststring='F122')
-    return result
-
-def step_9(can_p):
-    """
-    Teststep 9: set back frame_control_delay to default
-    """
-    stepno = 9
-    purpose = "set back frame_control_delay to default"
-
-    can_mf: CanMFParam = {
-        "block_size": 0,
-        "separation_time": 0,
-        "frame_control_delay": 0,
-        "frame_control_flag": 48,
-        "frame_control_auto": False
-        }
-
-    SUTE.print_test_purpose(stepno, purpose)
-    SC.change_mf_fc(can_p["send"], can_mf)
-
-def step_10(can_p):
-    """
-    Teststep 10: verify session SBL
-    """
-    result = SE22.read_did_eda0(can_p, stepno=11)
+    result = SE22.read_did_eda0(can_p, stepno=4)
     logging.info("Complete Part/serial received: %s", SC.can_messages[can_p["receive"]])
 
     result = result and SUTE.test_message(SC.can_messages[can_p["receive"]],\
@@ -256,39 +160,14 @@ def run():
         vbf_header = step_2()
 
         # step3:
-        # action: set FC delay > 1000 ms
-        # result:
-        result = result and step_3(can_p)
-
-        # step4:
-        # action: Send multi frame request DIDs
-        # result: No reply to request as timeout
-        result = result and step_4(can_p, vbf_header)
-
-        # step5:
-        # action: set FC delay < 1000 ms
-        # result:
-        result = result and step_5(can_p)
-
-        # step6:
         # action: Send multi frame request DIDs
         # result: Reply to request as no timeout
-        result = result and step_6(can_p, vbf_header)
+        result = result and step_3(can_p, vbf_header)
 
-        # step7:
+        # step4:
         # action: Verify SBL session still active
         # result:
-        result = result and step_7(can_p)
-
-        # step10:
-        # action: restore FC timing
-        # result:
-        step_9(can_p)
-
-        # step10:
-        # action: verify SBL session still active
-        # result:
-        result = result and step_10(can_p)
+        result = result and step_4(can_p)
 
     ############################################
     # postCondition

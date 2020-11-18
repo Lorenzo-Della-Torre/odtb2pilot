@@ -1,14 +1,14 @@
 # Testscript ODTB2 MEPII
 # project:  BECM basetech MEPII
 # author:   LDELLATO (Lorenzo Della Torre)
-# date:     2020-02-10
+# date:     2019-12-13
 # version:  1.0
-# reqprod:  53973
+# reqprod:  53959
 
 # author:   LDELLATO (Lorenzo Della Torre)
-# date:     2020-09-16
+# date:     2020-09-17
 # version:  1.1
-# reqprod:  53973
+# reqprod:  53959
 
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
 
@@ -30,6 +30,7 @@
 
 import time
 from datetime import datetime
+import os
 import sys
 import logging
 import inspect
@@ -49,8 +50,6 @@ from supportfunctions.support_service10 import SupportService10
 from supportfunctions.support_service11 import SupportService11
 from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_service31 import SupportService31
-from supportfunctions.support_service34 import SupportService34
-
 
 SIO = SupportFileIO
 SC = SupportCAN()
@@ -65,93 +64,34 @@ SE10 = SupportService10()
 SE11 = SupportService11()
 SE22 = SupportService22()
 SE31 = SupportService31()
-SE34 = SupportService34()
 
-def step_4():
+def step_3(can_p):
     """
-    Teststep 4: Read VBF files for ESS file (1st Logical Block)
+    Teststep 3: Not Compatible Software Download
     """
-    stepno = 4
-    purpose = "1st files reading"
+    stepno = 3
+    purpose = "Not Compatible Software Download"
 
-    SUTE.print_test_purpose(stepno, purpose)
-    _, vbf_header, data, data_start = SSBL.read_vbf_file(SSBL.get_ess_filename())
-    return vbf_header, data, data_start
-
-def step_5(data, data_start):
-    """
-    Teststep 5: Extract data for ESS
-    """
-    stepno = 5
-    purpose = "EXtract data for ESS"
-
-    SUTE.print_test_purpose(stepno, purpose)
-
-    _, block_by, _ = SSBL.block_data_extract(data, data_start)
-    return block_by
-
-def step_6(can_p, block_by,
-           vbf_header):
-    """
-    Teststep 6: Verify Request Download the 1st data block (ESS) rejected
-    """
-    stepno = 6
-    purpose = "Verify Request Download the 1st data block (ESS) rejected"
-
-    SUTE.print_test_purpose(stepno, purpose)
-    SSBL.vbf_header_convert(vbf_header)
-    resultt, _ = SE34.request_block_download(can_p, vbf_header, block_by, stepno,
-                                             purpose)
-    result = not resultt
-    return result
-
-def step_9(can_p):
-    """
-    Teststep 9: Flash Software Part != ESS
-    """
-    stepno = 9
-    purpose = " Flash Software Part != ESS"
-
-    #REQ_53973_SIGCFG_compatible_with current release
+    #REQ_53959_SIGCFG_from_previous_release_E3.vbf
     result = True
-    #by default we get files from VBF_Reqprod directory
-    swp = "./VBF_Reqprod/REQ_53973_1*.vbf"
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), swp)
-    if not glob.glob(swp):
+    odtb_proj_param = os.environ.get('ODTBPROJPARAM')
+    if odtb_proj_param is None:
+        odtb_proj_param = '.'
+
+    if not glob.glob(odtb_proj_param + "/VBF_Reqprod/REQ_53959_1*.vbf"):
         result = False
     else:
-        for f_name in glob.glob(swp):
+        for f_name in glob.glob(odtb_proj_param + "/VBF_Reqprod/REQ_53959_1*.vbf"):
             result = result and SSBL.sw_part_download(can_p, f_name,
                                                       stepno, purpose)
     return result
 
-
-def step_11(can_p):
+def step_4(can_p):
     """
-    Teststep 11: Flash remnant Software Part != ESS
-    """
-    stepno = 11
-    purpose = " Flash remnant Software Part != ESS"
-
-    #REQ_53973_SWP's_compatible_with current release
-    result = True
-    #by default we get files from VBF_Reqprod directory
-    swps = "./VBF_Reqprod/REQ_53973_2*.vbf"
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), swps)
-    if not glob.glob(swps):
-        result = False
-    else:
-        for f_name in glob.glob(swps):
-            result = result and SSBL.sw_part_download(can_p, f_name,
-                                                      stepno, purpose)
-    return result
-
-def step_12(can_p):
-    """
-    Teststep 12: Verify the Complete and compatible Routine return Not Complete
+    Teststep 4: Check the Complete and compatible Routine return Not Complete
     """
     etp: CanTestExtra = {
-        "step_no" : 12,
+        "step_no" : 4,
         "purpose" : "Check the Complete and compatible Routine return Not Complete"
     }
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
@@ -163,17 +103,60 @@ def step_12(can_p):
                          == 'Not Complete, Compatible')
     return result
 
-def step_13(can_p):
+def step_5(can_p):
     """
-    Teststep 13: Flash Software Part != ESS as in step_9
+    Teststep 5: Complete Software Download
     """
-    stepno = 13
-    purpose = " Flash Software Part != ESS as in step_9"
+    stepno = 5
+    purpose = " Complete Software Download"
 
-    #REQ_53973_SIGCFG_compatible_with current release
+    #Download remnants VBF to Complete the Software Download
     result = True
-    #by default we get files from VBF_Reqprod directory
-    swp = "./VBF_Reqprod/REQ_53973_1*.vbf"
+    odtb_proj_param = os.environ.get('ODTBPROJPARAM')
+    if odtb_proj_param is None:
+        odtb_proj_param = '.'
+
+    swps = odtb_proj_param + "/VBF_Reqprod/REQ_53959_2*.vbf"
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), swps)
+    if not glob.glob(swps):
+        result = False
+    else:
+        for f_name in glob.glob(swps):
+            result = result and SSBL.sw_part_download(can_p, f_name,
+                                                      stepno, purpose)
+    return result
+
+def step_6(can_p):
+    """
+    Teststep 6: Check the Complete and compatible Routine return Complete Not Compatible
+    """
+    etp: CanTestExtra = {
+        "step_no" : 6,
+        "purpose" : "Check the Complete and compatible Routine return Complete not Compatible"
+    }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+
+    SUTE.print_test_purpose(etp["step_no"], etp["purpose"])
+    result = SSBL.check_complete_compatible_routine(can_p, etp["step_no"])
+    result = result and (SSBL.pp_decode_routine_complete_compatible
+                         (SC.can_messages[can_p["receive"]][0][2])
+                         == 'Complete, Not Compatible')
+    return result
+
+def step_7(can_p):
+    """
+    Teststep 7: Flash compatible Software Part
+    """
+    stepno = 7
+    purpose = " Complete Software Download"
+
+    #REQ_53959_SIGCFG_compatible_with current release
+    result = True
+    odtb_proj_param = os.environ.get('ODTBPROJPARAM')
+    if odtb_proj_param is None:
+        odtb_proj_param = '.'
+
+    swp = odtb_proj_param + "/VBF_Reqprod/REQ_53959_3*.vbf"
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), swp)
     if not glob.glob(swp):
         result = False
@@ -205,108 +188,76 @@ def run():
     ############################################
     # read VBF param when testscript is s started, if empty take default param
     SSBL.get_vbf_files()
-    timeout = 1500
+    timeout = 2000
     result = PREC.precondition(can_p, timeout)
 
     if result:
     ############################################
     # teststeps
     ############################################
-        # step 1:
-        # action: Verify programming preconditions
-        # result: ECU sends positive reply
-        result = result and SE31.routinecontrol_requestsid_prog_precond(can_p, stepno=1)
 
-        # step2:
-        # action: Change to programming session
-        # result: ECU sends positive reply
-        result = result and SE10.diagnostic_session_control_mode2(can_p, stepno=2)
-
-        # step 3:
-        # action:
-        # result:
-        result = result and SSA.activation_security_access(can_p, 3,
-                                                           "Security Access Request SID")
-
-        # step 4:
-        # action: Read VBF files for ESS file (1st Logical Block)
-        # result:
-        vbf_header, data, data_start = step_4()
-
-        # step 5:
-        # action: Extract data for ESS
-        # result:
-        block_by = step_5(data, data_start)
-
-        # step 6:
-        # action: Verify Request Download the 1st data block (ESS) is rejected
-        # result: ECU sends positive reply
-        result = result and step_6(can_p, block_by, vbf_header)
-
-        # step 7:
-        # action: # ECU Reset
-        # result: ECU sends positive reply
-        result = result and SE11.ecu_hardreset(can_p, stepno=7)
-        time.sleep(1)
-
-        # step8:
+        # step1:
         # action: DL and activate SBL
         # result: ECU sends positive reply
-        result = result and SSBL.sbl_activation(can_p, stepno=8,
+        result = result and SSBL.sbl_activation(can_p, stepno=1,
                                                 purpose="DL and activate SBL")
         time.sleep(1)
 
-        # step 9:
-        # action: Flash Software Part != ESS
-        # result: ECU sends positive reply
-        result = result and step_9(can_p)
 
-        # step10:
+        # step2:
         # action: download ESS Software Part
         # result: ECU sends positive reply
         result = result and SSBL.sw_part_download(can_p, SSBL.get_ess_filename(),\
-                                   stepno=10, purpose="ESS Software Part Download")
+                                   stepno=2, purpose="ESS Software Part Download")
         time.sleep(1)
 
-        # step11:
-        # action: Flash remnant Software Part != ESS
+        # step3:
+        # action: download SWP not compatible with current version
         # result: ECU sends positive reply
-        result = result and step_11(can_p)
+        result = result and step_3(can_p)
 
-        # step12:
-        # action: Verify the Complete and compatible Routine return Not Complete
+        # step4:
+        # action: verify SWDL Not complete
+        # result: ECU sends positive reply "Not Complete, Compatible"
+        result = result and step_4(can_p)
+
+        # step5:
+        # action: Download the remnants Software Parts
         # result: ECU sends positive reply
-        result = result and step_12(can_p)
+        result = result and step_5(can_p)
 
-        # step13:
-        # action: Flash Software Part != ESS as in step_9
+        # step6:
+        # action: verify SWDL Not compatible
+        # result: ECU sends positive reply "Complete, Not Compatible"
+        result = result and step_6(can_p)
+        time.sleep(1)
+
+        # step7:
+        # action: replace Not compatible SWP with compatible one
         # result: ECU sends positive reply
-        result = result and step_13(can_p)
+        result = result and step_7(can_p)
 
-        # step14:
+        # step 8:
         # action: Check Complete and Compatible
         # result: BECM sends positive reply "Complete and Compatible"
-        result = result and SSBL.check_complete_compatible_routine(can_p, stepno=14)
+        result = result and SSBL.check_complete_compatible_routine(can_p, stepno=8)
 
-
-        # step15:
+        # step9:
         # action: Hard Reset
         # result: ECU sends positive reply
-        result = result and SE11.ecu_hardreset(can_p, stepno=15)
+        result = result and SE11.ecu_hardreset(can_p, stepno=9)
         time.sleep(1)
 
-        # step16:
+        # step10:
         # action: verify ECU in default session
         # result: ECU sends positive reply
-        result = result and SE22.read_did_f186(can_p, b'\x01', stepno=16)
+        result = result and SE22.read_did_f186(can_p, b'\x01', stepno=10)
 
     ############################################
     # postCondition
     ############################################
 
-
     POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()
-    
