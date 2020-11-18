@@ -1,11 +1,17 @@
 # Testscript ODTB2 MEPII
 # project:  BECM basetech MEPII
 # author:   LDELLATO (Lorenzo Della Torre)
-# date:     2020-08-21
-# version:  1.0
-# reqprod:  60012
+# date:     2020-03-31
+# version:  1.1
+# reqprod:  397438
 
-# #inspired by https://grpc.io/docs/tutorials/basic/python.html
+# author:   LDELLATO (Lorenzo Della Torre)
+# date:     2020-08-28
+# version:  1.2
+# reqprod:  397438
+
+#inspired by https://grpc.io/docs/tutorials/basic/python.html
+
 # Copyright 2015 gRPC authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,13 +30,14 @@
 
 import time
 from datetime import datetime
+import os
 import sys
 import logging
 import inspect
 
 import parameters.odtb_conf as odtb_conf
 
-from supportfunctions.support_can import SupportCAN, CanParam
+from supportfunctions.support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
 from supportfunctions.support_carcom import SupportCARCOM
 from supportfunctions.support_file_io import SupportFileIO
@@ -68,8 +75,13 @@ def step_2():
     purpose = "1st files reading"
 
     SUTE.print_test_purpose(stepno, purpose)
-    #ess_vbf_invalid = "./VBF_Reqprod/REQ_397438_32290520AA_SPA2_ESS_used_as_invalid.vbf"
-    ess_vbf_invalid = "./VBF_Reqprod/REQ_60012_ess_different_project.vbf"
+    odtb_proj_param = os.environ.get('ODTBPROJPARAM')
+    if odtb_proj_param is None:
+        odtb_proj_param = '.'
+
+    #ess_vbf_invalid = odtb_proj_param +\
+    #                  "/VBF_Reqprod/REQ_397438_32290520AA_SPA2_ESS_used_as_invalid.vbf"
+    ess_vbf_invalid = odtb_proj_param + "/VBF_Reqprod/REQ_397438_ess_different_project.vbf"
     SSBL.get_ess_filename()
     _, vbf_header, _, _ = SSBL.read_vbf_file(ess_vbf_invalid)
     SSBL.vbf_header_convert(vbf_header)
@@ -78,35 +90,27 @@ def step_2():
 
 def step_3(can_p, vbf_header):
     """
-    Teststep 3: Send first frame of a multi frame request verify ST is 0
+    Teststep 3: Send MF request erase
     """
-
-    # routine should give negative result as fault ESS was used
-    result = not SE31.routinecontrol_requestsid_flash_erase(can_p, vbf_header, stepno=3)
-
-    result = SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='7F3131')
+    #Take first element of list to erase
+    erase_el = vbf_header["erase"][0]
+    cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("RoutineControlRequestSID",\
+                                                         b'\xFF\x00' +\
+                                                         erase_el[0].to_bytes(4, byteorder='big') +\
+                                                         erase_el[1].to_bytes(4, byteorder='big'),
+                                                         b'\x01'),\
+                        "extra" : ''
+                       }
+    etp: CanTestExtra = {"step_no": 3,
+                         "purpose" : "Send MF request erase",
+                         "timeout" : 1,
+                         "min_no_messages" : -1,
+                         "max_no_messages" : -1
+                        }
+    #start flash erase, may take long to erase
+    result = SUTE.teststep(can_p, cpay, etp)
+    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='7F3131')
     logging.info('%s', SUTE.pp_decode_7f_response(SC.can_frames[can_p["receive"]][0][2]))
-    logging.info("Result after request: %s", result)
-
-    logging.info("Control Frame from Server: %s", SC.can_cf_received[can_p["receive"]][0][2])
-
-    #test if ST is 0 ms: get ST from saved Control Frame
-    result = result and (int(SC.can_cf_received[can_p["receive"]][0][2][4:6], 16) == 0)
-    if int(SC.can_cf_received[can_p["receive"]][0][2][4:6], 16) == 0:
-        logging.info("ST is 0 ms")
-    else:
-        logging.info("ST is not 0 ms")
-    return result
-
-def step_4(can_p):
-    """
-    Teststep 4: verify session SBL
-    """
-    result = SE22.read_did_eda0(can_p, stepno=4)
-    logging.info("Complete Part/serial received: %s", SC.can_messages[can_p["receive"]])
-
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]],\
-                                          teststring='F122')
     return result
 
 def run():
@@ -130,44 +134,66 @@ def run():
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
     logging.info("Time: %s \n", time.time())
-
     ############################################
     # precondition
     ############################################
     # read VBF param when testscript is s started, if empty take default param
     SSBL.get_vbf_files()
-    timeout = 180
+    timeout = 3600
     result = PREC.precondition(can_p, timeout)
-
     if result:
+
     ############################################
     # teststeps
     ############################################
         # step1:
-        # action: Download and activate SBL
-        # result: True, if all went fine
-        result = result and SSBL.sbl_activation(can_p, 1, "DL and activate SBL")
+        # action: DL and anctivation of SBL
+        # result: ECU sends positive reply
+        result = result and SSBL.sbl_activation(can_p, stepno=1, purpose="DL and activate SBL")
         time.sleep(1)
 
         # step2:
-        # action: Read invalid ESS file, for not erasing part of flash
+        # action: Read VBF files for ESS not valid file (1st Logical Block)
         # result:
-        vbf_header = step_2()
+        erase = step_2()
 
         # step3:
-        # action: Send multi frame request DIDs
-        # result: Reply to request as no timeout
-        result = result and step_3(can_p, vbf_header)
+        # action: Send MF request erase
+        # result: ECU reply with NRC
+        result = result and step_3(can_p, erase)
 
         # step4:
-        # action: Verify SBL session still active
-        # result:
-        result = result and step_4(can_p)
+        # action: DL right ESS
+        # result: ECU sends positive reply
+        result = result and SSBL.sw_part_download(can_p, SSBL.get_ess_filename(),
+                                                  stepno=4, purpose="ESS Software Part Download")
+        time.sleep(1)
+
+        # step5:
+        # action: DL rest of the files
+        # result: ECU sends positive reply
+        for i in SSBL.get_df_filenames():
+
+            result = result and SSBL.sw_part_download(can_p, i, stepno=5)
+
+        # step6:
+        # action: check complete & compatible
+        # result: ECU sends positive reply "complete & compatible"
+        result = result and SSBL.check_complete_compatible_routine(can_p, stepno=6)
+
+        # step 7:
+        # action: # ECU Reset
+        # result: ECU sends positive reply
+        result = result and SE11.ecu_hardreset_5sec_delay(can_p, stepno=7)
+
+        # step8:
+        # action: verify current session
+        # result: BECM reports default session
+        result = result and SE22.read_did_f186(can_p, dsession=b'\x01', stepno=8)
 
     ############################################
     # postCondition
     ############################################
-
     POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':

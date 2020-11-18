@@ -54,7 +54,7 @@ class SupportService10:
         if not 'step_no' in etp:
             etp["step_no"] = 100
         result = SUTE.teststep(can_p, cpay, etp)
-        time.sleep(1) #mode change can lead to services are restarted
+        time.sleep(2) #mode change can lead to services are restarted
         return result
 
     @staticmethod

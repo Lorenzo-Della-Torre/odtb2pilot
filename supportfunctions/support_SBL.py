@@ -38,6 +38,7 @@
 
 import time
 import logging
+import os
 import sys
 import glob
 from typing import Dict
@@ -215,11 +216,14 @@ class SupportSBL:
         read filenames used for transfer to ECU
         sets filenames found in dict vbf_header
         """
+        odtb_proj_param = os.environ.get('ODTBPROJPARAM')
+        if odtb_proj_param is None:
+            odtb_proj_param = '.'
         logging.debug("Length sys.argv:  %s", len(sys.argv))
         if len(sys.argv) != 1:
             f_names = sys.argv
         else:
-            f_names = glob.glob("./VBF/*.vbf")
+            f_names = glob.glob(odtb_proj_param + "/VBF/*.vbf")
 
         result = self.read_vbf_param(f_names)
         return result
