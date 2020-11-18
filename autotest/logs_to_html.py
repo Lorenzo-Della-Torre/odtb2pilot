@@ -25,6 +25,8 @@ import re
 import collections
 import csv
 from yattag import Doc
+from support_test_odtb2 import SupportTestODTB2
+from logs_to_html_css import STYLE as CSS
 
 # Ugly hack to allow absolute import from the root folder
 # whatever its name is. Please forgive the heresy.
@@ -32,6 +34,8 @@ if __name__ == "__main__" and __package__ is None:
     path.append(dir(path[0]))
     __package__ = "autotest" # pylint: disable=redefined-builtin
 import dids_from_sddb_checker.output.testrun_data as td # pylint: disable=import-error,wrong-import-position
+
+SUPPORT_TEST = SupportTestODTB2()
 
 RE_DATE_START = re.compile(r'\s*Testcase\s+start:\s+(?P<date>\d+-\d+-\d+)\s+(?P<time>\d+:\d+:\d+)')
 RE_RESULT = re.compile(r'.*(?P<result>FAILED|PASSED|To be inspected|tested implicitly|'\
@@ -97,6 +101,12 @@ FOLDER_NAME_IDX = 2
 
 FIRST_PART_IDX = 0
 
+# Adding some style to this page ;)
+# Example:  Making every other row in a different colour
+#           Customizing padding
+#           Customizing links
+
+
 
 ### Code ###
 def parse_some_args():
@@ -112,6 +122,8 @@ def parse_some_args():
                         type=str, action='store', dest='logs', default='testruns',)
     parser.add_argument("--script_folder", help="Path to testscript folders",
                         type=str, action='store', dest='script_folder', default='./',)
+    parser.add_argument("--graphfile", help="Filename of the local_stats_plot generated file",
+                        type=str, action='store', dest='graph_file', default='stats_plot.svg',)
     ret_args = parser.parse_args()
     return ret_args
 
@@ -250,45 +262,59 @@ def get_url_dict(script_folder):
 def get_git_revision_hash():
     ''' Returns git revision hash '''
     message = ''
+
     try:
-        message = subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode('ascii').strip()
+        # This part is for RPi
+        repo_path = os.path.join('..', 'Repos', 'odtb2pilot') # Not in repo, try to find repo
+        message = subprocess.check_output(['git', 'rev-parse', 'HEAD'],
+                                          cwd=repo_path).decode('ascii').strip()
     except Exception as _: # pylint: disable=broad-except
-        logging.error(traceback.format_exc())
-        message = 'Error'
+        try:
+            # This is when run locally
+            message = subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode('ascii').strip()
+        except Exception as _: # pylint: disable=broad-except
+            logging.warning('Not able to get git hash')
+            message = ''
     return message
+# Will break this into smaller functions later, but it is not easy to split the html generation.
+
+
+def generate_error_page(err_msg, outfile):
+    """
+    Create html error page
+    """
+    doc, tag, text = Doc().ttl()
+
+    with tag('html'):
+        with tag('head'):
+            with tag('style'):
+                text(CSS)
+        with tag('body'):
+            with tag('div', id='header_box'): # Header box
+                text('Log report')
+            with tag('div', id='btn_container'):
+                with tag('button', klass="btn btn-primary"):
+                    with tag("a", href='did_report.html', target='_blank'):
+                        text('DID report')
+            with tag('div', id='error_msg'):
+                with tag('div', id='error_msg_header'):
+                    text('Error occured when creating Log report:')
+                with tag('div', id='error_msg_body'):
+                    text(err_msg)
+            try:
+                text(SUPPORT_TEST.get_current_time())
+            except Exception as _: # pylint: disable=broad-except
+                logging.error(traceback.format_exc())
+    write_to_file(doc.getvalue(), outfile)
+
 
 # Will break this into smaller functions later, but it is not easy to split the html generation.
 def generate_html(folderinfo_and_result_tuple_list, outfile, verif_d,  # pylint: disable=too-many-locals, too-many-branches, too-many-statements, too-many-arguments
-                  elektra_d, script_folder, log_folders):
+                  elektra_d, script_folder, log_folders, graph_file):
     """
     Create html table based on the dict
     """
     doc, tag, text, line = Doc().ttl()
-
-    # Adding some style to this page ;)
-    # Example:  Making every other row in a different colour
-    #           Customizing padding
-    #           Customizing links
-    style = ("table {border-collapse: collapse;}"
-             "table, th, td {border: 1px solid black;}"
-             "th, td {text-align: left;}"
-             "td.number {text-align: right;}"
-             "th {background-color: lightgrey; padding: 8px;}"
-             "td {padding: 3px;}"
-             "tr:nth-child(even) {background-color: #e3e3e3;}"
-             "a {color:black; text-decoration: none;}"
-             "#header {}"
-             "#did_report {background-color: lightgrey; height: 100px; line-height: 100px;"
-             "float:left; overflow:hidden;"
-             "width: 10%; text-align:center; vertical-align: middle; border:1px black solid;"
-             "margin:30px;}"
-             "#meta_data {float:left;margin:30px;}"
-             ".ecu_git_hash {max-width:300px;overflow-wrap:break-word;text-align: right;}"
-             "#legend {float:left;margin:30px;}"
-             "#title {background-color: lightgrey; height: 100px; line-height: 100px; float:left;"
-             "overflow:hidden;"
-             "width: 80%; text-align:center; vertical-align: middle; border:1px black solid;"
-             "margin:30px; font-size: 50px;}")
 
     # Create the urls for the different files in GitLab
     url_dict = get_url_dict(script_folder)
@@ -315,14 +341,14 @@ def generate_html(folderinfo_and_result_tuple_list, outfile, verif_d,  # pylint:
     with tag('html'):
         with tag('head'):
             with tag('style'):
-                text(style)
+                text(CSS)
         with tag('body'):
-            with tag('div', id='header'): # Surrounding box
-                with tag('div', id='title'): # Header box
-                    text('Test Summary Report')
-                with tag('div', id='did_report'): # DID report box
+            with tag('div', id='header_box'): # Header box
+                text('Log report')
+            with tag('div', id='btn_container'):
+                with tag('button', klass="btn btn-primary"):
                     with tag("a", href='did_report.html', target='_blank'):
-                        text('DID_report')
+                        text('DID report')
 
             doc.stag('br') # Line break for some space
 
@@ -346,105 +372,95 @@ def generate_html(folderinfo_and_result_tuple_list, outfile, verif_d,  # pylint:
             # Get the counter for the last testrun
             res_counter = res_counter_list[0]
 
-            # A separate table for the legend (explanation) and the summarization
-            with tag('div', id='legend'):
-                with tag('table', id='main'):
-                    with tag('tr'): # Heading
-                        line('th', "Category")
-                        line('th', "# of scripts")
-                        line('th', "Explanation")
-                    # Using the description dict to get the different categories
-                    for category in DESC_DICT:
-                        with tag('tr'):
-                            line('td', category, bgcolor=COLOR_DICT[category])
-                            with tag('td', klass='number'):
-                                text(amount_per_status(category, res_counter))
-                            line('td', DESC_DICT[category])
-
             # A separate table for metadata
             git_revision_hash = get_git_revision_hash()
             hostname = socket.gethostname()
             current_time = get_current_time()
 
-            with tag('div', id='meta_data'):
-                with tag('table', id='main'):
-                    with tag('tr'): # Heading
-                        line('th', "Testrun info", colspan='3')
-                    # Using the description dict to get the different categories
-                    with tag('tr'):
-                        line('td', 'Report Generator Hostname')
-                        with tag('td', klass='number'):
-                            text(hostname)
-                    with tag('tr'):
-                        line('td', 'Testreport generated')
-                        with tag('td', klass='number'):
-                            text(current_time)
-                    with tag('tr'):
-                        line('td', 'logs_to_html GIT Hash')
-                        with tag('td', klass='number'):
-                            text(git_revision_hash)
-                    with tag('tr'):
-                        line('td', 'ECU GIT Hash')
-                        with tag('td', klass='ecu_git_hash'):
-                            text(td.git_hash)
-                    with tag('tr'):
-                        line('td', 'Application Diagnostic Database Part Number')
-                        with tag('td', klass='number'):
-                            text(td.f120)
-                    with tag('tr'):
-                        line('td', 'ECU Core Assembly Part Number')
-                        with tag('td', klass='number'):
-                            text(td.f12a)
-                    with tag('tr'):
-                        line('td', 'ECU Delivery Assembly Part Number')
-                        with tag('td', klass='number'):
-                            text(td.f12b)
-                    with tag('tr'):
-                        line('td', 'ECU Serial Number')
-                        with tag('td', klass='number'):
-                            text(td.serial)
-                    with tag('tr'):
-                        line('td', 'SWCE')
-                        with tag('td', klass='number'):
-                            text(td.swce)
-                    with tag('tr'):
-                        line('td', 'SWLM - Application SW')
-                        with tag('td', klass='number'):
-                            text(td.swlm)
-                    with tag('tr'):
-                        line('td', 'SWP1 - Calibration parameter file')
-                        with tag('td', klass='number'):
-                            text(td.swp1)
-                    with tag('tr'):
-                        line('td', 'SWP2')
-                        with tag('td', klass='number'):
-                            text(td.swp2)
-                    with tag('tr'):
-                        line('td', 'ECU Software Structure Partnumber')
-                        with tag('td', klass='number'):
-                            text(td.structure_pn)
+            with tag('div', klass='flex-container'):
+                with tag('div', klass='metadata_box'):
+                    with tag('div', klass='metadata_header'):
+                        with tag('h1', klass='metadata'):
+                            text('Testrun info')
+                        with tag('table', klass='metadata_table'):
+                            with tag('tr'):
+                                with tag('td'):
+                                    text('Report Generator Hostname')
+                                with tag('td', klass='number'):
+                                    text(hostname)
+                            with tag('tr'):
+                                with tag('td'):
+                                    text('Report generated')
+                                with tag('td', klass='number'):
+                                    text(current_time)
+                    with tag('table', klass='metadata_table'):
+                        with tag('tr'):
+                            with tag('td', klass='thin-row'):
+                                text('logs_to_html GIT Hash')
+                            with tag('td', klass='thin-row number'):
+                                text(git_revision_hash)
+                        with tag('tr'):
+                            with tag('td', klass='thick-row'):
+                                text('ECU GIT Hash')
+                            with tag('td', klass='ecu_git_hash thick-row number'):
+                                text(td.git_hash)
+
+                    with tag('table', klass='metadata_table'):
+                        for name in td.eda0_dict:
+                            with tag('tr'):
+                                with tag('td', klass='thin-row'):
+                                    text(name)
+                                with tag('td', klass='number thin-row'):
+                                    text(td.eda0_dict.get(name, ''))
+
+                # A separate table for the legend (explanation) and the summarization
+                with tag('div', klass='legend'):
+                    with tag('table', klass='legend'):
+                        with tag('tr'): # Heading
+                            with tag('th', klass='legend'):
+                                text("Category")
+                            with tag('th', klass='legend'):
+                                text("# of scripts")
+                            with tag('th', klass='legend'):
+                                text("Explanation")
+                        # Using the description dict to get the different categories
+                        for category in DESC_DICT:
+                            with tag('tr', klass='stripe'):
+                                with tag('td', klass='legend', bgcolor=COLOR_DICT[category]):
+                                    text(category)
+                                with tag('td', klass='number legend'):
+                                    text(amount_per_status(category, res_counter))
+                                with tag('td', klass='legend'):
+                                    text(DESC_DICT[category])
+
+                with tag('div', klass='pic'):
+                    doc.stag('img', src=graph_file)
 
             doc.stag('br') # Line break for some space
 
             with tag('table', id='main'):
                 with tag('tr'):
                     # Heading - First row
-                    line('th', '', colspan='3')
-                    line('th', 'TestResult-ODTB2', colspan=amount_of_testruns)
+                    with tag('th', klass="main", colspan='3'):
+                        text('')
+                    with tag('th', klass="main", colspan=amount_of_testruns):
+                        text('TestResult-ODTB2')
                 with tag('tr'):
                     # Heading - Second row
                     for heading in HEADING_LIST:
-                        line('th', heading)
+                        with tag('th', klass="main"):
+                            text(heading)
                     for folderinfo_and_result_tuple in folderinfo_and_result_tuple_list:
-                        line('th', folderinfo_and_result_tuple[FOLDER_TIME_IDX])
+                        with tag('th', klass="main"):
+                            text(folderinfo_and_result_tuple[FOLDER_TIME_IDX])
 
                 # Iterating over the set of keys (rows) matching it with the dicts representing
                 # the testrun result. Creating the body of the table.
                 # The testcript names are the keys
                 for key in sorted_key_list:
-                    with tag('tr'):
+                    with tag('tr', klass='stripe'):
                         # First column - DVM
-                        with tag('td'):
+                        with tag('td', klass="main"):
                             with tag("a", href=dvm_url_service_level, target='_blank'):
                                 text('DVM')
 
@@ -453,7 +469,7 @@ def generate_html(folderinfo_and_result_tuple_list, outfile, verif_d,  # pylint:
                         if e_match:
                             e_key = str(e_match.group('reqprod'))
                             req_set.add(e_key)
-                            with tag('td'):
+                            with tag('td', klass="main number"):
                                 if e_key in elektra_d:
                                     with tag("a", href=elektra_d[e_key], target='_blank'):
                                         text(e_key)
@@ -462,13 +478,13 @@ def generate_html(folderinfo_and_result_tuple_list, outfile, verif_d,  # pylint:
 
                         # Third column - Script name
                         if key.lower() in url_dict:
-                            with tag('td'):
+                            with tag('td', klass="main"):
                                 with tag("a", href=url_dict[key.lower()], target='_blank'):
                                     text(key)
                         else:
                             # Highlight with blue if we don't find the matching URL
                             #with tag('td', bgcolor=BROKEN_URL_COLOR):
-                            with tag('td'):
+                            with tag('td', klass="main"):
                                 text(key)
 
                         # Fourth (fifth, sixth) - Result columns
@@ -486,26 +502,32 @@ def generate_html(folderinfo_and_result_tuple_list, outfile, verif_d,  # pylint:
                             color = COLOR_DICT[MISSING_STATUS]
                             if result in COLOR_DICT:
                                 color = COLOR_DICT.get(result)
-                            with tag('td', bgcolor=color):
+                            with tag('td', klass="main", bgcolor=color):
                                 with tag("a", href=href_string, target='_blank'):
                                     text(result)
 
                 # Sum row
                 with tag('tr'):
-                    line('th', '', colspan='3')
+                    with tag('td', klass="main", colspan='3'):
+                        text('')
                     for res_counter in res_counter_list:
-                        line('th', calculate_sum_string(res_counter))
+                        with tag('td', klass="main"):
+                            text(calculate_sum_string(res_counter))
 
             doc.stag('br') # Line break for some space
 
             # A separate table for the coverage
-            with tag('table', id='main'):
+            with tag('table', id='coverage'):
                 with tag('tr'):
                     # Heading
-                    line('th', "Verification method")
-                    line('th', "Available")
-                    line('th', "Covered")
-                    line('th', "% covered")
+                    with tag('th', klass='coverage'):
+                        text("Verification method")
+                    with tag('th', klass='coverage'):
+                        text("Available")
+                    with tag('th', klass='coverage'):
+                        text("Covered")
+                    with tag('th', klass='coverage'):
+                        text("% covered")
 
                     # Counting how many requirements there are of each verification method
                     req_counter = collections.Counter()
@@ -522,16 +544,17 @@ def generate_html(folderinfo_and_result_tuple_list, outfile, verif_d,  # pylint:
                             logging.warning('Req: %s not in verif_dict', req)
 
                 for each in req_counter:
-                    with tag('tr'):
-                        line('td', each)                        # First column
+                    with tag('tr', klass='stripe'):
+                        with tag('td', klass='number coverage'):
+                            text(each)                      # First column
 
-                        with tag('td', klass='number'):         # Second column
+                        with tag('td', klass='number coverage'): # Second column
                             text(str(req_counter[each]))
 
-                        tested_str = ''                         # Third column
+                        tested_str = ''                     # Third column
                         if tested_counter[each] > 0:
                             tested_str = str(tested_counter[each])
-                        with tag('td', klass='number'):
+                        with tag('td', klass='number coverage'):
                             text(tested_str)
 
                         # Fourth column
@@ -540,7 +563,7 @@ def generate_html(folderinfo_and_result_tuple_list, outfile, verif_d,  # pylint:
                         coverage = ''
                         if percent > 0:
                             coverage = str(round(percent, AMOUNT_OF_DECIMALS)) + '%'
-                        with tag('td', klass='number'):
+                        with tag('td', klass='number coverage'):
                             text(coverage)
 
                 # The total row
@@ -590,43 +613,48 @@ def main(margs):
     """Call other functions from here"""
     logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
-    folderinfo_and_result_tuple_list = []
-    verif_dict = {}
-    e_link_dict = {}
-    log_folders = ''
+    try:
+        folderinfo_and_result_tuple_list = []
+        verif_dict = {}
+        e_link_dict = {}
+        log_folders = ''
 
-    # For selected folders
-    if margs.report_folder:
-        logging.debug('Input: %s', margs.report_folder)
-        folders = margs.report_folder
-        folders.sort(reverse=True)
-    elif margs.logs: # No selected folder. Pick 5 latest folders
-        logging.debug('Input: %s', margs.logs)
-        log_folders = margs.logs
+        # For selected folders
+        if margs.report_folder:
+            logging.debug('Input: %s', margs.report_folder)
+            folders = margs.report_folder
+            folders.sort(reverse=True)
+        elif margs.logs: # No selected folder. Pick 5 latest folders
+            logging.debug('Input: %s', margs.logs)
+            log_folders = margs.logs
 
-        # Get all testfolders
-        all_test_folders = [file_name for file_name in listdir(log_folders)
-                            if isdir(file_name) and RE_FOLDER_TIME.match(file_name)]
-        all_test_folders.sort(reverse=True)
-        # Pick the 5 newest
-        folders = all_test_folders[:5]
+            # Get all testfolders
+            all_test_folders = [file_name for file_name in listdir(log_folders)
+                                if isdir(file_name) and RE_FOLDER_TIME.match(file_name)]
+            all_test_folders.sort(reverse=True)
+            # Pick the 5 newest
+            folders = all_test_folders[:5]
 
-    # For each folder
-    for folder_name in folders:
-        res_dict, _, _ = get_file_names_and_results(folder_name)
-        folder_time = get_folder_time(folder_name)
-        logging.debug('Folder time: %s', folder_time)
-        # Put all data in a tuple
-        folderinfo_and_result_tuple = (folder_time, res_dict, folder_name)
-        # And put the tuple in a list
-        folderinfo_and_result_tuple_list.append(folderinfo_and_result_tuple)
+        # For each folder
+        for folder_name in folders:
+            res_dict, _, _ = get_file_names_and_results(folder_name)
+            folder_time = get_folder_time(folder_name)
+            logging.debug('Folder time: %s', folder_time)
+            # Put all data in a tuple
+            folderinfo_and_result_tuple = (folder_time, res_dict, folder_name)
+            # And put the tuple in a list
+            folderinfo_and_result_tuple_list.append(folderinfo_and_result_tuple)
 
-    if margs.req_csv:
-        logging.debug("CSV-file found: %s", margs.req_csv)
-        verif_dict, e_link_dict = get_reqprod_links(margs.req_csv)
-    generate_html(folderinfo_and_result_tuple_list, margs.html_file, verif_dict, e_link_dict,
-                  margs.script_folder, log_folders)
-    logging.info("Script finished")
+        if margs.req_csv:
+            logging.debug("CSV-file found: %s", margs.req_csv)
+            verif_dict, e_link_dict = get_reqprod_links(margs.req_csv)
+        generate_html(folderinfo_and_result_tuple_list, margs.html_file, verif_dict, e_link_dict,
+                      margs.script_folder, log_folders, margs.graph_file)
+        logging.info("Script finished")
+
+    except Exception as _: # pylint: disable=broad-except
+        logging.error(traceback.format_exc())
+        generate_error_page(str(traceback.format_exc()), margs.html_file)
 
 
 if __name__ == "__main__":
