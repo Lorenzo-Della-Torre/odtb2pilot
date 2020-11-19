@@ -32,6 +32,10 @@ import logging
 import inspect
 import argparse
 
+import odtb_conf
+
+from output.did_dict import sddb_sbl_did_dict
+from output.did_dict import sbl_diag_part_num
 from supportfunctions.support_can import SupportCAN, CanParam, CanTestExtra, CanPayload
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
 from supportfunctions.support_carcom import SupportCARCOM
@@ -46,10 +50,6 @@ from supportfunctions.support_service10 import SupportService10
 from supportfunctions.support_service11 import SupportService11
 from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_service31 import SupportService31
-from output.did_dict import sddb_sbl_did_dict
-from output.did_dict import sbl_diag_part_num
-
-import odtb_conf
 
 SIO = SupportFileIO
 SC = SupportCAN()

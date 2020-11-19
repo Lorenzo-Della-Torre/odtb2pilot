@@ -28,11 +28,12 @@ from datetime import datetime
 import sys
 import logging
 
-import ODTB_conf as ODTB_config
+#import ODTB_conf as ODTB_config # <- can it be removed?
+import odtb_conf
+from support_SecAcc import Support_Security_Access
 from supportfunctions.support_can import Support_CAN, CanMFParam
 from supportfunctions.support_test_odtb2 import Support_test_ODTB2
 from supportfunctions.support_SBL import Support_SBL
-from support_SecAcc import Support_Security_Access
 
 SC = Support_CAN()
 SUTE = Support_test_ODTB2()
@@ -257,7 +258,7 @@ def run():
     # to be implemented
 
     # where to connect to signal_broker
-    network_stub = SC.connect_to_signalbroker(ODTB_config.ODTB2_DUT, ODTB_config.ODTB2_PORT)
+    network_stub = SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT)
 
     can_send = "Vcu1ToBecmFront1DiagReqFrame"
     can_receive = "BecmToVcu1Front1DiagResFrame"

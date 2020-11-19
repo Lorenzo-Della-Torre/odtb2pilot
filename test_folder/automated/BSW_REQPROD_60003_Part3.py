@@ -29,6 +29,8 @@ import logging
 import time
 import sys
 
+import odtb_conf
+
 from supportfunctions.support_can import SupportCAN, CanParam, CanTestExtra, CanPayload, CanMFParam
 from supportfunctions.support_carcom import SupportCARCOM
 from supportfunctions.support_file_io import SupportFileIO
@@ -37,7 +39,6 @@ from supportfunctions.support_postcondition import SupportPostcondition
 from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
 
-import odtb_conf
 
 SC = SupportCAN()
 SC_CARCOM = SupportCARCOM()

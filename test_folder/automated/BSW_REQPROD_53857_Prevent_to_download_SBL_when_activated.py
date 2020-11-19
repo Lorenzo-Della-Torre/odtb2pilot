@@ -34,6 +34,8 @@ import sys
 import logging
 import inspect
 
+import odtb_conf
+
 from supportfunctions.support_can import SupportCAN, CanParam, CanTestExtra, CanPayload, CanMFParam
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
 from supportfunctions.support_carcom import SupportCARCOM
@@ -49,8 +51,6 @@ from supportfunctions.support_service11 import SupportService11
 from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_service31 import SupportService31
 from supportfunctions.support_service34 import SupportService34
-
-import odtb_conf
 
 SIO = SupportFileIO
 SC = SupportCAN()
