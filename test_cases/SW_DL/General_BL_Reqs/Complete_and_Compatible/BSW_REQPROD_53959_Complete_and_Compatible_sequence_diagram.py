@@ -30,6 +30,7 @@
 
 import time
 from datetime import datetime
+import os
 import sys
 import logging
 import inspect
@@ -73,10 +74,14 @@ def step_3(can_p):
 
     #REQ_53959_SIGCFG_from_previous_release_E3.vbf
     result = True
-    if not glob.glob("./VBF_Reqprod/REQ_53959_1*.vbf"):
+    odtb_proj_param = os.environ.get('ODTBPROJPARAM')
+    if odtb_proj_param is None:
+        odtb_proj_param = '.'
+
+    if not glob.glob(odtb_proj_param + "/VBF_Reqprod/REQ_53959_1*.vbf"):
         result = False
     else:
-        for f_name in glob.glob("./VBF_Reqprod/REQ_53959_1*.vbf"):
+        for f_name in glob.glob(odtb_proj_param + "/VBF_Reqprod/REQ_53959_1*.vbf"):
             result = result and SSBL.sw_part_download(can_p, f_name,
                                                       stepno, purpose)
     return result
@@ -107,7 +112,11 @@ def step_5(can_p):
 
     #Download remnants VBF to Complete the Software Download
     result = True
-    swps = "./VBF_Reqprod/REQ_53959_2*.vbf"
+    odtb_proj_param = os.environ.get('ODTBPROJPARAM')
+    if odtb_proj_param is None:
+        odtb_proj_param = '.'
+
+    swps = odtb_proj_param + "/VBF_Reqprod/REQ_53959_2*.vbf"
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), swps)
     if not glob.glob(swps):
         result = False
@@ -143,7 +152,11 @@ def step_7(can_p):
 
     #REQ_53959_SIGCFG_compatible_with current release
     result = True
-    swp = "./VBF_Reqprod/REQ_53959_3*.vbf"
+    odtb_proj_param = os.environ.get('ODTBPROJPARAM')
+    if odtb_proj_param is None:
+        odtb_proj_param = '.'
+
+    swp = odtb_proj_param + "/VBF_Reqprod/REQ_53959_3*.vbf"
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), swp)
     if not glob.glob(swp):
         result = False
