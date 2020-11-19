@@ -30,6 +30,7 @@
 
 import time
 from datetime import datetime
+import os
 import sys
 import logging
 import inspect
@@ -71,9 +72,13 @@ def step_7(can_p):
     stepno = 7
     purpose = "Download SWP1 variant"
     result = True
+    odtb_proj_param = os.environ.get('ODTBPROJPARAM')
+    if odtb_proj_param is None:
+        odtb_proj_param = '.'
+
     #by default we get files from VBF_Reqprod directory
     #REQ_53957_32325411XC_SWP1variant.vbf
-    variant = "./VBF_Reqprod/REQ_53957*.vbf"
+    variant = odtb_proj_param + "/VBF_Reqprod/REQ_53957*.vbf"
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), variant)
     if not glob.glob(variant):
         result = False

@@ -30,6 +30,7 @@
 
 import time
 from datetime import datetime
+import os
 import sys
 import logging
 import inspect
@@ -77,7 +78,11 @@ def step_2():
     #REQ_53973_SIGCFG_compatible_with current release
     #by default we get files from VBF_Reqprod directory
     #REQ_400878_ess_32263666_AA_6M_header_modified.vbf
-    ess_modif_header = "./VBF_Reqprod/REQ_400878*.vbf"
+    odtb_proj_param = os.environ.get('ODTBPROJPARAM')
+    if odtb_proj_param is None:
+        odtb_proj_param = '.'
+
+    ess_modif_header = odtb_proj_param + "/VBF_Reqprod/REQ_400878*.vbf"
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), ess_modif_header)
     if not glob.glob(ess_modif_header):
         result = False

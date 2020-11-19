@@ -30,6 +30,7 @@
 
 import time
 from datetime import datetime
+import os
 import sys
 import logging
 import inspect
@@ -115,7 +116,11 @@ def step_9(can_p):
     #REQ_53973_SIGCFG_compatible_with current release
     result = True
     #by default we get files from VBF_Reqprod directory
-    swp = "./VBF_Reqprod/REQ_53973_1*.vbf"
+    odtb_proj_param = os.environ.get('ODTBPROJPARAM')
+    if odtb_proj_param is None:
+        odtb_proj_param = '.'
+
+    swp = odtb_proj_param + "/VBF_Reqprod/REQ_53973_1*.vbf"
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), swp)
     if not glob.glob(swp):
         result = False
@@ -135,8 +140,12 @@ def step_11(can_p):
 
     #REQ_53973_SWP's_compatible_with current release
     result = True
+    odtb_proj_param = os.environ.get('ODTBPROJPARAM')
+    if odtb_proj_param is None:
+        odtb_proj_param = '.'
+
     #by default we get files from VBF_Reqprod directory
-    swps = "./VBF_Reqprod/REQ_53973_2*.vbf"
+    swps = odtb_proj_param + "/VBF_Reqprod/REQ_53973_2*.vbf"
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), swps)
     if not glob.glob(swps):
         result = False
@@ -173,7 +182,11 @@ def step_13(can_p):
     #REQ_53973_SIGCFG_compatible_with current release
     result = True
     #by default we get files from VBF_Reqprod directory
-    swp = "./VBF_Reqprod/REQ_53973_1*.vbf"
+    odtb_proj_param = os.environ.get('ODTBPROJPARAM')
+    if odtb_proj_param is None:
+        odtb_proj_param = '.'
+
+    swp = odtb_proj_param + "/VBF_Reqprod/REQ_53973_1*.vbf"
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), swp)
     if not glob.glob(swp):
         result = False

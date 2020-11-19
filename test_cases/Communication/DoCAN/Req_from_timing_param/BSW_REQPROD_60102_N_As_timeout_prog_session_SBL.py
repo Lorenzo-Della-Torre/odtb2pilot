@@ -29,6 +29,7 @@
 
 import time
 from datetime import datetime
+import os
 import sys
 import logging
 import inspect
@@ -72,8 +73,13 @@ def step_2():
     purpose = "1st files reading"
 
     SUTE.print_test_purpose(stepno, purpose)
-    #ess_vbf_invalid = "./VBF_Reqprod/REQ_397438_32290520AA_SPA2_ESS_used_as_invalid.vbf"
-    ess_vbf_invalid = "./VBF_Reqprod/REQ_60102_ess_different_project.vbf"
+    odtb_proj_param = os.environ.get('ODTBPROJPARAM')
+    if odtb_proj_param is None:
+        odtb_proj_param = '.'
+
+    #ess_vbf_invalid = odtb_proj_param +\
+    #                  "/VBF_Reqprod/REQ_397438_32290520AA_SPA2_ESS_used_as_invalid.vbf"
+    ess_vbf_invalid = odtb_proj_param + "/VBF_Reqprod/REQ_60102_ess_different_project.vbf"
     SSBL.get_ess_filename()
     _, vbf_header, _, _ = SSBL.read_vbf_file(ess_vbf_invalid)
     SSBL.vbf_header_convert(vbf_header)
