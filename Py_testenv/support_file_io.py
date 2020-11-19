@@ -60,7 +60,10 @@ class SupportFileIO:
         - a file specific one
         If parameters exist in both, the file specific overrides the project specific
         """
-        param_dir = './parameters_yml'
+        odtb_proj_param = os.environ.get('ODTBPROJPARAM')
+        if odtb_proj_param is None:
+            odtb_proj_param = '.'
+        param_dir = 'parameters_yml'
         proj_default = "project_default.yml"
         #logging.debug("Number file of param: %s", len(sys.argv))
         #logging.debug("regexpr %s", r"\w+_(?P<reqprod>\d{3,})_\w+")
@@ -82,27 +85,34 @@ class SupportFileIO:
 
             f_name = re.split(r"(.py)", f_name_temp)[0] + '.yml'
             #logging.info("SIO Split part2:  %s", f_name_temp)
-        logging.debug("Path exists: %s", os.path.exists(param_dir))
-        if os.path.exists(param_dir):
-            logging.debug("Path: %s", param_dir)
-        #logging.debug("Path         %s", param_dir)
-        #logging.debug("Project default: %s", param_dir + '/' + proj_default)
-        logging.debug("Project default exists: %s", os.path.isfile(param_dir + '/' + proj_default))
-        if os.path.isfile(param_dir + '/' + proj_default):
-            logging.debug("Default: %s", (param_dir + '/' + proj_default))
-        logging.debug("File exists: %s", os.path.isfile(param_dir + '/' + f_name))
-        if os.path.isfile(param_dir + '/' + f_name):
-            logging.info("Parameter file : %s", (param_dir + '/' + f_name))
+        if os.path.exists(odtb_proj_param):
+            logging.info("Path to project: %s", odtb_proj_param)
+        logging.info("Path exists: %s", os.path.exists(odtb_proj_param + '/' + param_dir))
+        if os.path.exists(odtb_proj_param + '/' + param_dir):
+            logging.info("Path: %s", odtb_proj_param + '/' + param_dir)
+        #logging.debug("Path         %s", odtb_proj_param + '/' + param_dir)
+        #logging.debug("Project default: %s", odtb_proj_param + '/' param_dir + '/' + proj_default)
+        logging.debug("Project default exists: %s",\
+                      os.path.isfile(odtb_proj_param + '/' + param_dir + '/' + proj_default))
+        if os.path.isfile(odtb_proj_param + '/' + param_dir + '/' + proj_default):
+            logging.debug("Default: %s", (odtb_proj_param + '/' + param_dir + '/' + proj_default))
+        logging.debug("File exists: %s",\
+                      os.path.isfile(odtb_proj_param + '/' + param_dir + '/' + f_name))
+        if os.path.isfile(odtb_proj_param + '/' + param_dir + '/' + f_name):
+            logging.info("Parameter file : %s", (odtb_proj_param + '/' + param_dir + '/' + f_name))
 
         #try to find matching files in catalog holding parameter files
-        if os.path.exists(param_dir) and os.path.isfile(param_dir + '/' + proj_default):
-            dir_file_default = param_dir + '/' + proj_default
+        logging.info("dir_file_default: %s", odtb_proj_param + '/' + param_dir + '/' + proj_default)
+        if os.path.exists(odtb_proj_param + '/' + param_dir)\
+            and os.path.isfile(odtb_proj_param + '/' + param_dir + '/' + proj_default):
+            dir_file_default = odtb_proj_param + '/' + param_dir + '/' + proj_default
         elif os.path.isfile(proj_default):
             dir_file_default = proj_default
         #no matching parameter file
         else: dir_file_default = ''
 
-        if os.path.exists(param_dir) and os.path.isfile(param_dir + '/' + f_name):
+        if os.path.exists(odtb_proj_param + '/' + param_dir)\
+            and os.path.isfile(odtb_proj_param + '/' + param_dir + '/' + f_name):
             dir_file = param_dir + '/' + f_name
         elif os.path.isfile(f_name):
             dir_file = f_name
@@ -172,8 +182,8 @@ class SupportFileIO:
                         newarg = data_default[key].get(dict_key)
                         logging.debug("Default-par: New values for %s: %s",
                                       dict_key, newarg)
-                        logging.debug("type before replace: %s" , type(arg[dict_key]))
-                        logging.debug("type after replace: %s" , type(newarg))
+                        logging.debug("type before replace: %s", type(arg[dict_key]))
+                        logging.debug("type after replace: %s", type(newarg))
 
                         if not isinstance(newarg, type(arg[dict_key])):
                             logging.debug("Try to get same type via EVAL:")
@@ -186,9 +196,9 @@ class SupportFileIO:
 
                         #convert some values to bytes
                         if dict_key in ('mode', 'mask', 'did'):
-                            logging.debug("type before convert: %s" , arg[dict_key])
+                            logging.debug("type before convert: %s", arg[dict_key])
                             arg[dict_key] = bytes(arg[dict_key], 'utf-8')
-                            logging.debug("type after convert type: %s" , arg[dict_key])
+                            logging.debug("type after convert type: %s", arg[dict_key])
 
                     #search in file specific parameters
                     logging.info("search file parameter data for %s %s", key, dict_key)

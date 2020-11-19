@@ -1,0 +1,1 @@
+../project_template/generate_log_report.sh
