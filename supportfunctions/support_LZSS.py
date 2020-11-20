@@ -22,7 +22,7 @@
 """The Python implementation of the grPC route guide client."""
 
 import io
-import supportfunctions.lzss_bitio
+from supportfunctions.lzss_bitio import BitReader, BitWriter
 from supportfunctions.lzss_helpers import CircularBuffer, Reference, SmartOpener
 
 class LzssEncoder():
@@ -167,7 +167,7 @@ class LzssEncoder():
         dictionary = CircularBuffer(self.LZSS_WINDOW_SIZE)
         # no out_array here, wouldn't be returned
         with io.BytesIO(in_array) as infile, io.BytesIO() as outfile:
-            with lzss_bitio.BitReader(infile) as reader, lzss_bitio.BitWriter(outfile) as writer:
+            with BitReader(infile) as reader, BitWriter(outfile) as writer:
                 while not eos_reached:
                     bit = reader.readbits(1)
                     if bit == self.ENCODED_FLAG:
