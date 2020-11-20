@@ -18,18 +18,29 @@
     echo PATH: $PATH
 
     cd ~/testrun
-    [ ! -d VBF ] && mkdir VBF
-    rm -f VBF/*
-    cp ~/delivery/*.vbf VBF
-    cp ~/SBL/*.vbf VBF
+### VBF files in $TESTREPO/projects/$ODTBPROJ
+    [ ! -d $TESTREPO/projects/$ODTBPROJ/VBF && mkdir $TESTREPO/projects/$ODTBPROJ/VBF
+    rm -f $TESTREPO/projects/$ODTBPROJ/VBF/*
+    cp ~/delivery/*.vbf $TESTREPO/projects/$ODTBPROJ/VBF
+    cp ~/SBL/*.vbf $TESTREPO/projects/$ODTBPROJ/VBF
 
-    [ ! -d VBF_Reqprod ] && mkdir VBF_Reqprod
-    rm -f VBF_Reqprod/*
-    cp $TESTREPO/autotest/VBF_Reqprod_SPA/* VBF_Reqprod
+###    [ ! -d $TESTPROJ/projects/$ODTBPROJ/VBF_Reqprod ] && mkdir $TESTREPO/projects/$ODTBPROJ/VBF_Reqprod
+###    rm -f $TESTREPO/projects/$ODTBPROJ/VBF_Reqprod/*
+###    cp $TESTREPO/autotest/VBF_Reqprod_SPA/* VBF_Reqprod
 
-    [ ! -d parameters_yml ] && mkdir parameters_yml
-    rm -f parameters_yml/*
-    cp $TESTREPO/yml_parameter/MEP2_SPA1/* parameters_yml
+### VBF in local catalog:
+###    [ ! -d VBF ] && mkdir VBF
+###    rm -f VBF/*
+###    cp ~/delivery/*.vbf VBF
+###    cp ~/SBL/*.vbf VBF
+###
+###    [ ! -d VBF_Reqprod ] && mkdir VBF_Reqprod
+###    rm -f VBF_Reqprod/*
+###    cp $TESTREPO/autotest/VBF_Reqprod_SPA/* VBF_Reqprod
+
+###    [ ! -d parameters_yml ] && mkdir parameters_yml
+###    rm -f parameters_yml/*
+###    cp $TESTREPO/yml_parameter/MEP2_SPA1/* parameters_yml
 
     ### Generate catalog for logfiles and list of scripts to run
     TESTRUN=$(date +Testrun_%Y%m%d_%H%M_BECM_BT)
@@ -37,9 +48,7 @@
     echo "Results of testrun $TESTRUN:" >$TESTRUN\/Result.txt
 
     ### collect all testscripts
-    find $TESTREPO/test_cases  -name BSW_REQPROD_*.py >testscripts.lst
-    find $TESTREPO/test_cases_old -name BSW_REQPROD_*.py >>testscripts.lst
-    find $TESTREPO/manual_test -name BSW_REQPROD_*.py >>testscripts.lst
+    find $TESTREPO/test_folder/ -name BSW_REQPROD_*.py >testscripts.lst
 
     ### Run all testscripts found:
     while IFS= read -r line

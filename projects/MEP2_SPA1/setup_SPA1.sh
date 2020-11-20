@@ -10,7 +10,7 @@
         export PYTHONPATH=~/Repos/odtb2pilot/:.
 ###     export PYTHONPATH=~/Repos/odtb2pilot/supportfunctions/:.
 
-        export PYTHONPATH=$TESTREPO/projects/project_template:$PYTHONPATH
+###        export PYTHONPATH=$TESTREPO/projects/project_template:$PYTHONPATH
 ###        export PYTHONPATH=$TESTREPO/projects/$ODTBPROJ:$PYTHONPATH
 ###        export PYTHONPATH=$TESTREPO/projects/project_template/protogenerated:$PYTHONPATH
         echo export PYTHONPATH=$PYTHONPATH
