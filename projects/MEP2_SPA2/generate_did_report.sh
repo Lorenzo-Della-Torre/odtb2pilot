@@ -1,0 +1,1 @@
+../project_template/automated_testrun/generate_did_report.sh

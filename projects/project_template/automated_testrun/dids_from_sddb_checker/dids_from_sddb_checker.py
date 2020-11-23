@@ -32,19 +32,22 @@ import sys
 import inspect
 from collections import namedtuple
 from yattag import Doc
-from support_test_odtb2 import SupportTestODTB2
+
 import odtb_conf
+
+from supportfunctions.support_test_odtb2 import SupportTestODTB2
+from supportfunctions.support_can import SupportCAN, CanParam
+from supportfunctions.support_carcom import SupportCARCOM
+from supportfunctions.support_precondition import SupportPrecondition
+from supportfunctions.support_postcondition import SupportPostcondition
+from supportfunctions.support_file_io import SupportFileIO
+from supportfunctions.support_service22 import SupportService22
+
 import parameters as parammod
 import dids_from_sddb_checker_conf as conf
 from output.did_dict import sddb_resp_item_dict
 from output.did_dict import sddb_app_did_dict
 from output.did_dict import app_diag_part_num
-from support_can import SupportCAN, CanParam
-from support_carcom import SupportCARCOM
-from support_precondition import SupportPrecondition
-from support_postcondition import SupportPostcondition
-from support_file_io import SupportFileIO
-from support_service22 import SupportService22
 
 SIO = SupportFileIO
 SC = SupportCAN()
