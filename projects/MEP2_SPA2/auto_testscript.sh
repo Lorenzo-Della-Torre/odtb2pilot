@@ -1,7 +1,8 @@
 #!/bin/bash
 
-### token and pass created for tht repo
+### token and pass created for that repo
     TESTREPO=~/Repos/odtb2pilot
+### adopt ODTBPROJ to fit your local project setting
 ###    ODTBPROJ=my_odtb_proj
     ODTBPROJ=MEP2_SPA2
 
@@ -12,43 +13,33 @@
     export PYTHONPATH=$TESTREPO/projects/project_template:$PYTHONPATH
     echo export PYTHONPATH=$PYTHONPATH
 
+### show environment variables used in automated testrun:
     echo Variables used in testrun:
     echo TESTREPO: $TESTREPO
     echo ODTBPROJPARAM $ODTBPROJPARAM
     echo PYTHONPATH: $PYTHONPATH
     echo PATH: $PATH
 
-    cd ~/testrun
-### VBF files in $TESTREPO/projects/$ODTBPROJ
+### VBF files update in $TESTREPO/projects/$ODTBPROJ
     [ ! -d $TESTREPO/projects/$ODTBPROJ/VBF && mkdir $TESTREPO/projects/$ODTBPROJ/VBF
     rm -f $TESTREPO/projects/$ODTBPROJ/VBF/*
     cp ~/delivery/*.vbf $TESTREPO/projects/$ODTBPROJ/VBF
     cp ~/SBL/*.vbf $TESTREPO/projects/$ODTBPROJ/VBF
 
-###    [ ! -d $TESTPROJ/projects/$ODTBPROJ/VBF_Reqprod ] && mkdir $TESTREPO/projects/$ODTBPROJ/VBF_Reqprod
-###    rm -f $TESTREPO/projects/$ODTBPROJ/VBF_Reqprod/*
-###    cp $TESTREPO/autotest/VBF_Reqprod_SPA/* VBF_Reqprod
 
-### VBF in local catalog:
+### uncomment if VBF should be updated in local catalog:
 ###    [ ! -d VBF ] && mkdir VBF
 ###    rm -f VBF/*
 ###    cp ~/delivery/*.vbf VBF
 ###    cp ~/SBL/*.vbf VBF
-###
-###    [ ! -d VBF_Reqprod ] && mkdir VBF_Reqprod
-###    rm -f VBF_Reqprod/*
-###    cp $TESTREPO/autotest/VBF_Reqprod_SPA/* VBF_Reqprod
 
-###    [ ! -d parameters_yml ] && mkdir parameters_yml
-###    rm -f parameters_yml/*
-###    cp $TESTREPO/yml_parameter/MEP2_SPA1/* parameters_yml
 
-    ### Generate catalog for logfiles and list of scripts to run
+### Generate catalog for logfiles and list of scripts to run
     TESTRUN=$(date +Testrun_%Y%m%d_%H%M_BECM_BT)
     [ ! -d $TESTRUN ] && mkdir $TESTRUN
     echo "Results of testrun $TESTRUN:" >$TESTRUN\/Result.txt
 
-    ### collect all testscripts
+### collect all testscript, chose subcatalog separately or all existing:
 ###    find $TESTREPO/test_folder/automated/ -name BSW_REQPROD_*.py >testscripts.lst
 ###    find $TESTREPO/test_folder/manual/ -name BSW_REQPROD_*.py >>testscripts.lst
 ###    find $TESTREPO/test_folder/not_applicable/ -name BSW_REQPROD_*.py >>testscripts.lst
