@@ -25,8 +25,8 @@ import re
 import collections
 import csv
 from yattag import Doc
-from support_test_odtb2 import SupportTestODTB2
-from logs_to_html_css import STYLE as CSS
+from supportfunctions.support_test_odtb2 import SupportTestODTB2
+from supportfunctions.logs_to_html_css import STYLE as CSS
 
 # Ugly hack to allow absolute import from the root folder
 # whatever its name is. Please forgive the heresy.
