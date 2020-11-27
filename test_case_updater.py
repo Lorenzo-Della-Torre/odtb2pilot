@@ -6,7 +6,7 @@ import os
 import re
 import shutil
 
-FOLDER = "test_folder"
+FOLDER = "test_folder/automated"
 MOD_FOLDER = "supportfunctions"
 GEN_FOLDER = "protogenerated"
 CONF_FOLDER = "parameters"
@@ -23,9 +23,9 @@ def get_module_file(mod_folder, gen_folder):
     # odtb_conf file is special, 
     # could do another loop if need
     ODTB_CONF_NAME = 'odtb_conf'
-    ODTB_FIX_NAME = f'{CONF_FOLDER}.{ODTB_CONF_NAME}'
+    ODTB_FIX_NAME = f'{CONF_FOLDER}.{ODTB_CONF_NAME} as {ODTB_CONF_NAME}'
     #mod_name_dict[ODTB_CONF_NAME] = f"{CONF_FOLDER}.{ODTB_CONF_NAME}"
-    mod_name_dict[ODTB_CONF_NAME] = f"{ODTB_FIX_NAME} as {ODTB_CONF_NAME}"
+    mod_name_dict[ODTB_FIX_NAME] = f"{ODTB_CONF_NAME}"
 
     for file in os.listdir(mod_folder):
         if file.endswith(".py"):
@@ -37,6 +37,14 @@ def get_module_file(mod_folder, gen_folder):
             file_nosuff = file.split('.')[0]
             print(file_nosuff)
             mod_name_dict[file_nosuff] = f"{GEN_FOLDER}.{file_nosuff} as {file_nosuff}"
+    return mod_name_dict
+
+def get_module_file_single():
+    """ Dict for quick fix """
+    mod_name_dict = {}
+    ODTB_CONF_NAME = 'odtb_conf'
+    ODTB_FIX_NAME = f'{CONF_FOLDER}.{ODTB_CONF_NAME} as {ODTB_CONF_NAME}'
+    mod_name_dict[ODTB_FIX_NAME] = f"{ODTB_CONF_NAME}"
     return mod_name_dict
 
 def replacer_func(name, mod_dict):
@@ -55,6 +63,7 @@ def update_files_incl(test_folder, mod_dict):
     """ Modify exisiting scripts to do correct imports """
     re_import = re.compile(r"import\s+([\w\.]+)")
     re_from = re.compile(r"from\s+(\w+)")
+    re_odtb = re.compile(r"import\s+(parameters.odtb_conf\sas\sodtb_conf)")
     for file in os.listdir(test_folder):
         if file.endswith(".py"):
             file_path = test_folder + '/' + file
@@ -67,7 +76,10 @@ def update_files_incl(test_folder, mod_dict):
             for line in py_text:
                 match_import = re_import.match(line)
                 match_from = re_from.match(line)
-                if match_import:
+                match_odtb = re_odtb.match(line)
+                if match_odtb:
+                    tmp_str = 'import odtb_conf\n'
+                elif match_import:
                     #print(line)
                     replace_name = replacer_func(match_import.group(1), mod_dict)
                     tmp_str = re.sub(r'(import\s+)([\w\.]+)(.*)', r'\1' + replace_name + r'\3', line)
@@ -78,6 +90,7 @@ def update_files_incl(test_folder, mod_dict):
                     replace_name = replacer_func(match_from.group(1), mod_dict)
                     tmp_str = re.sub(r'(from\s+)(\w+)(.*)', r'\1' + replace_name + r'\3', line)
                     #print(tmp_str)
+                
                 else:
                     tmp_str = line
                 dest_file.write(tmp_str.encode('utf8'))
@@ -85,6 +98,7 @@ def update_files_incl(test_folder, mod_dict):
 
 if __name__ == "__main__":
     # Boilerplate to launch the main function with the command line arguments.
-    mod_dict = get_module_file(FOLDER + '/' + MOD_FOLDER, FOLDER + '/' + GEN_FOLDER)
+    #mod_dict = get_module_file(FOLDER + '/' + MOD_FOLDER, FOLDER + '/' + GEN_FOLDER)
+    mod_dict = get_module_file_single()
     update_files_incl(FOLDER, mod_dict)
-    update_files_incl(FOLDER + '/' + MOD_FOLDER, mod_dict)
+    #update_files_incl(FOLDER + '/' + MOD_FOLDER, mod_dict)
