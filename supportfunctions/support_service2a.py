@@ -28,7 +28,7 @@
 
 import logging
 import inspect
-import time
+#import time
 from collections import namedtuple
 from supportfunctions.support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
 from supportfunctions.support_test_odtb2 import SupportTestODTB2

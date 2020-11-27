@@ -72,7 +72,7 @@ class LzssEncoder():
         dictionary = CircularBuffer(self.LZSS_WINDOW_SIZE)
         buffer = CircularBuffer(self.MAX_MATCH_SIZE)
         with SmartOpener.smart_read(inpath) as infile, SmartOpener.smart_write(outpath) as outfile:
-            with lzss_bitio.BitWriter(outfile) as writer:
+            with BitWriter(outfile) as writer:
                 for _ in range(0, self.MAX_MATCH_SIZE): #max match as initial buffer value
                     buffer.put_byte(self._byte2int(infile.read(1)))
                 is_there_something_to_read = True
@@ -99,7 +99,7 @@ class LzssEncoder():
         buffer = CircularBuffer(self.MAX_MATCH_SIZE)
         #with in_array as infile, out_array as outfile:
         with io.BytesIO(in_array) as infile, io.BytesIO(out_array) as outfile:
-            with lzss_bitio.BitWriter(outfile) as writer:
+            with BitWriter(outfile) as writer:
                 for _ in range(0, self.MAX_MATCH_SIZE): #max match as initial buffer value
                     buffer.put_byte(self._byte2int(infile.read(1)))
                 is_there_something_to_read = True
@@ -127,7 +127,7 @@ class LzssEncoder():
         eos_reached = False
         dictionary = CircularBuffer(self.LZSS_WINDOW_SIZE)
         with SmartOpener.smart_read(inpath) as infile, SmartOpener.smart_write(outpath) as outfile:
-            with lzss_bitio.BitReader(infile) as reader, lzss_bitio.BitWriter(outfile) as writer:
+            with BitReader(infile) as reader, BitWriter(outfile) as writer:
                 while not eos_reached:
                     bit = reader.readbits(1)
                     if bit == self.ENCODED_FLAG:
