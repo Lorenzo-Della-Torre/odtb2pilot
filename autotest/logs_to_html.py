@@ -25,8 +25,6 @@ import re
 import collections
 import csv
 from yattag import Doc
-from supportfunctions.support_test_odtb2 import SupportTestODTB2
-from supportfunctions.logs_to_html_css import STYLE as CSS
 
 # Ugly hack to allow absolute import from the root folder
 # whatever its name is. Please forgive the heresy.
@@ -34,6 +32,10 @@ if __name__ == "__main__" and __package__ is None:
     path.append(dir(path[0]))
     __package__ = "autotest" # pylint: disable=redefined-builtin
 import dids_from_sddb_checker.output.testrun_data as td # pylint: disable=import-error,wrong-import-position
+
+from supportfunctions.support_test_odtb2 import SupportTestODTB2
+from supportfunctions.logs_to_html_css import STYLE as CSS
+
 
 SUPPORT_TEST = SupportTestODTB2()
 
