@@ -22,5 +22,6 @@ strict_pylint_analysis:
   stage: Static Analysis Part 2
   allow_failure: false
   script:
-  - find ./autotest/ -type f -name "*.py" | xargs pylint-fail-under --fail_under 10.0 -d duplicate-code,import-error,invalid-name
+ # - find ./autotest/ -type f -name "*.py" | xargs pylint-fail-under --fail_under 10.0 -d duplicate-code,import-error,invalid-name
+  - find ./supportfunctions/ -type f -name "*.py" | xargs pylint-fail-under --fail_under 10.0 -d duplicate-code,import-error,invalid-name
   - find ./test_folder/ -type f -name "*.py" | xargs pylint-fail-under --fail_under 10.0 --module-rgx="BSW_REQPROD_\d*_.*" -d duplicate-code,import-error,no-name-in-module

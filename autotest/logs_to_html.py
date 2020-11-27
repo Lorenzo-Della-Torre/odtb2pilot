@@ -26,8 +26,8 @@ import collections
 import csv
 from yattag import Doc
 
-from supportfunctions.support_test_odtb2 import SupportTestODTB2 # pylint: wrong-import-position
-from supportfunctions.logs_to_html_css import STYLE as CSS # pylint: wrong-import-position
+from supportfunctions.support_test_odtb2 import SupportTestODTB2 # pylint: disable=wrong-import-position
+from supportfunctions.logs_to_html_css import STYLE as CSS # pylint: disable=wrong-import-position
 # Ugly hack to allow absolute import from the root folder
 # whatever its name is. Please forgive the heresy.
 if __name__ == "__main__" and __package__ is None:
