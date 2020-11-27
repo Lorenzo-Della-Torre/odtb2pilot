@@ -63,7 +63,6 @@ def update_files_incl(test_folder, mod_dict):
     """ Modify exisiting scripts to do correct imports """
     re_import = re.compile(r"import\s+([\w\.]+)")
     re_from = re.compile(r"from\s+(\w+)")
-    re_odtb = re.compile(r"import\s+(parameters.odtb_conf\sas\sodtb_conf)")
     for file in os.listdir(test_folder):
         if file.endswith(".py"):
             file_path = test_folder + '/' + file
@@ -76,10 +75,7 @@ def update_files_incl(test_folder, mod_dict):
             for line in py_text:
                 match_import = re_import.match(line)
                 match_from = re_from.match(line)
-                match_odtb = re_odtb.match(line)
-                if match_odtb:
-                    tmp_str = 'import odtb_conf\n'
-                elif match_import:
+                if match_import:
                     #print(line)
                     replace_name = replacer_func(match_import.group(1), mod_dict)
                     tmp_str = re.sub(r'(import\s+)([\w\.]+)(.*)', r'\1' + replace_name + r'\3', line)
@@ -98,7 +94,7 @@ def update_files_incl(test_folder, mod_dict):
 
 if __name__ == "__main__":
     # Boilerplate to launch the main function with the command line arguments.
-    #mod_dict = get_module_file(FOLDER + '/' + MOD_FOLDER, FOLDER + '/' + GEN_FOLDER)
-    mod_dict = get_module_file_single()
+    mod_dict = get_module_file(MOD_FOLDER, GEN_FOLDER)
+    #mod_dict = get_module_file_single()
     update_files_incl(FOLDER, mod_dict)
     #update_files_incl(FOLDER + '/' + MOD_FOLDER, mod_dict)
