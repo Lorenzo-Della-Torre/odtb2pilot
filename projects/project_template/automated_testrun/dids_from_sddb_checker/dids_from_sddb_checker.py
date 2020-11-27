@@ -30,24 +30,23 @@ import time
 import logging
 import sys
 import inspect
+import socket
 from collections import namedtuple
 from yattag import Doc
-
+from support_test_odtb2 import SupportTestODTB2
 import odtb_conf
-
-from supportfunctions.support_test_odtb2 import SupportTestODTB2
-from supportfunctions.support_can import SupportCAN, CanParam
-from supportfunctions.support_carcom import SupportCARCOM
-from supportfunctions.support_precondition import SupportPrecondition
-from supportfunctions.support_postcondition import SupportPostcondition
-from supportfunctions.support_file_io import SupportFileIO
-from supportfunctions.support_service22 import SupportService22
-
 import parameters as parammod
 import dids_from_sddb_checker_conf as conf
 from output.did_dict import sddb_resp_item_dict
 from output.did_dict import sddb_app_did_dict
 from output.did_dict import app_diag_part_num
+from support_can import SupportCAN, CanParam
+from support_carcom import SupportCARCOM
+from support_precondition import SupportPrecondition
+from support_postcondition import SupportPostcondition
+from support_file_io import SupportFileIO
+from support_service22 import SupportService22
+from logs_to_html_css import STYLE as CSS
 
 SIO = SupportFileIO
 SC = SupportCAN()
@@ -65,9 +64,11 @@ PART_NUMBER_STRING_LENGTH = 14
 COMPLETE_ECU_PART_SERIAL_NRS_DID = 'EDA0'
 PART_NUMBER_DID = 'F120'
 GIT_HASH_DID = 'F1F2'
+DEF_VAL = '-'
 
-MATCH_DICT = {True:'match', False:'no_match'}
-ERROR_DICT = {True:'error', False:''}
+PART_MATCH_DICT = {True:'part_match', False:'part_no_match'}
+MATCH_DICT = {True:'match main', False:'no_match main'}
+ERROR_DICT = {True:'error main', False:'main'}
 HEADING_LIST = ['DID', 'Name', 'Correct SID', 'Correct DID', 'Correct size', 'Scaled values',
                 'Error Message', 'Payload']
 
@@ -118,12 +119,12 @@ def comp_part_nbrs(can_p, sddb_cleaned_part_number):
             # Comparing part numbers
             if sddb_cleaned_part_number == ecu_diag_part_num_full:
                 message = ('Diagnostic part number is matching! Expected ' +
-                           sddb_cleaned_part_number + ', and got ' + ecu_diag_part_num_full)
+                           sddb_cleaned_part_number)
                 match = True
             else:
                 message = (
                     'Diagnostic part number is NOT matching! Expected ' +
-                    sddb_cleaned_part_number + ', but got ' + ecu_diag_part_num_full)
+                    sddb_cleaned_part_number)
 
             logging.debug('-------------------------------------------------')
             logging.debug(message)
@@ -134,64 +135,117 @@ def comp_part_nbrs(can_p, sddb_cleaned_part_number):
     return match, message
 
 
-def generate_html2(result_list, pass_or_fail_counter_dict, part_nbr_match,
-                   part_nbr_match_msg):
-    """Create html table based on the dict"""
-    # Used for for selecting style class
-    doc, tag, text, line = Doc().ttl()
+def generate_error_page(err_msg):
+    """ Create html error page """
 
-    style = ("table#main {border-collapse: collapse; width: 100%;}"
-             "table#main, th, td {border: 1px solid black;}"
-             "th, td {text-align: left;}"
-             "th {background-color: lightgrey; padding: 8px;}"
-             "td {padding: 3px;}"
-             "tr:nth-child(even) {background-color: #e3e3e3;}"
-             "a {color:black; text-decoration: none;}"
-             "#header, #match, #no_match, #passed_fail {height: 100px;"
-             "line-height: 100px; width: 1000px; text-align:center; vertical-align: middle;"
-             "border:1px black solid; margin:30px;}"
-             "#header {font-size: 50px; background-color: lightgrey;}"
-             "#match, .match {background-color: #94f7a2}"
-             "#no_match, .no_match, .error {background-color: #ff9ea6}"
-             "#no_match, .no_match, #passed_fail, #match, .match {font-size: 25px;}"
-             "#passed_fail {background-color: #ffdea6}"
-             ".borderless, #scal_val {border-style: none; border: 0px;}"
-             ".no_wrap, #scal_val {white-space: nowrap;}"
-             "")
+    # Used for for selecting style class
+    doc, tag, text = Doc().ttl()
+
     with tag('html'):
         with tag('head'):
             with tag('style'):
-                text(style)
+                text(CSS)
         with tag('body'):
-            with tag('div', id='header'): # Header box
-                text('Summary Report: Sending all DIDs Test')
-            with tag('div', id=MATCH_DICT[part_nbr_match]): # Match box
-                text(part_nbr_match_msg)
-            with tag('div', id='passed_fail'): # Passed/failed counter box
-                text(str(pass_or_fail_counter_dict))
+            with tag('div', id='header_box'): # Header box
+                text('DID report')
+            with tag('div', id='error_msg'):
+                with tag('div', id='error_msg_header'):
+                    text('Error occured when creating DID report:')
+                with tag('div', id='error_msg_body'):
+                    text(err_msg)
+            try:
+                text(SUPPORT_TEST.get_current_time())
+            except Exception as _: # pylint: disable=broad-except
+                logging.error(traceback.format_exc())
+    outfile = "did_report.html"
+    write_to_file(doc.getvalue(), outfile)
+
+
+def generate_html(result_list, pass_or_fail_counter_dict, part_nbr_match, # pylint: disable=too-many-locals,too-many-statements
+                  part_nbr_match_msg, eda0_dict):
+    """Create html table based on the dict"""
+    # Used for for selecting style class
+    doc, tag, text, line = Doc().ttl()
+    hostname = socket.gethostname()
+    current_time = get_current_time()
+
+    with tag('html'):
+        with tag('head'):
+            with tag('style'):
+                text(CSS)
+        with tag('body'):
+            with tag('div', id='header_box'): # Header box
+                text('DID report')
+            with tag('div', klass='flex-container'):
+                with tag('div', klass='metadata_box'):
+                    with tag('div', klass='metadata_header'):
+                        with tag('h1', klass='metadata'):
+                            text('Testrun info')
+                        with tag('table', klass='metadata_table'):
+                            with tag('tr'):
+                                with tag('td'):
+                                    text('Report Generator Hostname')
+                                with tag('td', klass='number'):
+                                    text(hostname)
+                            with tag('tr'):
+                                with tag('td'):
+                                    text('Report generated')
+                                with tag('td', klass='number'):
+                                    text(current_time)
+                    with tag('table', klass='metadata_table'):
+                        with tag('tr'):
+                            with tag('td', klass='thick-row', id=PART_MATCH_DICT[part_nbr_match]):
+                                text(part_nbr_match_msg)
+                    with tag('table', klass='metadata_table'):
+                        for name in eda0_dict:
+                            with tag('tr'):
+                                with tag('td', klass='thin-row'):
+                                    text(name)
+                                with tag('td', klass='number thin-row'):
+                                    text(eda0_dict.get(name, ''))
+
+                with tag('div', klass='metadata_box'):
+                    with tag('div', klass='metadata_header'):
+                        with tag('h1', klass='metadata'):
+                            text('Summary')
+                    with tag('table', klass='metadata_table'):
+                        for key in pass_or_fail_counter_dict:
+                            with tag('tr'):
+                                with tag('td', klass='thin-row'):
+                                    text(key)
+                                with tag('td', klass='number thin-row'):
+                                    text(pass_or_fail_counter_dict.get(key, ''))
+
             with tag('table', id='main'):
                 with tag('tr'):
                     for heading in HEADING_LIST:
-                        line('th', heading)
+                        with tag('th', klass="main"):
+                            text(heading)
                 for elem in result_list:
                     error_exist = False
                     if elem.err_msg:
                         error_exist = True
 
-                    with tag('tr'):
-                        line('td', elem.did)
-                        line('td', elem.name, klass='no_wrap')
-                        line('td', '', klass=MATCH_DICT[elem.c_sid])
-                        line('td', '', klass=MATCH_DICT[elem.c_did])
-                        line('td', '', klass=MATCH_DICT[elem.c_size])
-                        with tag('td'):
+                    with tag('tr', klass='stripe'):
+                        with tag('td', klass="main"):
+                            text(elem.did)
+                        with tag('td', klass="main no_wrap"):
+                            text(elem.name)
+                        with tag('td', klass=MATCH_DICT[elem.c_sid], style='width:25px;'):
+                            text('')
+                        with tag('td', klass=MATCH_DICT[elem.c_did], style='width:25px;'):
+                            text('')
+                        with tag('td', klass=MATCH_DICT[elem.c_size], style='width:25px;'):
+                            text('')
+                        with tag('td', klass="main"):
                             with tag('table', klass='borderless'):
                                 for scal_val in elem.scal_val_list:
                                     with tag('tr'):
                                         line('td', scal_val, id='scal_val')
-                        line('td', elem.err_msg, klass=ERROR_DICT[error_exist])
-                        line('td', elem.payload)
-            text(SUPPORT_TEST.get_current_time())
+                        with tag('td', klass=ERROR_DICT[error_exist]):
+                            text(elem.err_msg)
+                        with tag('td', klass="main"):
+                            text(elem.payload)
     outfile = "did_report.html"
     write_to_file(doc.getvalue(), outfile)
 
@@ -298,22 +352,49 @@ def create_folder(folder):
     if not os.path.isdir(folder):
         os.makedirs(folder)
 
-def write_data(head, data, mode):
+def write_data(head, data, mode, string_bool=True):
     ''' Write content to outfile '''
     new_path = os.path.join(parammod.OUTPUT_FOLDER, parammod.OUTPUT_TESTRUN_DATA_FN)
     with open(new_path, mode) as file:
         head = "\n" + head + " = "
-        data_str = '"' + str(data) + '"'
+        if string_bool:
+            data_str = '"' + str(data) + '"'
+        else:
+            data_str = str(data)
         file.write(head + data_str)
-
 
 def get_did_eda0(can_p):
     '''  Returns content from DID EDA0 Request '''
     did_dict = SE22.get_did_info(can_p, COMPLETE_ECU_PART_SERIAL_NRS_DID,
                                  conf.response_timeout)
     message = did_dict.get('payload', '')
-    eda0_dict = SUPPORT_TEST.get_combined_did_eda0(message, title='')
+
+    eda0_dict = SUPPORT_TEST.get_combined_did_eda0(message, sddb_resp_item_dict)
     return eda0_dict
+
+def get_current_time():
+    '''
+    Returns current time
+    This also exist in support_test_odtb2. Should use that one instead when the python path
+    issue is solved.
+    '''
+    now = datetime.now()
+    current_time = now.strftime("%Y-%m-%d %H:%M:%S")
+    return current_time
+
+def write_testrun_data(eda0_dict, can_p):
+    '''
+    Write data to file
+    '''
+
+    # Create output folder if it doesn't exist
+    create_folder(parammod.OUTPUT_FOLDER)
+    # File used to write the data in. This data is used by the logs_to_html script.
+    write_data(parammod.GIT_HASH, get_git_hash(can_p), 'w+')
+
+    #for name in eda0_dict:
+    #    write_data(name, eda0_dict.get(name, DEF_VAL), 'a+')
+    write_data('eda0_dict', eda0_dict, 'a+', False)
 
 
 def run(): # pylint: disable=too-many-locals
@@ -322,90 +403,82 @@ def run(): # pylint: disable=too-many-locals
     # so we set it on WARN.
     logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.WARN)
 
-    # Should get the values from an yml-file instead
-    can_p: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        "send" : "Vcu1ToBecmFront1DiagReqFrame", #SPA2: "HvbmdpToHvbmUdsDiagRequestFrame",
-        "receive" : "BecmToVcu1Front1DiagResFrame", #SPA2: "HvbmToHvbmdpUdsDiagResponseFrame",
-        "namespace" : SC.nspace_lookup("Front1CANCfg0")
-    }
+    try:
+        # Should get the values from an yml-file instead
+        can_p: CanParam = {
+            "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
+            "send" : "Vcu1ToBecmFront1DiagReqFrame", #SPA2: "HvbmdpToHvbmUdsDiagRequestFrame",
+            "receive" : "BecmToVcu1Front1DiagResFrame", #SPA2: "HvbmToHvbmdpUdsDiagResponseFrame",
+            "namespace" : SC.nspace_lookup("Front1CANCfg0")
+        }
 
-    #Read YML parameter for current function (get it from stack)
-    logging.debug("Read YML for %s", str(inspect.stack()[0][3]))
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
+        #Read YML parameter for current function (get it from stack)
+        logging.debug("Read YML for %s", str(inspect.stack()[0][3]))
+        SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
 
-    logging.info("Testcase start: %s", datetime.now())
-    starttime = time.time()
-    logging.info("Time: %s \n", time.time())
+        logging.info("Testcase start: %s", datetime.now())
+        starttime = time.time()
+        logging.info("Time: %s \n", time.time())
 
-    ############################################
-    # precondition
-    ############################################
-    result = PREC.precondition(can_p, conf.script_timeout)
+        ############################################
+        # precondition
+        ############################################
+        result = PREC.precondition(can_p, conf.script_timeout)
 
-    pass_or_fail_counter_dict = {"Passed": 0, "Failed": 0, "conditionsNotCorrect (22)": 0,
-                                 "requestOutOfRange (31)": 0}
-    result_list = list()
+        pass_or_fail_counter_dict = {"Passed": 0, "Failed": 0, "conditionsNotCorrect (22)": 0,
+                                     "requestOutOfRange (31)": 0}
+        result_list = list()
 
-    did_counter = 1 # Used when we don't want to run through all tests
-    # For each line in dictionary_from_file, store result
-    for did_dict_from_file_values in sddb_app_did_dict.values():
-        logging.debug('DID counter: %s', str(did_counter))
+        did_counter = 1 # Used when we don't want to run through all tests
+        # For each line in dictionary_from_file, store result
+        for did_dict_from_file_values in sddb_app_did_dict.values():
+            logging.debug('DID counter: %s', str(did_counter))
 
-        did_id = did_dict_from_file_values['ID']
-        did_dict_with_result = did_dict_from_file_values
+            did_id = did_dict_from_file_values['ID']
+            did_dict_with_result = did_dict_from_file_values
 
-        # Using Service 22 to request a particular DID, returning the result in a dictionary
-        did_dict_from_service_22 = SE22.get_did_info(can_p, did_id, conf.response_timeout)
+            # Using Service 22 to request a particular DID, returning the result in a dictionary
+            did_dict_from_service_22 = SE22.get_did_info(can_p, did_id, conf.response_timeout)
 
-        # Copy info to the did_dict_with_result dictionary from the did_dict
-        did_dict_with_result = SE22.adding_info(did_dict_from_service_22, did_dict_with_result)
+            # Copy info to the did_dict_with_result dictionary from the did_dict
+            did_dict_with_result = SE22.adding_info(did_dict_from_service_22, did_dict_with_result)
 
-        # Adding scaled data to the dictionary with the result
-        if 'error_message' not in did_dict_with_result:
-            did_dict_with_result = scale_data(did_dict_with_result)
+            # Adding scaled data to the dictionary with the result
+            if 'error_message' not in did_dict_with_result:
+                did_dict_with_result = scale_data(did_dict_with_result)
 
-        # Summarizing the result
-        info_entry, pass_or_fail_counter_dict = SE22.summarize_result(did_dict_with_result,
-                                                                      pass_or_fail_counter_dict,
-                                                                      did_id)
-        # Add the results
-        result_list.append(info_entry)
+            # Summarizing the result
+            info_entry, pass_or_fail_counter_dict = SE22.summarize_result(did_dict_with_result,
+                                                                          pass_or_fail_counter_dict,
+                                                                          did_id)
+            # Add the results
+            result_list.append(info_entry)
 
-        if did_counter >= conf.max_no_of_dids:
-            break
+            if did_counter >= conf.max_no_of_dids:
+                break
 
-        did_counter += 1
+            did_counter += 1
 
-    # Clean underscore (Replace with whitespace) from SDDB file part number
-    sddb_cleaned_part_number = app_diag_part_num.replace('_', ' ')
+        # Clean underscore (Replace with whitespace) from SDDB file part number
+        sddb_cleaned_part_number = app_diag_part_num.replace('_', ' ')
 
-    # Comparing the part numbers
-    part_nbr_match, part_nbr_match_msg = comp_part_nbrs(can_p, sddb_cleaned_part_number)
-    eda0_dict = get_did_eda0(can_p)
+        # Comparing the part numbers
+        part_nbr_match, part_nbr_match_msg = comp_part_nbrs(can_p, sddb_cleaned_part_number)
+        eda0_dict = get_did_eda0(can_p)
 
-    # Create output folder if it doesn't exist
-    create_folder(parammod.OUTPUT_FOLDER)
-    # File used to write the data in. This data is used by the logs_to_html script.
-    def_val = '-'
-    write_data(parammod.GIT_HASH, get_git_hash(can_p), 'w+')
-    write_data(parammod.F120, eda0_dict.get('f120', def_val), 'a+')
-    write_data(parammod.F12A, eda0_dict.get('f12a', def_val), 'a+')
-    write_data(parammod.F12B, eda0_dict.get('f12b', def_val), 'a+')
-    write_data(parammod.SERIAL, eda0_dict.get('serial', def_val), 'a+')
-    write_data(parammod.SWCE, eda0_dict.get('swce', def_val), 'a+')
-    write_data(parammod.SWLM, eda0_dict.get('swlm', def_val), 'a+')
-    write_data(parammod.SWP1, eda0_dict.get('swp1', def_val), 'a+')
-    write_data(parammod.SWP2, eda0_dict.get('swp2', def_val), 'a+')
-    write_data(parammod.STRUCTURE_PN, eda0_dict.get('structure_pn', def_val), 'a+')
+        write_testrun_data(eda0_dict, can_p)
 
-    generate_html2(result_list, pass_or_fail_counter_dict, part_nbr_match,
-                   part_nbr_match_msg)
+        generate_html(result_list, pass_or_fail_counter_dict, part_nbr_match,
+                      part_nbr_match_msg, eda0_dict)
 
-    ############################################
-    # postCondition
-    ############################################
-    POST.postcondition(can_p, starttime, result)
+        ############################################
+        # postCondition
+        ############################################
+        POST.postcondition(can_p, starttime, result)
+
+    except Exception as _: # pylint: disable=broad-except
+        logging.error(traceback.format_exc())
+        generate_error_page(str(traceback.format_exc()))
 
 
 if __name__ == "__main__":

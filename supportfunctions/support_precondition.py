@@ -111,7 +111,8 @@ class SupportPrecondition:
         #            ['F12A', 'PN'],\
         #            ['F12B', 'PN'],\
         #            ['F18C', 'SN'],\
-        #            ['F12E', 'PN']]
+        #            ['F12E', 'PN'],\
+        #            ['F126', 'VIDCV']]
         pn_sn_list = []
         SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'pn_sn_list')
 

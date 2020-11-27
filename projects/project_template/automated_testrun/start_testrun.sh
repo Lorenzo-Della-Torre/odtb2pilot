@@ -18,7 +18,10 @@ else
 
 	# Generate did report
 	./generate_did_report.sh
-	
+
+	# Generate test stats plot graph
+	./generate_plot_graph.sh
+
 	# Generate log report
 	./generate_log_report.sh
 	

@@ -38,15 +38,20 @@ from datetime import datetime
 import string
 
 #sys.path.append('generated')
-from supportfunctions.support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
+from support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
 SC = SupportCAN()
 
+BYTE_SIZE = 2
+HEX_BASE = 16
+DID_OFFSET = 4
 
 class SupportTestODTB2: # pylint: disable=too-many-public-methods
     # pylint: disable=too-many-branches, too-many-lines
     """
     Class for supporting sending/receiving CAN frames
     """
+
+
 
     @classmethod
     def print_test_purpose(cls, stepno, purpose):
@@ -277,8 +282,7 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
             # Validate BCD coding in first 4 bytes (8 nibbles), right justified, 0 padded
             result = result and all(nibble in string.digits for nibble in part_number)
             if not result:
-                logging.info("validate PN failed - PN: %s", part_number_record)
-                logging.info("validate PN failed - BCD part: %s", part_number)
+                logging.info("validate PN failed - BCD part: %s", part_number_record)
 
             # Validate version suffix
             suffix_chars = [chr(byte) for byte in bytes.fromhex(version_suffix_hex)]
@@ -292,8 +296,7 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
             # Last suffix character can not be space
             result = result and suffix_chars[2] != ' '
             if not result:
-                logging.info("validate PN failed - PN: %s", part_number_record)
-                logging.info("validate PN failed - suffix part: %s", version_suffix_hex)
+                logging.info("validate PN failed - suffix part: %s", part_number_record)
         return result
 
 
@@ -329,7 +332,6 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
                 pn_rec2 = pn_rec[pn_count*14:]
                 if len(pn_rec2) > 14:
                     pn_rec2 = pn_rec2[0:14]
-                logging.info("pn_rec2 calling: %s", pn_rec2)
                 result = result and self.validate_part_number_record(pn_rec2)
                 if result:
                     logging.info("Validate PN record ok: %s", pn_rec2)
@@ -372,50 +374,43 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
                 logging.info("Validate DID EDA0: pos_list %s", pos_list)
                 result = False
             else:
-                logging.warning("Unclear position of id in combined did response: %s %s",
-                                pos_first,
-                                pos_last)
-        logging.info("Validate PN/SN - pos_list generated: %s", pos_list)
-        if -1 in pos_list:
-            logging.info("Validate PN/SN: Not all IDs found in reply.")
-            logging.info("Validate PN/SN: Search for %s", pn_sn_list)
-            logging.info("Validate DID EDA0: pos_list %s", pos_list)
-            result = False
-        else:
-            logging.info("Validate PN/SN: All IDs found in reply. Validate format.")
-            #is there an index following? -1 if not
-            logging.info("Validate DID EDA0: rec_message %s", rec_message)
-            logging.info("Validate DID EDA0: pn_sn_list  %s", pn_sn_list)
-            for idx, pn_sn in enumerate(pn_sn_list):
-                pos_end = -1
-                logging.debug("Val DID EDA0: idx  %s", idx)
-                pos_start = pos_list[idx]
-                logging.debug("Val DID EDA0: pos_start  %s", pos_start)
-                # -1: index not found
-                if not pos_start == -1:
-                    next_pos = sorted(pos_list).index(pos_start) +1
-                    logging.debug("Val DID EDA0: next_pos  %s", next_pos)
-                    if not next_pos >= len(pos_list):
-                        pos_end = sorted(pos_list)[next_pos]
+                logging.info("Validate PN/SN: All IDs found in reply. Validate format.")
+                #is there an index following? -1 if not
+                logging.info("Validate DID EDA0: rec_message %s", rec_message)
+                logging.info("Validate DID EDA0: pn_sn_list  %s", pn_sn_list)
+                for idx, pn_sn in enumerate(pn_sn_list):
+                    pos_end = -1
+                    logging.debug("Val DID EDA0: idx  %s", idx)
+                    pos_start = pos_list[idx]
+                    logging.debug("Val DID EDA0: pos_start  %s", pos_start)
+                    # -1: index not found
+                    if not pos_start == -1:
+                        next_pos = sorted(pos_list).index(pos_start) +1
+                        logging.debug("Val DID EDA0: next_pos  %s", next_pos)
+                        if not next_pos >= len(pos_list):
+                            pos_end = sorted(pos_list)[next_pos]
+                        else:
+                            pos_end = -1
+                    logging.debug("rec_message: %s", rec_message)
+                    logging.debug("rec_message: pos_start %s", pos_start)
+                    logging.debug("rec_message: pos_end   %s", pos_end)
+                    if pos_end != -1:
+                        record = rec_message[pos_start+4: pos_end]
                     else:
-                        pos_end = -1
-                logging.info("rec_message: %s", rec_message)
-                logging.info("rec_message: pos_first %s", pos_first)
-                logging.info("rec_message: pos_end   %s", pos_end)
-                if pos_end != -1:
-                    record = rec_message[pos_first: pos_end]
-                else:
-                    record = rec_message[pos_first:]
+                        record = rec_message[pos_start+4:]
 
-                logging.info("rec_message: to check %s", record)
-                if pn_sn[1] == 'PN':
-                    result = self.validate_part_number_record(record)
-                elif pn_sn[1] == 'SN':
-                    result = self.validate_ecu_serial_number_record(record)
-                else:
-                    result = False
+                    logging.debug("rec_message: to check %s", record)
+                    if pn_sn[1] == 'PN':
+                        result = self.validate_part_number_records(record)
+                    elif pn_sn[1] == 'SN':
+                        result = self.validate_serial_number_records(record)
+                    elif pn_sn[1] == 'VIDCV':
+                        logging.info("Vendor ID, cluster version not validated   %s", record)
+                    else:
+                        result = False
         logging.debug("Validate PN/SN: result %s.", result)
         return result
+
 
     @staticmethod
     def pp_partnumber(i, title=''):
@@ -423,10 +418,11 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
         Pretty Print function support for part numbers
         """
         if not SupportTestODTB2.validate_part_number_record(i):
-            logging.error("Error: Invalid part number: %s %s", title, i)
+            logging.warning("Warning: Invalid part number: %s %s", title, i)
             return title + i
 
         return title + i[0:8] + bytes.fromhex(i[8:14]).decode('utf-8')
+
 
     def pp_combined_did_eda0(self, message, title=''):
         """
@@ -445,26 +441,27 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
             logging.warning("Message received: %s", message)
         return retval
 
-    def get_combined_did_eda0(self, message, title=''):
+
+    def get_combined_did_eda0(self, message, sddb_dict):
         """
         PrettyPrint Combined_DID EDA0:
         """
         pos = 0
-        retval = title
         if (not message.find('F120', pos) == -1) and (not message.find('F12E', pos) == -1):
-            retval = self.combined_did_eda0_becm_mode1_mode3(message)
+            retval = self.combined_did_eda0_becm_mode1_mode3(message, sddb_dict)
             return retval
 
         retval = "Unknown format of EDA0 message'\n"
         logging.warning("%s Message received: %s", retval, message)
 
         eda0_dict_wo_f12e: dict = {
-            'f120': 'Error',
-            'f12a': 'Error',
-            'f12b': 'Error',
-            'serial': 'Error'
+            'Application Diagnostic Database Part Number': '',
+            'ECU Core Assembly Part Number': '',
+            'ECU Delivery Assembly Part Number': '',
+            'ECU Serial Number': ''
         }
         return eda0_dict_wo_f12e
+
 
     def pp_combined_did_eda0_mep2(self, message, title=''):
         """
@@ -483,6 +480,7 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
             retval = "Unknown format of EDA0 message'\n"
             logging.warning("Message received: %s", message)
         return retval
+
 
     def pp_combined_did_eda0_becm_mode1_mode3(self, message, title=''):
         """
@@ -513,32 +511,33 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
                         + self.pp_ecu_serial_number(message[144:152]) + "'\n"
         return title + " " + retval
 
-    def combined_did_eda0_becm_mode1_mode3(self, message):
+
+    def combined_did_eda0_becm_mode1_mode3(self, message, sddb_dict):
         """
         Combined_DID EDA0. This function is for returning the actual values.
         Not pretty print them.
         """
-        eda0_dict_wo_f12e: dict = {
-            'f120': '',
-            'f12a': '',
-            'f12b': '',
-            'serial': ''
-        }
+        eda0_dict_wo_f12e: dict = {}
+
         pos1 = message.find('F120')
-        eda0_dict_wo_f12e["f120"] = self.pp_partnumber(message[pos1+4: pos1+18])
+        eda0_dict_wo_f12e['Application Diagnostic Database Part Number'] =\
+            self.pp_partnumber(message[pos1+4: pos1+18])
 
         pos1 = message.find('F12A', pos1+18)
-        eda0_dict_wo_f12e["f12a"] = self.pp_partnumber(message[pos1+4: pos1+18])
+        eda0_dict_wo_f12e['ECU Core Assembly Part Number'] =\
+            self.pp_partnumber(message[pos1+4: pos1+18])
 
         pos1 = message.find('F12B', pos1+18)
-        eda0_dict_wo_f12e["f12b"] = self.pp_partnumber(message[pos1+4: pos1+18])
+        eda0_dict_wo_f12e['ECU Delivery Assembly Part Number'] =\
+            self.pp_partnumber(message[pos1+4: pos1+18])
 
         # Combined DID F12E:
         f12e_dict = self.get_did_f12e(message[(message.find('F12E', pos1+18))
-                                              :(message.find('F12E', pos1+18)+76)])
-        ## ECU serial:
+                                              :(message.find('F12E', pos1+18)+76)], sddb_dict)
+        # ECU serial:
         pos1 = message.find('F18C', pos1+18)
-        eda0_dict_wo_f12e["serial"] = self.pp_ecu_serial_number(message[pos1+4: pos1+18])
+        eda0_dict_wo_f12e['ECU Serial Number'] =\
+            self.pp_ecu_serial_number(message[pos1+4: pos1+12])
 
         # Combining the dicts
         eda0_dict = {**eda0_dict_wo_f12e, **f12e_dict}
@@ -610,28 +609,29 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
                         + "'\n"
         return title + " " + retval
 
-    def get_did_f12e(self, message):
+
+    def get_did_f12e(self, payload, sddb_dict):
         """
         Returns DID F12E content in a dict.
         """
 
-        f12e_dict: dict = {
-            'amount': '',
-            'swlm': '',
-            'swp1': '',
-            'swp2': '',
-            'swce': '',
-            'structure_pn': ''
-        }
+        f12e_dict: dict = {}
 
-        pos = message.find('F12E')
-        f12e_dict["amount"] = message[pos+4:pos+6]
-        f12e_dict["swlm"] = self.pp_partnumber(message[pos+6:pos+20])
-        f12e_dict["swp1"] = self.pp_partnumber(message[pos+20:pos+34])
-        f12e_dict["swp2"] = self.pp_partnumber(message[pos+34:pos+48])
-        f12e_dict["swce"] = self.pp_partnumber(message[pos+48:pos+62])
-        f12e_dict["structure_pn"] = self.pp_partnumber(message[pos+62:pos+76])
+        for resp_item in sddb_dict['22F12E']:
+            name = resp_item.get('Name')
+            offset = resp_item.get('Offset')
+            size = resp_item.get('Size')
+
+            start = int(offset, HEX_BASE)*BYTE_SIZE
+            end = start+(int(size, HEX_BASE)*BYTE_SIZE)
+
+            if len(payload) >= end:
+                part_number = self.pp_partnumber(payload[start + DID_OFFSET:end + DID_OFFSET])
+                f12e_dict[name] = part_number
+            else:
+                raise RuntimeError('Payload is to short!')
         return f12e_dict
+
 
     def pp_did_f12e(self, message, title=''):
         """

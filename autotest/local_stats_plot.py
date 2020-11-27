@@ -3,6 +3,8 @@
 """ Create statistics on number of REQPRODs covered per day """
 
 import argparse
+import logging
+import sys
 import re
 import datetime
 import os
@@ -19,9 +21,9 @@ def parse_some_args():
     parser = argparse.ArgumentParser(
         description='Create plot with local test case coverage over time')
     parser.add_argument("--resultfolder", help="path to parent of log reports folders", type=str,
-        action='store', dest='resfolder', default="fake_test_result",)
+                        action='store', dest='resfolder', default="fake_test_result",)
     parser.add_argument("--outplot", help="name of the output file without extension", type=str,
-        action='store', dest='outplt', default="mysvggraph2")
+                        action='store', dest='outplt', default="mysvggraph2")
     ret_args = parser.parse_args()
     return ret_args
 
@@ -29,15 +31,13 @@ def get_req_cnt(folder_path):
     """ Return how many reqprods that has been tested per day """
     # For future: consider to merge this with parts from logs_to_html.py
     LOG_FILE_EXT = ".log"
-    req_set= set()
+    req_set = set()
     RE_REQPROD_ID = re.compile(r'\s*BSW_REQPROD_(?P<reqprod>\d+)_', flags=re.IGNORECASE)
     files = [file_name for file_name in os.listdir(folder_path)
-            if (isfile(join(folder_path, file_name)) and file_name.endswith(LOG_FILE_EXT))]
+             if (isfile(join(folder_path, file_name)) and file_name.endswith(LOG_FILE_EXT))]
     for file in files:
-        #print(file)
         re_match = RE_REQPROD_ID.match(file)
         if re_match:
-            #print(re_match.group('reqprod'))
             req_set.add(re_match.group('reqprod'))
     return req_set
 
@@ -46,15 +46,15 @@ def get_all_req_set(folder_path):
     """ Gather all stats fot the different days """
     RE_DATE = re.compile(r'Testrun_(?P<rundate>\d+)_', flags=re.IGNORECASE)
     day_run_dict = defaultdict(set)
-    log_folders = [ f.path for f in os.scandir(folder_path) if f.is_dir() ]
+    log_folders = [f.path for f in os.scandir(folder_path) if f.is_dir()]
     for log_folder in log_folders:
-        print(f'In the {log_folder}!!')
+        logging.debug('In the {%s}!!', log_folder)
         re_match_date = RE_DATE.search(log_folder)
         if re_match_date:
             testrun_set = get_req_cnt(log_folder)
             key_name = "A_" + str(re_match_date.group('rundate'))
             day_run_dict[key_name].update(testrun_set)
-    print(day_run_dict)
+    logging.debug(day_run_dict)
     return day_run_dict
 
 def create_stats_plot(plt_name, stat_sets):
@@ -82,6 +82,7 @@ def create_stats_plot(plt_name, stat_sets):
 
 def main(margs):
     """ Call the other functions from here """
+    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
     day_sets = get_all_req_set(margs.resfolder)
     create_stats_plot(margs.outplt, day_sets)
 

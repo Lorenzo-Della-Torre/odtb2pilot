@@ -1,64 +1,51 @@
 #!/bin/bash
 
-### token and pass created for that repo
+### token and pass created for tht repo
     TESTREPO=~/Repos/odtb2pilot
-### adopt ODTBPROJ to fit your local project setting
-###    ODTBPROJ=my_odtb_proj
-    ODTBPROJ=MEP2_SPA1
+	export PYTHONPATH=~/Repos/odtb2pilot/Py_testenv/:.
+    echo variables used in testrun:
+	echo TESTREPO: $TESTREPO
+	echo PYTHONPATH: $PYTHONPATH
+	echo PATH: $PATH
 
-    export ODTBPROJPARAM=$TESTREPO/projects/$ODTBPROJ
-    echo export ODTBPROJPARAM=$ODTBPROJPARAM
+	cd ~/testrun
+	[ ! -d VBF ] && mkdir VBF
+	rm -f VBF/*
+	cp ~/delivery/*.vbf VBF
+	cp ~/SBL/*.vbf VBF
 
-    export PYTHONPATH=$TESTREPO/:.
-    export PYTHONPATH=$TESTREPO/projects/project_template:$PYTHONPATH
-    echo export PYTHONPATH=$PYTHONPATH
+	[ ! -d VBF_Reqprod ] && mkdir VBF_Reqprod
+	rm -f VBF_Reqprod/*
+	cp $TESTREPO/autotest/VBF_Reqprod_SPA/* VBF_Reqprod
 
-### show environment variables used in automated testrun:
-    echo Variables used in testrun:
-    echo TESTREPO: $TESTREPO
-    echo ODTBPROJPARAM $ODTBPROJPARAM
-    echo PYTHONPATH: $PYTHONPATH
-    echo PATH: $PATH
+	[ ! -d parameters_yml ] && mkdir parameters_yml
+	rm -f parameters_yml/*
+	cp $TESTREPO/yml_parameter/MEP2_SPA1/* parameters_yml
 
-### VBF files update in $TESTREPO/projects/$ODTBPROJ
-    [ ! -d $TESTREPO/projects/$ODTBPROJ/VBF && mkdir $TESTREPO/projects/$ODTBPROJ/VBF
-    rm -f $TESTREPO/projects/$ODTBPROJ/VBF/*
-    cp ~/delivery/*.vbf $TESTREPO/projects/$ODTBPROJ/VBF
-    cp ~/SBL/*.vbf $TESTREPO/projects/$ODTBPROJ/VBF
+	### Generate catalog for logfiles and list of scripts to run
+	TESTRUN=$(date +Testrun_%Y%m%d_%H%M_BECM_BT)
+	[ ! -d $TESTRUN ] && mkdir $TESTRUN
+	echo "Results of testrun $TESTRUN:" >$TESTRUN\/Result.txt
 
+	### collect all testscripts
+	find $TESTREPO/test_cases  -name BSW_REQPROD_*.py >testscripts.lst
+	find $TESTREPO/test_cases_old -name BSW_REQPROD_*.py >>testscripts.lst
+	find $TESTREPO/manual_test -name BSW_REQPROD_*.py >>testscripts.lst
 
-### uncomment if VBF should be updated in local catalog:
-###    [ ! -d VBF ] && mkdir VBF
-###    rm -f VBF/*
-###    cp ~/delivery/*.vbf VBF
-###    cp ~/SBL/*.vbf VBF
-
-
-### Generate catalog for logfiles and list of scripts to run
-    TESTRUN=$(date +Testrun_%Y%m%d_%H%M_BECM_BT)
-    [ ! -d $TESTRUN ] && mkdir $TESTRUN
-    echo "Results of testrun $TESTRUN:" >$TESTRUN\/Result.txt
-
-### collect all testscript, chose subcatalog separately or all existing:
-###    find $TESTREPO/test_folder/automated/ -name BSW_REQPROD_*.py >testscripts.lst
-###    find $TESTREPO/test_folder/manual/ -name BSW_REQPROD_*.py >>testscripts.lst
-###    find $TESTREPO/test_folder/not_applicable/ -name BSW_REQPROD_*.py >>testscripts.lst
-    find $TESTREPO/test_folder/ -name BSW_REQPROD_*.py >testscripts.lst
-
-    ### Run all testscripts found:
-    while IFS= read -r line
-    do
-        echo $line | sed -E "s/(.*BSW_REQPROD)(.*)(\.py)/python3 \1\2\3 >$TESTRUN\/BSW_REQPROD\2.log/"
-        script2run_log=$(echo $line | sed -E "s/(.*BSW_REQPROD)(.*)(\.py)/BSW_REQPROD\2.log/")
-        python3 $TESTREPO/autotest/BSW_ECU_restore_SWDL.py
-        python3 $line >$TESTRUN/$script2run_log
-        ### add REQ_NR, scriptresult, filename to result
-        req_tested=$(echo $line | sed -E "s/(.*BSW_REQPROD_)([0-9]*)(_.*)/\2/")
-        testresult=$(tail -1 $TESTRUN/$script2run_log | sed -E "s/(Testcase result: )(.*)/\2/")
-        #echo "$req_tested $testresult $script2run_log"
-        echo "$req_tested $testresult $script2run_log" >>$TESTRUN\/Result.txt
-    done <testscripts.lst
+	### Run all testscripts found:
+	while IFS= read -r line
+	do
+		echo $line | sed -E "s/(.*BSW_REQPROD)(.*)(\.py)/python3 \1\2\3 >$TESTRUN\/BSW_REQPROD\2.log/"
+		script2run_log=$(echo $line | sed -E "s/(.*BSW_REQPROD)(.*)(\.py)/BSW_REQPROD\2.log/")
+		python3 $TESTREPO/autotest/BSW_ECU_restore_SWDL.py
+		python3 $line >$TESTRUN/$script2run_log
+		### add REQ_NR, scriptresult, filename to result
+		req_tested=$(echo $line | sed -E "s/(.*BSW_REQPROD_)([0-9]*)(_.*)/\2/")
+		testresult=$(tail -1 $TESTRUN/$script2run_log | sed -E "s/(Testcase result: )(.*)/\2/")
+		#echo "$req_tested $testresult $script2run_log"
+		echo "$req_tested $testresult $script2run_log" >>$TESTRUN\/Result.txt
+	done <testscripts.lst
 
     echo
-    date "+Test done. Time: %Y%m%d %H%M" 
-    date "+Test done. Time: %Y%m%d %H%M" >>$TESTRUN\/Result.txt
+	date "+Test done. Time: %Y%m%d %H%M" 
+	date "+Test done. Time: %Y%m%d %H%M" >>$TESTRUN\/Result.txt

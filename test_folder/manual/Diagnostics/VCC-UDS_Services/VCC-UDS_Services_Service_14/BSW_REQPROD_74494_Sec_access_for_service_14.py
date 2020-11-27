@@ -24,8 +24,8 @@
 """
 
 import logging
+import sys
 
-logging.basicConfig(filename='{}.log'.format((__file__)[-3]), format='%(asctime)s - %(message)s',
-                    level=logging.INFO)
+logging.basicConfig(format='%(asctime)s - %(message)s', stream=sys.stdout, level=logging.INFO)
 
 logging.info("Testcase result: Tested implicitly by REQPROD 76496")
