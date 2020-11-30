@@ -357,7 +357,10 @@ def create_folder(folder):
 
 def write_data(head, data, mode, string_bool=True):
     ''' Write content to outfile '''
-    new_path = os.path.join(parammod.OUTPUT_FOLDER, parammod.OUTPUT_TESTRUN_DATA_FN)
+    output_folder = os.environ.get('PWD') + '/' + paramod.OUTPUT_FOLDER
+    if not os.path.exists(output_folder):
+        os.mkdir(output_folder)         
+    new_path = os.path.join(output_folder, parammod.OUTPUT_TESTRUN_DATA_FN)
     with open(new_path, mode) as file:
         head = "\n" + head + " = "
         if string_bool:
