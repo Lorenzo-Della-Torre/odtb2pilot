@@ -1,10 +1,12 @@
 #!/bin/bash
 
+### TESTREPO and ODTBPROJ taken from environment variables
 ### token and pass created for tht repo
-TESTREPO=~/Repos/odtb2pilot
-ODTBPROJ=my_odtb_proj
+###TESTREPO=~/Repos/odtb2pilot
+###ODTBPROJ=my_odtb_proj
+###ODTBPROJ=MEP2_SPA2
 
-export ODTBPROJPATH=$TESTREPO/projects/$ODTBPATH
+export ODTBPROJPARAM=$TESTREPO/projects/$ODTBPATH
 echo export ODTBPROJPARAM=$ODTBPROJPARAM
 
 export PYTHONPATH=$TESTREPO/:.

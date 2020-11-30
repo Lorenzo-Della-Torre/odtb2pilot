@@ -5,12 +5,12 @@
 ### adopt ODTBPROJ to fit your local project setting
 ###    ODTBPROJ=my_odtb_proj
     ODTBPROJ=MEP2_SPA2
-
-    export ODTBPROJPARAM=$TESTREPO/projects/$ODTBPROJ
+    ODTBPROJPARAM=$TESTREPO/projects/$ODTBPROJ
     echo export ODTBPROJPARAM=$ODTBPROJPARAM
 
-    export PYTHONPATH=$TESTREPO/:.
-    export PYTHONPATH=$TESTREPO/projects/project_template:$PYTHONPATH
+    ###export PYTHONPATH=$TESTREPO/:.
+    ###export PYTHONPATH=$TESTREPO/projects/project_template:$PYTHONPATH
+    export PYTHONPATH=$TESTREPO:$ODTBPROJPARAM:.
     echo export PYTHONPATH=$PYTHONPATH
 
 ### show environment variables used in automated testrun:

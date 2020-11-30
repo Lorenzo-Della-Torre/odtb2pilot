@@ -1,0 +1,3 @@
+
+git_hash = "7c0b4e6cc7e96546b6368f54063eea7d84b1dd43"
+eda0_dict = {'Application Diagnostic Database Part Number': '32290001 AE', 'ECU Core Assembly Part Number': '12345678 AC', 'ECU Delivery Assembly Part Number': '12345678 AD', 'ECU Serial Number': '11223344', 'Total number of ECU Software Part Numbers': '03', 'SWLM - Application SW': '32290802CYI', 'SWP1 - Calibration parameter file': '99999999XXX', 'ECU Software Structure Partnumber': '00000000000000'}

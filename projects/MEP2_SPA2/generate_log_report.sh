@@ -1,10 +1,12 @@
 #!/bin/bash
 
+### TESTREPO and ODTBPROJ taken from environment variables
 ### token and pass created for tht repo
-TESTREPO=~/Repos/odtb2pilot
-ODTBPROJ=my_odtb_proj
+###TESTREPO=~/Repos/odtb2pilot
+###ODTBPROJ=my_odtb_proj
+###ODTBPROJ=MEP2_SPA2
 
-export ODTBPROJPATH=$TESTREPO/projects/$ODTBPATH
+export ODTBPROJPARAM=$TESTREPO/projects/$ODTBPATH
 echo export ODTBPROJPARAM=$ODTBPROJPARAM
 
 export PYTHONPATH=$TESTREPO/:.
@@ -22,5 +24,5 @@ cd ~/testrun
 # Generate testreport
 echo
 echo "Generate html-report for all scripts - Start"
-python3 $TESTREPO/projects/project_templates/automated_testrun/logs_to_html.py --logs ~/testrun --reqcsv $TESTREPO/autotest/req_bsw.csv --script_folder $TESTREPO/ --outfile index.html
+python3 $TESTREPO/projects/project_template/automated_testrun/logs_to_html.py --logs ~/testrun --reqcsv $TESTREPO/autotest/req_bsw.csv --script_folder $TESTREPO/ --outfile index.html
 echo "Generate html-report for all scripts - Done"
