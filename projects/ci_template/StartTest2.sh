@@ -11,6 +11,8 @@ rm -r ./testrun/Testrun_20*
 cd delivery
 rm -f *.vbf
 rm -f *.zip
+rm -f *.sddb
+rm -f *.dbc
 
 #curl -sS -u "$1" -o delivery.zip $3
 curl -sS -u "$1:$2" -o delivery.zip $3
@@ -25,6 +27,10 @@ then
 	echo "Delivery zip downloaded"
         unzip -p delivery.zip | busybox unzip - -j */output/[0-9]*.vbf
 	echo "VBF Files unzipped"
+        unzip -p delivery.zip | busybox unzip - -j */DBCfiles/*.dbc
+        echo "dbc File unzipped"
+        unzip -p delivery.zip | busybox unzip - -j */Sddb/*.sddb
+        echo "sddb File unzipped"
         cd ~/testrun
         rm -f VBF/*
         cp ~/delivery/*.vbf VBF
