@@ -7,6 +7,6 @@
     export ODTBPROJPARAM=$TESTREPO/projects/$ODTBPROJ/
     echo export ODTBPROJPARAM=$ODTBPROJPARAM
 
-    export PYTHONPATH=~/Repos/odtb2pilot/:.
+    export PYTHONPATH=$TESTREPO:.
     echo export PYTHONPATH=$PYTHONPATH
 
