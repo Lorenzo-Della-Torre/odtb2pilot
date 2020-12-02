@@ -1,32 +1,68 @@
-# Testscript ODTB2 MEPII
-# project:  BECM basetech MEPII
-# author:   hweiler (Hans-Klaus Weiler)
-# date:     2019-05-09
-# version:  1.0
-# reqprod:  76170
+"""
+Testscript ODTB2 MEPII
+project:  BECM basetech MEPII
+author:   hweiler (Hans-Klaus Weiler)
+date:     2019-05-09
+version:  1.0
+reqprod:  76170
 
-# author:   HWEILER (Hans-Klaus Weiler)
-# date:     2020-08-13
-# version:  1.1
-# changes:  update for YML support
+author:   HWEILER (Hans-Klaus Weiler)
+date:     2020-08-13
+version:  1.1
+changes:  update for YML support
 
-#inspired by https://grpc.io/docs/tutorials/basic/python.html
+author:   DHJELM (Daniel Hjelm)
+date:     2020-11-23
+version:  2
 
-# Copyright 2015 gRPC authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+title:
 
-"""The Python implementation of the gRPC route guide client."""
+    ReadDataByIdentifier (22) - dataIdentifier(-s) ; 2
+
+purpose:
+
+    It shall be possible to read data from all ECUs
+
+description:
+
+    The ECU shall support the service readDataByIdentifer with the data
+    parameter dataIdentifier(-s). The ECU shall implement the service
+    accordingly:
+
+    ### Supported sessions:
+
+    The ECU shall support Service readDataByIdentifer in:
+
+    - defaultSession
+    - extendedDiagnosticSession
+    - programmingSession, both primary and secondary bootloader
+
+    ### Response time:
+
+    Maximum response time for the service readDataByIdentifier (0x22) is 200
+    ms.
+
+    Effect on the ECU normal operation:
+
+    The service readDataByIdentifier (0x22) shall not affect the ECU’s ability
+    to execute non-diagnostic tasks.
+
+    ### Entry conditions:
+
+    The ECU shall not implement entry conditions for service
+    readDataByIdentifier (0x22).
+
+    ### Security access:
+
+    The ECU are allowed to protect the service ReadDataByIdentifier (0x22),
+    read by other than system supplier specific dataIdentifiers, by using the
+    service securityAccess (0x27) only if approved by Volvo Car Corporation.
+
+details:
+
+    This test verifies defaultSession mode.
+
+"""
 
 import time
 from datetime import datetime
