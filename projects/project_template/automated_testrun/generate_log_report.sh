@@ -6,14 +6,18 @@
 ###ODTBPROJ=my_odtb_proj
 ###ODTBPROJ=MEP2_SPA2
 
+echo
+echo Start: generate_log_report script
+echo parameter: TESTREPO: $TESTREPO
+echo parameter: ODTBPROJ: $ODTBPROJ
 export ODTBPROJPARAM=$TESTREPO/projects/$ODTBPROJ
-echo export ODTBPROJPARAM=$ODTBPROJPARAM
+echo ODTBPROJPARAM=$ODTBPROJPARAM
 
-export PYTHONPATH=$TESTREPO/:.
-export PYTHONPATH=$TESTREPO/projects/project_template:$PYTHONPATH
-echo export PYTHONPATH=$PYTHONPATH
+###export PYTHONPATH=$TESTREPO/:.
+###export PYTHONPATH=$TESTREPO/projects/project_template:$PYTHONPATH
+echo PYTHONPATH=$PYTHONPATH
 
-cd ~/testrun
+###cd ~/testrun
 
 # Copying files from Py_testenv to projects/odtb2/python/ where it can be found
 #cp -u $TESTREPO/Py_testenv/*.py ~/projects/odtb2/python/

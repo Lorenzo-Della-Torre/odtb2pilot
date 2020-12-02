@@ -1,16 +1,8 @@
 #!/bin/bash
 
-### token and pass created for that repo
-    TESTREPO=~/Repos/odtb2pilot
-### adopt ODTBPROJ to fit your local project setting
-###    ODTBPROJ=my_odtb_proj
-
-    export ODTBPROJPARAM=$TESTREPO/projects/$ODTBPROJ
+### TESTREPO and ODTBPRO taken from environment variables
+    ODTBPROJPARAM=$TESTREPO/projects/$ODTBPROJ
     echo export ODTBPROJPARAM=$ODTBPROJPARAM
-
-    export PYTHONPATH=$TESTREPO/:.
-    export PYTHONPATH=$TESTREPO/projects/project_template:$PYTHONPATH
-    echo export PYTHONPATH=$PYTHONPATH
 
 ### show environment variables used in automated testrun:
     echo Variables used in testrun:

@@ -357,7 +357,7 @@ def create_folder(folder):
 
 def write_data(head, data, mode, string_bool=True):
     ''' Write content to outfile '''
-    output_folder = os.environ.get('PWD') + '/' + paramod.OUTPUT_FOLDER
+    output_folder = os.environ.get('PWD') + '/' + parammod.OUTPUT_FOLDER
     if not os.path.exists(output_folder):
         os.mkdir(output_folder)         
     new_path = os.path.join(output_folder, parammod.OUTPUT_TESTRUN_DATA_FN)

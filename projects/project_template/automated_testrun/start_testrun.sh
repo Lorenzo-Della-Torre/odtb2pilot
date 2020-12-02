@@ -8,23 +8,30 @@ else
 	echo "Start automated testrun"
 
 	### token and pass created for tht repo
-	TESTREPO=~/Repos/odtb2pilot
-	cd $TESTREPO
+	export TESTREPO=~/Repos/odtb2pilot
+	export ODTBPROJ=my_project_to_use
+	export PYTHONPATH=$TESTREPO:$TESTREPO/projects/$ODTBPROJPARAM:.
+	echo TESTREPO: $TESTREPO
+	echo ODTBPROJ: $ODTBPROJ
+	echo PYTHONPATH: $PYTHONPATH
+
+        cd $TESTREPO
 	git pull
 	cd ~/testrun
 
 	# Execute test scripts
-	./auto_testscript.sh
+        $TESTREPO/projects/project_template/automated_testrun/auto_testscript.sh
 
 	# Generate did report
-	./generate_did_report.sh
+        $TESTREPO/projects/project_template/automated_testrun/generate_did_report.sh
 
 	# Generate test stats plot graph
-	./generate_plot_graph.sh
+        $TESTREPO/projects/project_template/automated_testrun/generate_plot_graph.sh
 
 	# Generate log report
-	./generate_log_report.sh
+        $TESTREPO/projects/project_template/automated_testrun/generate_log_report.sh
 	
 	echo
 	echo "All scripts executed. All html reports generated"
 fi
+
