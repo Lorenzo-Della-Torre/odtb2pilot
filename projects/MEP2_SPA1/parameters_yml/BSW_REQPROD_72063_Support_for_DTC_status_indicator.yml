@@ -1,0 +1,3 @@
+step_1:
+  payload: b'\x19\x06\x0B\x4A\x00\x30'
+  teststring: "0B4A00"
