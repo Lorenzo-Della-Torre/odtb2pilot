@@ -1,33 +1,75 @@
-# Testscript ODTB2 MEPII
-# project:  BECM basetech MEPII
-# author:   LDELLATO (Lorenzo Della Torre)
-# date:     2020-06-02
-# version:  1.1
-# reqprod:  76139 76140
+"""
+Testscript ODTB2 MEPII
+project:  BECM basetech MEPII
+author:   LDELLATO (Lorenzo Della Torre)
+date:     2020-06-02
+version:  1.1
+reqprod:  76139 76140
 
-# author:   HWEILER (Hans-Klaus Weiler)
-# date:     2020-07-08
-# version:  1.2
-# reqprod:  76139 76140
-# changes:  YML fixed, some timing fixed
+author:   HWEILER (Hans-Klaus Weiler)
+date:     2020-07-08
+version:  1.2
+reqprod:  76139 76140
+changes:  YML fixed, some timing fixed
 
-# #inspired by https://grpc.io/docs/tutorials/basic/python.html
-# Copyright 2015 gRPC authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+author:   DHJELM (Daniel Hjelm)
+date:     2020-11-23
+version:  4
 
-"""The Python implementation of the gRPC route guide client."""
+title:
 
+    ECUReset (11) ; 4
+
+purpose:
+
+    ECU reset is used in the SWDL process and may be useful when testing an ECU.
+
+description:
+
+    ## Purpose
+
+    ECU reset is used in the SWDL process and may be useful when testing an ECU.
+
+    ## Description
+
+    The ECU must support the service ECUReset. The ECU shall implement the
+    service accordingly:
+
+    ### Supported sessions:
+    The ECU shall support Service ECUReset in:
+
+    - defaultSession
+    - extendedDiagnosticSession
+    - programmingSession, both primary and secondary bootloader
+
+    ### Response time:
+
+    Maximum response time for the service ECUReset (0x11) is P2Server_max.
+
+    Effect on the ECU normal operation: The service ECUReset (0x11) is allowed
+    to affect the ECU’s ability to execute non-diagnostic tasks. The service is
+    only allowed to affect execution of the non-diagnostic tasks during the
+    execution of the diagnostic service. After the diagnostic service is
+    completed any effect on the non-diagnostic tasks is not allowed anymore
+    (normal operational functionality resumes).
+
+    ### Entry conditions:
+
+    Entry conditions for service ECUReset (0x11) are allowed only if approved
+    by Volvo Car Corporation.
+
+    If the ECU implement safety requirements with an ASIL higher than QM it
+    shall, in all situations when diagnostic services may violate any of those
+    safety requirements, reject the critical diagnostic service requests. Note
+    that if the ECU rejects such critical diagnostic service requests, this
+    requires an approval by Volvo Car Corporation.
+
+    ### Security access:
+
+    The ECU shall not protect service ECUReset by using the service
+    securityAccess (0x27).
+
+"""
 import time
 from datetime import datetime
 import sys
