@@ -28,5 +28,7 @@ echo PYTHONPATH=$PYTHONPATH
 # Generate testreport
 echo
 echo "Generate html-report for all scripts - Start"
-python3 $TESTREPO/projects/project_template/automated_testrun/logs_to_html.py --logs ~/testrun --reqcsv $TESTREPO/autotest/req_bsw.csv --script_folder $TESTREPO/ --outfile index.html
+echo "Take logs from: $PWD"
+echo "outfile generated in: $PWD"
+python3 $TESTREPO/projects/project_template/automated_testrun/logs_to_html.py --logs $PWD --reqcsv $ODTBPROJPARAM/req_bsw.csv --script_folder $TESTREPO/ --outfile $PWD/index.html
 echo "Generate html-report for all scripts - Done"

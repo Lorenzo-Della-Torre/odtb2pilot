@@ -197,8 +197,8 @@ def main(margs):
         wash_xml(temp_file_name, output_file_name)
         #print("Wait 10 seconds to inspect washed output file")
         #time.sleep(10)
-        logging.info("ENC change and washing done.")
-        print("ENC change and wahsing done.")
+        #logging.info("ENC change and washing done.")
+        print("ENC change and washing done.")
 
         # Read information from SDDB XML file, put in dicts
         pbl_dict, pbl_diag_part_num = parse_xml_did_info(output_file_name, 'PBL')
