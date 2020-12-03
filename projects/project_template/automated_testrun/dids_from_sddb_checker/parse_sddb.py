@@ -17,7 +17,6 @@ import pprint
 import ntpath
 from lxml import etree as ET
 import parameters as parammod
-import time
 
 #LOGGER = logging.getLogger(__name__)
 #LOGGER.setLevel(logging.DEBUG)
@@ -139,13 +138,8 @@ def change_encoding(input_file_name, output_file_name):
             line = firstline[firstline.find('<?xml version='):] 
             while line:
             ###for line in input_file:
-                #logging.info("line to wash: %s", line)
-                #print("line to wash: ", line)
                 line = bytes(line, 'utf-8').decode('latin1', 'ignore')
-                #logging.info("line filtered enc:  %s", line)
-                #print("line filtered enc:  ", line)
                 washed_file.write(line)
-                #time.sleep(1)
                 line = input_file.readline()
 
 def wash_xml(input_file_name, output_file_name):
@@ -156,8 +150,6 @@ def wash_xml(input_file_name, output_file_name):
                 line = line.replace('°C', 'degC')
                 line = line.replace('µC', 'uC')
                 line = line.replace(u'\xa0', u' ') #non-breaking space
-                #print("line wash_xml: ", line)
-                #time.sleep(1)
                 washed_file.write(line)
 
 def stringify(string):
@@ -186,19 +178,12 @@ def main(margs):
         output_file_name = '%s/%s%s.txt' % (parammod.OUTPUT_FOLDER, tmp_output_file_name, 'WASHED')
 
         # Read file, decode ugly character to pretty characters, then write it.
-        #logging.info("change encoding")
-        print("change encoding")
+        logging.info("parse_sddb: change encoding")
         change_encoding(margs.sddb, temp_file_name)
-        #print("Wait 10seconds to inspect output file encoding")
-        #time.sleep(10)
         # Remove unwanted characters
-        #logging.info("Wash xml")
-        print("Wash xml")
+        logging.info("parse_sddb: Wash xml")
         wash_xml(temp_file_name, output_file_name)
-        #print("Wait 10 seconds to inspect washed output file")
-        #time.sleep(10)
-        #logging.info("ENC change and washing done.")
-        print("ENC change and washing done.")
+        logging.info("parse_sddb: ENC change and washing done.")
 
         # Read information from SDDB XML file, put in dicts
         pbl_dict, pbl_diag_part_num = parse_xml_did_info(output_file_name, 'PBL')
