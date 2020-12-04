@@ -18,7 +18,6 @@ import ntpath
 from lxml import etree as ET
 import parameters as parammod
 
-
 #LOGGER = logging.getLogger(__name__)
 #LOGGER.setLevel(logging.DEBUG)
 
@@ -134,9 +133,14 @@ def change_encoding(input_file_name, output_file_name):
     """ Washing script to remove non utf-8 char, until CarCom has fixed their export. """
     with open(output_file_name, 'w+') as washed_file:
         with open(input_file_name, encoding='latin1') as input_file:
-            for line in input_file:
+            firstline = input_file.readline()
+### filter until '<?xml version='
+            line = firstline[firstline.find('<?xml version='):] 
+            while line:
+            ###for line in input_file:
                 line = bytes(line, 'utf-8').decode('latin1', 'ignore')
                 washed_file.write(line)
+                line = input_file.readline()
 
 def wash_xml(input_file_name, output_file_name):
     """ Washing script to remove non utf-8 char, until CarCom has fixed their export. """
@@ -170,12 +174,16 @@ def main(margs):
         # Supports both the ending .txt and .sddb
         tmp_output_file_name = input_file_name.replace(".txt", "_")
         tmp_output_file_name = input_file_name.replace(".sddb", "_")
+        temp_file_name = '%s/%s%s.temp' % (parammod.OUTPUT_FOLDER, tmp_output_file_name, 'WASHED')
         output_file_name = '%s/%s%s.txt' % (parammod.OUTPUT_FOLDER, tmp_output_file_name, 'WASHED')
 
         # Read file, decode ugly character to pretty characters, then write it.
-        change_encoding(margs.sddb, output_file_name)
+        logging.info("parse_sddb: change encoding")
+        change_encoding(margs.sddb, temp_file_name)
         # Remove unwanted characters
-        wash_xml(margs.sddb, output_file_name)
+        logging.info("parse_sddb: Wash xml")
+        wash_xml(temp_file_name, output_file_name)
+        logging.info("parse_sddb: ENC change and washing done.")
 
         # Read information from SDDB XML file, put in dicts
         pbl_dict, pbl_diag_part_num = parse_xml_did_info(output_file_name, 'PBL')
@@ -203,4 +211,5 @@ def main(margs):
 if __name__ == "__main__":
     # Boilerplate to launch the main function with the command line arguments.
     ARGS = parse_some_args()
+    logging.info("Arguments for reading SDDB: %s", ARGS)
     main(ARGS)
