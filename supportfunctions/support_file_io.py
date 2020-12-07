@@ -113,7 +113,7 @@ class SupportFileIO:
 
         if os.path.exists(odtb_proj_param + '/' + param_dir)\
             and os.path.isfile(odtb_proj_param + '/' + param_dir + '/' + f_name):
-            dir_file = param_dir + '/' + f_name
+            dir_file = odtb_proj_param + '/' + param_dir + '/' + f_name
         elif os.path.isfile(f_name):
             dir_file = f_name
         #no matching parameter file
