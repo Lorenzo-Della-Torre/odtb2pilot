@@ -27,23 +27,20 @@ import time
 from datetime import datetime
 import sys
 import logging
-import inspect
 
-import odtb_conf
-from support_can import SupportCAN, CanParam #, CanTestExtra
-from support_test_odtb2 import SupportTestODTB2
-from support_SBL import SupportSBL
-from support_sec_acc import SupportSecurityAccess
-from support_carcom import SupportCARCOM
+import ODTB_conf
+from supportfunctions.support_can import SupportCAN, CanParam #, CanTestExtra
+from supportfunctions.support_test_odtb2 import SupportTestODTB2
+from supportfunctions.support_SBL import SupportSBL
+from supportfunctions.support_sec_acc import SupportSecurityAccess
+from supportfunctions.support_carcom import SupportCARCOM
 
-from support_precondition import SupportPrecondition
-from support_postcondition import SupportPostcondition
-from support_service10 import SupportService10
-from support_service22 import SupportService22
-from support_service3e import SupportService3e
-from support_file_io import SupportFileIO
+from supportfunctions.support_precondition import SupportPrecondition
+from supportfunctions.support_postcondition import SupportPostcondition
+from supportfunctions.support_service10 import SupportService10
+from supportfunctions.support_service22 import SupportService22
+from supportfunctions.support_service3e import SupportService3e
 
-SIO = SupportFileIO
 SC = SupportCAN()
 S_CARCOM = SupportCARCOM()
 SUTE = SupportTestODTB2()
@@ -61,28 +58,24 @@ def run():
     """
     Run
     """
-    #logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.DEBUG)
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.DEBUG)
+    #logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
     # start logging
     # to be implemented
 
-    # where to connect to signal_broker
-    can_p: CanParam = {
-        'netstub': SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        'send': "Vcu1ToBecmFront1DiagReqFrame",
-        'receive': "BecmToVcu1Front1DiagResFrame",
-        'namespace': SC.nspace_lookup("Front1CANCfg0")
-        }
-    #Read YML parameter for current function (get it from stack)
-    logging.debug("Read YML for %s", str(inspect.stack()[0][3]))
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
-
     #can_p: CanParam = {
     #    "netstub" : SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT),\
-    #    "send" : "HvbmdpToHvbmUdsDiagRequestFrame",\
-    #    "receive" : "HvbmToHvbmdpUdsDiagResponseFrame",\
+    #    "send" : "Vcu1ToBecmFront1DiagReqFrame",\
+    #    "receive" : "BecmToVcu1Front1DiagResFrame",\
     #    "namespace" : SC.nspace_lookup("Front1CANCfg0")
     #    }
+    # where to connect to signal_broker
+    can_p: CanParam = {
+        "netstub" : SC.connect_to_signalbroker(ODTB_conf.ODTB2_DUT, ODTB_conf.ODTB2_PORT),\
+        "send" : "HvbmdpToHvbmUdsDiagRequestFrame",\
+        "receive" : "HvbmToHvbmdpUdsDiagResponseFrame",\
+        "namespace" : SC.nspace_lookup("Front1CANCfg0")
+        }
 
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
@@ -94,8 +87,8 @@ def run():
     # read VBF param when testscript is s started, if empty take default param
     #SSBL.get_vbf_files()
     timeout = 60
-    result = PREC.precondition(can_p, timeout)
-    #result = PREC.precondition_spa2(can_p, timeout)
+    #result = PREC.precondition(can_p, timeout)
+    result = PREC.precondition_spa2(can_p, timeout)
 
 
     ############################################
@@ -105,12 +98,21 @@ def run():
     # step1:
     # action:  Request read pressure sensor (DID FD35)
     # result:
-    step_no = 1
-    logging.info("Step%s: Read Pressure Sensor (DID FD35).", step_no)
+    logging.info("Step 1: Read Pressure Sensor.")
     result2, pressure = SE22.read_did_fd35_pressure_sensor(can_p, b'', '1')
     logging.info("Pressure returned: %s \n", pressure)
-    logging.info("Step%s, received frames: %s", step_no, SC.can_frames[can_p["receive"]])
-    logging.info("Step%s, received messages: %s", step_no, SC.can_messages[can_p["receive"]])
+    print("Step1, received frames: ", SC.can_frames[can_p["receive"]])
+    print("Step1, received messages: ", SC.can_messages[can_p["receive"]])
+    result = result2 and result
+
+    # step2:
+    # action:  Request read pressure sensor (DID 4A28)
+    # result:
+    logging.info("Step 1: Read Pressure Sensor.")
+    result2, pressure = SE22.read_did_4a28_pressure_sensor(can_p, b'', '2')
+    logging.info("Pressure returned: %s \n", pressure)
+    print("Step2, received frames: ", SC.can_frames[can_p["receive"]])
+    print("Step2, received messages: ", SC.can_messages[can_p["receive"]])
     result = result2 and result
 
     ############################################

@@ -30,18 +30,18 @@ import logging
 import inspect
 
 import odtb_conf
-from support_can import SupportCAN, CanParam #, CanTestExtra
-from support_test_odtb2 import SupportTestODTB2
-from support_SBL import SupportSBL
-from support_sec_acc import SupportSecurityAccess
-from support_carcom import SupportCARCOM
+from supportfunctions.support_can import SupportCAN, CanParam #, CanTestExtra
+from supportfunctions.support_test_odtb2 import SupportTestODTB2
+from supportfunctions.support_SBL import SupportSBL
+from supportfunctions.support_sec_acc import SupportSecurityAccess
+from supportfunctions.support_carcom import SupportCARCOM
 
-from support_precondition import SupportPrecondition
-from support_postcondition import SupportPostcondition
-from support_service10 import SupportService10
-from support_service22 import SupportService22
-from support_service3e import SupportService3e
-from support_file_io import SupportFileIO
+from supportfunctions.support_precondition import SupportPrecondition
+from supportfunctions.support_postcondition import SupportPostcondition
+from supportfunctions.support_service10 import SupportService10
+from supportfunctions.support_service22 import SupportService22
+from supportfunctions.support_service3e import SupportService3e
+from supportfunctions.support_file_io import SupportFileIO
 
 SIO = SupportFileIO
 SC = SupportCAN()
@@ -56,13 +56,37 @@ SE10 = SupportService10()
 SE22 = SupportService22()
 SE3E = SupportService3e()
 
+def step_1(can_p):
+    """
+    Teststep 1: Request read pressure sensor (DID FD35)
+    """
+    step_no = 1
+    did_pressure = b'\x4A\x28'
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'did_pressure')
+    did_pressure_new = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'did_pressure')
+    # don't set empty value if no replacement was found:
+    if did_pressure_new:
+        if type(did_pressure) != type(did_pressure_new):# pylint: disable=unidiomatic-typecheck
+            did_pressure = eval(did_pressure_new)# pylint: disable=eval-used
+        else:
+            did_pressure = did_pressure_new
+    else:
+        logging.info("Step%s did_pressure_new is empty. Discard.", step_no)
+    logging.info("Step%s: did_pressure after YML: %s", step_no, did_pressure.hex())
+
+    result, pressure = SE22.read_did_pressure_sensor(can_p, did_pressure, b'', '1')
+    logging.info("Pressure returned: %s \n", pressure)
+    logging.info("Step%s, received frames: %s", step_no, SC.can_frames[can_p["receive"]])
+    logging.info("Step%s, received messages: %s", step_no, SC.can_messages[can_p["receive"]])
+    return result
+
 
 def run():
     """
     Run
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.DEBUG)
-    #logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+    #logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.DEBUG)
+    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
     # start logging
     # to be implemented
 
@@ -103,24 +127,9 @@ def run():
     ############################################
 
     # step1:
-    # action:  Request read pressure sensor (DID FD35)
-    # result:
-    logging.info("Step 1: Read Pressure Sensor (DID FD35).")
-    result2, pressure = SE22.read_did_fd35_pressure_sensor(can_p, b'', '1')
-    logging.info("Pressure returned: %s \n", pressure)
-    print("Step1, received frames: ", SC.can_frames[can_p["receive"]])
-    print("Step1, received messages: ", SC.can_messages[can_p["receive"]])
-    result = result2 and result
-
-    # step2:
     # action:  Request read pressure sensor (DID 4A28)
     # result:
-    logging.info("Step 2: Read Pressure Sensor (DID 4A28).")
-    result2, pressure = SE22.read_did_4a28_pressure_sensor(can_p, b'', '2')
-    logging.info("Pressure returned: %s \n", pressure)
-    print("Step2, received frames: ", SC.can_frames[can_p["receive"]])
-    print("Step2, received messages: ", SC.can_messages[can_p["receive"]])
-    result = result2 and result
+    result = result and step_1(can_p)
 
     ############################################
     # postCondition

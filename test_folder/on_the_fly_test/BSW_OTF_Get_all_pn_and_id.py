@@ -29,17 +29,17 @@ import logging
 import inspect
 
 import odtb_conf
-from support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
-from support_test_odtb2 import SupportTestODTB2
-from support_SBL import SupportSBL
-from support_sec_acc import SupportSecurityAccess
+from supportfunctions.support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
+from supportfunctions.support_test_odtb2 import SupportTestODTB2
+from supportfunctions.support_SBL import SupportSBL
+from supportfunctions.support_sec_acc import SupportSecurityAccess
 
-from support_precondition import SupportPrecondition
-from support_service10 import SupportService10
-from support_service11 import SupportService11
-from support_service22 import SupportService22
-from support_carcom import SupportCARCOM
-from support_file_io import SupportFileIO
+from supportfunctions.support_precondition import SupportPrecondition
+from supportfunctions.support_service10 import SupportService10
+from supportfunctions.support_service11 import SupportService11
+from supportfunctions.support_service22 import SupportService22
+from supportfunctions.support_carcom import SupportCARCOM
+from supportfunctions.support_file_io import SupportFileIO
 
 SIO = SupportFileIO
 SC = SupportCAN()
@@ -408,13 +408,13 @@ def run():
         # action: Service22: F12E ECU Software Part Numbers
         # result: BECM sends requested IDs
         #result = result and step_7(can_p)
-        
+
         # F12E only defined in MEP2 PBL
         step_7(can_p)
 
         # step 8:
         # action: activate SBL
-        # result: 
+        # result:
         result = result and step_8(can_p)
 
         # step 9:
