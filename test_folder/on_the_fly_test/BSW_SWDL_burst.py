@@ -33,15 +33,15 @@ import logging
 import inspect
 
 import odtb_conf
-from support_can import SupportCAN, CanParam
-from support_test_odtb2 import SupportTestODTB2
-from support_SBL import SupportSBL
-from support_sec_acc import SupportSecurityAccess
-from support_file_io import SupportFileIO
+from supportfunctions.support_can import SupportCAN, CanParam
+from supportfunctions.support_test_odtb2 import SupportTestODTB2
+from supportfunctions.support_SBL import SupportSBL
+from supportfunctions.support_sec_acc import SupportSecurityAccess
+from supportfunctions.support_file_io import SupportFileIO
 
-from support_precondition import SupportPrecondition
-from support_service11 import SupportService11
-from support_service22 import SupportService22
+from supportfunctions.support_precondition import SupportPrecondition
+from supportfunctions.support_service11 import SupportService11
+from supportfunctions.support_service22 import SupportService22
 
 SIO = SupportFileIO
 SC = SupportCAN()

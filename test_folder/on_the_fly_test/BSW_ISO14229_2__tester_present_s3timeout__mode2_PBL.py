@@ -29,17 +29,17 @@ import sys
 import logging
 
 import ODTB_conf
-from support_can import SupportCAN, CanParam #, CanTestExtra
-from support_test_odtb2 import SupportTestODTB2
-from support_SBL import SupportSBL
-from support_sec_acc import SupportSecurityAccess
-from support_carcom import SupportCARCOM
+from supportfunctions.support_can import SupportCAN, CanParam #, CanTestExtra
+from supportfunctions.support_test_odtb2 import SupportTestODTB2
+from supportfunctions.support_SBL import SupportSBL
+from supportfunctions.support_sec_acc import SupportSecurityAccess
+from supportfunctions.support_carcom import SupportCARCOM
 
-from support_precondition import SupportPrecondition
-from support_postcondition import SupportPostcondition
-from support_service10 import SupportService10
-from support_service22 import SupportService22
-from support_service3e import SupportService3e
+from supportfunctions.support_precondition import SupportPrecondition
+from supportfunctions.support_postcondition import SupportPostcondition
+from supportfunctions.support_service10 import SupportService10
+from supportfunctions.support_service22 import SupportService22
+from supportfunctions.support_service3e import SupportService3e
 
 SC = SupportCAN()
 S_CARCOM = SupportCARCOM()
@@ -54,7 +54,7 @@ SE22 = SupportService22()
 SE3E = SupportService3e()
 
 
-def run():
+def run():# pylint: disable=too-many-statements
     """
     Run
     """

@@ -30,13 +30,12 @@ import inspect
 import sys
 import time
 
-from support_precondition import SupportPrecondition
-from support_postcondition import SupportPostcondition
-from support_can import SupportCAN, CanParam
-from support_file_io import SupportFileIO
-from support_test_odtb2 import SupportTestODTB2
-
 import odtb_conf
+from supportfunctions.support_precondition import SupportPrecondition
+from supportfunctions.support_postcondition import SupportPostcondition
+from supportfunctions.support_can import SupportCAN, CanParam
+from supportfunctions.support_file_io import SupportFileIO
+from supportfunctions.support_test_odtb2 import SupportTestODTB2
 
 PREC = SupportPrecondition()
 POST = SupportPostcondition()

@@ -1,7 +1,7 @@
 # Testscript ODTB2 MEPII
 # project:  BECM basetech MEPII
 # author:   LDELLATO (Lorenzo Della Torre)
-# date:     2020-03-31
+# date:     2020-06-05
 # version:  1.1
 # reqprod:  397438
 
@@ -29,17 +29,17 @@ import sys
 import logging
 
 import ODTB_conf
-from support_can import SupportCAN, CanParam #, CanTestExtra
-from support_test_odtb2 import SupportTestODTB2
-from support_SBL import SupportSBL
-from support_sec_acc import SupportSecurityAccess
-from support_carcom import SupportCARCOM
+from supportfunctions.support_can import SupportCAN, CanParam #, CanTestExtra
+from supportfunctions.support_test_odtb2 import SupportTestODTB2
+from supportfunctions.support_SBL import SupportSBL
+from supportfunctions.support_sec_acc import SupportSecurityAccess
+from supportfunctions.support_carcom import SupportCARCOM
 
-from support_precondition import SupportPrecondition
-from support_postcondition import SupportPostcondition
-from support_service10 import SupportService10
-from support_service22 import SupportService22
-from support_service3e import SupportService3e
+from supportfunctions.support_precondition import SupportPrecondition
+from supportfunctions.support_postcondition import SupportPostcondition
+from supportfunctions.support_service10 import SupportService10
+from supportfunctions.support_service22 import SupportService22
+from supportfunctions.support_service3e import SupportService3e
 
 SC = SupportCAN()
 S_CARCOM = SupportCARCOM()
@@ -54,7 +54,7 @@ SE22 = SupportService22()
 SE3E = SupportService3e()
 
 
-def run():
+def run():# pylint: disable=too-many-statements
     """
     Run
     """
@@ -96,7 +96,7 @@ def run():
 
     # read VBF param when testscript is s started, if empty take default param
     SSBL.get_vbf_files()
-    timeout = 200
+    timeout = 60
     result = PREC.precondition(can_p, timeout)
 
 
@@ -113,65 +113,60 @@ def run():
     # step2:
     # action:
     # result:
-    logging.info("Step 2: Request change to mode2 (programming session).")
-    result = result and SE10.diagnostic_session_control_mode2(can_p, '2')
+    logging.info("Step 2: Request change to mode3 (extended session).")
+    result = result and SE10.diagnostic_session_control_mode3(can_p, '2')
     #erase = step_2()
 
     # step3:
     # action:
     # result:
     logging.info("Step 3: Verify ECU change to requested session mode.")
-    result = result and SE22.read_did_f186(can_p, b'\x02', '3')
+    result = result and SE22.read_did_f186(can_p, b'\x03', '3')
 
-    logging.info("Step 4: DL and activate SBL.")
-    result = SSBL.sbl_activation(can_p, 4, "DL and activate SBL")
-    time.sleep(1)
-    
-    logging.info("Step 5: Request Complete ECU part/serial numbers (EDA0).")
+
+    logging.info("Step 4: Request Complete ECU part/serial numbers (EDA0).")
     result = SE22.read_did_eda0(can_p)
     message = SC.can_messages[can_p["receive"]][0][2]
     logging.info("Message to analyse: %s", message)
-    if (not message.find('F122') == -1) and (not message.find('F124') == -1):
-        logging.info("Step 5: SBL Diagnostic Database Part Number found in message.")
-        logging.info("Step 5: SBL SW_part_number found in message.")
-        SUTE.pp_combined_did_eda0_sbl(message, "EDA0 for SBL:\n")
-    #if (not message.find('F121') == -1) and (not message.find('F125') == -1):
-    #    SUTE.pp_combined_did_eda0_sbl(message, "EDA0 for PBL:\n")
+    if (not message.find('F120') == -1) and (not message.find('F12E') == -1):
+        logging.info("Step 4: Application Diagnostic Database Part Number found in message.")
+        logging.info("Step 4: ECU Software Part Numbers found in message.")
+        SUTE.pp_combined_did_eda0_becm_mode1_mode3(message, "EDA0 for mode1/mode3:\n")
     else:
         logging.info("Step 4: Complete ECU part/serial numbers (EDA0)"\
                      "did not give expected result.")
         result = False
 
-    # step6:
+    # step5:
     # action: don't send a request until timeout occured
     # result:
-    logging.info("Step 6: Wait longer than timeout for staying in current mode.")
-    logging.info("Step 6: Tester present sent, but no request to ECU.")
+    logging.info("Step 5: Wait longer than timeout for staying in current mode.")
+    logging.info("Step 5: Tester present sent, but no request to ECU.")
     time.sleep(6)
+
+    # step6:
+    # action: Verify ECU is still in mode extended session
+    # result:
+    logging.info("Step 5: Verify ECU did not change session mode.")
+    result = result and SE22.read_did_f186(can_p, b'\x03', '6')
 
     # step7:
-    # action: Verify ECU is still in mode prog session
-    # result:
-    logging.info("Step 7: Verify ECU did not change session mode.")
-    result = result and SE22.read_did_f186(can_p, b'\x02', '6')
-
-    # step8:
     # action: stop sending tester present
     # result:
-    logging.info("Step 8: stop sending tester present.")
+    logging.info("Step 7: stop sending tester present.")
     SE3E.stop_periodic_tp_zero_suppress_prmib()
 
-    # step9:
+    # step8:
     # action: wait longer than timeout
     # result:
-    logging.info("Step 9: Wait longer than timeout for staying in current mode.")
-    logging.info("Step 9: Tester present not sent, no request to ECU as before.")
-    time.sleep(6)
+    logging.info("Step 8: Wait longer than timeout for staying in current mode.")
+    logging.info("Step 8: Tester present not sent, no request to ECU as before.")
+    time.sleep(8)
 
-    # step10:
+    # step9:
     # action: verify ECU changed to default
     # result:
-    logging.info("Step 10: Verify ECU changed to default session.")
+    logging.info("Step 8: Verify ECU changed to default session.")
     result = result and SE22.read_did_f186(can_p, b'\x01', '9')
 
     ############################################
