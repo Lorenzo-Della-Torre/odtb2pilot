@@ -156,6 +156,7 @@ class SupportFileIO:
             logging.warn("Could not open parameter file for testscript\n")
             logging.info("Parameter path: %s", param_dir)
             logging.info("Parameter file: %s", f_name)
+            logging.info("path+Parameter testscript file: %s", dir_file)
             #sys.exit(1)
             #sys.exit is to hard, skip reading parameter, don't exit python
             file_par_open = False

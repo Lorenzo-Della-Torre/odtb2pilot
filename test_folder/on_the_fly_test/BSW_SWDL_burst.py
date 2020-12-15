@@ -60,7 +60,12 @@ def step_1(can_p: CanParam):
     """
     stepno = 1
     purpose = "Download and Activation of SBL"
+    fixed_key = '0102030405'
+    new_fixed_key = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'fixed_key')
+    if new_fixed_key != '':
+        fixed_key = new_fixed_key
     result = SSBL.sbl_activation(can_p,
+                                 fixed_key,
                                  stepno, purpose)
     return result
 

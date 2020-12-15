@@ -369,7 +369,9 @@ class SupportSBL:
 
 
     # Support Function for Flashing and activate Secondary Bootloader from Default session
-    def sbl_activation_def(self, can_p: CanParam, stepno='',\
+    def sbl_activation_def(self, can_p: CanParam,\
+                           fixed_key='0102030405',\
+                           stepno='',\
                            purpose="sbl_activation_default/ext mode"):
         """
         function used for BECM in Default or Extended mode
@@ -388,12 +390,14 @@ class SupportSBL:
 
         # Verify Session changed
         SE22.read_did_f186(can_p, dsession=b'\x02')
-        result = result and self.sbl_activation_prog(can_p, stepno, purpose)
+        result = result and self.sbl_activation_prog(can_p, fixed_key, stepno, purpose)
         return result
 
 
     # Support Function for Flashing and activate Secondary Bootloader from Programming session
-    def sbl_activation_prog(self, can_p: CanParam, stepno='',\
+    def sbl_activation_prog(self, can_p: CanParam,\
+                            fixed_key='0102030405',\
+                            stepno='',\
                             purpose="sbl_activation_prog"):
         """
         Function used for BECM in forced Programming mode
@@ -404,7 +408,9 @@ class SupportSBL:
         pos = message.find('EDA0')
         if (not message.find('F121', pos) == -1) and (not message.find('F125', pos) == -1):
             # Security Access Request SID
-            result = result and SSA.activation_security_access(can_p, stepno, purpose)
+            result = result and SSA.activation_security_access(can_p,\
+                                                               fixed_key,\
+                                                               stepno, purpose)
 
             # SBL Download
             tresult, vbf_sbl_header = self.sbl_download(can_p, self._sbl, stepno)
@@ -420,7 +426,8 @@ class SupportSBL:
 
 
     # Support Function to select Support functions to use for activating SBL based on actual mode
-    def sbl_activation(self, can_p: CanParam, stepno='', purpose=""):
+    def sbl_activation(self, can_p: CanParam,\
+                       fixed_key='0102030405', stepno='', purpose=""):
         """
         Function used to activate the Secondary Bootloader
         """
@@ -437,9 +444,9 @@ class SupportSBL:
         #if mode1/mode3 change to mode2 (prog), then dl/activate SBL
         #if mode2 already dl/activate SBL direct
             if ('62F18601' in rec_messages) or ('62F18603' in rec_messages):
-                result = self.sbl_activation_def(can_p, stepno, purpose)
+                result = self.sbl_activation_def(can_p, fixed_key, stepno, purpose)
             elif '62F18602' in rec_messages:
-                result = self.sbl_activation_prog(can_p, stepno, purpose)
+                result = self.sbl_activation_prog(can_p, fixed_key, stepno, purpose)
             else:
                 logging.info("error message: %s\n", SC.can_messages[can_p["receive"]])
                 result = False
