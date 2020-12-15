@@ -377,12 +377,12 @@ def run():
         # step 1:
         # action: verify combined did EDA0 in default session
         # result: BECM sends positive reply with PN as serial numbers as expected
-        result = SE22.read_did_eda0(can_p, '1')
+        result = SE22.read_did_eda0(can_p, stepno='1')
 
         # step 2:
         # action: Request PBL PN while in Mode 1
         # result: BECM sends requested PN
-        result = result and step_2(can_p)
+        result = step_2(can_p) and result
 
         # step 3:
         # action: SE22: AUTOSAR BSW Vendor IDs and Cluster Versions
@@ -392,35 +392,35 @@ def run():
         # step 4:
         # action: Switch to programming mode
         # result: BECM sends positive reply
-        result = result and SE10.diagnostic_session_control_mode2(can_p, stepno=4)
+        result = SE10.diagnostic_session_control_mode2(can_p, stepno=4) and result
 
         # step 5:
         # action: request_did_eda0
         # result: BECM sends requested IDs
-        result = result and SE22.read_did_eda0(can_p, '5')
+        result = SE22.read_did_eda0(can_p, stepno='5') and result
 
         # step 6:
         # action: ervice22: F12C ECU Software Structure Part Number
         # result: BECM sends requested IDs
-        result = result and step_6(can_p)
+        result = step_6(can_p) and result
 
         # step 7:
         # action: Service22: F12E ECU Software Part Numbers
         # result: BECM sends requested IDs
-        #result = result and step_7(can_p)
+        result = step_7(can_p) and result
 
         # F12E only defined in MEP2 PBL
-        step_7(can_p)
+        #step_7(can_p)
 
         # step 8:
         # action: activate SBL
         # result:
-        result = result and step_8(can_p)
+        result = step_8(can_p) and result
 
         # step 9:
         # action: request_did_eda0
         # result: BECM sends requested IDs
-        result = result and SE22.read_did_eda0(can_p, '9')
+        result = SE22.read_did_eda0(can_p, stepno='9') and result
 
 
         # Next steps left commented out:
@@ -429,22 +429,22 @@ def run():
         # step 10:
         # action: F121 Primary Bootloader Diagnostic Database Part Number
         # result: BECM sends requested PN
-        result = result and step_10(can_p)
+        result = step_10(can_p) and result
 
         # step 11:
         # action: F125 Primary Bootloader Software Part Number
         # result:
-        result = result and step_11(can_p)
+        result = step_11(can_p) and result
 
         # step 12:
         # action: Service22: F12C ECU Software Structure Part Number
         # result:
-        result = result and step_12(can_p)
+        result = step_12(can_p) and result
 
         # step 13:
         # action: F12E ECU Software Part Numbers
         # result:
-        #result = result and step_13(can_p)
+        result = step_13(can_p) and result
 
         # F12E only defined in MEP2 SBL
         step_13(can_p)
