@@ -62,7 +62,7 @@ def step_1(can_p):
     Change delay to reply to FF: delay < 1000 ms
     """
     step_no = 1
-    purpose = "send CF with with CF delay < 1000 ms"
+    purpose = "set Frame Control delay < 1000 ms"
     result = True
     SUTE.print_test_purpose(step_no, purpose)
 
@@ -72,24 +72,25 @@ def step_1(can_p):
         "separation_time": 0,
         "frame_control_delay": 950,
         "frame_control_flag": 48,
-        "frame_control_auto": False
+        "frame_control_auto": True
         }
-    SC.change_mf_fc(can_p["send"], can_mf)
+    #SC.change_mf_fc(can_p["send"], can_mf)
+    SC.change_mf_fc(can_p["receive"], can_mf)
     return result
 
 def step_2(can_p):
     """
-    Teststep 2: Send multi frame request DIDs with delay in CF < 1000ms
+    Teststep 2: Send multi frame request DIDs with FC delay < 1000ms
     """
     result = True
     cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("ReadDataByIdentifier",
-                                                         b'\xDD\x02\xDD\x0A\xDD\x0C\x49\x47', b''),
+                                                         b'\xDD\x02\xDD\x0A\xDD\x0C\xF1\x86', b''),
                         "extra" : ''
                        }
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
 
     etp: CanTestExtra = {"step_no": 2,
-                         "purpose": "Send multi frame request DIDs with delay in CF < 1000ms",
+                         "purpose": "Send multi frame request DIDs with FC delay < 1000ms",
                          "timeout": 1,
                          "min_no_messages": -1,
                          "max_no_messages": -1
@@ -111,9 +112,9 @@ def step_2(can_p):
     result = result and 'DD0C' in SC.can_messages[can_p["receive"]][0][2]
     if not result:
         logging.info("Result after test DD0C: %s", result)
-    result = result and '4947' in SC.can_messages[can_p["receive"]][0][2]
+    result = result and 'F186' in SC.can_messages[can_p["receive"]][0][2]
     if not result:
-        logging.info("Result after test 4947: %s", result)
+        logging.info("Result after test F186: %s", result)
 
     logging.info("Step%s teststatus: %s \n", etp["step_no"], result)
     logging.info("Step %s: Result teststep: %s \n", etp["step_no"], result)
@@ -133,14 +134,15 @@ def step_3(can_p):
         "separation_time": 0,
         "frame_control_delay": 1050,
         "frame_control_flag": 48,
-        "frame_control_auto": False
+        "frame_control_auto": True
         }
-    SC.change_mf_fc(can_p["send"], can_mf)
+    #SC.change_mf_fc(can_p["send"], can_mf)
+    SC.change_mf_fc(can_p["receive"], can_mf)
     return result
 
 def step_4(can_p):
     """
-    Teststep 4: Send multi frame request DIDs with delay in CF < 1000ms
+    Teststep 4: Send multi frame request DIDs with FC delay > 1000ms
     """
     cpay: CanPayload = {
         "payload": SC_CARCOM.can_m_send("ReadDataByIdentifier",
@@ -149,7 +151,7 @@ def step_4(can_p):
         }
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
     etp: CanTestExtra = {"step_no": 4,
-                         "purpose": "Send multi frame request DIDs with delay in CF > 1000ms",
+                         "purpose": "Send multi frame request DIDs with FC delay > 1000ms",
                          "timeout": 1,
                          "min_no_messages": -1,
                          "max_no_messages": -1
@@ -182,7 +184,7 @@ def step_5(can_p):
         "separation_time": 0,
         "frame_control_delay": 0,
         "frame_control_flag": 48,
-        "frame_control_auto": False
+        "frame_control_auto": True
         }
 
     SUTE.print_test_purpose(stepno, purpose)
