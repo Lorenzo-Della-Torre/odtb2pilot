@@ -62,8 +62,16 @@ def step_1(can_p: CanParam):
     purpose = "Download and Activation of SBL"
     fixed_key = '0102030405'
     new_fixed_key = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'fixed_key')
-    if new_fixed_key != '':
-        fixed_key = new_fixed_key
+    # don't set empty value if no replacement was found:
+    if new_fixed_key:
+        if type(fixed_key) != type(new_fixed_key):# pylint: disable=unidiomatic-typecheck
+            fixed_key = eval(new_fixed_key)# pylint: disable=eval-used
+        else:
+            fixed_key = new_fixed_key
+    else:
+        logging.info("Step%s new_fixed_key is empty. Discard.", stepno)
+    logging.info("Step%s: fixed_key after YML: %s", stepno, fixed_key.hex())
+
     result = SSBL.sbl_activation(can_p,
                                  fixed_key,
                                  stepno, purpose)
@@ -75,8 +83,13 @@ def step_2(can_p: CanParam):
     """
     stepno = 2
     purpose = "ESS Software Part Download"
-    result = SSBL.sw_part_download(can_p, SSBL.get_ess_filename(),
-                                   stepno, purpose)
+    # Some ECU like HLCM don't have ESS vbf file
+    # if no ESS file present: skip download
+    if SSBL.get_ess_filename():
+        result = SSBL.sw_part_download(can_p, SSBL.get_ess_filename(),
+                                       stepno, purpose)
+    else:
+        result = True
     return result
 
 def step_3(can_p: CanParam):

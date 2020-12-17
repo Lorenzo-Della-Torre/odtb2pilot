@@ -43,12 +43,14 @@ import sys
 import glob
 from typing import Dict
 import traceback
+import inspect
 
 from supportfunctions.support_carcom import SupportCARCOM
 from supportfunctions.support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
 from supportfunctions.support_sec_acc import SupportSecurityAccess
 from supportfunctions.support_LZSS import LzssEncoder
+from supportfunctions.support_file_io import SupportFileIO
 from supportfunctions.support_service10 import SupportService10
 from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_service31 import SupportService31
@@ -56,6 +58,7 @@ from supportfunctions.support_service34 import SupportService34
 from supportfunctions.support_service36 import SupportService36
 from supportfunctions.support_service37 import SupportService37
 
+SIO = SupportFileIO
 SC = SupportCAN()
 S_CARCOM = SupportCARCOM()
 SUTE = SupportTestODTB2()
@@ -143,7 +146,21 @@ class SupportSBL:
         print filenames used for SWDL
         """
         result = True
-        if (len(self._sbl) == 0) or (len(self._ess) == 0) or (len(self._df) == 0):
+        # Some ECU like HLCM don't include ESS vbf
+        # if so, state that in project or testscript parameters (yml file)
+        ess_needed = True
+        new_ess_needed = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'ess_needed')
+        if new_ess_needed:
+            if type(ess_needed) != type(new_ess_needed):# pylint: disable=unidiomatic-typecheck
+                ess_needed = eval(new_ess_needed)# pylint: disable=eval-used
+            else:
+                ess_needed = new_ess_needed
+        else:
+            logging.info("Support_SBL: new_ess_needed is empty. Leave True.")
+        logging.info("Support_SBL: ess_needed after YML: %s", ess_needed.hex())
+
+        if (len(self._sbl) == 0) or\
+            (ess_needed and (len(self._ess) == 0)) or (len(self._df) == 0):
             logging.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             logging.info("!!!!! VBF files not as expected / incomplete! !!!!!")
             logging.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
@@ -154,7 +171,8 @@ class SupportSBL:
         logging.info("SBL:  %s", self._sbl)
         logging.info("ESS: %s", self._ess)
         logging.info("DF: %s", self._df)
-        if (len(self._sbl) == 0) or (len(self._ess) == 0) or (len(self._df) == 0):
+        if (len(self._sbl) == 0) or\
+            (ess_needed and (len(self._ess) == 0)) or (len(self._df) == 0):
             logging.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             logging.info("!!!!! VBF files not as expected / incomplete! !!!!!")
             logging.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
