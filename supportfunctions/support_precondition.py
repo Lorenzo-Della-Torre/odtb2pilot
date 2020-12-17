@@ -61,7 +61,7 @@ class SupportPrecondition:
             "send" : True,
             "id" : "MvcmFront1NMFr",
             "nspace" : can_p["namespace"].name,
-            "frame" : b'\x00\x40\xFF\xFF\xFF\xFF\xFF\xFF',
+            "frame" : b'\x1A\x40\xC3\xFF\x01\x00\x00\x00',
             "intervall" : 0.4
             }
         #Read current function name from stack:
@@ -163,7 +163,7 @@ class SupportPrecondition:
             "send" : True,
             "id" : "MvcmFront1NMFr",
             "nspace" : can_p["namespace"].name,
-            "frame" : b'\x00\x40\xFF\xFF\xFF\xFF\xFF\xFF',
+            "frame" : b'\x1A\x40\xC3\xFF\x01\x00\x00\x00',
             "intervall" : 0.4
             }
         #Read current function name from stack:
