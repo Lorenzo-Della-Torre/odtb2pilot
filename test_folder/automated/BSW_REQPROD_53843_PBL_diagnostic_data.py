@@ -37,8 +37,8 @@ import argparse
 
 import odtb_conf
 
-from output.did_dict import sddb_pbl_did_dict
-from output.did_dict import pbl_diag_part_num
+from build.did import pbl_did_dict
+from build.did import pbl_diag_part_num
 
 from supportfunctions.support_can import SupportCAN, CanParam, CanTestExtra, CanPayload
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
@@ -151,10 +151,10 @@ def step_6(can_p):
                                  "requestOutOfRange (31)": 0}
     result_list = list()
     did_counter = 0
-    stepresult = len(sddb_pbl_did_dict) > 0
-    logging.info("Step %s: DID:s in dictionary: %s", stepno, len(sddb_pbl_did_dict))
+    stepresult = len(pbl_did_dict) > 0
+    logging.info("Step %s: DID:s in dictionary: %s", stepno, len(pbl_did_dict))
 
-    for did_dict_from_file_values in sddb_pbl_did_dict.values():
+    for did_dict_from_file_values in pbl_did_dict.values():
         did_counter += 1
         if did_counter > MAX_NO_OF_DIDS:
             logging.info("MAX_NO_OF_DIDS reached: %s", MAX_NO_OF_DIDS)
@@ -279,8 +279,8 @@ def run():
         # step 3:
         # action: Security Access Request SID
         # result: ECU sends positive reply
-        result = result and SSA.activation_security_access(can_p, 3,
-                                                           "Security Access Request SID")
+        result = result and SSA.activation_security_access(
+            can_p, "0102030405", 3, "Security Access Request SID")
         time.sleep(1)
 
         # step 4:

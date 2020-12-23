@@ -31,7 +31,7 @@ import sys
 import logging
 
 import odtb_conf
-from output.did_dict                        import sddb_app_did_dict
+from build.did                              import app_did_dict
 from supportfunctions.support_can           import SupportCAN, CanParam, CanTestExtra, CanPayload
 from supportfunctions.support_test_odtb2    import SupportTestODTB2
 from supportfunctions.support_carcom        import SupportCARCOM
@@ -83,7 +83,7 @@ def step_1():
     for _ in range(96):
         did_hex = hex(did_int)[2:].upper()
 
-        if did_hex in sddb_app_did_dict:
+        if did_hex in app_did_dict:
             didarray.append([did_int-0x220000, did_hex[2:]])
 
         did_int = did_int + 1
@@ -116,7 +116,7 @@ def step_3():
     for _ in range(96):
         did_hex = hex(did_int)[2:].upper()
 
-        if did_hex in sddb_app_did_dict:
+        if did_hex in app_did_dict:
             didarray.append([did_int-0x220000, did_hex[2:]])
 
         did_int = did_int + 1
@@ -210,4 +210,3 @@ def run():
 
 if __name__ == '__main__':
     run()
-    
