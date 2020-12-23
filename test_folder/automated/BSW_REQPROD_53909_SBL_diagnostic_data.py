@@ -34,8 +34,8 @@ import argparse
 
 import odtb_conf
 
-from output.did_dict import sddb_sbl_did_dict
-from output.did_dict import sbl_diag_part_num
+from build.did import sbl_did_dict
+from build.did import sbl_diag_part_num
 from supportfunctions.support_can import SupportCAN, CanParam, CanTestExtra, CanPayload
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
 from supportfunctions.support_carcom import SupportCARCOM
@@ -147,10 +147,10 @@ def step_4(can_p):
                                  "requestOutOfRange (31)": 0}
     result_list = list()
     did_counter = 0
-    stepresult = len(sddb_sbl_did_dict) > 0
-    logging.info("Step %s: DID:s in dictionary: %s", stepno, len(sddb_sbl_did_dict))
+    stepresult = len(sbl_did_dict) > 0
+    logging.info("Step %s: DID:s in dictionary: %s", stepno, len(sbl_did_dict))
 
-    for did_dict_from_file_values in sddb_sbl_did_dict.values():
+    for did_dict_from_file_values in sbl_did_dict.values():
         did_counter += 1
 
         if did_counter > MAX_NO_OF_DIDS:
@@ -269,7 +269,7 @@ def run():
         # step 2:
         # action: Extract SWP Number for SBL
         # result: SBL Part Number is read from active SBL
-        result_step2, sbl_part_number = result and step_2(can_p)
+        result_step2, sbl_part_number = step_2(can_p)
         result = result and result_step2
 
         # step 3:

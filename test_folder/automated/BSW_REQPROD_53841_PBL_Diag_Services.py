@@ -31,7 +31,7 @@ import inspect
 
 import odtb_conf
 
-from output.did_dict import sddb_pbl_did_dict
+from build.did import pbl_did_dict
 from supportfunctions.support_can import SupportCAN, CanParam
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
 from supportfunctions.support_carcom import SupportCARCOM
@@ -74,10 +74,10 @@ def step_3(can_p):
                                  "requestOutOfRange (31)": 0}
     result_list = list()
     did_counter = 0
-    stepresult = len(sddb_pbl_did_dict) > 0
-    logging.info("Step %s: DID:s in dictionary: %s", stepno, len(sddb_pbl_did_dict))
+    stepresult = len(pbl_did_dict) > 0
+    logging.info("Step %s: DID:s in dictionary: %s", stepno, len(pbl_did_dict))
 
-    for did_dict_from_file_values in sddb_pbl_did_dict.values():
+    for did_dict_from_file_values in pbl_did_dict.values():
         did_counter += 1
         if did_counter > MAX_NO_OF_DIDS:
             logging.info("MAX_NO_OF_DIDS reached: %s", MAX_NO_OF_DIDS)
@@ -151,7 +151,7 @@ def run():
     ############################################
     result = PREC.precondition(can_p, SCRIPT_TIMEOUT)
 
-    #result = result and len(sddb_pbl_did_dict) > 0
+    #result = result and len(pbl_did_dict) > 0
     logging.info("Result: %s", result)
     if result:
 
