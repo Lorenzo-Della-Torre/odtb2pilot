@@ -28,15 +28,17 @@ from datetime import datetime
 import sys
 import logging
 import inspect
-from support_can import SupportCAN, CanParam,CanPayload, CanTestExtra
-from support_test_odtb2 import SupportTestODTB2
-from support_carcom import SupportCARCOM
-from support_file_io import SupportFileIO
-from support_SBL import SupportSBL
-from support_precondition import SupportPrecondition
-from support_postcondition import SupportPostcondition
 import odtb_conf
 
+from supportfunctions.support_can import SupportCAN, CanParam,CanPayload, CanTestExtra
+from supportfunctions.support_test_odtb2 import SupportTestODTB2
+from supportfunctions.support_carcom import SupportCARCOM
+from supportfunctions.support_file_io import SupportFileIO
+from supportfunctions.support_SBL import SupportSBL
+from supportfunctions.support_precondition import SupportPrecondition
+from supportfunctions.support_postcondition import SupportPostcondition
+from supportfunctions.support_service22 import SupportService22
+from supportfunctions.support_service10 import SupportService10
 
 SIO = SupportFileIO
 SC = SupportCAN()
@@ -46,6 +48,9 @@ SSBL = SupportSBL()
 
 PREC = SupportPrecondition()
 POST = SupportPostcondition()
+SE22 = SupportService22()
+SE10 = SupportService10()
+
 
 def step_1(can_p):
     '''
@@ -66,12 +71,11 @@ def step_1(can_p):
     }
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
     result = SUTE.teststep(can_p,cpay, etp)
+    did_list = ['DD00','DD01','DD02','DD03']
     logging.info("Global DTC Snapshot data: %s",SC.can_messages[can_p['receive']][0][2])
-    result = result and SUTE.test_message(SC.can_messages[can_p['receive']], teststring='DD00')
-    result = result and SUTE.test_message(SC.can_messages[can_p['receive']], teststring='DD01')
-    result = result and SUTE.test_message(SC.can_messages[can_p['receive']], teststring='DD02')
-    result = result and SUTE.test_message(SC.can_messages[can_p['receive']], teststring='DD0A')
-    return result
+    for i in did_list:
+        result = result and SUTE.test_message(SC.can_messages[can_p['receive']], teststring=i)
+        return result
 
 def run():
     """
