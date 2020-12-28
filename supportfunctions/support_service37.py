@@ -49,7 +49,7 @@ class SupportService37: # pylint: disable=too-few-public-methods
                            }
         etp: CanTestExtra = {"step_no": stepno,\
                              "purpose": purpose,\
-                             "timeout": 0.2,\
+                             "timeout": 4,\
                              "min_no_messages" : 1,\
                              "max_no_messages" : 1
                             }

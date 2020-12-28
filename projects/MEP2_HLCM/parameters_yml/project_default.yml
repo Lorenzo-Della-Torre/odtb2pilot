@@ -1,10 +1,13 @@
 precondition:
-        id: "MvcmFront1NMFr"
-        tp_name: "Vcu1ToAllFuncFront1DiagReqFrame"
-
+        id: "HlcmdpToallUdsDiagRequestFrame"
+        tp_name: "HlcmdpToallUdsDiagRequestFrame"
+        frame : b'\x3F\x40\xFF\xFF\xFF\xFF\xFF\xFF'
 run:
-        send: Vcu1ToBecmFront1DiagReqFrame
-        receive: BecmToVcu1Front1DiagResFrame
-
+        send: HlcmdpToHlcmUdsDiagRequestFrame
+        receive: HlcmToHlcmdpUdsDiagResponseFrame
 show_filenames:
         ess_needed : False
+teststep:
+        max_7fxx78 : 12
+transfer_data_block:
+        decompress_block: True

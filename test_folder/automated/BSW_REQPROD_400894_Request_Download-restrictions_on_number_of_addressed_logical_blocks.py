@@ -65,6 +65,27 @@ SE22 = SupportService22()
 SE31 = SupportService31()
 SE34 = SupportService34()
 
+def step_1(can_p: CanParam):
+    """
+    Teststep 1: Activate SBL
+    """
+    stepno = 1
+    purpose = "Download and Activation of SBL"
+    fixed_key = '0102030405'
+    new_fixed_key = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'fixed_key')
+    # don't set empty value if no replacement was found:
+    if new_fixed_key != '':
+        assert isinstance(new_fixed_key, str)
+        fixed_key = new_fixed_key
+    else:
+        logging.info("Step%s: new_fixed_key is empty. Leave old value.", stepno)
+    logging.info("Step%s: fixed_key after YML: %s", stepno, fixed_key)
+
+    result = SSBL.sbl_activation(can_p,
+                                 fixed_key,
+                                 stepno, purpose)
+    return result
+
 def step_3():
     """
     Teststep 3: Read VBF files for 1st SWP file (1st Logical Block)
@@ -223,8 +244,7 @@ def run():
         # step 1:
         # action: DL and activate SBL
         # result: ECU sends positive reply
-        result = result and SSBL.sbl_activation(can_p, stepno=1, purpose="DL and activate SBL")
-        time.sleep(1)
+        result = result and step_1(can_p)
 
         # step 2:
         # action: download ESS Software Part

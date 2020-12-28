@@ -108,7 +108,7 @@ def step_1(can_p):
             fixed_key = new_fixed_key
     else:
         logging.info("Step%s new_fixed_key is empty. Discard.", stepno)
-    logging.info("Step%s: fixed_key after YML: %s", stepno, fixed_key.hex())
+    logging.info("Step%s: fixed_key after YML: %s", stepno, fixed_key)
 
     result = SSBL.sbl_activation(can_p,
                                  fixed_key,
@@ -186,7 +186,6 @@ def run():# pylint: disable=too-many-statements
         }
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
 
-
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
     logging.info("Time: %s \n", time.time())
@@ -194,22 +193,22 @@ def run():# pylint: disable=too-many-statements
     # precondition
     ############################################
 
-    # read arguments for files to DL:
-    f_sbl = ''
-    f_ess = ''
-    f_df = []
-    for f_name in sys.argv:
-        if not f_name.find('.vbf') == -1:
-            print("Filename to DL: ", f_name)
-            if not f_name.find('sbl') == -1:
-                f_sbl = f_name
-            elif not f_name.find('ess') == -1:
-                f_ess = f_name
-            else:
-                f_df.append(f_name)
-    SSBL.__init__(f_sbl, f_ess, f_df)
-    SSBL.show_filenames()
-    time.sleep(10)
+    ## read arguments for files to DL:
+    #f_sbl = ''
+    #f_ess = ''
+    #f_df = []
+    #for f_name in sys.argv:
+    #    if not f_name.find('.vbf') == -1:
+    #        print("Filename to DL: ", f_name)
+    #        if not f_name.find('sbl') == -1:
+    #            f_sbl = f_name
+    #        elif not f_name.find('ess') == -1:
+    #            f_ess = f_name
+    #        else:
+    #            f_df.append(f_name)
+    #SSBL.__init__(f_sbl, f_ess, f_df)
+    #SSBL.show_filenames()
+    #time.sleep(10)
 
     # read VBF param when testscript is s started, if empty take default param
     SSBL.get_vbf_files()

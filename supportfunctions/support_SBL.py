@@ -150,11 +150,9 @@ class SupportSBL:
         # if so, state that in project or testscript parameters (yml file)
         ess_needed = True
         new_ess_needed = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'ess_needed')
-        if new_ess_needed:
-            if type(ess_needed) != type(new_ess_needed):# pylint: disable=unidiomatic-typecheck
-                ess_needed = eval(new_ess_needed)# pylint: disable=eval-used
-            else:
-                ess_needed = new_ess_needed
+        if new_ess_needed != '':
+            assert isinstance(new_ess_needed, bool)
+            ess_needed = new_ess_needed
         else:
             logging.info("Support_SBL: new_ess_needed is empty. Leave True.")
 
@@ -249,7 +247,9 @@ class SupportSBL:
         return result
 
 
-    def transfer_data_block(self, can_p: CanParam, vbf_header: VbfHeader, vbf_data, vbf_offset):
+    def transfer_data_block(self,# pylint: disable=too-many-branches too-many-statements
+                            can_p: CanParam, vbf_header: VbfHeader,
+                            vbf_data, vbf_offset):
         """
             transfer_data_block
             support function to transfer
@@ -269,26 +269,45 @@ class SupportSBL:
             vbf_offset, vbf_block, vbf_block_data = (
                 self.block_data_extract(vbf_data, vbf_offset))
 
+            decompress_block = True
+            new_decompress_block =\
+                SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'decompress_block')
+            if new_decompress_block != '':
+                assert isinstance(new_decompress_block, bool)
+                decompress_block = new_decompress_block
+            else:
+                logging.info("Support_SBL: new_decompress_block is empty. Leave True.")
+            logging.info("Support_SBL: decompress_block after YML: %s", decompress_block)
+
             #decompress data["b_data"] if needed
             logging.debug("vbf_header:  %s", vbf_header)
             logging.debug("data_format_identifier %s", vbf_header['data_format_identifier'])
             logging.debug("DataFormat block: {0:02X}".format(vbf_header['data_format_identifier']))
-            if vbf_header['data_format_identifier'] == 0: # format '0x00':
-                decompr_data = vbf_block_data
-            elif vbf_header['data_format_identifier'] == 16: # format '0x10':
-                decompr_data = b''
-                decompr_data = LZSS.decode_barray(vbf_block_data)
-            else:
-                logging.info("Unknown compression format: {0:02X}".format\
-                             (vbf_header['data_format_identifier']))
+
+            if decompress_block:
+                if vbf_header['data_format_identifier'] == 0: # format '0x00':
+                    decompr_data = vbf_block_data
+                elif vbf_header['data_format_identifier'] == 16: # format '0x10':
+                    decompr_data = LZSS.decode_barray(vbf_block_data)
+                else:
+                    logging.info("Unknown compression format: {0:02X}".format\
+                                 (vbf_header['data_format_identifier']))
 
             logging.debug("Header       CRC16 block_data:  {0:04X}".format(vbf_block['Checksum']))
-            logging.debug("Decompressed CRC16 calculation: {0:04X}".format\
-                            (SUTE.crc16(decompr_data)))
+            if decompress_block:
+                logging.debug("Decompressed CRC16 calculation: {0:04X}".format\
+                              (SUTE.crc16(decompr_data)))
+            else:
+                logging.debug("Block not decompress. No compare of CRC16.")
             logging.debug("Length block from header:  {0:08X}".format(vbf_block['Length']))
-            logging.debug("Length block decompressed: {0:08X}".format(len(decompr_data)))
+            if decompress_block:
+                logging.debug("Length block decompressed: {0:08X}".format\
+                              (len(decompr_data)))
+            else:
+                logging.debug("Block not decompress. No compare of Block length.")
 
-            if SUTE.crc16(decompr_data) == vbf_block['Checksum']:
+            if (decompress_block and SUTE.crc16(decompr_data) == vbf_block['Checksum'])\
+               or not decompress_block:
                 # Request Download
                 #result, nbl = SE34.request_block_download(can_p, data, step_no, purpose)
                 result = SE22.read_did_eda0(can_p)
