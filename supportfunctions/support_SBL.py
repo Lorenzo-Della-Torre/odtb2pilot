@@ -157,7 +157,9 @@ class SupportSBL:
                 ess_needed = new_ess_needed
         else:
             logging.info("Support_SBL: new_ess_needed is empty. Leave True.")
-        logging.info("Support_SBL: ess_needed after YML: %s", ess_needed.hex())
+
+        if not isinstance(ess_needed, bool):
+            logging.info("Support_SBL: ess_needed after YML: %s", ess_needed.hex())
 
         if (len(self._sbl) == 0) or\
             (ess_needed and (len(self._ess) == 0)) or (len(self._df) == 0):
