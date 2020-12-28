@@ -70,7 +70,7 @@ def step_1(can_p: CanParam):
             fixed_key = new_fixed_key
     else:
         logging.info("Step%s new_fixed_key is empty. Discard.", stepno)
-    logging.info("Step%s: fixed_key after YML: %s", stepno, fixed_key.hex())
+    logging.info("Step%s: fixed_key after YML: %s", stepno, fixed_key)
 
     result = SSBL.sbl_activation(can_p,
                                  fixed_key,
@@ -130,8 +130,6 @@ def run():
         "receive" : "BecmToVcu1Front1DiagResFrame",
         "namespace" : SC.nspace_lookup("Front1CANCfg0")
         }
-    #print("Current function name: ", inspect.stack()[0][3])
-    logging.info("Update parameters for testscript, part: %s", inspect.stack()[0][3])
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
 
     logging.info("Testcase start: %s", datetime.now())

@@ -133,6 +133,12 @@ class SupportCAN:
 
 
 
+    def remove_first_can_frame(self, can_frame):
+        """
+        remove first frame in list
+        """
+        self.can_frames[can_frame].pop()
+
     def clear_old_cf_frames(self):
         """
         clear_old_CF_frames

@@ -133,8 +133,8 @@ class SupportService31:
 
             rc_response = False
             rc_loop = 0
-            logging.info("SE31 RC FlashErase wait max 15sec for flash erased")
-            while (not rc_response) and (rc_loop < 15):
+            logging.info("SE31 RC FlashErase wait max 30sec for flash erased")
+            while (not rc_response) and (rc_loop < 30):
                 SC.clear_can_message(can_p["receive"])
                 SC.update_can_messages(can_p["receive"])
                 if len(SC.can_messages[can_p["receive"]]) > 0:

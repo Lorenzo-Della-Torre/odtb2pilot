@@ -74,9 +74,10 @@ class SupportService34: # pylint: disable=too-few-public-methods
                              "min_no_messages" : -1,
                              "max_no_messages" : -1
                             }
+        logging.info("340: payload %s", cpay['payload'].hex())
         result = SUTE.teststep(can_p, cpay, etp)
-        logging.info("340: result request: %s", result)
-        logging.info("340: received frames: %s", SC.can_frames[can_p["receive"]])
+        logging.debug("340: result request: %s", result)
+        logging.debug("340: received frames: %s", SC.can_frames[can_p["receive"]])
         result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], '74')
         nbl = SUTE.pp_string_to_bytes(SC.can_frames[can_p["receive"]][0][2][6:10], 4)
         nbl = int.from_bytes(nbl, 'big')
