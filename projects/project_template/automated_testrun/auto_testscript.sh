@@ -30,11 +30,24 @@
     [ ! -d $TESTRUN ] && mkdir $TESTRUN
     echo "Results of testrun $TESTRUN:" >$TESTRUN\/Result.txt
 
-### collect all testscript, chose subcatalog separately or all existing:
-###    find $TESTREPO/test_folder/automated/ -name BSW_REQPROD_*.py >testscripts.lst
-###    find $TESTREPO/test_folder/manual/ -name BSW_REQPROD_*.py >>testscripts.lst
-###    find $TESTREPO/test_folder/not_applicable/ -name BSW_REQPROD_*.py >>testscripts.lst
-    find $TESTREPO/test_folder/ -name BSW_REQPROD_*.py >testscripts.lst
+### collect all testscript, divide automated / non automated scripts:
+    find $TESTREPO/test_folder/automated -name BSW_REQPROD_*.py >testscripts_auto.lst
+    find $TESTREPO/test_folder -path $TESTREPO/test_folder/automated -prune -false -o -name BSW_REQPROD_*.py >testscripts_noauto.lst
+
+    ### Run all testscripts found:
+    while IFS= read -r line
+    do
+        echo $line | sed -E "s/(.*BSW_REQPROD)(.*)(\.py)/python3 \1\2\3 >$TESTRUN\/BSW_REQPROD\2.log/"
+        script2run_log=$(echo $line | sed -E "s/(.*BSW_REQPROD)(.*)(\.py)/BSW_REQPROD\2.log/")
+        ###python3 $TESTREPO/test_folder/on_the_fly_test/BSW_Set_ECU_to_default.py
+        python3 $line >$TESTRUN/$script2run_log
+        ### add REQ_NR, scriptresult, filename to result
+        req_tested=$(echo $line | sed -E "s/(.*BSW_REQPROD_)([0-9]*)(_.*)/\2/")
+        testresult=$(tail -1 $TESTRUN/$script2run_log | sed -E "s/(Testcase result: )(.*)/\2/")
+        #echo "$req_tested $testresult $script2run_log"
+        echo "$req_tested $testresult $script2run_log" >>$TESTRUN\/Result.txt
+    done <testscripts_noauto.lst
+
 
     ### Run all testscripts found:
     while IFS= read -r line
@@ -48,7 +61,8 @@
         testresult=$(tail -1 $TESTRUN/$script2run_log | sed -E "s/(Testcase result: )(.*)/\2/")
         #echo "$req_tested $testresult $script2run_log"
         echo "$req_tested $testresult $script2run_log" >>$TESTRUN\/Result.txt
-    done <testscripts.lst
+    done <testscripts_auto.lst
+
 
     echo
     date "+Test done. Time: %Y%m%d %H%M" 
