@@ -24,13 +24,18 @@ def get_platform_dir():
         sys.exit("You need to set the ODTBPROJPARAM. Exiting...")
     return platform_dir
 
-
-def get_sddb_file():
-    """Get the current sddb file from the release directory"""
+def get_release_dir():
+    """Get the release dir for the current platform"""
     dbpath = Path(get_platform_dir()).joinpath('release')
     if not dbpath.exists():
         sys.exit(f"{dbpath} directory is missing. Exiting...")
+    return dbpath
 
+
+def get_sddb_file():
+    """Get the current sddb file from the release directory"""
+
+    dbpath = get_release_dir()
     sddb_glob = dbpath.glob("*.sddb")
     try:
         sddb_file = next(sddb_glob)
