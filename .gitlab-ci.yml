@@ -22,8 +22,9 @@ strict_pylint_analysis:
   stage: Static Analysis Part 2
   allow_failure: false
   script:
-  - find ./dids_from_sddb_checker/ -type f -name "*.py" | xargs pylint-fail-under --fail_under 10.0 -d duplicate-code,import-error,invalid-name,no-name-in-module
-  - find ./Py_testenv/ -type f -name "*.py" | xargs pylint-fail-under --fail_under 10.0 -d duplicate-code,import-error,invalid-name
-  - find ./autotest/ -type f -name "*.py" | xargs pylint-fail-under --fail_under 10.0 -d duplicate-code,import-error,invalid-name
-  - find ./manual_test/ -type f -name "*.py" | xargs pylint-fail-under --fail_under 10.0 --module-rgx="BSW_REQPROD_\d*_.*" -d duplicate-code
-  - find ./test_cases/ -type f -name "*.py" | xargs pylint-fail-under --fail_under 10.0 --module-rgx="BSW_REQPROD_\d*_.*" -d duplicate-code,import-error,no-name-in-module
+ # - find ./autotest/ -type f -name "*.py" | xargs pylint-fail-under --fail_under 10.0 -d duplicate-code,import-error,invalid-name
+  - find ./supportfunctions/ -type f -name "*.py" | xargs pylint-fail-under --fail_under 10.0 -d duplicate-code,import-error,invalid-name
+  - find ./test_folder/automated/ -type f -name "*.py" | xargs pylint-fail-under --fail_under 10.0 --module-rgx="BSW_REQPROD_\d*_.*" -d duplicate-code,import-error,no-name-in-module
+  - find ./test_folder/manual/ -type f -name "*.py" | xargs pylint-fail-under --fail_under 10.0 --module-rgx="BSW_REQPROD_\d*_.*" -d duplicate-code,import-error,no-name-in-module
+#  - find ./test_folder/not_applicable/ -type f -name "*.py" | xargs pylint-fail-under --fail_under 10.0 --module-rgx="BSW_REQPROD_\d*_.*" -d duplicate-code,import-error,no-name-in-module
+  - find ./test_folder/on_the_fly_test/ -type f -name "*.py" | xargs pylint-fail-under --fail_under 10.0 -d duplicate-code,import-error,no-name-in-module,invalid-name

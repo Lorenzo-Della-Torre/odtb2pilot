@@ -1,0 +1,31 @@
+{
+    "default_namespace": "Front1CANCfg0",
+    "chains": [
+        {
+            "type": "can",
+            "namespace": "Front1CANCfg0",
+            "device_name": "can0",
+            "dbc_file": "configuration/can/SPA3010_ConfigurationsSPA3_Front1CANCfg_180615_Prototype.dbc"
+        },
+        {
+            "type": "can",
+            "namespace": "BecmRmsCanFr1",
+            "device_name": "can1",
+            "dbc_file": "configuration/can/SPA3230_ConfigurationsCMAVolvo2_RMSCANCfg_181214_.dbc"
+        },
+        {
+            "type": "virtual",
+            "namespace": "virtual",
+            "device_name": "virtual"
+        }
+    ],
+    "gateway": {
+        "tcp_socket_port": 4040,
+        "gateway_pid": "gateway_pid"
+    },
+    "auto_config_boot_server": {
+        "port": 4000,
+        "server_pid": "auto_config_boot_server_pid"
+    },
+    "reflectors": []
+}
