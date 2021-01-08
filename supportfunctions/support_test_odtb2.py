@@ -36,9 +36,13 @@ import os
 import binascii
 from datetime import datetime
 import string
+import inspect
 
 #sys.path.append('generated')
 from supportfunctions.support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
+from supportfunctions.support_file_io import SupportFileIO
+
+SIO = SupportFileIO
 SC = SupportCAN()
 
 BYTE_SIZE = 2
@@ -86,6 +90,10 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
                     logging.warning("Bad: Expected: %s received: %s", teststring, i[2].upper())
                     logging.warning("Try to decode error message (7F):")
                     logging.warning("%s", self.pp_decode_7f_response(i[2].upper()))
+                    #logging.info("test_message: test if 7F38 - "\
+                    #             "requestCorrectlyReceived-ResponsePending was received")
+                    #if self.check_7f78_response(i):
+                    #    logging.info("78 found")
         return testresult
 
 
@@ -120,7 +128,9 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
                 time.sleep(0.05) #pause a bit to receive frames in background
 
 
-    def teststep(self, can_p: CanParam, cpay: CanPayload, etp: CanTestExtra):
+    def teststep(self,# pylint: disable=too-many-statements
+                 can_p: CanParam,
+                 cpay: CanPayload, etp: CanTestExtra):# pylint: disable=too-many-statements
         """
         teststep for ODTB2 testenvironment
 
@@ -165,7 +175,44 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
         # message to send
         self.__send(can_p, etp, cpay)
 
-        logging.debug("Rec can messages: %s", SC.can_messages[can_p["receive"]])
+        logging.info("Teststep: Rec can messages: %s", SC.can_messages[can_p["receive"]])
+
+        if SC.can_messages[can_p["receive"]]:
+            while self.check_7f78_response(SC.can_messages[can_p["receive"]]):
+
+                logging.debug("Filter 7Fxx78: requestCorrectlyReceived-ResponsePending")
+                logging.debug("Rec can frames: %s", SC.can_frames[can_p["receive"]])
+                logging.debug("Rec can messages: %s", SC.can_messages[can_p["receive"]])
+
+                logging.debug("78 - ResponsePending was received")
+                logging.info("7Fxx78 received: remove first frame received")
+                SC.remove_first_can_frame(can_p["receive"])
+                #wait for next frame to be received
+                wait_loop = 0
+                max_7fxx78 = 10
+
+                new_max_7fxx78 = SIO.extract_parameter_yml(str(inspect.stack()[0][3]),
+                                                           'max_7fxx78')
+                if new_max_7fxx78 != '':
+                    assert isinstance(new_max_7fxx78, int)
+                    max_7fxx78 = new_max_7fxx78
+                else:
+                    logging.info("teststep: new_max_7Fxx78 is empty. Leave old value.")
+                logging.info("teststep: max_7Fxx78 %s", max_7fxx78)
+
+                while (len(SC.can_frames[can_p['receive']]) == 0) and (wait_loop <= max_7fxx78):
+                    time.sleep(1)
+                    wait_loop += 1
+                    logging.info("7Fxx78: frames received: %s", SC.can_frames[can_p['receive']])
+                    logging.info("7Fxx78: len frames received: %s",
+                                 len(SC.can_frames[can_p['receive']]))
+                    logging.info("7Fxx78 wait for next frame: %s", wait_loop)
+                    logging.info("7Fxx78 wait_loop <=%s: %s",
+                                 max_7fxx78, (wait_loop <= max_7fxx78))
+                logging.info("Rec can frames after loop: %s", SC.can_frames[can_p["receive"]])
+                SC.clear_can_message(can_p["receive"])
+                SC.update_can_messages(can_p["receive"])
+
         if len(SC.can_messages[can_p["receive"]]) < etp["min_no_messages"]:
             logging.warning("Bad: min_no_messages not reached: %s",
                             len(SC.can_messages[can_p["receive"]]))
@@ -176,6 +223,9 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
             testresult = False
         else:
             if SC.can_messages[can_p["receive"]]:
+                #logging.info("teststep test message: %s", SC.can_messages[can_p["receive"]])
+                #logging.info("teststep test against len: %s", len(can_answer))
+                #logging.info("teststep test against: %s", can_answer)
                 if etp["min_no_messages"] >= 0:
                     testresult = testresult and\
                         self.test_message(SC.can_messages[can_p["receive"]],\
@@ -870,6 +920,36 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
         service = "Service: " + message[pos+2:pos+4]
         return_code = self.pp_can_nrc(message[pos+4:])
         return "Negative response: " + service + ", " + return_code
+
+
+    def check_7f78_response(self, message_el):
+        """
+        Check if 7F message is 78: requestCorrectlyReceived-ResponsePending
+        message: String to check for code 78
+        return: bool, True if '78' as returncode in message
+        """
+        if len(message_el) == 0:
+            return False
+        message = message_el[0][2]
+        result = False
+        logging.info("check_7f78_response message: %s", message)
+        mess_len = len(message)
+        if mess_len == 0:
+            return False
+
+        pos = message.find('7F')
+        logging.debug("check_7f78 pos: %s", pos)
+        if pos == -1:
+            return False
+        service = "Service: " + message[pos+2:pos+4]
+        return_code = self.pp_can_nrc(message[pos+4:])
+        logging.debug("check_7f78 service: %s", service)
+        logging.debug("check_7f78 returncode: %s", return_code)
+        logging.debug("check_7f78 [6:8] %s", message[6:8])
+        if message[6:8] == '78':
+            logging.info("Code 78: ResponsePending")
+            result = True
+        return result
 
 
     @classmethod

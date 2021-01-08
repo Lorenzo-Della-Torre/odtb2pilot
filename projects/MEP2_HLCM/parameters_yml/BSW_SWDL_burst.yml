@@ -1,0 +1,6 @@
+precondition_burst:
+        id: "HlcmdpToallUdsDiagRequestFrame"
+        tp_name: "HlcmdpToallUdsDiagRequestFrame"
+        frame : b'\x3F\x40\xFF\xFF\xFF\xFF\xFF\xFF'
+step_1:
+        fixed_key : '0102030405'

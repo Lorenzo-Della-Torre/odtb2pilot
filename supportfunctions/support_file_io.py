@@ -113,7 +113,7 @@ class SupportFileIO:
 
         if os.path.exists(odtb_proj_param + '/' + param_dir)\
             and os.path.isfile(odtb_proj_param + '/' + param_dir + '/' + f_name):
-            dir_file = param_dir + '/' + f_name
+            dir_file = odtb_proj_param + '/' + param_dir + '/' + f_name
         elif os.path.isfile(f_name):
             dir_file = f_name
         #no matching parameter file
@@ -156,6 +156,7 @@ class SupportFileIO:
             logging.warn("Could not open parameter file for testscript\n")
             logging.info("Parameter path: %s", param_dir)
             logging.info("Parameter file: %s", f_name)
+            logging.info("path+Parameter testscript file: %s", dir_file)
             #sys.exit(1)
             #sys.exit is to hard, skip reading parameter, don't exit python
             file_par_open = False

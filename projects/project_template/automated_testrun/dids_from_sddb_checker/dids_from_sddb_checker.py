@@ -33,20 +33,23 @@ import inspect
 import socket
 from collections import namedtuple
 from yattag import Doc
-from support_test_odtb2 import SupportTestODTB2
+
 import odtb_conf
+
+from supportfunctions.support_test_odtb2 import SupportTestODTB2
+from supportfunctions.support_can import SupportCAN, CanParam
+from supportfunctions.support_carcom import SupportCARCOM
+from supportfunctions.support_precondition import SupportPrecondition
+from supportfunctions.support_postcondition import SupportPostcondition
+from supportfunctions.support_file_io import SupportFileIO
+from supportfunctions.support_service22 import SupportService22
+from supportfunctions.logs_to_html_css import STYLE as CSS
+
 import parameters as parammod
 import dids_from_sddb_checker_conf as conf
 from output.did_dict import sddb_resp_item_dict
 from output.did_dict import sddb_app_did_dict
 from output.did_dict import app_diag_part_num
-from support_can import SupportCAN, CanParam
-from support_carcom import SupportCARCOM
-from support_precondition import SupportPrecondition
-from support_postcondition import SupportPostcondition
-from support_file_io import SupportFileIO
-from support_service22 import SupportService22
-from logs_to_html_css import STYLE as CSS
 
 SIO = SupportFileIO
 SC = SupportCAN()
@@ -354,7 +357,10 @@ def create_folder(folder):
 
 def write_data(head, data, mode, string_bool=True):
     ''' Write content to outfile '''
-    new_path = os.path.join(parammod.OUTPUT_FOLDER, parammod.OUTPUT_TESTRUN_DATA_FN)
+    output_folder = os.environ.get('PWD') + '/' + parammod.OUTPUT_FOLDER
+    if not os.path.exists(output_folder):
+        os.mkdir(output_folder)         
+    new_path = os.path.join(output_folder, parammod.OUTPUT_TESTRUN_DATA_FN)
     with open(new_path, mode) as file:
         head = "\n" + head + " = "
         if string_bool:

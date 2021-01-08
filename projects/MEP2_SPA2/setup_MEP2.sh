@@ -8,6 +8,6 @@
     echo export ODTBPROJPARAM=$ODTBPROJPARAM
 
 ### PYTHON needs to look in current catalog 
-    export PYTHONPATH=~/Repos/odtb2pilot/:.
+    export PYTHONPATH=$TESTREPO:.
     echo export PYTHONPATH=$PYTHONPATH
 

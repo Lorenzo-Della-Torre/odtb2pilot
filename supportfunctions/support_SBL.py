@@ -43,12 +43,14 @@ import sys
 import glob
 from typing import Dict
 import traceback
+import inspect
 
 from supportfunctions.support_carcom import SupportCARCOM
 from supportfunctions.support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
 from supportfunctions.support_sec_acc import SupportSecurityAccess
 from supportfunctions.support_LZSS import LzssEncoder
+from supportfunctions.support_file_io import SupportFileIO
 from supportfunctions.support_service10 import SupportService10
 from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_service31 import SupportService31
@@ -56,6 +58,7 @@ from supportfunctions.support_service34 import SupportService34
 from supportfunctions.support_service36 import SupportService36
 from supportfunctions.support_service37 import SupportService37
 
+SIO = SupportFileIO
 SC = SupportCAN()
 S_CARCOM = SupportCARCOM()
 SUTE = SupportTestODTB2()
@@ -143,7 +146,21 @@ class SupportSBL:
         print filenames used for SWDL
         """
         result = True
-        if (len(self._sbl) == 0) or (len(self._ess) == 0) or (len(self._df) == 0):
+        # Some ECU like HLCM don't include ESS vbf
+        # if so, state that in project or testscript parameters (yml file)
+        ess_needed = True
+        new_ess_needed = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'ess_needed')
+        if new_ess_needed != '':
+            assert isinstance(new_ess_needed, bool)
+            ess_needed = new_ess_needed
+        else:
+            logging.info("Support_SBL: new_ess_needed is empty. Leave True.")
+
+        if not isinstance(ess_needed, bool):
+            logging.info("Support_SBL: ess_needed after YML: %s", ess_needed.hex())
+
+        if (len(self._sbl) == 0) or\
+            (ess_needed and (len(self._ess) == 0)) or (len(self._df) == 0):
             logging.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             logging.info("!!!!! VBF files not as expected / incomplete! !!!!!")
             logging.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
@@ -154,7 +171,8 @@ class SupportSBL:
         logging.info("SBL:  %s", self._sbl)
         logging.info("ESS: %s", self._ess)
         logging.info("DF: %s", self._df)
-        if (len(self._sbl) == 0) or (len(self._ess) == 0) or (len(self._df) == 0):
+        if (len(self._sbl) == 0) or\
+            (ess_needed and (len(self._ess) == 0)) or (len(self._df) == 0):
             logging.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             logging.info("!!!!! VBF files not as expected / incomplete! !!!!!")
             logging.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
@@ -229,7 +247,9 @@ class SupportSBL:
         return result
 
 
-    def transfer_data_block(self, can_p: CanParam, vbf_header: VbfHeader, vbf_data, vbf_offset):
+    def transfer_data_block(self,# pylint: disable=too-many-branches too-many-statements
+                            can_p: CanParam, vbf_header: VbfHeader,
+                            vbf_data, vbf_offset):
         """
             transfer_data_block
             support function to transfer
@@ -249,26 +269,45 @@ class SupportSBL:
             vbf_offset, vbf_block, vbf_block_data = (
                 self.block_data_extract(vbf_data, vbf_offset))
 
+            decompress_block = True
+            new_decompress_block =\
+                SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'decompress_block')
+            if new_decompress_block != '':
+                assert isinstance(new_decompress_block, bool)
+                decompress_block = new_decompress_block
+            else:
+                logging.info("Support_SBL: new_decompress_block is empty. Leave True.")
+            logging.info("Support_SBL: decompress_block after YML: %s", decompress_block)
+
             #decompress data["b_data"] if needed
             logging.debug("vbf_header:  %s", vbf_header)
             logging.debug("data_format_identifier %s", vbf_header['data_format_identifier'])
             logging.debug("DataFormat block: {0:02X}".format(vbf_header['data_format_identifier']))
-            if vbf_header['data_format_identifier'] == 0: # format '0x00':
-                decompr_data = vbf_block_data
-            elif vbf_header['data_format_identifier'] == 16: # format '0x10':
-                decompr_data = b''
-                decompr_data = LZSS.decode_barray(vbf_block_data)
-            else:
-                logging.info("Unknown compression format: {0:02X}".format\
-                             (vbf_header['data_format_identifier']))
+
+            if decompress_block:
+                if vbf_header['data_format_identifier'] == 0: # format '0x00':
+                    decompr_data = vbf_block_data
+                elif vbf_header['data_format_identifier'] == 16: # format '0x10':
+                    decompr_data = LZSS.decode_barray(vbf_block_data)
+                else:
+                    logging.info("Unknown compression format: {0:02X}".format\
+                                 (vbf_header['data_format_identifier']))
 
             logging.debug("Header       CRC16 block_data:  {0:04X}".format(vbf_block['Checksum']))
-            logging.debug("Decompressed CRC16 calculation: {0:04X}".format\
-                            (SUTE.crc16(decompr_data)))
+            if decompress_block:
+                logging.debug("Decompressed CRC16 calculation: {0:04X}".format\
+                              (SUTE.crc16(decompr_data)))
+            else:
+                logging.debug("Block not decompress. No compare of CRC16.")
             logging.debug("Length block from header:  {0:08X}".format(vbf_block['Length']))
-            logging.debug("Length block decompressed: {0:08X}".format(len(decompr_data)))
+            if decompress_block:
+                logging.debug("Length block decompressed: {0:08X}".format\
+                              (len(decompr_data)))
+            else:
+                logging.debug("Block not decompress. No compare of Block length.")
 
-            if SUTE.crc16(decompr_data) == vbf_block['Checksum']:
+            if (decompress_block and SUTE.crc16(decompr_data) == vbf_block['Checksum'])\
+               or not decompress_block:
                 # Request Download
                 #result, nbl = SE34.request_block_download(can_p, data, step_no, purpose)
                 result = SE22.read_did_eda0(can_p)
@@ -369,7 +408,9 @@ class SupportSBL:
 
 
     # Support Function for Flashing and activate Secondary Bootloader from Default session
-    def sbl_activation_def(self, can_p: CanParam, stepno='',\
+    def sbl_activation_def(self, can_p: CanParam,\
+                           fixed_key='0102030405',\
+                           stepno='',\
                            purpose="sbl_activation_default/ext mode"):
         """
         function used for BECM in Default or Extended mode
@@ -388,12 +429,14 @@ class SupportSBL:
 
         # Verify Session changed
         SE22.read_did_f186(can_p, dsession=b'\x02')
-        result = result and self.sbl_activation_prog(can_p, stepno, purpose)
+        result = result and self.sbl_activation_prog(can_p, fixed_key, stepno, purpose)
         return result
 
 
     # Support Function for Flashing and activate Secondary Bootloader from Programming session
-    def sbl_activation_prog(self, can_p: CanParam, stepno='',\
+    def sbl_activation_prog(self, can_p: CanParam,\
+                            fixed_key='0102030405',\
+                            stepno='',\
                             purpose="sbl_activation_prog"):
         """
         Function used for BECM in forced Programming mode
@@ -404,7 +447,9 @@ class SupportSBL:
         pos = message.find('EDA0')
         if (not message.find('F121', pos) == -1) and (not message.find('F125', pos) == -1):
             # Security Access Request SID
-            result = result and SSA.activation_security_access(can_p, stepno, purpose)
+            result = result and SSA.activation_security_access(can_p,\
+                                                               fixed_key,\
+                                                               stepno, purpose)
 
             # SBL Download
             tresult, vbf_sbl_header = self.sbl_download(can_p, self._sbl, stepno)
@@ -420,7 +465,8 @@ class SupportSBL:
 
 
     # Support Function to select Support functions to use for activating SBL based on actual mode
-    def sbl_activation(self, can_p: CanParam, stepno='', purpose=""):
+    def sbl_activation(self, can_p: CanParam,\
+                       fixed_key='0102030405', stepno='', purpose=""):
         """
         Function used to activate the Secondary Bootloader
         """
@@ -437,9 +483,9 @@ class SupportSBL:
         #if mode1/mode3 change to mode2 (prog), then dl/activate SBL
         #if mode2 already dl/activate SBL direct
             if ('62F18601' in rec_messages) or ('62F18603' in rec_messages):
-                result = self.sbl_activation_def(can_p, stepno, purpose)
+                result = self.sbl_activation_def(can_p, fixed_key, stepno, purpose)
             elif '62F18602' in rec_messages:
-                result = self.sbl_activation_prog(can_p, stepno, purpose)
+                result = self.sbl_activation_prog(can_p, fixed_key, stepno, purpose)
             else:
                 logging.info("error message: %s\n", SC.can_messages[can_p["receive"]])
                 result = False
