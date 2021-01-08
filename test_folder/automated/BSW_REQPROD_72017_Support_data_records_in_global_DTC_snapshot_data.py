@@ -1,28 +1,45 @@
-# Testscript ODTB2 MEPII
-# project:  BECM basetech MEPII
-# author:   T-KUMARA (Tanuj Kumar Aluru)
-# date:     2020-11-19
-# version:  1.0
-# reqprod:  72017
-#
-# inspired by https://grpc.io/docs/tutorials/basic/python.html
-#
-# Copyright 2015 gRPC authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+"""
+reqprod: 72017
 
-"""The Python implementation of the gRPC route guide client."""
+title:
+    Supported data records in global DTC snapshot data ; 10
 
+purpose:
+    To define the criteria for sampling of snapshot data record 20
+
+definition:
+    For all DTCs stored and supported by the ECU, global DTC snapshot data
+    records shall include the following data, as defined in Carcom - Global
+    Master Reference Database (GMRDB).
+
+    0xDD00 – Global Real Time
+    0xDD01 – Total Distance
+    0xDD02 – Vehicle Battery Voltage
+    0xDD05 – Outside Temperature
+    0xDD06 – Vehicle Speed
+    0xDD0A – Usage Mode
+
+details:
+    Note: 1) That the above requirement is for SPA2. For SPA1 we will use the
+    following list of DIDs to check against as it is corresponding to an
+    earlier version of this requirement.
+
+    0xDD00 – Global Real Time
+    0xDD01 – Total Distance
+    0xDD02 – Vehicle Battery Voltage
+    0xDD0A – Usage Mode
+
+    Note: 2) When we request the global DTC snapshot data, the response can
+    also include local DTCs so there is a risk that by doing this testing that
+    we get false positives. That is, one or more of the DID might actually not
+    be part of the global snapshot, but rather the local. Unfortunatly, there
+    seems not to exist any good way to distinguish between the two, so we will
+    have to live with that for now.
+
+"""
+
+
+import os
 import time
 from datetime import datetime
 import sys
@@ -75,7 +92,15 @@ def step_1(can_p):
     logging.info("Global DTC Snapshot data: %s", message)
 
     did_check = True
-    for did in ['DD00', 'DD01', 'DD02', 'DD05', 'DD06', 'DD0A']:
+    platform = os.environ.get("ODTBPROJ")
+    if platform == "MEP2_SPA1":
+        snapshot_dids = ['DD00', 'DD01', 'DD02', 'DD0A']
+    elif platform == "MEP2_SPA2":
+        snapshot_dids = ['DD00', 'DD01', 'DD02', 'DD05', 'DD06', 'DD0A']
+    else:
+        raise EnvironmentError("ODTBPROJ is not set")
+
+    for did in snapshot_dids:
         if not did in message:
             logging.error("The following DID is not in the reply: %s", did)
             did_check = False
