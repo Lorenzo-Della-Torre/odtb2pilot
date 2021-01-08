@@ -71,11 +71,18 @@ def step_1(can_p):
     }
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
     result = SUTE.teststep(can_p,cpay, etp)
-    did_list = ['DD00','DD01','DD02','DD03']
-    logging.info("Global DTC Snapshot data: %s",SC.can_messages[can_p['receive']][0][2])
+    did_list = ['DD00', 'DD01', 'DD02', 'DD05', 'DD06', 'DD0A']
+    message = SC.can_messages[can_p['receive']][0][2]  
+    logging.info("Global DTC Snapshot data: %s", message)
+
+    did_check = True
     for i in did_list:
-        result = result and SUTE.test_message(SC.can_messages[can_p['receive']], teststring=i)
-        return result
+        if not i in message:
+            logging.error("The following DID is not in the reply: %s", i)
+            did_check = False
+
+    return result and did_check
+
 
 def run():
     """
