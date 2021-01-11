@@ -1,9 +1,9 @@
 # Testscript ODTB2 MEPII
 # project:  BECM basetech MEPII
 # author:   J-ADSJO
-# date:     2021-01-06
+# date:     2021-01-11
 # version:  1.0
-# reqprod:  72185
+# reqprod:  68194
 
 # #inspired by https://grpc.io/docs/tutorials/basic/python.html
 # Copyright 2015 gRPC authors.
@@ -28,5 +28,5 @@ import sys
 
 logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
-logging.info("Testcase result: Tested implicitly by all diagnostic tests,\
- e.g. by REQPROD 67170 (tested implicitly)")
+logging.info("Testcase result: Tested implicitly by\
+REQPROD 53909 and 68239 (tested implicitly)")

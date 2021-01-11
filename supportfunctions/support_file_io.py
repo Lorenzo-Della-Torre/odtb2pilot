@@ -172,7 +172,7 @@ class SupportFileIO:
             logging.debug("Dict to modify: %s", arg)
             if isinstance(arg, dict):
                 for dict_key in arg:
-                    logging.info("search project parameter data for %s %s", key, dict_key)
+                    logging.debug("search project parameter data for %s %s", key, dict_key)
 
                     #search in default parameters
                     if default_par_open and\
@@ -202,7 +202,7 @@ class SupportFileIO:
                             logging.debug("type after convert type: %s", arg[dict_key])
 
                     #search in file specific parameters
-                    logging.info("search file parameter data for %s %s", key, dict_key)
+                    logging.debug("search file parameter data for %s %s", key, dict_key)
                     if file_par_open and\
                         key in data and\
                         (data[key].get(dict_key) is not None):
