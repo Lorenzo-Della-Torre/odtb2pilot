@@ -31,20 +31,19 @@ details:
 
 """
 
-import os
 import sys
 import logging
 
 from supportfunctions.support_dut import Dut
 from supportfunctions.support_dut import DutTestError
-from supportfunctions.support_uds import global_timestamp
+from supportfunctions.support_uds import global_timestamp_dd00
 from supportfunctions.support_uds import UdsEmptyResponse
 
 def step_1(dut):
     """
     Attempt to get the global timestamp
     """
-    data = dut.uds.read_data_by_identifier(global_timestamp)
+    data = dut.uds.read_data_by_id_22(global_timestamp_dd00)
     if not data:
         raise DutTestError("No global_timestamp data received")
 
@@ -54,21 +53,21 @@ def step_2(dut):
     """
     Attempt to get the global timestamp with DLC set to 7 bytes
     """
-    platform = os.getenv("ODTBPROJ")
-    if platform == "MEP2_SPA1":
+
+    platform = dut.get_platform()
+    if platform == "spa1":
         dut.reconfigure_broker(
             "BO_ 1845 Vcu1ToBecmFront1DiagReqFrame: 8 VCU1",
             "BO_ 1845 Vcu1ToBecmFront1DiagReqFrame: 7 VCU1",
         )
-
-    if platform == "MEP2_SPA2":
+    elif platform == "spa2":
         dut.reconfigure_broker(
             "BO_ 1875 HvbmdpToHvbmUdsDiagRequestFrame : 8 HVBMdp",
             "BO_ 1875 HvbmdpToHvbmUdsDiagRequestFrame : 7 HVBMdp"
         )
 
     try:
-        dut.uds.read_data_by_identifier(global_timestamp)
+        dut.uds.read_data_by_id_22(global_timestamp_dd00)
     except UdsEmptyResponse:
         logging.info("Received an empty response as expected when using 7 byte frame")
 

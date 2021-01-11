@@ -74,7 +74,6 @@ class Dut:
         self.namespace = NameSpace(name="Front1CANCfg0")
 
         self.uds = Uds(self)
-        # pylint: disable=too-many-instance-attributes
 
     def __getitem__(self, key):
         # Legacy subscript access to dut object for old code
@@ -262,6 +261,18 @@ def get_dut_custom():
     frame_info = inspect.stack()[1]
     filename = Path(frame_info.filename)
     return Dut(custom_yml_file=os.path.basename(filename.with_suffix(".yml")))
+
+
+def get_platform():
+    """ get the currently activated platform """
+    platform = os.getenv("ODTBPROJ")
+    if platform == "MEP2_SPA1":
+        return "spa1"
+    if platform == "MEP2_SPA2":
+        return "spa2"
+    if platform == "MEP2_HLCM":
+        return "hlcm"
+    raise EnvironmentError("ODTBPROJ is not set")
 
 
 def get_parameters(custom_yml_file=None):
