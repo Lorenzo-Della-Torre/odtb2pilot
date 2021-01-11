@@ -39,6 +39,7 @@ from supportfunctions.support_carcom        import SupportCARCOM
 from supportfunctions.support_service10     import SupportService10
 from supportfunctions.support_service11     import SupportService11
 from supportfunctions.support_service22     import SupportService22
+from supportfunctions.support_service27     import SupportService27
 from supportfunctions.support_service31     import SupportService31
 from supportfunctions.support_SBL           import SupportSBL
 from supportfunctions.support_sec_acc       import SupportSecurityAccess
@@ -52,19 +53,11 @@ SIO = SupportFileIO
 SE10 = SupportService10()
 SE11 = SupportService11()
 SE22 = SupportService22()
+SE27 = SupportService27()
 SE31 = SupportService31()
 SSBL = SupportSBL()
 SSA = SupportSecurityAccess()
 
-
-def step_3(can_p):
-    """
-    Teststep 3: Security Access Request SID
-    """
-    stepno = 3
-    purpose = "Security Access Request SID"
-    result = SSA.activation_security_access(can_p, stepno, purpose)
-    return result
 
 def step_4(can_p):
     """
@@ -160,7 +153,7 @@ def run():
         # step 3:
         # action: Request Security Access to be able to unlock the server(s) and run the PBL.
         # result: The ECU reply with the Security Access PIN.
-        result = result and step_3(can_p)
+        result = result and SE27.activate_security_access(can_p, 3)
         logging.debug("Step %s completed: Result = %s", 3, result)
 
         # step 4:

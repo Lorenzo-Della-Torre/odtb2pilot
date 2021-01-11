@@ -65,6 +65,7 @@ SE10 = SupportService10()
 SE22 = SupportService22()
 SE31 = SupportService31()
 SE34 = SupportService34()
+
 def step_2():
     """
     Teststep 2: Read VBF files for ESS file (1st Logical Block)
@@ -253,8 +254,8 @@ def run():
         # step1:
         # action: Download and activate SBL
         # result: True, if all went fine
-        result = result and SSBL.sbl_activation(can_p, 1, "DL and activate SBL")
-        time.sleep(1)
+        result = result and SSBL.sbl_dl_activation(can_p, 1, "DL and activate SBL")
+
 
         # step2:
         # action: Read invalid ESS file, for not erasing part of flash

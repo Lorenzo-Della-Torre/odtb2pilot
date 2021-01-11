@@ -5,3 +5,8 @@ precondition:
 run:
         send: Vcu1ToBecmFront1DiagReqFrame
         receive: BecmToVcu1Front1DiagResFrame
+
+activate_security_access:
+        fixed_key: 'FFFFFFFFFF'
+sbl_dl_activation:
+        fixed_key: 'FFFFFFFFFF'

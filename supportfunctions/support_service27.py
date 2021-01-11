@@ -26,13 +26,18 @@
 
 """The Python implementation of the gRPC route guide client."""
 import logging
+import inspect
 
 from supportfunctions.support_carcom import SupportCARCOM
 from supportfunctions.support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
+from supportfunctions.support_file_io import SupportFileIO
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
+from supportfunctions.support_sec_acc import SupportSecurityAccess
 from supportfunctions.support_service22 import SupportService22
 
+SSA = SupportSecurityAccess()
 SC = SupportCAN()
+SIO = SupportFileIO
 SUTE = SupportTestODTB2()
 S_CARCOM = SupportCARCOM()
 SE22 = SupportService22()
@@ -87,7 +92,7 @@ class SupportService27:
 
 
     @staticmethod
-    def pbl_security_access_send_key(can_p: CanParam, payload_value, stepno=270,\
+    def pbl_security_access_send_key(can_p: CanParam, payload_value, stepno=271,\
                                      purpose="SecurityAccessSendKey"):
         """
             Support function: request seed for calculating security access pin
@@ -123,3 +128,39 @@ class SupportService27:
         result = SUTE.teststep(can_p, cpay, etp)
         result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], '6702')
         return result
+
+    def activate_security_access(self,
+                                 can_p: CanParam,
+                                 step_no=272,
+                                 purpose='Security Access Request SID'):
+        """
+        Teststep : Activate SecurityAccess
+        action: Request Security Access to be able to unlock the server(s)
+                and run the primary bootloader.
+        result: Positive reply from support function if Security Access to server is activated.
+        """
+        fixed_key = '0102030405'
+        new_fixed_key = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'fixed_key')
+        # don't set empty value if no replacement was found:
+        if new_fixed_key != '':
+            assert isinstance(new_fixed_key, str)
+            fixed_key = new_fixed_key
+        else:
+            logging.info("Step%s: new_fixed_key is empty. Leave old value.", step_no)
+        logging.info("Step%s: fixed_key after YML: %s", step_no, fixed_key)
+        result = self.activate_security_access_fixedkey(can_p, fixed_key, step_no,
+                                                purpose)
+        return result
+
+    def activate_security_access_fixedkey(self, can_p: CanParam, fixed_key, step_no, purpose):
+        """
+        Support function to activate the Security Access
+        """
+        #Security Access request seed
+        testresult, seed = self.pbl_security_access_request_seed(can_p, step_no, purpose)
+        r_0 = SSA.set_security_access_pins(seed, fixed_key)
+
+        #Security Access Send Key
+        testresult = testresult and self.pbl_security_access_send_key(can_p, r_0,
+                                                                      step_no, purpose)
+        return testresult

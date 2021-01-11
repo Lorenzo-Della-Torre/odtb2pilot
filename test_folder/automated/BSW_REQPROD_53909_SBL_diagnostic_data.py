@@ -262,9 +262,7 @@ def run():
         # step 1:
         # action: DL and activate SBL
         # result: ECU sends positive reply
-        result = result and SSBL.sbl_activation(can_p, stepno=1,
-                                                purpose="DL and activate SBL")
-        time.sleep(1)
+        result = result and SSBL.sbl_dl_activation(can_p, 1, "DL and activate SBL")
 
         # step 2:
         # action: Extract SWP Number for SBL

@@ -61,27 +61,6 @@ class VbfFilePath(Dict): # pylint: disable=too-few-public-methods,inherit-non-cl
     """
     path: str
 
-def step_1(can_p: CanParam):
-    """
-    Teststep 1: Activate SBL
-    """
-    stepno = 1
-    purpose = "Download and Activation of SBL"
-    fixed_key = '0102030405'
-    new_fixed_key = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'fixed_key')
-    # don't set empty value if no replacement was found:
-    if new_fixed_key != '':
-        assert isinstance(new_fixed_key, str)
-        fixed_key = new_fixed_key
-    else:
-        logging.info("Step%s: new_fixed_key is empty. Leave old value.", stepno)
-    logging.info("Step%s: fixed_key after YML: %s", stepno, fixed_key)
-
-    result = SSBL.sbl_activation(can_p,
-                                 fixed_key,
-                                 stepno, purpose)
-    return result
-
 def step_2(can_p):
     """
     Teststep 2: ESS Software Part Download older version
@@ -172,17 +151,18 @@ def run():
         # step 1:
         # action: SBL Activation.
         # result: Positive reply from support function if DL and Activation of SBL ok.
-        result = result and step_1(can_p)
+        result = result and SSBL.sbl_dl_activation(can_p, 1, "DL and activate SBL")
 
         # step 2:
         # action: Download the ESS SW Part, older version.
         # result: Positive reply from support function if DL of SWP ok.
-        result = result and step_2(can_p)
+        #result = result and step_2(can_p)
 
         # step 3:
         # action: Verify that is possible to download the updated ESS SW Part without resetting.
         # result: Positive reply from support function if DL of SWP ok.
         result = result and step_3(can_p)
+        result = result and step_5(can_p)
 
         # step 4:
         # action: Download EXE, SIGCFG and CARCFG SWPs.

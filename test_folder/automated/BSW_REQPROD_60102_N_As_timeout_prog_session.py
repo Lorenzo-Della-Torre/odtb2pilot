@@ -42,9 +42,10 @@ from supportfunctions.support_file_io import SupportFileIO
 
 from supportfunctions.support_precondition import SupportPrecondition
 from supportfunctions.support_postcondition import SupportPostcondition
-from supportfunctions.support_service22 import SupportService22
-from supportfunctions.support_service11 import SupportService11
 from supportfunctions.support_service10 import SupportService10
+from supportfunctions.support_service11 import SupportService11
+from supportfunctions.support_service22 import SupportService22
+from supportfunctions.support_service27 import SupportService27
 from supportfunctions.support_service34 import SupportService34
 from supportfunctions.support_sec_acc import SupportSecurityAccess
 from supportfunctions.support_SBL import SupportSBL
@@ -58,9 +59,10 @@ SUTE = SupportTestODTB2()
 SC_CARCOM = SupportCARCOM()
 PREC = SupportPrecondition()
 POST = SupportPostcondition()
-SE11 = SupportService11()
 SE10 = SupportService10()
+SE11 = SupportService11()
 SE22 = SupportService22()
+SE27 = SupportService27()
 SE34 = SupportService34()
 
 def step_3():
@@ -252,9 +254,9 @@ def run():
         result = result and SE10.diagnostic_session_control_mode2(can_p, 1)
 
         # step2:
-        # action:
-        # result: whole message received
-        result = result and SSA.activation_security_access(can_p, 2, "activate security access")
+        # action: Security Access Request SID
+        # result: ECU sends positive reply
+        result = result and SE27.activate_security_access(can_p, 2)
 
         # step3:
         # action: read SBL

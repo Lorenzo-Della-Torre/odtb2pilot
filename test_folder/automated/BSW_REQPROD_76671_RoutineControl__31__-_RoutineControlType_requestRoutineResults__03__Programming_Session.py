@@ -41,9 +41,9 @@ from supportfunctions.support_carcom import SupportCARCOM
 from supportfunctions.support_file_io import SupportFileIO
 from supportfunctions.support_precondition import SupportPrecondition
 from supportfunctions.support_postcondition import SupportPostcondition
-from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_service10 import SupportService10
-from supportfunctions.support_sec_acc import SupportSecurityAccess
+from supportfunctions.support_service22 import SupportService22
+from supportfunctions.support_service27 import SupportService27
 
 SIO = SupportFileIO
 SC = SupportCAN()
@@ -53,7 +53,7 @@ PREC = SupportPrecondition()
 POST = SupportPostcondition()
 SE10 = SupportService10()
 SE22 = SupportService22()
-SSA = SupportSecurityAccess()
+SE27 = SupportService27()
 
 
 def step_2(can_p):
@@ -333,10 +333,8 @@ def run():
         result = result and step_3(can_p)
 
     # step4:
-    # action: Acivate Security Access
-        result = result and SSA.activation_security_access(can_p,\
-                                                           step_no=4,\
-                                                           purpose='activate SecAccess')
+    # action: Activate Security Access
+        result = result and SE27.activate_security_access(can_p, 4)
 
     # step5:
     # action: send start RoutineControl signal in Programming Session
