@@ -47,6 +47,7 @@ from supportfunctions.support_postcondition import SupportPostcondition
 from supportfunctions.support_service10 import SupportService10
 from supportfunctions.support_service11 import SupportService11
 from supportfunctions.support_service22 import SupportService22
+from supportfunctions.support_service27 import SupportService27
 from supportfunctions.support_service31 import SupportService31
 from supportfunctions.support_service3e import SupportService3e
 
@@ -62,6 +63,7 @@ POST = SupportPostcondition()
 SE10 = SupportService10()
 SE11 = SupportService11()
 SE22 = SupportService22()
+SE27 = SupportService27()
 SE31 = SupportService31()
 SE3E = SupportService3e()
 
@@ -118,7 +120,7 @@ def run():
     # read VBF param when testscript is s started, if empty take default param
     SSBL.get_vbf_files()
     time.sleep(4)
-    timeout = 100
+    timeout = 200
     result = PREC.precondition(can_p, timeout)
     if result:
 
@@ -139,8 +141,7 @@ def run():
         # action: Request Security Access to be able to unlock the server(s)
         #         and run the primary bootloader.
         # result: Positive reply from support function if Security Access to server is activated.
-        result = result and SSA.activation_security_access(can_p, 3,
-                                                           "Security Access Request SID")
+        result = result and SE27.activate_security_access(can_p, 3)
 
         # step4:
         # action: Flash the SBL without Check Memory (without verification).

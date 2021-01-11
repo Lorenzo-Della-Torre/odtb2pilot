@@ -23,17 +23,9 @@
 
 import logging
 
-from supportfunctions.support_service27 import SupportService27
-from supportfunctions.support_can import SupportCAN, CanParam
-from supportfunctions.support_test_odtb2 import SupportTestODTB2
 
-SC = SupportCAN()
-SUTE = SupportTestODTB2()
-
-SE27 = SupportService27()
-
-#class for supporting Security Access
-class SupportSecurityAccess:
+#class for supporting Security Access Gen1
+class SupportSecurityAccess:# pylint: disable=too-few-public-methods
     """
     class for supporting Security Access
     """
@@ -118,16 +110,3 @@ class SupportSecurityAccess:
         logging.debug("r_0: %s", r_0)
         logging.debug("Sec_acc_pins: {0:06x}".format(int(r_0, 2)))
         return bytes.fromhex("{0:06x}".format(int(r_0, 2)))
-
-    def activation_security_access(self, can_p: CanParam, fixed_key, step_no, purpose):
-        """
-        Support function to activate the Security Access
-        """
-        #Security Access request seed
-        testresult, seed = SE27.pbl_security_access_request_seed(can_p, step_no, purpose)
-        r_0 = self.set_security_access_pins(seed, fixed_key)
-
-        #Security Access Send Key
-        testresult = testresult and SE27.pbl_security_access_send_key(can_p, r_0,
-                                                                      step_no, purpose)
-        return testresult

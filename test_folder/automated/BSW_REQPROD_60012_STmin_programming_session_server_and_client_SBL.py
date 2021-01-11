@@ -38,9 +38,9 @@ from supportfunctions.support_file_io import SupportFileIO
 
 from supportfunctions.support_precondition import SupportPrecondition
 from supportfunctions.support_postcondition import SupportPostcondition
-from supportfunctions.support_service22 import SupportService22
-from supportfunctions.support_service11 import SupportService11
 from supportfunctions.support_service10 import SupportService10
+from supportfunctions.support_service11 import SupportService11
+from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_service31 import SupportService31
 from supportfunctions.support_service34 import SupportService34
 from supportfunctions.support_sec_acc import SupportSecurityAccess
@@ -55,8 +55,8 @@ SUTE = SupportTestODTB2()
 SC_CARCOM = SupportCARCOM()
 PREC = SupportPrecondition()
 POST = SupportPostcondition()
-SE11 = SupportService11()
 SE10 = SupportService10()
+SE11 = SupportService11()
 SE22 = SupportService22()
 SE31 = SupportService31()
 SE34 = SupportService34()
@@ -151,7 +151,7 @@ def run():
         # step1:
         # action: Download and activate SBL
         # result: True, if all went fine
-        result = result and SSBL.sbl_activation(can_p, 1, "DL and activate SBL")
+        result = result and SSBL.sbl_dl_activation(can_p, 1, "DL and activate SBL")
         time.sleep(1)
 
         # step2:

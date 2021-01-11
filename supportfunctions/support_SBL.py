@@ -53,6 +53,7 @@ from supportfunctions.support_LZSS import LzssEncoder
 from supportfunctions.support_file_io import SupportFileIO
 from supportfunctions.support_service10 import SupportService10
 from supportfunctions.support_service22 import SupportService22
+from supportfunctions.support_service27 import SupportService27
 from supportfunctions.support_service31 import SupportService31
 from supportfunctions.support_service34 import SupportService34
 from supportfunctions.support_service36 import SupportService36
@@ -67,6 +68,7 @@ LZSS = LzssEncoder()
 
 SE10 = SupportService10()
 SE22 = SupportService22()
+SE27 = SupportService27()
 SE31 = SupportService31()
 SE34 = SupportService34()
 SE36 = SupportService36()
@@ -447,9 +449,9 @@ class SupportSBL:
         pos = message.find('EDA0')
         if (not message.find('F121', pos) == -1) and (not message.find('F125', pos) == -1):
             # Security Access Request SID
-            result = result and SSA.activation_security_access(can_p,\
-                                                               fixed_key,\
-                                                               stepno, purpose)
+            result = result and SE27.activate_security_access_fixedkey(can_p,
+                                                                       fixed_key,
+                                                                       stepno, purpose)
 
             # SBL Download
             tresult, vbf_sbl_header = self.sbl_download(can_p, self._sbl, stepno)
@@ -490,6 +492,24 @@ class SupportSBL:
                 logging.info("error message: %s\n", SC.can_messages[can_p["receive"]])
                 result = False
         time.sleep(0.1)
+        return result
+
+    # Support Function to select Support functions to use for activating SBL based on actual mode
+    def sbl_dl_activation(self, can_p: CanParam, stepno='', purpose=""):
+        """
+        Function used to download and activate the Secondary Bootloader
+        """
+        fixed_key = '0102030405'
+        new_fixed_key = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'fixed_key')
+        # don't set empty value if no replacement was found:
+        if new_fixed_key != '':
+            assert isinstance(new_fixed_key, str)
+            fixed_key = new_fixed_key
+        else:
+            logging.info("Step%s: new_fixed_key is empty. Leave old value.", stepno)
+        logging.info("Step%s: fixed_key after YML: %s", stepno, fixed_key)
+
+        result = self.sbl_activation(can_p, fixed_key, stepno, purpose)
         return result
 
 

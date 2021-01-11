@@ -148,7 +148,7 @@ def run():
         # step 5:
         # action: Active DL and SBL
         # result: BECM reply positively
-        result = result and SSBL.sbl_activation(can_p,5,"DL and activate SBL")
+        result = result and SSBL.sbl_dl_activation(can_p, 5, "DL and activate SBL")
 
         # step 6:
         # action: Verify SBL session

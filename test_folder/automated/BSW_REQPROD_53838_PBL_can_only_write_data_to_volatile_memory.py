@@ -47,6 +47,7 @@ from supportfunctions.support_postcondition import SupportPostcondition
 from supportfunctions.support_service10 import SupportService10
 from supportfunctions.support_service11 import SupportService11
 from supportfunctions.support_service22 import SupportService22
+from supportfunctions.support_service27 import SupportService27
 from supportfunctions.support_service31 import SupportService31
 from supportfunctions.support_service34 import SupportService34
 
@@ -62,9 +63,9 @@ POST = SupportPostcondition()
 SE10 = SupportService10()
 SE11 = SupportService11()
 SE22 = SupportService22()
+SE27 = SupportService27()
 SE31 = SupportService31()
 SE34 = SupportService34()
-
 
 def step_4():
     """
@@ -144,10 +145,9 @@ def run():
         result = result and SE10.diagnostic_session_control_mode2(can_p, stepno=2)
 
         # step 3:
-        # action:
-        # result:
-        result = result and SSA.activation_security_access(can_p, 3,
-                                                           "Security Access Request SID")
+        # action: Security Access Request SID
+        # result: ECU sends positive reply
+        result = result and SE27.activate_security_access(can_p, 3)
 
         # step 4:
         # action: Read VBF files for ESS file (1st Logical Block)
