@@ -244,6 +244,7 @@ def run():
     #SSBL.get_vbf_files()
     timeout = 2000
     result = PREC.precondition(can_p, timeout)
+    result = True
 
     if result:
     ############################################
