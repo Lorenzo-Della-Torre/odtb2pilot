@@ -1,9 +1,9 @@
 # Testscript ODTB2 MEPII
 # project:  ECU basetech MEPII
 # author:   J-ADSJO (Johan Adsjö)
-# date:     2020-10-21
+# date:     2021-01-12
 # version:  1.0
-# reqprod:  68202
+# reqprod:  466751
 # -- UPDATES --
 # author:
 # date:
@@ -59,14 +59,14 @@ def validate_and_get_pn_f12b(message):
     '''
     Validate and pretty print ECU Delivery Assembly Part Number
     '''
-    pos = message.find('F12B')
+    pos = message.find('D03A')
     valid = SUTE.validate_part_number_record(message[pos+4:pos+18])
     ecu_delivery_assembly_pn = SUTE.pp_partnumber(message[pos+4:pos+18])
     return valid, ecu_delivery_assembly_pn
 
 def step_2(can_p):
     """
-    Teststep 2: send requests DID F12B - in Default Session
+    Teststep 2: send requests DID D03A - in Default Session
     """
     # Parameters for the teststep
     cpay: CanPayload = {
@@ -78,7 +78,7 @@ def step_2(can_p):
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
     etp: CanTestExtra = {
         "step_no": 2,
-        "purpose": "Reead Public Key Checksum - in Default Session",
+        "purpose": "Read Public Key Checksum - in Default Session",
         "timeout": 1,
         "min_no_messages": -1,
         "max_no_messages": -1
@@ -86,19 +86,19 @@ def step_2(can_p):
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
 
     result = SUTE.teststep(can_p, cpay, etp)
-    time.sleep(1)
+    time.sleep(3)
 
-    #result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='F12B')
-    logging.info(SC.can_messages[can_p["receive"]])
+    #result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='D03A')
+    logging.info("TestStep2 Received msg: %s", SC.can_messages[can_p["receive"]])
 
     default_f12b_result = SC.can_messages[can_p["receive"]][0][2]
-    #logging.info(default_f12b_result)
+    logging.info(default_f12b_result)
 
     return result, default_f12b_result
 
 def step_4(can_p):
     """
-    Teststep 3: send requests DID F12B - in Default Session
+    Teststep 3: send requests DID D03A - in Default Session
     """
     # Parameters for the teststep
     cpay: CanPayload = {
@@ -110,7 +110,7 @@ def step_4(can_p):
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
     etp: CanTestExtra = {
         "step_no": 4,
-        "purpose": "Request DID F12B - in Extended Session",
+        "purpose": "Request DID D03A - in Extended Session",
         "timeout": 1,
         "min_no_messages": -1,
         "max_no_messages": -1
@@ -120,7 +120,7 @@ def step_4(can_p):
     result = SUTE.teststep(can_p, cpay, etp)
     time.sleep(1)
 
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='F12B')
+    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='D03A')
     logging.info(SC.can_messages[can_p["receive"]])
 
     extended_f12b_result = SC.can_messages[can_p["receive"]][0][2]
@@ -130,7 +130,7 @@ def step_4(can_p):
 
 def step_6(can_p):
     """
-    Teststep 6: send requests DID F12B - in Programming Session
+    Teststep 6: send requests DID D03A - in Programming Session
     """
     # Parameters for the teststep
     cpay: CanPayload = {
@@ -142,7 +142,7 @@ def step_6(can_p):
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
     etp: CanTestExtra = {
         "step_no": 6,
-        "purpose": "Request DID F12B - in Programming Session",
+        "purpose": "Request DID D03A - in Programming Session",
         "timeout": 1,
         "min_no_messages": -1,
         "max_no_messages": -1
@@ -152,7 +152,7 @@ def step_6(can_p):
     result = SUTE.teststep(can_p, cpay, etp)
     time.sleep(1)
 
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='F12B')
+    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='D03A')
     logging.info(SC.can_messages[can_p["receive"]])
 
     programming_f12b_result = SC.can_messages[can_p["receive"]][0][2]
@@ -162,7 +162,7 @@ def step_6(can_p):
 
 def step_8(can_p):
     """
-    Teststep 8: send requests DID F12B - with SBL active
+    Teststep 8: send requests DID D03A - with SBL active
     """
     # Parameters for the teststep
     cpay: CanPayload = {
@@ -174,7 +174,7 @@ def step_8(can_p):
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
     etp: CanTestExtra = {
         "step_no": 8,
-        "purpose": "Request DID F12B - with SBL Activated",
+        "purpose": "Request DID D03A - with SBL Activated",
         "timeout": 1,
         "min_no_messages": -1,
         "max_no_messages": -1
@@ -184,7 +184,7 @@ def step_8(can_p):
     result = SUTE.teststep(can_p, cpay, etp)
     time.sleep(1)
 
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='F12B')
+    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='D03A')
     logging.info(SC.can_messages[can_p["receive"]])
 
     sbl_f12b_result = SC.can_messages[can_p["receive"]][0][2]
@@ -194,7 +194,7 @@ def step_8(can_p):
 
 def step_9(default_f12b_result, extended_f12b_result, programming_f12b_result, sbl_f12b_result):
     """
-    TestStep 9: Validate F12B Part Number messages
+    TestStep 9: Validate D03A Part Number messages
     """
 
     default_valid, default_ecu_da_pn = validate_and_get_pn_f12b(default_f12b_result)
@@ -241,7 +241,7 @@ def run():
     # precondition
     ############################################
     # read VBF param when testscript is s started, if empty take default param
-    SSBL.get_vbf_files()
+    #SSBL.get_vbf_files()
     timeout = 2000
     result = PREC.precondition(can_p, timeout)
 
@@ -257,7 +257,7 @@ def run():
         time.sleep(1)
 
     # step 2:
-    # action: send requests DID F12B in Default Session
+    # action: send requests DID D03A in Default Session
     # result: Data record with Autosar BSW cluster version is returned
         result_step_2, default_f12b_result = step_2(can_p)
 
@@ -268,7 +268,7 @@ def run():
         time.sleep(1)
 
     # step 4:
-    # action: send requests DID F12B in Extended Session
+    # action: send requests DID D03A in Extended Session
     # result: Data record with Autosar BSW cluster version is returned
         result_step_4, extended_f12b_result = step_4(can_p)
         time.sleep(1)
@@ -276,43 +276,43 @@ def run():
     # step 5:
     # action: Change to Programming session
     # result: ECU reports mode
-        result = result and SE10.diagnostic_session_control_mode2(can_p, 5)
-        time.sleep(1)
+        #result = result and SE10.diagnostic_session_control_mode2(can_p, 5)
+        #time.sleep(1)
 
     # step 6:
-    # action: send requests DID F12B in Extended Session
+    # action: send requests DID D03A in Extended Session
     # result: Data record with Autosar BSW cluster version is returned
-        result_step_6, programming_f12b_result = step_6(can_p)
-        time.sleep(1)
+        #result_step_6, programming_f12b_result = step_6(can_p)
+        #time.sleep(1)
 
     # step 7:
     # action: Change to Programming session
     # result: ECU reports mode
-        result = result and SSBL.sbl_activation(can_p, stepno=7, purpose="DL and activate SBL")
-        time.sleep(1)
+        #result = result and SSBL.sbl_activation(can_p, stepno=7, purpose="DL and activate SBL")
+        #time.sleep(1)
 
     # step 8:
-    # action: send requests DID F12B in Extended Session
+    # action: send requests DID D03A in Extended Session
     # result: Data record with Autosar BSW cluster version is returned
-        result_step_8, sbl_f12b_result = step_8(can_p)
-        time.sleep(1)
+        #result_step_8, sbl_f12b_result = step_8(can_p)
+        #time.sleep(1)
 
     # step9:
     # action: Complete the testcase
     # result: Merge the results from all steps
     #         The record received in Default, Extended and Programming Session shall be equal
         step_no = 9
-        purpose = "Verify the F12B records received are equal in all modes"
+        purpose = "Verify the D03A records received are equal in all modes"
         SUTE.print_test_purpose(step_no, purpose)
 
-        result = result and result_step_2 and result_step_4 and result_step_6 and result_step_8
-        result = result and step_9(default_f12b_result, extended_f12b_result,
-                                    programming_f12b_result, sbl_f12b_result)
+        #result = result and result_step_2 and result_step_4 and result_step_6 and result_step_8
+        #result = result and step_9(default_f12b_result, extended_f12b_result,
+        #                            programming_f12b_result, sbl_f12b_result)
 
         result = result and (default_f12b_result == extended_f12b_result)
-        result = result and (default_f12b_result == programming_f12b_result == sbl_f12b_result)
+        #result = result and (default_f12b_result == programming_f12b_result == sbl_f12b_result)
 
-    # step7:
+    # step10:
     # action: Set to Default session before leaving
     # result: ECU reports modes
         result_end = SE10.diagnostic_session_control_mode1(can_p, 10)
