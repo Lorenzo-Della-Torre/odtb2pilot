@@ -6,3 +6,4 @@
 *.html
 *.sddb
 did_dict.py
+.DS_Store
