@@ -1,32 +1,28 @@
 """
+reqprod: 418372
+version: 2
 title:
-
-    ECU Software Structure Part Number data record ; 2
+    ECU Software Structure Part Number data record
 
 purpose:
-
     To enable readout of the part number of the ECU Software Structure.
 
-description:
-
+description: >
     If the ECU supports the Software Authentication concept where each data
-    file is signed and verified individually as defined in Ref[LC : General
-    Software Authentication], a data record shall be implemented as specified
+    file is signed and verified individually as defined in Ref[*LC : General
+    Software Authentication*], a data record shall be implemented as specified
     in the table below.
 
-    Description: ECU Software Structure Part Number
-    Identifier: F12C
+    ECU Software Structure Part Number: F12C
 
     It shall be possible to read the data record by using the diagnostic
-    service specified in Ref[LC : Volvo Car Corporation - UDS Services -
-    Service 0x22 (ReadDataByIdentifier) Reqs].  The ECU shall implement the
-    data record exactly as defined in Carcom – Global Master Referenced
-    Database (GMRDB).
+    service specified in Ref[*LC : Volvo Car Corporation - UDS Services -
+    Service 0x22 (ReadDataByIdentifier) Reqs*].  The ECU shall implement the
+    data record exactly as defined in *Carcom - Global Master Referenced
+    Database (GMRDB)*.
 
     The ECU shall support the identifier in the following sessions:
-
-     - Programming session (which includes both primary and secondary
-       bootloader)
+     - Programming session (which includes both primary and secondary bootloader)
 
 """
 
@@ -41,8 +37,10 @@ from supportfunctions.support_uds import ecu_software_structure_part_number_f12c
 
 def step_1(dut):
     """
-    Get the complete ecu part numbers from another did to have something to
-    compare it with
+    action:
+
+        Get the complete ecu part numbers from another did to have something to
+        compare it with
     """
     eda0_response = dut.uds.read_data_by_id_22(
         complete_ecu_part_number_eda0)
@@ -55,15 +53,18 @@ def step_1(dut):
 
 def step_2(dut):
     """
-    Set ecu to programming mode/session
+    action: Set ecu to programming mode/session
     """
     dut.uds.set_mode(2)
 
 
 def step_3(dut, eda0_response):
     """
-    Make sure that the ecu software structure part number that we get with F12C
-    matches with what we get from EDA0
+    action:
+
+        Make sure that the ecu software structure part number that we get with
+        F12C matches with what we get from EDA0
+
     """
     f12c_response = dut.uds.read_data_by_id_22(
         ecu_software_structure_part_number_f12c)

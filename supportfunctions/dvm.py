@@ -1,9 +1,12 @@
 #!/usr/bin/env python
 
-import importlib.util
 import sys
+import importlib.util
 from pathlib import Path
+
 import yaml
+from html_to_docx import add_html
+from markdown import markdown
 
 from docx import Document
 from docx.shared import Inches
@@ -13,6 +16,7 @@ from docx.enum.style import WD_STYLE_TYPE
 from docx.enum.table import WD_ROW_HEIGHT_RULE
 from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT
 from docx.enum.section import WD_ORIENTATION
+
 
 def create_dvm(test_file_py):
     spec = importlib.util.spec_from_file_location("req_test", test_file_py)
@@ -27,7 +31,6 @@ def create_dvm(test_file_py):
     reqdata.setdefault('precondition', 'Default session')
     reqdata.setdefault('postcondition', 'Default session')
     reqdata.setdefault('details', '')
-
 
     steps = []
     for step_name in dir(req_test):
@@ -45,6 +48,7 @@ def create_dvm(test_file_py):
     section = dvm.sections[-1]
     section.orientation = WD_ORIENTATION.LANDSCAPE
 
+    # let's make the document A4 and not letter
     section = dvm.sections[0]
     section.page_height = Mm(210)
     section.page_width = Mm(297)
@@ -65,6 +69,10 @@ def create_dvm(test_file_py):
     body.font.size = Pt(11)
     body.font.bold = True
 
+    normal_body = styles.add_style('Body Normal', WD_STYLE_TYPE.PARAGRAPH)
+    normal_body.font.name = 'Calibri'
+    normal_body.font.size = Pt(11)
+
     table_body = styles.add_style('Table Body', WD_STYLE_TYPE.TABLE)
     table_body.font.name = 'Calibri'
     table_body.font.size = Pt(11)
@@ -72,6 +80,8 @@ def create_dvm(test_file_py):
     border_table_body = styles['Table Grid']
     border_table_body.font.name = 'Calibri'
     border_table_body.font.size = Pt(11)
+
+    dvm.styles.default(normal_body)
 
     dvm_heading = f'REQPROD {reqdata["reqprod"]} / MAIN ; {reqdata["version"]}'
 
@@ -85,7 +95,6 @@ def create_dvm(test_file_py):
         ('General:', dvm_heading),
         ('Title:', reqdata['title']),
         ('Purpose:', reqdata['purpose']),
-        ('Description:', reqdata['description'])
     )
 
     table = dvm.add_table(rows=0, cols=2)
@@ -97,12 +106,22 @@ def create_dvm(test_file_py):
         p.style = body
         p.text = title
         row.cells[0].vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.TOP
-        row.cells[1].text = content
+        p = row.cells[1].paragraphs[0]
+        p.text = content
 
-    table.columns[0].width = Mm(25)
+    row = table.add_row()
+    p = row.cells[0].paragraphs[0]
+    p.style = body
+    p.text = 'Description:'
+    p = row.cells[1].paragraphs[0]
+    description = reqdata['description']
+    for paragraph in description.split('\n'):
+        html = markdown(paragraph)
+        if html:
+            p = add_html(p, html)
+
+    table.columns[0].width = Mm(26)
     table.columns[1].width = Mm(218.4)
-
-    #  dvm.add_page_break()
 
     table = dvm.add_table(rows=1, cols=2)
     table.style = table_body
@@ -112,8 +131,10 @@ def create_dvm(test_file_py):
     p.text = "Precondition:"
     p = row.cells[1].paragraphs[0]
     p.text = reqdata["precondition"]
-    table.columns[0].width = Mm(25)
-    table.columns[1].width = Mm(218.4)
+    table.columns[0].width = Mm(27)
+    table.columns[1].width = Mm(216)
+
+    dvm.add_page_break()
 
     p = dvm.add_paragraph("Test execution:")
     p.style = body
@@ -158,8 +179,9 @@ def create_dvm(test_file_py):
         row.cells[0].vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.TOP
         row.cells[1].text = content
 
-    table.columns[0].width = Mm(25)
-    table.columns[1].width = Mm(218.4)
+    table.columns[0].width = Mm(27)
+    table.columns[1].width = Mm(216)
+
     docx_filename = Path(test_file_py).with_suffix('.docx').name
     docx_filename = docx_filename.replace("BSW_REQPROD_", "REQ_")
     print("Generated file: ", docx_filename)
