@@ -88,7 +88,7 @@ def step_2(can_p):
     result = SUTE.teststep(can_p, cpay, etp)
     time.sleep(3)
 
-    #result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='D03A')
+    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='D03A')
     logging.info("TestStep2 Received msg: %s", SC.can_messages[can_p["receive"]])
 
     default_f12b_result = SC.can_messages[can_p["receive"]][0][2]
