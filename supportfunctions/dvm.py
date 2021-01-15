@@ -1,6 +1,8 @@
-#!/usr/bin/env python
+"""
+Module for creating DVMs from appropriately formatted yaml contained in the
+module and function docstrings.
+"""
 
-import sys
 import importlib.util
 from pathlib import Path
 
@@ -9,16 +11,19 @@ from html_to_docx import add_html
 from markdown import markdown
 
 from docx import Document
-from docx.shared import Inches
 from docx.shared import Pt
 from docx.shared import Mm
 from docx.enum.style import WD_STYLE_TYPE
-from docx.enum.table import WD_ROW_HEIGHT_RULE
 from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT
 from docx.enum.section import WD_ORIENTATION
 
-
+#pylint: disable=too-many-statements
 def create_dvm(test_file_py):
+    """
+    creates a docx document in the current work directory from test_file_py
+    """
+
+    # pylint: disable=no-member,too-many-locals
     spec = importlib.util.spec_from_file_location("req_test", test_file_py)
     req_test = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(req_test)
@@ -187,9 +192,3 @@ def create_dvm(test_file_py):
     print("Generated file: ", docx_filename)
 
     dvm.save(docx_filename)
-
-
-if __name__ == '__main__':
-    if len(sys.argv) != 2:
-           sys.exit("Usage: dvm.py <test_file.py>")
-    create_dvm(sys.argv[1])
