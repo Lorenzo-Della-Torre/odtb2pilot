@@ -25,7 +25,7 @@ class UdsEmptyResponse(Exception):
 
 class UdsResponse:
     """ UDS response """
-    # pylint: disable=too-many-instance-attributes
+    # pylint: disable=too-many-instance-attributes, attribute-defined-outside-init
     def __init__(self, raw):
         self.raw = raw
         self.__process_message()
@@ -71,7 +71,7 @@ class UdsResponse:
         if hasattr(self, "match"):
             s = s + f"  match = {self.match} \n"
 
-        # TODO: this should be made general
+        # this should be made general
         if hasattr(self, "ecu_sw_struct_part_num"):
             s = s + "  ecu_sw_struct_part_num = " + \
                 f"{self.ecu_sw_struct_part_num} "
