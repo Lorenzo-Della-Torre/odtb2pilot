@@ -8,3 +8,9 @@ Testscripts are done using Python and GRPC supplied by Signalbroker.
 Hardware used is Raspberry Pi3, CanCase2, BECM module including CVTN, CMS and ODTB2.
 
 Software used: CSP/Signalbroker (from gitlab) and Python 3.7 (or later). 
+
+
+## Setup
+
+  sudo apt install libxslt-dev
+  pip3 install -r requirements.txt
