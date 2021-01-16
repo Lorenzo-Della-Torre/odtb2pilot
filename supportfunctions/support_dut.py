@@ -105,6 +105,12 @@ class Dut:
         logging.info("Time: %s \n", timestamp)
         return timestamp
 
+    def step(self, func, *args, purpose="", **kwargs):
+        """ add test step """
+        self.uds.step += 1
+        self.uds.purpose = purpose
+        return func(self, *args, **kwargs)
+
     @beamy_feature
     def check_licence(self):
         """ check the beamy check_licence with beamylabs """

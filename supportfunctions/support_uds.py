@@ -103,6 +103,8 @@ class Uds:
     """ Unified diagnostic services """
     def __init__(self, dut):
         self.dut = dut
+        self.step = 0
+        self.purpose = ""
 
     def __make_call(self, payload):
         cpay: CanPayload = {
@@ -110,8 +112,8 @@ class Uds:
             "extra": ''
         }
         etp: CanTestExtra = {
-            "step_no": 1,
-            "purpose": "purpose",
+            "step_no": self.step,
+            "purpose": self.purpose,
             "timeout": 1,
             "min_no_messages": -1,
             "max_no_messages": -1

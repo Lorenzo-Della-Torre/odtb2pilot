@@ -121,9 +121,9 @@ def run():
     try:
         dut.precondition()
 
-        eda0_response = step_1(dut)
-        step_2(dut)
-        step_3(dut, eda0_response)
+        eda0_response = dut.step(step_1, purpose="get eda0")
+        dut.step(step_2, purpose="set programming mode")
+        dut.step(step_3, eda0_response, purpose="get f12c and compare values")
 
         result = True
     except DutTestError as error:
