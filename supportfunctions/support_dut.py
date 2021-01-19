@@ -39,7 +39,7 @@ from supportfunctions.support_uds import Uds
 # pylint: disable=no-member
 import protogenerated.system_api_pb2
 if hasattr(protogenerated.system_api_pb2, "License"):
-    # pylint: disable=no-name-in-module,redefined-outer-name,import-outside-toplevel 
+    # pylint: disable=no-name-in-module,redefined-outer-name,import-outside-toplevel
     from protogenerated.system_api_pb2 import License
     from protogenerated.system_api_pb2 import LicenseStatus # pylint: disable=no-name-in-module
     from protogenerated.system_api_pb2 import FileDescription # pylint: disable=no-name-in-module
@@ -228,11 +228,11 @@ class Dut:
             config_dir = Path(tmpdirname)
             config_can = config_dir.joinpath("can")
             config_can.mkdir()
-            platform = os.getenv("ODTBPROJ")
-            if platform == "MEP2_SPA1":
+            platform = get_platform()
+            if platform == "spa1":
                 can0_dbc_file = \
                     'SPA3010_ConfigurationsSPA3_Front1CANCfg_180615_Prototype.dbc'
-            if platform == "MEP2_SPA2":
+            if platform == "spa2":
                 can0_dbc_file = 'HVBMsystemSPA2_MAIN_3_HVBM1CANCfg_200506_.dbc'
 
 
@@ -272,13 +272,16 @@ def get_dut_custom():
 def get_platform():
     """ get the currently activated platform """
     platform = os.getenv("ODTBPROJ")
-    if platform == "MEP2_SPA1":
-        return "spa1"
-    if platform == "MEP2_SPA2":
-        return "spa2"
-    if platform == "MEP2_HLCM":
-        return "hlcm"
-    raise EnvironmentError("ODTBPROJ is not set")
+    if not platform:
+        raise EnvironmentError("ODTBPROJ is not set")
+
+    match = re.search(r'MEP2_(.+)$', platform)
+    if not match:
+        raise EnvironmentError(
+            "Unknown ODTBPROJ encountered. " \
+            "get_platform() might need to get updated")
+
+    return match.groups()[0].lower()
 
 
 def get_parameters(custom_yml_file=None):
@@ -391,6 +394,28 @@ def test_upload_folder():
         "BO_ 1875 HvbmdpToHvbmUdsDiagRequestFrame : 8 HVBMdp",
         "BO_ 1875 HvbmdpToHvbmUdsDiagRequestFrame : 7 HVBMdp"
     )
+
+
+def test_get_platform():
+    """ pytest: testing get_platform """
+    old_odtbproj = os.getenv("ODTBPROJ")
+
+    os.environ["ODTBPROJ"] = "MEP2_SPA1"
+    assert get_platform() == "spa1"
+    os.environ["ODTBPROJ"] = "MEP2_SPA2"
+    assert get_platform() == "spa2"
+    os.environ["ODTBPROJ"] = "MEP2_HLCM"
+    assert get_platform() == "hlcm"
+    os.environ["ODTBPROJ"] = "MEP2_ED_IFHA"
+    assert get_platform() == "ed_ifha"
+    os.environ["ODTBPROJ"] = ""
+    with pytest.raises(EnvironmentError, match=r".*not set"):
+        get_platform()
+    os.environ["ODTBPROJ"] = "NONESENSE"
+    with pytest.raises(EnvironmentError, match=r"Unknown ODTBPROJ.*"):
+        get_platform()
+
+    os.environ["ODTBPROJ"] = old_odtbproj
 
 
 def test_get_parameters():
