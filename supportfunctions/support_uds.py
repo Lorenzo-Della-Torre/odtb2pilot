@@ -45,10 +45,9 @@ class UdsResponse:
 
         g = match.groupdict()
         self.sid = g["sid"]
-        if not self.sid in service_types:
-            raise LookupError("Unknown service type in response")
+        if self.sid in service_types:
+            self.service = service_types[self.sid]
 
-        self.service = service_types[self.sid]
         self.did = g["did"]
         self.content = g["content"]
 
