@@ -36,6 +36,7 @@ import logging
 
 from supportfunctions.support_dut import Dut
 from supportfunctions.support_dut import DutTestError
+from supportfunctions.support_dut import get_platform
 from supportfunctions.support_uds import global_timestamp_dd00
 from supportfunctions.support_uds import UdsEmptyResponse
 
@@ -47,23 +48,25 @@ def step_1(dut):
     if not data:
         raise DutTestError("No global_timestamp data received")
 
-    assert 'DD00' in data
+    assert 'DD00' in data.raw
 
 def step_2(dut):
     """
     Attempt to get the global timestamp with DLC set to 7 bytes
     """
 
-    platform = dut.get_platform()
+    platform = get_platform()
     if platform == "spa1":
         dut.reconfigure_broker(
             "BO_ 1845 Vcu1ToBecmFront1DiagReqFrame: 8 VCU1",
             "BO_ 1845 Vcu1ToBecmFront1DiagReqFrame: 7 VCU1",
+            can0_dbc_file='SPA3010_ConfigurationsSPA3_Front1CANCfg_180615_Prototype.dbc'
         )
     elif platform == "spa2":
         dut.reconfigure_broker(
             "BO_ 1875 HvbmdpToHvbmUdsDiagRequestFrame : 8 HVBMdp",
-            "BO_ 1875 HvbmdpToHvbmUdsDiagRequestFrame : 7 HVBMdp"
+            "BO_ 1875 HvbmdpToHvbmUdsDiagRequestFrame : 7 HVBMdp",
+            can0_dbc_file='HVBMsystemSPA2_MAIN_3_HVBM1CANCfg_200506_.dbc'
         )
 
     try:
@@ -96,12 +99,12 @@ def run():
         # step1:
         # action: Get time data from DTC snapshoot with a 8 byte long frame
         # result: We should be able to retrieve a timestamp from the response
-        step_1(dut)
+        dut.step(step_1)
 
         # step2:
         # action: Get time data from DTC snapshoot with a 7 byte long frame
         # result: Any attempts with a DLC that is not 8 byte long should fail
-        step_2(dut)
+        dut.step(step_2)
 
         result = True
     except DutTestError as error:
