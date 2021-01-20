@@ -211,7 +211,11 @@ class Dut:
 
 
     @beamy_feature
-    def reconfigure_broker(self, pattern="", replace=""):
+    def reconfigure_broker(
+            self, pattern="", replace="",
+            can0_dbc_file='SPA3010_ConfigurationsSPA3_Front1CANCfg_180615_Prototype.dbc',
+            can1_dbc_file='SPA3230_ConfigurationsCMAVolvo2_RMSCANCfg_181214_.dbc'):
+
         """
         Modify the signal broker configuration
 
@@ -228,12 +232,6 @@ class Dut:
             config_dir = Path(tmpdirname)
             config_can = config_dir.joinpath("can")
             config_can.mkdir()
-            platform = get_platform()
-            if platform == "spa1":
-                can0_dbc_file = \
-                    'SPA3010_ConfigurationsSPA3_Front1CANCfg_180615_Prototype.dbc'
-            if platform == "spa2":
-                can0_dbc_file = 'HVBMsystemSPA2_MAIN_3_HVBM1CANCfg_200506_.dbc'
 
 
             with open(dbpath.joinpath(can0_dbc_file), "r") as from_dbc_file:
@@ -247,7 +245,6 @@ class Dut:
             interfaces["chains"][0]["dbc_file"] = \
                 str(Path("can").joinpath(can0_dbc_file))
 
-            can1_dbc_file = 'SPA3230_ConfigurationsCMAVolvo2_RMSCANCfg_181214_.dbc'
             shutil.copy(dbpath.joinpath(can1_dbc_file), config_can)
             interfaces["chains"][1]["dbc_file"] =  \
                 str(Path("can").joinpath(can1_dbc_file))
@@ -278,7 +275,7 @@ def get_platform():
     match = re.search(r'MEP2_(.+)$', platform)
     if not match:
         raise EnvironmentError(
-            "Unknown ODTBPROJ encountered. " \
+            "Unknown ODTBPROJ encountered. "
             "get_platform() might need to get updated")
 
     return match.groups()[0].lower()
