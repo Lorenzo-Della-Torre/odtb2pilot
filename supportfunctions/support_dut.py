@@ -39,7 +39,7 @@ from supportfunctions.support_uds import Uds
 # pylint: disable=no-member
 import protogenerated.system_api_pb2
 if hasattr(protogenerated.system_api_pb2, "License"):
-    # pylint: disable=no-name-in-module,redefined-outer-name,import-outside-toplevel 
+    # pylint: disable=no-name-in-module,redefined-outer-name,import-outside-toplevel
     from protogenerated.system_api_pb2 import License
     from protogenerated.system_api_pb2 import LicenseStatus # pylint: disable=no-name-in-module
     from protogenerated.system_api_pb2 import FileDescription # pylint: disable=no-name-in-module
@@ -74,7 +74,6 @@ class Dut:
         self.namespace = NameSpace(name="Front1CANCfg0")
 
         self.uds = Uds(self)
-        # pylint: disable=too-many-instance-attributes
 
     def __getitem__(self, key):
         # Legacy subscript access to dut object for old code
@@ -105,6 +104,12 @@ class Dut:
         logging.info("Testcase start: %s", start_time)
         logging.info("Time: %s \n", timestamp)
         return timestamp
+
+    def step(self, func, *args, purpose="", **kwargs):
+        """ add test step """
+        self.uds.step += 1
+        self.uds.purpose = purpose
+        return func(self, *args, **kwargs)
 
     @beamy_feature
     def check_licence(self):
@@ -206,7 +211,11 @@ class Dut:
 
 
     @beamy_feature
-    def reconfigure_broker(self, pattern="", replace=""):
+    def reconfigure_broker(
+            self, pattern="", replace="",
+            can0_dbc_file='SPA3010_ConfigurationsSPA3_Front1CANCfg_180615_Prototype.dbc',
+            can1_dbc_file='SPA3230_ConfigurationsCMAVolvo2_RMSCANCfg_181214_.dbc'):
+
         """
         Modify the signal broker configuration
 
@@ -223,12 +232,6 @@ class Dut:
             config_dir = Path(tmpdirname)
             config_can = config_dir.joinpath("can")
             config_can.mkdir()
-            platform = os.getenv("ODTBPROJ")
-            if platform == "MEP2_SPA1":
-                can0_dbc_file = \
-                    'SPA3010_ConfigurationsSPA3_Front1CANCfg_180615_Prototype.dbc'
-            if platform == "MEP2_SPA2":
-                can0_dbc_file = 'HVBMsystemSPA2_MAIN_3_HVBM1CANCfg_200506_.dbc'
 
 
             with open(dbpath.joinpath(can0_dbc_file), "r") as from_dbc_file:
@@ -242,7 +245,6 @@ class Dut:
             interfaces["chains"][0]["dbc_file"] = \
                 str(Path("can").joinpath(can0_dbc_file))
 
-            can1_dbc_file = 'SPA3230_ConfigurationsCMAVolvo2_RMSCANCfg_181214_.dbc'
             shutil.copy(dbpath.joinpath(can1_dbc_file), config_can)
             interfaces["chains"][1]["dbc_file"] =  \
                 str(Path("can").joinpath(can1_dbc_file))
@@ -262,6 +264,21 @@ def get_dut_custom():
     frame_info = inspect.stack()[1]
     filename = Path(frame_info.filename)
     return Dut(custom_yml_file=os.path.basename(filename.with_suffix(".yml")))
+
+
+def get_platform():
+    """ get the currently activated platform """
+    platform = os.getenv("ODTBPROJ")
+    if not platform:
+        raise EnvironmentError("ODTBPROJ is not set")
+
+    match = re.search(r'MEP2_(.+)$', platform)
+    if not match:
+        raise EnvironmentError(
+            "Unknown ODTBPROJ encountered. "
+            "get_platform() might need to get updated")
+
+    return match.groups()[0].lower()
 
 
 def get_parameters(custom_yml_file=None):
@@ -374,6 +391,28 @@ def test_upload_folder():
         "BO_ 1875 HvbmdpToHvbmUdsDiagRequestFrame : 8 HVBMdp",
         "BO_ 1875 HvbmdpToHvbmUdsDiagRequestFrame : 7 HVBMdp"
     )
+
+
+def test_get_platform():
+    """ pytest: testing get_platform """
+    old_odtbproj = os.getenv("ODTBPROJ")
+
+    os.environ["ODTBPROJ"] = "MEP2_SPA1"
+    assert get_platform() == "spa1"
+    os.environ["ODTBPROJ"] = "MEP2_SPA2"
+    assert get_platform() == "spa2"
+    os.environ["ODTBPROJ"] = "MEP2_HLCM"
+    assert get_platform() == "hlcm"
+    os.environ["ODTBPROJ"] = "MEP2_ED_IFHA"
+    assert get_platform() == "ed_ifha"
+    os.environ["ODTBPROJ"] = ""
+    with pytest.raises(EnvironmentError, match=r".*not set"):
+        get_platform()
+    os.environ["ODTBPROJ"] = "NONESENSE"
+    with pytest.raises(EnvironmentError, match=r"Unknown ODTBPROJ.*"):
+        get_platform()
+
+    os.environ["ODTBPROJ"] = old_odtbproj
 
 
 def test_get_parameters():

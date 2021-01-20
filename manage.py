@@ -9,6 +9,7 @@ from pathlib import Path
 from supportfunctions.support_sddb import parse_sddb_file
 from supportfunctions.support_sddb import get_platform_dir
 from supportfunctions.support_sddb import get_sddb_file
+from supportfunctions.dvm import create_dvm
 
 def check_install():
     """ Make sure that the installation is setup and configured properly """
@@ -93,6 +94,11 @@ if __name__ == "__main__":
         "check", help="Does various checks to ensure that your "
         "system is setup correctly"
     )
+    dvm_parser = subparsers.add_parser(
+        "dvm", help="generate a new dvm document from the test script"
+    )
+    dvm_parser.add_argument('test_script')
+
     args = parser.parse_args()
     if not args.command:
         parser.print_help()
@@ -102,3 +108,5 @@ if __name__ == "__main__":
         parse_sddb_file()
     elif args.command == 'check':
         check_install()
+    elif args.command == 'dvm':
+        create_dvm(args.test_script)
