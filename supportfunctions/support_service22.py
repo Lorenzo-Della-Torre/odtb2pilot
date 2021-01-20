@@ -485,23 +485,23 @@ class SupportService22:
 
 
     @classmethod
-    def adding_info(cls, copy_from_dict, dictionary):
+    def adding_info(cls, source_dict, target_dict):
         '''
         Copies some information from one dictionary to another
         Returns the dictionary
         '''
-        if 'payload' in copy_from_dict:
-            dictionary['payload'] = copy_from_dict['payload']
-            dictionary['payload_length'] = copy_from_dict['payload_length']
-        if 'error_message' in copy_from_dict:
-            dictionary['error_message'] = copy_from_dict['error_message']
-        if 'sid_test' in copy_from_dict:
-            dictionary['sid_test'] = copy_from_dict['sid_test']
-        if 'did_in_response_test' in copy_from_dict:
-            dictionary['did_in_response_test'] = copy_from_dict['did_in_response_test']
-        if 'did' in copy_from_dict:
-            dictionary['did'] = copy_from_dict['did']
-        return dictionary
+        if 'payload' in source_dict:
+            target_dict['payload'] = source_dict['payload']
+            target_dict['payload_length'] = source_dict['payload_length']
+        if 'error_message' in source_dict:
+            target_dict['error_message'] = source_dict['error_message']
+        if 'sid_test' in source_dict:
+            target_dict['sid_test'] = source_dict['sid_test']
+        if 'did_in_response_test' in source_dict:
+            target_dict['did_in_response_test'] = source_dict['did_in_response_test']
+        if 'did' in source_dict:
+            target_dict['did'] = source_dict['did']
+        return target_dict
 
 
     @classmethod
