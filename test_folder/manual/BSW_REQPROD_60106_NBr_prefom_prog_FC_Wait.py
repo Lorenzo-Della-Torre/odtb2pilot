@@ -5,7 +5,7 @@
     author      J-ADSJO (Johan Adsjö)
     date        2021-01-21
     version     1.0
-    reqprod     60063
+    reqprod     60106
 
     Inspired by https://grpc.io/docs/tutorials/basic/python.html
     Copyright 2015 gRPC authors.
