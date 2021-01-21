@@ -18,10 +18,6 @@ import ntpath
 from lxml import etree as ET
 import parameters as parammod
 
-#LOGGER = logging.getLogger(__name__)
-#LOGGER.setLevel(logging.DEBUG)
-
-### Constants ###
 SERV_22 = './/Service[@ID="22"]/DataIdentifiers/DataIdentifier'
 RESP_ITEMS = './/ResponseItems/ResponseItem'
 FORMULAS = 'Formula'
@@ -32,7 +28,6 @@ ECU = './/ECU'
 DIAG_PART = 'DiagnosticPartNumber'
 
 
-### Code ###
 def parse_some_args():
     """Get the command line input, using the defined flags."""
     parser = argparse.ArgumentParser(description=
@@ -74,6 +69,7 @@ def parse_xml_did_info(sddb_path, mode):
             did_dict[did_key] = did.attrib
     return did_dict, diag_part_num_washed
 
+
 def parse_xml_response_items(sddb_path, mode):
     """Parse given sddb and return a dict with relevant data."""
     tree = ET.parse(sddb_path) # pylint: disable=c-extension-no-member
@@ -103,16 +99,28 @@ def parse_xml_response_items(sddb_path, mode):
                 # Adding the rest of the information
                 for formula in sddb_resp_item.findall(FORMULAS):
                     logging.debug('          FORMULA = %s', formula.text)
-                    resp_item['Formula'] = formula.text
+                    resp_item['Formula'] = ''
+                    if formula.text:
+                        resp_item['Formula'] = formula.text
+
                 for unit in sddb_resp_item.findall(UNITS):
                     logging.debug('          UNIT = %s', unit.text)
-                    resp_item['Unit'] = unit.text
+                    resp_item['Unit'] = ''
+                    if unit.text:
+                        resp_item['Unit'] = unit.text
+
                 for compare_value in sddb_resp_item.findall(COMPARE_VALUES):
                     logging.debug('          COMPARE_VALUE = %s', compare_value.text)
-                    resp_item['CompareValue'] = compare_value.text
+                    resp_item['CompareValue'] = ''
+                    if compare_value.text:
+                        resp_item['CompareValue'] = compare_value.text
+
                 for software_label in sddb_resp_item.findall(SOFTWARE_LABELS):
                     logging.debug('          SOFTWARE_LABEL = %s', software_label.text)
-                    resp_item['SoftwareLabel'] = software_label.text
+                    resp_item['SoftwareLabel'] = ''
+                    if software_label.text:
+                        resp_item['SoftwareLabel'] = software_label.text
+
                 response_items_dict[did_key].append(resp_item)
     return response_items_dict
 
@@ -133,24 +141,24 @@ def change_encoding(input_file_name, output_file_name):
     """ Washing script to remove non utf-8 char, until CarCom has fixed their export. """
     with open(output_file_name, 'w+') as washed_file:
         with open(input_file_name, encoding='latin1') as input_file:
-            firstline = input_file.readline()
-### filter until '<?xml version='
-            line = firstline[firstline.find('<?xml version='):] 
-            while line:
-            ###for line in input_file:
+            for line in input_file:
                 line = bytes(line, 'utf-8').decode('latin1', 'ignore')
                 washed_file.write(line)
-                line = input_file.readline()
+
 
 def wash_xml(input_file_name, output_file_name):
     """ Washing script to remove non utf-8 char, until CarCom has fixed their export. """
     with open(output_file_name, 'w+') as washed_file:
         with open(input_file_name, encoding='latin1') as input_file:
-            for line in input_file:
+            firstline = input_file.readline()
+            line = firstline[firstline.find('<?xml version='):]
+            while line:
+            #for line in input_file:
                 line = line.replace('°C', 'degC')
                 line = line.replace('µC', 'uC')
                 line = line.replace(u'\xa0', u' ') #non-breaking space
                 washed_file.write(line)
+                line = input_file.readline()
 
 def stringify(string):
     ''' Surround string with hyphens '''
@@ -161,35 +169,59 @@ def name_getter(fullpath):
     _, tail = ntpath.split(fullpath)
     return tail
 
+
+### Code ###
+def execute(sddb_file):
+    """Parse diagnostic file and output the data in a file."""
+    parsed_sddb = read_file(sddb_file)
+    return parsed_sddb
+
+
+def read_file(sddb_file):
+    '''
+    Reading and parsing SDDB-file
+    Return content in dict
+    '''
+    # Picking only the filename of the path
+    input_file_name = name_getter(sddb_file)
+    create_folder(parammod.OUTPUT_FOLDER)
+
+    # Generate output_file_name based on input_file_name(add _WASHED)
+    # Supports both the ending .txt and .sddb
+    tmp_output_file_name = input_file_name.replace(".txt", "_")
+    tmp_output_file_name = input_file_name.replace(".sddb", "_")
+    temp_file_name = '%s/%s%s.temp' % (parammod.OUTPUT_FOLDER, tmp_output_file_name, 'WASHED')
+    output_file_name = '%s/%s%s.txt' % (parammod.OUTPUT_FOLDER, tmp_output_file_name, 'WASHED')
+
+    # Remove unwanted characters from file
+    logging.debug("Parse_sddb: Wash xml")
+    wash_xml(sddb_file, temp_file_name)
+
+    # Read information from SDDB XML file, put in dicts
+    pbl_dict, pbl_diag_part_num = parse_xml_did_info(output_file_name, 'PBL')
+    sbl_dict, sbl_diag_part_num = parse_xml_did_info(output_file_name, 'SBL')
+    app_dict, app_diag_part_num = parse_xml_did_info(output_file_name, 'APP')
+    response_item_dict = parse_xml_response_items(output_file_name, 'APP')
+
+    # Putting it all in a dict
+    parsed_sddb = {'pbl_dict': pbl_dict,
+                   'pbl_diag_part_num': pbl_diag_part_num,
+                   'sbl_dict': sbl_dict,
+                   'sbl_diag_part_num': sbl_diag_part_num,
+                   'app_dict': app_dict,
+                   'app_diag_part_num': app_diag_part_num,
+                   'response_item_dict': response_item_dict
+                   }
+
+    return parsed_sddb
+
+
 def main(margs):
     """Parse diagnostic file and output the data in a file."""
     # Setting up logging
     logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
     if margs.sddb:
-        # Picking only the filename of the path
-        input_file_name = name_getter(margs.sddb)
-        create_folder(parammod.OUTPUT_FOLDER)
-
-        # Generate output_file_name based on input_file_name(add _WASHED)
-        # Supports both the ending .txt and .sddb
-        tmp_output_file_name = input_file_name.replace(".txt", "_")
-        tmp_output_file_name = input_file_name.replace(".sddb", "_")
-        temp_file_name = '%s/%s%s.temp' % (parammod.OUTPUT_FOLDER, tmp_output_file_name, 'WASHED')
-        output_file_name = '%s/%s%s.txt' % (parammod.OUTPUT_FOLDER, tmp_output_file_name, 'WASHED')
-
-        # Read file, decode ugly character to pretty characters, then write it.
-        logging.info("parse_sddb: change encoding")
-        change_encoding(margs.sddb, temp_file_name)
-        # Remove unwanted characters
-        logging.info("parse_sddb: Wash xml")
-        wash_xml(temp_file_name, output_file_name)
-        logging.info("parse_sddb: ENC change and washing done.")
-
-        # Read information from SDDB XML file, put in dicts
-        pbl_dict, pbl_diag_part_num = parse_xml_did_info(output_file_name, 'PBL')
-        sbl_dict, sbl_diag_part_num = parse_xml_did_info(output_file_name, 'SBL')
-        app_dict, app_diag_part_num = parse_xml_did_info(output_file_name, 'APP')
-        response_item_dict = parse_xml_response_items(output_file_name, 'APP')
+        parsed_sddb = read_file(margs.sddb)
 
         # File used to write the dicts in
         file_name = '%s/%s.py' % (parammod.OUTPUT_FOLDER, parammod.OUTPUT_FILE_NAME)
@@ -199,13 +231,19 @@ def main(margs):
 
         # Write all information to file.
         # First file mode should be w+ so we start with empty file, then we append to that file.
-        write_data(file_name, stringify(pbl_diag_part_num), parammod.PBL_PART_NUM_NAME, 'w+')
-        write_data(file_name, pretty_print.pformat(pbl_dict), parammod.PBL_DICT_NAME, 'a+')
-        write_data(file_name, stringify(sbl_diag_part_num), parammod.SBL_PART_NUM_NAME, 'a+')
-        write_data(file_name, pretty_print.pformat(sbl_dict), parammod.SBL_DICT_NAME, 'a+')
-        write_data(file_name, stringify(app_diag_part_num), parammod.APP_PART_NUM_NAME, 'a+')
-        write_data(file_name, pretty_print.pformat(app_dict), parammod.APP_DICT_NAME, 'a+')
-        write_data(file_name, pretty_print.pformat(response_item_dict),
+        write_data(file_name, stringify(parsed_sddb['pbl_diag_part_num']),
+                   parammod.PBL_PART_NUM_NAME, 'w+')
+        write_data(file_name, pretty_print.pformat(parsed_sddb['pbl_dict']),
+                   parammod.PBL_DICT_NAME, 'a+')
+        write_data(file_name, stringify(parsed_sddb['sbl_diag_part_num']),
+                   parammod.SBL_PART_NUM_NAME, 'a+')
+        write_data(file_name, pretty_print.pformat(parsed_sddb['sbl_dict']),
+                   parammod.SBL_DICT_NAME, 'a+')
+        write_data(file_name, stringify(parsed_sddb['app_diag_part_num']),
+                   parammod.APP_PART_NUM_NAME, 'a+')
+        write_data(file_name, pretty_print.pformat(parsed_sddb['app_dict']),
+                   parammod.APP_DICT_NAME, 'a+')
+        write_data(file_name, pretty_print.pformat(parsed_sddb['response_item_dict']),
                    parammod.RESP_ITEM_DICT_NAME, 'a+')
 
 if __name__ == "__main__":

@@ -1,27 +1,9 @@
-# Testscript ODTB2 MEPII
-# project:  BECM basetech MEPII
-# author:   fjansso8 (Fredrik Jansson)
-# date:     2019-10-09
-# version:  1.0
-# reqprod:
-
-#inspired by https://grpc.io/docs/tutorials/basic/python.html
-
-# Copyright 2015 gRPC authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-"""The Python implementation of the gRPC route guide client."""
+"""
+    Testscript ODTB2 MEPII
+    project:  BECM basetech MEPII
+    author:   fjansso8 (Fredrik Jansson)
+    date:     2019-10-09
+"""
 
 from datetime import datetime
 import traceback
@@ -31,6 +13,7 @@ import logging
 import sys
 import inspect
 import socket
+import copy
 from collections import namedtuple
 from yattag import Doc
 
@@ -47,9 +30,13 @@ from supportfunctions.logs_to_html_css import STYLE as CSS
 
 import parameters as parammod
 import dids_from_sddb_checker_conf as conf
-from output.did_dict import sddb_resp_item_dict
-from output.did_dict import sddb_app_did_dict
-from output.did_dict import app_diag_part_num
+from output.did_dict import sddb_resp_item_dict as sddb_resp_item_dict_imp
+from output.did_dict import sddb_app_did_dict as sddb_app_did_dict_imp
+from output.did_dict import app_diag_part_num as app_diag_part_num_imp
+from output.did_dict import pbl_diag_part_num as pbl_diag_part_num_imp
+from output.did_dict import sddb_pbl_did_dict as sddb_pbl_did_dict_imp
+from output.did_dict import sbl_diag_part_num as sbl_diag_part_num_imp
+from output.did_dict import sddb_sbl_did_dict as sddb_sbl_did_dict_imp
 
 SIO = SupportFileIO
 SC = SupportCAN()
@@ -63,7 +50,6 @@ SE22 = SupportService22()
 PASSED_STATUS = 'PASSED'
 FAILED_STATUS = 'FAILED'
 PART_NUMBER_STRING_LENGTH = 14
-
 COMPLETE_ECU_PART_SERIAL_NRS_DID = 'EDA0'
 PART_NUMBER_DID = 'F120'
 GIT_HASH_DID = 'F1F2'
@@ -76,6 +62,7 @@ HEADING_LIST = ['DID', 'Name', 'Correct SID', 'Correct DID', 'Correct size', 'Sc
                 'Error Message', 'Payload']
 
 Infoentry = namedtuple('Infoentry', 'did name c_sid c_did c_size scal_val_list err_msg payload')
+
 
 def get_git_hash(can_p):
     '''
@@ -91,6 +78,7 @@ def get_git_hash(can_p):
         logging.error(traceback.format_exc())
         ascii_git_hash = 'Error'
     return ascii_git_hash
+
 
 def comp_part_nbrs(can_p, sddb_cleaned_part_number):
     '''
@@ -142,7 +130,7 @@ def generate_error_page(err_msg):
     """ Create html error page """
 
     # Used for for selecting style class
-    doc, tag, text = Doc().ttl()
+    doc, tag, text, _ = Doc().ttl()
 
     with tag('html'):
         with tag('head'):
@@ -268,7 +256,7 @@ def __create_key(did_dict_with_result):
     return key
 
 
-def scale_data(did_dict_with_result): #pylint: disable=too-many-branches
+def scale_data(did_dict_with_result, sddb_resp_item_dict_inp): #pylint: disable=too-many-branches
     '''
     Input  - Takes a dictionary where we store the results from previous test runs
     Output - Same dictionary as in input. Now with added scaled data.
@@ -286,7 +274,7 @@ def scale_data(did_dict_with_result): #pylint: disable=too-many-branches
                       did_dict_with_result['payload_length'])
 
         # For each response item for the dict
-        for resp_item in sddb_resp_item_dict[key]:
+        for resp_item in sddb_resp_item_dict_inp[key]:
             sub_payload = SE22.get_sub_payload(payload, resp_item['Offset'], resp_item['Size'])
             logging.debug('==================================')
             logging.debug('Name = %s', resp_item['Name'])
@@ -350,16 +338,19 @@ def write_to_file(content, outfile):
     with open(outfile, 'w') as file:
         file.write(str(content))
 
+
 def create_folder(folder):
     """If folder does not exisists, then it will be created."""
     if not os.path.isdir(folder):
         os.makedirs(folder)
 
+
 def write_data(head, data, mode, string_bool=True):
     ''' Write content to outfile '''
-    output_folder = os.environ.get('PWD') + '/' + parammod.OUTPUT_FOLDER
+    output_folder = os.path.join(os.path.abspath(os.getcwd()), parammod.OUTPUT_FOLDER)
+
     if not os.path.exists(output_folder):
-        os.mkdir(output_folder)         
+        os.mkdir(output_folder)
     new_path = os.path.join(output_folder, parammod.OUTPUT_TESTRUN_DATA_FN)
     with open(new_path, mode) as file:
         head = "\n" + head + " = "
@@ -369,14 +360,16 @@ def write_data(head, data, mode, string_bool=True):
             data_str = str(data)
         file.write(head + data_str)
 
-def get_did_eda0(can_p):
+
+def get_did_eda0(can_p, sddb_resp_item_dict_eda0):
     '''  Returns content from DID EDA0 Request '''
     did_dict = SE22.get_did_info(can_p, COMPLETE_ECU_PART_SERIAL_NRS_DID,
                                  conf.response_timeout)
     message = did_dict.get('payload', '')
 
-    eda0_dict = SUPPORT_TEST.get_combined_did_eda0(message, sddb_resp_item_dict)
+    eda0_dict = SUPPORT_TEST.get_combined_did_eda0(message, sddb_resp_item_dict_eda0)
     return eda0_dict
+
 
 def get_current_time():
     '''
@@ -388,6 +381,7 @@ def get_current_time():
     current_time = now.strftime("%Y-%m-%d %H:%M:%S")
     return current_time
 
+
 def write_testrun_data(eda0_dict, can_p):
     '''
     Write data to file
@@ -397,24 +391,18 @@ def write_testrun_data(eda0_dict, can_p):
     create_folder(parammod.OUTPUT_FOLDER)
     # File used to write the data in. This data is used by the logs_to_html script.
     write_data(parammod.GIT_HASH, get_git_hash(can_p), 'w+')
-
-    #for name in eda0_dict:
-    #    write_data(name, eda0_dict.get(name, DEF_VAL), 'a+')
     write_data('eda0_dict', eda0_dict, 'a+', False)
 
 
-def run(): # pylint: disable=too-many-locals
-    ''' run '''
-    # Setup logging. We don't want this script to generate to many rows in the log-file
-    # so we set it on WARN.
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.WARN)
-
+def run_main_part(parsed_sddb): # pylint: disable=too-many-locals
+    '''
+    Common part regardless if you execute from main or execute
+    '''
     try:
-        # Should get the values from an yml-file instead
         can_p: CanParam = {
             "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-            "send" : "Vcu1ToBecmFront1DiagReqFrame", #SPA2: "HvbmdpToHvbmUdsDiagRequestFrame",
-            "receive" : "BecmToVcu1Front1DiagResFrame", #SPA2: "HvbmToHvbmdpUdsDiagResponseFrame",
+            "send" : "HvbmdpToHvbmUdsDiagRequestFrame",
+            "receive" : "HvbmToHvbmdpUdsDiagResponseFrame",
             "namespace" : SC.nspace_lookup("Front1CANCfg0")
         }
 
@@ -430,18 +418,17 @@ def run(): # pylint: disable=too-many-locals
         # precondition
         ############################################
         result = PREC.precondition(can_p, conf.script_timeout)
-
         pass_or_fail_counter_dict = {"Passed": 0, "Failed": 0, "conditionsNotCorrect (22)": 0,
                                      "requestOutOfRange (31)": 0}
         result_list = list()
 
         did_counter = 1 # Used when we don't want to run through all tests
         # For each line in dictionary_from_file, store result
-        for did_dict_from_file_values in sddb_app_did_dict.values():
+        for did_dict_from_file_values in parsed_sddb['app_dict'].values():
             logging.debug('DID counter: %s', str(did_counter))
 
             did_id = did_dict_from_file_values['ID']
-            did_dict_with_result = did_dict_from_file_values
+            did_dict_with_result = copy.deepcopy(did_dict_from_file_values)
 
             # Using Service 22 to request a particular DID, returning the result in a dictionary
             did_dict_from_service_22 = SE22.get_did_info(can_p, did_id, conf.response_timeout)
@@ -451,7 +438,8 @@ def run(): # pylint: disable=too-many-locals
 
             # Adding scaled data to the dictionary with the result
             if 'error_message' not in did_dict_with_result:
-                did_dict_with_result = scale_data(did_dict_with_result)
+                did_dict_with_result = scale_data(did_dict_with_result,
+                                                  parsed_sddb['response_item_dict'])
 
             # Summarizing the result
             info_entry, pass_or_fail_counter_dict = SE22.summarize_result(did_dict_with_result,
@@ -466,11 +454,11 @@ def run(): # pylint: disable=too-many-locals
             did_counter += 1
 
         # Clean underscore (Replace with whitespace) from SDDB file part number
-        sddb_cleaned_part_number = app_diag_part_num.replace('_', ' ')
+        sddb_cleaned_part_number = parsed_sddb['app_diag_part_num'].replace('_', ' ')
 
         # Comparing the part numbers
         part_nbr_match, part_nbr_match_msg = comp_part_nbrs(can_p, sddb_cleaned_part_number)
-        eda0_dict = get_did_eda0(can_p)
+        eda0_dict = get_did_eda0(can_p, parsed_sddb['response_item_dict'])
 
         write_testrun_data(eda0_dict, can_p)
 
@@ -481,13 +469,39 @@ def run(): # pylint: disable=too-many-locals
         # postCondition
         ############################################
         POST.postcondition(can_p, starttime, result)
-
     except Exception as _: # pylint: disable=broad-except
         logging.error(traceback.format_exc())
         generate_error_page(str(traceback.format_exc()))
 
 
+def execute(parsed_sddb):
+    '''
+    When executed from other pythonscript
+    '''
+    run_main_part(parsed_sddb)
+
+
+def main():
+    '''
+    Main (run)
+    '''
+
+    # Setup logging. We don't want this script to generate to many rows in the log-file
+    # so we set it on WARN.
+    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.WARN)
+
+    parsed_sddb = {'pbl_dict': sddb_pbl_did_dict_imp,
+                   'pbl_diag_part_num': pbl_diag_part_num_imp,
+                   'sbl_dict': sddb_sbl_did_dict_imp,
+                   'sbl_diag_part_num': sbl_diag_part_num_imp,
+                   'app_dict': sddb_app_did_dict_imp,
+                   'app_diag_part_num': app_diag_part_num_imp,
+                   'response_item_dict': sddb_resp_item_dict_imp
+                   }
+    run_main_part(parsed_sddb)
+
+
 if __name__ == "__main__":
     # Boilerplate to launch the main function with the command line arguments.
     #ARGS = parse_some_args()
-    run()
+    main()
