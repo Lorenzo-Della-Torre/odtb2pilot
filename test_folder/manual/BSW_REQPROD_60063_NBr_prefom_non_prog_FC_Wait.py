@@ -3,9 +3,9 @@
     Testscript  ODTB2 MEPII
     project     BECM basetech MEPII
     author      J-ADSJO (Johan Adsjö)
-    date        2021-01-14
+    date        2021-01-21
     version     1.0
-    reqprod     56148
+    reqprod     60063
 
     Inspired by https://grpc.io/docs/tutorials/basic/python.html
     Copyright 2015 gRPC authors.
