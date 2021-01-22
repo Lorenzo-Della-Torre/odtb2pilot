@@ -55,7 +55,7 @@ POST = SupportPostcondition()
 SE10 = SupportService10()
 SE22 = SupportService22()
 
-def validate_and_get_pn_f12b(message):
+def validate_and_get_pn(message):
     '''
     Validate and pretty print ECU Delivery Assembly Part Number
     '''
@@ -88,17 +88,17 @@ def step_2(can_p):
     result = SUTE.teststep(can_p, cpay, etp)
     time.sleep(3)
 
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='D03A')
     logging.info("TestStep2 Received msg: %s", SC.can_messages[can_p["receive"]])
+    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='D03A')
 
-    default_f12b_result = SC.can_messages[can_p["receive"]][0][2]
-    logging.info(default_f12b_result)
+    default_result = SC.can_messages[can_p["receive"]][0][2]
+    logging.info(default_result)
 
-    return result, default_f12b_result
+    return result, default_result
 
 def step_4(can_p):
     """
-    Teststep 3: send requests DID D03A - in Default Session
+    Teststep 3: send requests DID D03A - in Extended Session
     """
     # Parameters for the teststep
     cpay: CanPayload = {
@@ -118,15 +118,15 @@ def step_4(can_p):
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
 
     result = SUTE.teststep(can_p, cpay, etp)
-    time.sleep(1)
+    time.sleep(3)
 
     result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='D03A')
     logging.info(SC.can_messages[can_p["receive"]])
 
-    extended_f12b_result = SC.can_messages[can_p["receive"]][0][2]
-    logging.info(extended_f12b_result)
+    extended_result = SC.can_messages[can_p["receive"]][0][2]
+    logging.info(extended_result)
 
-    return result, extended_f12b_result
+    return result, extended_result
 
 def step_6(can_p):
     """
@@ -155,10 +155,10 @@ def step_6(can_p):
     result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='D03A')
     logging.info(SC.can_messages[can_p["receive"]])
 
-    programming_f12b_result = SC.can_messages[can_p["receive"]][0][2]
-    logging.info(programming_f12b_result)
+    programming_result = SC.can_messages[can_p["receive"]][0][2]
+    logging.info(programming_result)
 
-    return result, programming_f12b_result
+    return result, programming_result
 
 def step_8(can_p):
     """
@@ -187,29 +187,29 @@ def step_8(can_p):
     result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='D03A')
     logging.info(SC.can_messages[can_p["receive"]])
 
-    sbl_f12b_result = SC.can_messages[can_p["receive"]][0][2]
-    logging.info(sbl_f12b_result)
+    sbl_result = SC.can_messages[can_p["receive"]][0][2]
+    logging.info(sbl_result)
 
-    return result, sbl_f12b_result
+    return result, sbl_result
 
-def step_9(default_f12b_result, extended_f12b_result, programming_f12b_result, sbl_f12b_result):
+def step_9(default_result, extended_result, programming_result, sbl_result):
     """
     TestStep 9: Validate D03A Part Number messages
     """
 
-    default_valid, default_ecu_da_pn = validate_and_get_pn_f12b(default_f12b_result)
+    default_valid, default_ecu_da_pn = validate_and_get_pn(default_result)
     logging.info("Default ECU Delivery Assembly Part Number: %s  - %s",
                   default_ecu_da_pn, default_valid)
 
-    extended_valid, extended_ecu_da_pn = validate_and_get_pn_f12b(extended_f12b_result)
+    extended_valid, extended_ecu_da_pn = validate_and_get_pn(extended_result)
     logging.info("Extended ECU Delivery Assembly Part Number: %s  - %s",
                   extended_ecu_da_pn, extended_valid)
 
-    programming_valid, programming_ecu_da_pn = validate_and_get_pn_f12b(programming_f12b_result)
+    programming_valid, programming_ecu_da_pn = validate_and_get_pn(programming_result)
     logging.info("Programming ECU Delivery Assembly Part Number: %s  - %s",
                   programming_ecu_da_pn, programming_valid)
 
-    sbl_valid, sbl_ecu_da_pn = validate_and_get_pn_f12b(sbl_f12b_result)
+    sbl_valid, sbl_ecu_da_pn = validate_and_get_pn(sbl_result)
     logging.info("SBL: ECU Delivery Assembly Part Number: %s  - %s",
                   sbl_ecu_da_pn, sbl_valid)
 
@@ -260,7 +260,7 @@ def run():
     # step 2:
     # action: send requests DID D03A in Default Session
     # result: Data record with Autosar BSW cluster version is returned
-        result_step_2, default_f12b_result = step_2(can_p)
+        result_step_2, default_result = step_2(can_p)
 
     # step 3:
     # action: Change to Extended session
@@ -271,7 +271,7 @@ def run():
     # step 4:
     # action: send requests DID D03A in Extended Session
     # result: Data record with Autosar BSW cluster version is returned
-        result_step_4, extended_f12b_result = step_4(can_p)
+        result_step_4, extended_result = step_4(can_p)
         time.sleep(1)
 
     # step 5:
@@ -283,7 +283,7 @@ def run():
     # step 6:
     # action: send requests DID D03A in Extended Session
     # result: Data record with Autosar BSW cluster version is returned
-        #result_step_6, programming_f12b_result = step_6(can_p)
+        #result_step_6, programming_result = step_6(can_p)
         #time.sleep(1)
 
     # step 7:
@@ -295,7 +295,7 @@ def run():
     # step 8:
     # action: send requests DID D03A in Extended Session
     # result: Data record with Autosar BSW cluster version is returned
-        #result_step_8, sbl_f12b_result = step_8(can_p)
+        #result_step_8, sbl_result = step_8(can_p)
         #time.sleep(1)
 
     # step9:
@@ -306,12 +306,13 @@ def run():
         purpose = "Verify the D03A records received are equal in all modes"
         SUTE.print_test_purpose(step_no, purpose)
 
-        #result = result and result_step_2 and result_step_4 and result_step_6 and result_step_8
-        #result = result and step_9(default_f12b_result, extended_f12b_result,
-        #                            programming_f12b_result, sbl_f12b_result)
+        result = result and result_step_2 and result_step_4 
+        #and result_step_6 and result_step_8
+        #result = result and step_9(default_result, extended_result,
+        #                            programming_result, sbl_result)
 
-        result = result and (default_f12b_result == extended_f12b_result)
-        #result = result and (default_f12b_result == programming_f12b_result == sbl_f12b_result)
+        result = result and (default_result == extended_result)
+        #result = result and (default_result == programming_result == sbl_result)
 
     # step10:
     # action: Set to Default session before leaving
