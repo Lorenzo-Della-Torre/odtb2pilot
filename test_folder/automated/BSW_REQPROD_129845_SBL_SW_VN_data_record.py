@@ -61,8 +61,8 @@ def validate_and_get_pn_f124(message):
     '''
     pos = message.find('F124')
     valid = SUTE.validate_part_number_record(message[pos+4:pos+18])
-    part_number = SUTE.pp_partnumber(message[pos+4:pos+18])
-    return valid, part_number
+    #part_number = SUTE.pp_partnumber(message[pos+4:pos+18])
+    return valid
 
 def step_3(can_p):
     """
@@ -93,8 +93,9 @@ def step_3(can_p):
     logging.info(SC.can_messages[can_p["receive"]])
 
     pbl_f124_result = SC.can_messages[can_p["receive"]][0][2]
+    result = result and validate_and_get_pn_f124(pbl_f124_result)
     logging.info(pbl_f124_result)
-
+    logging.info("\nTeststep 3_result: %s\n", result)
     return result, pbl_f124_result
 
 def step_5(can_p):
@@ -126,6 +127,8 @@ def step_5(can_p):
 
     sbl_f124_result = SC.can_messages[can_p["receive"]][0][2]
     logging.info("Step 5: result: %s", sbl_f124_result)
+    valid = validate_and_get_pn_f124(sbl_f124_result)
+    logging.info("\nTeststep 5_result: %s\n", result)
 
     return result, sbl_f124_result
 
@@ -218,7 +221,7 @@ def run():
         SUTE.print_test_purpose(step_no, purpose)
 
         result = result and result_step_3 and result_step_5
-        result = result and step_6(pbl_f124_result, sbl_f124_result)
+        result = result and (pbl_f124_result == sbl_f124_result)
 
         #result = result and (pbl_f124_result == sbl_f124_result)
         logging.info("Step 6: Result: %s", result)
