@@ -26,7 +26,7 @@ echo Generate_did_report: parse sddb for DID list
 SDDB_FILE=$(find ~/delivery/*.sddb)
 echo SDDB_FILE: $SDDB_FILE
 
-python3 $TESTREPO/projects/project_template/automated_testrun/dids_from_sddb_checker/generate_did_report.py --sddb $SDDB_FILE
+python3 $TESTREPO/projects/project_template/automated_testrun/dids_from_sddb_checker/generate_did_report.py --SDDB $SDDB_FILE
 
 # Copying the file containing testrun info from testrun to where logs_to_html.py can find it
 # Not the prettiest solution, but will be fixed when we have the flat structure.
