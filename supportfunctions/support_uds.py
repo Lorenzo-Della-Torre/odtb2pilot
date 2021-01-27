@@ -4,6 +4,7 @@ Unified diagnostic services (ISO-14229-1)
 
 import re
 import logging
+import textwrap
 from dataclasses import dataclass
 
 from build.did import pbl_did_dict
@@ -73,6 +74,8 @@ class UdsResponse:
 
         self.content = self.data["content"]
 
+        # FIXME: actually, this is not a good idea since we have to use
+        # different definitions depending on the mode of the ecu
         self.all_defined_dids = get_all_dids()
         for did, item in self.all_defined_dids.items():
             # each byte takes two hexadecimal characters
@@ -93,7 +96,7 @@ class UdsResponse:
         for did, regex in self.__did_regex.items():
             match = re.search(regex, content)
             if match:
-                item = match.groups(0)[0]
+                item = match.groups()[0]
                 self.data[did] = item
                 self.data[did+'_info'] = self.all_defined_dids[did]
                 if did in ['F120', 'F121', 'F122', 'F125', 'F12A', 'F12B',
@@ -105,6 +108,7 @@ class UdsResponse:
     def __str__(self):
         s = (
             f"{self.__class__.__name__}:\n"
+            f"  raw = {self.raw}\n"
             f"  service = {self.service} (sid={self.sid})\n"
             f"  data = \n"
         )
@@ -113,19 +117,41 @@ class UdsResponse:
         return s
 
     def __ecu_software_structure_part_number_f12c(self):
-        self.data['ecu_sw_struct_part_num'] = \
-            SupportTestODTB2.pp_partnumber(self.content)
+        if SupportTestODTB2.validate_part_number_record(self.content):
+            self.data['F12C_valid'] = \
+                SupportTestODTB2.pp_partnumber(self.content)
 
     def __complete_ecu_part_number_eda0(self):
-
         self.extract_dids(self.content)
+        remaining = self.data['F12E']
 
-        ecu_sw_struct_part_num = re.search(
-            r'(.{14})$', self.data['F12E']).group()
+        # each part number is 7 bytes and each byte is represented as two
+        # hexadecimal characters
+        part_num_len = 7 * 2
 
-        self.data['ecu_sw_struct_part_num'] = \
-            SupportTestODTB2.pp_partnumber(ecu_sw_struct_part_num)
+        records = int(remaining[0:2])
+        self.data['F12E_info']['records'] = records
+        remaining = remaining[2:]
 
+        if not records * part_num_len == len(remaining):
+            logging.warning(
+                "Record length of F12E in EDA0 appears incorrect in SDDB file")
+            # attempting to recover by ignoreing SDDB record for F12E
+            match = re.search(r'F12E\d\d(.{{{}}})'.format(
+                records * part_num_len), self.content)
+            remaining = match.groups()[0]
+
+        part_nums = textwrap.wrap(remaining, part_num_len)
+        self.data['F12E_list'] = part_nums
+
+        # validate the part numbers
+        f12e_valid = []
+        for pn in part_nums:
+            if SupportTestODTB2.validate_part_number_record(pn):
+                f12e_valid.append(SupportTestODTB2.pp_partnumber(pn))
+            else:
+                f12e_valid.append(False)
+        self.data['F12E_valid'] = f12e_valid
 
 class Uds:
     """ Unified diagnostic services """
@@ -205,12 +231,12 @@ def test_uds_response():
     """ pytest: UdsResponse """
     f12c_response = "100A62F12C32263666204141"
     response = UdsResponse(f12c_response)
-    assert response.data['ecu_sw_struct_part_num'] == "32263666 AA"
+    assert response.data['F12C_valid'] == "32263666 AA"
     eda0 = "104A62EDA0F12032299361204142F12A32290749202020F12BFFFFFFFFFFFFFF" + \
     "F12E053229942520414532299427204143322994292041453229943020414132263666204141" + \
     "F18C30400011"
     response = UdsResponse(eda0)
-    assert response.data['ecu_sw_struct_part_num'] == "32263666 AA"
+    assert response.data['F12E_valid'][-1] == "32263666 AA"
     print(response)
 
 def test_did():
