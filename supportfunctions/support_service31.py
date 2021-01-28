@@ -60,6 +60,10 @@ class SupportService31:
         result = result and (
             SUTE.pp_decode_routine_control_response(SC.can_messages[can_p["receive"]][0][2],
                                                     'Type1,Completed'))
+        if not result:
+            logging.warning("%s",
+                            SUTE.pp_decode_7f_response(SC.can_messages\
+                                                       [can_p["receive"]][0][2].upper()))
         return result
 
     @staticmethod
@@ -155,4 +159,34 @@ class SupportService31:
             if rc_loop == 15:
                 logging.info("SE31 RC FlashErase: No pos reply received in max time")
                 result = False
+        return result
+
+    @staticmethod
+    def check_memory(can_p: CanParam, vbf_header, stepno):
+        """
+        Support function for Check Memory
+        """
+        logging.info("SBL CheckMemory: vbf_header %s", vbf_header)
+        # In VBF header sw_signature_dev was stored as hex, Python converts that into int.
+        # It has to be converted to bytes to be used as payload
+
+        #sw_signature = vbf_header['sw_signature_dev'].to_bytes\
+        #                ((vbf_header['sw_signature_dev'].bit_length()+7) // 8, 'big')
+
+        #take fixed length now. We had problems with signatures starting with 0x00
+        #leading to incorrect length of header sent
+        sw_signature = vbf_header['sw_signature_dev'].to_bytes(256, 'big')
+        #logging.info("SBL CheckMemory: Length sw signature: %s",
+        #             (vbf_header['sw_signature_dev'].bit_length()+7) // 8)
+        cpay: CanPayload = {"payload" : S_CARCOM.can_m_send("RoutineControlRequestSID",\
+                                             b'\x02\x12' + sw_signature, b'\x01'),\
+                            "extra" : ''
+                           }
+        etp: CanTestExtra = {"step_no": stepno,\
+                             "purpose" : "SE31 CheckMemory",\
+                             "timeout" : 2,\
+                             "min_no_messages" : -1,\
+                             "max_no_messages" : -1
+                            }
+        result = SupportService31.routinecontrol_request_sid(can_p, cpay, etp)
         return result
