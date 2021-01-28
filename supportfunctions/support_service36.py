@@ -54,7 +54,7 @@ class SupportService36: # pylint: disable=too-few-public-methods
                          1+i, 1+int(vbf_block['Length']/(nbl-2)))
             pad = (nbl-2)*i
             i += 1
-            ibyte = bytes([i])
+            ibyte = bytes([i % 256])
 
             cpay: CanPayload = {"payload" : b'\x36' + ibyte + vbf_block_data[pad:pad + nbl-2],
                                 "extra" : ''

@@ -354,8 +354,7 @@ class SupportSBL:
         return testresult, vbf_header
 
 
-    def sbl_download(self, can_p: CanParam, file_n, stepno='',\
-                     purpose="SBL Download transfer block"):
+    def sbl_download(self, can_p: CanParam, file_n, stepno=''):
         """
         Support Function for flashing Secondary Bootloader SW
         """
@@ -368,7 +367,7 @@ class SupportSBL:
 
         testresult = self.transfer_data_block(can_p, vbf_header, vbf_data, vbf_offset)
         #Check memory
-        testresult = testresult and self.check_memory(can_p, vbf_header, stepno, purpose)
+        testresult = testresult and SE31.check_memory(can_p, vbf_header, stepno)
         return testresult, vbf_header
 
 
@@ -378,12 +377,13 @@ class SupportSBL:
         Software Download
         Support Function for flashing SW Parts
         """
+        logging.info("sw_part_download: %s", purpose)
         logging.info("sw_part_download filename: %s", file_n)
         result, vbf_header = self.sw_part_download_no_check(can_p, file_n, stepno)
 
         # Check memory
-        result = result and self.check_memory(can_p, vbf_header,
-                                              stepno, purpose
+        result = result and SE31.check_memory(can_p, vbf_header,
+                                              stepno
                                              )
         return result
 
@@ -854,34 +854,6 @@ class SupportSBL:
         crc_res = 'ok'
         return "Block adr: 0x%X length: 0x%X crc %s" % (vbf_block('StartAddress'),\
                vbf_block('Length'), crc_res)
-
-
-    @classmethod
-    def check_memory(cls, can_p: CanParam, vbf_header, stepno, purpose):
-        """
-        Support function for Check Memory
-        """
-        logging.info("SBL CheckMemory: vbf_header %s", vbf_header)
-        # In VBF header sw_signature_dev was stored as hex, Python converts that into int.
-        # It has to be converted to bytes to be used as payload
-        sw_signature = vbf_header['sw_signature_dev'].to_bytes\
-                        ((vbf_header['sw_signature_dev'].bit_length()+7) // 8, 'big')
-        cpay: CanPayload = {"payload" : S_CARCOM.can_m_send("RoutineControlRequestSID",\
-                                             b'\x02\x12' + sw_signature, b'\x01'),\
-                            "extra" : ''
-                           }
-        etp: CanTestExtra = {"step_no": stepno,\
-                             "purpose" : purpose,\
-                             "timeout" : 2,\
-                             "min_no_messages" : -1,\
-                             "max_no_messages" : -1
-                            }
-        testresult = SUTE.teststep(can_p, cpay, etp)
-        testresult = testresult and (
-            SUTE.pp_decode_routine_control_response(SC.can_messages[can_p["receive"]][0][2],
-                                                    'Type1,Completed'))
-        logging.info(SC.can_messages[can_p["receive"]])
-        return testresult
 
 
     @classmethod
