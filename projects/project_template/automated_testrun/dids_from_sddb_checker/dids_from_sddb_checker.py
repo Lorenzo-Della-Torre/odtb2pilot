@@ -26,6 +26,8 @@ from supportfunctions.support_precondition import SupportPrecondition
 from supportfunctions.support_postcondition import SupportPostcondition
 from supportfunctions.support_file_io import SupportFileIO
 from supportfunctions.support_service22 import SupportService22
+from supportfunctions.support_service10 import SupportService10
+from supportfunctions.support_SBL import SupportSBL
 from supportfunctions.logs_to_html_css import STYLE as CSS
 
 import parameters as parammod
@@ -44,7 +46,9 @@ SC_CARCOM = SupportCARCOM()
 SUPPORT_TEST = SupportTestODTB2()
 PREC = SupportPrecondition()
 POST = SupportPostcondition()
+SSBL = SupportSBL()
 SE22 = SupportService22()
+SE10 = SupportService10()
 
 # The different status the test run can have
 PASSED_STATUS = 'PASSED'
@@ -152,7 +156,7 @@ def generate_error_page(err_msg):
     write_to_file(doc.getvalue(), outfile)
 
 
-def generate_html(result_list, pass_or_fail_counter_dict, part_nbr_match, # pylint: disable=too-many-locals,too-many-statements
+def generate_html(pbl_list, sbl_list, appl_list, pass_or_fail_counter_dict, part_nbr_match, # pylint: disable=too-many-locals,too-many-statements
                   part_nbr_match_msg, eda0_dict):
     """Create html table based on the dict"""
     # Used for for selecting style class
@@ -212,33 +216,44 @@ def generate_html(result_list, pass_or_fail_counter_dict, part_nbr_match, # pyli
                     for heading in HEADING_LIST:
                         with tag('th', klass="main"):
                             text(heading)
-                for elem in result_list:
-                    error_exist = False
-                    if elem.err_msg:
-                        error_exist = True
 
-                    with tag('tr', klass='stripe'):
-                        with tag('td', klass="main"):
-                            text(elem.did)
-                        with tag('td', klass="main no_wrap"):
-                            text(elem.name)
-                        with tag('td', klass=MATCH_DICT[elem.c_sid], style='width:25px;'):
-                            text('')
-                        with tag('td', klass=MATCH_DICT[elem.c_did], style='width:25px;'):
-                            text('')
-                        with tag('td', klass=MATCH_DICT[elem.c_size], style='width:25px;'):
-                            text('')
-                        with tag('td', klass="main"):
-                            with tag('table', klass='borderless'):
-                                for scal_val in elem.scal_val_list:
-                                    with tag('tr'):
-                                        line('td', scal_val, id='scal_val')
-                        with tag('td', klass=ERROR_DICT[error_exist]):
-                            text(elem.err_msg)
-                        with tag('td', klass="main"):
-                            text(elem.payload)
+                __iterate_list(pbl_list, tag, text, line, 'Primary Bootloader')
+                __iterate_list(sbl_list, tag, text, line, 'Secondary Bootloader')
+                __iterate_list(appl_list, tag, text, line, 'Application')
+                
     outfile = "did_report.html"
     write_to_file(doc.getvalue(), outfile)
+
+def __iterate_list(did_list, tag, text, line, title):
+    with tag('tr', klass='stripe'):
+        with tag('th', klass="main", colspan='8'):
+            text(title)
+    for elem in did_list:
+        error_exist = False
+        if elem.err_msg:
+            error_exist = True
+
+        with tag('tr', klass='stripe'):
+            with tag('td', klass="main"):
+                text(elem.did)
+            with tag('td', klass="main no_wrap"):
+                text(elem.name)
+            with tag('td', klass=MATCH_DICT[elem.c_sid], style='width:25px;'):
+                text('')
+            with tag('td', klass=MATCH_DICT[elem.c_did], style='width:25px;'):
+                text('')
+            with tag('td', klass=MATCH_DICT[elem.c_size], style='width:25px;'):
+                text('')
+            with tag('td', klass="main"):
+                with tag('table', klass='borderless'):
+                    for scal_val in elem.scal_val_list:
+                        with tag('tr'):
+                            with tag('td', klass="main", id='scal_val'):
+                                text(scal_val)
+            with tag('td', klass=ERROR_DICT[error_exist]):
+                text(elem.err_msg)
+            with tag('td', klass="main"):
+                text(elem.payload)
 
 
 def __extract_payload(did_dict_with_result):
@@ -394,6 +409,42 @@ def write_testrun_data(eda0_dict, can_p):
     write_data('eda0_dict', eda0_dict, 'a+', False)
 
 
+def did_checker(dids, can_p, response_item_dict, pass_or_fail_counter_dict, max_no_of_dids):
+    result_list = list()
+    did_counter = 1 # Used when we don't want to run through all tests
+
+    # For each line in dictionary_from_file, store result
+    for did_dict_from_file_values in dids:
+        logging.debug('DID counter: %s', str(did_counter))
+
+        did_id = did_dict_from_file_values['ID']
+        did_dict_with_result = copy.deepcopy(did_dict_from_file_values)
+
+        # Using Service 22 to request a particular DID, returning the result in a dictionary
+        did_dict_from_service_22 = SE22.get_did_info(can_p, did_id, conf.response_timeout)
+
+        # Copy info to the did_dict_with_result dictionary from the did_dict
+        did_dict_with_result = SE22.adding_info(did_dict_from_service_22, did_dict_with_result)
+
+        # Adding scaled data to the dictionary with the result
+        if 'error_message' not in did_dict_with_result:
+            did_dict_with_result = scale_data(did_dict_with_result, response_item_dict)
+
+        # Summarizing the result
+        info_entry, pass_or_fail_counter_dict = SE22.summarize_result(did_dict_with_result,
+                                                                      pass_or_fail_counter_dict,
+                                                                      did_id)
+        # Add the results
+        result_list.append(info_entry)
+
+        if did_counter >= max_no_of_dids and max_no_of_dids != -1:
+            break
+
+        did_counter += 1
+        
+    return result_list
+
+
 def run_main_part(parsed_sddb): # pylint: disable=too-many-locals
     '''
     Common part regardless if you execute from main or execute
@@ -410,64 +461,60 @@ def run_main_part(parsed_sddb): # pylint: disable=too-many-locals
         logging.debug("Read YML for %s", str(inspect.stack()[0][3]))
         SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
 
-        logging.info("Testcase start: %s", datetime.now())
+        logging.info("\nTestcase start: %s", datetime.now())
         starttime = time.time()
         logging.info("Time: %s \n", time.time())
 
-        ############################################
-        # precondition
-        ############################################
+        logging.debug('\nPrecondition')
+        # read VBF param when testscript is s started, if empty take default param
+        SSBL.get_vbf_files_wo_argv()
         result = PREC.precondition(can_p, conf.script_timeout)
+
         pass_or_fail_counter_dict = {"Passed": 0, "Failed": 0, "conditionsNotCorrect (22)": 0,
                                      "requestOutOfRange (31)": 0}
-        result_list = list()
 
-        did_counter = 1 # Used when we don't want to run through all tests
-        # For each line in dictionary_from_file, store result
-        for did_dict_from_file_values in parsed_sddb['app_dict'].values():
-            logging.debug('DID counter: %s', str(did_counter))
-
-            did_id = did_dict_from_file_values['ID']
-            did_dict_with_result = copy.deepcopy(did_dict_from_file_values)
-
-            # Using Service 22 to request a particular DID, returning the result in a dictionary
-            did_dict_from_service_22 = SE22.get_did_info(can_p, did_id, conf.response_timeout)
-
-            # Copy info to the did_dict_with_result dictionary from the did_dict
-            did_dict_with_result = SE22.adding_info(did_dict_from_service_22, did_dict_with_result)
-
-            # Adding scaled data to the dictionary with the result
-            if 'error_message' not in did_dict_with_result:
-                did_dict_with_result = scale_data(did_dict_with_result,
-                                                  parsed_sddb['response_item_dict'])
-
-            # Summarizing the result
-            info_entry, pass_or_fail_counter_dict = SE22.summarize_result(did_dict_with_result,
-                                                                          pass_or_fail_counter_dict,
-                                                                          did_id)
-            # Add the results
-            result_list.append(info_entry)
-
-            if did_counter >= conf.max_no_of_dids:
-                break
-
-            did_counter += 1
+        logging.debug('\nReading eda0')
+        eda0_dict = get_did_eda0(can_p, parsed_sddb['response_item_dict'])
+        write_testrun_data(eda0_dict, can_p)
+        
+        logging.debug('\nTesting application DIDs')
+        appl_list = did_checker(parsed_sddb['app_dict'].values(), can_p,
+                                parsed_sddb['response_item_dict'],
+                                pass_or_fail_counter_dict,
+                                conf.max_no_of_dids
+                                )
 
         # Clean underscore (Replace with whitespace) from SDDB file part number
         sddb_cleaned_part_number = parsed_sddb['app_diag_part_num'].replace('_', ' ')
 
-        # Comparing the part numbers
+        logging.debug('\nComparing the part numbers')
         part_nbr_match, part_nbr_match_msg = comp_part_nbrs(can_p, sddb_cleaned_part_number)
-        eda0_dict = get_did_eda0(can_p, parsed_sddb['response_item_dict'])
 
-        write_testrun_data(eda0_dict, can_p)
+        #pbl_list = list()
+        logging.debug('\nChange to programming session (02) - Enter PBL')
+        result = result and SE10.diagnostic_session_control_mode2(can_p, stepno=1)
+        logging.debug('\nTesting PBL DIDs')
+        pbl_list = did_checker(parsed_sddb['pbl_dict'].values(), can_p,
+                               parsed_sddb['response_item_dict'],
+                               pass_or_fail_counter_dict,
+                               -1)
 
-        generate_html(result_list, pass_or_fail_counter_dict, part_nbr_match,
+        logging.debug('\nDL and activate SBL')
+        result = result and SSBL.sbl_dl_activation(can_p, 1, "DL and activate SBL")
+        logging.debug('\nTesting SBL DIDs')
+        sbl_list = did_checker(parsed_sddb['sbl_dict'].values(), can_p,
+                               parsed_sddb['response_item_dict'],
+                               pass_or_fail_counter_dict,
+                               -1)
+
+        logging.debug('\nGenerating HTML')
+        generate_html(pbl_list, sbl_list, appl_list, pass_or_fail_counter_dict, part_nbr_match,
                       part_nbr_match_msg, eda0_dict)
 
         ############################################
         # postCondition
         ############################################
+        logging.debug('\nPostcondition')
         POST.postcondition(can_p, starttime, result)
     except Exception as _: # pylint: disable=broad-except
         logging.error(traceback.format_exc())

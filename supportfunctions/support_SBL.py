@@ -231,21 +231,31 @@ class SupportSBL:
         return result
 
 
+    def get_vbf_files_wo_argv(self):
+        """
+        read filenames used for transfer to ECU
+        sets filenames found in dict vbf_header
+        This can be used if you want to avoid the sys.argv part
+        """
+        odtb_proj_param = os.environ.get('ODTBPROJPARAM')
+        if odtb_proj_param is None:
+            odtb_proj_param = '.'
+        f_names = glob.glob(odtb_proj_param + "/VBF/*.vbf")
+        result = self.read_vbf_param(f_names)
+        return result
+
+
     def get_vbf_files(self):
         """
         read filenames used for transfer to ECU
         sets filenames found in dict vbf_header
         """
-        odtb_proj_param = os.environ.get('ODTBPROJPARAM')
-        if odtb_proj_param is None:
-            odtb_proj_param = '.'
-        logging.debug("Length sys.argv:  %s", len(sys.argv))
+        logging.debug("Length sys.argv: %s", len(sys.argv))
         if len(sys.argv) != 1:
             f_names = sys.argv
+            result = self.read_vbf_param(f_names)
         else:
-            f_names = glob.glob(odtb_proj_param + "/VBF/*.vbf")
-
-        result = self.read_vbf_param(f_names)
+            result = self.get_vbf_files_wo_argv()
         return result
 
 
