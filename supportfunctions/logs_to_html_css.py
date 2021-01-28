@@ -36,7 +36,13 @@ STYLE = (
         "border: 0px;"
         "}"
 
-        ".no_wrap, #scal_val {"
+        "#scal_val {"
+        "width:100%;"
+        "max-width: 540px;"
+        "overflow-wrap:break-word;"
+        "}"
+
+        ".no_wrap {"
         "white-space: nowrap;"
         "}"
 
