@@ -31,15 +31,13 @@ details: >
 
 """
 
-import re
 import sys
 import logging
 
 from supportfunctions.support_dut import Dut
 from supportfunctions.support_dut import DutTestError
 from supportfunctions.support_dut import get_platform
-from supportfunctions.support_uds import complete_ecu_part_number_eda0
-from supportfunctions.support_uds import ecu_software_structure_part_number_f12c
+from supportfunctions.support_uds import VccDid
 
 
 def step_1(dut):
@@ -55,12 +53,12 @@ def step_1(dut):
         All the part numbers should be returned
     """
     eda0_response = dut.uds.read_data_by_id_22(
-        complete_ecu_part_number_eda0)
+        VccDid.complete_ecu_part_number_eda0)
+    logging.info(eda0_response)
 
-    if eda0_response.empty() or not hasattr(
-            eda0_response, "ecu_sw_struct_part_num"):
+    if eda0_response.empty() or not "F12E_valid" in eda0_response.data["details"]:
         raise DutTestError("Could not retrieve complete ecu part number")
-    return eda0_response
+    return eda0_response.data["details"]["F12E_valid"][-1]
 
 
 def step_2(dut):
@@ -76,7 +74,7 @@ def step_2(dut):
     dut.uds.set_mode(2)
 
 
-def step_3(dut, eda0_response):
+def step_3(dut, eda0_f12c_valid):
     """
     action:
         Test that the format of the software part number is correct. That is
@@ -91,20 +89,18 @@ def step_3(dut, eda0_response):
         one we get from f12c
     """
     f12c_response = dut.uds.read_data_by_id_22(
-        ecu_software_structure_part_number_f12c)
+        VccDid.ecu_software_structure_part_number_f12c)
+    logging.info(f12c_response)
 
-    if f12c_response.empty() or not hasattr(
-            f12c_response, "ecu_sw_struct_part_num"):
+    if f12c_response.empty() or "F12E_valid" in f12c_response.data['details']:
         raise DutTestError("No software structure part number received")
 
-    sw_pn = f12c_response.ecu_sw_struct_part_num
-    assert re.match(r'^\d{8} [A-Z]{2}$', sw_pn), sw_pn
-
+    f12c_valid = f12c_response.data["details"]["F12C_valid"]
     if get_platform() == "spa1":
-        assert sw_pn == eda0_response.ecu_sw_struct_part_num, \
+        assert eda0_f12c_valid == f12c_valid, \
             "ecu software structure part numbers does not match: " + \
             "\neda0: %s\nf12c: %s" % (
-                sw_pn, eda0_response.ecu_sw_struct_part_num)
+                eda0_f12c_valid, f12c_valid)
 
 
 def run():
@@ -121,9 +117,9 @@ def run():
     try:
         dut.precondition()
 
-        eda0_response = dut.step(step_1, purpose="get eda0")
+        eda0_f12c_valid = dut.step(step_1, purpose="get eda0")
         dut.step(step_2, purpose="set programming mode")
-        dut.step(step_3, eda0_response, purpose="get f12c and compare values")
+        dut.step(step_3, eda0_f12c_valid, purpose="get f12c and compare values")
 
         result = True
     except DutTestError as error:
