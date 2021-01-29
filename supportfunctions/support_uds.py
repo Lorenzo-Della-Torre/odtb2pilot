@@ -61,7 +61,7 @@ class UdsResponse:
             "71": "RoutineControl",
         }
 
-        pattern = r'.{4}(?P<sid>.{2})(?P<body>.*)'
+        pattern = r'.{2,4}(?P<sid>59|62|6F|71)(?P<body>.*)'
         match = re.match(pattern, self.raw)
         if not match:
             raise LookupError("Unrecognizable response format")
