@@ -61,7 +61,7 @@ class UdsResponse:
             "71": "RoutineControl",
         }
 
-        pattern = r'.{4}(?P<sid>.{2})(?P<did>.{4})(?P<content>.*)'
+        pattern = r'.{4}(?P<sid>.{2})(?P<body>.*)'
         match = re.match(pattern, self.raw)
         if not match:
             raise LookupError("Unrecognizable response format")
@@ -72,15 +72,24 @@ class UdsResponse:
         if self.sid in service_types:
             self.service = service_types[self.sid]
 
-        self.content = self.data["content"]
-
-        # FIXME: actually, this is not a good idea since we have to use
-        # different definitions depending on the mode of the ecu
+        # actually, this is not a good idea since we have to use different
+        # definitions depending on the mode of the ecu, but let's att that
+        # functionality when we need it
         self.all_defined_dids = get_all_dids()
         for did, item in self.all_defined_dids.items():
             # each byte takes two hexadecimal characters
-            length = int(item['size']) * 2
+            length = int(item['sddb_size']) * 2
             self.__did_regex[did] = r'{}(.{{{}}})'.format(did, length)
+
+
+        did = self.data["body"][0:4]
+        item = self.data["body"][4:]
+        info = self.all_defined_dids[did]
+        self.data['did'] = did
+        self.data['details'] = {}
+        self.data['details'].update(info)
+        self.data['details']['item'] = item
+        self.validate_part_num(did, item)
 
         # execute did specific handler if it's defined
         for did_method in dir(self):
@@ -91,19 +100,27 @@ class UdsResponse:
         """ Check if the response is empty """
         return len(self.raw) == 0
 
+
     def extract_dids(self, content):
         """ find all the defined dids in the content """
         for did, regex in self.__did_regex.items():
             match = re.search(regex, content)
             if match:
                 item = match.groups()[0]
-                self.data[did] = item
-                self.data[did+'_info'] = self.all_defined_dids[did]
-                if did in ['F120', 'F121', 'F122', 'F125', 'F12A', 'F12B',
-                           'F12C', 'F12E']:
-                    if SupportTestODTB2.validate_part_number_record(item):
-                        self.data[did+'_valid'] = \
-                            SupportTestODTB2.pp_partnumber(item)
+                info = self.all_defined_dids[did]
+                self.data['details'][did] = item
+                self.data['details'][did+'_info'] = info
+                self.validate_part_num(did, item)
+
+
+    def validate_part_num(self, did, item):
+        """ validate part number and add convert it to text format """
+        if did in ['F120', 'F121', 'F122', 'F125', 'F12A', 'F12B',
+                   'F12C', 'F12E']:
+            if SupportTestODTB2.validate_part_number_record(item):
+                self.data['details'][did+'_valid'] = \
+                    SupportTestODTB2.pp_partnumber(item)
+
 
     def __str__(self):
         s = (
@@ -113,24 +130,32 @@ class UdsResponse:
             f"  data = \n"
         )
         for key, item in self.data.items():
-            s += f"    {key}: {item}\n"
+            if isinstance(item, dict):
+                s += f"    {key}: \n"
+                for k, v in item.items():
+                    s += f"      {k}: {v}\n"
+            else:
+                s += f"    {key}: {item}\n"
         return s
 
+
     def __ecu_software_structure_part_number_f12c(self):
-        if SupportTestODTB2.validate_part_number_record(self.content):
-            self.data['F12C_valid'] = \
-                SupportTestODTB2.pp_partnumber(self.content)
+        item = self.data['details']['item']
+        if SupportTestODTB2.validate_part_number_record(item):
+            self.data['details']['valid'] = \
+                SupportTestODTB2.pp_partnumber(item)
+
 
     def __complete_ecu_part_number_eda0(self):
-        self.extract_dids(self.content)
-        remaining = self.data['F12E']
+        self.extract_dids(self.data['details']['item'])
+        remaining = self.data['details']['F12E']
 
         # each part number is 7 bytes and each byte is represented as two
         # hexadecimal characters
         part_num_len = 7 * 2
 
         records = int(remaining[0:2])
-        self.data['F12E_info']['records'] = records
+        self.data['details']['F12E_info']['records'] = records
         remaining = remaining[2:]
 
         if not records * part_num_len == len(remaining):
@@ -138,11 +163,11 @@ class UdsResponse:
                 "Record length of F12E in EDA0 appears incorrect in SDDB file")
             # attempting to recover by ignoreing SDDB record for F12E
             match = re.search(r'F12E\d\d(.{{{}}})'.format(
-                records * part_num_len), self.content)
+                records * part_num_len), self.data['body'])
             remaining = match.groups()[0]
 
         part_nums = textwrap.wrap(remaining, part_num_len)
-        self.data['F12E_list'] = part_nums
+        self.data['details']['F12E_list'] = part_nums
 
         # validate the part numbers
         f12e_valid = []
@@ -151,7 +176,8 @@ class UdsResponse:
                 f12e_valid.append(SupportTestODTB2.pp_partnumber(pn))
             else:
                 f12e_valid.append(False)
-        self.data['F12E_valid'] = f12e_valid
+        self.data['details']['F12E_valid'] = f12e_valid
+
 
 class Uds:
     """ Unified diagnostic services """
@@ -218,8 +244,8 @@ def get_all_dids():
     dids = {}
     for did_dict in [pbl_did_dict, sbl_did_dict, app_did_dict]:
         for key, item in did_dict.items():
-            dids[key[2:]] = {
-                k.lower(): v for k, v in item.items() if k in ['Name', 'Size']}
+            dids[key[2:]] = {"sddb_" + k.lower(): v
+                             for k, v in item.items() if k in ['Name', 'Size']}
     return dids
 
 
@@ -231,16 +257,18 @@ def test_uds_response():
     """ pytest: UdsResponse """
     f12c_response = "100A62F12C32263666204141"
     response = UdsResponse(f12c_response)
-    assert response.data['F12C_valid'] == "32263666 AA"
+    print(response)
+    assert response.data['did'] == "F12C"
+    assert response.data['details']['valid'] == "32263666 AA"
     eda0 = "104A62EDA0F12032299361204142F12A32290749202020F12BFFFFFFFFFFFFFF" + \
     "F12E053229942520414532299427204143322994292041453229943020414132263666204141" + \
     "F18C30400011"
     response = UdsResponse(eda0)
-    assert response.data['F12E_valid'][-1] == "32263666 AA"
     print(response)
+    assert response.data['details']['F12E_valid'][-1] == "32263666 AA"
 
 def test_did():
     """ pytest: make sure get_all_dids works properly """
     did = get_all_dids()
-    assert did['EDA0']['size'] == '64'
-    assert did['EDA0']['name'] == 'Complete ECU Part/Serial Number(s)'
+    assert did['EDA0']['sddb_size'] == '64'
+    assert did['EDA0']['sddb_name'] == 'Complete ECU Part/Serial Number(s)'
