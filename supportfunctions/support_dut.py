@@ -109,6 +109,8 @@ class Dut:
         """ add test step """
         self.uds.step += 1
         self.uds.purpose = purpose
+        if inspect.ismethod(func):
+            return func(*args, **kwargs)
         return func(self, *args, **kwargs)
 
     @beamy_feature
