@@ -4,11 +4,6 @@
 # date:     2021-01-12
 # version:  1.0
 # reqprod:  466751
-# -- UPDATES --
-# author:
-# date:
-# version:
-# changes:
 
 # inspired by https://grpc.io/docs/tutorials/basic/python.html
 
@@ -41,7 +36,6 @@ from supportfunctions.support_carcom import SupportCARCOM
 from supportfunctions.support_file_io import SupportFileIO
 from supportfunctions.support_precondition import SupportPrecondition
 from supportfunctions.support_postcondition import SupportPostcondition
-from supportfunctions.support_SBL import SupportSBL
 from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_service10 import SupportService10
 
@@ -49,20 +43,11 @@ SIO = SupportFileIO
 SC = SupportCAN()
 SUTE = SupportTestODTB2()
 SC_CARCOM = SupportCARCOM()
-SSBL = SupportSBL()
 PREC = SupportPrecondition()
 POST = SupportPostcondition()
 SE10 = SupportService10()
 SE22 = SupportService22()
 
-def validate_and_get_pn(message):
-    '''
-    Validate and pretty print ECU Delivery Assembly Part Number
-    '''
-    pos = message.find('D03A')
-    valid = SUTE.validate_part_number_record(message[pos+4:pos+18])
-    ecu_delivery_assembly_pn = SUTE.pp_partnumber(message[pos+4:pos+18])
-    return valid, ecu_delivery_assembly_pn
 
 def step_2(can_p):
     """
@@ -108,6 +93,7 @@ def step_4(can_p):
         "extra": ''
         }
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+
     etp: CanTestExtra = {
         "step_no": 4,
         "purpose": "Request DID D03A - in Extended Session",
@@ -128,94 +114,6 @@ def step_4(can_p):
 
     return result, extended_result
 
-def step_6(can_p):
-    """
-    Teststep 6: send requests DID D03A - in Programming Session
-    """
-    # Parameters for the teststep
-    cpay: CanPayload = {
-        "payload": SC_CARCOM.can_m_send("ReadDataByIdentifier",
-                                        b'\xD0\x3A',
-                                        b''),
-        "extra": ''
-        }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
-    etp: CanTestExtra = {
-        "step_no": 6,
-        "purpose": "Request DID D03A - in Programming Session",
-        "timeout": 1,
-        "min_no_messages": -1,
-        "max_no_messages": -1
-        }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
-
-    result = SUTE.teststep(can_p, cpay, etp)
-    time.sleep(1)
-
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='D03A')
-    logging.info(SC.can_messages[can_p["receive"]])
-
-    programming_result = SC.can_messages[can_p["receive"]][0][2]
-    logging.info(programming_result)
-
-    return result, programming_result
-
-def step_8(can_p):
-    """
-    Teststep 8: send requests DID D03A - with SBL active
-    """
-    # Parameters for the teststep
-    cpay: CanPayload = {
-        "payload": SC_CARCOM.can_m_send("ReadDataByIdentifier",
-                                        b'\xD0\x3A',
-                                        b''),
-        "extra": ''
-        }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
-    etp: CanTestExtra = {
-        "step_no": 8,
-        "purpose": "Request DID D03A - with SBL Activated",
-        "timeout": 1,
-        "min_no_messages": -1,
-        "max_no_messages": -1
-        }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
-
-    result = SUTE.teststep(can_p, cpay, etp)
-    time.sleep(1)
-
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='D03A')
-    logging.info(SC.can_messages[can_p["receive"]])
-
-    sbl_result = SC.can_messages[can_p["receive"]][0][2]
-    logging.info(sbl_result)
-
-    return result, sbl_result
-
-def step_9(default_result, extended_result, programming_result, sbl_result):
-    """
-    TestStep 9: Validate D03A Part Number messages
-    """
-
-    default_valid, default_ecu_da_pn = validate_and_get_pn(default_result)
-    logging.info("Default ECU Delivery Assembly Part Number: %s  - %s",
-                  default_ecu_da_pn, default_valid)
-
-    extended_valid, extended_ecu_da_pn = validate_and_get_pn(extended_result)
-    logging.info("Extended ECU Delivery Assembly Part Number: %s  - %s",
-                  extended_ecu_da_pn, extended_valid)
-
-    programming_valid, programming_ecu_da_pn = validate_and_get_pn(programming_result)
-    logging.info("Programming ECU Delivery Assembly Part Number: %s  - %s",
-                  programming_ecu_da_pn, programming_valid)
-
-    sbl_valid, sbl_ecu_da_pn = validate_and_get_pn(sbl_result)
-    logging.info("SBL: ECU Delivery Assembly Part Number: %s  - %s",
-                  sbl_ecu_da_pn, sbl_valid)
-
-    result = default_valid and extended_valid and programming_valid and sbl_valid
-
-    return result
 
 def run():
     """
@@ -240,9 +138,7 @@ def run():
     ############################################
     # precondition
     ############################################
-    # read VBF param when testscript is s started, if empty take default param
-    #SSBL.get_vbf_files()
-    timeout = 2000
+    timeout = 500
     result = PREC.precondition(can_p, timeout)
     result = True
 
@@ -275,49 +171,23 @@ def run():
         time.sleep(1)
 
     # step 5:
-    # action: Change to Programming session
-    # result: ECU reports mode
-        #result = result and SE10.diagnostic_session_control_mode2(can_p, 5)
-        #time.sleep(1)
-
-    # step 6:
-    # action: send requests DID D03A in Extended Session
-    # result: Data record with Autosar BSW cluster version is returned
-        #result_step_6, programming_result = step_6(can_p)
-        #time.sleep(1)
-
-    # step 7:
-    # action: Change to Programming session
-    # result: ECU reports mode
-        #result = result and SSBL.sbl_activation(can_p, stepno=7, purpose="DL and activate SBL")
-        #time.sleep(1)
-
-    # step 8:
-    # action: send requests DID D03A in Extended Session
-    # result: Data record with Autosar BSW cluster version is returned
-        #result_step_8, sbl_result = step_8(can_p)
-        #time.sleep(1)
-
-    # step9:
     # action: Complete the testcase
     # result: Merge the results from all steps
     #         The record received in Default, Extended and Programming Session shall be equal
-        step_no = 9
+        step_no = 5
         purpose = "Verify the D03A records received are equal in all modes"
         SUTE.print_test_purpose(step_no, purpose)
 
-        result = result and result_step_2 and result_step_4 
-        #and result_step_6 and result_step_8
+        result = result and result_step_2 and result_step_4
         #result = result and step_9(default_result, extended_result,
         #                            programming_result, sbl_result)
 
         result = result and (default_result == extended_result)
-        #result = result and (default_result == programming_result == sbl_result)
 
-    # step10:
+    # step 6:
     # action: Set to Default session before leaving
     # result: ECU reports modes
-        result_end = SE10.diagnostic_session_control_mode1(can_p, 10)
+        result_end = SE10.diagnostic_session_control_mode1(can_p, 6)
         time.sleep(1)
         result = result and result_end
 
