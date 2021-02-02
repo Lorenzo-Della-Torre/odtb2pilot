@@ -23,16 +23,24 @@ SC = SupportCAN()
 
 global_timestamp_dd00 = bytes.fromhex('DD00')
 
+@dataclass
+class EicDid:
+    """
+    ECU Identification and Configuration
+
+    EDA0-EDFF, ED20-ED7F
+    """
+    complete_ecu_part_number_eda0 = bytes.fromhex('EDA0')
+
 # maybe move this to a different file since it's volvo specific
 @dataclass
-class VccDid:
+class IoVmsDid:
     """
     Identification Option - Vehicle Manufacturer Specific
 
     F100-F17F, F1A0-F1EF
     """
     # pylint: disable=too-many-instance-attributes,invalid-name
-    complete_ecu_part_number_eda0 = bytes.fromhex('EDA0')
     app_diag_part_num_f120 = bytes.fromhex('F120')
     pbl_diag_part_num_f121 = bytes.fromhex('F121')
     sbl_diag_part_num_f122 = bytes.fromhex('F122')
@@ -148,6 +156,11 @@ class UdsResponse:
 
     def __complete_ecu_part_number_eda0(self):
         self.extract_dids(self.data['details']['item'])
+
+        if not 'F12E' in self.data['details']:
+            logging.error('No F12E part numbers found')
+            return
+
         remaining = self.data['details']['F12E']
 
         # each part number is 7 bytes and each byte is represented as two
