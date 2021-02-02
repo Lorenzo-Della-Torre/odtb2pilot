@@ -38,7 +38,7 @@ import logging
 
 from supportfunctions.support_dut import Dut
 from supportfunctions.support_dut import DutTestError
-from supportfunctions.support_uds import VccDid
+from supportfunctions.support_uds import IoVmsDid
 from supportfunctions.support_SBL import SupportSBL
 
 
@@ -51,10 +51,10 @@ def step_1(dut: Dut):
         All returned part numbers should be valid
     """
     dids = [
-        VccDid.app_diag_part_num_f120,
-        VccDid.ecu_core_assembly_part_num_f12a,
-        VccDid.ecu_delivery_assembly_part_num_f12b,
-        VccDid.ecu_software_part_number_f12e
+        IoVmsDid.app_diag_part_num_f120,
+        IoVmsDid.ecu_core_assembly_part_num_f12a,
+        IoVmsDid.ecu_delivery_assembly_part_num_f12b,
+        IoVmsDid.ecu_software_part_number_f12e
     ]
     validate_dids(dut, dids)
 
@@ -80,9 +80,9 @@ def step_3(dut: Dut):
 
     """
     dids = [
-        VccDid.pbl_diag_part_num_f121,
-        VccDid.pbl_software_part_num_f125,
-        VccDid.ecu_software_structure_part_number_f12c,
+        IoVmsDid.pbl_diag_part_num_f121,
+        IoVmsDid.pbl_software_part_num_f125,
+        IoVmsDid.ecu_software_structure_part_number_f12c,
     ]
     validate_dids(dut, dids)
 
@@ -113,7 +113,7 @@ def step_5(dut: Dut):
 
     """
     dids = [
-        VccDid.sbl_diag_part_num_f122
+        IoVmsDid.sbl_diag_part_num_f122
     ]
     validate_dids(dut, dids)
 

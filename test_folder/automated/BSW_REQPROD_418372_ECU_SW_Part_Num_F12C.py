@@ -37,7 +37,8 @@ import logging
 from supportfunctions.support_dut import Dut
 from supportfunctions.support_dut import DutTestError
 from supportfunctions.support_dut import get_platform
-from supportfunctions.support_uds import VccDid
+from supportfunctions.support_uds import IoVmsDid
+from supportfunctions.support_uds import EicDid
 
 
 def step_1(dut):
@@ -53,7 +54,7 @@ def step_1(dut):
         All the part numbers should be returned
     """
     eda0_response = dut.uds.read_data_by_id_22(
-        VccDid.complete_ecu_part_number_eda0)
+        EicDid.complete_ecu_part_number_eda0)
     logging.info(eda0_response)
 
     if eda0_response.empty() or not "F12E_valid" in eda0_response.data["details"]:
@@ -89,7 +90,7 @@ def step_3(dut, eda0_f12c_valid):
         one we get from f12c
     """
     f12c_response = dut.uds.read_data_by_id_22(
-        VccDid.ecu_software_structure_part_number_f12c)
+        IoVmsDid.ecu_software_structure_part_number_f12c)
     logging.info(f12c_response)
 
     if f12c_response.empty() or "F12E_valid" in f12c_response.data['details']:
