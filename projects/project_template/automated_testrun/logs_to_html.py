@@ -254,12 +254,9 @@ def get_url_dict(script_folder):
     '''
     Create and return a dict with the urls to the different scripts.
     '''
-    new_tc = get_key_and_url_comb(os.path.join(script_folder, 'test_cases'), 'test_cases')
-    manual_tc = get_key_and_url_comb(os.path.join(script_folder, 'manual_test'), 'manual_test')
-    old_tc = get_key_and_url_comb(os.path.join(script_folder, 'test_cases_old'), 'test_cases_old')
-    # Add them together
-    ret_dict = {**new_tc, **manual_tc, **old_tc}
-    return ret_dict
+    url_dict = get_key_and_url_comb(os.path.join(script_folder, 'test_folder'), 'test_folder')
+    return url_dict
+
 
 def get_git_revision_hash():
     ''' Returns git revision hash '''
