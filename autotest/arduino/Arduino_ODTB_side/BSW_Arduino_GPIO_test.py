@@ -5,6 +5,11 @@
 # version:  1.0
 # reqprod:  GPIO
 
+# date:     2021-02-02
+# version:  1.1
+# changes:  update to match support_function
+#           added support for I2C-relay card
+
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
 
 # Copyright 2015 gRPC authors.
@@ -36,12 +41,12 @@ import odtb_conf
 
 #from gpiozero import LED
 
-from support_can import SupportCAN, CanParam, CanTestExtra
-from support_test_odtb2 import SupportTestODTB2
-from support_file_io import SupportFileIO
-from support_rpi_gpio import SupportRpiGpio
-from support_precondition import SupportPrecondition
-from support_postcondition import SupportPostcondition
+from supportfunctions.support_can import SupportCAN, CanParam, CanTestExtra
+from supportfunctions.support_test_odtb2 import SupportTestODTB2
+from supportfunctions.support_file_io import SupportFileIO
+from supportfunctions.support_rpi_gpio import SupportRpiGpio
+from supportfunctions.support_precondition import SupportPrecondition
+from supportfunctions.support_postcondition import SupportPostcondition
 
 SIO = SupportFileIO
 SC = SupportCAN()
@@ -52,15 +57,14 @@ POST = SupportPostcondition()
 
 # Global variable:
 #testresult = True
-sleeptime = 0.7
+SLEEPTIME = 0.7
 
 #Led1=LED(16)
 #Led2=LED(12)
 
-    # teststep 1: Test relais connected to Arduino
 def step_1(can_p):
     """
-    Teststep 1: Test relais connected to Arduino
+    Teststep 1: Test relais on I2C-Relay card
     """
 
     etp: CanTestExtra = {
@@ -74,101 +78,61 @@ def step_1(can_p):
 
     stub = can_p["netstub"]
 
-    ns_rpiGPIO = SC.nspace_lookup("RpiGPIO")
-    #print hex: print("Rx%02X"%c)
+    ns_rpi_gpio = SC.nspace_lookup("RpiGPIO")
     time_tsend = time.time()
-    
-    # Led1 ON
-    print("Arduino_Relais_0 on (time_diff: )", time.time()-time_tsend)
-    SGPIO.t_send_gpio_signal_hex(stub, "PsR", ns_rpiGPIO, b'On')
-    time_tsend = time.time()
-    time.sleep(sleeptime)
-    # Led1 OFF
-    print("Arduino_Relais_0 off (time_diff: )", time.time()-time_tsend)
-    SGPIO.t_send_gpio_signal_hex(stub, "PsR", ns_rpiGPIO, b'Off')
+
 
     for i in range(5):
-        # Led1 ON
-        print("Arduino_Relais_0 on (time_diff: )", time.time()-time_tsend)
-        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpiGPIO, b'Rx\x01')
+        logging.debug("Test loop no. %s", i)
+        # I2C relay card: Relay1 ON
+        logging.debug("I2C_Relais_1 on (time_diff: ) %s", time.time()-time_tsend)
+        SGPIO.t_send_gpio_signal_hex(stub, "I2C_GPIO", ns_rpi_gpio, b'Rx\x01')
         time_tsend = time.time()
-        time.sleep(sleeptime)
-        # Led1 OFF
-        print("Arduino_Relais_0 off (time_diff: )", time.time()-time_tsend)
-        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpiGPIO, b'Rx\x00')
-        # Led2 ON
+        time.sleep(SLEEPTIME)
+        # I2C relay card: Relay1 OFF
+        logging.debug("I2C_Relais_1 off (time_diff: ) %s", time.time()-time_tsend)
+        SGPIO.t_send_gpio_signal_hex(stub, "I2C_GPIO", ns_rpi_gpio, b'Rx\x00')
         time_tsend = time.time()
-        time.sleep(sleeptime)
-        print("Arduino_Relais_1 on (time_diff: )", time.time()-time_tsend)
-        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpiGPIO, b'Rx\x02')
-        # Led2 OFF
-        time_tsend = time.time()
-        time.sleep(sleeptime)
-        print("Arduino_Relais_1 off (time_diff: )", time.time()-time_tsend)
-        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpiGPIO, b'Rx\x00')
-        # Relais1 ON
-        time_tsend = time.time()
-        time.sleep(sleeptime)
-        print("Arduino_Relais_2 on (time_diff: )", time.time()-time_tsend)
-        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpiGPIO, b'Rx\x04')
-        # Relais2 OFF
-        time_tsend = time.time()
-        time.sleep(sleeptime)
-        print("Arduino_Relais_2 off (time_diff: )", time.time()-time_tsend)
-        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpiGPIO, b'Rx\x00')
-        time_tsend = time.time()
-        time.sleep(sleeptime)
-        print("Arduino_Relais_3 on (time_diff: )", time.time()-time_tsend)
-        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpiGPIO, b'Rx\x08')
-        # Relais2 OFF
-        time_tsend = time.time()
-        time.sleep(sleeptime)
-        print("Arduino_Relais_3 off (time_diff: )", time.time()-time_tsend)
-        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpiGPIO, b'Rx\x00')
-        time_tsend = time.time()
-        time.sleep(sleeptime)
-        print("Arduino_Relais_4 on (time_diff: )", time.time()-time_tsend)
-        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpiGPIO, b'Rx\x10')
-        # Relais2 OFF
-        time_tsend = time.time()
-        time.sleep(sleeptime)
-        print("Arduino_Relais_4 off (time_diff: )", time.time()-time_tsend)
-        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpiGPIO, b'Rx\x00')
-        time_tsend = time.time()
-        time.sleep(sleeptime)
-        print("Arduino_Relais_5 on (time_diff: )", time.time()-time_tsend)
-        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpiGPIO, b'Rx\x20')
-        # Relais2 OFF
-        time_tsend = time.time()
-        time.sleep(sleeptime)
-        print("Arduino_Relais_5 off (time_diff: )", time.time()-time_tsend)
-        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpiGPIO, b'Rx\x00')
-        time_tsend = time.time()
-        time.sleep(sleeptime)
-        print("Arduino_Relais_6 on (time_diff: )", time.time()-time_tsend)
-        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpiGPIO, b'Rx\x40')
-        # Relais2 OFF
-        time_tsend = time.time()
-        time.sleep(sleeptime)
-        print("Arduino_Relais_6 off (time_diff: )", time.time()-time_tsend)
-        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpiGPIO, b'Rx\x00')
-        time_tsend = time.time()
-        time.sleep(sleeptime)
-        print("Arduino_Relais_7 on (time_diff: )", time.time()-time_tsend)
-        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpiGPIO, b'Rx\x80')
-        # Relais2 OFF
-        time_tsend = time.time()
-        time.sleep(sleeptime)
-        print("Arduino_Relais_7 off (time_diff: )", time.time()-time_tsend)
-        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpiGPIO, b'Rx\x00')
-        time_tsend = time.time()
-        time.sleep(sleeptime)
+        time.sleep(SLEEPTIME)
 
-    #testresult = testresult and SUTE.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
+        # I2C relay card: Relay2 ON
+        logging.debug("I2C_Relais_2 on (time_diff: ) %s", time.time()-time_tsend)
+        SGPIO.t_send_gpio_signal_hex(stub, "I2C_GPIO", ns_rpi_gpio, b'Rx\x11')
+        time_tsend = time.time()
+        time.sleep(SLEEPTIME)
+        # I2C relay card: Relay2 OFF
+        logging.debug("I2C_Relais_2 off (time_diff: ) %s", time.time()-time_tsend)
+        SGPIO.t_send_gpio_signal_hex(stub, "I2C_GPIO", ns_rpi_gpio, b'Rx\x10')
+        time_tsend = time.time()
+        time.sleep(SLEEPTIME)
+
+        # I2C relay card: Relay3 ON
+        logging.debug("I2C_Relais_3 on (time_diff: ) %s", time.time()-time_tsend)
+        SGPIO.t_send_gpio_signal_hex(stub, "I2C_GPIO", ns_rpi_gpio, b'Rx\x21')
+        time_tsend = time.time()
+        time.sleep(SLEEPTIME)
+        # I2C relay card: Relay3 OFF
+        logging.debug("I2C_Relais_3 off (time_diff: ) %s", time.time()-time_tsend)
+        SGPIO.t_send_gpio_signal_hex(stub, "I2C_GPIO", ns_rpi_gpio, b'Rx\x20')
+        time_tsend = time.time()
+        time.sleep(SLEEPTIME)
+
+        # I2C relay card: Relay4 ON
+        logging.debug("I2C_Relais_4 on (time_diff: ) %s", time.time()-time_tsend)
+        SGPIO.t_send_gpio_signal_hex(stub, "I2C_GPIO", ns_rpi_gpio, b'Rx\x31')
+        time_tsend = time.time()
+        time.sleep(SLEEPTIME)
+        # I2C relay card: Relay4 OFF
+        logging.debug("I2C_Relais_4 off (time_diff: ) %s", time.time()-time_tsend)
+        SGPIO.t_send_gpio_signal_hex(stub, "I2C_GPIO", ns_rpi_gpio, b'Rx\x30')
+        time_tsend = time.time()
+        time.sleep(SLEEPTIME)
 
 
-    # teststep 2: Test relais connected to Arduino with mask sent
-def step_2(can_p):
+def step_2(can_p): # pylint: disable=too-many-statements
+    """
+    Teststep 2: Test relais connected to Arduino
+    """
 
     etp: CanTestExtra = {
         "step_no": 1,
@@ -181,104 +145,209 @@ def step_2(can_p):
 
     stub = can_p["netstub"]
 
-    ns_rpiGPIO = SC.nspace_lookup("RpiGPIO")
+    ns_rpi_gpio = SC.nspace_lookup("RpiGPIO")
+    #print hex: print("Rx%02X"%c)
+    time_tsend = time.time()
+
+    # Led1 ON
+    logging.debug("Arduino_Relais_0 on (time_diff: ) %s", time.time()-time_tsend)
+    SGPIO.t_send_gpio_signal_hex(stub, "PsR", ns_rpi_gpio, b'On')
+    time_tsend = time.time()
+    time.sleep(SLEEPTIME)
+    # Led1 OFF
+    logging.debug("Arduino_Relais_0 off (time_diff: ) %s", time.time()-time_tsend)
+    SGPIO.t_send_gpio_signal_hex(stub, "PsR", ns_rpi_gpio, b'Off')
+
+    for i in range(5):
+        logging.debug("Test loop no. %s", i)
+        # Led1 ON
+        logging.debug("Arduino_Relais_0 on (time_diff: ) %s", time.time()-time_tsend)
+        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpi_gpio, b'Rx\x01')
+        time_tsend = time.time()
+        time.sleep(SLEEPTIME)
+        # Led1 OFF
+        logging.debug("Arduino_Relais_0 off (time_diff: ) %s", time.time()-time_tsend)
+        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpi_gpio, b'Rx\x00')
+        # Led2 ON
+        time_tsend = time.time()
+        time.sleep(SLEEPTIME)
+        logging.debug("Arduino_Relais_1 on (time_diff: ) %s", time.time()-time_tsend)
+        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpi_gpio, b'Rx\x02')
+        # Led2 OFF
+        time_tsend = time.time()
+        time.sleep(SLEEPTIME)
+        logging.debug("Arduino_Relais_1 off (time_diff: ) %s", time.time()-time_tsend)
+        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpi_gpio, b'Rx\x00')
+        # Relais1 ON
+        time_tsend = time.time()
+        time.sleep(SLEEPTIME)
+        logging.debug("Arduino_Relais_2 on (time_diff: ) %s", time.time()-time_tsend)
+        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpi_gpio, b'Rx\x04')
+        # Relais2 OFF
+        time_tsend = time.time()
+        time.sleep(SLEEPTIME)
+        logging.debug("Arduino_Relais_2 off (time_diff: ) %s", time.time()-time_tsend)
+        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpi_gpio, b'Rx\x00')
+        time_tsend = time.time()
+        time.sleep(SLEEPTIME)
+        logging.debug("Arduino_Relais_3 on (time_diff: ) %s", time.time()-time_tsend)
+        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpi_gpio, b'Rx\x08')
+        # Relais2 OFF
+        time_tsend = time.time()
+        time.sleep(SLEEPTIME)
+        logging.debug("Arduino_Relais_3 off (time_diff: ) %s", time.time()-time_tsend)
+        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpi_gpio, b'Rx\x00')
+        time_tsend = time.time()
+        time.sleep(SLEEPTIME)
+        logging.debug("Arduino_Relais_4 on (time_diff: ) %s", time.time()-time_tsend)
+        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpi_gpio, b'Rx\x10')
+        # Relais2 OFF
+        time_tsend = time.time()
+        time.sleep(SLEEPTIME)
+        logging.debug("Arduino_Relais_4 off (time_diff: ) %s", time.time()-time_tsend)
+        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpi_gpio, b'Rx\x00')
+        time_tsend = time.time()
+        time.sleep(SLEEPTIME)
+        logging.debug("Arduino_Relais_5 on (time_diff: ) %s", time.time()-time_tsend)
+        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpi_gpio, b'Rx\x20')
+        # Relais2 OFF
+        time_tsend = time.time()
+        time.sleep(SLEEPTIME)
+        logging.debug("Arduino_Relais_5 off (time_diff: ) %s", time.time()-time_tsend)
+        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpi_gpio, b'Rx\x00')
+        time_tsend = time.time()
+        time.sleep(SLEEPTIME)
+        logging.debug("Arduino_Relais_6 on (time_diff: ) %s", time.time()-time_tsend)
+        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpi_gpio, b'Rx\x40')
+        # Relais2 OFF
+        time_tsend = time.time()
+        time.sleep(SLEEPTIME)
+        logging.debug("Arduino_Relais_6 off (time_diff: ) %s", time.time()-time_tsend)
+        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpi_gpio, b'Rx\x00')
+        time_tsend = time.time()
+        time.sleep(SLEEPTIME)
+        logging.debug("Arduino_Relais_7 on (time_diff: ) %s", time.time()-time_tsend)
+        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpi_gpio, b'Rx\x80')
+        # Relais2 OFF
+        time_tsend = time.time()
+        time.sleep(SLEEPTIME)
+        logging.debug("Arduino_Relais_7 off (time_diff: ) %s", time.time()-time_tsend)
+        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpi_gpio, b'Rx\x00')
+        time_tsend = time.time()
+        time.sleep(SLEEPTIME)
+
+
+def step_3(can_p): # pylint: disable=too-many-statements
+    """
+    Teststep 3: Test relais connected to Arduino with mask sent
+    """
+
+    etp: CanTestExtra = {
+        "step_no": 1,
+        "purpose": "Test relais connected to Arduino",
+        "timeout": 1,
+        "min_no_messages": 1,
+        "max_no_messages": 1
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+
+    stub = can_p["netstub"]
+
+    ns_rpi_gpio = SC.nspace_lookup("RpiGPIO")
 
     #print hex: print("Rx%02X"%c)
     time_tsend = time.time()
 
     for i in range(5):
+        logging.debug("Test loop no. %s", i)
         # PsR ON
-        print("Arduino_Relais_0 (PsR) on (time_diff: )", time.time()-time_tsend)
-        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpiGPIO, b'On')
+        logging.debug("Arduino_Relais_0 (PsR) on (time_diff: ) %s", time.time()-time_tsend)
+        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpi_gpio, b'On')
         time_tsend = time.time()
-        time.sleep(sleeptime)
+        time.sleep(SLEEPTIME)
         # PsR OFF
-        print("Arduino_Relais_0 (PsR) off (time_diff: )", time.time()-time_tsend)
-        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpiGPIO, b'Off')
+        logging.debug("Arduino_Relais_0 (PsR) off (time_diff: ) %s", time.time()-time_tsend)
+        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpi_gpio, b'Off')
         # Led2 ON
         time_tsend = time.time()
-        time.sleep(sleeptime)
+        time.sleep(SLEEPTIME)
 
 
         # Led1 ON
-        print("Arduino_Relais_0 on (time_diff: )", time.time()-time_tsend)
-        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpiGPIO, b'Rx\xff\x01')
+        logging.debug("Arduino_Relais_0 on (time_diff: ) %s", time.time()-time_tsend)
+        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpi_gpio, b'Rx\xff\x01')
         time_tsend = time.time()
-        time.sleep(sleeptime)
+        time.sleep(SLEEPTIME)
         # Led1 OFF
-        print("Arduino_Relais_0 off (time_diff: )", time.time()-time_tsend)
-        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpiGPIO, b'Rx\xff\x00')
+        logging.debug("Arduino_Relais_0 off (time_diff: ) %s", time.time()-time_tsend)
+        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpi_gpio, b'Rx\xff\x00')
         # Led2 ON
         time_tsend = time.time()
-        time.sleep(sleeptime)
-        print("Arduino_Relais_1 on (time_diff: )", time.time()-time_tsend)
-        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpiGPIO, b'Rx\xff\x02')
+        time.sleep(SLEEPTIME)
+        logging.debug("Arduino_Relais_1 on (time_diff: ) %s", time.time()-time_tsend)
+        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpi_gpio, b'Rx\xff\x02')
         # Led2 OFF
         time_tsend = time.time()
-        time.sleep(sleeptime)
-        print("Arduino_Relais_1 off (time_diff: )", time.time()-time_tsend)
-        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpiGPIO, b'Rx\xff\x00')
+        time.sleep(SLEEPTIME)
+        logging.debug("Arduino_Relais_1 off (time_diff: ) %s", time.time()-time_tsend)
+        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpi_gpio, b'Rx\xff\x00')
         # Relais1 ON
         time_tsend = time.time()
-        time.sleep(sleeptime)
-        print("Arduino_Relais_2 on (time_diff: )", time.time()-time_tsend)
-        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpiGPIO, b'Rx\xff\x04')
+        time.sleep(SLEEPTIME)
+        logging.debug("Arduino_Relais_2 on (time_diff: ) %s", time.time()-time_tsend)
+        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpi_gpio, b'Rx\xff\x04')
         # Relais2 OFF
         time_tsend = time.time()
-        time.sleep(sleeptime)
-        print("Arduino_Relais_2 off (time_diff: )", time.time()-time_tsend)
-        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpiGPIO, b'Rx\xff\x00')
+        time.sleep(SLEEPTIME)
+        logging.debug("Arduino_Relais_2 off (time_diff: ) %s", time.time()-time_tsend)
+        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpi_gpio, b'Rx\xff\x00')
         time_tsend = time.time()
-        time.sleep(sleeptime)
-        print("Arduino_Relais_3 on (time_diff: )", time.time()-time_tsend)
-        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpiGPIO, b'Rx\xff\x08')
+        time.sleep(SLEEPTIME)
+        logging.debug("Arduino_Relais_3 on (time_diff: ) %s", time.time()-time_tsend)
+        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpi_gpio, b'Rx\xff\x08')
         # Relais2 OFF
         time_tsend = time.time()
-        time.sleep(sleeptime)
-        print("Arduino_Relais_3 off (time_diff: )", time.time()-time_tsend)
-        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpiGPIO, b'Rx\xff\x00')
+        time.sleep(SLEEPTIME)
+        logging.debug("Arduino_Relais_3 off (time_diff: ) %s", time.time()-time_tsend)
+        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpi_gpio, b'Rx\xff\x00')
         time_tsend = time.time()
-        time.sleep(sleeptime)
-        print("Arduino_Relais_4 on (time_diff: )", time.time()-time_tsend)
-        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpiGPIO, b'Rx\xff\x10')
+        time.sleep(SLEEPTIME)
+        logging.debug("Arduino_Relais_4 on (time_diff: ) %s", time.time()-time_tsend)
+        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpi_gpio, b'Rx\xff\x10')
         # Relais2 OFF
         time_tsend = time.time()
-        time.sleep(sleeptime)
-        print("Arduino_Relais_4 off (time_diff: )", time.time()-time_tsend)
-        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpiGPIO, b'Rx\xff\x00')
+        time.sleep(SLEEPTIME)
+        logging.debug("Arduino_Relais_4 off (time_diff: ) %s", time.time()-time_tsend)
+        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpi_gpio, b'Rx\xff\x00')
         time_tsend = time.time()
-        time.sleep(sleeptime)
-        print("Arduino_Relais_5 on (time_diff: )", time.time()-time_tsend)
-        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpiGPIO, b'Rx\xff\x20')
+        time.sleep(SLEEPTIME)
+        logging.debug("Arduino_Relais_5 on (time_diff: ) %s", time.time()-time_tsend)
+        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpi_gpio, b'Rx\xff\x20')
         # Relais2 OFF
         time_tsend = time.time()
-        time.sleep(sleeptime)
-        print("Arduino_Relais_5 off (time_diff: )", time.time()-time_tsend)
-        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpiGPIO, b'Rx\xff\x00')
+        time.sleep(SLEEPTIME)
+        logging.debug("Arduino_Relais_5 off (time_diff: ) %s", time.time()-time_tsend)
+        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpi_gpio, b'Rx\xff\x00')
         time_tsend = time.time()
-        time.sleep(sleeptime)
-        print("Arduino_Relais_6 on (time_diff: )", time.time()-time_tsend)
-        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpiGPIO, b'Rx\xff\x40')
+        time.sleep(SLEEPTIME)
+        logging.debug("Arduino_Relais_6 on (time_diff: ) %s", time.time()-time_tsend)
+        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpi_gpio, b'Rx\xff\x40')
         # Relais2 OFF
         time_tsend = time.time()
-        time.sleep(sleeptime)
-        print("Arduino_Relais_6 off (time_diff: )", time.time()-time_tsend)
-        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpiGPIO, b'Rx\xff\x00')
+        time.sleep(SLEEPTIME)
+        logging.debug("Arduino_Relais_6 off (time_diff: ) %s", time.time()-time_tsend)
+        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpi_gpio, b'Rx\xff\x00')
         time_tsend = time.time()
-        time.sleep(sleeptime)
-        print("Arduino_Relais_7 on (time_diff: )", time.time()-time_tsend)
-        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpiGPIO, b'Rx\xff\x80')
+        time.sleep(SLEEPTIME)
+        logging.debug("Arduino_Relais_7 on (time_diff: ) %s", time.time()-time_tsend)
+        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpi_gpio, b'Rx\xff\x80')
         # Relais2 OFF
         time_tsend = time.time()
-        time.sleep(sleeptime)
-        print("Arduino_Relais_7 off (time_diff: )", time.time()-time_tsend)
-        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpiGPIO, b'Rx\xff\x00')
+        time.sleep(SLEEPTIME)
+        logging.debug("Arduino_Relais_7 off (time_diff: ) %s", time.time()-time_tsend)
+        SGPIO.t_send_gpio_signal_hex(stub, "Arduino_GPIO", ns_rpi_gpio, b'Rx\xff\x00')
         time_tsend = time.time()
-        time.sleep(sleeptime)
-
-    #testresult = testresult and SUTE.teststep(stub, can_m_send, can_mr_extra, s, r, ns, stepno, purpose, timeout, min_no_messages, max_no_messages)
-
-
+        time.sleep(SLEEPTIME)
 
 
 def run():
@@ -310,14 +379,19 @@ def run():
     # teststeps
     ############################################
     # step 1:
-    # action: bTest Relais / LED on/off
+    # action: Test Relais on I2C-Relay card
     # result:
         step_1(can_p)
 
-     # step 2:
-    # action: bTest Relais / LED on/off
+    # step 1:
+    # action: Test Relais on GPIO and Arduino/ LED on/off
     # result:
         step_2(can_p)
+
+     # step 2:
+    # action: Test Relais on Arduino (with mask) / LED on/off
+    # result:
+        step_3(can_p)
 
     ############################################
     # postCondition
