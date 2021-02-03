@@ -68,6 +68,7 @@ def validate_and_get_pn_f124(message):
 def step_3(can_p):
     """
     Teststep 3: send requests DID F124 - in Programming Session
+      Expect: Negative response: Service: 22, requestOutOfRange (3100000000)
     """
     # Parameters for the teststep
     cpay: CanPayload = {
@@ -89,15 +90,16 @@ def step_3(can_p):
 
     result = SUTE.teststep(can_p, cpay, etp)
     time.sleep(1)
-
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='F124')
-    logging.info(SC.can_messages[can_p["receive"]])
+    # Negative response: Service: 22, requestOutOfRange (3100000000)
+    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='7F2231')
 
     pbl_f124_result = SC.can_messages[can_p["receive"]][0][2]
     #result = result and validate_and_get_pn_f124(pbl_f124_result)
+
     logging.info(pbl_f124_result)
-    logging.info("\nTeststep 3_result: %s\n", result)
-    return result, pbl_f124_result
+    logging.debug("\nTeststep 3_result: %s\n", result)
+
+    return result
 
 def step_5(can_p):
     """
@@ -129,7 +131,7 @@ def step_5(can_p):
     sbl_f124_result = SC.can_messages[can_p["receive"]][0][2]
     result = result and validate_and_get_pn_f124(sbl_f124_result)
 
-    return result, sbl_f124_result
+    return result
 
 
 def run():
@@ -174,15 +176,14 @@ def run():
     # step 2:
     # action: Change to Programming session
     # result: ECU reports mode
-        #result = result and SE10.diagnostic_session_control_mode2(can_p, 2)
-        #time.sleep(1)
+        result = result and SE10.diagnostic_session_control_mode2(can_p, 2)
+        time.sleep(1)
 
     # step 3:
     # action: read DID F124 from PBL
-    # result: Data record is returned
-        #result_step_3, pbl_f124_result = step_3(can_p)
-        #time.sleep(1)
-        #result = result and validate_and_get_pn_f124(pbl_f124_result)
+    # result: Negative response: Service: 22, requestOutOfRange (3100000000)
+        result = result and step_3(can_p)
+        time.sleep(1)
 
     # step 4:
     # action: DL and activate SBL
@@ -194,27 +195,13 @@ def run():
     # step 5:
     # action: read DID F124 from SBL
     # result: Data record is returned
-        result, sbl_f124_result = result and step_5(can_p)
+        result = result and step_5(can_p)
         time.sleep(1)
 
     # step 6:
-    # action: Complete the testcase
-    # result: Merge the results from all steps
-    #         The records received Programming Session (PBL and SBL) shall be equal
-        #step_no = 6
-        #purpose = "Verify the F124 records received are equal in all modes"
-        #SUTE.print_test_purpose(step_no, purpose)
-
-        #result = result and validate_and_get_pn_f124(sbl_f124_result)
-        #result = result and result_step_3 and result_step_5
-        #result = result and (pbl_f124_result == sbl_f124_result)
-
-        #logging.info("Step 6: Result: %s", result)
-
-    # step7:
     # action: Set to Default session before leaving
     # result: ECU reports modes
-        result_end = SE10.diagnostic_session_control_mode1(can_p, 7)
+        result_end = SE10.diagnostic_session_control_mode1(can_p, 6)
         time.sleep(1)
         result = result and result_end
 
