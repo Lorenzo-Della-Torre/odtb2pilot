@@ -39,6 +39,7 @@ from supportfunctions.support_dut import DutTestError
 from supportfunctions.support_dut import get_platform
 from supportfunctions.support_uds import IoVmsDid
 from supportfunctions.support_uds import EicDid
+from supportfunctions.support_SBL import SupportSBL
 
 
 def step_1(dut):
@@ -89,6 +90,46 @@ def step_3(dut, eda0_f12c_valid):
         spa1: also test if the software part number from eda0 matches with the
         one we get from f12c
     """
+    verify_f12c(dut, eda0_f12c_valid)
+
+
+def step_4(dut: Dut):
+    """
+    action:
+        Set ecu to programming mode (sbl)
+
+    expected_result: >
+        ECU: Empty response
+
+    comment: Mode 2 should be set and in sbl mode
+    """
+    sbl = SupportSBL()
+    sbl.get_vbf_files()
+    if not sbl.sbl_activation(
+        dut, fixed_key='FFFFFFFFFF', stepno='4',
+            purpose="Activate Secondary bootloader"):
+        DutTestError("Could not set ecu in sbl mode")
+
+
+def step_5(dut, eda0_f12c_valid):
+    """
+    action:
+        Test that the format of the software part number is correct. That is
+        consist of 8 consecutive numbers, followed by a space, and followed by
+        two letters.
+
+    expected_result:
+        The format should be correct
+
+    comment: >
+        spa1: also test if the software part number from eda0 matches with the
+        one we get from f12c
+    """
+    verify_f12c(dut, eda0_f12c_valid)
+
+
+def verify_f12c(dut: Dut, eda0_f12c_valid):
+    """ verify the f12c part number from eda0 with a direct f12c call """
     f12c_response = dut.uds.read_data_by_id_22(
         IoVmsDid.ecu_software_structure_part_number_f12c)
     logging.info(f12c_response)
@@ -102,7 +143,6 @@ def step_3(dut, eda0_f12c_valid):
             "ecu software structure part numbers does not match: " + \
             "\neda0: %s\nf12c: %s" % (
                 eda0_f12c_valid, f12c_valid)
-
 
 def run():
     """
@@ -119,8 +159,18 @@ def run():
         dut.precondition()
 
         eda0_f12c_valid = dut.step(step_1, purpose="get eda0")
-        dut.step(step_2, purpose="set programming mode")
-        dut.step(step_3, eda0_f12c_valid, purpose="get f12c and compare values")
+
+        dut.step(step_2,
+                 purpose="set programming mode (pbl)")
+
+        dut.step(step_3, eda0_f12c_valid,
+                 purpose="get f12c and compare values in pbl")
+
+        dut.step(step_4,
+                 purpose="set programming mode (sbl)")
+
+        dut.step(step_5, eda0_f12c_valid,
+                 purpose="get f12c and compare values in sbl")
 
         result = True
     except DutTestError as error:
