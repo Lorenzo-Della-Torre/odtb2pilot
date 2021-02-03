@@ -149,14 +149,14 @@ def run():
     ECU Software Structure Part Number data record
     """
     logging.basicConfig(
-        format=' %(message)s', stream=sys.stdout, level=logging.DEBUG)
+        format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
     dut = Dut()
     start_time = dut.start()
     result = False
 
     try:
-        dut.precondition()
+        dut.precondition(timeout=200)
 
         eda0_f12c_valid = dut.step(step_1, purpose="get eda0")
 
