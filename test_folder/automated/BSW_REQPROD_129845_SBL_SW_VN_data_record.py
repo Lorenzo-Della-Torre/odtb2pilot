@@ -61,7 +61,8 @@ def validate_and_get_pn_f124(message):
     '''
     pos = message.find('F124')
     valid = SUTE.validate_part_number_record(message[pos+4:pos+18])
-    #part_number = SUTE.pp_partnumber(message[pos+4:pos+18])
+    part_number = SUTE.pp_partnumber(message[pos+4:pos+18])
+    logging.info("SBL Software Version Number: %s", part_number)
     return valid
 
 def step_3(can_p):
@@ -93,7 +94,7 @@ def step_3(can_p):
     logging.info(SC.can_messages[can_p["receive"]])
 
     pbl_f124_result = SC.can_messages[can_p["receive"]][0][2]
-    result = result and validate_and_get_pn_f124(pbl_f124_result)
+    #result = result and validate_and_get_pn_f124(pbl_f124_result)
     logging.info(pbl_f124_result)
     logging.info("\nTeststep 3_result: %s\n", result)
     return result, pbl_f124_result
@@ -126,27 +127,10 @@ def step_5(can_p):
     logging.info(SC.can_messages[can_p["receive"]])
 
     sbl_f124_result = SC.can_messages[can_p["receive"]][0][2]
-    logging.info("Step 5: result: %s", sbl_f124_result)
-    valid = validate_and_get_pn_f124(sbl_f124_result)
-    logging.info("\nTeststep 5_result: %s\n", result)
+    result = result and validate_and_get_pn_f124(sbl_f124_result)
 
     return result, sbl_f124_result
 
-def step_6(pbl_f124_result, sbl_f124_result):
-    """
-    TestStep 6: Validate F124 Part Number messages
-    """
-    pbl_valid, pbl_sbl_sw_vn = validate_and_get_pn_f124(pbl_f124_result)
-    logging.info("PBL: SBL SW Version Number: %s", pbl_sbl_sw_vn)
-    logging.info("pbl_valid: %s", pbl_valid)
-
-    sbl_valid, sbl_sbl_sw_vn = validate_and_get_pn_f124(sbl_f124_result)
-    logging.info("SBL: SBL SW Version Number: %s",sbl_sbl_sw_vn)
-    logging.info("sbl_valid: %s", sbl_valid)
-
-    result = pbl_valid and sbl_valid
-
-    return result
 
 def run():
     """
@@ -190,41 +174,42 @@ def run():
     # step 2:
     # action: Change to Programming session
     # result: ECU reports mode
-        result = result and SE10.diagnostic_session_control_mode2(can_p, 2)
-        time.sleep(1)
+        #result = result and SE10.diagnostic_session_control_mode2(can_p, 2)
+        #time.sleep(1)
 
     # step 3:
-    # action: send requests DID F124 in Extended Session
+    # action: read DID F124 from PBL
     # result: Data record is returned
-        result_step_3, pbl_f124_result = step_3(can_p)
-        time.sleep(1)
+        #result_step_3, pbl_f124_result = step_3(can_p)
+        #time.sleep(1)
+        #result = result and validate_and_get_pn_f124(pbl_f124_result)
 
     # step 4:
-    # action: Change to Programming session
+    # action: DL and activate SBL
     # result: ECU reports mode
         result = result and SSBL.sbl_activation(can_p,
          fixed_key='FFFFFFFFFF', stepno='4', purpose="DL and activate SBL")
         time.sleep(1)
 
     # step 5:
-    # action: send requests DID F124 in Extended Session
+    # action: read DID F124 from SBL
     # result: Data record is returned
-        result_step_5, sbl_f124_result = step_5(can_p)
+        result, sbl_f124_result = result and step_5(can_p)
         time.sleep(1)
 
     # step 6:
     # action: Complete the testcase
     # result: Merge the results from all steps
-    #         The record received Programming Session (PBL and SBL) shall be equal
-        step_no = 6
-        purpose = "Verify the F124 records received are equal in all modes"
-        SUTE.print_test_purpose(step_no, purpose)
+    #         The records received Programming Session (PBL and SBL) shall be equal
+        #step_no = 6
+        #purpose = "Verify the F124 records received are equal in all modes"
+        #SUTE.print_test_purpose(step_no, purpose)
 
-        result = result and result_step_3 and result_step_5
-        result = result and (pbl_f124_result == sbl_f124_result)
-
+        #result = result and validate_and_get_pn_f124(sbl_f124_result)
+        #result = result and result_step_3 and result_step_5
         #result = result and (pbl_f124_result == sbl_f124_result)
-        logging.info("Step 6: Result: %s", result)
+
+        #logging.info("Step 6: Result: %s", result)
 
     # step7:
     # action: Set to Default session before leaving
