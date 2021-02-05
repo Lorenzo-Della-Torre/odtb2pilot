@@ -22,6 +22,14 @@ Next step is to get all dependencies:
 
 Remember to set the address to the rig you will use, in `odtb2_conf.py`!
 
+Make sure that you have a release in the folder 'projects/<platform>/release/' containing at least a .sddb file, but also .dbc files to support more advanced features of the platform.
+
+You also need VBF files for the platform you want to test in the 'projects/<platform>/VBF/' directory.
+
+In 'projects/<platform>/' you will find a file called setup\_<platform>.py that contains the basic environment variables that you need to have set.
+
+Test your installation by running the following command: `./manage.py check`
+
 Now you are good to go if you are on your own PC. For setting up a rig, then a few more steps are needed.
 
 ### Extra steps for rig setup
