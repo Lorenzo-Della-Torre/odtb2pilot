@@ -29,9 +29,14 @@ Only for rigs (i.e. computer connected to the device under test)
 
 *  Set host name, so clients can connect to the rig
 *  Define and enable interfaces (eg CAN)
-*  Install Docker and Docker Compose
-*  Run `sb_starter.sh`
+*  Install Docker
 *  Update `interfaces.json`and place it in `sb_docker/configuration` with e.g. links to CAN-db in `sb_docker/configuration/can`
+*  Run `sb_starter.sh`
 *  Make sure that the SignalBroker image is running (and add it to sysctl so it starts in case of reboot)
 
 One way to ensure that communication is working properly is to connect a CANalyzer CANcase and listen for the traffic, when starting a script from rig computer.
+
+#### Details about setting up SignalBroker image
+The image we are using as of Feb 2021, must be restarted in order to get any updates in `interfaces.json` and files that are referred to.
+
+Check that the SignalBroker is running with command `docker ps -a` where `STATUS` shall be `Up`.
