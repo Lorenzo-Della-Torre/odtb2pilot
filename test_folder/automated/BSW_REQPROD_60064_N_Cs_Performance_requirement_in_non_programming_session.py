@@ -92,8 +92,8 @@ def step_3(can_p):
     logging.info("Sent message: %s", can_p["send"])
     logging.info("Recived message: %s", can_p["receive"])
 
-    logging.info("Step5: frames sent %s", len(SC.can_frames[can_p["send"]]))
-    logging.info("Step5: frames received %s", len(SC.can_frames[can_p["receive"]]))
+    logging.info("Step3: frames sent %s", len(SC.can_frames[can_p["send"]]))
+    logging.info("Step3: frames received %s", len(SC.can_frames[can_p["receive"]]))
 
     SC.clear_all_can_messages()
     SC.update_can_messages(can_p["receive"])

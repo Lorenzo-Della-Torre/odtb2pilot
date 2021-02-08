@@ -12,5 +12,20 @@ Software used: CSP/Signalbroker (from gitlab) and Python 3.7 (or later).
 
 ## Setup
 
+```
   sudo apt install libxslt-dev
   pip3 install -r requirements.txt
+```
+
+## Unittest
+
+Some of the new support functions have pytest unittest in the bottom of them. You can execute them as follows:
+
+```
+  pytest supportfunctions/support\_dut.py
+  pytest supportfunctions/support\_uds.py
+```
+
+This is very useful when developing new functionality and also to guard against
+regressions. Using test driven development (TDD) can helps us to improve code
+structure and to reduce unnecesary coupling.

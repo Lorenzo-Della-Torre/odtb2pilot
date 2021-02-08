@@ -18,6 +18,7 @@ from supportfunctions.support_can import CanTestExtra
 from supportfunctions.support_SBL import SupportSBL
 
 
+
 SUTE = SupportTestODTB2()
 SC = SupportCAN()
 
@@ -50,7 +51,6 @@ class IoVmsDid:
     ecu_delivery_assembly_part_num_f12b = bytes.fromhex('F12B')
     ecu_software_structure_part_number_f12c = bytes.fromhex('F12C')
     ecu_software_part_number_f12e = bytes.fromhex('F12E')
-    ecu_serial_number_f18c = bytes.fromhex('F18C')
 
 class UdsEmptyResponse(Exception):
     """ Exception class to indicate that that response was empty """
@@ -333,6 +333,16 @@ def get_all_dids():
     return dids
 
 
+def get_all_dids():
+    """ collect all dids defined in sddb in one dictionary """
+    dids = {}
+    for did_dict in [pbl_did_dict, sbl_did_dict, app_did_dict]:
+        for key, item in did_dict.items():
+            dids[key[2:]] = {"sddb_" + k.lower(): v
+                             for k, v in item.items() if k in ['Name', 'Size']}
+    return dids
+
+
 ##################################
 # Pytest unit tests starts here
 ##################################
@@ -341,14 +351,12 @@ def test_uds_response():
     """ pytest: UdsResponse """
     f12c_response = "100A62F12C32263666204141"
     response = UdsResponse(f12c_response)
-    print(response)
     assert response.data['did'] == "F12C"
     assert response.data['details']['valid'] == "32263666 AA"
     eda0 = "104A62EDA0F12032299361204142F12A32290749202020F12BFFFFFFFFFFFFFF" + \
     "F12E053229942520414532299427204143322994292041453229943020414132263666204141" + \
     "F18C30400011"
     response = UdsResponse(eda0)
-    print(response)
     assert response.data['details']['F12E_valid'][-1] == "32263666 AA"
 
 def test_did():
