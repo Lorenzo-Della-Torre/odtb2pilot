@@ -4,11 +4,6 @@
 # date:     2021-01-11
 # version:  1.0
 # reqprod:  129845
-# -- UPDATES --
-# author:
-# date:
-# version:
-# changes:
 
 # inspired by https://grpc.io/docs/tutorials/basic/python.html
 
