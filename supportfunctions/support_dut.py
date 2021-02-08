@@ -109,6 +109,10 @@ class Dut:
         """ add test step """
         self.uds.step += 1
         self.uds.purpose = purpose
+        if inspect.ismethod(func):
+            # step should also works with class methods and not just functions.
+            # e.g. dut.step(dut.uds.set_mode, 2)
+            return func(*args, **kwargs)
         return func(self, *args, **kwargs)
 
     @beamy_feature
@@ -381,7 +385,6 @@ def test_dut():
     status = dut.system_stub.GetLicenseInfo(Empty()).status
     assert status == LicenseStatus.VALID, \
         "Check your license, status is: %d" % status
-    print(dut.system_stub.GetLicenseInfo(Empty()))
 
 
 def test_upload_folder():
