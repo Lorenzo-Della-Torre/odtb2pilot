@@ -180,6 +180,14 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
         if SC.can_messages[can_p["receive"]]:
             while self.check_7f78_response(SC.can_messages[can_p["receive"]]):
 
+                # For the following services P4Server_max is equal to P2Server_max.
+                # 7F78 response is not an accepted response from the server.
+                # Flag with logging error.
+                unsupported_services = ['10', '11', '27', '3E', '23', '2F']
+                service = SC.can_messages[can_p["receive"]][0][0][4:6]
+                if service in unsupported_services:
+                    logging.error('Failed: Service %s does not support NRC 78.', service)
+
                 logging.debug("Filter 7Fxx78: requestCorrectlyReceived-ResponsePending")
                 logging.debug("Rec can frames: %s", SC.can_frames[can_p["receive"]])
                 logging.debug("Rec can messages: %s", SC.can_messages[can_p["receive"]])
