@@ -333,16 +333,6 @@ def get_all_dids():
     return dids
 
 
-def get_all_dids():
-    """ collect all dids defined in sddb in one dictionary """
-    dids = {}
-    for did_dict in [pbl_did_dict, sbl_did_dict, app_did_dict]:
-        for key, item in did_dict.items():
-            dids[key[2:]] = {"sddb_" + k.lower(): v
-                             for k, v in item.items() if k in ['Name', 'Size']}
-    return dids
-
-
 ##################################
 # Pytest unit tests starts here
 ##################################
