@@ -184,7 +184,7 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
                 # 7F78 response is not an accepted response from the server.
                 # Flag with logging error.
                 unsupported_services = ['10', '11', '27', '3E', '23', '2F']
-                service = SC.can_messages[can_p["receive"]][0][0][4:6]
+                service = SC.can_messages[can_p["receive"]][0][2][4:6]
                 if service in unsupported_services:
                     logging.error('Failed: Service %s does not support NRC 78.', service)
 
