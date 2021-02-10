@@ -10,3 +10,4 @@ PyYAML==5.3.1
 requests==2.25.1
 yattag==1.14.0
 matplotlib==3.3.3
+inflection==0.5.1

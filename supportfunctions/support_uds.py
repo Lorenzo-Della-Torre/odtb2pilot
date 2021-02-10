@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from build.did import pbl_did_dict
 from build.did import sbl_did_dict
 from build.did import app_did_dict
+from build.dtc import dtcs
 
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
 from supportfunctions.support_can import SupportCAN
@@ -58,30 +59,78 @@ class UdsResponse:
     def __init__(self, raw):
         self.raw = raw
         self.data = {}
+        self.data['details'] = {}
+        self.all_defined_dids = {}
         self.__did_regex = {}
         self.__process_message()
 
     def __process_message(self):
-        service_types = {
-            "59": "ReadDTCInformation",
-            "62": "ReadDataByIdentifier",
-            "6F": "InputOutputControlByIdentifier",
-            "71": "RoutineControl",
+        # check for negative reply
+        response_patterns = [
+            (r'.{2}7F(?P<service_id>.{2})(?P<nrc>.{2})', self.__negative_response),
+            (r'.{2,4}(?P<sid>59|62|6F|71)(?P<body>.*)', self.__positive_response)
+        ]
+        for pattern, processor in response_patterns:
+            match = re.match(pattern, self.raw)
+            if match:
+                self.data.update(match.groupdict())
+                processor()
+                # only one pattern should match so we must stop here
+                return
+        raise LookupError("Unrecognizable response format")
+
+    def __negative_response(self):
+        # we should get these from the sddb file instead
+        negative_response_codes = {
+            "00": "positiveResponse",
+            "10": "generalReject",
+            "11": "serviceNotSupported",
+            "12": "subFunctionNotSupported",
+            "13": "incorrectMessageLengthOrInvalidFormat",
+            "14": "responseTooLong",
+            "21": "busyRepeatRequest",
+            "22": "conditionsNotCorrect",
+            "24": "requestSequenceError",
+            "25": "noResponseFromSubnetComponent",
+            "26": "failurePreventsExecutionOfRequestedAction",
+            "31": "requestOutOfRange",
+            "33": "securityAccessDenied",
+            "35": "invalidKey",
+            "36": "exceedNumberOfAttempts",
+            "37": "requiredTimeDelayNotExpired",
+            "70": "uploadDownloadNotAccepted",
+            "71": "transferDataSuspended",
+            "72": "generalProgrammingFailure",
+            "73": "wrongBlockSequenceCounter",
+            "78": "requestCorrectlyReceived-ResponsePending",
+            "7E": "subFunctionNotSupportedInActiveSession",
+            "7F": "serviceNotSupportedInActiveSession",
+            "81": "rpmTooHigh",
+            "82": "rpmTooLow",
+            "83": "engineIsRunning",
+            "84": "engineIsNotRunning",
+            "85": "engineRunTimeTooLow",
+            "86": "temperatureTooHigh",
+            "87": "temperatureTooLow",
+            "88": "vehicleSpeedTooHigh",
+            "89": "vehicleSpeedTooLow",
+            "8A": "throttle/PedalTooHigh",
+            "8B": "throttle/PedalTooLow",
+            "8C": "transmissionRangeInNeutral",
+            "8D": "transmissionRangeInGear",
+            "8F": "brakeSwitch(es)NotClosed (Brake Pedal not pressed or not applied)",
+            "90": "shifterLeverNotInPark",
+            "91": "torqueConverterClutchLocked",
+            "92": "voltageTooHigh",
+            "93": "voltageTooLow"
         }
+        nrc = self.data["nrc"]
+        if nrc in negative_response_codes:
+            self.data["nrc_name"] = negative_response_codes[nrc]
 
-        pattern = r'.{2,4}(?P<sid>59|62|6F|71)(?P<body>.*)'
-        match = re.match(pattern, self.raw)
-        if not match:
-            raise LookupError("Unrecognizable response format")
-
-        self.data = match.groupdict()
-
-        self.sid = self.data["sid"]
-        if self.sid in service_types:
-            self.service = service_types[self.sid]
-
+    def __positive_response(self):
         # actually, this is not a good idea since we have to use different
-        # definitions depending on the mode of the ecu, but let's att that
+        # definitions depending on the mode of the ecu, but let's add that
         # functionality when we need it
         self.all_defined_dids = get_all_dids()
         for did, item in self.all_defined_dids.items():
@@ -89,12 +138,28 @@ class UdsResponse:
             length = int(item['sddb_size']) * 2
             self.__did_regex[did] = r'{}(.{{{}}})'.format(did, length)
 
+        service_types = {
+            "59": "ReadDTCInformation",
+            "62": "ReadDataByIdentifier",
+            "6F": "InputOutputControlByIdentifier",
+            "71": "RoutineControl",
+        }
+        sid = self.data["sid"]
+        if sid in service_types:
+            service = service_types[sid]
+            self.data["service"] = service
 
+            if service == "ReadDataByIdentifier":
+                self.__process_dids()
+            if service == "ReadDTCInformation":
+                self.__process_dtc()
+
+
+    def __process_dids(self):
         did = self.data["body"][0:4]
         item = self.data["body"][4:]
         info = self.all_defined_dids[did]
         self.data['did'] = did
-        self.data['details'] = {}
         self.data['details'].update(info)
         self.data['details']['item'] = item
         self.validate_part_num(did, item)
@@ -103,6 +168,28 @@ class UdsResponse:
         for did_method in dir(self):
             if did_method.endswith(self.data["did"].lower()):
                 getattr(self, did_method)()
+
+    def __process_dtc(self):
+        sub_service = self.data["body"][0:2]
+        if sub_service == '03':
+            rest = self.data["body"][10:]
+            # process list of dtc and snapshot ids
+            snapshot_ids = []
+            pattern = re.compile(r'(?P<dtc>.{6})(?P<snapshot_id>.{2})')
+            for record in textwrap.wrap(rest, width=8):
+                match = pattern.match(record)
+                if match:
+                    group = match.groupdict()
+                    snapshot_ids.append({group["snapshot_id"]: group["dtc"]})
+            self.data['snapshot_ids'] = snapshot_ids
+            self.data['count'] = len(snapshot_ids)
+            return
+
+        dtc = self.data["body"][2:8]
+        self.data['dtc'] = dtc
+        if dtc in dtcs:
+            self.data['details'] = dtcs[dtc]
+
 
     def empty(self):
         """ Check if the response is empty """
@@ -134,7 +221,6 @@ class UdsResponse:
         s = (
             f"{self.__class__.__name__}:\n"
             f"  raw = {self.raw}\n"
-            f"  service = {self.service} (sid={self.sid})\n"
             f"  data = \n"
         )
         for key, item in self.data.items():
@@ -221,10 +307,24 @@ class Uds:
         return UdsResponse(response[0][2])
 
 
-    def dtc_snapshot(self, dtc_number: bytes, mask: bytes):
-        """ Report DTC Snapshot Record By DTC Number """
-        payload = b'\x19\x04' + dtc_number + mask
+    def dtc_by_status_mask_1902(self, mask: bytes):
+        """ Read dtc by status mask """
+        payload = bytes([0x19, 0x02]) + mask
+        return self.__make_call(payload)
+
+    def dtc_snapshot_ids_1903(self):
+        """ Read snapshot id and dtc pairs currently in the ECU """
+        payload = bytes([0x19, 0x03])
+        return self.__make_call(payload)
+
+    def dtc_snapshot_1904(self, dtc_number: bytes, mask: bytes):
+        """ Report DTC snapshot record by DTC Number """
         payload = bytes([0x19, 0x04]) + dtc_number + mask
+        return self.__make_call(payload)
+
+    def dtc_extended_1906(self, dtc_number: bytes, mask: bytes):
+        """ Report DTC extended data record by DTC number """
+        payload = bytes([0x19, 0x06]) + dtc_number + mask
         return self.__make_call(payload)
 
 
@@ -283,3 +383,48 @@ def test_did():
     did = get_all_dids()
     assert did['EDA0']['sddb_size'] == '64'
     assert did['EDA0']['sddb_name'] == 'Complete ECU Part/Serial Number(s)'
+
+def test_dtc_snapshot():
+    """ pytest: test parsing of dtc snapshots """
+
+    dtc_snapshot = \
+        "116859040B4A00AF2019DD0000000000DD01000000DD0200DD0A00DD0B000000" + \
+        "DD0C004028FFEF25074802000001480300004947000649FA00" + \
+        "4A2A00000000000000000000000000000000000000000000000000000000FFFF" + \
+        "4B1900000000000000004B1A00000000000000004B1B0000000000000000" + \
+        "D02102D9010110D96007D007D007D0DAD00000DB755817E8DB9F2000" + \
+        "DBA400040000DBB400000000FFFF000000000000000000000000000000000000" + \
+        "F40D00F4463C2119DD0000000000DD01000000DD0200DD0A00DD0B000000" + \
+        "DD0C004028FFF2095A4802000001480300004947000049FA0" + \
+        "04A2A00000000000000000000000000000000000000000000000000000000FFFF" + \
+        "4B1900000000000000004B1A00000000000000004B1B0000000000000000" + \
+        "D02102D9010110D96007D007D007D0DAD00000DB75581590DB9F2000" + \
+        "DBA400040000DBB400000000FFFF000000000000000000000000000000000000" + \
+        "F40D00F4463C"
+
+    res = UdsResponse(dtc_snapshot)
+    assert "dtc" in res.data
+    assert res.data["dtc"] == "0B4A00"
+    assert res.data["sid"] == "59"
+    assert res.data["service"] == "ReadDTCInformation"
+
+def test_negative_response():
+    """ pytest: test negative responses """
+    negative_response = "037F191300000000"
+    res = UdsResponse(negative_response)
+    assert res.data["nrc"] == "13"
+    assert res.data["nrc_name"] == "incorrectMessageLengthOrInvalidFormat"
+
+def test_dtc_snapshot_ids():
+    """ pytest: test call for listing dtc snapshot ids from the ECU """
+    raw = \
+        '105A59030D150021C29A00211C4068201C406821C64A00210C4500210CD800' + \
+        '210B3B00200B3B00210B4000200B4000210B4A00200B4A00210B4F00200B4F' + \
+        '00210B4500210B5400210B5900210B5E00210B63002150605721D0640021'
+    res = UdsResponse(raw)
+    assert res.data["sid"] == "59"
+    assert res.data["service"] == "ReadDTCInformation"
+    assert res.data["count"] == 21
+    snapshot_id0 = res.data["snapshot_ids"][0]
+    assert '21' in snapshot_id0
+    assert snapshot_id0['21'] == 'C29A00'
