@@ -22,6 +22,7 @@ SUTE = SupportTestODTB2()
 SC = SupportCAN()
 
 
+
 global_timestamp_dd00 = bytes.fromhex('DD00')
 
 @dataclass
@@ -160,8 +161,8 @@ class UdsResponse:
         item = self.data["body"][4:]
         info = self.all_defined_dids[did]
         self.data['did'] = did
-        self.data['details'].update(info)
-        self.data['details']['item'] = item
+        self.details.update(info)
+        self.details['item'] = item
         self.validate_part_num(did, item)
 
         # execute did specific handler if it's defined
@@ -170,9 +171,9 @@ class UdsResponse:
                 getattr(self, did_method)()
 
     def __process_dtc(self):
-        sub_service = self.data["body"][0:2]
-        if sub_service == '03':
-            rest = self.data["body"][10:]
+        report_type = self.data["body"][0:2]
+        if report_type == '03':
+            rest = self.data["body"][2:]
             # process list of dtc and snapshot ids
             snapshot_ids = []
             pattern = re.compile(r'(?P<dtc>.{6})(?P<snapshot_id>.{2})')
@@ -184,11 +185,19 @@ class UdsResponse:
             self.data['snapshot_ids'] = snapshot_ids
             self.data['count'] = len(snapshot_ids)
             return
+        if report_type == '04':
+            pattern = re.compile(r'..(?P<dtc>.{6})(?P<dtc_status_bits>.{2})')
 
-        dtc = self.data["body"][2:8]
-        self.data['dtc'] = dtc
-        if dtc in dtcs:
-            self.data['details'] = dtcs[dtc]
+            dtc = self.data["body"][2:8]
+            self.data['dtc'] = dtc
+            if dtc in dtcs:
+                self.details.update(dtcs[dtc])
+
+
+    @property
+    def details(self):
+        """ convenience property for getting response details """
+        return self.data["details"]
 
 
     def empty(self):
@@ -203,8 +212,9 @@ class UdsResponse:
             if match:
                 item = match.groups()[0]
                 info = self.all_defined_dids[did]
-                self.data['details'][did] = item
-                self.data['details'][did+'_info'] = info
+                self.details[did] = item
+                self.details[did] = item
+                self.details[did+'_info'] = info
                 self.validate_part_num(did, item)
 
 
@@ -213,7 +223,7 @@ class UdsResponse:
         if did in ['F120', 'F121', 'F122', 'F125', 'F12A', 'F12B',
                    'F12C', 'F12E']:
             if SupportTestODTB2.validate_part_number_record(item):
-                self.data['details'][did+'_valid'] = \
+                self.details[did+'_valid'] = \
                     SupportTestODTB2.pp_partnumber(item)
 
 
@@ -234,27 +244,27 @@ class UdsResponse:
 
 
     def __ecu_software_structure_part_number_f12c(self):
-        item = self.data['details']['item']
+        item = self.details['item']
         if SupportTestODTB2.validate_part_number_record(item):
-            self.data['details']['valid'] = \
+            self.details['valid'] = \
                 SupportTestODTB2.pp_partnumber(item)
 
 
     def __complete_ecu_part_number_eda0(self):
-        self.extract_dids(self.data['details']['item'])
+        self.extract_dids(self.details['item'])
 
-        if not 'F12E' in self.data['details']:
+        if not 'F12E' in self.details:
             logging.error('No F12E part numbers found')
             return
 
-        remaining = self.data['details']['F12E']
+        remaining = self.details['F12E']
 
         # each part number is 7 bytes and each byte is represented as two
         # hexadecimal characters
         part_num_len = 7 * 2
 
         records = int(remaining[0:2])
-        self.data['details']['F12E_info']['records'] = records
+        self.details['F12E_info']['records'] = records
         remaining = remaining[2:]
 
         if not records * part_num_len == len(remaining):
@@ -266,7 +276,7 @@ class UdsResponse:
             remaining = match.groups()[0]
 
         part_nums = textwrap.wrap(remaining, part_num_len)
-        self.data['details']['F12E_list'] = part_nums
+        self.details['F12E_list'] = part_nums
 
         # validate the part numbers
         f12e_valid = []
@@ -275,7 +285,7 @@ class UdsResponse:
                 f12e_valid.append(SupportTestODTB2.pp_partnumber(pn))
             else:
                 f12e_valid.append(False)
-        self.data['details']['F12E_valid'] = f12e_valid
+        self.details['F12E_valid'] = f12e_valid
 
 
 class Uds:
@@ -424,7 +434,7 @@ def test_dtc_snapshot_ids():
     res = UdsResponse(raw)
     assert res.data["sid"] == "59"
     assert res.data["service"] == "ReadDTCInformation"
-    assert res.data["count"] == 21
+    assert res.data["count"] == 22
     snapshot_id0 = res.data["snapshot_ids"][0]
     assert '21' in snapshot_id0
-    assert snapshot_id0['21'] == 'C29A00'
+    assert snapshot_id0['21'] == '0D1500'
