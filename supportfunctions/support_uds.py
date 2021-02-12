@@ -264,10 +264,10 @@ class Uds:
         """ Read active diagnostic session/mode """
         return self.read_data_by_id_22(b'\xf1\x86')
 
-    def set_mode(self, mode=1):
+    def set_mode(self, mode=1, change_check=True):
         """ Read Data by Identifier """
 
-        if mode == 3 and self.mode == 2:
+        if change_check and mode == 3 and self.mode == 2:
             raise UdsError(
                 "You can not change directly from mode 2 to mode 3. Use the "
                 "mode order 1, 3, 2 if you want to implement at testcase "
