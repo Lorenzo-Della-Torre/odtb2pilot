@@ -20,6 +20,21 @@ class DtcStatus:
         """ string representation of the bits """
         return ''.join(self.__bits)
 
+    @property
+    def int(self):
+        """ int representation of the bits """
+        return int(''.join(self.__bits), 2)
+
+    @property
+    def hex(self):
+        """ hex string representation of the bits """
+        return "{:X}".format(self.int)
+
+    @property
+    def bytes(self):
+        """ convert bits to bytes """
+        return bytes([int(self.bits, 2)])
+
     def clear(self):
         """ reset all bits to 0 """
         self.__bits = list("00000000")
@@ -28,24 +43,20 @@ class DtcStatus:
         """ set all bits to 1 """
         self.__bits = list("11111111")
 
-    def to_bytes(self):
-        """ convert bits to bytes """
-        return bytes([int(self.bits, 2)])
-
     def __eq__(self, other):
         if isinstance(other, self.__class__):
-            return self.to_bytes() == other.to_bytes()
+            return self.bytes == other.bytes
         if isinstance(other, str):
             return self.bits == other
         if isinstance(other, bytes):
-            return self.to_bytes() == other
+            return self.bytes == other
         raise NotImplementedError("datatype is not supported for equality")
 
     def __repr__(self):
-        return f'{self.__class__.__name__}(bits="{self.bits}")'
+        return f'{self.__class__.__name__}("{self.hex}")'
 
     def __str__(self):
-        s = f'{self.__class__.__name__}:\n'
+        s = repr(self)
         dtc_status_bits = [
             'test_failed',
             'test_failed_this_operation_cycle',
@@ -60,7 +71,7 @@ class DtcStatus:
         # 11.3.5.2.2 of ISO-14229-1:2006). bit 0 is the least
         # significant bit (e.g the right-most bit in the string).
         for bit, name in zip(self.bits[::-1], dtc_status_bits):
-            s += f' {bit} {name}\n'
+            s += f'\n {bit} {name}'
         return s
 
     @property
@@ -153,7 +164,7 @@ def test_dtc_status():
     assert bits == other_bits
     assert bits is not other_bits
     assert bits == "10101111"
-    assert bits.to_bytes() == b'\xAF'
+    assert bits.bytes == b'\xAF'
     assert bits == b'\xAF'
     assert bits.test_failed
     bits.test_failed = False
