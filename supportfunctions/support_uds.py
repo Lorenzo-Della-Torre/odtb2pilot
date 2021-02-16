@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from build.did import pbl_did_dict
 from build.did import sbl_did_dict
 from build.did import app_did_dict
-from build.dtc import dtcs
+from build.dtc import sddb_dtcs
 
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
 from supportfunctions.support_can import SupportCAN
@@ -154,7 +154,7 @@ class UdsResponse:
             if service == "ReadDataByIdentifier":
                 self.__process_dids()
             if service == "ReadDTCInformation":
-                self.__process_dtc()
+                self.__process_dtc_report()
 
 
     def __process_dids(self):
@@ -171,70 +171,96 @@ class UdsResponse:
             if did_method.endswith(self.data["did"].lower()):
                 getattr(self, did_method)()
 
-    def __process_dtc(self):
+    def __process_dtc_report(self):
         report_type = self.data["body"][0:2]
         content = self.data["body"][2:]
 
         if report_type == '02':
-            dtc_status_list_match = re.match(
-                r'(?P<dtc_status_availability_mask>.{2})(?P<dtc_status_list>)$',
-                content)
-            if dtc_status_list_match:
-                list_group = dtc_status_list_match.groupdict()
-                dtc_status_bits_pattern = re.compile(
-                    r'(?P<dtc>.{6})(?P<dtc_status_bits>.{2})')
-                dtc_list = []
-                for record in textwrap.wrap(
-                        list_group['dtc_status_list'], width=8):
-                    dtc_status_match = dtc_status_bits_pattern.match(record)
-                    if dtc_status_match:
-                        status_group = dtc_status_match.groupdict()
-                        bits = DtcStatus(status_group["dtc_status_bits"])
-                        dtc_list.append({status_group["dtc"]: bits})
-                        self.data['dtcs'] = dtc_list
-                        self.data['count'] = len(dtc_list)
-            return
-        if report_type == '03':
-            # process list of dtc and snapshot ids
-            snapshot_ids = []
-            pattern = re.compile(r'(?P<dtc>.{6})(?P<snapshot_id>.{2})')
-            for record in textwrap.wrap(content, width=8):
-                match = pattern.match(record)
-                if match:
-                    group = match.groupdict()
-                    snapshot_ids.append({group["snapshot_id"]: group["dtc"]})
-            self.data['snapshot_ids'] = snapshot_ids
-            self.data['count'] = len(snapshot_ids)
-            return
-        if report_type == '04':
-            match = re.match(r'(?P<dtc>.{6})(?P<dtc_status_bits>.{2})', content)
-            if match:
-                dtc = match.groupdict()["dtc"]
-                self.data['dtc'] = dtc
-                if dtc in dtcs:
-                    self.details.update(dtcs[dtc])
-                self.data["dtc_status_bits"] = DtcStatus(
-                    match.groupdict()["dtc_status_bits"])
-                return
-        if report_type == '06':
-            match = re.match(
-                r'(?P<dtc>.{6})(?P<dtc_status_bits>.{2})01(?P<occ1>..)' + \
-                r'02(?P<occ2>..)03(?P<occ3>..)04(?P<occ4>..)05(?P<occ5>..)' + \
-                r'06(?P<occ6>..)07(?P<unknown07>..)10(?P<fdc10>..)' + \
-                r'12(?P<unknown12>..)20(?P<ts20>.{8})' + \
-                r'21(?P<ts21>.{8})30(?P<si30>..)',
-                content)
-            if match:
-                self.data.update(match.groupdict())
-                dtc = match.groupdict()["dtc"]
-                self.data['dtc'] = dtc
-                if dtc in dtcs:
-                    self.details.update(dtcs[dtc])
-                self.data["dtc_status_bits"] = DtcStatus(
-                    match.groupdict()["dtc_status_bits"])
-                return
-        logging.warning("dtc report type not supported by UdsResponse")
+            self.__process_dtc_by_status_mask(content)
+        elif report_type == '03':
+            self.__process_dtc_snapshot_ids(content)
+        elif report_type == '04':
+            self.__process_dtc_snapshot(content)
+        elif report_type == '06':
+            self.__process_dtc_extended_data_records(content)
+        else:
+            logging.warning("dtc report type not supported by UdsResponse")
 
+    def __process_dtc_by_status_mask(self, content):
+        dtc_status_list_match = re.match(
+            r'(?P<dtc_status_availability_mask>.{2})(?P<dtc_status_list>)$',
+            content)
+        if dtc_status_list_match:
+            list_group = dtc_status_list_match.groupdict()
+            dtc_status_bits_pattern = re.compile(
+                r'(?P<dtc>.{6})(?P<dtc_status_bits>.{2})')
+            dtc_list = []
+            for record in textwrap.wrap(
+                    list_group['dtc_status_list'], width=8):
+                dtc_status_match = dtc_status_bits_pattern.match(record)
+                if dtc_status_match:
+                    status_group = dtc_status_match.groupdict()
+                    bits = DtcStatus(status_group["dtc_status_bits"])
+                    dtc_list.append({status_group["dtc"]: bits})
+                    self.data['dtcs'] = dtc_list
+                    self.data['count'] = len(dtc_list)
+
+    def __process_dtc_snapshot_ids(self, content):
+        """ process list of dtc and snapshot ids """
+        snapshot_ids = []
+        pattern = re.compile(r'(?P<dtc>.{6})(?P<snapshot_id>.{2})')
+        for record in textwrap.wrap(content, width=8):
+            match = pattern.match(record)
+            if match:
+                group = match.groupdict()
+                snapshot_ids.append((group["snapshot_id"], group["dtc"]))
+        self.data['snapshot_ids'] = snapshot_ids
+        self.data['count'] = len(snapshot_ids)
+
+    def __process_dtc_snapshot(self, content):
+        match = re.match(
+            r'(?P<dtc>.{6})(?P<dtc_status_bits>.{2})(?P<snapshot>.*)$', content)
+        if match:
+            dtc = match.groupdict()["dtc"]
+            self.data['dtc'] = dtc
+            if dtc in sddb_dtcs:
+                self.details.update(sddb_dtcs[dtc])
+            self.data["dtc_status_bits"] = DtcStatus(
+                match.groupdict()["dtc_status_bits"])
+
+    def __process_dtc_extended_data_records(self, content):
+        match = re.match(
+            r'(?P<dtc>.{6})(?P<dtc_status_bits>.{2})(?P<ext_records>.*)$',
+            content)
+
+        if match:
+            # self.data.update(match.groupdict())
+            group = match.groupdict()
+            dtc = group["dtc"]
+            self.data['dtc'] = dtc
+            if dtc in sddb_dtcs:
+                self.details.update(sddb_dtcs[dtc])
+
+            self.data["dtc_status_bits"] = DtcStatus(
+                group["dtc_status_bits"])
+
+            regex_fields = [
+                '.*?(01)(?P<occ1>..)',
+                '.*?(02)(?P<occ2>..)',
+                '.*?(03)(?P<occ3>..)',
+                '.*?(04)(?P<occ4>..)',
+                '.*?(05)(?P<occ5>..)',
+                '.*?(06)(?P<occ6>..)',
+                '.*?(10)(?P<fdc10>..)',
+                '.*?(20)(?P<ts20>.{8})',
+                '.*?(21)(?P<ts21>.{8})',
+                '.*?(30)(?P<si30>..)'
+            ]
+            fields = extract_fields(group["ext_records"], regex_fields)
+            if "si30" in fields:
+                fields["si30_bits"] = "{:08b}".format(int(fields["si30"], 16))
+                fields["si30_decimal_bits"] = "{:08b}".format(int(fields["si30"], 10))
+            self.data.update(fields)
 
     @property
     def details(self):
@@ -416,6 +442,19 @@ def get_all_dids():
                              for k, v in item.items() if k in ['Name', 'Size']}
     return dids
 
+def extract_fields(hexstring, regex_fields: list):
+    """
+    Match regex_fields against the hexstring, add them to the fields
+    dictionary, and remove the record from the original string representation.
+    """
+    fields = {}
+    for regex in regex_fields:
+        match = re.match(regex, hexstring)
+        if match:
+            fields.update(match.groupdict())
+            hexstring = hexstring[:match.start(1)] + hexstring[match.end(2):]
+    fields["unmatched_data"] = hexstring
+    return fields
 
 ##################################
 # Pytest unit tests starts here
@@ -490,8 +529,32 @@ def test_dtc_extended_data_record():
         '102459060B4A00AF01FF020003FF04FF0500060007FF107F127F2000000000' + \
         '21000000003023'
     res = UdsResponse(raw)
+
     assert res.data["occ1"] == "FF"
     assert res.data["fdc10"] == "7F"
     assert res.data["ts20"] == "00000000"
     assert res.data["ts21"] == "00000000"
     assert res.data["si30"] == "23"
+
+def test_extract_fields():
+    """ pytest: test extract_fields helper function """
+    regex_fields = [
+        '.*(01)(?P<occ1>..)',
+        '.*(02)(?P<occ2>..)',
+        '.*(03)(?P<occ3>..)',
+        '.*(04)(?P<occ4>..)',
+        '.*(05)(?P<occ5>..)',
+        '.*(06)(?P<occ6>..)',
+        '.*(10)(?P<fdc10>..)',
+        '.*(20)(?P<ts20>.{8})',
+        '.*(21)(?P<ts21>.{8})',
+        '.*(30)(?P<si30>..)'
+    ]
+    fields = extract_fields(
+        '01fa02fb03fc04fd05fe06ff07aa10ab12ac20xxxxxxxx21yyyyyyyy30zz',
+        regex_fields)
+    assert "occ1" in fields
+    assert fields["occ1"] == "fa"
+    assert fields["ts20"] == "xxxxxxxx"
+    assert fields["ts21"] == "yyyyyyyy"
+    assert fields["si30"] == "zz"
