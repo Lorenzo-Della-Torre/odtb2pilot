@@ -228,8 +228,8 @@ def process_dtc_content(root):
     report_dtc = extract_report_dtc(root)
 
     dtc_file = Path(get_build_dir()).joinpath('dtc.py')
-    write(dtc_file, 'dtcs', pformat(dtc_dict), 'w')
-    write(dtc_file, 'report_dtc', pformat(report_dtc), 'a')
+    write(dtc_file, 'sddb_dtcs', pformat(dtc_dict), 'w')
+    write(dtc_file, 'sddb_report_dtc', pformat(report_dtc), 'a')
 
 
 def parse_sddb_file():
