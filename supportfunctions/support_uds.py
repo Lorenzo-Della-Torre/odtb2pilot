@@ -188,7 +188,7 @@ class UdsResponse:
 
     def __process_dtc_by_status_mask(self, content):
         dtc_status_list_match = re.match(
-            r'(?P<dtc_status_availability_mask>.{2})(?P<dtc_status_list>)$',
+            r'(?P<dtc_status_availability_mask>.{2})(?P<dtc_status_list>.*)$',
             content)
         if dtc_status_list_match:
             list_group = dtc_status_list_match.groupdict()
@@ -201,7 +201,7 @@ class UdsResponse:
                 if dtc_status_match:
                     status_group = dtc_status_match.groupdict()
                     bits = DtcStatus(status_group["dtc_status_bits"])
-                    dtc_list.append({status_group["dtc"]: bits})
+                    dtc_list.append((status_group["dtc"], bits))
                     self.data['dtcs'] = dtc_list
                     self.data['count'] = len(dtc_list)
 
