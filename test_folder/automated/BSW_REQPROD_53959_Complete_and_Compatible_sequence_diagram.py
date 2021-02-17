@@ -10,6 +10,11 @@
 # version:  1.1
 # reqprod:  53959
 
+# author:   J-ADSJO
+# date:     2020-12-07
+# version:  1.2
+# reqprod:  53959
+
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
 
 # Copyright 2015 gRPC authors.
@@ -35,15 +40,14 @@ import sys
 import logging
 import inspect
 import glob
-
 import odtb_conf
+
 from supportfunctions.support_can import SupportCAN, CanParam, CanTestExtra
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
 from supportfunctions.support_carcom import SupportCARCOM
 from supportfunctions.support_file_io import SupportFileIO
 from supportfunctions.support_SBL import SupportSBL
 from supportfunctions.support_sec_acc import SupportSecurityAccess
-
 from supportfunctions.support_precondition import SupportPrecondition
 from supportfunctions.support_postcondition import SupportPostcondition
 from supportfunctions.support_service10 import SupportService10
@@ -111,17 +115,33 @@ def step_4(can_p):
     """
     Teststep 4: Check the Complete and compatible Routine return Not Complete
     """
+    time_stamp = [0]
+
     etp: CanTestExtra = {
         "step_no" : 4,
         "purpose" : "Check the Complete and compatible Routine return Not Complete"
     }
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
 
-    SUTE.print_test_purpose(etp["step_no"], etp["purpose"])
     result = SSBL.check_complete_compatible_routine(can_p, etp["step_no"])
     result = result and (SSBL.pp_decode_routine_complete_compatible
                          (SC.can_messages[can_p["receive"]][0][2])
                          == 'Not Complete, Compatible')
+
+    time_stamp[0] = SC.can_frames[can_p["send"]][0][0]
+    time_stamp.append(SC.can_frames[can_p["receive"]][0][0])
+    result = result and ((time_stamp[1] - time_stamp[0])*1000.0 < 25.0)
+    if result:
+        logging.info("P2Server time (%f) < 25 ms", (time_stamp[1] - time_stamp[0])*1000.0)
+    else:
+        logging.info("P2Server time (%f) > 25 ms", (time_stamp[1] - time_stamp[0])*1000.0)
+
+    for frame_type, frames in SC.can_frames.items():
+        logging.info("%s:", frame_type)
+        for frame in frames:
+            ts_type, frame_type, frame_byte = frame
+            logging.info("%s", [round(1000 * (ts_type - time_stamp[0]), 3), frame_type, frame_byte])
+
     return result
 
 def step_5(can_p):
@@ -151,17 +171,34 @@ def step_6(can_p):
     """
     Teststep 6: Check the Complete and compatible Routine return Complete Not Compatible
     """
+    time_stamp = [0]
+
     etp: CanTestExtra = {
         "step_no" : 6,
         "purpose" : "Check the Complete and compatible Routine return Complete not Compatible"
     }
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
 
-    SUTE.print_test_purpose(etp["step_no"], etp["purpose"])
-    result = SSBL.check_complete_compatible_routine(can_p, etp["step_no"])
-    result = result and (SSBL.pp_decode_routine_complete_compatible
-                         (SC.can_messages[can_p["receive"]][0][2])
-                         == 'Complete, Not Compatible')
+    result_str = SSBL.check_complete_compatible_routine(can_p, etp["step_no"])
+    result = (result_str  == 'Complete, Not Compatible')
+
+    logging.info("Step 6: Check(%s == Complete, Not Compatible) :%s",
+                     result_str, result)
+
+    time_stamp[0] = SC.can_frames[can_p["send"]][0][0]
+    time_stamp.append(SC.can_frames[can_p["receive"]][0][0])
+    result = result and ((time_stamp[1] - time_stamp[0])*1000.0 < 25.0)
+    if result:
+        logging.info("P2Server time (%f) < 25 ms", (time_stamp[1] - time_stamp[0])*1000.0)
+    else:
+        logging.info("P2Server time (%f) > 25 ms", (time_stamp[1] - time_stamp[0])*1000.0)
+
+    for frame_type, frames in SC.can_frames.items():
+        logging.info("%s:", frame_type)
+        for frame in frames:
+            ts_type, frame_type, frame_byte = frame
+            logging.info("%s", [round(1000 * (ts_type - time_stamp[0]), 3), frame_type, frame_byte])
+
     return result
 
 def step_7(can_p):
@@ -174,10 +211,12 @@ def step_7(can_p):
     #REQ_53959_SIGCFG_compatible_with current release
     result = True
     odtb_proj_param = os.environ.get('ODTBPROJPARAM')
+    logging.info("\nODTBPROJPARAM: %s", odtb_proj_param)
     if odtb_proj_param is None:
         odtb_proj_param = '.'
 
     swp = odtb_proj_param + "/VBF_Reqprod/REQ_53959_3*.vbf"
+    logging.info(swp)
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), swp)
     if not glob.glob(swp):
         result = False
@@ -186,6 +225,41 @@ def step_7(can_p):
             result = result and SSBL.sw_part_download(can_p, f_name,
                                                       stepno, purpose)
     return result
+
+def step_8(can_p):
+    """
+    Teststep 8: Check the Complete and compatible Routine return Complete and Compatible
+    """
+    time_stamp = [0]
+
+    etp: CanTestExtra = {
+        "step_no" : 8,
+        "purpose" : "Check the Complete and compatible Routine return Complete and Compatible"
+    }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+
+    result_str = SSBL.check_complete_compatible_routine(can_p, etp["step_no"])
+    result = (result_str  == 'Complete, Compatible')
+
+    logging.info("Step 8: Check(%s == Complete, Compatible) :%s",
+                     result_str, result)
+
+    time_stamp[0] = SC.can_frames[can_p["send"]][0][0]
+    time_stamp.append(SC.can_frames[can_p["receive"]][0][0])
+    result = result and ((time_stamp[1] - time_stamp[0])*1000.0 < 25.0)
+    if result:
+        logging.info("P2Server time (%f) < 25 ms", (time_stamp[1] - time_stamp[0])*1000.0)
+    else:
+        logging.info("P2Server time (%f) > 25 ms", (time_stamp[1] - time_stamp[0])*1000.0)
+
+    for frame_type, frames in SC.can_frames.items():
+        logging.info("%s:", frame_type)
+        for frame in frames:
+            ts_type, frame_type, frame_byte = frame
+            logging.info("%s", [round(1000 * (ts_type - time_stamp[0]), 3), frame_type, frame_byte])
+
+    return result
+
 
 def run():
     """
@@ -248,7 +322,7 @@ def run():
         # action: verify SWDL Not compatible
         # result: ECU sends positive reply "Complete, Not Compatible"
         result = result and step_6(can_p)
-        time.sleep(1)
+        time.sleep(3)
 
         # step7:
         # action: replace Not compatible SWP with compatible one
@@ -258,18 +332,22 @@ def run():
         # step 8:
         # action: Check Complete and Compatible
         # result: BECM sends positive reply "Complete and Compatible"
-        result = result and SSBL.check_complete_compatible_routine(can_p, stepno=8)
+        #result = result and SSBL.check_complete_compatible_routine(can_p, stepno=8)
+        result = result and step_8(can_p)
+        time.sleep(3)
 
         # step9:
         # action: Hard Reset
         # result: ECU sends positive reply
-        result = result and SE11.ecu_hardreset(can_p, stepno=9)
+        result_9 = SE11.ecu_hardreset_5sec_delay(can_p, stepno=9)
         time.sleep(1)
+        result = result and result_9
 
         # step10:
         # action: verify ECU in default session
         # result: ECU sends positive reply
-        result = result and SE22.read_did_f186(can_p, b'\x01', stepno=10)
+        result_10 =  SE22.read_did_f186(can_p, b'\x01', stepno=10)
+        result = result_10 and result
 
     ############################################
     # postCondition

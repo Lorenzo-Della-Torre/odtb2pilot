@@ -17,6 +17,7 @@ from supportfunctions.support_can import SupportCAN
 from supportfunctions.support_can import CanPayload
 from supportfunctions.support_can import CanTestExtra
 from supportfunctions.dtc_status import DtcStatus
+from supportfunctions.support_SBL import SupportSBL
 
 
 SUTE = SupportTestODTB2()
@@ -56,6 +57,9 @@ class IoVmsDid:
 class UdsEmptyResponse(Exception):
     """ Exception class to indicate that that response was empty """
 
+class UdsError(Exception):
+    """ General exception class for Uds """
+
 class UdsResponse:
     """ UDS response """
     def __init__(self, raw):
@@ -67,7 +71,16 @@ class UdsResponse:
         self.__process_message()
 
     def __process_message(self):
-        # check for negative reply
+        if self.raw == "065003001901F400":
+            # Setting the ecu in mode 1 or 2 does not give us any response at
+            # all, but this the response we get when setting the ecu in mode 3.
+            # We should be able to parse this response and add the information
+            # to the data dictionary in a better way than this. Maybe use
+            # nibble 5 and 6?
+            self.data["details"]["mode"] = 3
+            logging.info("The ECU was successfully set to mode 3")
+            return
+
         response_patterns = [
             (r'.{2}7F(?P<service_id>.{2})(?P<nrc>.{2})', self.__negative_response),
             (r'.{2,4}(?P<sid>59|62|6F|71)(?P<body>.*)', self.__positive_response)
@@ -359,12 +372,21 @@ class UdsResponse:
         self.details['F12E_valid'] = f12e_valid
 
 
+    def __active_diag_session_f186(self):
+        details = self.data['details']
+        item = details['item']
+        length = int(details['sddb_size']) * 2
+        if len(item) >= length:
+            self.data['details']['mode'] = int(item[:length])
+
+
 class Uds:
     """ Unified diagnostic services """
     def __init__(self, dut):
         self.dut = dut
         self.step = 0
         self.purpose = ""
+        self.mode = None
 
     def __make_call(self, payload):
         cpay: CanPayload = {
@@ -414,9 +436,19 @@ class Uds:
         payload = b'\x22' + did + mask
         return self.__make_call(payload)
 
+    def active_diag_session_f186(self):
+        """ Read active diagnostic session/mode """
+        return self.read_data_by_id_22(b'\xf1\x86')
 
-    def set_mode(self, mode=1):
+    def set_mode(self, mode=1, change_check=True):
         """ Read Data by Identifier """
+
+        if change_check and mode == 3 and self.mode == 2:
+            raise UdsError(
+                "You can not change directly from mode 2 to mode 3. Use the "
+                "mode order 1, 3, 2 if you want to implement at testcase "
+                "covering all modes instead")
+
         modes = {
             1: "default session/mode",
             2: "programming session/mode",
@@ -426,11 +458,42 @@ class Uds:
         payload = bytes([0x10, mode])
         logging.info(
             "Set %s with payload %s", modes[mode], payload.hex())
+
         try:
-            self.__make_call(payload)
+            response = self.__make_call(payload)
         except UdsEmptyResponse:
-            # set mode calls does not give us any response, so this is fine
+            # set mode 1 and 2 calls does not give us any response, so this is
+            # fine
             pass
+
+        if mode in [1, 2]:
+            res_mode = self.active_diag_session_f186()
+            self.mode = res_mode.data["details"]["mode"]
+            return
+
+        # since we actually get a reply when changing to mode 3 we don't
+        # need to do any extra call to f186 in order to ensure that the
+        # mode change went well.
+        if mode == 3 and response.data["details"]["mode"] == 3:
+            self.mode = 3
+            return
+
+        raise UdsError(f"Failure occurred when setting mode: {mode}")
+
+
+    def enter_sbl(self):
+        """ enter the secondary bootloader """
+        if self.mode != 2:
+            UdsError(
+                "You need to be in programming mode to change from pbl to sbl")
+
+        sbl = SupportSBL()
+        sbl.get_vbf_files()
+        if not sbl.sbl_activation(
+            self.dut, fixed_key='FFFFFFFFFF', stepno=self.dut.step,
+                purpose="Activate Secondary bootloader"):
+            UdsError("Could not set ecu in sbl mode")
+
 
 
 def get_all_dids():
@@ -438,8 +501,11 @@ def get_all_dids():
     dids = {}
     for did_dict in [pbl_did_dict, sbl_did_dict, app_did_dict]:
         for key, item in did_dict.items():
-            dids[key[2:]] = {"sddb_" + k.lower(): v
-                             for k, v in item.items() if k in ['Name', 'Size']}
+            # all dids in the did dicts unfortunately contains a service 22
+            # prefix (e.g. 22EDA0), maybe we should remove it. For now we
+            # remove it for the use here.
+            dids[key[2:]] = {
+                "sddb_name": item['Name'], "sddb_size": int(item['Size'])}
     return dids
 
 def extract_fields(hexstring, regex_fields: list):
@@ -475,7 +541,7 @@ def test_uds_response():
 def test_did():
     """ pytest: make sure get_all_dids works properly """
     did = get_all_dids()
-    assert did['EDA0']['sddb_size'] == '64'
+    assert did['EDA0']['sddb_size'] == 64
     assert did['EDA0']['sddb_name'] == 'Complete ECU Part/Serial Number(s)'
 
 def test_dtc_snapshot():
@@ -520,8 +586,7 @@ def test_dtc_snapshot_ids():
     assert res.data["service"] == "ReadDTCInformation"
     assert res.data["count"] == 22
     snapshot_id0 = res.data["snapshot_ids"][0]
-    assert '21' in snapshot_id0
-    assert snapshot_id0['21'] == '0D1500'
+    assert snapshot_id0 == ('21','0D1500')
 
 def test_dtc_extended_data_record():
     """ pytest: test parsing of extended data records """
@@ -558,3 +623,11 @@ def test_extract_fields():
     assert fields["ts20"] == "xxxxxxxx"
     assert fields["ts21"] == "yyyyyyyy"
     assert fields["si30"] == "zz"
+
+def test_active_session():
+    """ pytest: test mode/session state changes in response """
+    response = UdsResponse("0462F18601000000")
+    assert response.data['details']['mode'] == 1
+    # set mode/session to 3 (extended) gives us actually a proper reply
+    response = UdsResponse("065003001901F400")
+    assert response.data['details']['mode'] == 3

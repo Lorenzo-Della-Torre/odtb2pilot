@@ -157,9 +157,7 @@ class SupportSBL:
             ess_needed = new_ess_needed
         else:
             logging.info("Support_SBL: new_ess_needed is empty. Leave True.")
-
-        if not isinstance(ess_needed, bool):
-            logging.info("Support_SBL: ess_needed after YML: %s", ess_needed.hex())
+        logging.info("Support_SBL: ess_needed after YML: %s", ess_needed)
 
         if (len(self._sbl) == 0) or\
             (ess_needed and (len(self._ess) == 0)) or (len(self._df) == 0):
@@ -536,8 +534,8 @@ class SupportSBL:
         else:
             pos = message.find('0205')
             res = message[pos+6:pos+16]
-            val = "{0:40b}".format(int(res, 16))
-            if val[38] == '0' or ' ':
+            val = "{:040b}".format(int(res, 16))
+            if val[38] == '0':
                 val_ca = 'Compatible'
             elif val[38] == '1':
                 val_ca = 'Not Compatible'
