@@ -56,7 +56,7 @@ class DtcStatus:
         return f'{self.__class__.__name__}("{self.hex}")'
 
     def __str__(self):
-        s = repr(self)
+        __str = repr(self)
         dtc_status_bits = [
             'test_failed',
             'test_failed_this_operation_cycle',
@@ -71,8 +71,8 @@ class DtcStatus:
         # 11.3.5.2.2 of ISO-14229-1:2006). bit 0 is the least
         # significant bit (e.g the right-most bit in the string).
         for bit, name in zip(self.bits[::-1], dtc_status_bits):
-            s += f'\n {bit} {name}'
-        return s
+            __str += f'\n {bit} {name}'
+        return __str
 
     @property
     def test_failed(self):
