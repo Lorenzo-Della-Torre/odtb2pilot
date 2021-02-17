@@ -51,7 +51,7 @@ import inspect
 
 import odtb_conf
 
-from build.dtc import dtcs
+from build.dtc import sddb_dtcs
 
 from supportfunctions.support_can import SupportCAN, CanParam, CanTestExtra, CanPayload
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
@@ -79,7 +79,7 @@ class Dtc:
 def step_1(can_p):
     """ Test that all DTC responds appropriately """
 
-    for dtc_id, dtc in dtcs.items():
+    for dtc_id, dtc in sddb_dtcs.items():
         dtc_number = bytearray.fromhex(dtc_id)
         logging.debug('Testing DTC number: %s', dtc_number)
 
