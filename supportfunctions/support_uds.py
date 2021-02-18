@@ -410,9 +410,9 @@ class Uds:
         return UdsResponse(response[0][2])
 
 
-    def dtc_by_status_mask_1902(self, mask: bytes):
+    def dtc_by_status_mask_1902(self, mask: DtcStatus):
         """ Read dtc by status mask """
-        payload = bytes([0x19, 0x02]) + mask
+        payload = bytes([0x19, 0x02]) + mask.bytes
         return self.__make_call(payload)
 
     def dtc_snapshot_ids_1903(self):
@@ -439,6 +439,14 @@ class Uds:
     def active_diag_session_f186(self):
         """ Read active diagnostic session/mode """
         return self.read_data_by_id_22(b'\xf1\x86')
+
+    def generic_ecu_call(self, payload: bytes = b''):
+        """
+        Generic ECU call
+
+        Use the service specific methods if you can instead of this method
+        """
+        return self.__make_call(payload)
 
     def set_mode(self, mode=1, change_check=True):
         """ Read Data by Identifier """
@@ -493,8 +501,6 @@ class Uds:
             self.dut, fixed_key='FFFFFFFFFF', stepno=self.dut.step,
                 purpose="Activate Secondary bootloader"):
             UdsError("Could not set ecu in sbl mode")
-
-
 
 def get_all_dids():
     """ collect all dids defined in sddb in one dictionary """
@@ -574,6 +580,9 @@ def test_negative_response():
     res = UdsResponse(negative_response)
     assert res.data["nrc"] == "13"
     assert res.data["nrc_name"] == "incorrectMessageLengthOrInvalidFormat"
+    res = UdsResponse("037F001100000000")
+    print(res)
+    assert res.data["nrc_name"] == "serviceNotSupported"
 
 def test_dtc_snapshot_ids():
     """ pytest: test call for listing dtc snapshot ids from the ECU """
