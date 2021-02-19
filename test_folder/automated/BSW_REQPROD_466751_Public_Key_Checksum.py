@@ -173,15 +173,13 @@ def run():
     # step 5:
     # action: Complete the testcase
     # result: Merge the results from all steps
-    #         The record received in Default, Extended and Programming Session shall be equal
+    #         The record received in Default and Extended Session shall be equal
         step_no = 5
         purpose = "Verify the D03A records received are equal in all modes"
         SUTE.print_test_purpose(step_no, purpose)
-
+        logging.info("D03A read in Default: %s  Valid: %s", default_result, result_step_2)
+        logging.info("D03A read in Extended: %s Valid: %s",extended_result, result_step_4)
         result = result and result_step_2 and result_step_4
-        #result = result and step_9(default_result, extended_result,
-        #                            programming_result, sbl_result)
-
         result = result and (default_result == extended_result)
 
     # step 6:
