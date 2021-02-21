@@ -1,29 +1,28 @@
 """
-Status of DTC (ISO-14229-1:2006)
+Status of DTC (UDS: ISO-14229-1:2006) and Status Indicators SI30 (Autosar)
 """
 
-class DtcStatus:
-    """ DTC status bits """
-
+class StatusBits:
+    """ Base class for status bits """
     def __init__(self, hexstring="", bits=""):
         if hexstring and bits:
             raise Exception("specify either hexstring or bits, not both")
         if bits:
-            self.__bits = list(bits)
+            self._bits = list(bits)
         elif hexstring:
-            self.__bits = list(format(int(hexstring, 16), '08b'))
+            self._bits = list(format(int(hexstring, 16), '08b'))
         else:
-            self.__bits = list("00000000")
+            self._bits = list("00000000")
 
     @property
     def bits(self):
         """ string representation of the bits """
-        return ''.join(self.__bits)
+        return ''.join(self._bits)
 
     @property
     def int(self):
         """ int representation of the bits """
-        return int(''.join(self.__bits), 2)
+        return int(''.join(self._bits), 2)
 
     @property
     def hex(self):
@@ -37,11 +36,11 @@ class DtcStatus:
 
     def clear(self):
         """ reset all bits to 0 """
-        self.__bits = list("00000000")
+        self._bits = list("00000000")
 
     def set_all(self):
         """ set all bits to 1 """
-        self.__bits = list("11111111")
+        self._bits = list("11111111")
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
@@ -54,6 +53,10 @@ class DtcStatus:
 
     def __repr__(self):
         return f'{self.__class__.__name__}("{self.hex}")'
+
+
+class DtcStatus(StatusBits):
+    """ dtc status bits """
 
     def __str__(self):
         __str = repr(self)
@@ -68,7 +71,7 @@ class DtcStatus:
             'warning_indicator_requested',
         ]
         # note the reverse order of the bits below (see section
-        # 11.3.5.2.2 of ISO-14229-1:2006). bit 0 is the least
+        # 11.3.5.2.2 of iso-14229-1:2006). bit 0 is the least
         # significant bit (e.g the right-most bit in the string).
         for bit, name in zip(self.bits[::-1], dtc_status_bits):
             __str += f'\n {bit} {name}'
@@ -76,76 +79,267 @@ class DtcStatus:
 
     @property
     def test_failed(self):
-        """ DTC failed at the time of the request """
-        return bool(int(self.__bits[7]))
+        """ dtc failed at the time of the request """
+        return bool(int(self._bits[7]))
 
     @test_failed.setter
     def test_failed(self, value):
-        self.__bits[7] = bool_to_bit(value)
+        self._bits[7] = bool_to_bit(value)
 
     # pylint: disable=invalid-name
     @property
     def test_failed_this_operation_cycle(self):
-        """ DTC failed on the current operation cycle """
-        return bool(int(self.__bits[6]))
+        """ dtc failed on the current operation cycle """
+        return bool(int(self._bits[6]))
 
     @test_failed_this_operation_cycle.setter
     def test_failed_this_operation_cycle(self, value):
-        self.__bits[6] = bool_to_bit(value)
+        self._bits[6] = bool_to_bit(value)
 
     @property
     def pending_dtc(self):
-        """  DTC failed on the current or previous operation cycle """
-        return bool(int(self.__bits[5]))
+        """  dtc failed on the current or previous operation cycle """
+        return bool(int(self._bits[5]))
 
     @pending_dtc.setter
     def pending_dtc(self, value):
-        self.__bits[5] = bool_to_bit(value)
+        self._bits[5] = bool_to_bit(value)
 
     @property
     def confirmed_dtc(self):
-        """ DTC is confirmed at the time of the request """
-        return bool(int(self.__bits[4]))
+        """ dtc is confirmed at the time of the request """
+        return bool(int(self._bits[4]))
 
     @confirmed_dtc.setter
     def confirmed_dtc(self, value):
-        self.__bits[4] = bool_to_bit(value)
+        self._bits[4] = bool_to_bit(value)
 
     @property
     def test_not_completed_since_last_clear(self):
-        """ DTC test has not been completed since last clear """
-        return bool(int(self.__bits[3]))
+        """ dtc test has not been completed since last clear """
+        return bool(int(self._bits[3]))
 
     @test_not_completed_since_last_clear.setter
     def test_not_completed_since_last_clear(self, value):
-        self.__bits[3] = bool_to_bit(value)
+        self._bits[3] = bool_to_bit(value)
 
     @property
     def test_failed_since_last_clear(self):
-        """ DTC test failed at least once since last code clear """
-        return bool(int(self.__bits[2]))
+        """ dtc test failed at least once since last code clear """
+        return bool(int(self._bits[2]))
 
     @test_failed_since_last_clear.setter
     def test_failed_since_last_clear(self, value):
-        self.__bits[2] = bool_to_bit(value)
+        self._bits[2] = bool_to_bit(value)
 
     @property
     def test_not_completed_this_operation_cycle(self):
-        """ DTC test has not been completed this operation cycle """
-        return bool(int(self.__bits[1]))
+        """ dtc test has not been completed this operation cycle """
+        return bool(int(self._bits[1]))
 
     @test_not_completed_this_operation_cycle.setter
     def test_not_completed_this_operation_cycle(self, value):
-        self.__bits[1] = bool_to_bit(value)
+        self._bits[1] = bool_to_bit(value)
 
     @property
     def warning_indicator_requested(self):
-        """ Server is requesting warningIndicator to be active """
-        return bool(int(self.__bits[0]))
+        """ server is requesting warningindicator to be active """
+        return bool(int(self._bits[0]))
 
     @warning_indicator_requested.setter
     def warning_indicator_requested(self, value):
-        self.__bits[0] = bool_to_bit(value)
+        self._bits[0] = bool_to_bit(value)
+
+
+class StatusIndicators(StatusBits):
+    """
+    DTC status indicator bits (SI30)
+
+    Note: These bits are defined by Autosar and are not covered by ISO-14229-1
+    """
+
+    def __str__(self):
+        __str = repr(self)
+        status_indicators = [
+            'fdc_threshold_reached',
+            'fdc_threshold_reached_toc',
+            '_undefined_bit_3',
+            'aged_dtc',
+            'symptoms_since_last_clear',
+            'warning_indicator',
+            'emission_related_dtc',
+            'test_failed_since_last_clear_aged',
+        ]
+
+        # like for DTC status bits, status indicators bits are also counted
+        # from right to left
+        for bit, name in zip(self.bits[::-1], status_indicators):
+            __str += f'\n {bit} {name}'
+        return __str
+
+    @property
+    def fdc_threshold_reached(self):
+        """
+        autosar: This bit is set to 1 when debouncing counter reach the value
+        DemEventMemoryEntryFdcThresholdStorageValue and reset to 0 when the
+        debouncing counter reach the value DemDebounceCounterPassedThreshold
+
+        according to swrs version 4, this bit is N/A and should always be 0
+        """
+        return bool(int(self._bits[7]))
+
+    @fdc_threshold_reached.setter
+    def fdc_threshold_reached(self, value):
+        self._bits[7] = bool_to_bit(value)
+
+    @property
+    def fdc_threshold_reached_toc(self):
+        """
+        autosar: The bit is set to 1 when fdc_threshold_reached is set to 1.
+        The bit is reset to 0 at the start of the operation cycle
+        (DemOperationCycleRef)
+
+        according to swrs version 4, this bit is N/A and should always be 0
+        """
+        return bool(int(self._bits[6]))
+
+    @fdc_threshold_reached_toc.setter
+    def fdc_threshold_reached_toc(self, value):
+        self._bits[6] = bool_to_bit(value)
+
+    @property
+    def _undefined_bit_3(self):
+        """
+        undefined bit 3
+
+        according to swrs version 4, this bit is N/A and should always be 0
+        """
+        # according to swrs version 4, this should always be 0
+        return bool(int(self._bits[5]))
+
+    @_undefined_bit_3.setter
+    def _undefined_bit_3(self, value):
+        self._bits[5] = bool_to_bit(value)
+
+    @property
+    def aged_dtc(self):
+        """
+        The bit is set to 1 when the DTC is aged.
+        The bit is reset to 0 when the aged DTC reoccurs.
+        """
+        return bool(int(self._bits[4]))
+
+    @aged_dtc.setter
+    def aged_dtc(self, value):
+        self._bits[4] = bool_to_bit(value)
+
+    @property
+    def symptoms_since_last_clear(self):
+        """
+        swrs:
+        When implemented, this bit indicates whether the fault detected by the
+        DTC-test has caused a customer symptom since DTC information was last
+        cleared.
+
+        The bit shall be set to 1 when the FDC10 is in the range [UnconfirmedDTCLimit
+        to TestFailedLimit] and specific conditions, that need to be fulfilled in order
+        to cause a customer symptom, are satisfied.
+
+        The specific conditions, specified by the implementer, can be that the
+        customer use the defect function, ECU takes certain actions due to the
+        fault, the ECU is in specific operation or environment condition, etc.
+
+        When not implemented, the bit shall be set to 0
+        """
+        return bool(int(self._bits[3]))
+
+    @symptoms_since_last_clear.setter
+    def symptoms_since_last_clear(self, value):
+        self._bits[3] = bool_to_bit(value)
+
+    @property
+    def warning_indicator(self):
+        """
+        autosar:
+        This bit is set to 1 when UDS DTC status bit 7 is set to 1 and
+        the bit is reset to 0 when a call to ClearDTC is made
+
+        When implemented, this bit indicates the maximum value of DTC status
+        bit 7 since DTC information was last cleared.
+
+        swrs:
+        The bit is set to 1 when DTC status bit no 7 is set to 1.
+
+        However, the bit may also be set to 1 even when DTC status bit not 7 –
+        warningIndicatorRequested is not set to 1 (refer to reference ISO
+        14229-1 regarding requirements on set of DTC status bit not 7 to 1)
+        according to the following:
+
+
+        The bit is set to 1 when the same criteria as required by the above
+        mention reference on set of DTC status bit not 7 –
+        warningIndicatorRequested to 1 is satisfied, but it may also be set to
+        1 and warning indicator may be requested before DTC status bit 3 –
+        confirmed DTC is set to 1.
+
+        Note that in all cases must FDC10 has reached the value +127, since DTC
+        information was latest cleared, before the bit is set to 1 and warring
+        indicator is requested (if not otherwise is specified in this
+        document).
+
+        When not implemented, the bit shall be set to 0
+        """
+        return bool(int(self._bits[2]))
+
+    @warning_indicator.setter
+    def warning_indicator(self, value):
+        self._bits[2] = bool_to_bit(value)
+
+    @property
+    def emission_related_dtc(self):
+        """
+        autosar:
+        This bit is set to 1 when the DTC is emission related and set to 0 when
+        the DTC is not emission related.
+
+        swrs:
+        The bit is set to 0 when the DTC is not emission related.
+
+        The bit is set to 1 when the DTC is emission related.
+
+        Note that a DTC is not emission related as long as the FDC10 has not
+        reached the value +127 since DTC information was last cleared and when
+        it is aged i.e. the SI30:3 (bit 3 above) is set to1.
+        """
+        return bool(int(self._bits[1]))
+
+    @emission_related_dtc.setter
+    def emission_related_dtc(self, value):
+        self._bits[1] = bool_to_bit(value)
+
+    # pylint: disable=invalid-name
+    @property
+    def test_failed_since_last_clear_aged(self):
+        """
+        swrs:
+        When implemented, this bit indicates DTC test failed since the DTC was
+        last aged or, as long as the DTC have not been aged, since the DTC
+        information was last cleared.
+
+        The bit is set to set to 1 when DTC test is failed i.e. when the FDC10
+        reach the value +127.
+
+        The bit is reset to 0 when DTC is aged i.e. the SI30:3 (bit 3 above) is
+        set to1.
+
+        When not implemented, this bit shall be set to 0
+        """
+        return bool(int(self._bits[0]))
+
+    @test_failed_since_last_clear_aged.setter
+    def test_failed_since_last_clear_aged(self, value):
+        self._bits[0] = bool_to_bit(value)
+
 
 
 def bool_to_bit(value):
@@ -211,3 +405,25 @@ def test_dtc_status():
     assert table_263_bits.test_failed_since_last_clear
     assert not table_263_bits.test_not_completed_this_operation_cycle
     assert not table_263_bits.warning_indicator_requested
+
+def test_status_indicators():
+    """ ensure the correct operation of status indicators """
+    si = StatusIndicators("01")
+    assert si.bits == "00000001"
+    assert si.fdc_threshold_reached
+
+    si = StatusIndicators("03")
+    assert si.bits == "00000011"
+    assert si.fdc_threshold_reached
+    assert si.fdc_threshold_reached_toc
+
+    si = StatusIndicators("21")
+    assert si.bits == "00100001"
+    assert si.fdc_threshold_reached
+    assert si.warning_indicator
+
+    si = StatusIndicators("23")
+    assert si.bits == "00100011"
+    assert si.fdc_threshold_reached
+    assert si.fdc_threshold_reached_toc
+    assert si.warning_indicator
