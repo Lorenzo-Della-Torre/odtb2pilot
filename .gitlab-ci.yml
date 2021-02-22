@@ -5,6 +5,7 @@ before_script:
   - pip3 install pylint --quiet
   - pip3 install openpyxl --quiet
   - pip3 install lxml --quiet
+  - pip3 install neo4j --quiet
   - pip3 install pylint-fail-under --quiet
 
 stages:
