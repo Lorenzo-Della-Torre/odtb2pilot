@@ -1,4 +1,4 @@
- /* Pro Micro + Relaiscard 8x Test Code
+/* Pro Micro + Relaycard 8x Test Code
    by: Hans-Klaus Weiler
    date: November 26, 2019
    license: Public Domain - please use this code however you'd like.
@@ -8,25 +8,26 @@
    ProMicro's D0..D7  within a sketch.
 */
 
-// 
+// Each Arduino should identify when asked
+// and show it's configuration (R8 = 8 relay)
 String Ardu_ID =  "Arduino_0001";
 String Ardu_config = "Ardu_config R8";
 
-//define Relais for Arduino D0..D7
-int Relais_0 = 0;
-int Relais_1 = 1;
-int Relais_2 = 2;
-int Relais_3 = 3;
-int Relais_4 = 4;
-int Relais_5 = 5;
-int Relais_6 = 6;
-int Relais_7 = 7;
+//define Relay for Arduino D0..D7
+int Relay_0 = 0;
+int Relay_1 = 1;
+int Relay_2 = 2;
+int Relay_3 = 3;
+int Relay_4 = 4;
+int Relay_5 = 5;
+int Relay_6 = 6;
+int Relay_7 = 7;
 
 int RXLED = 17;  // The RX LED has a defined Arduino pin
 int TXLED = 30;  // The TX LED has a defined Arduino pin
 
 
-// CommandString for Relais will be Rx00..RxFF or RxMM00..RxMMFF where MM is mask
+// CommandString for Relay will be Rx00..RxFF or RxMM00..RxMMFF where MM is mask
 // the last two characters will be used as HEX for each bit to control a relais.
 // The mask is used to leave relais in previous state if needed.
 const int bufLength = 32;
@@ -38,14 +39,14 @@ int  command_count=0;
 void setup()
 {
   //setup pins used for relay card D0..D7
-  pinMode(Relais_0, OUTPUT);  // Set Relais_0 as an output
-  pinMode(Relais_1, OUTPUT);  // Set Relais_1 as an output
-  pinMode(Relais_2, OUTPUT);  // Set Relais_2 as an output
-  pinMode(Relais_3, OUTPUT);  // Set Relais_3 as an output
-  pinMode(Relais_4, OUTPUT);  // Set Relais_4 as an output
-  pinMode(Relais_5, OUTPUT);  // Set Relais_5 as an output
-  pinMode(Relais_6, OUTPUT);  // Set Relais_6 as an output
-  pinMode(Relais_7, OUTPUT);  // Set Relais_7 as an output
+  pinMode(Relay_0, OUTPUT);  // Set Relay_0 as an output
+  pinMode(Relay_1, OUTPUT);  // Set Relay_1 as an output
+  pinMode(Relay_2, OUTPUT);  // Set Relay_2 as an output
+  pinMode(Relay_3, OUTPUT);  // Set Relay_3 as an output
+  pinMode(Relay_4, OUTPUT);  // Set Relay_4 as an output
+  pinMode(Relay_5, OUTPUT);  // Set Relay_5 as an output
+  pinMode(Relay_6, OUTPUT);  // Set Relay_6 as an output
+  pinMode(Relay_7, OUTPUT);  // Set Relay_7 as an output
   
   pinMode(RXLED, OUTPUT);  // Set RX LED as an output
   pinMode(TXLED, OUTPUT);  // Set TX LED as an output
@@ -60,21 +61,17 @@ void setup()
   digitalWrite(TXLED, HIGH);    // set the TX LED OFF
  
   //init relais: OFF
-  digitalWrite(Relais_0, HIGH);
-  digitalWrite(Relais_1, HIGH);
-  digitalWrite(Relais_2, HIGH);
-  digitalWrite(Relais_3, HIGH);
-  digitalWrite(Relais_4, HIGH);
-  digitalWrite(Relais_5, HIGH);
-  digitalWrite(Relais_6, HIGH);
-  digitalWrite(Relais_7, HIGH);
+  digitalWrite(Relay_0, HIGH);
+  digitalWrite(Relay_1, HIGH);
+  digitalWrite(Relay_2, HIGH);
+  digitalWrite(Relay_3, HIGH);
+  digitalWrite(Relay_4, HIGH);
+  digitalWrite(Relay_5, HIGH);
+  digitalWrite(Relay_6, HIGH);
+  digitalWrite(Relay_7, HIGH);
 
   // wait for Serial to be active
   while (!Serial);
-  // register Arduino to counterpart
-  //
-  // was not the best idea to have: won't work after reboot
-  //register_ardu();
 }
 
 /*
@@ -127,56 +124,17 @@ char * read_command(unsigned long timeout) {
 
 
 /*
- * Register Arduino at startup.
- * Purpose is that devices Arduino is connected to can distinguish several ones connected
- * and even get the GPIO configuration of them.
- */
-/*void register_ardu(){
-  String reg_token =  "Arduino_0001";
-  String Ardu_config = "Ardu_config R7";
-  bool Ardu_registered = false;
-  bool Ardu_configured = false;
-  String comm_read;
-  int timeout = 5000;
-  
-  //Serial.println("Start to register Ardu");
-  while (!Ardu_registered) {
-    digitalWrite(RXLED, LOW);    // set the RX LED ON
-    //Serial.print ("Req for Arduino: ");
-    Serial.println(reg_token);
-    digitalWrite(RXLED, HIGH);    // set the RX LED OFF
-    comm_read = read_command(timeout);
-    //Serial.print ("Command returned from read_command1: ");
-    //Serial.println (comm_read);
-    if (comm_read == String("Ardu_reg_ack1\n")) Ardu_registered = true;
-  }
-  //part2 of registration: Arduino sends configuration
-  while (!Ardu_configured) {
-    digitalWrite(RXLED, LOW);    // set the RX LED ON
-    //Serial.print ("Config for Arduino: ");
-    Serial.println (Ardu_config);
-    digitalWrite(RXLED, HIGH);    // set the RX LED OFF
-    comm_read = read_command(timeout);
-    //Serial.print ("Command returned from read_command2: ");
-    //Serial.println (comm_read);
-    if (comm_read == String("Ardu_configured\n")) Ardu_configured = true;
-  }
-  Serial.println("Ardu registered");
-}
-*/
-
-/*
- * setRelais(int RMaskComm)
+ * setRelay(int RMaskComm)
  * parameter: int RMaskComm - first 2 bytes bitmask for setting relais
  *                          - second 2 bytes relais bitmask set/unset
  */
-void setRelais(int RMaskComm) {
+void setRelay(int RMaskComm) {
   byte RMask = (RMaskComm & 0xFF00) >> 8;
   byte RComm = (RMaskComm & 0x00FF);
-  byte Rpins[] = {Relais_0, Relais_1, Relais_2, Relais_3, Relais_4, Relais_5, Relais_6, Relais_7};
+  byte Rpins[] = {Relay_0, Relay_1, Relay_2, Relay_3, Relay_4, Relay_5, Relay_6, Relay_7};
   byte numRpins = sizeof(Rpins);
   digitalWrite(TXLED, LOW);    // set the TX LED ON
-  Serial.print ("Set Relais RMask 0x");
+  Serial.print ("Set Relay RMask 0x");
   Serial.print (RMask, HEX);
   Serial.print (" RComm 0x");
   Serial.println (RComm, HEX);
@@ -193,7 +151,7 @@ void setRelais(int RMaskComm) {
 /*
  * loop in sketch:
  * - read command string from serial (usb):
- * - Rx (for Relais)
+ * - Rx (for Relay)
  * - MM hex for 8 relais bitmask
  * - RR hex for 8 relais set/unset
  * - '\n' to end string
@@ -230,7 +188,9 @@ void loop()
   if (CommandComplete) {
     commandR2 = String(commandRead);
     CommandComplete = false;
-    //check if AT command received
+    // check if AT command received
+	// Board can send it's name (via AT I6)
+	// and it's configuration (via AT I8)
     if (commandR2.startsWith("AT")) {
       if(commandR2.substring(2) == "I6\n") {
         Serial.println (Ardu_ID);    
@@ -256,13 +216,13 @@ void loop()
       }
       else {
         //Serial.print("Command complete: ");     
-        //Serial.print("Relais to set: ");
+        //Serial.print("Relay to set: ");
      
         if (command_count == 4) {
-          setRelais( 0xFF00 | strtol(&commandRead[2], NULL, 16));
+          setRelay( 0xFF00 | strtol(&commandRead[2], NULL, 16));
         } 
         else if (command_count == 6) {            
-          setRelais(strtol(&commandRead[2], NULL, 16));
+          setRelay(strtol(&commandRead[2], NULL, 16));
           }
         else {
           digitalWrite(TXLED, LOW);    // set the TX LED ON
