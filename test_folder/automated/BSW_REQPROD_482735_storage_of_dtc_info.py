@@ -29,6 +29,7 @@ details:
 
 import sys
 import logging
+
 from supportfunctions.support_dut import Dut
 from supportfunctions.support_dut import DutTestError
 from supportfunctions.status_bits import DtcStatus
@@ -50,7 +51,7 @@ def step_1(dut):
 
     logging.info(dtc_status_mask)
 
-    res = dut.uds.dtc_by_status_mask_1902(dtc_status_mask.bytes)
+    res = dut.uds.dtc_by_status_mask_1902(dtc_status_mask)
 
     if res.empty():
         raise DutTestError(
