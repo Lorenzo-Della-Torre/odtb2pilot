@@ -443,10 +443,18 @@ class Uds:
     def generic_ecu_call(self, payload: bytes = b''):
         """
         Generic ECU call
-
         Use the service specific methods if you can instead of this method
         """
         return self.__make_call(payload)
+
+    def milliseconds_since_request(self):
+        """
+        Elapsed time since last sent frame to first received frame with
+        millisecond resolution.
+        """
+        t_sent = float(SC.can_frames[self.dut['send']][0][0])
+        t_received = float(SC.can_frames[self.dut['receive']][0][0])
+        return int((t_received - t_sent) * 1000)
 
     def set_mode(self, mode=1, change_check=True):
         """ Read Data by Identifier """
