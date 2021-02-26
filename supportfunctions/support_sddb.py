@@ -12,9 +12,11 @@ import sys
 import codecs
 import logging
 import tempfile
+
 from pathlib import Path
 from pprint import pformat
 from lxml import etree
+from inflection import underscore
 
 
 def get_platform_dir():
@@ -23,6 +25,7 @@ def get_platform_dir():
     if not platform_dir:
         sys.exit("You need to set the ODTBPROJPARAM. Exiting...")
     return platform_dir
+
 
 def get_release_dir():
     """Get the release dir for the current platform"""
@@ -232,6 +235,248 @@ def process_dtc_content(root):
     write(dtc_file, 'sddb_report_dtc', pformat(report_dtc), 'a')
 
 
+def extract_pbl_services(root):
+    """ Get primary bootloader services"""
+    # pylint: disable=bare-except
+    pbl_services = {}
+    for service in root.find('.//SW[@Type="PBL"]/Services', namespaces=None):
+        # First get Service name and ID
+        service_item = dict(service.attrib)
+        service_item['Name'] = underscore(service_item['Name'])
+        service_item['name'] = service_item.pop('Name')
+        try:
+            service_id = service_item.pop('ID')
+        except:
+            pass
+
+        pbl_services[service_id] = service_item
+
+        # Get the negative response codes
+        nrc_lst = []
+        try:
+            for nrc in service.find('NegativeResponseCodes'):
+                to_underscore = dict(nrc.attrib)
+                to_underscore['Name'] = underscore(to_underscore['Name'])
+                to_underscore['code'] = to_underscore.pop('Code')
+                to_underscore['name'] = to_underscore.pop('Name')
+                nrc_lst.append(to_underscore)
+
+            pbl_services[service_id]['negative_response_code'] = nrc_lst
+
+        except:
+            logging.debug("PBL: Service (%s) does not have any NRC defined.", service_id)
+
+        # Get subfunctions
+        try:
+            sub_fn_lst = []
+            for sub_functions in service.find('Subfunctions'):
+                to_underscore = dict(sub_functions.attrib)
+                to_underscore['Name'] = underscore(to_underscore['Name'])
+                to_underscore['id'] = to_underscore.pop('ID')
+                to_underscore['name'] = to_underscore.pop('Name')
+
+                # Not all subfunctions have the keys below, need to check for each subfunction.
+                if 'delayTime' in to_underscore:
+                    to_underscore['delay_time'] = to_underscore.pop('delayTime')
+                    to_underscore['delay_time_on_boot'] = to_underscore.pop('delayTimeOnBoot')
+                    to_underscore['number_of_attempts'] = to_underscore.pop('numberOfAttempts')
+
+                sub_fn_lst.append(to_underscore)
+
+                # Get sessions
+                sess_lst = []
+                for sessions in sub_functions.find('Sessions'):
+                    to_underscore = dict(sessions.attrib)
+                    to_underscore['Name'] = underscore(to_underscore['Name'])
+                    to_underscore['id'] = to_underscore.pop('ID')
+                    to_underscore['name'] = to_underscore.pop('Name')
+                    to_underscore['p2server_max'] = to_underscore.pop('P2ServerMax')
+                    to_underscore['p4server_max'] = to_underscore.pop('P4ServerMax')
+
+                    sess_lst.append(to_underscore)
+
+                pbl_services[service_id]['sessions'] = sess_lst
+            pbl_services[service_id]['sub_functions'] = sub_fn_lst
+
+        except:
+            logging.debug("PBL: No subfunction in service (%s).", service_id)
+
+    return pbl_services
+
+
+def extract_sbl_services(root):
+    """ Get secondary bootloader services """
+    # pylint: disable=bare-except
+    sbl_services = {}
+    for service in root.find('.//SW[@Type="SBL"]/Services', namespaces=None):
+        # First get Service name and ID
+        service_item = dict(service.attrib)
+        service_item['Name'] = underscore(service_item['Name'])
+        service_item['name'] = service_item.pop('Name')
+        try:
+            service_id = service_item.pop('ID')
+        except:
+            pass
+
+        sbl_services[service_id] = service_item
+
+        # Get the negative response codes
+        nrc_lst = []
+        try:
+            for nrc in service.find('NegativeResponseCodes'):
+                to_underscore = dict(nrc.attrib)
+                to_underscore['Name'] = underscore(to_underscore['Name'])
+                to_underscore['code'] = to_underscore.pop('Code')
+                to_underscore['name'] = to_underscore.pop('Name')
+                nrc_lst.append(to_underscore)
+
+            sbl_services[service_id]['negative_response_code'] = nrc_lst
+
+        except:
+            logging.debug("SBL: Service (%s) does not have any NRC defined.", service_id)
+
+        # Get subfunctions
+        try:
+            sub_fn_lst = []
+            for sub_functions in service.find('Subfunctions'):
+                to_underscore = dict(sub_functions.attrib)
+                to_underscore['Name'] = underscore(to_underscore['Name'])
+                to_underscore['id'] = to_underscore.pop('ID')
+                to_underscore['name'] = to_underscore.pop('Name')
+
+                # Not all subfunctions have the keys below, need to check for each subfunction.
+                if 'delayTime' in to_underscore:
+                    to_underscore['delay_time'] = to_underscore.pop('delayTime')
+                    to_underscore['delay_time_on_boot'] = to_underscore.pop('delayTimeOnBoot')
+                    to_underscore['number_of_attempts'] = to_underscore.pop('numberOfAttempts')
+
+                sub_fn_lst.append(to_underscore)
+
+                # Get sessions
+                sess_lst = []
+                for sessions in sub_functions.find('Sessions'):
+                    to_underscore = dict(sessions.attrib)
+                    to_underscore['Name'] = underscore(to_underscore['Name'])
+                    to_underscore['id'] = to_underscore.pop('ID')
+                    to_underscore['name'] = to_underscore.pop('Name')
+                    to_underscore['p2server_max'] = to_underscore.pop('P2ServerMax')
+                    to_underscore['p4server_max'] = to_underscore.pop('P4ServerMax')
+
+                    sess_lst.append(to_underscore)
+
+                sbl_services[service_id]['sessions'] = sess_lst
+            sbl_services[service_id]['sub_functions'] = sub_fn_lst
+
+        except:
+            logging.debug("SBL: No subfunction in service (%s).", service_id)
+
+    return sbl_services
+
+
+def extract_app_services(root):
+    """
+    Get application services
+        Default session
+        Extended session
+    """
+    # pylint: disable=bare-except
+    app_services = {}
+    for service in root.find('.//SW[@Type="APP"]/Services', namespaces=None):
+        # First get Service name and ID
+        service_item = dict(service.attrib)
+        service_item['Name'] = underscore(service_item['Name'])
+        service_item['name'] = service_item.pop('Name')
+        try:
+            service_id = service_item.pop('ID')
+        except:
+            pass
+
+        app_services[service_id] = service_item
+
+        # Get the negative response codes
+        nrc_lst = []
+        try:
+            for nrc in service.find('NegativeResponseCodes'):
+                to_underscore = dict(nrc.attrib)
+                to_underscore['Name'] = underscore(to_underscore['Name'])
+                to_underscore['code'] = to_underscore.pop('Code')
+                to_underscore['name'] = to_underscore.pop('Name')
+                nrc_lst.append(to_underscore)
+
+            app_services[service_id]['negative_response_code'] = nrc_lst
+
+        except:
+            logging.debug("APP: Service (%s) does not have any NRC defined.", service_id)
+
+        # Get subfunctions
+        try:
+            sub_fn_lst = []
+            for sub_functions in service.find('Subfunctions'):
+                to_underscore = dict(sub_functions.attrib)
+                to_underscore['Name'] = underscore(to_underscore['Name'])
+                to_underscore['id'] = to_underscore.pop('ID')
+                to_underscore['name'] = to_underscore.pop('Name')
+
+                # Not all subfunctions have the keys below, need to check for each subfunction.
+                if 'delayTime' in to_underscore:
+                    to_underscore['delay_time'] = to_underscore.pop('delayTime')
+                    to_underscore['delay_time_on_boot'] = to_underscore.pop('delayTimeOnBoot')
+                    to_underscore['number_of_attempts'] = to_underscore.pop('numberOfAttempts')
+
+                sub_fn_lst.append(to_underscore)
+
+                # Get sessions
+                sess_lst = []
+                for sessions in sub_functions.find('Sessions'):
+                    to_underscore = dict(sessions.attrib)
+                    to_underscore['Name'] = underscore(to_underscore['Name'])
+                    to_underscore['id'] = to_underscore.pop('ID')
+                    to_underscore['name'] = to_underscore.pop('Name')
+                    to_underscore['p2server_max'] = to_underscore.pop('P2ServerMax')
+                    to_underscore['p4server_max'] = to_underscore.pop('P4ServerMax')
+
+                    sess_lst.append(to_underscore)
+
+                app_services[service_id]['sessions'] = sess_lst
+            app_services[service_id]['sub_functions'] = sub_fn_lst
+
+        except:
+            logging.debug("APP: No subfunction in service (%s).", service_id)
+
+    return app_services
+
+
+def extract_defined_services(root):
+    """
+    Extract services which are defined in the different software levels.
+    Programming session which includes:
+        Primary bootloader
+        Secondary bootloader
+
+    Application includes:
+        Default session
+        ExtendedDiagnostic session
+    """
+    pbl_services = extract_pbl_services(root)
+    sbl_services = extract_sbl_services(root)
+    app_services = extract_app_services(root)
+
+    return pbl_services, sbl_services, app_services
+
+
+def process_service_content(root):
+    """ Get services for each software level and write to file. """
+    pbl_services, sbl_services, app_services = extract_defined_services(root)
+
+    service_file = Path(get_build_dir()).joinpath('services.py')
+    write(service_file, 'pbl', pformat(pbl_services), 'w')
+    write(service_file, 'sbl', pformat(sbl_services), 'a')
+    write(service_file, 'app', pformat(app_services), 'a')
+
+    logging.info("Services for primary bootloader, secondary bootloader, and application " \
+                 "has been saved at:\n %s", service_file)
+
+
 def parse_sddb_file():
     """
     Convert and parse the sddb file and trigger the processing of it's content
@@ -263,3 +508,4 @@ def parse_sddb_file():
 
     process_did_content(root)
     process_dtc_content(root)
+    process_service_content(root)
