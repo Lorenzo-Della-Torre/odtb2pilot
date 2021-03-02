@@ -99,7 +99,10 @@ def step_3(can_p, vbf_header):
 
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), vbf_header["sw_signature_dev"])
 
-    result = SSBL.check_memory(can_p, vbf_header, stepno, purpose)
+    SUTE.print_test_purpose(stepno, purpose)
+
+    result = SE31.check_memory(can_p, vbf_header, stepno)
+
     result = result and (
         SSBL.pp_decode_routine_check_memory(SC.can_messages[can_p["receive"]][0][2])
         == 'The signed data could not be authenticated'
@@ -113,13 +116,16 @@ def step_4(can_p, vbf_header):
     """
     stepno = 4
     purpose = "2nd Check Memory with verification failed"
+
     # modify the sw signature removing the last two number and replacing with 14 by default
     # Python converted the sw signature to int
     vbf_header["sw_signature_dev"] = int(str(vbf_header["sw_signature_dev"])[:-2]+ '14')
 
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), vbf_header["sw_signature_dev"])
 
-    result = SSBL.check_memory(can_p, vbf_header, stepno, purpose)
+    SUTE.print_test_purpose(stepno, purpose)
+
+    result = SE31.check_memory(can_p, vbf_header, stepno)
     result = result and (
         SSBL.pp_decode_routine_check_memory(SC.can_messages[can_p["receive"]][0][2])
         == 'The signed data could not be authenticated'
@@ -164,14 +170,19 @@ def step_7(can_p, vbf_header):
     """
     Teststep 7: 1st Check memory with verification failed
     """
+    stepno = 7
+
     # modify the sw signature removing the last two number and replacing with 16 by default
     # Python converted the sw signature to int
     vbf_header["sw_signature_dev"] = int(str(vbf_header["sw_signature_dev"])[:-2]+ '16')
 
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), vbf_header["sw_signature_dev"])
 
-    result = SSBL.check_memory(can_p, vbf_header, stepno=7,
-                               purpose="1st Check Memory with verification failed")
+    purpose="1st Check Memory with verification failed"
+
+    SUTE.print_test_purpose(stepno, purpose)
+
+    result = SE31.check_memory(can_p, vbf_header, stepno)
     result = result and (
         SSBL.pp_decode_routine_check_memory(SC.can_messages[can_p["receive"]][0][2])
         == 'The signed data could not be authenticated'
@@ -183,8 +194,13 @@ def step_8(can_p, vbf_header_original):
     """
     Teststep 8: 2nd Check memory with verification positive
     """
-    result = SSBL.check_memory(can_p, vbf_header_original, stepno=8,
-                               purpose="2nd Check memory with verification positive")
+    stepno = 8
+
+    purpose = "2nd Check memory with verification positive"
+    SUTE.print_test_purpose(stepno, purpose)
+
+    result = SE31.check_memory(can_p, vbf_header_original, stepno)
+
     result = result and (
         SSBL.pp_decode_routine_check_memory(SC.can_messages[can_p["receive"]][0][2])
         == 'The verification is passed'
