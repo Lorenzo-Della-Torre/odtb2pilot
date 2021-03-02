@@ -107,8 +107,11 @@ def step_4(can_p, vbf_header):
     """
     stepno = 4
     purpose = "Check memory with verification positive"
-    result = SSBL.check_memory(can_p, vbf_header,
-                               stepno, purpose)
+
+    SUTE.print_test_purpose(stepno, purpose)
+
+    result = SE31.check_memory(can_p, vbf_header, stepno)
+
     result = result and (SSBL.pp_decode_routine_check_memory
                          (SC.can_messages[can_p["receive"]][0][2])
                          == 'The verification is passed')
