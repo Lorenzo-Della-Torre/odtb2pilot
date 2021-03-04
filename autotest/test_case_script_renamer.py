@@ -6,14 +6,14 @@ Script to rename scripts according to SWRS
 import logging
 import argparse
 import os
+import sys
 import re
-import shutil
 import req_parser.rif_swrs_to_graph as rif_mod
 
 # Logging has different levels: DEBUG, INFO, WARNING, ERROR, and CRITICAL
 # Set the level you want to have printout in the console.
-logging.basicConfig(level=logging.INFO)
-LOGGER = logging.getLogger(__name__)
+logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Constants
 OWN_ID = "Own UUID"
@@ -35,7 +35,7 @@ def parse_some_args():
                         action='store',
                         dest='rif',
                         default='NOTE-SWRS-33754905-01-2.xml')
-    parser.add_argument("--script_folder",
+    parser.add_argument("--scriptfolder",
                         help="Folder where the scripts are located",
                         type=str,
                         action='store',
@@ -80,7 +80,7 @@ def rename_file(script_folder, file_name, new_file_name):
     '''
     file_and_path = script_folder + '/' + file_name
     new_file_and_path = script_folder + '/' + new_file_name
-    shutil.copy(file_and_path, new_file_and_path) # Make a copy with the new name
+    os.rename(file_and_path, new_file_and_path) # Make a copy with the new name
 
 
 def gen_file_name(req_id, var, rev, desc):
@@ -88,9 +88,9 @@ def gen_file_name(req_id, var, rev, desc):
     Returns the new file name
     '''
     if (req_id == '' or var == '' or rev == ''):
-        logging.warning('req_id(%s), var(%s) or rev(%s)', req_id, var, rev)
+        logger.warning('req_id(%s), var(%s) or rev(%s)', req_id, var, rev)
         return ''
-    file_name = f'e_{req_id}_{var}_{rev}_{desc}'
+    file_name = f'e_{req_id}_{var}_{rev}_{desc}.py'
     return file_name
 
 
@@ -117,7 +117,7 @@ def rename_files(reqprod_dict, script_folder):
         e_match = RE_REQPROD_ID.match(file)
         if e_match and file.endswith(".py"):
             e_key = str(e_match.group('reqprod'))
-            desc = e_match.group('desc')
+            desc = e_match.group('desc').lower()
             new_file_name = get_file_name(reqprod_dict, e_key, desc)
             if new_file_name:
                 rename_file(script_folder, file, new_file_name)
