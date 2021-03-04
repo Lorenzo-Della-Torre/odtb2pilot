@@ -5,6 +5,7 @@
 
 import logging
 import argparse
+import sys
 # pip install lxml
 from lxml import etree as ET # pylint: disable=c-extension-no-member
 import openpyxl
@@ -12,8 +13,8 @@ from neo4j import GraphDatabase
 
 # Logging has different levels: DEBUG, INFO, WARNING, ERROR, and CRITICAL
 # Set the level you want to have printout in the console.
-logging.basicConfig(level=logging.INFO)
-LOGGER = logging.getLogger(__name__)
+logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 OUTFOLDER = "output/"
 OWN_ID = "Own UUID"
@@ -45,14 +46,14 @@ def parse_some_args():
 
 def get_spec_dict(root):
     """ Parse and get data for the special attributes """
-    SPECTYPES = root.find('rif:SPEC-TYPES', NS)
+    spectypes = root.find('rif:SPEC-TYPES', NS)
 
     spec_dict = {}
 
-    for spectype in SPECTYPES:
+    for spectype in spectypes:
         tmp_dict = {}
         spec_long_name = spectype.find('rif:LONG-NAME', NS).text
-        LOGGER.info('Spec name: %s', spec_long_name)
+        logger.debug('Spec name: %s', spec_long_name)
         spec_identifier = spectype.find('rif:IDENTIFIER', NS).text
         # Find all attribute def as well
         tmp_attrib_list = []
@@ -67,25 +68,25 @@ def get_spec_dict(root):
         tmp_dict[ATTRIB] = tmp_attrib_list
         tmp_dict[SHORT] = short_name
         spec_dict[short_name] = tmp_dict
-    LOGGER.info(spec_dict)
+    logger.debug(spec_dict)
     # for key in spec_dict:
     #     print(key)
-    #     LOGGER.info(spec_dict[key]['ATTRIB'])
-    LOGGER.error(spec_dict['Hierarchy'])
+    #     logger.info(spec_dict[key]['ATTRIB'])
+    logger.debug(spec_dict['Hierarchy'])
     return spec_dict
 
 
 def get_spec_obj_dict(root, type_dict):
     """ Parse and get data for the special objects """
     # pylint: disable=too-many-locals
-    SPECOBJS = root.find('rif:SPEC-OBJECTS', NS)
+    specobjs = root.find('rif:SPEC-OBJECTS', NS)
 
     # Get the IDs for the spec types we are interested in
     ## REQ and REQPROD has same attibute
-    REQPROD_ID = type_dict['REQPROD'][ID]
-    REQSET_ID = type_dict['REQ-SET'][ID]
-    REQ_ID = type_dict['REQ'][ID]
-    FOLDER_ID = type_dict['FOLDER'][ID]
+    reqprod_id = type_dict['REQPROD'][ID]
+    reqset_id = type_dict['REQ-SET'][ID]
+    req_id = type_dict['REQ'][ID]
+    folder_id = type_dict['FOLDER'][ID]
 
     # Temporary dicts to be ut in the big dict when done.
     tmp_reqprod_dict = {}
@@ -96,26 +97,26 @@ def get_spec_obj_dict(root, type_dict):
     # Attrib of interest: ID, LongName, Type, list of AttribValueSimple
     spec_obj_dict = {}
 
-    for specobj in SPECOBJS:
+    for specobj in specobjs:
         if specobj.find('rif:TYPE/rif:SPEC-TYPE-REF', NS) is None:
-            LOGGER.info("Spec object without a type!")
+            logger.info("Spec object without a type!")
             continue
 
         spectype_id = specobj.find('rif:TYPE/rif:SPEC-TYPE-REF', NS).text
-        if spectype_id == REQPROD_ID:
+        if spectype_id == reqprod_id:
             reqprod_dict, obj_id = get_obj_data(specobj, \
                 type_dict['REQPROD'][ATTRIB])
             tmp_reqprod_dict[obj_id] = reqprod_dict
 
-        elif spectype_id == REQSET_ID:
+        elif spectype_id == reqset_id:
             reqset_dict, obj_id = get_obj_data(specobj, type_dict['REQ-SET'][ATTRIB])
             tmp_reqset_dict[obj_id] = reqset_dict
 
-        elif spectype_id == REQ_ID:
+        elif spectype_id == req_id:
             req_dict, obj_id = get_obj_data(specobj, type_dict['REQ'][ATTRIB])
             tmp_req_dict[obj_id] = req_dict
 
-        elif spectype_id == FOLDER_ID:
+        elif spectype_id == folder_id:
             folder_dict, obj_id = get_obj_data(specobj, type_dict['FOLDER'][ATTRIB])
             tmp_folder_dict[obj_id] = folder_dict
 
@@ -134,13 +135,13 @@ def get_hierarchy_dict(root, hier_info_dict):
     #  (and any attributes of interest)
     # Own identifier is found in other nodes that are already parsed (else those most be created)
     rel_dict = {}
-    HIER_ROOT = root.find('.//rif:SPEC-HIERARCHY-ROOT', NS)
+    hier_root = root.find('.//rif:SPEC-HIERARCHY-ROOT', NS)
     # Add check if the number is the same? Not necessary for now, assume generated data is correct.
-    HIER_ID = hier_info_dict[ID]
-    LOGGER.warning(HIER_ID)
+    hier_id = hier_info_dict[ID]
+    logger.debug(hier_id)
     # Keep it simple, optimize later. Find Children, and use xpath to get ID of parent.
     # Save the mapping to the spec obj (if any)
-    for child_node in HIER_ROOT.findall('.//rif:CHILDREN/rif:SPEC-HIERARCHY', NS):
+    for child_node in hier_root.findall('.//rif:CHILDREN/rif:SPEC-HIERARCHY', NS):
         #child_id = child_node.find('rif:IDENTIFIER', NS).text
         # one more dict to map identifier to spec-object?
         child_id = child_node.find('rif:OBJECT/rif:SPEC-OBJECT-REF', NS).text
@@ -149,9 +150,9 @@ def get_hierarchy_dict(root, hier_info_dict):
         parent_id_cand = child_node.find('../../rif:OBJECT/rif:SPEC-OBJECT-REF', NS)
         if parent_id_cand is not None:
             parent_id = parent_id_cand.text
-        #LOGGER.info(f'Child {child_id} has parent {parent_id}')
+        #logger.info(f'Child {child_id} has parent {parent_id}')
         rel_dict[child_id] = parent_id
-    #LOGGER.warning(rel_dict)
+    #logger.warning(rel_dict)
     return rel_dict
 
 ## Helper functions for parsing data
@@ -175,7 +176,7 @@ def parse_rif_to_dicts(rif_path):
     """ Get the required data for the nodes, then return the dicts """
     spec_dict = {} # dict with the info about SPEC-TYPE nodes
 
-    tree = ET.parse(rif_path)
+    tree = ET.parse(rif_path) # pylint: disable= c-extension-no-member
     root = tree.getroot()
 
     # need to identify what spec type is used, in order to parse
@@ -192,26 +193,26 @@ def parse_rif_to_dicts(rif_path):
 def write_xlsx_out(filepath, sp_dict, spobj_dict, child_to_parent_dict):
     """ Put data in a csv file which can be opened in Excel """
     # pylint: disable=too-many-locals
-    TYPE_LIST = ["REQPROD", "REQ", "REQ-SET", "FOLDER"]
+    type_list = ["REQPROD", "REQ", "REQ-SET", "FOLDER"]
     # Need to add info about own ID, and parent's ID (if existing)
 
     # ATTRIB is a list, get the keys for col headings for all the different TYPEs
-    col_names = create_col_names(sp_dict, TYPE_LIST)
-    wb = openpyxl.Workbook()
-    ws = wb.active
-    ws.title = "SWRS info"
+    col_names = create_col_names(sp_dict, type_list)
+    workbook = openpyxl.Workbook()
+    worksheet = workbook.active
+    worksheet.title = "SWRS info"
 
-    LOGGER.info("In the writing phase...")
+    logger.info("In the writing phase...")
     for col_cnt, col_name in enumerate(col_names, 1):
-        heading_cell = ws.cell(row=FIRSTLINE, column=col_cnt)
+        heading_cell = worksheet.cell(row=FIRSTLINE, column=col_cnt)
         heading_cell.style = 'Headline 1'
         heading_cell.value = col_name
     # Add the data...
     excel_line_cnt = FIRSTLINE
-    for type_name in TYPE_LIST:
+    for type_name in type_list:
         for obj_id in spobj_dict[type_name]:
             excel_line_cnt += 1
-            #LOGGER.error(spobj_dict[type_name][obj_id].keys())
+            #logger.error(spobj_dict[type_name][obj_id].keys())
             for col_cnt, col in enumerate(col_names, 1):
                 write_cell = None
                 if col == OWN_ID:
@@ -223,19 +224,19 @@ def write_xlsx_out(filepath, sp_dict, spobj_dict, child_to_parent_dict):
                     ver_id_value = spobj_dict[type_name][obj_id].get(col, "NA")
                     write_cell = f"easee:VCC_EEDM,{ver_id_value}"
                 else:
-                    #LOGGER.info(spobj_dict[type_name][obj_id])
+                    #logger.info(spobj_dict[type_name][obj_id])
                     write_cell = spobj_dict[type_name][obj_id].get(col, "-_-")
-                data_cell = ws.cell(row=excel_line_cnt, column=col_cnt)
+                data_cell = worksheet.cell(row=excel_line_cnt, column=col_cnt)
                 data_cell.value = write_cell
 
-    wb.save(filepath)
-    LOGGER.info("Written to file %s", filepath)
+    workbook.save(filepath)
+    logger.info("Written to file %s", filepath)
 
-def create_col_names(sp_dict, TYPE_LIST):
+def create_col_names(sp_dict, type_list):
     """ Return the column names """
     col_list = ["Class", "ID", "Revision", "Variant", "Name"]
     name_set = set()
-    for elektra_type in TYPE_LIST:
+    for elektra_type in type_list:
         for tup_text, _ in sp_dict[elektra_type][ATTRIB]:
             name_set.add(tup_text)
     # If class exists, then first. Also add the own+parent id columns
@@ -255,15 +256,15 @@ def neo_fix(node_dict, c2p_dict, neousr, neopw):
     uri = "bolt://localhost:7687"
     driver = GraphDatabase.driver(uri, auth=(neousr, neopw))
 
-    def create_elektranode(tx, el_type, attr):
-        tx.run(f"MERGE (a:{wash_char(el_type)} {{ {attr} }})")
+    def create_elektranode(neo_tx, el_type, attr):
+        neo_tx.run(f"MERGE (a:{wash_char(el_type)} {{ {attr} }})")
 
-    def create_elektrarel(tx, node, rel, other):
-        tx.run\
+    def create_elektrarel(neo_tx, node, rel, other):
+        neo_tx.run\
         (f"MATCH (a {{UUID: '{node}'}})\nMATCH (b {{UUID: '{other}'}})\nMERGE (a)-[r:{rel}]->(b)")
 
     for el_type in node_dict:
-        LOGGER.info('Neo4j working with %s', el_type)
+        logger.info('Neo4j working with %s', el_type)
         for obj in node_dict[el_type]:
             with driver.session() as session:
                 attrib_str = get_attib_str(node_dict[el_type][obj], obj)
@@ -287,7 +288,7 @@ def get_attib_str(obj_dict, obj_id):
 
 def main(margs):
     """ Main function """
-    LOGGER.info("In main!")
+    logger.debug("In main!")
     sp_dict, spobj_dict, child_to_parent_dict = parse_rif_to_dicts(margs.rif)
     # Map the data per node in order to generate an excel file
     # Need to set the graph adding here as well.
