@@ -30,9 +30,6 @@
     [ ! -d $TESTRUN ] && mkdir $TESTRUN
     echo "Results of testrun $TESTRUN:" >$TESTRUN\/Result.txt
 
-	# For smoketest (Cherrypicked scripts)
-	#python3 $TESTREPO/autotest/testcase_picker.py --txtfile $TESTREPO/autotest/smoke_test.txt --script_folder $TESTREPO/test_folder > testscripts_auto.lst
-	
 	# SWRS Testing
 	python3 $TESTREPO/autotest/testcase_picker.py --swrs NOTE-SWRS-33754905-01-2.xml --scriptfolder $TESTREPO/test_folder > testscripts_auto.lst
 
