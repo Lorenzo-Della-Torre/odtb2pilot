@@ -23,7 +23,7 @@ ID = 'ID'
 TYPE_LIST = ["REQPROD"] # Only interested in the REQPRODS
 
 
-RE_REQPROD_ID = re.compile(r'\s*BSW_REQPROD_(?P<reqprod>\d+)_(?P<desc>\w+).py', flags=re.IGNORECASE)
+RE_REQPROD_ID = re.compile(r'\s*BSW_REQPROD_(?P<reqprod>\d+)_(?P<desc>.*).py', flags=re.IGNORECASE)
 
 def parse_some_args():
     """Get the command line input, using the defined flags."""
@@ -121,6 +121,8 @@ def rename_files(reqprod_dict, script_folder):
             new_file_name = get_file_name(reqprod_dict, e_key, desc)
             if new_file_name:
                 rename_file(script_folder, file, new_file_name)
+        else:
+            logger.debug("No match: %s", file)
 
 
 def main(margs):
