@@ -36,22 +36,19 @@
     ### Run all testscripts found:
     while IFS= read -r line
     do
-		echo "###############################################################"
 		echo "Origin: $line"
 		echo $line | sed -E "s/(.*e_)([0-9]{3,}.*)(\.py)/python3 \1\2\3 >$TESTRUN\/e_\2.log/"
         script2run_log=$(echo $line | sed -E "s/(.*e_)([0-9]{3,}.*)(\.py)/e_\2.log/")
 		echo $script2run_log
-		echo "###############################################################"
-        python3 $TESTREPO/test_folder/on_the_fly_test/BSW_Set_ECU_to_default.py
+        echo "Set ECU to default"
+		python3 $TESTREPO/test_folder/on_the_fly_test/BSW_Set_ECU_to_default.py >/dev/null
         python3 $line >$TESTRUN/$script2run_log
         ### add REQ_NR, scriptresult, filename to result
         req_tested=$(echo $line | sed -E "s/(.*?e_)([0-9]{3,})(_.*)/\2/")
         testresult=$(tail -1 $TESTRUN/$script2run_log | sed -E "s/(Testcase result: )(.*)/\2/")
-  		echo "###############################################################"
 		echo "Requirement: $req_tested"
 		echo "Testresult: $testresult"
 		echo "Log: $script2run_log"
-		echo "###############################################################"
         echo "$req_tested $testresult $script2run_log" >>$TESTRUN\/Result.txt
     done <testscripts_auto.lst
 
