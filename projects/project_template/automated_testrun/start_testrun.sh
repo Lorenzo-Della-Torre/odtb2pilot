@@ -17,21 +17,21 @@ else
 	echo ODTBPROJPARAM: $ODTBPROJPARAM
 	echo PYTHONPATH: $PYTHONPATH
 
-        cd $TESTREPO
+    cd $TESTREPO
 	git pull
 	cd ~/testrun
 
 	# Execute test scripts
-        $TESTREPO/projects/project_template/automated_testrun/auto_testscript.sh
+    $TESTREPO/projects/project_template/automated_testrun/auto_testscript_swrs_rev_2.sh
 
 	# Generate did report
-        $TESTREPO/projects/project_template/automated_testrun/generate_did_report.sh
+    $TESTREPO/projects/project_template/automated_testrun/generate_did_report.sh
 
 	# Generate test stats plot graph
-        $TESTREPO/projects/project_template/automated_testrun/generate_plot_graph.sh
+    $TESTREPO/projects/project_template/automated_testrun/generate_plot_graph.sh
 
 	# Generate log report
-        $TESTREPO/projects/project_template/automated_testrun/generate_log_report.sh
+    $TESTREPO/projects/project_template/automated_testrun/generate_log_report.sh
 	
 	echo
 	echo "All scripts executed. All html reports generated"
