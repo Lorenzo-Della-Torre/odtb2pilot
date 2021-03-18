@@ -11,6 +11,7 @@ import os
 from os.path import isfile, join
 from collections import defaultdict
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 
 # Take the folder with test logs, and then have set per day, which is later put into a pole plot
 
@@ -33,9 +34,16 @@ def get_req_cnt(folder_path):
     LOG_FILE_EXT = ".log"
     req_set = set()
     RE_REQPROD_ID = re.compile(r'\s*BSW_REQPROD_(?P<reqprod>\d+)_', flags=re.IGNORECASE)
+    RE_REQPROD_ID_NEW = re.compile(
+        r'\s*e_(?P<reqprod>\d+)_(?P<var>[a-zA-Z]*|-)_(?P<rev>\d+)', 
+        flags=re.IGNORECASE)
     files = [file_name for file_name in os.listdir(folder_path)
              if (isfile(join(folder_path, file_name)) and file_name.endswith(LOG_FILE_EXT))]
     for file in files:
+        re_match_e = RE_REQPROD_ID_NEW.match(file)
+        if re_match_e:
+            req_set.add(re_match_e.group('reqprod'))
+            continue
         re_match = RE_REQPROD_ID.match(file)
         if re_match:
             req_set.add(re_match.group('reqprod'))
@@ -77,6 +85,13 @@ def create_stats_plot(plt_name, stat_sets):
     ax = plt.subplot(111)
     ax.bar(bar_xs, bar_ys, width=10)
     ax.xaxis_date()
+    # Setup the axis to not be clogged, small ticks for months
+    years = mdates.YearLocator()
+    months = mdates.MonthLocator()
+    fmyear = mdates.DateFormatter('%Y-%m')
+    ax.xaxis.set_major_locator(years)
+    ax.xaxis.set_major_formatter(fmyear)
+    ax.xaxis.set_minor_locator(months)
     ax.set(title="Number of REQPRODs covered during a day")
     plt.savefig(f"{plt_name}.svg", format="svg")
 
