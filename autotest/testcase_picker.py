@@ -25,7 +25,7 @@ TYPE_LIST = ["REQPROD"] # Only interested in the REQPRODS
 
 
 RE_REQPROD_ID = re.compile(r'\s*BSW_REQPROD_(?P<reqprod>\d+)_(?P<desc>\w+).py', flags=re.IGNORECASE)
-RE_FILE_NAME = re.compile(r'e_(?P<reqprod>\d+)_(?P<var>[a-zA-Z]*|-)_(?P<rev>\d+)_(?P<desc>\w+).py',
+RE_FILE_NAME = re.compile(r'e_(?P<reqprod>\d+)_(?P<var>[a-zA-Z]*|-)_(?P<rev>\d+)_(?P<desc>.*).py',
                           flags=re.IGNORECASE)
 
 def parse_some_args():
