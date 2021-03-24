@@ -1,6 +1,36 @@
 
 ## Setup
 
+### Naming
+
+In order to keep track of all the instances of ODTB2 we need to keep the naming consistent.
+
+Only lower case letters are allowed. For rigs that are used for a specific
+project, use the following naming scheme:
+
+```
+<project-name>-<ecu-type>-pi<number>
+```
+
+Example project rig host names:
+ - p519-hvbm-pi1
+ - p519-becm-pi1
+ - p519-hlcm-pi1
+ - p519-ed-ihfa-pi1
+
+For rigs that are used by a specific ART:
+
+```
+<art-name>-pi<number>
+```
+
+Example ART rig host names:
+ - bsw-pi1
+ - eps-pi1
+
+
+### Configuring the software on the raspberry pi
+
 Clone this repository. If you are setting up a Raspberry Pi for CI, then you
 probably want to use "Deploy Token" with read access. Otherwise, use your CDSID
 credentials.
