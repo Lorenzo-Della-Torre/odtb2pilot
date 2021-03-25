@@ -43,7 +43,7 @@ and avoids code duplication.
 ## Basic configuration
 
 You will find the basic configuration in
-`projects/MEP2_SPA1/parameters_yml/project_default.yml` where you can configure
+`projects/<platform>/parameters_yml/project_default.yml` where you can configure
 the request and result frame to use for the ECU under test.
 
 ## Supporting multiple platforms with the same test
@@ -53,7 +53,7 @@ newer HVBM ECU, it is by no means limited to those. Many of the test that we
 create can be reused when testing various platform, however we might need to
 provide the test with different parameters. That can be accomplished in test
 itself by calling `get_platform()` or you can use yaml configuration files for
-each platform that you place in the `projects/MEP2_SPA1/parameters_yml`
+each platform that you place in the `projects/<platform>/parameters_yml`
 directory.
 
 

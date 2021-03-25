@@ -14,7 +14,7 @@ project, use the following naming scheme:
 
 Example project rig host names:
  - p519-hvbm-pi1
- - p519-becm-pi1
+ - p319-becm-pi1
  - p519-hlcm-pi1
  - p519-ed-ihfa-pi1
 
