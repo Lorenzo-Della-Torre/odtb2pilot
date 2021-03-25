@@ -18,6 +18,8 @@ This documentation assumes that the reader has at least basic understanding of:
  - Python - https://docs.python.org/3/
  - Autosar - https://www.autosar.org/
  - Linux command line
+ - SSH - https://www.raspberrypi.org/documentation/remote-access/ssh/
+ - SSH on windows 10 - https://www.raspberrypi.org/documentation/remote-access/ssh/windows10.md
 
 ## Documentation
 
