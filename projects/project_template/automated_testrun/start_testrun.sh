@@ -22,7 +22,7 @@ else
 	cd ~/testrun
 
 	# Execute test scripts
-    $TESTREPO/projects/project_template/automated_testrun/auto_testscript_swrs_rev_2.sh
+    $TESTREPO/projects/project_template/automated_testrun/auto_testscript_swrs_rev_5.sh
 
 	# Generate did report
     $TESTREPO/projects/project_template/automated_testrun/generate_did_report.sh

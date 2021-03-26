@@ -116,6 +116,10 @@ def filter_files(reqprod_dict, script_folder):
             if fn_regexp:
                 req = str(fn_regexp.group('reqprod'))
                 var = str(fn_regexp.group('var'))
+                # In some cases we have removed the hyphen from the script name,
+                # but we still want to use it for comparison. So we set var to '-'
+                if var == '':
+                    var = '-'
                 rev = str(fn_regexp.group('rev'))
                 match = match_f(req, var, rev, reqprod_dict)
                 if match:
