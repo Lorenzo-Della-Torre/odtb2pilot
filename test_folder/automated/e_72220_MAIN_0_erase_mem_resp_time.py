@@ -1,27 +1,26 @@
-# Testscript ODTB2 MEPII
-# project:  BECM basetech MEPII
-# author:   J-ADSJO
-# date:     2021-02-24
-# version:  1.0
-# reqprod:  72220
+"""
+reqprod: 72220
+version: 1
+title: Erase Memory response time
+purpose:
+    Erasing Flash Memory is a time consuming routine that needs longer time
+    than allowed for other routines
 
-#inspired by https://grpc.io/docs/tutorials/basic/python.html
+description: >
+    The response time P4server_max for the Erase Memory routine shall be 60s.
 
-# Copyright 2015 gRPC authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+    If the data that shall be erased exceeds 1 megabyte, it is allowed to
+    increase the response time with 20s for each additional megabyte.
 
-"""The Python implementation of the gRPC route guide client."""
+    Data erase size (megabyte): 1, 2, -, 5
+
+    P4server_max (seconds): 60, 80, -, 140
+
+    The P4server_max for an ESS update shall be defined by the size of the
+    total memory, e.g. the sum of all erase requests for all programmable data
+    files
+
+"""
 
 import time
 from datetime import datetime
@@ -56,7 +55,7 @@ SE31 = SupportService31()
 # Support Function for flashing SW Parts
 def sw_part_erase_download_check(can_p: CanParam, file_n, stepno, purpose):
     """
-    Software Erase, Download and check
+    software erase, download and check
     """
     logging.info("sw_part_edc: %s", purpose)
     logging.info("sw_part_edc filename: %s", file_n)
@@ -94,10 +93,18 @@ def sw_part_erase_download_check(can_p: CanParam, file_n, stepno, purpose):
 
     return result
 
+def step_1(can_p: CanParam):
+    """
+    action: download and activate sbl
+    expected_result: positive reply
+    """
+    return SSBL.sbl_dl_activation(can_p, 1, "DL and activate SBL")
+
 
 def step_2(can_p: CanParam):
     """
-    Teststep 2: ESS Software Part Download
+    action: ess software part download
+    expected_result: positive reply
     """
     stepno = 2
     purpose = "ESS Software Part"
@@ -112,7 +119,8 @@ def step_2(can_p: CanParam):
 
 def step_3(can_p: CanParam):
     """
-    Teststep 3: Download other SW Parts
+    action: download other software parts
+    expected_result: positive reply
     """
     stepno = 3
     result = True
@@ -125,7 +133,8 @@ def step_3(can_p: CanParam):
 
 def step_4(can_p: CanParam):
     """
-    Teststep 4: Check Complete And Compatible
+    action: check complete and compatible
+    expected_result: positive reply
     """
     stepno = 4
     result = SSBL.check_complete_compatible_routine(can_p, stepno)
@@ -146,6 +155,21 @@ def step_4(can_p: CanParam):
               frame_type, frame_byte])
 
     return result
+
+def step_5(can_p: CanParam):
+    """
+    action: ecu reset - restart with downloaded sw
+    expected_result: ecu accepts reset request
+    """
+    return SE11.ecu_hardreset_5sec_delay(can_p)
+
+
+def step_6(can_p: CanParam):
+    """
+    action: check which mode ecu is in after reset
+    expected_result: all went well. boot up to mode 1
+    """
+    return SE22.read_did_f186(can_p, dsession=b'\x01')
 
 
 def run():
@@ -181,36 +205,19 @@ def run():
         ############################################
         # teststeps
         ############################################
-        # step 1:
-        # action: download and activate SBL
-        # result:
-        result = result and SSBL.sbl_dl_activation(can_p, 1, "DL and activate SBL")
+        result = result and step_1(can_p)
 
-        # step 2:
-        # action: ESS Software Part Download
-        # result:
         result = result and step_2(can_p)
 
-        # step 3:
-        # action: Download other SW Parts
-        # result:
         result = result and step_3(can_p)
 
-        # step 4:
-        # action: Check Complete And Compatible
-        # result:
         result = result and step_4(can_p)
 
-        # step 5:
-        # action: ECU reset - Restart with downloaded SW
-        # result: ECU accepts reset request
-        result_5 = SE11.ecu_hardreset_5sec_delay(can_p)
+        result_5 = step_5(can_p)
         result = result and result_5
 
-        # step 6:
-        # action: Check which Mode ECU is in after reset
-        # result: All went well. Boot up to Mode 1
-        result = result and SE22.read_did_f186(can_p, dsession=b'\x01')
+        result = result and step_6(can_p)
+
     ############################################
     # postCondition
     ############################################
