@@ -258,6 +258,7 @@ class SupportCAN:
         """
         # start every subscribe as extra thread as subscribe is blocking
         thread_1 = Thread(target=self.subscribe_to_sig, args=(can_p, timeout))
+        thread_1.name = "SubscribeThread"
         thread_1.deamon = True
         thread_1.start()
 
@@ -287,18 +288,20 @@ class SupportCAN:
     @classmethod
     def thread_stop(cls):
         """
-        thread_stop
+        stop any remaining active threads that we have created in support_can
+        with a join
         """
-        logging.debug("Active threads remaining: %s", threading.active_count())
-        #cleanup
-        #postcondition(network_stub)
-        while threading.active_count() > 1:
-            item = (threading.enumerate())[-1]
-            logging.debug("Thread to join %s", item)
-            item.join(5)
-            time.sleep(5)
-            logging.debug("Active thread after join %s", threading.active_count())
-            logging.debug("Thread enumerate %s", threading.enumerate())
+        logging.debug("Active threads: %s", threading.enumerate())
+        threads = [t.name for t in threading.enumerate()
+            if t.name in ["SignalThread", "PeriodicThread"]]
+
+        logging.debug("Signal or periodic threads remaining: %s", len(threads))
+
+        for thread in threads:
+            logging.debug("Joining thread: %s", thread)
+            thread.join()
+
+        logging.debug("Active threads: %s", threading.enumerate())
 
 
     def start_periodic(self, stub, per_param):
@@ -316,6 +319,7 @@ class SupportCAN:
 
         # start periodic, repeat every per_intervall (ms)
         thread_1 = Thread(target=self.send_periodic, args=(stub, per_param["name"]))
+        thread_1.name = "PeriodicThread"
         thread_1.daemon = True
         thread_1.start()
         logging.debug("Wait 1sec for periodic signal to start: %s", per_param["name"])
