@@ -258,6 +258,9 @@ class SupportCAN:
         """
         # start every subscribe as extra thread as subscribe is blocking
         thread_1 = Thread(target=self.subscribe_to_sig, args=(can_p, timeout))
+
+        # perhaps this should have a number attached like SubscribeThread-1
+        # since more than one signal is typically subscribed
         thread_1.name = "SubscribeThread"
         thread_1.deamon = True
         thread_1.start()
@@ -319,6 +322,8 @@ class SupportCAN:
 
         # start periodic, repeat every per_intervall (ms)
         thread_1 = Thread(target=self.send_periodic, args=(stub, per_param["name"]))
+
+        # perhaps this should have a number attached like PeriodicThread-1
         thread_1.name = "PeriodicThread"
         thread_1.daemon = True
         thread_1.start()
