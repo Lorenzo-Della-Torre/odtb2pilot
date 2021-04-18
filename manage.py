@@ -10,6 +10,7 @@ from supportfunctions.support_sddb import parse_sddb_file
 from supportfunctions.support_sddb import get_platform_dir
 from supportfunctions.support_sddb import get_sddb_file
 from supportfunctions.dvm import create_dvm
+from supportfunctions.testrunner import runner
 
 def check_install():
     """ Make sure that the installation is setup and configured properly """
@@ -79,12 +80,14 @@ def check_install():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(
-        format='%(levelname)s %(message)s', stream=sys.stdout,
-        level=logging.INFO)
     parser = ArgumentParser(
         description="Management commands for the odtb project"
     )
+    parser.add_argument(
+        '-l', '--log-level', dest="loglevel", default="info",
+        choices=["notset", "debug", "info", "warning", "error", "critical"],
+        help="set logging level")
+
     subparsers = parser.add_subparsers(dest="command")
     subparsers.add_parser(
         "sddb", help="Generates/updates the platform specific "
@@ -94,12 +97,28 @@ if __name__ == "__main__":
         "check", help="Does various checks to ensure that your "
         "system is setup correctly"
     )
+
     dvm_parser = subparsers.add_parser(
         "dvm", help="generate a new dvm document from the test script"
     )
     dvm_parser.add_argument('test_script')
 
+    run_parser = subparsers.add_parser(
+        "run", help="Test runner that tries to select the current branch "
+        "or gives you a list of test to select from"
+    )
+    run_parser.add_argument('reqprod', nargs='?')
+    run_parser.add_argument('--use-db', action="store_true")
+    run_parser.add_argument('--use-mq', action="store_true")
+
     args = parser.parse_args()
+
+    # we probably want to make all of the logging user configurable, but right
+    # not let's just start with the level
+    logging.basicConfig(
+        format='%(levelname)s %(message)s', stream=sys.stdout,
+        level=getattr(logging, args.loglevel.upper()))
+
     if not args.command:
         parser.print_help()
 
@@ -110,3 +129,5 @@ if __name__ == "__main__":
         check_install()
     elif args.command == 'dvm':
         create_dvm(args.test_script)
+    elif args.command == 'run':
+        runner(args)
