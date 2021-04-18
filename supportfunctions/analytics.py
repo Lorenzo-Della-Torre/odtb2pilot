@@ -9,6 +9,13 @@ import epsmsgbus
 
 import odtb_conf
 
+def require_use_epsmsgbus(func):
+    """Decorator to disable func if odtb_conf.USE_EPSMSGBUS is not True"""
+    def wrapper_require_use_epsmsgbus(*args, **kwargs):
+        if getattr(odtb_conf, "USE_EPSMSGBUS", False):
+            func(*args, **kwargs)
+    return wrapper_require_use_epsmsgbus
+
 class Odtb2TestSuiteDataAdapter(epsmsgbus.TestSuiteDataAdapter):
     """ODTB2 Test Suite"""
     def __init__(
@@ -93,6 +100,7 @@ class Odtb2TestStepDataAdapter(epsmsgbus.TestStepDataAdapter):
 
 
 # Just for convenience
+@require_use_epsmsgbus
 def testsuite_started():
     """Signal that test suite started. Link adapter and API function."""
     date =  datetime.utcnow().date()
@@ -102,33 +110,41 @@ def testsuite_started():
     epsmsgbus.testsuite_started(adapter, adapter.name)
 
 
+@require_use_epsmsgbus
 def testsuite_ended():
     """Signal that test suite ended. Link adapter and API function."""
     # No verdict = use the worst verdict of the test cases
     epsmsgbus.testsuite_ended()
 
 
+@require_use_epsmsgbus
 def testcase_started(name):
     """Signal that test case ended. Link adapter and API function."""
     adapter = Odtb2TestCaseDataAdapter(name)
     epsmsgbus.testcase_started(adapter, name)
 
 
-def testcase_ended(verdict):
+@require_use_epsmsgbus
+def testcase_ended(verdict, combine_steps=False):
     """Signal that test case ended. Link adapter and API function."""
+    if combine_steps:
+        teststep_ended(verdict)
     epsmsgbus.testcase_ended(verdict)
 
 
+@require_use_epsmsgbus
 def teststep_started(name):
     """Signal that test step started. Link adapter and API function."""
     adapter = Odtb2TestStepDataAdapter()
     epsmsgbus.teststep_started(adapter, name)
 
 
+@require_use_epsmsgbus
 def teststep_ended(verdict):
     """Signal that test step ended. Link adapter and API function."""
     epsmsgbus.teststep_ended(verdict)
 
+@require_use_epsmsgbus
 def messagehandler(use_db=False, use_mq=False):
     """Configure what to connect to"""
     epsmsgbus.messagehandler(use_db, use_mq)
