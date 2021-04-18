@@ -6,6 +6,7 @@ module and function docstrings.
 import importlib.util
 from pathlib import Path
 
+import logging
 import yaml
 from html_to_docx import add_html
 from markdown import markdown
@@ -17,17 +18,17 @@ from docx.enum.style import WD_STYLE_TYPE
 from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT
 from docx.enum.section import WD_ORIENTATION
 
-#pylint: disable=too-many-statements
-def create_dvm(test_file_py):
-    """
-    creates a docx document in the current work directory from test_file_py
-    """
-
-    # pylint: disable=no-member,too-many-locals
+def get_reqdata(test_file_py):
+    """get dict with all required reqdata attributes"""
     spec = importlib.util.spec_from_file_location("req_test", test_file_py)
     req_test = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(req_test)
-    reqdata = yaml.safe_load(req_test.__doc__)
+
+    try:
+        reqdata = yaml.safe_load(req_test.__doc__)
+    except yaml.scanner.ScannerError:
+        reqdata = {}
+
     reqdata.setdefault('reqprod', '')
     reqdata.setdefault('version', '')
     reqdata.setdefault('title', '')
@@ -37,16 +38,30 @@ def create_dvm(test_file_py):
     reqdata.setdefault('postcondition', 'Default session')
     reqdata.setdefault('details', '')
 
+    dut_is_imported = False
+    if 'Dut' in dir(req_test):
+        dut_is_imported = True
+        logging.debug("dut style testcase")
+
+    return req_test, reqdata, dut_is_imported
+
+#pylint: disable=too-many-statements
+def create_dvm(test_file_py):
+    """
+    creates a docx document in the current work directory from test_file_py
+    """
+    req_test, reqdata, _ = get_reqdata(test_file_py)
+
     steps = []
     for step_name in dir(req_test):
         if step_name.startswith("step_"):
             step = getattr(req_test, step_name)
-            d = yaml.safe_load(step.__doc__)
-            d.setdefault('action', '')
-            d.setdefault('expected_result', '')
-            d.setdefault('result', '')
-            d.setdefault('comment', '')
-            steps.append(d)
+            doc = yaml.safe_load(step.__doc__)
+            doc.setdefault('action', '')
+            doc.setdefault('expected_result', '')
+            doc.setdefault('result', '')
+            doc.setdefault('comment', '')
+            steps.append(doc)
 
     dvm = Document()
 
@@ -90,11 +105,11 @@ def create_dvm(test_file_py):
 
     dvm_heading = f'REQPROD {reqdata["reqprod"]} / MAIN ; {reqdata["version"]}'
 
-    p = dvm.add_paragraph(dvm_heading)
-    p.style = dvm.styles['Heading']
+    par = dvm.add_paragraph(dvm_heading)
+    par.style = dvm.styles['Heading']
 
-    p = dvm.add_paragraph('Tprocedure:')
-    p.style = dvm.styles['Heading']
+    par = dvm.add_paragraph('Tprocedure:')
+    par.style = dvm.styles['Heading']
 
     records = (
         ('General:', dvm_heading),
@@ -107,23 +122,23 @@ def create_dvm(test_file_py):
 
     for title, content in records:
         row = table.add_row()
-        p = row.cells[0].paragraphs[0]
-        p.style = body
-        p.text = title
+        par = row.cells[0].paragraphs[0]
+        par.style = body
+        par.text = title
         row.cells[0].vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.TOP
-        p = row.cells[1].paragraphs[0]
-        p.text = content
+        par = row.cells[1].paragraphs[0]
+        par.text = content
 
     row = table.add_row()
-    p = row.cells[0].paragraphs[0]
-    p.style = body
-    p.text = 'Description:'
-    p = row.cells[1].paragraphs[0]
+    par = row.cells[0].paragraphs[0]
+    par.style = body
+    par.text = 'Description:'
+    par = row.cells[1].paragraphs[0]
     description = reqdata['description']
     for paragraph in description.split('\n'):
         html = markdown(paragraph)
         if html:
-            p = add_html(p, html)
+            par = add_html(par, html)
 
     table.columns[0].width = Mm(26)
     table.columns[1].width = Mm(218.4)
@@ -131,18 +146,18 @@ def create_dvm(test_file_py):
     table = dvm.add_table(rows=1, cols=2)
     table.style = table_body
     row = table.rows[0]
-    p = row.cells[0].paragraphs[0]
-    p.style = body
-    p.text = "Precondition:"
-    p = row.cells[1].paragraphs[0]
-    p.text = reqdata["precondition"]
+    par = row.cells[0].paragraphs[0]
+    par.style = body
+    par.text = "Precondition:"
+    par = row.cells[1].paragraphs[0]
+    par.text = reqdata["precondition"]
     table.columns[0].width = Mm(27)
     table.columns[1].width = Mm(216)
 
     dvm.add_page_break()
 
-    p = dvm.add_paragraph("Test execution:")
-    p.style = body
+    par = dvm.add_paragraph("Test execution:")
+    par.style = body
 
     table = dvm.add_table(rows=1, cols=5)
     table.style = 'Table Grid'
@@ -153,13 +168,13 @@ def create_dvm(test_file_py):
     hdr_cells[3].text = 'Result'
     hdr_cells[4].text = 'Comment'
 
-    for step, d in enumerate(steps, 1):
+    for step, doc in enumerate(steps, 1):
         row = table.add_row()
         row.cells[0].text = str(step)
-        row.cells[1].text = d["action"]
-        row.cells[2].text = d["expected_result"]
-        row.cells[3].text = d["result"]
-        row.cells[4].text = d["comment"]
+        row.cells[1].text = doc["action"]
+        row.cells[2].text = doc["expected_result"]
+        row.cells[3].text = doc["result"]
+        row.cells[4].text = doc["comment"]
 
     table.columns[0].width = Mm(19)
     table.columns[1].width = Mm(71.3)
@@ -178,9 +193,9 @@ def create_dvm(test_file_py):
 
     for title, content in records:
         row = table.add_row()
-        p = row.cells[0].paragraphs[0]
-        p.style = body
-        p.text = title
+        par = row.cells[0].paragraphs[0]
+        par.style = body
+        par.text = title
         row.cells[0].vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.TOP
         row.cells[1].text = content
 
