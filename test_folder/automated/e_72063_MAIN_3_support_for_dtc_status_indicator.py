@@ -1,6 +1,7 @@
 '''Import script - Inherited from older version of requirement'''
 
-from e_76601_MAIN_1_routinecontrol__31__default_session import run
+from e_72063_MAIN_1_support_for_dtc_status_indicator import run
 
 if __name__ == '__main__':
-    run()
+     run()
+
