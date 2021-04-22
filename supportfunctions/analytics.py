@@ -2,6 +2,7 @@
 Add results from ODTB2 test to JAKOB db and the cynosure message bus
 """
 
+import sys
 from secrets import token_urlsafe
 from datetime import datetime
 
@@ -9,10 +10,38 @@ import epsmsgbus
 
 import odtb_conf
 
+required_attr = [
+    "TEST_SUITE_NAME",
+    "TEST_SUITE_IDENTIFIER",
+    "TEST_SUITE_DESCRIPTION",
+    "EXECUTOR",
+    "PROJECT",
+    "PLATFORM",
+    "BRANCH",
+    "ECU",
+    "DBC",
+    "VEHICLE_PROJECT",
+    "VEHICLE_SERIES",
+    "SW_VERSION",
+    "SW_GITHASH",
+    "SW_CHANGESET",
+    "SW_INHOUSECHANGESET",
+    "TESTENV_INFO_NAME",
+    "TESTENV_INFO_DESCRIPTION",
+    "TESTENV_INFO_PLATFORM",
+]
+
+def analytics_config(name):
+    """Get config names or a default dummy value"""
+    return getattr(odtb_conf, name, "UNKNOWN")
+
 def require_use_epsmsgbus(func):
     """Decorator to disable func if odtb_conf.USE_EPSMSGBUS is not True"""
     def wrapper_require_use_epsmsgbus(*args, **kwargs):
         if getattr(odtb_conf, "USE_EPSMSGBUS", False):
+            for attr in required_attr:
+                if not hasattr(odtb_conf, attr):
+                    sys.exit(f"analytics error: {attr} is not configured in odtb_conf")
             func(*args, **kwargs)
     return wrapper_require_use_epsmsgbus
 
@@ -20,8 +49,8 @@ class Odtb2TestSuiteDataAdapter(epsmsgbus.TestSuiteDataAdapter):
     """ODTB2 Test Suite"""
     def __init__(
             self,
-            name=odtb_conf.TEST_SUITE_NAME,
-            identifier=odtb_conf.TEST_SUITE_IDENTIFIER,
+            name=analytics_config("TEST_SUITE_NAME"),
+            identifier=analytics_config("TEST_SUITE_IDENTIFIER"),
             jobid='SET_JOBID'):
         self.name = name
         self.id = identifier # pylint: disable=invalid-name
@@ -42,43 +71,43 @@ class Odtb2TestSuiteDataAdapter(epsmsgbus.TestSuiteDataAdapter):
         """Return information about the test execution itself."""
         return epsmsgbus.ExecutionInfo(
                 name=self.jobid,
-                description=odtb_conf.TEST_SUITE_DESCRIPTION,
-                executor=odtb_conf.EXECUTOR)
+                description=analytics_config("TEST_SUITE_DESCRIPTION"),
+                executor=analytics_config("EXECUTOR"))
 
     def get_simulation_info(self):
         """Return information about the virtual simulation model running on the
         HIL simulator."""
-        project = odtb_conf.PROJECT
-        ecu = odtb_conf.ECU
+        project = analytics_config("PROJECT")
+        ecu = analytics_config("ECU")
         token = token_urlsafe(7)
         date =  datetime.utcnow().date()
         build_id = f"ODTB2_{project}_{ecu}_{date}_{token}"
         return epsmsgbus.SimulationInfo(
                 build_id=build_id,
                 project=project,
-                branch=odtb_conf.BRANCH,
+                branch=analytics_config("BRANCH"),
                 ecu=ecu,
-                dbc=odtb_conf.DBC)
+                dbc=analytics_config("DBC"))
 
 
     def get_software_info(self):
         """Return information about the software under test."""
         return epsmsgbus.SoftwareInfo(
-                ecu=odtb_conf.ECU,
-                platform=odtb_conf.PLATFORM,
-                vehicle_project=odtb_conf.VEHICLE_PROJECT,
-                vehicle_series=odtb_conf.VEHICLE_SERIES,
-                version=odtb_conf.SW_VERSION,
-                githash=odtb_conf.SW_GITHASH,
-                changeset=odtb_conf.SW_CHANGESET,
-                inhousechangeset=odtb_conf.SW_INHOUSECHANGESET)
+                ecu=analytics_config("ECU"),
+                platform=analytics_config("PLATFORM"),
+                vehicle_project=analytics_config("VEHICLE_PROJECT"),
+                vehicle_series=analytics_config("VEHICLE_SERIES"),
+                version=analytics_config("SW_VERSION"),
+                githash=analytics_config("SW_GITHASH"),
+                changeset=analytics_config("SW_CHANGESET"),
+                inhousechangeset=analytics_config("SW_INHOUSECHANGESET"))
 
     def get_testenv_info(self):
         """Return information about the test environment."""
         return epsmsgbus.TestEnvironmentinfo(
-                name=odtb_conf.TESTENV_INFO_NAME,
-                description=odtb_conf.TESTENV_INFO_DESCRIPTION,
-                platform=odtb_conf.TESTENV_INFO_PLATFORM)
+                name=analytics_config("TESTENV_INFO_NAME"),
+                description=analytics_config("TESTENV_INFO_DESCRIPTION"),
+                platform=analytics_config("TESTENV_INFO_PLATFORM"))
 
 
 class Odtb2TestCaseDataAdapter(epsmsgbus.TestCaseDataAdapter):
