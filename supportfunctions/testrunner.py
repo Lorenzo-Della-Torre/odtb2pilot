@@ -72,3 +72,9 @@ def runner(args):
             test_files = get_automated_files("*.py")
 
     run_tests(test_files, args.use_db, args.use_mq)
+
+def nightly(args):
+    """ run the nighly test from list """
+    with open(args.testfile_list) as testfile_list:
+        l = [t.strip() for t in testfile_list.readlines()]
+        run_tests(l, args.use_db, args.use_mq)

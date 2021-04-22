@@ -11,6 +11,7 @@ from supportfunctions.support_sddb import get_platform_dir
 from supportfunctions.support_sddb import get_sddb_file
 from supportfunctions.dvm import create_dvm
 from supportfunctions.testrunner import runner
+from supportfunctions.testrunner import nightly
 
 def check_install():
     """ Make sure that the installation is setup and configured properly """
@@ -111,6 +112,13 @@ if __name__ == "__main__":
     run_parser.add_argument('--use-db', action="store_true")
     run_parser.add_argument('--use-mq', action="store_true")
 
+    nightly_parser = subparsers.add_parser(
+        "nightly", help="Run nightly tests from file"
+    )
+    nightly_parser.add_argument('testfile_list', help="file with each test listed")
+    nightly_parser.add_argument('--use-db', action="store_true")
+    nightly_parser.add_argument('--use-mq', action="store_true")
+
     args = parser.parse_args()
 
     # we probably want to make all of the logging user configurable, but right
@@ -131,3 +139,5 @@ if __name__ == "__main__":
         create_dvm(args.test_script)
     elif args.command == 'run':
         runner(args)
+    elif args.command == 'nightly':
+        nightly(args)
