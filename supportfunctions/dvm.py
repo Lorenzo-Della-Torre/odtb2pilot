@@ -29,6 +29,11 @@ def get_reqdata(test_file_py):
     except yaml.scanner.ScannerError:
         reqdata = {}
 
+    if isinstance(reqdata, str):
+        # if the module header is only a string we do not get a dictionary from
+        # the yaml parser
+        reqdata = {}
+
     reqdata.setdefault('reqprod', '')
     reqdata.setdefault('version', '')
     reqdata.setdefault('title', '')
