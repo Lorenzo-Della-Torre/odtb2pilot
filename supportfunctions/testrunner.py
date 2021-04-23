@@ -5,6 +5,7 @@ import re
 import logging
 import sys
 import importlib
+from datetime import datetime
 from pathlib import Path
 
 from pygit2 import Repository
@@ -13,13 +14,22 @@ from pyfzf.pyfzf import FzfPrompt
 from supportfunctions import analytics
 from supportfunctions.dvm import get_reqdata
 
+from test_folder.on_the_fly_test.BSW_Set_ECU_to_default import run as set_ecu_to_default
 
-def run_tests(test_files, use_db=False, use_mq=False):
+def run_tests(
+        test_files, use_db=False, use_mq=False, save_result=False,
+        reset_between=False):
     """
     run tests from list of tests and optionally log to message bus and/or db
     """
     analytics.messagehandler(use_db=use_db, use_mq=use_mq)
     analytics.testsuite_started()
+
+    if save_result:
+        now = datetime.now().strftime("%Y%m%d_%H%M")
+        test_res_dir = Path(f"Testrun_{now}_BECM_BT")
+        test_res_dir.mkdir(exist_ok=True)
+
     for test_file_py in test_files:
         req_test, reqdata, dut_is_imported = get_reqdata(test_file_py)
 
@@ -40,10 +50,31 @@ def run_tests(test_files, use_db=False, use_mq=False):
             "overriding sys.argv to make test specific yaml files load: %s",
             sys.argv)
 
+        if reset_between:
+            # run a reset test script
+            set_ecu_to_default()
+
+        if save_result:
+            # Remove all handlers associated with the root logger object.
+            for handler in logging.root.handlers[:]:
+                logging.root.removeHandler(handler)
+
+            log_file = test_res_dir.joinpath(test_file_py.with_suffix('.log').name)
+
+            # Configure a new handlers for this test
+            logging.basicConfig(
+                filename=log_file, format=' %(message)s', level=logging.INFO)
+            logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
+
         spec = importlib.util.spec_from_file_location("req_test", test_file_py)
         req_test = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(req_test)
         req_test.run()
+
+        if save_result:
+            # Remove all handlers associated with the root logger object.
+            for handler in logging.root.handlers[:]:
+                logging.root.removeHandler(handler)
 
     analytics.testsuite_ended()
 
@@ -71,11 +102,14 @@ def runner(args):
             # select from all available automated tests
             test_files = get_automated_files("*.py")
 
-    run_tests(test_files, args.use_db, args.use_mq)
+    run_tests(
+        test_files, args.use_db, args.use_mq, args.save_result,
+        args.reset_between)
 
 def nightly(args):
     """ run the nighly test from list """
     with open(args.testfile_list) as testfile_list:
-        l = [Path(t.strip()) for t in testfile_list.readlines()]
-        run_tests(l, args.use_db, args.use_mq)
-
+        test_files = [Path(t.strip()) for t in testfile_list.readlines()]
+        run_tests(
+            test_files, args.use_db, args.use_mq, save_result=True,
+            reset_between=True)

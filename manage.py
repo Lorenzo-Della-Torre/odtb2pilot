@@ -116,6 +116,8 @@ if __name__ == "__main__":
     run_parser.add_argument('reqprod', nargs='?')
     run_parser.add_argument('--use-db', action="store_true")
     run_parser.add_argument('--use-mq', action="store_true")
+    run_parser.add_argument('--save-result', action="store_true")
+    run_parser.add_argument('--reset-between', action="store_true")
 
     nightly_parser = subparsers.add_parser(
         "nightly", help="Run nightly tests from file"
