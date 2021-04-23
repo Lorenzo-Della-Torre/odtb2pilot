@@ -72,6 +72,7 @@ def run_tests(
             req_test.run()
         except: # pylint: disable=bare-except
             logging.critical("Testcase failed: %s", sys.exc_info()[0])
+            analytics.testcase_ended("errored", combine_steps=(not dut_is_imported))
             # this should probably be logged as an ERRORED in the result file
 
         if save_result:
