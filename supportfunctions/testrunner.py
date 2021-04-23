@@ -66,9 +66,9 @@ def run_tests(
 
         spec = importlib.util.spec_from_file_location("req_test", test_file_py)
         req_test = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(req_test)
 
         try:
+            spec.loader.exec_module(req_test)
             req_test.run()
         except: # pylint: disable=bare-except
             logging.critical("Testcase failed: %s", sys.exc_info()[0])
