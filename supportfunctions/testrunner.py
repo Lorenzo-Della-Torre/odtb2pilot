@@ -86,7 +86,7 @@ def run_tests(
             # open log file and check for result
             with open(log_file) as log_file_handle:
                 for line in log_file_handle.readlines():
-                    match = re.search(r'Testcase result: (\w+)', line)
+                    match = re.search(r'Testcase result: (.*)', line)
 
                 # to emulated the bash script that we are replacing we add
                 # this to the result file if there is no result. We might
