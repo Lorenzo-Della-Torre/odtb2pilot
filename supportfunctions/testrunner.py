@@ -16,6 +16,7 @@ from supportfunctions.dvm import get_reqdata
 
 from test_folder.on_the_fly_test.BSW_Set_ECU_to_default import run as set_ecu_to_default
 
+# pylint: disable=too-many-locals
 def run_tests(
         test_files, use_db=False, use_mq=False, save_result=False,
         reset_between=False):
@@ -55,26 +56,47 @@ def run_tests(
             set_ecu_to_default()
 
         if save_result:
-            # Remove all handlers associated with the root logger object.
-            for handler in logging.root.handlers[:]:
-                logging.root.removeHandler(handler)
-
             log_file = test_res_dir.joinpath(test_file_py.with_suffix('.log').name)
-
-            # Configure a new handlers for this test
-            logging.basicConfig(
-                filename=log_file, format=' %(message)s', level=logging.INFO)
-            logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
+            log_file_handler = logging.FileHandler(log_file)
+            log_file_handler.setFormatter(logging.Formatter(" %(message)s"))
+            log_file_handler.setLevel(logging.INFO)
+            logging.root.addHandler(log_file_handler)
 
         spec = importlib.util.spec_from_file_location("req_test", test_file_py)
         req_test = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(req_test)
-        req_test.run()
+
+        try:
+            req_test.run()
+        except: # pylint: disable=bare-except
+            logging.critical("Testcase failed: %s", sys.exc_info()[0])
+            # this should probably be logged as an ERRORED in the result file
 
         if save_result:
-            # Remove all handlers associated with the root logger object.
-            for handler in logging.root.handlers[:]:
-                logging.root.removeHandler(handler)
+            logging.root.removeHandler(log_file_handler)
+
+            reqprod_match = re.search(r'^e_(\d{5,6})_', test_file_py.name)
+            if not reqprod_match:
+                sys.exit("Got a test with an incorrect format {test_file_py}")
+            reqprod = reqprod_match.group(1)
+
+            # open log file and check for result
+            with open(log_file) as log_file_handle:
+                for line in log_file_handle.readlines():
+                    match = re.search(r'Testcase result: (\w+)', line)
+
+                # to emulated the bash script that we are replacing we add
+                # this to the result file if there is no result. We might
+                # want to consider adding an ERRORED state instead, but
+                # that will have to come later
+                result = ""
+                if match:
+                    result = match.group(1)
+
+                # append to result file
+                result_file = test_res_dir.joinpath('Result.txt')
+                with open(result_file, mode='a') as result_file_handle:
+                    result_file_handle.write(f"{reqprod} {result} {log_file.name}\n")
 
     analytics.testsuite_ended()
 
