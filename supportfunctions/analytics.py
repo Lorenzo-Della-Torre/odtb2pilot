@@ -74,7 +74,7 @@ class Odtb2TestSuiteDataAdapter(epsmsgbus.TestSuiteDataAdapter):
                 description=analytics_config("TEST_SUITE_DESCRIPTION"),
                 executor=analytics_config("EXECUTOR"))
 
-    def get_simulation_info(self):
+    def get_simulation_info(self): #pylint: disable=no-self-use
         """Return information about the virtual simulation model running on the
         HIL simulator."""
         project = analytics_config("PROJECT")
@@ -90,7 +90,7 @@ class Odtb2TestSuiteDataAdapter(epsmsgbus.TestSuiteDataAdapter):
                 dbc=analytics_config("DBC"))
 
 
-    def get_software_info(self):
+    def get_software_info(self): #pylint: disable=no-self-use
         """Return information about the software under test."""
         return epsmsgbus.SoftwareInfo(
                 ecu=analytics_config("ECU"),
@@ -102,7 +102,7 @@ class Odtb2TestSuiteDataAdapter(epsmsgbus.TestSuiteDataAdapter):
                 changeset=analytics_config("SW_CHANGESET"),
                 inhousechangeset=analytics_config("SW_INHOUSECHANGESET"))
 
-    def get_testenv_info(self):
+    def get_testenv_info(self): #pylint: disable=no-self-use
         """Return information about the test environment."""
         return epsmsgbus.TestEnvironmentinfo(
                 name=analytics_config("TESTENV_INFO_NAME"),
@@ -110,16 +110,17 @@ class Odtb2TestSuiteDataAdapter(epsmsgbus.TestSuiteDataAdapter):
                 platform=analytics_config("TESTENV_INFO_PLATFORM"))
 
 
-class Odtb2TestCaseDataAdapter(epsmsgbus.TestCaseDataAdapter):
+class Odtb2TestCaseDataAdapter(epsmsgbus.TestCaseDataAdapter): #pylint: disable=too-few-public-methods
     """Adapter for metadata from test cases and test steps. Only 'get_taskid()'
     is mandatory."""
     def __init__(self, name):
         self.name = name
 
 
-class Odtb2TestStepDataAdapter(epsmsgbus.TestStepDataAdapter):
+class Odtb2TestStepDataAdapter(epsmsgbus.TestStepDataAdapter): #pylint: disable=too-few-public-methods
     """ODTB2 adapter for test steps"""
-    def get_testcode_info(self):
+    def get_testcode_info(self): #pylint: disable=no-self-use
+        """Get testcode info"""
         # No requirement info on test step level
         return epsmsgbus.TestCodeInfo(
                 author='ODTB2',

@@ -16,7 +16,8 @@ from supportfunctions.dvm import get_reqdata
 
 from test_folder.on_the_fly_test.BSW_Set_ECU_to_default import run as set_ecu_to_default
 
-# pylint: disable=too-many-locals
+# this need to be fixed
+# pylint: disable=too-many-locals, too-many-branches, too-many-statements
 def run_tests(
         test_files, use_db=False, use_mq=False, save_result=False,
         reset_between=False):
@@ -30,6 +31,7 @@ def run_tests(
         now = datetime.now().strftime("%Y%m%d_%H%M")
         test_res_dir = Path(f"Testrun_{now}_BECM_BT")
         test_res_dir.mkdir(exist_ok=True)
+        result_file = test_res_dir.joinpath('Result.txt')
 
     for test_file_py in test_files:
         req_test, reqdata, dut_is_imported = get_reqdata(test_file_py)
@@ -94,9 +96,13 @@ def run_tests(
                     result = match.group(1)
 
                 # append to result file
-                result_file = test_res_dir.joinpath('Result.txt')
                 with open(result_file, mode='a') as result_file_handle:
                     result_file_handle.write(f"{reqprod} {result} {log_file.name}\n")
+
+    if save_result:
+        with open(result_file, mode='a') as result_file_handle:
+            now = datetime.now().strftime("%Y%m%d %H%M")
+            result_file_handle.write(f"Test done. Time: {now}")
 
     analytics.testsuite_ended()
 
