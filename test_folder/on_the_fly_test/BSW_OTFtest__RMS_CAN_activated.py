@@ -1,4 +1,4 @@
-# Testscript ODTB2 MEPII
+# Testscript Hilding MEPII
 # project:  BECM basetech MEPII
 # author:   G-HERMA6 (Gunnar Hermansson)
 # date:     2020-10-21

@@ -1,4 +1,4 @@
-# Testscript ODTB2 MEPII
+# Testscript Hilding MEPII
 # project:  BECM basetech MEPII
 # author:   LDELLATO (Lorenzo Della Torre)
 # date:     2020-01-14
@@ -183,4 +183,3 @@ def run():
 
 if __name__ == '__main__':
     run()
-    

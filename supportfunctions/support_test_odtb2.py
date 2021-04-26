@@ -1,4 +1,4 @@
-# project:  ODTB2 testenvironment using SignalBroker
+# project:  Hilding testenvironment using SignalBroker
 # author:   FJANSSO8 (Fredrik Jansson)
 # date:     2020-05-12
 # version:  1.4
@@ -132,7 +132,7 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
                  can_p: CanParam,
                  cpay: CanPayload, etp: CanTestExtra):# pylint: disable=too-many-statements
         """
-        teststep for ODTB2 testenvironment
+        teststep for Hilding testenvironment
 
         step_no          integer    teststep
         purpose          string     purpose of teststep

@@ -1,5 +1,5 @@
 """ Testscript for a not testable requirement (not applicable) """
-# Testscript ODTB2 MEPII
+# Testscript Hilding MEPII
 # project:  BECM basetech MEPII
 # author:   fjansso8 (Fredrik Jansson)
 # date:     2020-03-18

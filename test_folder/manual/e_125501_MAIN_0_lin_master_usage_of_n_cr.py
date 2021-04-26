@@ -1,7 +1,7 @@
 """ Testscript for a requirement which is not applicable for us (Not applicable).
     For example: Test multiple processors when you only have one.
 
-    Testscript  ODTB2 MEPII
+    Testscript  Hilding MEPII
     project     BECM basetech MEPII
     author      HWEILER (Hans-Klaus Weiler)
     date:     2020-05-11

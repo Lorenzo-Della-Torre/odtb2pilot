@@ -1,4 +1,4 @@
-# Testscript ODTB2 MEPII
+# Testscript Hilding MEPII
 # project: ECU basetech MEPII
 # author:  J-ADSJO
 # date:    2021-01-07

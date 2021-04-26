@@ -1,4 +1,4 @@
-# Testscript ODTB2 MEPII
+# Testscript Hilding MEPII
 # project:  BECM basetech MEPII
 # author:   TALURU(Tanuj Kumar Aluru)
 # date:     2020-11-12
@@ -206,4 +206,3 @@ def run():
 
 if __name__ == '__main__':
     run()
-    

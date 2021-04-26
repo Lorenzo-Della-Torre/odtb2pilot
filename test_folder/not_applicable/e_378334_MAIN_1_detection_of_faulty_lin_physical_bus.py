@@ -1,4 +1,4 @@
-# Testscript ODTB2 MEPII
+# Testscript Hilding MEPII
 # project:  BECM basetech MEPII
 # author:   J-ADSJO (Johan Adsjö)
 # date:     2021-01-08

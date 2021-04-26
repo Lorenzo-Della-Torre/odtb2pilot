@@ -1,4 +1,4 @@
-# Testscript ODTB2 MEPII
+# Testscript Hilding MEPII
 # project:  BECM basetech MEPII
 # author:   FJANSSO8 (Fredrik Jansson)
 # date:     2019-12-16

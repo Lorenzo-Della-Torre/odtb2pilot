@@ -1,5 +1,5 @@
 """
-project:  ODTB2
+project:  Hilding
 author:   DHJELM (Daniel Hjelm)
 date:     2020-12-09
 

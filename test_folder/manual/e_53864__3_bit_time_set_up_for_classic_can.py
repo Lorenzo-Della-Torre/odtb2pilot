@@ -1,7 +1,7 @@
 """ Testscript for a requirement which needs to be tested by code inspection (To be inspected).
     For example: Test multiple processors when you only have one.
 
-    Testscript ODTB2 MEPII
+    Testscript Hilding MEPII
     project:  BECM basetech MEPII
     author:   LDELLATO (Lorenzo Della Torre)
     date:     2020-06-30

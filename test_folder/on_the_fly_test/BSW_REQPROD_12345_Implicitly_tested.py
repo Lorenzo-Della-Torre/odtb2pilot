@@ -1,6 +1,6 @@
 """ Testscript for an implicitly tested requirement (tested implicitly)
 
-    Testscript  ODTB2 MEPII
+    Testscript  Hilding MEPII
     project     BECM basetech MEPII
     author      USERNAME (firstname surname)
     date        YYYY-MM-DD
