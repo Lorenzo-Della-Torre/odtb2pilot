@@ -150,6 +150,8 @@ class SmartOpener():
             writes to file
         """
         if filename and filename != '-':
+            # to fix pylint warning: consider-using-with
+            # pylint: disable=E0012, R1732
             file_h = open(file=filename, mode=mode)
         else:
             file_h = sys.stdout.buffer
@@ -170,6 +172,8 @@ class SmartOpener():
             reads from file
         """
         if filename and filename != '-':
+            # to fix pylint warning: consider-using-with
+            # pylint: disable=E0012, R1732
             file_h = open(file=filename, mode=mode)
         else:
             file_h = sys.stdin.buffer

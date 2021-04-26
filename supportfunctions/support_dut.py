@@ -139,12 +139,11 @@ class Dut:
         """ Upload configuration file to the beamy signal broker """
         sha256 = get_sha256(path)
         logging.info(sha256)
-        f = open(path, "rb")
-
-        # make sure path is unix style (necessary for windows, and does no harm
-        # on linux)
-        upload_iterator = generate_data(
-            f, dest_path.replace(ntpath.sep, posixpath.sep), 1000000, sha256)
+        with open(path, "rb") as f:
+            # make sure path is unix style (necessary for windows, and does no harm
+            # on linux)
+            upload_iterator = generate_data(
+                f, dest_path.replace(ntpath.sep, posixpath.sep), 1000000, sha256)
         response = self.system_stub.UploadFile(upload_iterator)
         logging.info("uploaded: %s %s", path, response)
 
@@ -310,8 +309,8 @@ def get_parameters(custom_yml_file=None):
 
 def get_sha256(filename):
     """ Helper function for the file upload process """
-    f = open(filename,"rb")
-    byte_string = f.read() # read entire file as bytes
+    with open(filename,"rb") as f:
+        byte_string = f.read() # read entire file as bytes
     readable_hash = hashlib.sha256(byte_string).hexdigest()
     return readable_hash
 
