@@ -1,4 +1,4 @@
-# project:  ODTB2 testenvironment using SignalBroker
+# project:  Hilding testenvironment using SignalBroker
 # author:   LDELLATO (Lorenzo Della Torre)
 # date:     2019-12-11
 # version:  0.1

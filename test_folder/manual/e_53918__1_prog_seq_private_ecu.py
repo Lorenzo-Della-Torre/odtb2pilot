@@ -1,4 +1,4 @@
-""" Testscript ODTB2 MEPII
+""" Testscript Hilding MEPII
 project:  BECM basetech MEPII
 author:   hweiler (Hans-Klaus Weiler)
 date:     2020-03-09

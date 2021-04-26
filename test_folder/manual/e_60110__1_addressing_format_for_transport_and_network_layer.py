@@ -1,4 +1,4 @@
-""" Testscript ODTB2 MEPII
+""" Testscript Hilding MEPII
     project:  BECM basetech MEPII
     author:   NOA (ANDREAS NORRSTIG)
     date:     2020-11-13

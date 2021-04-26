@@ -443,7 +443,7 @@ def generate_html(folderinfo_and_result_tuple_list, outfile, verif_d,  # pylint:
                     with tag('th', klass="main", colspan='3'):
                         text('')
                     with tag('th', klass="main", colspan=amount_of_testruns):
-                        text('TestResult-ODTB2')
+                        text('TestResult-Hilding')
                 with tag('tr'):
                     # Heading - Second row
                     for heading in HEADING_LIST:

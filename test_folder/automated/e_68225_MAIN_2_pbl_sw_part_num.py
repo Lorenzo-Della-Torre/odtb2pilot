@@ -1,5 +1,5 @@
 """
-testscript: ODTB2 MEPII
+testscript: Hilding MEPII
 project:   BECM basetech MEPII
 author:    GANDER10 (Gustav Andersson)
 date:      2020-12-28

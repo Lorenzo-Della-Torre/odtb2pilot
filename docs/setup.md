@@ -3,7 +3,7 @@
 
 ### Naming
 
-In order to keep track of all the instances of ODTB2 we need to keep the naming consistent.
+In order to keep track of all the instances of Hilding we need to keep the naming consistent.
 
 Only lower case letters are allowed. For rigs that are used for a specific
 project, use the following naming scheme:

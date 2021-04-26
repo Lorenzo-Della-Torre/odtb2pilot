@@ -1,5 +1,5 @@
 """
-Testscript ODTB2 MEPII
+Testscript Hilding MEPII
 project:  BECM basetech MEPII
 author:   DHJELM (Daniel Hjelm)
 date:     2020-11-16

@@ -1,6 +1,6 @@
 """ Testscript for a requirement which can't be automated and needs to be manually tested.
 
-    Testscript  ODTB2 MEPII
+    Testscript  Hilding MEPII
     project     BECM basetech MEPII
     author      USERNAME (firstname surname)
     date        YYYY-MM-DD

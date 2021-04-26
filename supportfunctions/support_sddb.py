@@ -1,5 +1,5 @@
 """
-project:  ODTB2
+project:  Hilding
 author:   DHJELM (Daniel Hjelm)
 date:     2020-12-09
 
@@ -485,24 +485,25 @@ def parse_sddb_file():
 
     # the carcom sddb export seems to be in latin1 format and lxml.etree can't
     # handle it so let's convert the file first
-    tf = tempfile.TemporaryFile(mode='w+')
-    with open(sddb_file, 'r', encoding='latin1') as f:
+    with tempfile.TemporaryFile(mode='w+') as tf:
+        with open(sddb_file, 'r', encoding='latin1') as f:
 
-        # remove that pesky BOM at the beginning of the file if it exists
-        line = f.readline()
-        line = line.replace(codecs.BOM_UTF8.decode('latin1'), '')
-        tf.write(line)
-
-        # read the rest of the file
-        for line in f:
-            line = line.replace('°C', 'degC')
-            line = line.replace('µC', 'uC')
-            line = line.replace(u'\xa0', u' ') #non-breaking space
+            # remove that pesky BOM at the beginning of the file if it exists
+            line = f.readline()
+            line = line.replace(codecs.BOM_UTF8.decode('latin1'), '')
             tf.write(line)
 
-    logging.info("Parse sddb file")
-    tf.seek(0)
-    tree = etree.parse(tf) # pylint: disable=c-extension-no-member
+            # read the rest of the file
+            for line in f:
+                line = line.replace('°C', 'degC')
+                line = line.replace('µC', 'uC')
+                line = line.replace(u'\xa0', u' ') #non-breaking space
+                tf.write(line)
+
+        logging.info("Parse sddb file")
+        tf.seek(0)
+        tree = etree.parse(tf) # pylint: disable=c-extension-no-member
+
     root = tree.getroot()
     logging.debug(root.attrib)
 
