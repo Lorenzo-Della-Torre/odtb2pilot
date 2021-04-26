@@ -1,9 +1,9 @@
 # Testscript ODTB2 MEPII
 # project:  BECM basetech MEPII
-# author:   J-ADSJO (Johan Adsjö)
-# date:     2021-01-08
+# author:   G-HERMA6 (Gunnar Hermansson)
+# date:     2020-12-16
 # version:  1.0
-# reqprod:  94733
+# reqprod:  68064
 
 # #inspired by https://grpc.io/docs/tutorials/basic/python.html
 # Copyright 2015 gRPC authors.
@@ -27,6 +27,6 @@ import sys
 
 logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
-# Not applicable: 
-# N/A because HVBM don't have LIN
+# Not applicable:
+# N/A because we don't have HMI
 logging.info("Testcase result: Not applicable")

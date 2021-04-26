@@ -27,6 +27,6 @@ import sys
 
 logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
-# Not applicable: 
+# Not applicable:
 # N/A because we don't have HMI
 logging.info("Testcase result: Not applicable")

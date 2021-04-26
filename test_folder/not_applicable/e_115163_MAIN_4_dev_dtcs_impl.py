@@ -1,9 +1,9 @@
 # Testscript ODTB2 MEPII
 # project:  BECM basetech MEPII
 # author:   G-HERMA6 (Gunnar Hermansson)
-# date:     2020-12-16
+# date:     2020-12-15
 # version:  1.0
-# reqprod:  68067
+# reqprod:  115163
 
 # #inspired by https://grpc.io/docs/tutorials/basic/python.html
 # Copyright 2015 gRPC authors.
@@ -27,6 +27,6 @@ import sys
 
 logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
-# Not applicable: 
-# N/A because we don't have HMI
+# Not applicable:
+# Check CarCom if they exist. But they don't exist now. Will probably never use these.
 logging.info("Testcase result: Not applicable")

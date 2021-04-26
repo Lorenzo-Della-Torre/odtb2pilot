@@ -1,9 +1,9 @@
 # Testscript ODTB2 MEPII
 # project:  BECM basetech MEPII
-# author:   J-ADSJO (Johan Adsjö)
-# date:     2021-01-08
+# author:   G-HERMA6 (Gunnar Hermansson)
+# date:     2020-12-16
 # version:  1.0
-# reqprod:  94729
+# reqprod:  115401
 
 # #inspired by https://grpc.io/docs/tutorials/basic/python.html
 # Copyright 2015 gRPC authors.
@@ -27,6 +27,6 @@ import sys
 
 logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
-# Not applicable: 
-# N/A because HVBM don't have LIN
+# Not applicable:
+# N/A because only DTCSnapshotRecordNumber 0x20 and 0x21 is used.
 logging.info("Testcase result: Not applicable")
