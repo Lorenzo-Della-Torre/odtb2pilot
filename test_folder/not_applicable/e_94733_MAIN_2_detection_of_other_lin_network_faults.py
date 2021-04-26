@@ -3,7 +3,7 @@
 # author:   J-ADSJO (Johan Adsjö)
 # date:     2021-01-08
 # version:  1.0
-# reqprod:  94726
+# reqprod:  94733
 
 # #inspired by https://grpc.io/docs/tutorials/basic/python.html
 # Copyright 2015 gRPC authors.
@@ -27,6 +27,6 @@ import sys
 
 logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
-# Not applicable: 
+# Not applicable:
 # N/A because HVBM don't have LIN
 logging.info("Testcase result: Not applicable")
