@@ -1,6 +1,6 @@
 """ Testscript for a requirement which needs to be tested by code inspection (To be inspected)
 
-    Testscript  ODTB2 MEPII
+    Testscript  Hilding MEPII
     project     BECM basetech MEPII
     author      J-ASSAR1 (Joel Assarsson)
     date        2020-11-26

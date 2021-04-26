@@ -1,4 +1,4 @@
-""" project:  ODTB2 testenvironment using SignalBroker
+""" project:  Hilding testenvironment using SignalBroker
     author:   hweiler (Hans-Klaus Weiler)
     date:     2020-09-25
     version:  1.0

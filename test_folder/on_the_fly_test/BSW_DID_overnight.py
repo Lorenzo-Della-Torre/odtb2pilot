@@ -1,4 +1,4 @@
-# Testscript ODTB2 MEPII
+# Testscript Hilding MEPII
 # project:  DID overnight test
 # author:   hweiler (Hans-Klaus Weiler)
 # date:     2020-05-04

@@ -1,4 +1,4 @@
-# Testscript ODTB2 MEPII
+# Testscript Hilding MEPII
 # project: BECM basetech MEPII
 # author:  T-kumara (Tanuj Kumar Aluru)
 # date:    2020-10-26

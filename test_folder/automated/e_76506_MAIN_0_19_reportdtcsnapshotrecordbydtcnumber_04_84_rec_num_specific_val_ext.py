@@ -1,4 +1,4 @@
-# Testscript ODTB2 MEPII
+# Testscript Hilding MEPII
 # project:  BECM basetech MEPII
 # author:   LDELLATO (Lorenzo Della Torre)
 # date:     2020-05-06
