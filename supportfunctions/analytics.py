@@ -51,7 +51,7 @@ class Odtb2TestSuiteDataAdapter(epsmsgbus.TestSuiteDataAdapter):
             self,
             name=analytics_config("TEST_SUITE_NAME"),
             identifier=analytics_config("TEST_SUITE_IDENTIFIER"),
-            jobid='SET_JOBID'):
+            jobid="SET_JOBID"):
         self.name = name
         self.id = identifier # pylint: disable=invalid-name
         self.jobid = jobid
@@ -79,7 +79,8 @@ class Odtb2TestSuiteDataAdapter(epsmsgbus.TestSuiteDataAdapter):
         HIL simulator."""
         project = analytics_config("PROJECT")
         ecu = analytics_config("ECU")
-        token = token_urlsafe(7)
+        # we choose to use 7 bytes here to use the same token length as pmt
+        token = token_urlsafe(nbytes=7)
         date =  datetime.utcnow().date()
         build_id = f"ODTB2_{project}_{ecu}_{date}_{token}"
         return epsmsgbus.SimulationInfo(
@@ -98,6 +99,7 @@ class Odtb2TestSuiteDataAdapter(epsmsgbus.TestSuiteDataAdapter):
                 vehicle_project=analytics_config("VEHICLE_PROJECT"),
                 vehicle_series=analytics_config("VEHICLE_SERIES"),
                 version=analytics_config("SW_VERSION"),
+                # this should be the githash for the firmware
                 githash=analytics_config("SW_GITHASH"),
                 changeset=analytics_config("SW_CHANGESET"),
                 inhousechangeset=analytics_config("SW_INHOUSECHANGESET"))
