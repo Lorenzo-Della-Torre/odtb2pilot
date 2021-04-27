@@ -1,5 +1,5 @@
 """
-Add results from ODTB2 test to JAKOB db and the cynosure message bus
+Add results from Hilding test to JAKOB db and the cynosure message bus
 """
 
 import sys
@@ -31,6 +31,9 @@ required_attr = [
     "TESTENV_INFO_PLATFORM",
 ]
 
+# we choose to use 7 bytes here to use the same token length as pmt
+TOKEN_LENGTH = 7
+
 def analytics_config(name):
     """Get config names or a default dummy value"""
     return getattr(odtb_conf, name, "UNKNOWN")
@@ -45,8 +48,8 @@ def require_use_epsmsgbus(func):
             func(*args, **kwargs)
     return wrapper_require_use_epsmsgbus
 
-class Odtb2TestSuiteDataAdapter(epsmsgbus.TestSuiteDataAdapter):
-    """ODTB2 Test Suite"""
+class TestSuiteDataAdapter(epsmsgbus.TestSuiteDataAdapter):
+    """Hilding Test Suite"""
     def __init__(
             self,
             name=analytics_config("TEST_SUITE_NAME"),
@@ -75,14 +78,13 @@ class Odtb2TestSuiteDataAdapter(epsmsgbus.TestSuiteDataAdapter):
                 executor=analytics_config("EXECUTOR"))
 
     def get_simulation_info(self): #pylint: disable=no-self-use
-        """Return information about the virtual simulation model running on the
-        HIL simulator."""
+        """Return information about the virtual simulation model running on
+        Hilding"""
         project = analytics_config("PROJECT")
         ecu = analytics_config("ECU")
-        # we choose to use 7 bytes here to use the same token length as pmt
-        token = token_urlsafe(nbytes=7)
+        token = token_urlsafe(nbytes=TOKEN_LENGTH)
         date =  datetime.utcnow().date()
-        build_id = f"ODTB2_{project}_{ecu}_{date}_{token}"
+        build_id = f"HD_BUILD_{project}_{ecu}_{date}_{token}"
         return epsmsgbus.SimulationInfo(
                 build_id=build_id,
                 project=project,
@@ -112,21 +114,21 @@ class Odtb2TestSuiteDataAdapter(epsmsgbus.TestSuiteDataAdapter):
                 platform=analytics_config("TESTENV_INFO_PLATFORM"))
 
 
-class Odtb2TestCaseDataAdapter(epsmsgbus.TestCaseDataAdapter): #pylint: disable=too-few-public-methods
+class TestCaseDataAdapter(epsmsgbus.TestCaseDataAdapter): #pylint: disable=too-few-public-methods
     """Adapter for metadata from test cases and test steps. Only 'get_taskid()'
     is mandatory."""
     def __init__(self, name):
         self.name = name
 
 
-class Odtb2TestStepDataAdapter(epsmsgbus.TestStepDataAdapter): #pylint: disable=too-few-public-methods
-    """ODTB2 adapter for test steps"""
+class TestStepDataAdapter(epsmsgbus.TestStepDataAdapter): #pylint: disable=too-few-public-methods
+    """Hilding adapter for test steps"""
     def get_testcode_info(self): #pylint: disable=no-self-use
         """Get testcode info"""
         # No requirement info on test step level
         return epsmsgbus.TestCodeInfo(
-                author='ODTB2',
-                description='ODTB2 test step',
+                author='Hilding',
+                description='Hilding test step',
                 creationdate=datetime(2021, 3, 1, 0, 10),
                 modificationdate=datetime.utcnow())
 
@@ -136,9 +138,9 @@ class Odtb2TestStepDataAdapter(epsmsgbus.TestStepDataAdapter): #pylint: disable=
 def testsuite_started():
     """Signal that test suite started. Link adapter and API function."""
     date =  datetime.utcnow().date()
-    token = token_urlsafe(7)
-    jobid = f"ODTB2_JOB_{date}_{token}"
-    adapter = Odtb2TestSuiteDataAdapter(jobid=jobid)
+    token = token_urlsafe(nbytes=TOKEN_LENGTH)
+    jobid = f"HD_JOB_{date}_{token}"
+    adapter = TestSuiteDataAdapter(jobid=jobid)
     epsmsgbus.testsuite_started(adapter, adapter.name)
 
 
@@ -152,7 +154,7 @@ def testsuite_ended():
 @require_use_epsmsgbus
 def testcase_started(name):
     """Signal that test case ended. Link adapter and API function."""
-    adapter = Odtb2TestCaseDataAdapter(name)
+    adapter = TestCaseDataAdapter(name)
     epsmsgbus.testcase_started(adapter, name)
 
 
@@ -167,7 +169,7 @@ def testcase_ended(verdict, combine_steps=False):
 @require_use_epsmsgbus
 def teststep_started(name):
     """Signal that test step started. Link adapter and API function."""
-    adapter = Odtb2TestStepDataAdapter()
+    adapter = TestStepDataAdapter()
     epsmsgbus.teststep_started(adapter, name)
 
 
