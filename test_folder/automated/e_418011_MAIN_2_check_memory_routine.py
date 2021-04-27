@@ -1,6 +1,8 @@
 '''Import script - Inherited from older version of requirement'''
 
-from e_418011_MAIN_1_check_memory_routine import run
+import logging
+import sys
 
-if __name__ == '__main__':
-    run()
+logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+
+logging.info("Testcase result: Tested implicitly by REQPROD 405174 (tested implicitly)")
