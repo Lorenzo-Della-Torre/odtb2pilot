@@ -47,7 +47,8 @@ class SupportPostcondition: # pylint: disable=too-few-public-methods
     """
 
     @staticmethod
-    def postcondition(can_p: CanParam, starttime, result, combine_steps=True):
+    def postcondition(can_p: CanParam, starttime, result, combine_steps=True,
+                      use_analytics=True):
         """
         Precondition for test running:
         BECM has to be kept alive: start heartbeat
@@ -77,7 +78,9 @@ class SupportPostcondition: # pylint: disable=too-few-public-methods
 
         if result:
             logging.info("Testcase result: PASSED")
-            analytics.testcase_ended("passed", combine_steps)
+            if use_analytics:
+                analytics.testcase_ended("passed", combine_steps)
         else:
             logging.info("Testcase result: FAILED")
-            analytics.testcase_ended("failed", combine_steps)
+            if use_analytics:
+                analytics.testcase_ended("failed", combine_steps)

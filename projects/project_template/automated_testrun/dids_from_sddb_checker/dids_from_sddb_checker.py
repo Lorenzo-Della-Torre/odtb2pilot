@@ -220,7 +220,7 @@ def generate_html(pbl_list, sbl_list, appl_list, pass_or_fail_counter_dict, part
                 __iterate_list(pbl_list, tag, text, line, 'Primary Bootloader')
                 __iterate_list(sbl_list, tag, text, line, 'Secondary Bootloader')
                 __iterate_list(appl_list, tag, text, line, 'Application')
-                
+
     outfile = "did_report.html"
     write_to_file(doc.getvalue(), outfile)
 
@@ -441,7 +441,7 @@ def did_checker(dids, can_p, response_item_dict, pass_or_fail_counter_dict, max_
             break
 
         did_counter += 1
-        
+
     return result_list
 
 
@@ -476,7 +476,7 @@ def run_main_part(parsed_sddb): # pylint: disable=too-many-locals
         logging.debug('\nReading eda0')
         eda0_dict = get_did_eda0(can_p, parsed_sddb['response_item_dict'])
         write_testrun_data(eda0_dict, can_p)
-        
+
         logging.debug('\nTesting application DIDs')
         appl_list = did_checker(parsed_sddb['app_dict'].values(), can_p,
                                 parsed_sddb['response_item_dict'],
@@ -515,7 +515,7 @@ def run_main_part(parsed_sddb): # pylint: disable=too-many-locals
         # postCondition
         ############################################
         logging.debug('\nPostcondition')
-        POST.postcondition(can_p, starttime, result)
+        POST.postcondition(can_p, starttime, result, use_analytics=False)
     except Exception as _: # pylint: disable=broad-except
         logging.error(traceback.format_exc())
         generate_error_page(str(traceback.format_exc()))
