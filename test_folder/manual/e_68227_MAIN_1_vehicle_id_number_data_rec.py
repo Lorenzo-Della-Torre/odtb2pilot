@@ -1,6 +1,9 @@
 '''Import script - Inherited from older version of requirement'''
 
-from e_68227_MAIN_0_vehicle_id_number_data_rec import run
+import logging
+import sys
 
-if __name__ == '__main__':
-    run()
+logging.basicConfig(format='%(asctime)s - %(message)s',
+                    stream=sys.stdout, level=logging.DEBUG)
+
+logging.info("Testcase result: Not applicable")
