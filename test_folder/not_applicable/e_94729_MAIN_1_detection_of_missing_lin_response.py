@@ -1,6 +1,8 @@
 '''Import script - Inherited from older version of requirement'''
 
-from e_94729_MAIN_0_Detection_of_missing_LIN_response import run
+import logging
+import sys
 
-if __name__ == '__main__':
-    run()
+logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+
+logging.info("Testcase result: Not applicable")

@@ -1,6 +1,8 @@
 '''Import script - Inherited from older version of requirement'''
 
-from e_115623_MAIN_0_DTC_storage_time import run
+import logging
+import sys
 
-if __name__ == '__main__':
-    run()
+logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+
+logging.info("Testcase result: Not applicable")
