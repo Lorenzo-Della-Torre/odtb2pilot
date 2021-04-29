@@ -14,7 +14,7 @@ from pyfzf.pyfzf import FzfPrompt
 from supportfunctions import analytics
 from supportfunctions.dvm import get_reqdata
 
-from test_folder.on_the_fly_test.BSW_Set_ECU_to_default import run as set_ecu_to_default
+import test_folder.on_the_fly_test.BSW_Set_ECU_to_default as set_ecu_to_default
 
 # this need to be fixed
 # pylint: disable=too-many-locals, too-many-branches, too-many-statements
@@ -47,15 +47,12 @@ def run_tests(
         if not dut_is_imported:
             analytics.teststep_started("combined step")
 
-        # this is a bit hacky, but let's keep it for now
-        sys.argv = [str(test_file_py)]
-        logging.debug(
-            "overriding sys.argv to make test specific yaml files load: %s",
-            sys.argv)
-
         if reset_between:
-            # run a reset test script
-            set_ecu_to_default()
+            # this is a bit hacky, but let's keep it for now
+            sys.argv = [set_ecu_to_default.__file__]
+
+            # run the reset test script
+            set_ecu_to_default.run()
 
         if save_result:
             log_file = test_res_dir.joinpath(test_file_py.with_suffix('.log').name)
@@ -63,6 +60,12 @@ def run_tests(
             log_file_handler.setFormatter(logging.Formatter(" %(message)s"))
             log_file_handler.setLevel(logging.INFO)
             logging.root.addHandler(log_file_handler)
+
+        # this is a bit hacky, but let's keep it for now
+        sys.argv = [str(test_file_py)]
+        logging.debug(
+            "overriding sys.argv to make test specific yaml files load: %s",
+            sys.argv)
 
         spec = importlib.util.spec_from_file_location("req_test", test_file_py)
         req_test = importlib.util.module_from_spec(spec)
