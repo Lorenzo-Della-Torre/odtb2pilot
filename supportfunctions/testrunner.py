@@ -36,6 +36,8 @@ def run_tests(
     for test_file_py in test_files:
         req_test, reqdata, dut_is_imported = get_reqdata(test_file_py)
 
+        logging.critical("Running: %s", test_file_py.name)
+
         if reqdata['reqprod'] and reqdata['title']:
             test_case_name = f"{reqdata['reqprod']}: {reqdata['title']}"
         else:
@@ -52,7 +54,13 @@ def run_tests(
             sys.argv = [set_ecu_to_default.__file__]
 
             # run the reset test script
-            set_ecu_to_default.run()
+            try:
+                set_ecu_to_default.run()
+            except: # pylint: disable=bare-except
+                logging.critical(
+                    "set ecu to default failed: %s", sys.exc_info()[0])
+                sys.exit("If we can't reset the ecu, we can't reply on the "
+                         "test being correct. Exiting...")
 
         if save_result:
             log_file = test_res_dir.joinpath(test_file_py.with_suffix('.log').name)
