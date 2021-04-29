@@ -96,20 +96,21 @@ def run_tests(
 
             # open log file and check for result
             with open(log_file) as log_file_handle:
+                # to emulate the bash script that we are replacing we add
+                # this to the result file if there is no result. We might
+                # want to consider adding an ERRORED state instead, but
+                # that will have to come later
+                verdict = ""
                 for line in log_file_handle.readlines():
                     match = re.search(r'Testcase result: (.*)', line)
-
-                    # to emulated the bash script that we are replacing we add
-                    # this to the result file if there is no result. We might
-                    # want to consider adding an ERRORED state instead, but
-                    # that will have to come later
-                    result = ""
                     if match:
-                        result = match.group(1)
+                        verdict = match.group(1)
 
                 # append to result file
                 with open(result_file, mode='a') as result_file_handle:
-                    result_file_handle.write(f"{reqprod} {result} {log_file.name}\n")
+                    result_file_handle.write(f"{reqprod} {verdict} {log_file.name}\n")
+
+                logging.critical("Test done: verdict = %s", verdict)
 
     if save_result:
         with open(result_file, mode='a') as result_file_handle:
