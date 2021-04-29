@@ -26,7 +26,8 @@ def get_reqdata(test_file_py):
 
     try:
         reqdata = yaml.safe_load(req_test.__doc__)
-    except yaml.scanner.ScannerError:
+    except (yaml.scanner.ScannerError, yaml.parser.ParserError) as e:
+        logging.error("Could not get reqdata: %s", e)
         reqdata = {}
 
     if isinstance(reqdata, str):
