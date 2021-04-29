@@ -99,13 +99,13 @@ def run_tests(
                 for line in log_file_handle.readlines():
                     match = re.search(r'Testcase result: (.*)', line)
 
-                # to emulated the bash script that we are replacing we add
-                # this to the result file if there is no result. We might
-                # want to consider adding an ERRORED state instead, but
-                # that will have to come later
-                result = ""
-                if match:
-                    result = match.group(1)
+                    # to emulated the bash script that we are replacing we add
+                    # this to the result file if there is no result. We might
+                    # want to consider adding an ERRORED state instead, but
+                    # that will have to come later
+                    result = ""
+                    if match:
+                        result = match.group(1)
 
                 # append to result file
                 with open(result_file, mode='a') as result_file_handle:
