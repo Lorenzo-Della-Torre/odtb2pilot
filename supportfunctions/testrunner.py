@@ -16,6 +16,8 @@ from supportfunctions.dvm import get_reqdata
 
 import test_folder.on_the_fly_test.BSW_Set_ECU_to_default as set_ecu_to_default
 
+log = logging.getLogger('testrunner')
+
 # this need to be fixed
 # pylint: disable=too-many-locals, too-many-branches, too-many-statements
 def run_tests(
@@ -33,10 +35,17 @@ def run_tests(
         test_res_dir.mkdir(exist_ok=True)
         result_file = test_res_dir.joinpath('Result.txt')
 
+        formatter = logging.Formatter(
+            '%(asctime)s - (%name)s - %(levelname)s - %(message)s')
+        runner_file_handler = logging.FileHandler('testrunner.log')
+        runner_file_handler.setLevel(logging.INFO)
+        runner_file_handler.setFormatter(formatter)
+        log.addHandler(runner_file_handler)
+
     for test_file_py in test_files:
         req_test, reqdata, dut_is_imported = get_reqdata(test_file_py)
 
-        logging.critical("Running: %s", test_file_py.name)
+        log.critical("Running: %s", test_file_py.name)
 
         if reqdata['reqprod'] and reqdata['title']:
             test_case_name = f"{reqdata['reqprod']}: {reqdata['title']}"
@@ -67,11 +76,11 @@ def run_tests(
             log_file_handler = logging.FileHandler(log_file)
             log_file_handler.setFormatter(logging.Formatter(" %(message)s"))
             log_file_handler.setLevel(logging.INFO)
-            logging.root.addHandler(log_file_handler)
+            logging.getLogger('').addHandler(log_file_handler)
 
         # this is a bit hacky, but let's keep it for now
         sys.argv = [str(test_file_py)]
-        logging.debug(
+        log.debug(
             "overriding sys.argv to make test specific yaml files load: %s",
             sys.argv)
 
@@ -82,7 +91,7 @@ def run_tests(
             spec.loader.exec_module(req_test)
             req_test.run()
         except: # pylint: disable=bare-except
-            logging.critical("Testcase failed: %s", sys.exc_info()[0])
+            log.critical("Testcase failed: %s", sys.exc_info()[0])
             analytics.testcase_ended("errored", combine_steps=(not dut_is_imported))
             # this should probably be logged as an ERRORED in the result file
 
@@ -110,7 +119,7 @@ def run_tests(
                 with open(result_file, mode='a') as result_file_handle:
                     result_file_handle.write(f"{reqprod} {verdict} {log_file.name}\n")
 
-                logging.critical("Test done: verdict = %s", verdict)
+                log.critical("Test done: verdict = %s", verdict)
 
     if save_result:
         with open(result_file, mode='a') as result_file_handle:

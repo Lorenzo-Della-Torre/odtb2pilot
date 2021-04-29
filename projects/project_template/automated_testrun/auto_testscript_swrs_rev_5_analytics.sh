@@ -28,6 +28,6 @@
 python3 $TESTREPO/autotest/testcase_picker.py --swrs NOTE-SWRS-33754905-01-5.xml --scriptfolder $TESTREPO/test_folder > testscripts_auto.lst
 
 python3 $TESTREPO/manage.py sddb
-python3 $TESTREPO/manage.py --log critical nightly --use-db testscripts_auto.lst
+python3 $TESTREPO/manage.py nightly --use-db testscripts_auto.lst
 
 date "+Test done. Time: %Y%m%d %H%M" 
