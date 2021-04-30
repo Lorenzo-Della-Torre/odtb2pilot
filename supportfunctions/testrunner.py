@@ -35,12 +35,11 @@ def run_tests(
         test_res_dir.mkdir(exist_ok=True)
         result_file = test_res_dir.joinpath('Result.txt')
 
-        formatter = logging.Formatter(
-            '%(asctime)s - (%name)s - %(levelname)s - %(message)s')
-        runner_file_handler = logging.FileHandler('testrunner.log')
-        runner_file_handler.setLevel(logging.INFO)
-        runner_file_handler.setFormatter(formatter)
-        log.addHandler(runner_file_handler)
+        progress_handler = logging.FileHandler(test_res_dir.joinpath('progress.log'))
+        progress_handler.setLevel(logging.CRITICAL)
+        progress_handler.setFormatter(logging.Formatter(
+            '%(asctime)s - (%name)s - %(levelname)s - %(message)s'))
+        logging.getLogger('').addHandler(progress_handler)
 
     for test_file_py in test_files:
         req_test, reqdata, dut_is_imported = get_reqdata(test_file_py)
