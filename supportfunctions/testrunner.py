@@ -38,7 +38,8 @@ def run_tests(
         progress_handler = logging.FileHandler(test_res_dir.joinpath('progress.log'))
         progress_handler.setLevel(logging.CRITICAL)
         progress_handler.setFormatter(logging.Formatter(
-            '%(asctime)s - (%name)s - %(levelname)s - %(message)s'))
+            "%(levelname)s %(asctime)s %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S"))
         logging.getLogger('').addHandler(progress_handler)
 
     for test_file_py in test_files:
@@ -118,7 +119,7 @@ def run_tests(
                 with open(result_file, mode='a') as result_file_handle:
                     result_file_handle.write(f"{reqprod} {verdict} {log_file.name}\n")
 
-                log.critical("Test done: verdict = %s", verdict)
+                log.critical("%s done: verdict = %s", reqprod, verdict)
 
     if save_result:
         with open(result_file, mode='a') as result_file_handle:

@@ -137,7 +137,9 @@ def get_file_names_and_results(folder_path):
     f_date = None
     f_time = None
     files = [file_name for file_name in listdir(folder_path)
-             if (isfile(join(folder_path, file_name)) and file_name.endswith(LOG_FILE_EXT))]
+             if (isfile(join(folder_path, file_name))
+                 and file_name.endswith(LOG_FILE_EXT)
+                 and not file_name.endswith('progress.log'))]
 
     for file in files:
         file_path = os.path.join(folder_path, file)
