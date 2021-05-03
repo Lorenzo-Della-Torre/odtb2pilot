@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """ manage.py: Management commands for the ODTB project """
 
+import os
 import sys
 import logging
 from argparse import ArgumentParser
@@ -10,6 +11,12 @@ from supportfunctions.support_sddb import parse_sddb_file
 from supportfunctions.support_sddb import get_platform_dir
 from supportfunctions.support_sddb import get_sddb_file
 from supportfunctions.dvm import create_dvm
+from supportfunctions.testrunner import runner
+from supportfunctions.testrunner import nightly
+
+sys.path.append(os.path.dirname(__file__))
+sys.path.append(os.path.join(os.path.dirname(__file__), "test_folder/automated"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "test_folder/manual"))
 
 def check_install():
     """ Make sure that the installation is setup and configured properly """
@@ -50,7 +57,7 @@ def check_install():
     try:
         next(vbf_files)
     except StopIteration:
-        logging.error("Can not locate any vbf fiels in %s", vbf_dir)
+        logging.error("Can not locate any vbf files in %s", vbf_dir)
 
     # have a release directory or link
     get_sddb_file()
@@ -79,12 +86,14 @@ def check_install():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(
-        format='%(levelname)s %(message)s', stream=sys.stdout,
-        level=logging.INFO)
     parser = ArgumentParser(
         description="Management commands for the odtb project"
     )
+    parser.add_argument(
+        '-l', '--log-level', dest="loglevel", default="info",
+        choices=["notset", "debug", "info", "warning", "error", "critical"],
+        help="set logging level")
+
     subparsers = parser.add_subparsers(dest="command")
     subparsers.add_parser(
         "sddb", help="Generates/updates the platform specific "
@@ -94,12 +103,37 @@ if __name__ == "__main__":
         "check", help="Does various checks to ensure that your "
         "system is setup correctly"
     )
+
     dvm_parser = subparsers.add_parser(
         "dvm", help="generate a new dvm document from the test script"
     )
     dvm_parser.add_argument('test_script')
 
+    run_parser = subparsers.add_parser(
+        "run", help="Test runner that tries to select the current branch "
+        "or gives you a list of test to select from"
+    )
+    run_parser.add_argument('reqprod', nargs='?')
+    run_parser.add_argument('--use-db', action="store_true")
+    run_parser.add_argument('--use-mq', action="store_true")
+    run_parser.add_argument('--save-result', action="store_true")
+    run_parser.add_argument('--reset-between', action="store_true")
+
+    nightly_parser = subparsers.add_parser(
+        "nightly", help="Run nightly tests from file"
+    )
+    nightly_parser.add_argument('testfile_list', help="file with each test listed")
+    nightly_parser.add_argument('--use-db', action="store_true")
+    nightly_parser.add_argument('--use-mq', action="store_true")
+
     args = parser.parse_args()
+
+    # we probably want to make all of the logging user configurable, but right
+    # not let's just start with the level
+    logging.basicConfig(
+        format='%(levelname)s %(message)s', stream=sys.stdout,
+        level=getattr(logging, args.loglevel.upper()))
+
     if not args.command:
         parser.print_help()
 
@@ -110,3 +144,7 @@ if __name__ == "__main__":
         check_install()
     elif args.command == 'dvm':
         create_dvm(args.test_script)
+    elif args.command == 'run':
+        runner(args)
+    elif args.command == 'nightly':
+        nightly(args)

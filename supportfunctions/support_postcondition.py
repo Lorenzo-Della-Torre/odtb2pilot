@@ -34,6 +34,7 @@ from supportfunctions.support_can import SupportCAN, CanParam
 from supportfunctions.support_carcom import SupportCARCOM
 from supportfunctions.support_service10 import SupportService10
 from supportfunctions.support_service22 import SupportService22
+from supportfunctions import analytics
 
 SC_CARCOM = SupportCARCOM()
 SC = SupportCAN()
@@ -46,7 +47,8 @@ class SupportPostcondition: # pylint: disable=too-few-public-methods
     """
 
     @staticmethod
-    def postcondition(can_p: CanParam, starttime, result):
+    def postcondition(can_p: CanParam, starttime, result, combine_steps=True,
+                      use_analytics=True):
         """
         Precondition for test running:
         BECM has to be kept alive: start heartbeat
@@ -73,7 +75,12 @@ class SupportPostcondition: # pylint: disable=too-few-public-methods
 
         logging.info("Test cleanup end: %s\n", datetime.now())
 
+
         if result:
             logging.info("Testcase result: PASSED")
+            if use_analytics:
+                analytics.testcase_ended("passed", combine_steps)
         else:
             logging.info("Testcase result: FAILED")
+            if use_analytics:
+                analytics.testcase_ended("failed", combine_steps)

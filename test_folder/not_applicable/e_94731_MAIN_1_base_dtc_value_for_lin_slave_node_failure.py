@@ -1,6 +1,8 @@
 '''Import script - Inherited from older version of requirement'''
 
-from e_94731_MAIN_0_Base_DTC_value_for_LIN_slave_node_failure import run
+import logging
+import sys
 
-if __name__ == '__main__':
-    run()
+logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+
+logging.info("Testcase result: Not applicable")

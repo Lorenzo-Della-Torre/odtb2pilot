@@ -1,6 +1,9 @@
 '''Import script - Inherited from older version of requirement'''
 
-from e_68194_MAIN_2_sbl_diag_db_pn import run
+import logging
+import sys
 
-if __name__ == '__main__':
-    run()
+logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+
+logging.info("Testcase result: Tested implicitly by\
+ REQPROD 53909 and 68214 (tested implicitly)")

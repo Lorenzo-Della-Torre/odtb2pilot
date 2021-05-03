@@ -35,6 +35,7 @@ from supportfunctions.support_sddb import get_release_dir
 from supportfunctions.support_precondition import SupportPrecondition
 from supportfunctions.support_postcondition import SupportPostcondition
 from supportfunctions.support_uds import Uds
+from supportfunctions import analytics
 
 # pylint: disable=no-member
 import protogenerated.system_api_pb2
@@ -57,6 +58,25 @@ def beamy_feature(func):
             raise DutTestError
         func(*args, **kwargs)
     return wrapper_beamy_feature
+
+def analytics_test_step(func):
+    """ Decorator to add test step analytics """
+    def wrapper_test_step(self, *args, **kwargs):
+        analytics.teststep_started(
+            f"step {self.uds.step}: {self.uds.purpose}")
+        try:
+            result = func(self, *args, **kwargs)
+        except DutTestError as error:
+            analytics.teststep_ended("errored")
+            raise error
+        else:
+            if result:
+                analytics.teststep_ended("passed")
+            else:
+                analytics.teststep_ended("failed")
+        return result
+    return wrapper_test_step
+
 
 class Dut:
     """ Device under test """
@@ -94,7 +114,8 @@ class Dut:
 
     def postcondition(self, start_time, result):
         """ run postconditions and change to mode 1 """
-        return SupportPostcondition().postcondition(self, start_time, result)
+        return SupportPostcondition().postcondition(
+            self, start_time, result, combine_steps=False)
 
     def start(self):
         """ log the current time and return a timestamp """
@@ -105,6 +126,7 @@ class Dut:
         logging.info("Time: %s \n", timestamp)
         return timestamp
 
+    @analytics_test_step
     def step(self, func, *args, purpose="", **kwargs):
         """ add test step """
         self.uds.step += 1

@@ -1,6 +1,8 @@
 '''Import script - Inherited from older version of requirement'''
 
-from e_378334_MAIN_1_Detection_of_faulty_LIN_physical_bus import run
+import logging
+import sys
 
-if __name__ == '__main__':
-    run()
+logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+
+logging.info("Testcase result: Not applicable")

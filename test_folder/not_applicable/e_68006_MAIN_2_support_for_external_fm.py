@@ -1,6 +1,8 @@
 '''Import script - Inherited from older version of requirement'''
 
-from e_68006_MAIN_1_Support_for_external_FM import run
+import logging
+import sys
 
-if __name__ == '__main__':
-    run()
+logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+
+logging.info("Testcase result: Not applicable")

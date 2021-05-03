@@ -8,7 +8,6 @@ import argparse
 import os
 import sys
 import re
-from pprint import pformat
 import req_parser.rif_swrs_to_graph as rif_mod
 
 # Logging has different levels: DEBUG, INFO, WARNING, ERROR, and CRITICAL
@@ -23,9 +22,7 @@ VER_ID = "Version id"
 ID = 'ID'
 TYPE_LIST = ["REQPROD"] # Only interested in the REQPRODS
 
-
-RE_REQPROD_ID = re.compile(r'\s*BSW_REQPROD_(?P<reqprod>\d+)_(?P<desc>\w+).py', flags=re.IGNORECASE)
-RE_FILE_NAME = re.compile(r'e_(?P<reqprod>\d+)_(?P<var>[a-zA-Z]*|-)_(?P<rev>\d+)_(?P<desc>.*).py',
+RE_FILE_NAME = re.compile(r'e_(?P<reqprod>\d+)_(?P<var>[a-zA-Z]*|-)_(?P<rev>\d+)_(?P<desc>.*).py$',
                           flags=re.IGNORECASE)
 
 def parse_some_args():
@@ -165,7 +162,7 @@ def read_file(file_name):
     return files_for_test
 
 
-def pp_result(included, excluded):
+def pp_result(included):
     """
     Prints the list
     When using the old batchfile we use the output on stdout as input
@@ -208,17 +205,17 @@ def execute(swrs, txt_file, scripts, script_folder):
     if swrs: #SWRS argument
         reqprod_dict = swrs_parse(swrs)
         included, excluded = filter_files(reqprod_dict, script_folder)
-        pp_result(included, excluded)
+        pp_result(included)
     elif txt_file: #Textfile argument
         files_from_file = read_file(txt_file)
         included, excluded = match_list(files_from_file, script_folder)
-        pp_result(included, excluded)
+        pp_result(included)
     elif scripts: #script argument
         included, excluded = match_list(scripts, script_folder)
-        pp_result(included, excluded)
+        pp_result(included)
     else: # Test everything in folder and subfolders
         included, excluded = complete_test(script_folder)
-        pp_result(included, excluded)
+        pp_result(included)
     return included, excluded
 
 

@@ -38,8 +38,18 @@ credentials.
 Next step is to get all dependencies:
 
 ```shell
-  sudo apt install libxslt-dev
+  sudo apt install libxslt-dev unixodbc-dev tdsodbc libopenjp2-7 sqlite3
   pip3 install -r requirements.txt
+```
+
+And let's build libgit2 from source:
+```shell
+  wget https://github.com/libgit2/libgit2/releases/download/v1.1.0/libgit2-1.1.0.tar.gz
+  tar xzf libgit2-1.1.0.tar.gz
+  cd libgit2-1.1.0/
+  cmake .
+  make
+  sudo make install
 ```
 
 NOTE: `<platform>` has to be replaced with the name of the platform that you are
