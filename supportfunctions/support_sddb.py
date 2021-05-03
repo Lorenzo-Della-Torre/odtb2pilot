@@ -100,9 +100,9 @@ def extract_service22_dids(root, type_str):
 
         for did in ecu_app.findall(SERVICE22):
             # did.attrib is a dict containing the info we need
-            parent_id = "22"
-            did_key = parent_id + did.attrib["ID"]
-            service22_dids[did_key] = did.attrib
+            did_content = {k.lower():v for k, v in did.attrib.items()}
+            did_key = did_content.pop("id")
+            service22_dids[did_key] = did_content
     return service22_dids, diagnostic_part_number
 
 
@@ -120,7 +120,7 @@ def extract_service22_response_items(root, type_str):
         for did in ecu_app.findall(SERVICE22):
             # did.attrib is a dict containing the info we need
             logging.debug('%s', did.attrib["Name"])
-            did_key = "22" + did.attrib["ID"] # 22 Is parent ID
+            did_key = did.attrib["ID"]
             data_dict[did_key] = []
 
             for response_item in did.findall('.//ResponseItems/ResponseItem'):
@@ -128,21 +128,21 @@ def extract_service22_response_items(root, type_str):
                 logging.debug('Name = %s', response_item.attrib['Name'])
 
                 # Makes a new dict with the response_item as a base
-                resp_item = dict(response_item.attrib)
+                resp_item = {k.lower():v for k, v in response_item.attrib.items()}
 
                 # Adding the rest of the information
                 for formula in response_item.findall('Formula'):
                     logging.debug('FORMULA = %s', formula.text)
-                    resp_item['Formula'] = formula.text
+                    resp_item['formula'] = formula.text
                 for unit in response_item.findall('Unit'):
                     logging.debug('UNIT = %s', unit.text)
-                    resp_item['Unit'] = unit.text
+                    resp_item['unit'] = unit.text
                 for compare_value in response_item.findall('CompareValue'):
                     logging.debug('COMPARE_VALUE = %s', compare_value.text)
-                    resp_item['CompareValue'] = compare_value.text
+                    resp_item['compare_value'] = compare_value.text
                 for software_label in response_item.findall('SoftwareLabel'):
                     logging.debug('SOFTWARE_LABEL = %s', software_label.text)
-                    resp_item['SoftwareLabel'] = software_label.text
+                    resp_item['software_label'] = software_label.text
                 data_dict[did_key].append(resp_item)
     return data_dict
 
@@ -183,13 +183,13 @@ def process_did_content(root):
 
 def extract_dtcs(root):
     """
-    Extract DTCs and their respective snapshot diffinition from service 19
+    Extract DTCs and their respective snapshot definition from service 19
     """
     dtc_record = {}
     for dtc_node in root.find('.//Service[@ID="19"]/DTCS'):
-        dtc = dict(dtc_node.attrib)
+        dtc = {underscore(k):v for k, v in dtc_node.attrib.items()}
         try:
-            dtc_id = dtc.pop('ID')
+            dtc_id = dtc.pop('id')
         except KeyError:
             sys.exit("ID is missing from DTC entry. Check XML data. Exiting...")
         dtc_id = dtc_id.replace('0x', '')
@@ -197,11 +197,12 @@ def extract_dtcs(root):
 
         snapshot_dids_list = []
         for snapshot_dids in dtc_node.find('.//SnapshotDIDs'):
-            snapshot_dids_item = dict(snapshot_dids.attrib)
+            snapshot_dids_item = {
+                underscore(k):v for k, v in snapshot_dids.attrib.items()}
             did_ref = snapshot_dids.find('.//')
-            snapshot_dids_item['DataIdentifierReference'] = dict(did_ref.attrib)
+            snapshot_dids_item['did_ref'] = dict(did_ref.attrib)
             snapshot_dids_list.append(snapshot_dids_item)
-        dtc_record[dtc_id]['SnapshotDIDs'] = snapshot_dids_list
+        dtc_record[dtc_id]['snapshot_dids'] = snapshot_dids_list
     return dtc_record
 
 
@@ -210,17 +211,19 @@ def extract_report_dtc(root):
     report_dtc = {}
 
     for report_dtc_node in root.find('.//Service[@ID="19"]/Subfunctions'):
-        report_dtc_item = dict(report_dtc_node.attrib)
+        report_dtc_item = {
+            k.lower():v for k, v in report_dtc_node.attrib.items()}
         try:
-            report_dtc_id = report_dtc_item.pop('ID')
+            report_dtc_id = report_dtc_item.pop('id')
         except KeyError:
             sys.exit("ID is missing from DTC entry. Check XML data. Exiting...")
         report_dtc[report_dtc_id] = report_dtc_item
 
         response_item_list = []
         for response_item in report_dtc_node.findall('.//ResponseItems/ResponseItem'):
-            response_item_list.append(dict(response_item.attrib))
-        report_dtc[report_dtc_id]['ResponseItems'] = response_item_list
+            response_item_list.append(
+                {underscore(k):v for k, v in response_item.attrib.items()})
+        report_dtc[report_dtc_id]['response_items'] = response_item_list
 
     return report_dtc
 
