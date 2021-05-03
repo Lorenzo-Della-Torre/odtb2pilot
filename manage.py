@@ -57,7 +57,7 @@ def check_install():
     try:
         next(vbf_files)
     except StopIteration:
-        logging.error("Can not locate any vbf fiels in %s", vbf_dir)
+        logging.error("Can not locate any vbf files in %s", vbf_dir)
 
     # have a release directory or link
     get_sddb_file()
