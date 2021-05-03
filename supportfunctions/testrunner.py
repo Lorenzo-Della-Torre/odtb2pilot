@@ -9,7 +9,7 @@ from datetime import datetime
 from pathlib import Path
 
 from pygit2 import Repository
-from pyfzf.pyfzf import FzfPrompt
+from iterfzf import iterfzf
 
 from supportfunctions import analytics
 from supportfunctions.dvm import get_reqdata
@@ -130,9 +130,9 @@ def run_tests(
 
 def get_automated_files(glob_pattern):
     """ use fzf to select tests to run """
-    fzf = FzfPrompt()
     automated = Path('test_folder/automated')
-    test_files = fzf.prompt(automated.glob(glob_pattern), "--multi")
+    files = [str(f) for f in automated.glob(glob_pattern)]
+    test_files = iterfzf(files, multi=True)
     return [Path(p) for p in test_files]
 
 def runner(args):
