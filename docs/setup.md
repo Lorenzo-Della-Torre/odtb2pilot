@@ -42,19 +42,6 @@ Next step is to get all dependencies:
   pip3 install -r requirements.txt
 ```
 
-Currently on raspberry pi we need to build libgit2 manually from source as it is now:
-```shell
-  sudo apt install cmake
-  mkdir ~/software
-  cd ~/software
-  wget --no-check-certificate https://github.com/libgit2/libgit2/releases/download/v1.1.0/libgit2-1.1.0.tar.gz
-  tar xzf libgit2-1.1.0.tar.gz
-  cd libgit2-1.1.0/
-  cmake .
-  make
-  sudo make install
-```
-
 NOTE: `<platform>` has to be replaced with the name of the platform that you are
 using in the text below (for example: MEP2_SPA1, MEP2_SPA2, or MEP2_HLCM). The
 same goes for all other instances of angle brackets.
@@ -108,3 +95,34 @@ updates in `interfaces.json` and files that are referred to.
 Check that the SignalBroker is running with command `docker ps -a` where
 `STATUS` shall be `Up`.
 
+
+#### Optional feature: git support for the test runner
+
+As a tester we tend to work on many different tests and switch back and forth
+between different branches. Most of the time we name our branches with
+something including the reqprod number (e.g. req_12345). manage.py has support
+for directly running the right script from the current branch name if you have
+the python package `pygit2` installed.
+
+Just run
+```
+  python manage.py run
+```
+and if we are on the branch `req_12345` manage.py will automatically select any
+scripts in the `test_folder/automated` directory that contains `12345`. This
+can be quite convenient; especially for reviewers that frequently switches from
+one branch to another.
+
+Currently on raspberry pi we need to build libgit2 manually from source as it
+is now:
+```shell
+  sudo apt install cmake
+  mkdir ~/software
+  cd ~/software
+  wget --no-check-certificate https://github.com/libgit2/libgit2/releases/download/v1.1.0/libgit2-1.1.0.tar.gz
+  tar xzf libgit2-1.1.0.tar.gz
+  cd libgit2-1.1.0/
+  cmake .
+  make
+  sudo make install
+```
