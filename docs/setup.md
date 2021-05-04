@@ -42,9 +42,12 @@ Next step is to get all dependencies:
   pip3 install -r requirements.txt
 ```
 
-And let's build libgit2 from source:
+Currently on raspberry pi we need to build libgit2 manually from source as it is now:
 ```shell
-  wget https://github.com/libgit2/libgit2/releases/download/v1.1.0/libgit2-1.1.0.tar.gz
+  sudo apt install cmake
+  mkdir ~/software
+  cd ~/software
+  wget --no-check-certificate https://github.com/libgit2/libgit2/releases/download/v1.1.0/libgit2-1.1.0.tar.gz
   tar xzf libgit2-1.1.0.tar.gz
   cd libgit2-1.1.0/
   cmake .
