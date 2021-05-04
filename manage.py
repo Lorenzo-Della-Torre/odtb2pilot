@@ -19,11 +19,16 @@ def config_environ(platform):
     sys.path.append(dirname(__file__))
     sys.path.append(join(dirname(__file__), "test_folder/automated"))
     sys.path.append(join(dirname(__file__), "test_folder/manual"))
-    odtb_proj = f"MEP2_{platform}"
-    odtb_proj_parm = join(dirname(__file__), f"projects/{odtb_proj}")
-    environ["ODTBPROJ"] = odtb_proj
-    environ["ODTBPROJPARAM"] = odtb_proj_parm
-    sys.path.append(odtb_proj_parm)
+    if not ("ODTBPROJ" in environ and "ODTBPROJPARAM" in environ):
+        odtb_proj = f"MEP2_{platform}"
+        odtb_proj_parm = join(dirname(__file__), f"projects/{odtb_proj}")
+        # setting environment variables for process internal settings is not
+        # that pretty, but let's do it like this for now to get away from
+        # having to set these all the time in the shell.
+        environ["ODTBPROJ"] = odtb_proj
+        environ["ODTBPROJPARAM"] = odtb_proj_parm
+        if not odtb_proj_parm in sys.path:
+            sys.path.append(odtb_proj_parm)
 
 def check_install():
     """ Make sure that the installation is setup and configured properly """
