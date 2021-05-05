@@ -25,8 +25,9 @@ def run_tests(
     """
     run tests from list of tests and optionally log to message bus and/or db
     """
-    analytics.messagehandler(use_db=use_db, use_mq=use_mq)
-    analytics.testsuite_started()
+    if save_result:
+        analytics.messagehandler(use_db=use_db, use_mq=use_mq)
+        analytics.testsuite_started()
 
     if save_result:
         now = datetime.now().strftime("%Y%m%d_%H%M")
@@ -52,10 +53,12 @@ def run_tests(
             # let's use the filename as the test case name for none dut tests
             test_case_name = test_file_py.name
 
-        analytics.testcase_started(test_case_name)
+        combine_steps = not dut_is_imported
+        if save_result:
+            analytics.testcase_started(test_case_name)
+            if combine_steps:
+                analytics.teststep_started("combined step")
 
-        if not dut_is_imported:
-            analytics.teststep_started("combined step")
 
         if reset_between:
             # this is a bit hacky, but let's keep it for now
@@ -86,12 +89,13 @@ def run_tests(
         spec = importlib.util.spec_from_file_location("req_test", test_file_py)
         req_test = importlib.util.module_from_spec(spec)
 
+        epsmsgbus_testcase_verdict = "unknown"
         try:
             spec.loader.exec_module(req_test)
             req_test.run()
         except: # pylint: disable=bare-except
             log.critical("Testcase failed: %s", sys.exc_info()[0])
-            analytics.testcase_ended("errored", combine_steps=(not dut_is_imported))
+            epsmsgbus_testcase_verdict = "errored"
             # this should probably be logged as an ERRORED in the result file
 
         if save_result:
@@ -108,24 +112,34 @@ def run_tests(
                 # this to the result file if there is no result. We might
                 # want to consider adding an ERRORED state instead, but
                 # that will have to come later
-                verdict = ""
+                hilding_verdict = ""
                 for line in log_file_handle.readlines():
                     match = re.search(r'Testcase result: (.*)', line)
                     if match:
-                        verdict = match.group(1)
+                        hilding_verdict = match.group(1)
+                        if hilding_verdict == "PASSED":
+                            epsmsgbus_testcase_verdict = "passed"
+                        elif hilding_verdict == "FAILED":
+                            epsmsgbus_testcase_verdict = "failed"
+                        else:
+                            epsmsgbus_testcase_verdict = "errored"
 
                 # append to result file
                 with open(result_file, mode='a') as result_file_handle:
-                    result_file_handle.write(f"{reqprod} {verdict} {log_file.name}\n")
+                    result_file_handle.write(f"{reqprod} {hilding_verdict} {log_file.name}\n")
 
-                log.critical("%s done: verdict = %s", reqprod, verdict)
+                log.critical("%s done: hilding_verdict = %s", reqprod, hilding_verdict)
 
     if save_result:
+        if combine_steps:
+            analytics.teststep_ended(epsmsgbus_testcase_verdict)
+        analytics.testcase_ended(epsmsgbus_testcase_verdict, combine_steps)
+        analytics.testsuite_ended()
+
         with open(result_file, mode='a') as result_file_handle:
             now = datetime.now().strftime("%Y%m%d %H%M")
             result_file_handle.write(f"Test done. Time: {now}")
 
-    analytics.testsuite_ended()
 
 def get_automated_files(glob_pattern):
     """ use fzf to select tests to run """
