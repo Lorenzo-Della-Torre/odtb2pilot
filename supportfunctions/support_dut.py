@@ -114,8 +114,7 @@ class Dut:
 
     def postcondition(self, start_time, result):
         """ run postconditions and change to mode 1 """
-        return SupportPostcondition().postcondition(
-            self, start_time, result, combine_steps=False)
+        return SupportPostcondition().postcondition(self, start_time, result)
 
     def start(self):
         """ log the current time and return a timestamp """
