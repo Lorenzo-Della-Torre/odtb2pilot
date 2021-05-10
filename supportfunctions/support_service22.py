@@ -524,7 +524,7 @@ class SupportService22:
             if 'did' in did_dict and did_id in did_dict['did']:
                 c_did = True
             # Verifying payload length
-            if ('payload_length' in did_dict and int(did_dict['Size']) ==
+            if ('payload_length' in did_dict and int(did_dict['size']) ==
                     did_dict['payload_length']):
                 pass_or_fail_counter_dict['Passed'] += 1
                 c_size = True
@@ -532,7 +532,7 @@ class SupportService22:
             else:
                 if 'payload_length' in did_dict:
                     did_dict['error_message'] = 'Size wrong. Expected %s but was %s' % (
-                        did_dict['Size'], str(did_dict['payload_length']))
+                        did_dict['size'], str(did_dict['payload_length']))
                 else:
                     did_dict['error_message'] = 'No payload?'
                 pass_or_fail_counter_dict['Failed'] += 1
@@ -545,8 +545,7 @@ class SupportService22:
             if 'Negative response: requestOutOfRange (31)' in did_dict['error_message']:
                 pass_or_fail_counter_dict['requestOutOfRange (31)'] += 1
 
-        did = did_dict['ID']
-        name = did_dict['Name']
+        name = did_dict['name']
         scal_val_list = list()
         if 'formatted_result_value' in did_dict:
             for formatted_result_value in did_dict['formatted_result_value']:
@@ -562,12 +561,12 @@ class SupportService22:
             pp_payload = 'Payload: ' + SUPPORT_TEST.add_ws_every_nth_char(payload, 16)
 
         formula = str()
-        if 'Formula' in did_dict:
-            formula = did_dict['Formula']
+        if 'formula' in did_dict:
+            formula = did_dict['formula']
 
         data = 'Formula = [' + formula + '] ' + pp_payload
 
-        info_entry = Infoentry(did=did, name=name, c_sid=c_sid, c_did=c_did, c_size=c_size,
+        info_entry = Infoentry(did=did_id, name=name, c_sid=c_sid, c_did=c_did, c_size=c_size,
                                scal_val_list=scal_val_list, err_msg=err_msg, payload=data)
         return info_entry, pass_or_fail_counter_dict
 

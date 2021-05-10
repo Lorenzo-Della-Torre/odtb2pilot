@@ -85,20 +85,20 @@ UdsResponse:
   raw = 104A62EDA0...
   data =
     details:
-      sddb_name: Complete ECU Part/Serial Number(s)
-      sddb_size: 64
+      name: Complete ECU Part/Serial Number(s)
+      size: 64
       item: F12032299361204142...
       F12A: 32290749202020
-      F12A_info: {'sddb_name': 'ECU Core Assembly Part Number', 'sddb_size': 7}
+      F12A_info: {'name': 'ECU Core Assembly Part Number', 'size': 7}
       F12B: FFFFFFFFFFFFFF
-      F12B_info: {'sddb_name': 'ECU Delivery Assembly Part Number', 'sddb_size': 7}
+      F12B_info: {'name': 'ECU Delivery Assembly Part Number', 'size': 7}
       F18C: 30400011
-      F18C_info: {'sddb_name': 'ECU Serial Number', 'sddb_size': 4}
+      F18C_info: {'name': 'ECU Serial Number', 'size': 4}
       F120: 32299361204142
-      F120_info: {'sddb_name': 'Application Diagnostic Database Part Number', 'sddb_size': 7}
+      F120_info: {'name': 'Application Diagnostic Database Part Number', 'size': 7}
       F120_valid: 32299361 AB
       F12E: 0532299425204145322994272041433229942920414532299430204141
-      F12E_info: {'sddb_name': 'ECU Software Part Numbers', 'sddb_size': 29, 'records': 5}
+      F12E_info: {'name': 'ECU Software Part Numbers', 'size': 29, 'records': 5}
       F12E_list: ['32299425204145', '32299427204143', '32299429204145', '32299430204141', '32263666204141']
       F12E_valid: ['32299425 AE', '32299427 AC', '32299429 AE', '32299430 AA', '32263666 AA']
     sid: 62
