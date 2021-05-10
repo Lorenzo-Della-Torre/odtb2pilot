@@ -126,7 +126,7 @@ def validate_dids(dut, dids):
         if not did.hex().upper()+'_valid' in res.data['details']:
             raise DutTestError(
                 "No valid {} returned by ecu".format(
-                    res.data['details']['sddb_name']))
+                    res.data['details']['name']))
 
 
 def run():

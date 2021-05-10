@@ -106,10 +106,7 @@ def step_4(can_p):
     stepresult = len(app_did_dict) > 0
     logging.info("Step %s: DID:s in dictionary: %s", stepno, len(app_did_dict))
 
-    for did_dict_from_file_values in app_did_dict.values():
-
-        did_id = did_dict_from_file_values['ID']
-        did_dict_with_result = did_dict_from_file_values
+    for did_id, did_info in app_did_dict.items():
 
         if ((0xD900 <= int(did_id, base=16) <= 0xDCFF) or
             (0xE300 <= int(did_id, base=16) <= 0xE4FF) or
@@ -122,18 +119,17 @@ def step_4(can_p):
             logging.info('DID counter: %s', str(did_counter))
 
             logging.info("Testing DID: %s", did_id)
-            logging.info(did_dict_with_result)
+            logging.info(did_info)
 
             # Using Service 22 to request a particular DID, returning the result in a dictionary
             did_dict_from_service_22 = SE22.get_did_info(can_p, did_id, RESPONSE_TIMEOUT)
 
-            # Copy info to the did_dict_with_result dictionary from the did_dict
-            did_dict_with_result = SE22.adding_info(did_dict_from_service_22, did_dict_with_result)
+            # Copy info to the did_info dictionary from the did_dict
+            did_info = SE22.adding_info(did_dict_from_service_22, did_info)
 
             # Summarizing the result
-            info_entry, pass_or_fail_counter_dict = SE22.summarize_result(did_dict_with_result,
-                                                                      pass_or_fail_counter_dict,
-                                                                      did_id)
+            info_entry, pass_or_fail_counter_dict = SE22.summarize_result(
+                did_info, pass_or_fail_counter_dict, did_id)
 
             # Add the results
             result_list.append(info_entry)

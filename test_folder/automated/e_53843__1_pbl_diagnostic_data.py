@@ -156,7 +156,7 @@ def step_6(can_p):
     stepresult = len(pbl_did_dict) > 0
     logging.info("Step %s: DID:s in dictionary: %s", stepno, len(pbl_did_dict))
 
-    for did_dict_from_file_values in pbl_did_dict.values():
+    for did_id, did_info in pbl_did_dict.items():
         did_counter += 1
         if did_counter > MAX_NO_OF_DIDS:
             logging.info("MAX_NO_OF_DIDS reached: %s", MAX_NO_OF_DIDS)
@@ -164,20 +164,20 @@ def step_6(can_p):
 
         logging.debug('DID counter: %s', str(did_counter))
 
-        did_id = did_dict_from_file_values['ID']
-        did_dict_with_result = did_dict_from_file_values
-        logging.info(did_dict_with_result)
+        logging.debug("did_id: %s", did_id)
+        logging.debug("did_info: %s", did_info)
 
         # Using Service 22 to request a particular DID, returning the result in a dictionary
         did_dict_from_service_22 = SE22.get_did_info(can_p, did_id, RESPONSE_TIMEOUT)
+        logging.debug("did_dict_from_service_22: %s", did_dict_from_service_22)
 
-        # Copy info to the did_dict_with_result dictionary from the did_dict
-        did_dict_with_result = SE22.adding_info(did_dict_from_service_22, did_dict_with_result)
+        # Copy info to the did_info dictionary from the did_dict
+        did_info = SE22.adding_info(did_dict_from_service_22, did_info)
+        logging.debug("did_info: %s", did_info)
 
         # Summarizing the result
-        info_entry, pass_or_fail_counter_dict = SE22.summarize_result(did_dict_with_result,
-                                                                      pass_or_fail_counter_dict,
-                                                                      did_id)
+        info_entry, pass_or_fail_counter_dict = SE22.summarize_result(
+            did_info, pass_or_fail_counter_dict, did_id)
 
         # Add the results
         result_list.append(info_entry)
