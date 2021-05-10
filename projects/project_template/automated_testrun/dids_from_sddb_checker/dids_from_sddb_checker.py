@@ -431,9 +431,8 @@ def did_checker(dids, can_p, response_item_dict, pass_or_fail_counter_dict, max_
             did_dict_with_result = scale_data(did_dict_with_result, response_item_dict)
 
         # Summarizing the result
-        info_entry, pass_or_fail_counter_dict = SE22.summarize_result(did_dict_with_result,
-                                                                      pass_or_fail_counter_dict,
-                                                                      did_id)
+        info_entry, pass_or_fail_counter_dict = summarize_result_sddb_checker(
+            did_dict_with_result, pass_or_fail_counter_dict, did_id)
         # Add the results
         result_list.append(info_entry)
 
@@ -444,6 +443,75 @@ def did_checker(dids, can_p, response_item_dict, pass_or_fail_counter_dict, max_
 
     return result_list
 
+def summarize_result_sddb_checker(cls, did_dict, pass_or_fail_counter_dict, did_id):
+    '''
+    Comparing the expected size with the actual size and
+    compares the received DID value with the expected DID value.
+    Adding how the tests went to the did dictionary and adds one 'Failed' or 'Passed'
+    to the result dictionary.
+    '''
+
+    # NOTE: this function was copied from SE22 and once we have converted the
+    # rest of this file to use build.did we can go back to using it.
+
+    c_did = False
+    c_sid = False
+    c_size = False
+
+    if 'sid_test' in did_dict and did_dict['sid_test']:
+        c_sid = True
+    # No error message yet
+    if 'error_message' not in did_dict:
+        # Verifying DID in response
+        if 'did' in did_dict and did_id in did_dict['did']:
+            c_did = True
+        # Verifying payload length
+        if ('payload_length' in did_dict and int(did_dict['Size']) ==
+                did_dict['payload_length']):
+            pass_or_fail_counter_dict['Passed'] += 1
+            c_size = True
+        # Wrong payload length
+        else:
+            if 'payload_length' in did_dict:
+                did_dict['error_message'] = 'Size wrong. Expected %s but was %s' % (
+                    did_dict['Size'], str(did_dict['payload_length']))
+            else:
+                did_dict['error_message'] = 'No payload?'
+            pass_or_fail_counter_dict['Failed'] += 1
+
+    # Already an error message
+    else:
+        pass_or_fail_counter_dict['Failed'] += 1
+        if 'Negative response: conditionsNotCorrect (22)' in did_dict['error_message']:
+            pass_or_fail_counter_dict['conditionsNotCorrect (22)'] += 1
+        if 'Negative response: requestOutOfRange (31)' in did_dict['error_message']:
+            pass_or_fail_counter_dict['requestOutOfRange (31)'] += 1
+
+    did = did_dict['ID']
+    name = did_dict['Name']
+    scal_val_list = list()
+    if 'formatted_result_value' in did_dict:
+        for formatted_result_value in did_dict['formatted_result_value']:
+            scal_val_list.append(formatted_result_value)
+
+    err_msg = str()
+    if 'error_message' in did_dict:
+        err_msg = did_dict['error_message']
+
+    pp_payload = str()
+    if 'payload' in did_dict:
+        payload = did_dict['payload']
+        pp_payload = 'Payload: ' + SUPPORT_TEST.add_ws_every_nth_char(payload, 16)
+
+    formula = str()
+    if 'Formula' in did_dict:
+        formula = did_dict['Formula']
+
+    data = 'Formula = [' + formula + '] ' + pp_payload
+
+    info_entry = Infoentry(did=did, name=name, c_sid=c_sid, c_did=c_did, c_size=c_size,
+                           scal_val_list=scal_val_list, err_msg=err_msg, payload=data)
+    return info_entry, pass_or_fail_counter_dict
 
 def run_main_part(parsed_sddb): # pylint: disable=too-many-locals
     '''
