@@ -8,7 +8,6 @@ import importlib
 from datetime import datetime
 from pathlib import Path
 
-from pygit2 import Repository
 from iterfzf import iterfzf
 
 from supportfunctions import analytics
@@ -142,8 +141,15 @@ def runner(args):
     else:
         # see if we can find a reqprod number in current branch (that is, if
         # the branch is named like req_60112 or BSW_REQPROD_60112)
-        repo = Repository('.')
-        branch_name_reqprod = re.findall(r'\d{5,6}', repo.head.shorthand)
+        branch_name_reqprod = None
+        try:
+            # pylint: disable=import-outside-toplevel
+            from pygit2 import Repository
+            repo = Repository('.')
+            branch_name_reqprod = re.findall(r'\d{5,6}', repo.head.shorthand)
+        except ImportError:
+            pass
+
         if branch_name_reqprod:
             for reqprod in branch_name_reqprod:
                 test_files = get_automated_files(f"*{reqprod}*.py")
