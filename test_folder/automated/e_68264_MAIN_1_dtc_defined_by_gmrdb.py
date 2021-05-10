@@ -113,8 +113,8 @@ def step_1(can_p):
                 return True
 
             # testing that the snapshots contain dids according to SDDB
-            for snapshot in dtc["SnapshotDIDs"]:
-                for _, did in snapshot["DataIdentifierReference"].items():
+            for snapshot in dtc["snapshot_dids"]:
+                for _, did in snapshot["did_ref"].items():
                     if not did in message:
                         logging.error(
                             "DTC %s snapshot request does not return a "

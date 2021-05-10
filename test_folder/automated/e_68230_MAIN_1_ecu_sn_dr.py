@@ -70,7 +70,6 @@ import logging
 
 from supportfunctions.support_dut import Dut
 from supportfunctions.support_dut import DutTestError
-from supportfunctions.support_uds import IoVmsDid
 
 
 def step_1(dut: Dut):
@@ -152,7 +151,8 @@ def step_7(dut: Dut):
 
 
 def __call_f18c(dut: Dut):
-    response = dut.uds.read_data_by_id_22(IoVmsDid.ecu_serial_number_f18c)
+    ecu_serial_number_f18c = bytes.fromhex('F18C')
+    response = dut.uds.read_data_by_id_22(ecu_serial_number_f18c)
     if response.empty() or not response.data["did"] == "F18C":
         raise DutTestError("Could not retrieve ECU serial number")
 
@@ -163,10 +163,10 @@ def __call_f18c(dut: Dut):
     if len(item) != 8:
         raise DutTestError("ECU has incorrect length")
 
-    sddb_size = response.data["details"]["sddb_size"]
-    if sddb_size != 4:
+    size = response.data["details"]["size"]
+    if size != 4:
         raise DutTestError(f"SDDB contains wrong ECU serial number "
-                           f"length definition: {sddb_size}")
+                           f"length definition: {size}")
 
     return item
 
