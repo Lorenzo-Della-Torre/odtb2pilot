@@ -1,5 +1,7 @@
 """
 Pytest unit tests for support_uds.py
+
+The class takes replies as hex strings from the ECU and parses out the relevant parts.
 """
 import pytest
 from supportfunctions.support_uds import UdsResponse
@@ -8,10 +10,13 @@ from supportfunctions.support_uds import extract_fields
 
 def test_uds_response():
     """ pytest: UdsResponse """
+    # test the did F12C
     f12c_response = "100A62F12C32263666204141"
     response = UdsResponse(f12c_response)
     assert response.data['did'] == "F12C"
     assert response.data['details']['valid'] == "32263666 AA"
+
+    # test the composite did EDA0
     eda0 = "104A62EDA0F12032299361204142F12A32290749202020F12BFFFFFFFFFFFFFF" + \
     "F12E053229942520414532299427204143322994292041453229943020414132263666204141" + \
     "F18C30400011"
@@ -20,6 +25,7 @@ def test_uds_response():
 
 def test_uds_reponse_with_mode():
     """ pytest: make sure uds response with mode works properly """
+    # test the did F122
     f122_response = "XXXX62F122"
     response = UdsResponse(f122_response, mode=3)
     assert response.data['did'] == "F122"
