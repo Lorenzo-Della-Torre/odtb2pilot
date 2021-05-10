@@ -62,6 +62,10 @@ def beamy_feature(func):
 def analytics_test_step(func):
     """ Decorator to add test step analytics """
     def wrapper_test_step(self, *args, **kwargs):
+        if analytics.lack_testcases():
+            return func(self, *args, **kwargs)
+
+        # we can only add test steps if we have a testcase
         analytics.teststep_started(
             f"step {self.uds.step}: {self.uds.purpose}")
         try:

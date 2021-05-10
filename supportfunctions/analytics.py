@@ -3,6 +3,7 @@ Add results from Hilding test to JAKOB db and the cynosure message bus
 """
 
 import sys
+import logging
 from secrets import token_urlsafe
 from datetime import datetime
 
@@ -33,6 +34,12 @@ required_attr = [
 
 # we choose to use 7 bytes here to use the same token length as pmt
 TOKEN_LENGTH = 7
+
+log = logging.getLogger("analytics")
+
+def lack_testcases():
+    """the testsuite does not have any started testcases"""
+    return bool(epsmsgbus.core.testsuite().testcases == [])
 
 def analytics_config(name):
     """Get config names or a default dummy value"""
@@ -142,6 +149,7 @@ def testsuite_started():
     jobid = f"HD_JOB_{date}_{token}"
     adapter = TestSuiteDataAdapter(jobid=jobid)
     epsmsgbus.testsuite_started(adapter, adapter.name)
+    log.debug("testsuite_started: jobid=%s", jobid)
 
 
 @require_use_epsmsgbus
@@ -150,12 +158,17 @@ def testsuite_ended():
     # No verdict = use the worst verdict of the test cases
     epsmsgbus.testsuite_ended()
 
+    # this should probaly be done in epsmsgbus, but let's put it here for now
+    epsmsgbus.core.testsuite().testcases = []
+    log.debug("testsuite_ended")
+
 
 @require_use_epsmsgbus
 def testcase_started(name):
     """Signal that test case ended. Link adapter and API function."""
     adapter = TestCaseDataAdapter(name)
     epsmsgbus.testcase_started(adapter, name)
+    log.debug("testcase_started: %s", name)
 
 
 @require_use_epsmsgbus
@@ -164,6 +177,8 @@ def testcase_ended(verdict, combine_steps=False):
     if combine_steps:
         teststep_ended(verdict)
     epsmsgbus.testcase_ended(verdict)
+    log.debug("testcase_ended: verdict=%s combine_steps=%s", verdict,
+              combine_steps)
 
 
 @require_use_epsmsgbus
@@ -171,14 +186,17 @@ def teststep_started(name):
     """Signal that test step started. Link adapter and API function."""
     adapter = TestStepDataAdapter()
     epsmsgbus.teststep_started(adapter, name)
+    log.debug("teststep_started: %s", name)
 
 
 @require_use_epsmsgbus
 def teststep_ended(verdict):
     """Signal that test step ended. Link adapter and API function."""
     epsmsgbus.teststep_ended(verdict)
+    log.debug("teststep_ended: verdict=%s", verdict)
 
 @require_use_epsmsgbus
 def messagehandler(use_db=False, use_mq=False):
     """Configure what to connect to"""
     epsmsgbus.messagehandler(use_db, use_mq)
+    log.debug("messagehandler: use_db=%s use_mq=%s", use_db, use_mq)

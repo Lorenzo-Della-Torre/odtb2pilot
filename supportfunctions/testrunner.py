@@ -5,6 +5,7 @@ import re
 import logging
 import sys
 import importlib
+import traceback
 from datetime import datetime
 from pathlib import Path
 
@@ -29,7 +30,6 @@ def run_tests(
         analytics.messagehandler(use_db=use_db, use_mq=use_mq)
         analytics.testsuite_started()
 
-    if save_result:
         now = datetime.now().strftime("%Y%m%d_%H%M")
         test_res_dir = Path(f"Testrun_{now}_BECM_BT")
         test_res_dir.mkdir(exist_ok=True)
@@ -67,9 +67,9 @@ def run_tests(
             # run the reset test script
             try:
                 set_ecu_to_default.run()
-            except: # pylint: disable=bare-except
+            except Exception as e: # pylint: disable=broad-except
                 logging.critical(
-                    "set ecu to default failed: %s", sys.exc_info()[0])
+                    "Set ecu to default failed:\n%s", e)
                 sys.exit("If we can't reset the ecu, we can't reply on the "
                          "test being correct. Exiting...")
 
@@ -93,9 +93,11 @@ def run_tests(
         try:
             spec.loader.exec_module(req_test)
             req_test.run()
-        except: # pylint: disable=bare-except
-            log.critical("Testcase failed: %s", sys.exc_info()[0])
+        except Exception as e: # pylint: disable=broad-except
+            log.critical("Testcase failed:\n%s", e)
             epsmsgbus_testcase_verdict = "errored"
+            log.error("An exception was hit while running the hwtest: \n%s",
+                      traceback.format_exc())
             # this should probably be logged as an ERRORED in the result file
 
         if save_result:
@@ -130,10 +132,12 @@ def run_tests(
 
                 log.critical("%s done: hilding_verdict = %s", reqprod, hilding_verdict)
 
+        if save_result:
+            if combine_steps:
+                analytics.teststep_ended(epsmsgbus_testcase_verdict)
+            analytics.testcase_ended(epsmsgbus_testcase_verdict, combine_steps)
+
     if save_result:
-        if combine_steps:
-            analytics.teststep_ended(epsmsgbus_testcase_verdict)
-        analytics.testcase_ended(epsmsgbus_testcase_verdict, combine_steps)
         analytics.testsuite_ended()
 
         with open(result_file, mode='a') as result_file_handle:
@@ -147,6 +151,7 @@ def get_automated_files(glob_pattern):
     files = [str(f) for f in automated.glob(glob_pattern)]
     test_files = iterfzf(files, multi=True)
     return [Path(p) for p in test_files]
+
 
 def runner(args):
     """ test suite/case runner """
