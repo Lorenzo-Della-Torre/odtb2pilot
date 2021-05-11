@@ -172,13 +172,10 @@ def testcase_started(name):
 
 
 @require_use_epsmsgbus
-def testcase_ended(verdict, combine_steps=False):
+def testcase_ended(verdict):
     """Signal that test case ended. Link adapter and API function."""
-    if combine_steps:
-        teststep_ended(verdict)
     epsmsgbus.testcase_ended(verdict)
-    log.debug("testcase_ended: verdict=%s combine_steps=%s", verdict,
-              combine_steps)
+    log.debug("testcase_ended: verdict=%s", verdict)
 
 
 @require_use_epsmsgbus
