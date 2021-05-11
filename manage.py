@@ -129,9 +129,9 @@ if __name__ == "__main__":
         "or gives you a list of test to select from"
     )
     run_parser.add_argument('reqprod', nargs='?')
+    run_parser.add_argument('--save-result', action="store_true")
     run_parser.add_argument('--use-db', action="store_true")
     run_parser.add_argument('--use-mq', action="store_true")
-    run_parser.add_argument('--save-result', action="store_true")
     run_parser.add_argument('--reset-between', action="store_true")
 
     nightly_parser = subparsers.add_parser(
@@ -144,9 +144,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # we probably want to make all of the logging user configurable, but right
-    # not let's just start with the level
+    # now let's just start with the level
     logging.basicConfig(
-        format='%(levelname)s %(message)s', stream=sys.stdout,
+        format='%(levelname)s %(name)s %(message)s', stream=sys.stdout,
         level=getattr(logging, args.loglevel.upper()))
 
     config_environ(args.platform.upper())
