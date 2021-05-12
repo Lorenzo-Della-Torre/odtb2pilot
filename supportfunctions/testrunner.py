@@ -94,7 +94,8 @@ def run_test(test_file_py):
     verdict = "unknown"
     try:
         spec.loader.exec_module(module)
-        module.run()
+        if 'run' in dir(module):
+            module.run()
     except Exception as e: # pylint: disable=broad-except
         log.critical("Testcase failed:\n%s", e)
         verdict = "errored"
