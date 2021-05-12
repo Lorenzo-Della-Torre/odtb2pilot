@@ -99,7 +99,7 @@ def run_test(test_file_py):
     except Exception as e: # pylint: disable=broad-except
         log.critical("Testcase failed:\n%s", e)
         verdict = "errored"
-        log.error("An exception was hit while running the hwtest: \n%s",
+        log.error("An exception was hit while running the ecutest: \n%s",
                   traceback.format_exc())
         # should probably be logged as ERRORED in Result.txt
     return verdict
@@ -194,10 +194,10 @@ def run_tests_and_save_results(test_files, use_db=False, use_mq=False,
     add_testsuite_endtime(result_file)
 
 
-def get_automated_files(glob_pattern):
+def get_ecutest_files(glob_pattern):
     """ use fzf to select tests to run """
-    automated = Path('test_folder/automated')
-    files = [str(f) for f in automated.glob(glob_pattern)]
+    ecutest = Path('test_folder')
+    files = [str(f) for f in ecutest.glob(glob_pattern)]
     test_files = iterfzf(files, multi=True)
     return [Path(p) for p in test_files]
 
@@ -206,7 +206,7 @@ def runner(args):
     """ test suite/case runner """
     if args.reqprod:
         file_name_fragment = args.reqprod.rstrip('.py')
-        test_files = get_automated_files(f"*{file_name_fragment}*.py")
+        test_files = get_ecutest_files(f"*/*{file_name_fragment}*.py")
     else:
         # see if we can find a reqprod number in current branch (that is, if
         # the branch is named like req_60112 or BSW_REQPROD_60112)
@@ -221,11 +221,11 @@ def runner(args):
 
         if branch_name_reqprod:
             for reqprod in branch_name_reqprod:
-                test_files = get_automated_files(f"*{reqprod}*.py")
+                test_files = get_ecutest_files(f"*/*{reqprod}*.py")
         else:
             # current git branch does not match so let's do a interactive fuzzy
             # select from all available automated tests
-            test_files = get_automated_files("*.py")
+            test_files = get_ecutest_files("*/*.py")
 
     if args.save_result:
         run_tests_and_save_results(
