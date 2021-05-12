@@ -66,8 +66,7 @@ def analytics_test_step(func):
             return func(self, *args, **kwargs)
 
         # we can only add test steps if we have a testcase
-        analytics.teststep_started(
-            f"step {self.uds.step}: {self.uds.purpose}")
+        analytics.teststep_started(f"step{self.uds.step}")
         try:
             result = func(self, *args, **kwargs)
         except DutTestError as error:

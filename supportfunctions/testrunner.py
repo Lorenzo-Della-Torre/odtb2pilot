@@ -18,12 +18,20 @@ import test_folder.on_the_fly_test.BSW_Set_ECU_to_default as set_ecu_to_default
 log = logging.getLogger('testrunner')
 
 
-def get_test_res_dir():
-    """ get the test result directory for storing logs and Result.txt """
-    now = datetime.now().strftime("%Y%m%d_%H%M")
-    test_res_dir = Path(f"Testrun_{now}_BECM_BT")
-    test_res_dir.mkdir(exist_ok=True)
-    return test_res_dir
+def get_test_res_dir(fmt="%Y%m%d_%H%M"):
+    """
+    get test result directory for storing logs and Result.txt
+
+    can be called be called multiple time, but will always return a directory
+    based on the first invocation
+    """
+    global _TEST_RES_DIR # pylint: disable=global-statement
+    if not _TEST_RES_DIR:
+        now = datetime.now().strftime(fmt)
+        _TEST_RES_DIR = Path(f"Testrun_{now}_BECM_BT")
+        _TEST_RES_DIR.mkdir(exist_ok=True)
+    return _TEST_RES_DIR
+_TEST_RES_DIR = None
 
 
 def configure_progress_log(test_res_dir):
