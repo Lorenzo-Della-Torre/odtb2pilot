@@ -129,6 +129,9 @@ def run_test_and_parse_log_to_result(test_file_py, result_file):
                     verdict = "passed"
                 elif hilding_verdict == "FAILED":
                     verdict = "failed"
+                elif any([hilding_verdict.startswith(s) for s in [
+                    "Not applicable",  "To be inspected",  "Tested implicitly"]]):
+                    verdict = "unknown"
                 else:
                     verdict = "errored"
 
