@@ -66,17 +66,18 @@ def analytics_test_step(func):
             return func(self, *args, **kwargs)
 
         # we can only add test steps if we have a testcase
-        analytics.teststep_started(f"step{self.uds.step}")
+        analytics.teststep_started(f"step{self.uds.step+1}")
         try:
             result = func(self, *args, **kwargs)
-        except DutTestError as error:
+        except DutTestError as e:
+            # maybe we should rename DutTestError to DutTestFailed instead
+            analytics.teststep_ended("failed")
+            raise e
+        except Exception as e:
             analytics.teststep_ended("errored")
-            raise error
-        else:
-            if result:
-                analytics.teststep_ended("passed")
-            else:
-                analytics.teststep_ended("failed")
+            raise e
+        # if we don't get any exception the test has passed
+        analytics.teststep_ended("passed")
         return result
     return wrapper_test_step
 
