@@ -158,7 +158,7 @@ def testsuite_ended():
     # No verdict = use the worst verdict of the test cases
     epsmsgbus.testsuite_ended()
 
-    # this should probaly be done in epsmsgbus, but let's put it here for now
+    # this should probably be done in epsmsgbus, but let's put it here for now
     epsmsgbus.core.testsuite().testcases = []
     log.debug("testsuite_ended")
 
