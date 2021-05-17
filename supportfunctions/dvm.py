@@ -44,19 +44,14 @@ def get_reqdata(test_file_py):
     reqdata.setdefault('postcondition', 'Default session')
     reqdata.setdefault('details', '')
 
-    dut_is_imported = False
-    if 'Dut' in dir(req_test):
-        dut_is_imported = True
-        logging.debug("dut style testcase")
-
-    return req_test, reqdata, dut_is_imported
+    return req_test, reqdata
 
 #pylint: disable=too-many-statements, too-many-locals
 def create_dvm(test_file_py):
     """
     creates a docx document in the current work directory from test_file_py
     """
-    req_test, reqdata, _ = get_reqdata(test_file_py)
+    req_test, reqdata = get_reqdata(test_file_py)
 
     steps = []
     for step_name in dir(req_test):

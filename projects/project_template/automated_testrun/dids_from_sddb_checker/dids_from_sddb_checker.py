@@ -583,7 +583,7 @@ def run_main_part(parsed_sddb): # pylint: disable=too-many-locals
         # postCondition
         ############################################
         logging.debug('\nPostcondition')
-        POST.postcondition(can_p, starttime, result, use_analytics=False)
+        POST.postcondition(can_p, starttime, result)
     except Exception as _: # pylint: disable=broad-except
         logging.error(traceback.format_exc())
         generate_error_page(str(traceback.format_exc()))

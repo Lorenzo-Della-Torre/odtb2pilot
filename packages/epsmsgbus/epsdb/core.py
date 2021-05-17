@@ -18,8 +18,8 @@ log = logging.getLogger("epsdb.core")
 # Globals ================================================================{{{1
 DEFAULT_CONFIG_NAME = 'db'
 
-TEST_FRAMEWORK = 'AutomationDesk'
-TEST_ENVIRONMENT = 'HIL'
+TEST_FRAMEWORK = 'hilding'
+TEST_ENVIRONMENT = 'pirig'
 
 
 # Database configuration ================================================={{{1
@@ -1025,10 +1025,12 @@ class Admin(object):
 
     framework_values = (
         ('unknown',     "Unknown framework"),
-        ('AutomationDesk', "dSPACE AutomationDesk"),)
+        ('AutomationDesk', "dSPACE AutomationDesk"),
+        ('hilding',     "Python based test framework"),)
 
     environment_values = (
-        ('HIL',     "Hardware-In-the-Loop testing"),)
+        ('HIL',     "Hardware-In-the-Loop testing"),
+        ('pirig',   "Hilding rig testing"),)
 
     reqtype_values = (
         ('srd', 'System requirement'),)

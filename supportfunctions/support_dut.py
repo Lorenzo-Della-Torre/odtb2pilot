@@ -62,18 +62,22 @@ def beamy_feature(func):
 def analytics_test_step(func):
     """ Decorator to add test step analytics """
     def wrapper_test_step(self, *args, **kwargs):
-        analytics.teststep_started(
-            f"step {self.uds.step}: {self.uds.purpose}")
+        if analytics.lack_testcases():
+            return func(self, *args, **kwargs)
+
+        # we can only add test steps if we have a testcase
+        analytics.teststep_started(f"step{self.uds.step+1}")
         try:
             result = func(self, *args, **kwargs)
-        except DutTestError as error:
+        except DutTestError as e:
+            # maybe we should rename DutTestError to DutTestFailed instead
+            analytics.teststep_ended("failed")
+            raise e
+        except Exception as e:
             analytics.teststep_ended("errored")
-            raise error
-        else:
-            if result:
-                analytics.teststep_ended("passed")
-            else:
-                analytics.teststep_ended("failed")
+            raise e
+        # if we don't get any exception the test has passed
+        analytics.teststep_ended("passed")
         return result
     return wrapper_test_step
 
@@ -114,8 +118,7 @@ class Dut:
 
     def postcondition(self, start_time, result):
         """ run postconditions and change to mode 1 """
-        return SupportPostcondition().postcondition(
-            self, start_time, result, combine_steps=False)
+        return SupportPostcondition().postcondition(self, start_time, result)
 
     def start(self):
         """ log the current time and return a timestamp """
