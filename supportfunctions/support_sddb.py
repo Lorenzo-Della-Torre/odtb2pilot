@@ -506,7 +506,6 @@ def parse_sddb_file():
         logging.info("Parse sddb file")
         tf.seek(0)
         tree = etree.parse(tf) # pylint: disable=c-extension-no-member
-
     root = tree.getroot()
     logging.debug(root.attrib)
 
