@@ -49,6 +49,7 @@ class IoVmsDid:
     app_diag_part_num_f120 = bytes.fromhex('F120')
     pbl_diag_part_num_f121 = bytes.fromhex('F121')
     sbl_diag_part_num_f122 = bytes.fromhex('F122')
+    sbl_software_part_num_f124 = bytes.fromhex('F124')
     pbl_software_part_num_f125 = bytes.fromhex('F125')
     ecu_core_assembly_part_num_f12a = bytes.fromhex('F12A')
     ecu_delivery_assembly_part_num_f12b = bytes.fromhex('F12B')
@@ -147,16 +148,16 @@ class UdsResponse:
 
     def __positive_response(self):
         if not self.mode:
-            self.all_defined_dids = {}
-            self.all_defined_dids.update(app_did_dict)
+            self.all_defined_dids = app_did_dict
             self.all_defined_dids.update(pbl_did_dict)
             self.all_defined_dids.update(sbl_did_dict)
-        elif self.mode == 1:
+        elif self.mode in [1, 3]:
             self.all_defined_dids = app_did_dict
         elif self.mode == 2:
+            # we should add a state in this class to keep track of if we are in
+            # pbl or sbl. then we should separate these two.
             self.all_defined_dids = pbl_did_dict
-        elif self.mode == 3:
-            self.all_defined_dids = sbl_did_dict
+            self.all_defined_dids.update(sbl_did_dict)
         else:
             sys.exit(f"Incorrect mode set: {self.mode}. Exiting...")
 
@@ -313,7 +314,7 @@ class UdsResponse:
 
     def validate_part_num(self, did, item):
         """ validate part number and add convert it to text format """
-        if did in ['F120', 'F121', 'F122', 'F125', 'F12A', 'F12B',
+        if did in ['F120', 'F121', 'F122', 'F124', 'F125', 'F12A', 'F12B',
                    'F12C', 'F12E']:
             if SupportTestODTB2.validate_part_number_record(item):
                 self.details[did+'_valid'] = \
