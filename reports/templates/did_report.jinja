@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <style type="text/css" media="all">
+    {{ content.style }}
+  </style>
+  <title></title>
+</head>
+<body>
+  <div id="header_box">
+    DID report
+  </div>
+
+  {% if content.error %}
+  <div id="error_msg">
+    <div id="error_msg_header">
+      Error occured when creating DID report:
+    </div>
+    <div id="error_msg_body">
+      {{ content.error }}
+    </div>
+  </div>
+  {% else %}
+  <div class="flex-container">
+    <div class="metadata_box">
+      <div class="metadata_header">
+        <h1 class="metadata">Testrun info</h1>
+        <table class="metadata_table">
+          <tbody>
+            <tr>
+              <td>Report Generator Hostname</td>
+              <td class="number">{{ content.hostname }}</td>
+            </tr>
+            <tr>
+              <td>Report generated</td>
+              <td class="number">{{ content.report_generated }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      {% if content.sddb_app_diag_part_num != content.part_numbers.F120_valid %}
+      <table class="metadata_table">
+        <tbody>
+          <tr>
+            <td class="thick-row" id="part_no_match">
+              Diagnostic part number is NOT matching! Expected {{ content.sddb_app_diag_part_num }}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      {% endif %}
+      <table class="metadata_table">
+        <tbody>
+          <tr>
+            <td class="thin-row">Application Diagnostic Database Part Number</td>
+            <td class="number thin-row">{{ content.part_numbers.F120_valid }}</td>
+          </tr>
+          <tr>
+            <td class="thin-row">ECU Core Assembly Part Number</td>
+
+            {% if content.part_numbers.F12A_valid %}
+            <td class="number thin-row">{{ content.part_numbers.F12A_valid }}</td>
+            {% else %}
+            <td class="number thin-row">{{ content.part_numbers.F12A }}</td>
+            {% endif %}
+          </tr>
+          <tr>
+            <td class="thin-row">ECU Delivery Assembly Part Number</td>
+
+            {% if content.part_numbers.F12B_valid %}
+            <td class="number thin-row">{{ content.part_numbers.F12B_valid }}</td>
+            {% else %}
+            <td class="number thin-row">{{ content.part_numbers.F12B }}</td>
+            {% endif %}
+          </tr>
+          <tr>
+            <td class="thin-row">ECU Serial Number</td>
+            <td class="number thin-row">{{ content.part_numbers.F18C }}</td>
+          </tr>
+          <tr>
+            <td class="thin-row">Total number of ECU Software Part Numbers</td>
+            <td class="number thin-row">{{ content.part_numbers.F12E_info.records }}</td>
+          </tr>
+
+          {% if content.part_numbers.F12E_valid|length > 0 %}
+          <tr>
+            <td class="thin-row">SWLM - Application SW</td>
+            <td class="number thin-row">{{ content.part_numbers.F12E_valid[0]}}</td>
+          </tr>
+          {% endif %}
+
+          {% if content.part_numbers.F12E_valid|length > 1 %}
+          <tr>
+            <td class="thin-row">SWP1 - Calibration parameter file</td>
+            <td class="number thin-row">{{ content.part_numbers.F12E_valid[1]}}</td>
+          </tr>
+          {% endif %}
+
+          {% if content.part_numbers.F12E_valid|length > 2 %}
+          <tr>
+            <td class="thin-row">ECU Software Structure Partnumber</td>
+            <td class="number thin-row">{{ content.part_numbers.F12E_valid[2]}}</td>
+          </tr>
+          {% endif %}
+
+        </tbody>
+      </table>
+    </div>
+    <div class="metadata_box">
+      <div class="metadata_header">
+        <h1 class="metadata">Summary</h1>
+      </div>
+      <table class="metadata_table">
+        <tbody>
+          <tr>
+            <td class="thin-row">Passed</td>
+            <td class="number thin-row">
+            {{ content.did_counter.passed }}
+            </td>
+          </tr>
+          <tr>
+            <td class="thin-row">Failed</td>
+            <td class="number thin-row">
+            {{ content.did_counter.failed }}
+            </td>
+          </tr>
+          <tr>
+            <td class="thin-row">conditionsNotCorrect (22)</td>
+            <td class="number thin-row">
+            {{ content.did_counter.conditions_not_correct }}
+            </td>
+          </tr>
+          <tr>
+            <td class="thin-row">requestOutOfRange (31)</td>
+            <td class="number thin-row">
+            {{ content.did_counter.request_out_of_range }}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <table id="main">
+    <tbody>
+      <tr>
+        <th class="main">DID</th>
+        <th class="main">Name</th>
+        <th class="main">Correct SID</th>
+        <th class="main">Correct DID</th>
+        <th class="main">Correct size</th>
+        <th class="main">Scaled values</th>
+        <th class="main">Error Message</th>
+        <th class="main">Payload</th>
+      </tr>
+      <tr class="stripe">
+        <th class="main" colspan="8">Primary Bootloader</th>
+      </tr>
+      {% for did in content.pbl_dids %}
+      {% include "did_row.jinja" %}
+      {% endfor %}
+      <tr class="stripe">
+        <th class="main" colspan="8">Secondary Bootloader</th>
+      </tr>
+      {% for did in content.sbl_dids %}
+      {% include "did_row.jinja" %}
+      {% endfor %}
+      <tr class="stripe">
+        <th class="main" colspan="8">Application</th>
+      </tr>
+      {% for did in content.app_dids %}
+      {% include "did_row.jinja" %}
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</body>
+</html>

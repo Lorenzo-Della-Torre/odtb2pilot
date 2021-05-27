@@ -4,6 +4,7 @@ Unified diagnostic services (ISO-14229-1)
 
 import re
 import sys
+import time
 import logging
 import textwrap
 from dataclasses import dataclass
@@ -11,6 +12,7 @@ from dataclasses import dataclass
 from build.did import pbl_did_dict
 from build.did import sbl_did_dict
 from build.did import app_did_dict
+from build.did import resp_item_dict
 from build.dtc import sddb_dtcs
 
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
@@ -56,6 +58,15 @@ class IoVmsDid:
     ecu_software_structure_part_number_f12c = bytes.fromhex('F12C')
     ecu_software_part_number_f12e = bytes.fromhex('F12E')
 
+@dataclass
+class IoSssDid:
+    """
+    Identification Options-System Supplier Specific
+
+    F1F0-F1FF
+    """
+    git_hash_f1f2 = bytes.fromhex('F1F2')
+
 class UdsEmptyResponse(Exception):
     """ Exception class to indicate that that response was empty """
 
@@ -86,7 +97,7 @@ class UdsResponse:
 
         response_patterns = [
             (r'.{2}7F(?P<service_id>.{2})(?P<nrc>.{2})', self.__negative_response),
-            (r'.{2,4}(?P<sid>59|62|6F|71)(?P<body>.*)', self.__positive_response)
+            (r'.{2,4}(?P<sid>51|59|62|6F|71)(?P<body>.*)', self.__positive_response)
         ]
         for pattern, processor in response_patterns:
             match = re.match(pattern, self.raw)
@@ -167,6 +178,7 @@ class UdsResponse:
             self.__did_regex[did] = r'{}(.{{{}}})'.format(did, length)
 
         service_types = {
+            "51": "ECUReset",
             "59": "ReadDTCInformation",
             "62": "ReadDataByIdentifier",
             "6F": "InputOutputControlByIdentifier",
@@ -191,6 +203,7 @@ class UdsResponse:
         self.details.update(info)
         self.details['item'] = item
         self.validate_part_num(did, item)
+        self.add_response_items(did, item)
 
         # execute did specific handler if it's defined
         for did_method in dir(self):
@@ -310,6 +323,7 @@ class UdsResponse:
                 self.details[did] = item
                 self.details[did+'_info'] = info
                 self.validate_part_num(did, item)
+                self.add_response_items(did, item)
 
 
     def validate_part_num(self, did, item):
@@ -319,6 +333,30 @@ class UdsResponse:
             if SupportTestODTB2.validate_part_number_record(item):
                 self.details[did+'_valid'] = \
                     SupportTestODTB2.pp_partnumber(item)
+
+    def add_response_items(self, did, payload):
+        """ add response items """
+        if did in resp_item_dict:
+            response_items = []
+            for resp_item in resp_item_dict[did]:
+                offset = resp_item['offset']
+                size = resp_item['size']
+                sub_payload = get_sub_payload(payload, offset, size)
+                scaled_value = get_scaled_value(resp_item, sub_payload)
+                if 'compare_value' in resp_item:
+                    compare_value = resp_item['compare_value']
+                    if compare(scaled_value, compare_value):
+                        logging.debug('Equal! Comparing %s with %s', str(compare_value),
+                                      scaled_value)
+                    continue
+
+
+                resp_item['sub_payload'] = sub_payload
+                resp_item['scaled_value'] = scaled_value
+
+                response_items.append(resp_item)
+
+            self.details['response_items'] = response_items
 
 
     def __str__(self):
@@ -422,6 +460,20 @@ class Uds:
 
         return UdsResponse(response[0][2], self.mode)
 
+
+    def ecu_reset_1101(self, delay=1):
+        """ Reset the ECU """
+        payload = bytes([0x11, 0x01])
+        reply =  self.__make_call(payload)
+        time.sleep(delay)
+        return reply
+
+    def ecu_reset_noreply_1181(self, delay=1):
+        """ Reset the ECU with no reply """
+        payload = bytes([0x11, 0x81])
+        reply =  self.__make_call(payload)
+        time.sleep(delay)
+        return reply
 
     def dtc_by_status_mask_1902(self, mask: DtcStatus):
         """ Read dtc by status mask """
@@ -537,3 +589,131 @@ def extract_fields(hexstring, regex_fields: list):
             hexstring = hexstring[:match.start(1)] + hexstring[match.end(2):]
     fields["unmatched_data"] = hexstring
     return fields
+
+
+def get_sub_payload(payload, offset, size):
+    """
+    Returns the chosen sub part of the payload based on the offset and size
+    Payload, offset and size is hexadecimal (16 base)
+    Every byte is two characters (multiplying with two)
+    """
+    start = int(offset, 16)*2
+    end = start+(int(size, 16)*2)
+
+    # Making sure the end is inside the payload
+    if len(payload) >= end:
+        sub_payload = payload[start:end]
+    else:
+        raise RuntimeError('Payload is to short!')
+    return sub_payload
+
+
+def populate_formula(formula, value, size):
+    '''
+    Replaces X in a formula with a value.
+    Input:  formula = Example: X*1
+            value   = Any value
+            size    = size of bitmask/payload when it was in hex
+
+    Output: The formula with X replaced.
+
+    If there is "bitwise AND" in the formula;
+    - '&amp;' is replaced with '&'.
+    - '0x' is removed from the hex value.
+    - The bitmask is translated from hex to decimal
+
+    Example 1:  Input:  Formula: X/100
+                        Value: 56
+                        Size: 1 (doesn't matter in this example)
+                Output: 56/100
+
+    Example 2:  Input:  Formula: X&amp;0xFFFE/2
+                        Value: 56
+                        Size: 2 (doesn't matter in this example)
+                Output: (56 & 65534)/2
+    '''
+
+    # Check for "Bitwise AND"
+    # Removing characters we don't want
+    formula = formula.replace('&amp;0x', '&0x')
+    and_pos_hex = formula.find('&0x')
+    and_pos_bit = formula.find('&0b')
+
+    # It is a bitwise-and HEX
+    if and_pos_hex != -1:
+        logging.debug('Formula = %s and_pos_hex = %s', formula, and_pos_hex)
+        hex_value = formula[and_pos_hex + 1:and_pos_hex + 3 + int(size) * 2]
+        formula = formula.replace(hex_value, str(int(hex_value, 16)) + ')')
+        populated_formula = formula.replace('X', '(' +str(value))
+    # It is a bitwise-and bit-mapping
+    elif and_pos_bit != -1:
+        logging.debug('Formula = %s and_pos_bit = %s', formula, and_pos_bit)
+        bit_value = bin(value)
+        populated_formula = formula.replace('X', '(' +str(bit_value) + ')')
+    else:
+        logging.debug('Value = %s', value)
+        populated_formula = formula.replace('X', str(value))
+    return populated_formula
+
+
+def get_scaled_value(resp_item, sub_payload):
+    """
+    Input - Response Item with at least formula
+            Value which should converted from raw data
+    Returns the string with converted data
+    """
+    if 'outdatatype' in resp_item and resp_item['outdatatype'] == '06':
+        sub_payload = sub_payload.rstrip("0") # Removing trailing zeros
+        utf8_text = bytearray.fromhex(sub_payload).decode() # decode from hex to utf-8
+        return utf8_text
+
+    int_value = int(sub_payload, 16)
+    if 'formula' in resp_item:
+        size = resp_item['size']
+        formula = resp_item['formula']
+        logging.debug('Formula = %s', formula)
+        populated_formula = populate_formula(formula, int_value, size)
+        logging.debug('Populated formula = %s', populated_formula)
+
+        try:
+            result = str(eval(populated_formula)) # pylint: disable=eval-used
+            int_result = int(float(result))
+            logging.debug('Formula = %s => %s', formula, result)
+            return int_result
+        except RuntimeError as runtime_error:
+            logging.fatal(runtime_error)
+        except SyntaxError as syntax_error:
+            logging.fatal(syntax_error)
+        except OverflowError as overflow_error:
+            logging.fatal(overflow_error)
+    else:
+        # If we reach this, then there is no formula.
+        # That is an issue, formula should be mandatory
+        logging.fatal('No formula!')
+        logging.fatal(resp_item)
+        logging.fatal(sub_payload)
+        raise RuntimeError('No formula!')
+    return int_result
+
+
+def compare(scaled_value, compare_value):
+    """
+    Comparing two values. Returns boolean.
+    If the compare value contains '=', then we add an '='
+    Example:    Scaled value:    0x40
+                Compare value:  =0x40
+                Result: eval('0x40==0x40') which gives True
+    """
+    improved_compare_value = compare_value
+    result = False # If not True, then default is False
+    # To be able to compare we need to change '=' to '=='
+    if '=' in compare_value:
+        improved_compare_value = compare_value.replace('=', '==')
+    try:
+        # pylint: disable=eval-used
+        result = eval(str(scaled_value) + str(improved_compare_value))
+    except NameError as name_error:
+        logging.error(name_error)
+    except SyntaxError as syntax_error:
+        logging.error(syntax_error)
+    return result
