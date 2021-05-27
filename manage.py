@@ -141,6 +141,11 @@ if __name__ == "__main__":
     nightly_parser.add_argument('--use-db', action="store_true")
     nightly_parser.add_argument('--use-mq', action="store_true")
 
+    did_report_parser = subparsers.add_parser(
+        "did_report", help="Generate a DID report by testing all dids "
+        "defined in the sddb database against the ECU"
+    )
+
     args = parser.parse_args()
 
     # we probably want to make all of the logging user configurable, but right
@@ -162,8 +167,13 @@ if __name__ == "__main__":
     elif args.command == 'dvm':
         create_dvm(args.test_script)
     elif args.command == 'run':
+        # pylint: disable=ungrouped-imports
         from supportfunctions.testrunner import runner
         runner(args)
     elif args.command == 'nightly':
+        # pylint: disable=ungrouped-imports
         from supportfunctions.testrunner import nightly
         nightly(args)
+    elif args.command == 'did_report':
+        from reports.did_report import did_report
+        did_report()

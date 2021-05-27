@@ -1,0 +1,247 @@
+body {
+  font-family: 'Time New Roman', Times, Arial, Tahoma;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 400;
+  color: #3b3b3b;
+  -webkit-font-smoothing: antialiased;
+  background: lightgrey;
+}
+
+td.number {
+  text-align: right;
+}
+a {
+  color:black; text-decoration: none;
+}
+
+/* Flexbox for the three top items */
+.flex-container {
+  display: flex;
+  flex-direction: row;
+}
+.flex-container > div {
+}
+
+
+/*
+####################
+#### DID Report ####
+####################
+ */
+#match, .match, #part_match {
+  /* Green */
+  background-color: #94f7a2
+}
+
+#no_match, .no_match, .error, #part_no_match {
+  /* red-ish */
+  background-color: #ff9ea6
+}
+
+.borderless, #scal_val {
+  border-style: none;
+  border: 0px;
+}
+
+#scal_val {
+  width:100%;
+  max-width: 540px;
+  overflow-wrap:break-word;
+}
+
+.no_wrap {
+  white-space: nowrap;
+}
+
+/*
+####################
+#### Header box ####
+####################
+ */
+#header_box {
+  background-color: #2980b9;
+  height: 60px;
+  line-height: 60px;
+  overflow:hidden;
+  width: 100%;
+  text-align:center;
+  vertical-align: middle;
+  border:1px black solid;
+  font-size: 45px;
+  font-weight: normal;
+  color: white;
+}
+
+/*
+#################################
+#### Legend, Coverage, Pic & Main ####
+#################################
+ */
+div.pic {
+  #width: 500px;
+  margin: 20px 20px 20px 0;
+  border: 1px solid black;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+div.legend {
+  margin: 20px 20px 20px 0;
+  width: 500px;
+  min-width:  550px;
+}
+
+table.legend, table#main, table#coverage {
+  border: 1px solid black;
+  border-collapse: collapse;
+}
+
+td.legend, td.main, td.coverage {
+  vertical-align: top;
+  border: 1px solid black;
+  border-collapse: collapse;
+  padding: 3px;
+}
+
+th.legend, th.main, th.coverage {
+  border: 1px solid black;
+  border-collapse: collapse;
+  font-weight: 400;
+  color: #ffffff;
+  background: #2980b9;
+  padding: 8px;
+}
+
+/*
+###################################
+#### Meta data (test run info) ####
+###################################
+ */
+div.metadata_box {
+  border: 1px solid black;
+  margin: 20px 20px 20px 20px;
+  width: 500px;
+  min-width: 500px;
+  padding: 0.5rem;
+  background-color: #f6f6f6;
+  color: #3b3b3b;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+#meta_data {float:left;margin:30px;}
+
+.metadata_title {
+  font-weight: bold;
+  font-size: 2rem;
+  margin: 0 0 0.25rem 0;
+}
+
+.metadata_header {
+  border-bottom: 10px solid black;
+  padding: 0 0 0.25rem 0;
+  margin: 0 0 0.5rem 0;
+}
+
+table.metadata_table {
+  width: 100%;
+  border-style: none;
+  border: 0px solid black;
+  border-collapse: collapse;
+  font-size: 1rem;
+  background-color: #f6f6f6;
+  color: #3b3b3b;
+}
+
+td.thick-row {
+  border-bottom: 5px solid black;
+  padding: 0.25rem 0 0.25rem 0;
+  margin: 0 0 0.5rem 0;
+}
+
+td.thin-row {
+  border-bottom: 1px solid black;
+  padding: 0.25rem 0 0.25rem 0;
+  margin: 0 0 0.25rem 0;
+}
+
+td.blank {
+  padding: 0.25rem 0 0.25rem 0;
+  margin: 0 0 0.25rem 0;
+}
+
+.ecu_git_hash {
+  overflow-wrap:break-word;
+  text-align: right;
+}
+
+/*
+###################################################
+#### Stripe - Use class stripe on <tr> to make ####
+#### every other row a different color         ####
+###################################################
+ */
+tr.stripe:nth-child(odd) {background-color: #e9e9e9;}
+tr.stripe:nth-child(even) {background-color: #f6f6f6;}
+
+/*
+###################
+#### Error box ####
+###################
+ */
+
+#error_msg {
+  width: 50%;
+  margin-top: 10px;
+  margin-left: auto;
+  margin-right: auto;
+  border:1px black solid;
+  padding:10px;
+  background-color: #ff9ea6
+}
+
+#error_msg_header {
+  text-align:center;
+  padding:10px;
+  font-size: 25px;
+}
+
+#error_msg_body {
+  text-align:left;
+  font-size: 20px;
+}
+
+/*
+###########################
+#### DID report button ####
+###########################
+ */
+.btn {
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 0.5rem;
+  margin-right: 1rem;
+  display: inline-block;
+  line-height: 1.25rem;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: middle;
+  user-select: none;
+  border: 1px solid black;
+  padding: .75rem 1.25rem;
+  font-size: 1rem;
+  border-radius: .25rem;
+  transition: all .2s ease-in-out;
+  position: absolute;
+  top: 0px;
+  right: 0px;
+}
+
+.btn:hover {
+  color: #fff;
+  background-color: #333;
+  border-color: #666;
+}
+
+#btn_container {
+  position: relative;
+}

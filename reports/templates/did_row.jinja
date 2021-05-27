@@ -1,0 +1,33 @@
+      <tr class="stripe">
+        <td class="main">{{ did.did_called }}</td>
+        <td class="main no_wrap">{{ did.name }}</td>
+
+        <td class="{% if did.sid_match %}match{% else %}no_match{% endif %} main" style="width:25px;">
+        </td>
+        <td class="{% if did.did_match %}match{% else %}no_match{% endif %} main" style="width:25px;">
+        </td>
+        <td class="{% if did.size_match %}match{% else %}no_match{% endif %} main" style="width:25px;">
+        </td>
+
+        <td class="main">
+          <table class="borderless">
+            <tbody>
+              {% for item in did.response_items %}
+              <tr>
+                <td id="scal_val">
+                  {{ item.name }} = {{ item.scaled_value }} {{ item.unit }}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </td>
+        <td class="main">{{ did.error_message }}</td>
+        <td class="main">
+          {% if did.response_items|length > 0 %}
+          Formula: [{{ did.response_items[0].formula }}]<br/>
+          Payload: {{ did.response_items[0].sub_payload }}<br/>
+          {% endif %}
+        </td>
+      </tr>
+
