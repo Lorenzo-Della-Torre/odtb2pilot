@@ -3,7 +3,7 @@ analytics test cases
 
 do make sure that these tests never writes to production db
 """
-from supportfunctions import analytics
+from hilding import analytics
 
 def _test_testcase_has_started():
     """analytics test case """

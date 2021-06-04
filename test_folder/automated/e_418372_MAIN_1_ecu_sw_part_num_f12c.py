@@ -35,10 +35,10 @@ import sys
 import logging
 
 from hilding.platform import get_platform
-from supportfunctions.support_dut import Dut
-from supportfunctions.support_dut import DutTestError
-from supportfunctions.support_uds import IoVmsDid
-from supportfunctions.support_uds import EicDid
+from hilding.dut import Dut
+from hilding.dut import DutTestError
+from hilding.uds import IoVmsDid
+from hilding.uds import EicDid
 from supportfunctions.support_SBL import SupportSBL
 
 

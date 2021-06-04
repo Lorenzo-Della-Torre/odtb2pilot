@@ -28,8 +28,8 @@ import logging
 import time
 import build.services as services
 
-from supportfunctions.support_dut import Dut
-from supportfunctions.support_dut import DutTestError
+from hilding.dut import Dut
+from hilding.dut import DutTestError
 
 # Test environment jitter estimated at 30 milliseconds
 TEST_ENV_JITTER = 30

@@ -16,11 +16,11 @@ from jinja2 import FileSystemLoader
 from build import did
 
 from hilding.platform import get_build_dir
-from supportfunctions.support_dut import Dut
-from supportfunctions.support_uds import EicDid
-from supportfunctions.support_uds import IoSssDid
-from supportfunctions.support_uds import UdsEmptyResponse
-from supportfunctions.support_sddb import write
+from hilding.dut import Dut
+from hilding.uds import EicDid
+from hilding.uds import IoSssDid
+from hilding.uds import UdsEmptyResponse
+from hilding.sddb import write
 
 log = logging.getLogger('did_report')
 

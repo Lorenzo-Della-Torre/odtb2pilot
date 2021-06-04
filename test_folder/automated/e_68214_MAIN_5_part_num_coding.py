@@ -36,9 +36,9 @@ details:
 import sys
 import logging
 
-from supportfunctions.support_dut import Dut
-from supportfunctions.support_dut import DutTestError
-from supportfunctions.support_uds import IoVmsDid
+from hilding.dut import Dut
+from hilding.dut import DutTestError
+from hilding.uds import IoVmsDid
 from supportfunctions.support_SBL import SupportSBL
 
 

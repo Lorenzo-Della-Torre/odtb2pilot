@@ -30,9 +30,9 @@ details:
 import sys
 import logging
 
-from supportfunctions.support_dut import Dut
-from supportfunctions.support_dut import DutTestError
-from supportfunctions.status_bits import DtcStatus
+from hilding.dut import Dut
+from hilding.dut import DutTestError
+from hilding.status_bits import DtcStatus
 
 def step_1(dut):
     """

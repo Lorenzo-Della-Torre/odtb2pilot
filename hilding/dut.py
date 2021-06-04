@@ -31,8 +31,8 @@ from protogenerated.network_api_pb2_grpc import NetworkServiceStub
 
 from supportfunctions.support_precondition import SupportPrecondition
 from supportfunctions.support_postcondition import SupportPostcondition
-from supportfunctions.support_uds import Uds
-from supportfunctions import analytics
+from hilding import analytics
+from hilding.uds import Uds
 from hilding.platform import get_platform
 from hilding.platform import get_release_dir
 from hilding.platform import get_parameters
