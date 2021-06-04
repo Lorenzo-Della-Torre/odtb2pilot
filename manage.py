@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-""" manage.py: Management commands for the ODTB project """
+""" manage.py: Management commands for the Hilding framework """
 
 import sys
 import logging
@@ -10,9 +10,9 @@ from argparse import ArgumentParser
 from pathlib import Path
 
 from hilding.platform import get_platform_dir
-from supportfunctions.support_sddb import parse_sddb_file
-from supportfunctions.support_sddb import get_sddb_file
-from supportfunctions.dvm import create_dvm
+from hilding.sddb import parse_sddb_file
+from hilding.sddb import get_sddb_file
+from hilding.dvm import create_dvm
 
 def config_environ(platform):
     """automatically set pythonpath and environment variables"""
@@ -168,11 +168,11 @@ if __name__ == "__main__":
         create_dvm(args.test_script)
     elif args.command == 'run':
         # pylint: disable=ungrouped-imports
-        from supportfunctions.testrunner import runner
+        from hilding.testrunner import runner
         runner(args)
     elif args.command == 'nightly':
         # pylint: disable=ungrouped-imports
-        from supportfunctions.testrunner import nightly
+        from hilding.testrunner import nightly
         nightly(args)
     elif args.command == 'did_report':
         from reports.did_report import did_report

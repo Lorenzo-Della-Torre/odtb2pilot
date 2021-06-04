@@ -20,9 +20,9 @@ from supportfunctions.support_test_odtb2 import SupportTestODTB2
 from supportfunctions.support_can import SupportCAN
 from supportfunctions.support_can import CanPayload
 from supportfunctions.support_can import CanTestExtra
-from supportfunctions.status_bits import DtcStatus
 from supportfunctions.support_SBL import SupportSBL
 
+from hilding.status_bits import DtcStatus
 from hilding.platform import get_platform_dir
 
 

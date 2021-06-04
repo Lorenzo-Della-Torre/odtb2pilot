@@ -11,7 +11,7 @@ from pathlib import Path
 
 from iterfzf import iterfzf
 
-from supportfunctions import analytics
+from hilding import analytics
 
 import test_folder.on_the_fly_test.BSW_Set_ECU_to_default as set_ecu_to_default
 

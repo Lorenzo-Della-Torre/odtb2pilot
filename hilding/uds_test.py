@@ -4,8 +4,8 @@ Pytest unit tests for support_uds.py
 The class takes replies as hex strings from the ECU and parses out the relevant parts.
 """
 import pytest
-from supportfunctions.support_uds import UdsResponse
-from supportfunctions.support_uds import extract_fields
+from hilding.uds import UdsResponse
+from hilding.uds import extract_fields
 
 
 def test_uds_response():

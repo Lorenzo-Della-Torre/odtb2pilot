@@ -68,8 +68,8 @@ details:
 import sys
 import logging
 
-from supportfunctions.support_dut import Dut
-from supportfunctions.support_dut import DutTestError
+from hilding.dut import Dut
+from hilding.dut import DutTestError
 
 
 def step_1(dut: Dut):
