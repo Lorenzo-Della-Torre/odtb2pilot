@@ -675,10 +675,10 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
 
         f12e_dict: dict = {}
 
-        for resp_item in sddb_dict['22F12E']:
-            name = resp_item.get('Name')
-            offset = resp_item.get('Offset')
-            size = resp_item.get('Size')
+        for resp_item in sddb_dict['F12E']:
+            name = resp_item.get('name')
+            offset = resp_item.get('offset')
+            size = resp_item.get('size')
 
             start = int(offset, HEX_BASE)*BYTE_SIZE
             end = start+(int(size, HEX_BASE)*BYTE_SIZE)

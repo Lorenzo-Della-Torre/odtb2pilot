@@ -33,7 +33,7 @@ from supportfunctions.logs_to_html_css import STYLE as CSS # pylint: disable=wro
 if __name__ == "__main__" and __package__ is None:
     path.append(dir(path[0]))
     __package__ = "autotest" # pylint: disable=redefined-builtin
-import dids_from_sddb_checker.output.testrun_data as td # pylint: disable=import-error,wrong-import-position
+import build.testrun_data as td # pylint: disable=import-error,wrong-import-position
 
 
 

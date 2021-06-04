@@ -26,7 +26,7 @@
         <td class="main">
           {% if did.response_items|length > 0 %}
           Formula: [{{ did.response_items[0].formula }}]<br/>
-          Payload: {{ did.response_items[0].sub_payload }}<br/>
+          Payload: {{ did.response_items[0].sub_payload|wordwrap(16, True) }}<br/>
           {% endif %}
         </td>
       </tr>

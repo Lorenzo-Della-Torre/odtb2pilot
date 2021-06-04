@@ -29,7 +29,6 @@ import sys
 import logging
 import inspect
 import odtb_conf
-#from output.did_dict import sddb_resp_item_dict
 
 from supportfunctions.support_can import SupportCAN, CanParam, CanTestExtra, CanPayload
 from supportfunctions.support_test_odtb2 import SupportTestODTB2

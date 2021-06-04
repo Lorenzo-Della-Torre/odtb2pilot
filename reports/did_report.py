@@ -1,31 +1,40 @@
 """
 HTML did report generator
 """
+import time
 import logging
 import platform
 import traceback
 from datetime import datetime
 from collections import Counter
+from pathlib import Path
+from pprint import pformat
 
 from jinja2 import Environment
 from jinja2 import FileSystemLoader
 
 from build import did
 
+from hilding.platform import get_build_dir
 from supportfunctions.support_dut import Dut
 from supportfunctions.support_uds import EicDid
 from supportfunctions.support_uds import IoSssDid
-
+from supportfunctions.support_uds import UdsEmptyResponse
+from supportfunctions.support_sddb import write
 
 log = logging.getLogger('did_report')
+
 
 def get_ecu_content(dut: Dut):
     """ get data from the ecu """
     part_numbers_res = dut.uds.read_data_by_id_22(
         EicDid.complete_ecu_part_number_eda0)
+    log.info(part_numbers_res)
     git_hash_res = dut.uds.read_data_by_id_22(
         IoSssDid.git_hash_f1f2)
-    log.debug(git_hash_res)
+    log.info(git_hash_res)
+    write_to_testrun_data_file(git_hash_res, part_numbers_res)
+
     did_counter = Counter(
         passed=0,
         failed=0,
@@ -34,15 +43,21 @@ def get_ecu_content(dut: Dut):
     )
     app_dids = []
     for did_id, _ in did.app_did_dict.items():
-        app_dids.append(get_did_details(dut, did_id, did_counter))
+        details = get_did_details(dut, did_id, did_counter)
+        if details:
+            app_dids.append(details)
     dut.uds.set_mode(mode=2)
     pbl_dids = []
     for did_id, _ in did.pbl_did_dict.items():
-        pbl_dids.append(get_did_details(dut, did_id, did_counter))
+        details = get_did_details(dut, did_id, did_counter)
+        if details:
+            pbl_dids.append(details)
     dut.uds.enter_sbl()
     sbl_dids = []
     for did_id, _ in did.sbl_did_dict.items():
-        sbl_dids.append(get_did_details(dut, did_id, did_counter))
+        details = get_did_details(dut, did_id, did_counter)
+        if details:
+            sbl_dids.append(details)
 
     content = {}
     content['part_numbers'] = part_numbers_res.details
@@ -55,9 +70,40 @@ def get_ecu_content(dut: Dut):
     return content
 
 
+def write_to_testrun_data_file(git_hash_res, part_numbers_res):
+    """
+    provide data in the build dir to the logs_to_html script
+
+    due to this setup, the did_report always need to run before the
+    logs_to_html script.
+    """
+    testrun_data_file = Path(get_build_dir()).joinpath('testrun_data.py')
+    git_hash = 'no git hash available'
+    if 'response_items' in git_hash_res.details:
+        response_items = git_hash_res.details['response_items']
+        if len(response_items) > 0:
+            first_response_item = response_items[0]
+            if 'scaled_value' in first_response_item:
+                git_hash = first_response_item['scaled_value']
+
+    write(testrun_data_file, "git_hash", git_hash, "w")
+    eda0 = {}
+    details = part_numbers_res.details
+    for eda0_did in ['F120', 'F12A', 'F12B', 'F18C']:
+        if eda0_did in details:
+            value = details.get(eda0_did + '_valid', details[eda0_did])
+            eda0[details[eda0_did + '_info']['name']] = value
+    write(testrun_data_file, "eda0", pformat(eda0), "a")
+
+
 def get_did_details(dut, did_id, did_counter):
-    """ get did details """
-    res = dut.uds.read_data_by_id_22(bytes.fromhex(did_id))
+    """ get relevant did details as a dictionary """
+    # give the ecu some time to get ready for the next did request
+    time.sleep(2)
+    try:
+        res = dut.uds.read_data_by_id_22(bytes.fromhex(did_id))
+    except UdsEmptyResponse:
+        return None
     log.info(res)
     details = res.details
     details['did_called'] = did_id
@@ -95,7 +141,8 @@ def get_did_details(dut, did_id, did_counter):
 def create_report(content):
     """ create the report """
     style = ""
-    with open("reports/templates/style.css") as style_css:
+    templates = Path(__file__).parent.joinpath("templates")
+    with open(templates.joinpath("style.css").resolve()) as style_css:
         style = style_css.read()
 
     content['style'] = style
@@ -103,7 +150,7 @@ def create_report(content):
     content['report_generated'] = datetime.now().strftime("%Y-%m-%d %H:%M")
     content['sddb_app_diag_part_num'] = did.app_diag_part_num.replace('_', ' ')
 
-    file_loader = FileSystemLoader('reports/templates')
+    file_loader = FileSystemLoader([templates.resolve()])
     env = Environment(loader=file_loader)
     template = env.get_template('did_report.jinja')
     output = template.render(content=content)

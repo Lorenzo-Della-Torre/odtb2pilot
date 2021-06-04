@@ -9,8 +9,8 @@ from os.path import join
 from argparse import ArgumentParser
 from pathlib import Path
 
+from hilding.platform import get_platform_dir
 from supportfunctions.support_sddb import parse_sddb_file
-from supportfunctions.support_sddb import get_platform_dir
 from supportfunctions.support_sddb import get_sddb_file
 from supportfunctions.dvm import create_dvm
 
