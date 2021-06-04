@@ -7,6 +7,7 @@ import sys
 import time
 import logging
 import textwrap
+from glob import glob
 from dataclasses import dataclass
 
 from build.did import pbl_did_dict
@@ -21,6 +22,8 @@ from supportfunctions.support_can import CanPayload
 from supportfunctions.support_can import CanTestExtra
 from supportfunctions.status_bits import DtcStatus
 from supportfunctions.support_SBL import SupportSBL
+
+from hilding.platform import get_platform_dir
 
 
 SUTE = SupportTestODTB2()
@@ -158,16 +161,18 @@ class UdsResponse:
             self.data["nrc_name"] = negative_response_codes[nrc]
 
     def __positive_response(self):
+        self.all_defined_dids = {}
         if not self.mode:
-            self.all_defined_dids = app_did_dict
+            self.all_defined_dids.update(app_did_dict)
             self.all_defined_dids.update(pbl_did_dict)
             self.all_defined_dids.update(sbl_did_dict)
         elif self.mode in [1, 3]:
-            self.all_defined_dids = app_did_dict
+            self.all_defined_dids.update(app_did_dict)
         elif self.mode == 2:
-            # we should add a state in this class to keep track of if we are in
-            # pbl or sbl. then we should separate these two.
-            self.all_defined_dids = pbl_did_dict
+            # it would be good to separate these two and we can do that if we
+            # add a state to the class indicating which programming mode it's
+            # in.
+            self.all_defined_dids.update(pbl_did_dict)
             self.all_defined_dids.update(sbl_did_dict)
         else:
             sys.exit(f"Incorrect mode set: {self.mode}. Exiting...")
@@ -175,6 +180,17 @@ class UdsResponse:
         for did, item in self.all_defined_dids.items():
             # each byte takes two hexadecimal characters
             length = int(item['size']) * 2
+            # For F120 with a length of 14 the resulting regex should be
+            # r'F120(.{14})' in the raw string below. The first replacement is
+            # trivial, but the second one requires some explanation. Python
+            # `format` will consume any curly braces pairs, but we want to have
+            # {14} in the resulting string there is a way around that. By
+            # doubling the curly braces `format` will then not do any variable
+            # replacement and will add a single curly brace in the output
+            # instead which is what we want.
+            # see:
+            # https://docs.python.org/3/library/string.html#format-string-syntax
+            # for more details
             self.__did_regex[did] = r'{}(.{{{}}})'.format(did, length)
 
         service_types = {
@@ -320,7 +336,6 @@ class UdsResponse:
                 item = match.groups()[0]
                 info = self.all_defined_dids[did]
                 self.details[did] = item
-                self.details[did] = item
                 self.details[did+'_info'] = info
                 self.validate_part_num(did, item)
                 self.add_response_items(did, item)
@@ -406,6 +421,8 @@ class UdsResponse:
             logging.warning(
                 "Record length of F12E in EDA0 appears incorrect in SDDB file")
             # attempting to recover by ignoreing SDDB record for F12E
+            # `format` will replace the two outer most curly braces with a single
+            # curly braces pair (i.e. F12E\d\d(.{length}))
             match = re.search(r'F12E\d\d(.{{{}}})'.format(
                 records * part_num_len), self.data['body'])
             remaining = match.groups()[0]
@@ -569,7 +586,9 @@ class Uds:
                 "You need to be in programming mode to change from pbl to sbl")
 
         sbl = SupportSBL()
-        sbl.get_vbf_files()
+        f_names = glob(get_platform_dir() + "/VBF/*.vbf")
+        if not sbl.read_vbf_param(f_names):
+            UdsError("Could not load vbf files")
         if not sbl.sbl_activation(
             self.dut, fixed_key='FFFFFFFFFF', stepno=self.dut.step,
                 purpose="Activate Secondary bootloader"):
@@ -693,7 +712,7 @@ def get_scaled_value(resp_item, sub_payload):
         logging.fatal(resp_item)
         logging.fatal(sub_payload)
         raise RuntimeError('No formula!')
-    return int_result
+    return int_value
 
 
 def compare(scaled_value, compare_value):

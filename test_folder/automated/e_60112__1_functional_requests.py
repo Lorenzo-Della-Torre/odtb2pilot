@@ -17,9 +17,9 @@ details:
 import logging
 import sys
 
+from hilding.platform import get_platform
 from supportfunctions.support_dut import Dut
 from supportfunctions.support_dut import DutTestError
-from supportfunctions.support_dut import get_platform
 
 def step_1(dut):
     """

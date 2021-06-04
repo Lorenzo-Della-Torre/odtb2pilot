@@ -7,7 +7,6 @@ Support function for importing sddb data and store it as python data
 structures in <platform>/build/.
 """
 
-import os
 import sys
 import codecs
 import logging
@@ -18,21 +17,8 @@ from pprint import pformat
 from lxml import etree
 from inflection import underscore
 
-
-def get_platform_dir():
-    """Get the selected platform directory (spa1 or spa2)"""
-    platform_dir = os.getenv('ODTBPROJPARAM')
-    if not platform_dir:
-        sys.exit("You need to set the ODTBPROJPARAM. Exiting...")
-    return platform_dir
-
-
-def get_release_dir():
-    """Get the release dir for the current platform"""
-    dbpath = Path(get_platform_dir()).joinpath('release')
-    if not dbpath.exists():
-        sys.exit(f"{dbpath} directory is missing. Exiting...")
-    return dbpath
+from hilding.platform import get_release_dir
+from hilding.platform import get_build_dir
 
 
 def get_sddb_file():
@@ -55,17 +41,6 @@ def get_sddb_file():
         pass
 
     return sddb_file
-
-
-def get_build_dir():
-    """
-    Get the path of the build where we will store the python data structures
-    extracted from the sddb xml file
-    """
-    build_dir = Path(get_platform_dir()).joinpath('build')
-    if not build_dir.exists():
-        sys.exit(f"{build_dir} directory is missing. Existing...")
-    return build_dir
 
 
 def ecu_determination(root, type_str):

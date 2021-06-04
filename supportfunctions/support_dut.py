@@ -18,7 +18,6 @@ from datetime import datetime
 from tempfile import TemporaryDirectory
 
 import pytest
-import yaml
 import grpc
 import requests
 
@@ -30,12 +29,13 @@ from protogenerated.common_pb2 import NameSpace
 from protogenerated.system_api_pb2_grpc import SystemServiceStub
 from protogenerated.network_api_pb2_grpc import NetworkServiceStub
 
-from supportfunctions.support_sddb import get_platform_dir
-from supportfunctions.support_sddb import get_release_dir
 from supportfunctions.support_precondition import SupportPrecondition
 from supportfunctions.support_postcondition import SupportPostcondition
 from supportfunctions.support_uds import Uds
 from supportfunctions import analytics
+from hilding.platform import get_platform
+from hilding.platform import get_release_dir
+from hilding.platform import get_parameters
 
 # pylint: disable=no-member
 import protogenerated.system_api_pb2
@@ -292,44 +292,6 @@ def get_dut_custom():
     frame_info = inspect.stack()[1]
     filename = Path(frame_info.filename)
     return Dut(custom_yml_file=os.path.basename(filename.with_suffix(".yml")))
-
-
-def get_platform():
-    """ get the currently activated platform """
-    platform = os.getenv("ODTBPROJ")
-    if not platform:
-        raise EnvironmentError("ODTBPROJ is not set")
-
-    match = re.search(r'MEP2_(.+)$', platform)
-    if not match:
-        raise EnvironmentError(
-            "Unknown ODTBPROJ encountered. "
-            "get_platform() might need to get updated")
-
-    return match.groups()[0].lower()
-
-
-def get_parameters(custom_yml_file=None):
-    """
-    Get the basic platform parameters from the project_default.yml file for the
-    platform
-    """
-    platform_dir = get_platform_dir()
-    parameters_yml_dir = Path(platform_dir).joinpath('parameters_yml')
-    project_default = Path(parameters_yml_dir).joinpath("project_default.yml")
-    with open(project_default, "r") as f:
-        parameters = yaml.safe_load(f)
-
-    if custom_yml_file:
-        custom_file = Path(parameters_yml_dir).joinpath(custom_yml_file)
-        if not custom_file.exists():
-            # raise exception with explicit error message
-            raise FileNotFoundError(f"Could not find custom_yml_file in {custom_file}")
-        with open(custom_file, "r") as f:
-            custom_config = yaml.safe_load(f)
-        parameters.update(custom_config)
-
-    return parameters
 
 
 def get_sha256(filename):
