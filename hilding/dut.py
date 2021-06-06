@@ -21,8 +21,6 @@ import pytest
 import grpc
 import requests
 
-import odtb_conf
-
 from protogenerated.common_pb2 import Empty
 from protogenerated.common_pb2 import NameSpace
 
@@ -36,6 +34,7 @@ from hilding.uds import Uds
 from hilding.platform import get_platform
 from hilding.platform import get_release_dir
 from hilding.platform import get_parameters
+from hilding.settings import Settings
 
 # pylint: disable=no-member
 import protogenerated.system_api_pb2
@@ -86,8 +85,9 @@ class Dut:
     """ Device under test """
     # pylint: disable=too-many-instance-attributes
     def __init__(self, custom_yml_file=None):
-        self.dut_host = odtb_conf.ODTB2_DUT
-        self.dut_port = odtb_conf.ODTB2_PORT
+        settings = Settings()
+        self.dut_host = settings.hostname
+        self.dut_port = settings.signal_broker_port
         self.channel = grpc.insecure_channel(f'{self.dut_host}:{self.dut_port}')
         self.network_stub = NetworkServiceStub(self.channel)
         self.system_stub = SystemServiceStub(self.channel)
