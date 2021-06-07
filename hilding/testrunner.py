@@ -203,9 +203,12 @@ def run_tests_and_save_results(test_files, use_db=False, use_mq=False,
 
 def get_ecutest_files(glob_pattern):
     """ use fzf to select tests to run """
-    ecutest = Path('test_folder')
-    files = [str(f) for f in ecutest.glob(glob_pattern)]
+    ecutest_dir = Path(__file__).parent.parent.joinpath("test_folder")
+    files = [str(f) for f in ecutest_dir.glob(glob_pattern)]
     test_files = iterfzf(files, multi=True)
+    if not test_files:
+        sys.exit(f"ecutest selection was terminated or\n"
+                 f"{glob_pattern} couldn't be found in {ecutest_dir}")
     return [Path(p) for p in test_files]
 
 
