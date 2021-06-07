@@ -7,7 +7,6 @@ import sys
 import time
 import logging
 import textwrap
-from glob import glob
 from dataclasses import dataclass
 
 from build.did import pbl_did_dict
@@ -23,12 +22,9 @@ from supportfunctions.support_can import CanTestExtra
 from supportfunctions.support_SBL import SupportSBL
 
 from hilding.status_bits import DtcStatus
-from hilding.platform import get_platform_dir
+from hilding import get_settings
 
-
-SUTE = SupportTestODTB2()
 SC = SupportCAN()
-
 
 
 global_timestamp_dd00 = bytes.fromhex('DD00')
@@ -468,7 +464,7 @@ class Uds:
             "min_no_messages": -1,
             "max_no_messages": -1
         }
-        SUTE.teststep(self.dut, cpay, etp)
+        SupportTestODTB2().teststep(self.dut, cpay, etp)
 
         response = SC.can_messages[self.dut['receive']]
 
@@ -586,7 +582,7 @@ class Uds:
                 "You need to be in programming mode to change from pbl to sbl")
 
         sbl = SupportSBL()
-        f_names = glob(get_platform_dir() + "/VBF/*.vbf")
+        f_names = get_settings().rig.vbf_path.glob("*.vbf")
         if not sbl.read_vbf_param(f_names):
             UdsError("Could not load vbf files")
         if not sbl.sbl_activation(

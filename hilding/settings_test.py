@@ -2,7 +2,9 @@
 pytest for hilding/settings.py
 """
 from tempfile import TemporaryFile
-from settings import Settings
+
+from hilding.settings import Settings
+from hilding.settings import get_settings
 
 def test_settings():
     """ pytest: setting parsing """
@@ -19,13 +21,16 @@ def test_settings():
     settings_file.write(settings_file_content)
     settings_file.seek(0)
     settings = Settings(settings_file_name=None)
-    settings.read_settings_file(settings_file)
-    assert settings.settings['default_rig'] == "p2"
-    assert settings.hostname == "host2.domain"
+    settings.read_settings_file(settings_file, "p2")
+    assert settings.default_rig == "p2"
+    assert settings.rig.hostname == "host2.domain"
+    assert settings.rig.user == "pi"
+    assert settings.rig.platform == "spa2"
+    assert settings.rig.signal_broker_port == 50051
 
 def test_settings_yml():
     """ pytest: settings.yml parsing """
-    settings = Settings()
+    settings = get_settings()
     print(settings)
     assert settings.settings['default_rig'] == "p8"
-    assert settings.hostname == "host2.domain"
+    assert settings.rig.user == "pi"

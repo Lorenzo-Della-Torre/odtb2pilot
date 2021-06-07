@@ -11,8 +11,10 @@ import sys
 from pathlib import Path
 import yaml
 
+
 def get_hilding_root():
-    return Path(__file___).parent.parent
+    """ get the root directory of the hilding instance """
+    return Path(__file__).parent.parent
 
 
 def get_platform():

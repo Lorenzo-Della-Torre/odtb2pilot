@@ -13,6 +13,8 @@ from hilding.platform import get_platform_dir
 from hilding.sddb import parse_sddb_file
 from hilding.sddb import get_sddb_file
 from hilding.dvm import create_dvm
+from hilding.rig import get_rig_delivery_files
+from hilding.settings import initialize_settings
 
 def config_environ(platform):
     """automatically set pythonpath and environment variables"""
@@ -106,8 +108,7 @@ if __name__ == "__main__":
         help="set logging level")
 
     parser.add_argument(
-        '-p', dest="platform", default="spa2",
-        choices=["spa1", "spa2", "hlcm", "ed_ifha"], help="set platform")
+        '-rig', dest="rig", help="set which rig to run against")
 
     subparsers = parser.add_subparsers(dest="command")
     subparsers.add_parser(
@@ -120,7 +121,7 @@ if __name__ == "__main__":
     )
 
     dvm_parser = subparsers.add_parser(
-        "dvm", help="generate a new dvm document from the test script"
+        "dvm", help="Generate a new dvm document from the test script"
     )
     dvm_parser.add_argument('test_script')
 
@@ -146,6 +147,11 @@ if __name__ == "__main__":
         "defined in the sddb database against the ECU"
     )
 
+    rig_parser = subparsers.add_parser(
+        "update_rig", help="Handle the rigs"
+    )
+
+
     args = parser.parse_args()
 
     # we probably want to make all of the logging user configurable, but right
@@ -154,7 +160,8 @@ if __name__ == "__main__":
         format='%(levelname)s %(name)s %(message)s', stream=sys.stdout,
         level=getattr(logging, args.loglevel.upper()))
 
-    config_environ(args.platform.upper())
+    if args.rig:
+        initialize_settings(args.rig)
 
     if not args.command:
         parser.print_help()
@@ -177,3 +184,5 @@ if __name__ == "__main__":
     elif args.command == 'did_report':
         from reports.did_report import did_report
         did_report()
+    elif args.command == 'update_rig':
+        get_rig_delivery_files()
