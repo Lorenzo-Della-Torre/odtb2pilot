@@ -34,7 +34,7 @@ details:
 import sys
 import logging
 
-from hilding.platform import get_platform
+from hilding import get_settings
 from hilding.dut import Dut
 from hilding.dut import DutTestError
 from hilding.uds import global_timestamp_dd00
@@ -55,7 +55,7 @@ def step_2(dut):
     Attempt to get the global timestamp with DLC set to 7 bytes
     """
 
-    platform = get_platform()
+    platform = get_settings().rig.platform
     if platform == "spa1":
         dut.reconfigure_broker(
             "BO_ 1845 Vcu1ToBecmFront1DiagReqFrame: 8 VCU1",

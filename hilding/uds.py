@@ -9,12 +9,6 @@ import logging
 import textwrap
 from dataclasses import dataclass
 
-from build.did import pbl_did_dict
-from build.did import sbl_did_dict
-from build.did import app_did_dict
-from build.did import resp_item_dict
-from build.dtc import sddb_dtcs
-
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
 from supportfunctions.support_can import SupportCAN
 from supportfunctions.support_can import CanPayload
@@ -26,6 +20,8 @@ from hilding import get_settings
 
 SC = SupportCAN()
 
+sddb_dids = get_settings().rig.get_sddb('dids')
+sddb_dtcs = get_settings().rig.get_sddb('dtcs').sddb_dtcs
 
 global_timestamp_dd00 = bytes.fromhex('DD00')
 
@@ -159,17 +155,17 @@ class UdsResponse:
     def __positive_response(self):
         self.all_defined_dids = {}
         if not self.mode:
-            self.all_defined_dids.update(app_did_dict)
-            self.all_defined_dids.update(pbl_did_dict)
-            self.all_defined_dids.update(sbl_did_dict)
+            self.all_defined_dids.update(sddb_dids.app_did_dict)
+            self.all_defined_dids.update(sddb_dids.pbl_did_dict)
+            self.all_defined_dids.update(sddb_dids.sbl_did_dict)
         elif self.mode in [1, 3]:
-            self.all_defined_dids.update(app_did_dict)
+            self.all_defined_dids.update(sddb_dids.app_did_dict)
         elif self.mode == 2:
             # it would be good to separate these two and we can do that if we
             # add a state to the class indicating which programming mode it's
             # in.
-            self.all_defined_dids.update(pbl_did_dict)
-            self.all_defined_dids.update(sbl_did_dict)
+            self.all_defined_dids.update(sddb_dids.pbl_did_dict)
+            self.all_defined_dids.update(sddb_dids.sbl_did_dict)
         else:
             sys.exit(f"Incorrect mode set: {self.mode}. Exiting...")
 
@@ -347,9 +343,9 @@ class UdsResponse:
 
     def add_response_items(self, did, payload):
         """ add response items """
-        if did in resp_item_dict:
+        if did in sddb_dids.resp_item_dict:
             response_items = []
-            for resp_item in resp_item_dict[did]:
+            for resp_item in sddb_dids.resp_item_dict[did]:
                 offset = resp_item['offset']
                 size = resp_item['size']
                 sub_payload = get_sub_payload(payload, offset, size)

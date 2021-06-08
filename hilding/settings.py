@@ -10,6 +10,7 @@ get_settings().rig.hostname
 import sys
 import logging
 import pprint
+import importlib
 import yaml
 
 from hilding.platform import get_hilding_root
@@ -30,11 +31,11 @@ def get_settings():
     return Settings()
 
 
-def initialize_settings(rig):
+def initialize_settings(rig, force=False):
     """ initialize the settings with a given rig """
     # pylint: disable=global-statement
     global _SETTINGS
-    if _SETTINGS:
+    if _SETTINGS and not force:
         raise ReferenceError("The settings module has already been initialized")
     _SETTINGS = Settings(select_rig=rig)
 
@@ -59,20 +60,27 @@ class Settings:
             sys.exit(f"No default_rig in {self.settings_file_name}")
         if not 'rigs' in self.settings:
             sys.exit(f"No rigs configured in {self.settings_file_name}")
+        rigs = self.settings['rigs']
         if not select_rig:
             if not self.default_rig:
                 sys.exit(f"The default_rig has not been configured "
                          f"in {self.settings_file_name}")
             select_rig = self.default_rig
-        for rig in self.settings['rigs']:
-            if select_rig in rig:
-                self.selected_rig_dict = rig[select_rig]
+        if not select_rig in rigs:
+            sys.exit(f"Could not find the requested rig {select_rig} "
+                     f"in the rigs configuration")
+        self.selected_rig_dict = rigs[select_rig]
 
 
     @property
     def default_rig(self):
         """ settings default rig """
         return self.settings.get('default_rig')
+
+    @property
+    def rigs(self):
+        """ settings default rig """
+        return self.settings.get('rigs', {})
 
     def __str__(self):
         return pprint.pformat(self.settings)
@@ -104,6 +112,18 @@ class Rig:
         return self.settings.selected_rig_dict.get('signal_broker_port', 50051)
 
     @property
+    def default_signal_send(self):
+        """ settings platform """
+        platform_data = self.settings.settings.get(self.platform)
+        return platform_data.get("default_signal_send")
+
+    @property
+    def default_signal_receive(self):
+        """ settings platform """
+        platform_data = self.settings.settings.get(self.platform)
+        return platform_data.get("default_signal_receive")
+
+    @property
     def rig_path(self):
         """ get the path to the default rig """
         rigs = get_hilding_root().joinpath("rigs")
@@ -120,9 +140,30 @@ class Rig:
         return ensure_exists(self.rig_path.joinpath("sddb"))
 
     @property
+    def dbc_path(self):
+        """ get the path to the dbc dir for the selected rig """
+        return ensure_exists(self.rig_path.joinpath("dbc"))
+
+    @property
     def build_path(self):
         """ get the path to the build dir for the selected rig """
         return ensure_exists(self.rig_path.joinpath("build"))
+
+    def get_sddb(self, content: str):
+        """
+        accessor method to get one of the generated sddb modules
+        (e.g.  "dids", "dtcs", "services")
+        """
+
+        # needs caching
+
+        sddb_file = self.build_path.joinpath(f"sddb_{content}.py")
+        if not sddb_file.exists():
+            raise ModuleNotFoundError(f"The {sddb_file} file does not exist")
+        spec = importlib.util.spec_from_file_location("sddb", sddb_file)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
 
 
 def ensure_exists(path):

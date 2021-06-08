@@ -11,11 +11,14 @@ def test_settings():
     settings_file_content = b"""
     default_rig: p2
     rigs:
-      - p2:
-          hostname: host2.domain
-          user: pi #optional
-          platform: spa2
-          signal_broker_port: 50051 #optional
+        p2:
+            hostname: host2.domain
+            user: pi #optional
+            platform: spa2
+            signal_broker_port: 50051 #optional
+    spa2:
+        default_signal_send: sendsignal
+        default_signal_receive: receivesignal
     """
     settings_file = TemporaryFile()
     settings_file.write(settings_file_content)
@@ -27,6 +30,8 @@ def test_settings():
     assert settings.rig.user == "pi"
     assert settings.rig.platform == "spa2"
     assert settings.rig.signal_broker_port == 50051
+    assert settings.rig.default_signal_send == "sendsignal"
+    assert settings.rig.default_signal_receive == "receivesignal"
 
 def test_settings_yml():
     """ pytest: settings.yml parsing """

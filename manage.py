@@ -13,21 +13,21 @@ from hilding.platform import get_platform_dir
 from hilding.sddb import parse_sddb_file
 from hilding.sddb import get_sddb_file
 from hilding.dvm import create_dvm
-from hilding.rig import get_rig_delivery_files
+from hilding.rig import handle_rigs
 from hilding.settings import initialize_settings
+from hilding import get_settings
 
-def config_environ(platform):
+def config_environ():
     """automatically set pythonpath and environment variables"""
     sys.path.append(dirname(__file__))
     sys.path.append(join(dirname(__file__), "test_folder/automated"))
     sys.path.append(join(dirname(__file__), "test_folder/manual"))
-    if not ("ODTBPROJ" in environ and "ODTBPROJPARAM" in environ):
-        odtb_proj = f"MEP2_{platform}"
-        odtb_proj_parm = join(dirname(__file__), f"projects/{odtb_proj}")
+    if not "ODTBPROJPARAM" in environ:
+        platform = get_settings().rig.platform.upper()
+        odtb_proj_parm = join(dirname(__file__), f"projects/MEP2_{platform}")
         # setting environment variables for process internal settings is not
         # that pretty, but let's do it like this for now to get away from
         # having to set these all the time in the shell.
-        environ["ODTBPROJ"] = odtb_proj
         environ["ODTBPROJPARAM"] = odtb_proj_parm
         if not odtb_proj_parm in sys.path:
             sys.path.append(odtb_proj_parm)
@@ -60,7 +60,7 @@ def check_install():
         sys.exit(error)
     logging.info("DUT port: %s", port)
 
-    # implicitlly also check that ODTBPROJPARAM is set
+    # implicitly also check that ODTBPROJPARAM is set
     platform_dir = get_platform_dir()
 
     vbf_dir = Path(platform_dir).joinpath("VBF")
@@ -108,7 +108,7 @@ if __name__ == "__main__":
         help="set logging level")
 
     parser.add_argument(
-        '-rig', dest="rig", help="set which rig to run against")
+        '-r', dest="rig", help="set which rig to run against")
 
     subparsers = parser.add_subparsers(dest="command")
     subparsers.add_parser(
@@ -148,8 +148,18 @@ if __name__ == "__main__":
     )
 
     rig_parser = subparsers.add_parser(
-        "update_rig", help="Handle the rigs"
+        "rigs", help="Handle the rigs"
     )
+    rig_parser.add_argument(
+        '--list', action="store_true",
+        help="list all the configured rigs")
+    rig_parser.add_argument(
+        '--update', action="store_true",
+        help="download .vbf, .sddb, and .dbc files for the selected rig "
+        "(to select rig: ./manage.py -r <rigname> rig update)")
+    rig_parser.add_argument(
+        '--update-all', action="store_true",
+        help="download .vbf, .sddb, and .dbc files for all configured rigs")
 
 
     args = parser.parse_args()
@@ -162,6 +172,10 @@ if __name__ == "__main__":
 
     if args.rig:
         initialize_settings(args.rig)
+
+    # needs to be done after initialize_settings,
+    # since it uses the settings module
+    config_environ()
 
     if not args.command:
         parser.print_help()
@@ -184,5 +198,5 @@ if __name__ == "__main__":
     elif args.command == 'did_report':
         from reports.did_report import did_report
         did_report()
-    elif args.command == 'update_rig':
-        get_rig_delivery_files()
+    elif args.command == 'rigs':
+        handle_rigs(args)

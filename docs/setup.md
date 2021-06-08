@@ -42,8 +42,8 @@ Next step is to get all dependencies:
   pip3 install -r requirements.txt
 ```
 
-Make sure you the pip3 install in the Hilding root directory to include the
-packeges/epsmsgbus as well.
+Make sure you the pip3 install in the Hilding root directory (odtb2pilot or
+whatever you've called it) to include the packeges/epsmsgbus as well.
 
 NOTE: `<platform>` has to be replaced with the name of the platform that you are
 using in the text below (for example: MEP2_SPA1, MEP2_SPA2, or MEP2_HLCM). The

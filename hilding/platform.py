@@ -6,7 +6,6 @@ as we want to gradually move away from that way of working in favor of defining
 all in a single settings.yml for all rigs with their respective platforms
 """
 import os
-import re
 import sys
 from pathlib import Path
 import yaml
@@ -15,21 +14,6 @@ import yaml
 def get_hilding_root():
     """ get the root directory of the hilding instance """
     return Path(__file__).parent.parent
-
-
-def get_platform():
-    """ get the currently activated platform """
-    platform = os.getenv("ODTBPROJ")
-    if not platform:
-        raise EnvironmentError("ODTBPROJ is not set")
-
-    match = re.search(r'MEP2_(.+)$', platform)
-    if not match:
-        raise EnvironmentError(
-            "Unknown ODTBPROJ encountered. "
-            "get_platform() might need to get updated")
-
-    return match.groups()[0].lower()
 
 
 def get_platform_dir():

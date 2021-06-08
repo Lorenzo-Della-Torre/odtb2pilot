@@ -17,7 +17,6 @@ from pathlib import Path
 from datetime import datetime
 from tempfile import TemporaryDirectory
 
-import pytest
 import grpc
 import requests
 
@@ -29,12 +28,10 @@ from protogenerated.network_api_pb2_grpc import NetworkServiceStub
 
 from supportfunctions.support_precondition import SupportPrecondition
 from supportfunctions.support_postcondition import SupportPostcondition
-from hilding import analytics
 from hilding.uds import Uds
-from hilding.platform import get_platform
-from hilding.platform import get_release_dir
 from hilding.platform import get_parameters
-from hilding.settings import Settings
+from hilding import analytics
+from hilding import get_settings
 
 # pylint: disable=no-member
 import protogenerated.system_api_pb2
@@ -85,9 +82,9 @@ class Dut:
     """ Device under test """
     # pylint: disable=too-many-instance-attributes
     def __init__(self, custom_yml_file=None):
-        settings = Settings()
-        self.dut_host = settings.hostname
-        self.dut_port = settings.signal_broker_port
+        settings = get_settings()
+        self.dut_host = settings.rig.hostname
+        self.dut_port = settings.rig.signal_broker_port
         self.channel = grpc.insecure_channel(f'{self.dut_host}:{self.dut_port}')
         self.network_stub = NetworkServiceStub(self.channel)
         self.system_stub = SystemServiceStub(self.channel)
@@ -254,7 +251,7 @@ class Dut:
         Remember to set it back to default once you are done as it affects
         subsequent tests and users
         """
-        dbpath = get_release_dir()
+        dbpath = get_settings().rig.dbc_path
 
         with TemporaryDirectory() as tmpdirname:
             config_dir = Path(tmpdirname)
@@ -342,83 +339,3 @@ interfaces = {
     'reflectors': [],
     'support_dut_test_config': 'yes'
 }
-
-
-
-##################################
-# Pytest unit tests starts here
-##################################
-
-def test_dut():
-    """ pytest: testing dut """
-    dut = Dut()
-    # list available signals
-    configuration = dut.system_stub.GetConfiguration(Empty())
-    ns = [ni.namespace for ni in configuration.networkInfo]
-    platform = os.getenv("ODTBPROJ")
-    if platform == "MEP2_SPA1":
-        assert ns[0].name == "BecmRmsCanFr1"
-        assert ns[1].name == "Front1CANCfg0"
-        assert ns[2].name == "RpiGPIO"
-
-        front_can_signals = dut.system_stub.ListSignals(ns[1])
-        front_can_signal_names = [
-            frame.signalInfo.id.name for frame in front_can_signals.frame]
-
-        assert "Vcu1ToBecmFront1DiagReqFrame" in front_can_signal_names
-        assert "BecmToVcu1Front1DiagResFrame" in front_can_signal_names
-
-    status = dut.system_stub.GetLicenseInfo(Empty()).status
-    assert status == LicenseStatus.VALID, \
-        "Check your license, status is: %d" % status
-
-
-def test_upload_folder():
-    """ pytest: testing upload_folder """
-    dut = Dut()
-    dut.reconfigure_broker(
-        "BO_ 1875 HvbmdpToHvbmUdsDiagRequestFrame : 8 HVBMdp",
-        "BO_ 1875 HvbmdpToHvbmUdsDiagRequestFrame : 7 HVBMdp"
-    )
-
-
-def test_get_platform():
-    """ pytest: testing get_platform """
-    old_odtbproj = os.getenv("ODTBPROJ")
-
-    os.environ["ODTBPROJ"] = "MEP2_SPA1"
-    assert get_platform() == "spa1"
-    os.environ["ODTBPROJ"] = "MEP2_SPA2"
-    assert get_platform() == "spa2"
-    os.environ["ODTBPROJ"] = "MEP2_HLCM"
-    assert get_platform() == "hlcm"
-    os.environ["ODTBPROJ"] = "MEP2_ED_IFHA"
-    assert get_platform() == "ed_ifha"
-    os.environ["ODTBPROJ"] = ""
-    with pytest.raises(EnvironmentError, match=r".*not set"):
-        get_platform()
-    os.environ["ODTBPROJ"] = "NONESENSE"
-    with pytest.raises(EnvironmentError, match=r"Unknown ODTBPROJ.*"):
-        get_platform()
-
-    os.environ["ODTBPROJ"] = old_odtbproj
-
-
-def test_get_parameters():
-    """ pytest: testing get_parameters """
-    parameters = get_parameters()
-    assert "run" in parameters
-    assert "send" in parameters["run"]
-    assert "receive" in parameters["run"]
-    platform = os.getenv("ODTBPROJ")
-    if platform == "MEP2_SPA1":
-        assert parameters["run"]["send"] == "Vcu1ToBecmFront1DiagReqFrame"
-        assert parameters["run"]["receive"] == "BecmToVcu1Front1DiagResFrame"
-    if platform == "MEP2_SPA2":
-        assert parameters["run"]["send"] == "HvbmdpToHvbmUdsDiagRequestFrame"
-        assert parameters["run"]["receive"] == "HvbmToHvbmdpUdsDiagResponseFrame"
-
-def test_get_dut_custom():
-    """ pytest: testing get_dut_custom """
-    with pytest.raises(FileNotFoundError, match=r"Could not find .*support_dut.yml"):
-        get_dut_custom()
