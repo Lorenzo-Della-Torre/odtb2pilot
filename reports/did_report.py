@@ -21,6 +21,7 @@ from hilding.uds import EicDid
 from hilding.uds import IoSssDid
 from hilding.uds import UdsEmptyResponse
 from hilding.sddb import write
+from hilding.sddb import quotify
 
 log = logging.getLogger('did_report')
 
@@ -84,7 +85,7 @@ def write_to_testrun_data_file(git_hash_res, part_numbers_res):
         if len(response_items) > 0:
             first_response_item = response_items[0]
             if 'scaled_value' in first_response_item:
-                git_hash = first_response_item['scaled_value']
+                git_hash = quotify(first_response_item['scaled_value'])
 
     write(testrun_data_file, "git_hash", git_hash, "w")
     eda0 = {}
@@ -93,7 +94,7 @@ def write_to_testrun_data_file(git_hash_res, part_numbers_res):
         if eda0_did in details:
             value = details.get(eda0_did + '_valid', details[eda0_did])
             eda0[details[eda0_did + '_info']['name']] = value
-    write(testrun_data_file, "eda0", pformat(eda0), "a")
+    write(testrun_data_file, "eda0_dict", pformat(eda0), "a")
 
 
 def get_did_details(dut, did_id, did_counter):
