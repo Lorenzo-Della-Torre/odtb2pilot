@@ -29,7 +29,7 @@ def test_settings():
     assert settings.rig.hostname == "host2.domain"
     assert settings.rig.user == "pi"
     assert settings.rig.platform == "spa2"
-    assert settings.rig.signal_broker_port == 50051
+    assert settings.rig.signal_broker_port == "50051"
     assert settings.rig.default_signal_send == "sendsignal"
     assert settings.rig.default_signal_receive == "receivesignal"
 

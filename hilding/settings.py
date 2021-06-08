@@ -109,7 +109,7 @@ class Rig:
     @property
     def signal_broker_port(self):
         """ settings signal broker port number """
-        return self.settings.selected_rig_dict.get('signal_broker_port', 50051)
+        return str(self.settings.selected_rig_dict.get('signal_broker_port', 50051))
 
     @property
     def default_signal_send(self):
