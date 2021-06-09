@@ -11,9 +11,9 @@ import sys
 import logging
 import pprint
 import importlib
+from pathlib import Path
 import yaml
 
-from hilding.platform import get_hilding_root
 
 log = logging.getLogger('settings')
 
@@ -47,9 +47,10 @@ class Settings:
     """ Hilding settings """
     def __init__(self, select_rig=None, settings_file_name="settings.yml"):
         self.selected_rig_dict = {}
-        self.settings_file_name = settings_file_name
-        if self.settings_file_name:
-            with open(self.settings_file_name) as settings_file:
+        if settings_file_name:
+            settings_file_name_path = self.get_settings_file_path(
+                settings_file_name)
+            with open(settings_file_name_path) as settings_file:
                 self.read_settings_file(settings_file, select_rig)
         self.rig = Rig(self)
 
@@ -57,20 +58,29 @@ class Settings:
         """ read settings from file-like object """
         self.settings = yaml.safe_load(settings_file)
         if not 'default_rig' in self.settings:
-            sys.exit(f"No default_rig in {self.settings_file_name}")
+            sys.exit(f"No default_rig in {settings_file.name}")
         if not 'rigs' in self.settings:
-            sys.exit(f"No rigs configured in {self.settings_file_name}")
+            sys.exit(f"No rigs configured in {settings_file.name}")
         rigs = self.settings['rigs']
         if not select_rig:
             if not self.default_rig:
                 sys.exit(f"The default_rig has not been configured "
-                         f"in {self.settings_file_name}")
+                         f"in {settings_file.name}")
             select_rig = self.default_rig
         if not select_rig in rigs:
             sys.exit(f"Could not find the requested rig {select_rig} "
                      f"in the rigs configuration")
         self.selected_rig_dict = rigs[select_rig]
 
+    def get_settings_file_path(self, settings_file_name):
+        """ get or create a new setting file from template """
+        settings_file_path = self.hilding_root.joinpath(settings_file_name)
+        if not settings_file_path.exists():
+            log.info("No %s file found. Creating a new one...",
+                     settings_file_name)
+            with open(settings_file_path) as f:
+                f.write(SETTINGS_YML_TEMPLATE)
+        return settings_file_path
 
     @property
     def default_rig(self):
@@ -81,6 +91,11 @@ class Settings:
     def rigs(self):
         """ settings default rig """
         return self.settings.get('rigs', {})
+
+    @property
+    def hilding_root(self):
+        """ get the root directory of the hilding instance """
+        return Path(__file__).parent.parent
 
     def __str__(self):
         return pprint.pformat(self.settings)
@@ -126,7 +141,7 @@ class Rig:
     @property
     def rig_path(self):
         """ get the path to the default rig """
-        rigs = get_hilding_root().joinpath("rigs")
+        rigs = self.settings.hilding_root.joinpath("rigs")
         return ensure_exists(rigs.joinpath(self.settings.default_rig))
 
     @property
@@ -172,14 +187,6 @@ def ensure_exists(path):
     return path
 
 
-def create_settings_yml():
-    """ create a new setting.yml from template """
-    root = get_hilding_root()
-    settings_yml = root.joinpath("settings.yml")
-    if not settings_yml.exists():
-        log.info("No settings.yml file found. Creating a new one...")
-        with open(settings_yml) as f:
-            f.write(SETTINGS_YML_TEMPLATE)
 
 SETTINGS_YML_TEMPLATE = b"""
 default_rig: piX

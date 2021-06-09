@@ -11,11 +11,6 @@ from pathlib import Path
 import yaml
 
 
-def get_hilding_root():
-    """ get the root directory of the hilding instance """
-    return Path(__file__).parent.parent
-
-
 def get_platform_dir():
     """Get the selected platform directory (spa1 or spa2)"""
     platform_dir = os.getenv('ODTBPROJPARAM')
