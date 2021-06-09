@@ -1,6 +1,7 @@
 image: "python:3.7"
 
 before_script:
+  - sudo apt install libxslt-dev unixodbc-dev tdsodbc libopenjp2-7 sqlite3
   - python --version
   - pip3 install -r requirements.txt
   - pip3 install pylint-fail-under --quiet
