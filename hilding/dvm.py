@@ -46,7 +46,7 @@ def get_reqdata(test_file_py):
 
     return req_test, reqdata
 
-#pylint: disable=too-many-statements, too-many-locals
+#pylint: disable=too-many-statements, too-many-locals, no-member
 def create_dvm(test_file_py):
     """
     creates a docx document in the current work directory from test_file_py
