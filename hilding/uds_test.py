@@ -27,7 +27,7 @@ def test_uds_reponse_with_mode():
     """ pytest: make sure uds response with mode works properly """
     # test the did F122
     f122_response = "XXXX62F122"
-    response = UdsResponse(f122_response, mode=3)
+    response = UdsResponse(f122_response, mode=2)
     assert response.data['did'] == "F122"
     with pytest.raises(KeyError):
         UdsResponse(f122_response, mode=1)

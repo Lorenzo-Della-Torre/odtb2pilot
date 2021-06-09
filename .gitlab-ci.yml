@@ -2,15 +2,13 @@ image: "python:3.7"
 
 before_script:
   - python --version
-  - pip3 install pylint --quiet
-  - pip3 install openpyxl --quiet
-  - pip3 install lxml --quiet
-  - pip3 install neo4j --quiet
+  - pip3 install -r requirements.txt
   - pip3 install pylint-fail-under --quiet
 
 stages:
   - Static Analysis Part 1
   - Static Analysis Part 2
+  - Hilding unittest
 
 
 relaxed_pylint_analysis:
@@ -29,3 +27,9 @@ strict_pylint_analysis:
   - find ./test_folder/manual/ -type f -name "*.py" | xargs pylint-fail-under --fail_under 10.0 --module-rgx="BSW_REQPROD_\d*_.*|e_\d*_(\w*|-)_\d*_.*" -d duplicate-code,import-error,no-name-in-module
 #  - find ./test_folder/not_applicable/ -type f -name "*.py" | xargs pylint-fail-under --fail_under 10.0 --module-rgx="BSW_REQPROD_\d*_.*" -d duplicate-code,import-error,no-name-in-module
   - find ./test_folder/on_the_fly_test/ -type f -name "*.py" | xargs pylint-fail-under --fail_under 10.0 -d duplicate-code,import-error,no-name-in-module,invalid-name
+
+hilding_unittest:
+  stage: Hilding unittest
+  allow_failure: false
+  script:
+    - pytest ./hilding/
