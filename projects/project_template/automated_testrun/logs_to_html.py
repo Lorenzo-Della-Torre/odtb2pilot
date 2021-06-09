@@ -26,6 +26,7 @@ import collections
 import csv
 from yattag import Doc
 
+from hilding import get_settings
 from supportfunctions.support_test_odtb2 import SupportTestODTB2 # pylint: disable=wrong-import-position
 from supportfunctions.logs_to_html_css import STYLE as CSS # pylint: disable=wrong-import-position
 # Ugly hack to allow absolute import from the root folder
@@ -33,8 +34,8 @@ from supportfunctions.logs_to_html_css import STYLE as CSS # pylint: disable=wro
 if __name__ == "__main__" and __package__ is None:
     path.append(dir(path[0]))
     __package__ = "autotest" # pylint: disable=redefined-builtin
-import build.testrun_data as td # pylint: disable=import-error,wrong-import-position
 
+td = get_settings().rig.get_testrun_data()
 
 
 SUPPORT_TEST = SupportTestODTB2()
@@ -284,7 +285,7 @@ def generate_error_page(err_msg, outfile):
     """
     Create html error page
     """
-    doc, tag, text = Doc().ttl()
+    doc, tag, text, _ = Doc().ttl()
 
     with tag('html'):
         with tag('head'):
@@ -310,7 +311,7 @@ def generate_error_page(err_msg, outfile):
 
 
 # Will break this into smaller functions later, but it is not easy to split the html generation.
-def generate_html(folderinfo_and_result_tuple_list, outfile, verif_d,  # pylint: disable=too-many-locals, too-many-branches, too-many-statements, too-many-arguments
+def generate_html(folderinfo_result_tuple_list, outfile, verif_d,  # pylint: disable=too-many-locals, too-many-branches, too-many-statements, too-many-arguments
                   elektra_d, script_folder, log_folders, graph_file):
     """
     Create html table based on the dict
@@ -326,7 +327,7 @@ def generate_html(folderinfo_and_result_tuple_list, outfile, verif_d,  # pylint:
 
     # Creating set with only "keys", using a set to not get duplicates.
     # The testscript names are the keys
-    for testres_tuple in folderinfo_and_result_tuple_list:
+    for testres_tuple in folderinfo_result_tuple_list:
         # The second argument in tuple is the result dict
         # And the result dict is the key and the result of the test (FAILED/PASSED/NA)
         result_dict = testres_tuple[TESTRES_DICT_IDX]
@@ -335,7 +336,7 @@ def generate_html(folderinfo_and_result_tuple_list, outfile, verif_d,  # pylint:
 
     # Sorting the keys
     sorted_key_list = sorted(key_set)
-    amount_of_testruns = str(len(folderinfo_and_result_tuple_list))
+    amount_of_testruns = str(len(folderinfo_result_tuple_list))
 
     req_set = set()
 
@@ -354,13 +355,13 @@ def generate_html(folderinfo_and_result_tuple_list, outfile, verif_d,  # pylint:
             doc.stag('br') # Line break for some space
 
             # One counter for each test suite
-            for _ in folderinfo_and_result_tuple_list:
+            for _ in folderinfo_result_tuple_list:
                 res_counter_list.append(collections.Counter())
 
             # For the legend (explanation) and the summarization
             for key in sorted_key_list:
                 index = 0
-                for folderinfo_and_result_tuple in folderinfo_and_result_tuple_list:
+                for folderinfo_and_result_tuple in folderinfo_result_tuple_list:
                     testres_dict = folderinfo_and_result_tuple[TESTRES_DICT_IDX]
                     result = MISSING_STATUS # Default
                     if key in testres_dict:
@@ -451,7 +452,7 @@ def generate_html(folderinfo_and_result_tuple_list, outfile, verif_d,  # pylint:
                     for heading in HEADING_LIST:
                         with tag('th', klass="main"):
                             text(heading)
-                    for folderinfo_and_result_tuple in folderinfo_and_result_tuple_list:
+                    for folderinfo_and_result_tuple in folderinfo_result_tuple_list:
                         with tag('th', klass="main"):
                             text(folderinfo_and_result_tuple[FOLDER_TIME_IDX])
 
@@ -490,7 +491,7 @@ def generate_html(folderinfo_and_result_tuple_list, outfile, verif_d,  # pylint:
 
                         # Fourth (fifth, sixth) - Result columns
                         # Look up in dicts
-                        for folderinfo_and_result_tuple in folderinfo_and_result_tuple_list:
+                        for folderinfo_and_result_tuple in folderinfo_result_tuple_list:
                             folder_name = folderinfo_and_result_tuple[FOLDER_NAME_IDX]
                             testres_dict = folderinfo_and_result_tuple[TESTRES_DICT_IDX]
                             result = MISSING_STATUS
@@ -615,7 +616,7 @@ def main(margs):
     logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
     try:
-        folderinfo_and_result_tuple_list = []
+        folderinfo_result_tuple_list = []
         verif_dict = {}
         e_link_dict = {}
         log_folders = ''
@@ -644,12 +645,12 @@ def main(margs):
             # Put all data in a tuple
             folderinfo_and_result_tuple = (folder_time, res_dict, folder_name)
             # And put the tuple in a list
-            folderinfo_and_result_tuple_list.append(folderinfo_and_result_tuple)
+            folderinfo_result_tuple_list.append(folderinfo_and_result_tuple)
 
         if margs.req_csv:
             logging.debug("CSV-file found: %s", margs.req_csv)
             verif_dict, e_link_dict = get_reqprod_links(margs.req_csv)
-        generate_html(folderinfo_and_result_tuple_list, margs.html_file, verif_dict, e_link_dict,
+        generate_html(folderinfo_result_tuple_list, margs.html_file, verif_dict, e_link_dict,
                       margs.script_folder, log_folders, margs.graph_file)
         logging.info("Script finished")
 

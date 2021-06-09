@@ -8,7 +8,7 @@ import pytest
 from hilding.dut import Dut
 from hilding.dut import DutTestError
 from hilding.dut import get_dut_custom
-from hilding.platform import get_parameters
+from hilding.legacy import get_parameters
 
 from protogenerated.common_pb2 import Empty
 import protogenerated.system_api_pb2

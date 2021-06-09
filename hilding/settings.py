@@ -175,10 +175,14 @@ class Rig:
         sddb_file = self.build_path.joinpath(f"sddb_{content}.py")
         if not sddb_file.exists():
             raise ModuleNotFoundError(f"The {sddb_file} file does not exist")
-        spec = importlib.util.spec_from_file_location("sddb", sddb_file)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        return module
+        return get_module(sddb_file)
+
+    def get_testrun_data(self):
+        """ accessor method to get get_testrun_data module """
+        testrun_data_file = self.build_path.joinpath("testrun_data.py")
+        if not testrun_data_file.exists():
+            raise ModuleNotFoundError("The testrun_data.py file does not exist")
+        return get_module(testrun_data_file)
 
 
 def ensure_exists(path):
@@ -186,6 +190,12 @@ def ensure_exists(path):
     path.mkdir(exist_ok=True)
     return path
 
+def get_module(module_filename):
+    """ load module from file and return module object """
+    spec = importlib.util.spec_from_file_location("spec", module_filename)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 SETTINGS_YML_TEMPLATE = b"""

@@ -29,7 +29,7 @@ from protogenerated.network_api_pb2_grpc import NetworkServiceStub
 from supportfunctions.support_precondition import SupportPrecondition
 from supportfunctions.support_postcondition import SupportPostcondition
 from hilding.uds import Uds
-from hilding.platform import get_parameters
+from hilding.legacy import get_parameters
 from hilding import analytics
 from hilding import get_settings
 
