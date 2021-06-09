@@ -37,5 +37,5 @@ def test_settings_yml():
     """ pytest: settings.yml parsing """
     settings = get_settings()
     print(settings)
-    assert settings.settings['default_rig'] == "p8"
+    assert settings.default_rig
     assert settings.rig.user == "pi"

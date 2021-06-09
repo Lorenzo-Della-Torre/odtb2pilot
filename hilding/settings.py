@@ -78,7 +78,7 @@ class Settings:
         if not settings_file_path.exists():
             log.info("No %s file found. Creating a new one...",
                      settings_file_name)
-            with open(settings_file_path) as f:
+            with open(settings_file_path, "w") as f:
                 f.write(SETTINGS_YML_TEMPLATE)
         return settings_file_path
 
@@ -198,12 +198,12 @@ def get_module(module_filename):
     return module
 
 
-SETTINGS_YML_TEMPLATE = b"""
+SETTINGS_YML_TEMPLATE = """
 default_rig: piX
 rigs:
-  - piX:
-      hostname: art-piX.dhcp.nordic.volvocars.net
-      user: pi #optional
-      platform: spa2
-      signal_broker_port: 50051 #optional
+    piX:
+        hostname: art-piX.dhcp.nordic.volvocars.net
+        user: pi #optional
+        platform: spa2
+        signal_broker_port: 50051 #optional
 """
