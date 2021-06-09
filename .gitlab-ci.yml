@@ -16,13 +16,13 @@ relaxed_pylint_analysis:
   stage: Static Analysis Part 1
   allow_failure: true
   script:
-  - find ./OnTheFly_test/ -type f -name "*.py" | xargs pylint -d duplicate-code,import-error,invalid-name || true
+  - find ./test_folder/on_the_fly_test/ -type f -name "*.py" | xargs pylint -d duplicate-code,import-error,invalid-name || true
 
 strict_pylint_analysis:
   stage: Static Analysis Part 2
   allow_failure: false
   script:
- # - find ./autotest/ -type f -name "*.py" | xargs pylint-fail-under --fail_under 10.0 -d duplicate-code,import-error,invalid-name
+  - find ./hilding/ -type f -name "*.py" | xargs pylint-fail-under --fail_under 10.0 -d duplicate-code,import-error,invalid-name
   - find ./supportfunctions/ -type f -name "*.py" | xargs pylint-fail-under --fail_under 10.0 -d duplicate-code,import-error,invalid-name
   - find ./test_folder/automated/ -type f -name "*.py" | xargs pylint-fail-under --fail_under 10.0 --module-rgx="BSW_REQPROD_\d*_.*|e_\d*_(\w*|-)_\d*_.*" -d duplicate-code,import-error,no-name-in-module
   - find ./test_folder/manual/ -type f -name "*.py" | xargs pylint-fail-under --fail_under 10.0 --module-rgx="BSW_REQPROD_\d*_.*|e_\d*_(\w*|-)_\d*_.*" -d duplicate-code,import-error,no-name-in-module
