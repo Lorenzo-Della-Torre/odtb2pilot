@@ -105,6 +105,7 @@ class Rig:
     """ hilding rig management """
     def __init__(self, settings):
         self.settings = settings
+        self.__sddb_module_cache = {}
 
     @property
     def hostname(self):
@@ -164,25 +165,49 @@ class Rig:
         """ get the path to the build dir for the selected rig """
         return ensure_exists(self.rig_path.joinpath("build"))
 
-    def get_sddb(self, content: str):
+    @property
+    def sddb_dids(self):
+        """ get sddb did content """
+        return self.__get_sddb("dids")
+
+    @property
+    def sddb_dtcs(self):
+        """ get sddb dtc content """
+        return self.__get_sddb("dtcs")
+
+    @property
+    def sddb_services(self):
+        """ get sddb services content """
+        return self.__get_sddb("services")
+
+    def __get_sddb(self, content: str):
         """
         accessor method to get one of the generated sddb modules
         (e.g.  "dids", "dtcs", "services")
         """
+        if not content in self.__sddb_module_cache:
+            sddb_file = self.build_path.joinpath(f"sddb_{content}.py")
+            if not sddb_file.exists():
+                raise ModuleNotFoundError(f"The {sddb_file} file does not exist")
+            sddb_module = get_module(sddb_file)
+            self.__sddb_module_cache[content] = {
+                k:v for k,v in vars(sddb_module).items()
+                if not k.startswith('__')}
 
-        # needs caching
-
-        sddb_file = self.build_path.joinpath(f"sddb_{content}.py")
-        if not sddb_file.exists():
-            raise ModuleNotFoundError(f"The {sddb_file} file does not exist")
-        return get_module(sddb_file)
+        return self.__sddb_module_cache[content]
 
     def get_testrun_data(self):
         """ accessor method to get get_testrun_data module """
         testrun_data_file = self.build_path.joinpath("testrun_data.py")
         if not testrun_data_file.exists():
             raise ModuleNotFoundError("The testrun_data.py file does not exist")
-        return get_module(testrun_data_file)
+
+        testrun_data_module = get_module(testrun_data_file)
+        testrun_data = {
+            k:v for k,v in vars(testrun_data_module).items()
+            if not k.startswith('__')}
+        return testrun_data
+
 
 
 def ensure_exists(path):

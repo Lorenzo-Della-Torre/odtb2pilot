@@ -39,3 +39,21 @@ def test_settings_yml():
     print(settings)
     assert settings.default_rig
     assert settings.rig.user == "pi"
+
+def test_get_sddb(monkeypatch):
+    """ pytest: testing sddb access """
+    # pylint: disable=protected-access
+    settings = get_settings()
+    monkeypatch.setitem(
+        settings.rig._Rig__sddb_module_cache, "dids",
+        {"pbl_diag_part_num": ""})
+    monkeypatch.setitem(
+        settings.rig._Rig__sddb_module_cache, "dtcs",
+        {"sddb_dtcs": {}, "sddb_report_dtc": {}})
+    monkeypatch.setitem(
+        settings.rig._Rig__sddb_module_cache, "services",
+        {"pbl": {}, "sbl": {}, "app": {}})
+
+    assert settings.rig.sddb_dids == {"pbl_diag_part_num": ""}
+    assert settings.rig.sddb_dtcs == {"sddb_dtcs": {}, "sddb_report_dtc": {}}
+    assert settings.rig.sddb_services == {"pbl": {}, "sbl": {}, "app": {}}

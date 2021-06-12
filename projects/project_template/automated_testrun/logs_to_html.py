@@ -35,7 +35,10 @@ if __name__ == "__main__" and __package__ is None:
     path.append(dir(path[0]))
     __package__ = "autotest" # pylint: disable=redefined-builtin
 
-td = get_settings().rig.get_testrun_data()
+settings = get_settings()
+testrun_data = settings.rig.get_testrun_data()
+git_hash = testrun_data.get("git_hash")
+eda0_dict = testrun_data.get("eda0_dict")
 
 
 SUPPORT_TEST = SupportTestODTB2()
@@ -405,15 +408,15 @@ def generate_html(folderinfo_result_tuple_list, outfile, verif_d,  # pylint: dis
                             with tag('td', klass='thick-row'):
                                 text('ECU GIT Hash')
                             with tag('td', klass='ecu_git_hash thick-row number'):
-                                text(td.git_hash)
+                                text(git_hash)
 
                     with tag('table', klass='metadata_table'):
-                        for name in td.eda0_dict:
+                        for name in eda0_dict:
                             with tag('tr'):
                                 with tag('td', klass='thin-row'):
                                     text(name)
                                 with tag('td', klass='number thin-row'):
-                                    text(td.eda0_dict.get(name, ''))
+                                    text(eda0_dict.get(name, ''))
 
                 # A separate table for the legend (explanation) and the summarization
                 with tag('div', klass='legend'):
