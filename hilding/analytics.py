@@ -2,56 +2,31 @@
 Add results from Hilding test to JAKOB db and the cynosure message bus
 """
 
-import sys
 import logging
 from secrets import token_urlsafe
 from datetime import datetime
 
 import epsmsgbus
-
-import odtb_conf
-
-required_attr = [
-    "TEST_SUITE_NAME",
-    "TEST_SUITE_IDENTIFIER",
-    "TEST_SUITE_DESCRIPTION",
-    "EXECUTOR",
-    "PROJECT",
-    "PLATFORM",
-    "BRANCH",
-    "ECU",
-    "DBC",
-    "VEHICLE_PROJECT",
-    "VEHICLE_SERIES",
-    "SW_VERSION",
-    "SW_GITHASH",
-    "SW_CHANGESET",
-    "SW_INHOUSECHANGESET",
-    "TESTENV_INFO_NAME",
-    "TESTENV_INFO_DESCRIPTION",
-    "TESTENV_INFO_PLATFORM",
-]
+from hilding import get_settings
 
 # we choose to use 7 bytes here to use the same token length as pmt
 TOKEN_LENGTH = 7
 
 log = logging.getLogger("analytics")
 
+
 def lack_testcases():
     """the testsuite does not have any started testcases"""
     return bool(epsmsgbus.core.testsuite().testcases == [])
 
-def analytics_config(name):
-    """Get config names or a default dummy value"""
-    return getattr(odtb_conf, name, "UNKNOWN")
+def get_analytics():
+    """ Get analytics config """
+    return get_settings().rig.analytics
 
 def require_use_epsmsgbus(func):
-    """Decorator to disable func if odtb_conf.USE_EPSMSGBUS is not True"""
+    """ Decorator to disable func if analytics is not configured """
     def wrapper_require_use_epsmsgbus(*args, **kwargs):
-        if getattr(odtb_conf, "USE_EPSMSGBUS", False):
-            for attr in required_attr:
-                if not hasattr(odtb_conf, attr):
-                    sys.exit(f"analytics error: {attr} is not configured in odtb_conf")
+        if get_analytics().config:
             func(*args, **kwargs)
     return wrapper_require_use_epsmsgbus
 
@@ -59,8 +34,8 @@ class TestSuiteDataAdapter(epsmsgbus.TestSuiteDataAdapter):
     """Hilding Test Suite"""
     def __init__(
             self,
-            name=analytics_config("TEST_SUITE_NAME"),
-            identifier=analytics_config("TEST_SUITE_IDENTIFIER"),
+            name=get_analytics().test_suite_name,
+            identifier=get_analytics().test_suite_identifier,
             jobid="SET_JOBID"):
         self.name = name
         self.id = identifier # pylint: disable=invalid-name
@@ -81,44 +56,44 @@ class TestSuiteDataAdapter(epsmsgbus.TestSuiteDataAdapter):
         """Return information about the test execution itself."""
         return epsmsgbus.ExecutionInfo(
                 name=self.jobid,
-                description=analytics_config("TEST_SUITE_DESCRIPTION"),
-                executor=analytics_config("EXECUTOR"))
+                description=get_analytics().test_suite_description,
+                executor=get_analytics().executor)
 
     def get_simulation_info(self): #pylint: disable=no-self-use
         """Return information about the virtual simulation model running on
         Hilding"""
-        project = analytics_config("PROJECT")
-        ecu = analytics_config("ECU")
+        project = get_analytics().project
+        ecu = get_analytics().ecu
         token = token_urlsafe(nbytes=TOKEN_LENGTH)
         date =  datetime.utcnow().date()
         build_id = f"HD_BUILD_{project}_{ecu}_{date}_{token}"
         return epsmsgbus.SimulationInfo(
                 build_id=build_id,
                 project=project,
-                branch=analytics_config("BRANCH"),
+                branch=get_analytics().branch,
                 ecu=ecu,
-                dbc=analytics_config("DBC"))
+                dbc=get_analytics().dbc)
 
 
     def get_software_info(self): #pylint: disable=no-self-use
         """Return information about the software under test."""
         return epsmsgbus.SoftwareInfo(
-                ecu=analytics_config("ECU"),
-                platform=analytics_config("PLATFORM"),
-                vehicle_project=analytics_config("VEHICLE_PROJECT"),
-                vehicle_series=analytics_config("VEHICLE_SERIES"),
-                version=analytics_config("SW_VERSION"),
+                ecu=get_analytics().ecu,
+                platform=get_analytics().platform,
+                vehicle_project=get_analytics().vehicle_project,
+                vehicle_series=get_analytics().vehicle_series,
+                version=get_analytics().sw_version,
                 # this should be the githash for the firmware
-                githash=analytics_config("SW_GITHASH"),
-                changeset=analytics_config("SW_CHANGESET"),
-                inhousechangeset=analytics_config("SW_INHOUSECHANGESET"))
+                githash=get_analytics().sw_githash,
+                changeset=get_analytics().sw_changeset,
+                inhousechangeset=get_analytics().sw_inhousechangeset)
 
     def get_testenv_info(self): #pylint: disable=no-self-use
         """Return information about the test environment."""
         return epsmsgbus.TestEnvironmentinfo(
-                name=analytics_config("TESTENV_INFO_NAME"),
-                description=analytics_config("TESTENV_INFO_DESCRIPTION"),
-                platform=analytics_config("TESTENV_INFO_PLATFORM"))
+                name=get_analytics().testenv_info_name,
+                description=get_analytics().testenv_info_description,
+                platform=get_analytics().platform)
 
 
 class TestCaseDataAdapter(epsmsgbus.TestCaseDataAdapter): #pylint: disable=too-few-public-methods
