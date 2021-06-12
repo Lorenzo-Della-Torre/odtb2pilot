@@ -3,10 +3,18 @@ Pytest unit tests for support_uds.py
 
 The class takes replies as hex strings from the ECU and parses out the relevant parts.
 """
+#pylint: disable=redefined-outer-name, unused-import
 import pytest
+from hilding import uds
 from hilding.uds import UdsResponse
 from hilding.uds import extract_fields
+from hilding.settings_test import mock_get_settings
 
+
+@pytest.fixture(autouse=True)
+def setup(mock_get_settings):
+    """ mock get user settings for all tests """
+    uds.get_settings = mock_get_settings
 
 def test_uds_response():
     """ pytest: UdsResponse """

@@ -15,7 +15,7 @@ import protogenerated.system_api_pb2
 if hasattr(protogenerated.system_api_pb2, "License"):
     from protogenerated.system_api_pb2 import LicenseStatus # pylint: disable=no-name-in-module
 
-def test_dut():
+def _test_dut():
     """ pytest: testing dut """
     dut = Dut()
     # list available signals

@@ -3,8 +3,35 @@ pytest for hilding/settings.py
 """
 from tempfile import TemporaryFile
 
+import pytest
+
 from hilding.settings import Settings
 from hilding.settings import get_settings
+
+# pylint: disable=protected-access,redefined-outer-name
+
+@pytest.fixture
+def mock_get_settings(monkeypatch):
+    """ mock helper function to not touch the file system """
+    def get_settings_wrapper():
+        settings = get_settings()
+        monkeypatch.setitem(
+            settings.rig._Rig__sddb_module_cache, "dids",
+            {"pbl_diag_part_num": "",
+             "app_did_dict": {"F186": {'size': '1'},
+                              "EDA0": {'size': '110'},
+                              "F12E": {'size': '7'}},
+             "pbl_did_dict": {"F12C": {'size': '7'}},
+             "sbl_did_dict": {"F122": {'size': '7'}},
+             "resp_item_dict": {}})
+        monkeypatch.setitem(
+            settings.rig._Rig__sddb_module_cache, "dtcs",
+            {"sddb_dtcs": {}, "sddb_report_dtc": {}})
+        monkeypatch.setitem(
+            settings.rig._Rig__sddb_module_cache, "services",
+            {"pbl": {}, "sbl": {}, "app": {}})
+        return settings
+    return get_settings_wrapper
 
 def test_settings():
     """ pytest: setting parsing """
@@ -36,24 +63,16 @@ def test_settings():
 def test_settings_yml():
     """ pytest: settings.yml parsing """
     settings = get_settings()
-    print(settings)
     assert settings.default_rig
     assert settings.rig.user == "pi"
 
-def test_get_sddb(monkeypatch):
+def test_get_sddb(mock_get_settings):
     """ pytest: testing sddb access """
-    # pylint: disable=protected-access
-    settings = get_settings()
-    monkeypatch.setitem(
-        settings.rig._Rig__sddb_module_cache, "dids",
-        {"pbl_diag_part_num": ""})
-    monkeypatch.setitem(
-        settings.rig._Rig__sddb_module_cache, "dtcs",
-        {"sddb_dtcs": {}, "sddb_report_dtc": {}})
-    monkeypatch.setitem(
-        settings.rig._Rig__sddb_module_cache, "services",
-        {"pbl": {}, "sbl": {}, "app": {}})
+    settings = mock_get_settings()
 
-    assert settings.rig.sddb_dids == {"pbl_diag_part_num": ""}
-    assert settings.rig.sddb_dtcs == {"sddb_dtcs": {}, "sddb_report_dtc": {}}
-    assert settings.rig.sddb_services == {"pbl": {}, "sbl": {}, "app": {}}
+    assert "pbl_diag_part_num" in settings.rig.sddb_dids
+    assert "sddb_dtcs" in settings.rig.sddb_dtcs
+    assert "sddb_report_dtc" in settings.rig.sddb_dtcs
+    assert "app" in settings.rig.sddb_services
+    assert "pbl" in settings.rig.sddb_services
+    assert "sbl" in settings.rig.sddb_services

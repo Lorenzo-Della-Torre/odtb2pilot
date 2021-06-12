@@ -20,9 +20,6 @@ from hilding import get_settings
 
 SC = SupportCAN()
 
-sddb_dids = get_settings().rig.sddb_dids
-sddb_dtcs = get_settings().rig.sddb_dtcs.get("sddb_dtcs")
-
 global_timestamp_dd00 = bytes.fromhex('DD00')
 
 @dataclass
@@ -77,7 +74,10 @@ class UdsResponse:
         self.data['details'] = {}
         self.all_defined_dids = {}
         self.__did_regex = {}
+        self.__sddb_dids = get_settings().rig.sddb_dids
+        self.__sddb_dtcs = get_settings().rig.sddb_dtcs.get("sddb_dtcs")
         self.__process_message()
+
 
     def __process_message(self):
         if self.raw == "065003001901F400":
@@ -155,17 +155,17 @@ class UdsResponse:
     def __positive_response(self):
         self.all_defined_dids = {}
         if not self.mode:
-            self.all_defined_dids.update(sddb_dids["app_did_dict"])
-            self.all_defined_dids.update(sddb_dids["pbl_did_dict"])
-            self.all_defined_dids.update(sddb_dids["sbl_did_dict"])
+            self.all_defined_dids.update(self.__sddb_dids["app_did_dict"])
+            self.all_defined_dids.update(self.__sddb_dids["pbl_did_dict"])
+            self.all_defined_dids.update(self.__sddb_dids["sbl_did_dict"])
         elif self.mode in [1, 3]:
-            self.all_defined_dids.update(sddb_dids["app_did_dict"])
+            self.all_defined_dids.update(self.__sddb_dids["app_did_dict"])
         elif self.mode == 2:
             # it would be good to separate these two and we can do that if we
             # add a state to the class indicating which programming mode it's
             # in.
-            self.all_defined_dids.update(sddb_dids["pbl_did_dict"])
-            self.all_defined_dids.update(sddb_dids["sbl_did_dict"])
+            self.all_defined_dids.update(self.__sddb_dids["pbl_did_dict"])
+            self.all_defined_dids.update(self.__sddb_dids["sbl_did_dict"])
         else:
             sys.exit(f"Incorrect mode set: {self.mode}. Exiting...")
 
@@ -270,8 +270,8 @@ class UdsResponse:
         if match:
             dtc = match.groupdict()["dtc"]
             self.data['dtc'] = dtc
-            if dtc in sddb_dtcs:
-                self.details.update(sddb_dtcs[dtc])
+            if dtc in self.__sddb_dtcs:
+                self.details.update(self.__sddb_dtcs[dtc])
             self.data["dtc_status_bits"] = DtcStatus(
                 match.groupdict()["dtc_status_bits"])
 
@@ -285,8 +285,8 @@ class UdsResponse:
             group = match.groupdict()
             dtc = group["dtc"]
             self.data['dtc'] = dtc
-            if dtc in sddb_dtcs:
-                self.details.update(sddb_dtcs[dtc])
+            if dtc in self.__sddb_dtcs:
+                self.details.update(self.__sddb_dtcs[dtc])
 
             self.data["dtc_status_bits"] = DtcStatus(
                 group["dtc_status_bits"])
@@ -343,8 +343,8 @@ class UdsResponse:
 
     def add_response_items(self, did, payload):
         """ add response items """
-        if did in sddb_dids["resp_item_dict"]:
-            resp_item_dict = sddb_dids["resp_item_dict"]
+        if did in self.__sddb_dids["resp_item_dict"]:
+            resp_item_dict = self.__sddb_dids["resp_item_dict"]
             response_items = []
             for resp_item in resp_item_dict[did]:
                 offset = resp_item['offset']
