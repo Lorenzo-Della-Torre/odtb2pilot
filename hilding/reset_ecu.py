@@ -7,8 +7,8 @@ import traceback
 
 from supportfunctions.support_service31 import SupportService31
 from supportfunctions.support_SBL import SupportSBL
-from hilding import Dut
-from hilding import DutTestError
+from hilding.dut import Dut
+from hilding.dut import DutTestError
 from hilding.uds import EicDid
 
 
