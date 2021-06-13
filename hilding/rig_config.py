@@ -34,19 +34,19 @@ class Rig:
     @property
     def fixed_key(self):
         """ settings platform fixed key """
-        platform_data = self.settings.settings.get(self.platform)
+        platform_data = self.settings.settings.get(self.platform, {})
         return platform_data.get("fixed_key", "0102030405")
 
     @property
     def default_signal_send(self):
         """ settings platform default signal send """
-        platform_data = self.settings.settings.get(self.platform)
+        platform_data = self.settings.settings.get(self.platform, {})
         return platform_data.get("default_signal_send")
 
     @property
     def default_signal_receive(self):
         """ settings platform default signal receive """
-        platform_data = self.settings.settings.get(self.platform)
+        platform_data = self.settings.settings.get(self.platform, {})
         return platform_data.get("default_signal_receive")
 
     @property
