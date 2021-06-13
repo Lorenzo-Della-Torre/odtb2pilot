@@ -6,20 +6,13 @@ before_script:
   - pip3 install -r requirements.txt
   - pip3 install pylint-fail-under --quiet
 
-stages:
-  - Static Analysis Part 1
-  - Static Analysis Part 2
-  - Hilding unittest
-
 
 relaxed_pylint_analysis:
-  stage: Static Analysis Part 1
   allow_failure: true
   script:
   - find ./test_folder/on_the_fly_test/ -type f -name "*.py" | xargs pylint -d duplicate-code,import-error,invalid-name || true
 
 strict_pylint_analysis:
-  stage: Static Analysis Part 2
   allow_failure: false
   script:
   - find ./hilding/ -type f -name "*.py" | xargs pylint-fail-under --fail_under 10.0 -d duplicate-code,import-error,invalid-name
@@ -30,7 +23,6 @@ strict_pylint_analysis:
   - find ./test_folder/on_the_fly_test/ -type f -name "*.py" | xargs pylint-fail-under --fail_under 10.0 -d duplicate-code,import-error,no-name-in-module,invalid-name
 
 hilding_unittest:
-  stage: Hilding unittest
   allow_failure: false
   script:
     - pytest ./hilding/
