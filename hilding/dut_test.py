@@ -3,12 +3,10 @@ pytest: dut testing
 """
 
 import os
-import pytest
 
 from hilding.dut import Dut
 from hilding.dut import DutTestError
-from hilding.dut import get_dut_custom
-from hilding.legacy import get_parameters
+from hilding import get_settings
 
 from protogenerated.common_pb2 import Empty
 import protogenerated.system_api_pb2
@@ -55,21 +53,12 @@ def test_upload_folder():
         pass
 
 
-def test_get_parameters():
-    """ pytest: testing get_parameters """
-    parameters = get_parameters()
-    assert "run" in parameters
-    assert "send" in parameters["run"]
-    assert "receive" in parameters["run"]
-    platform = os.getenv("ODTBPROJ")
-    if platform == "MEP2_SPA1":
-        assert parameters["run"]["send"] == "Vcu1ToBecmFront1DiagReqFrame"
-        assert parameters["run"]["receive"] == "BecmToVcu1Front1DiagResFrame"
-    if platform == "MEP2_SPA2":
-        assert parameters["run"]["send"] == "HvbmdpToHvbmUdsDiagRequestFrame"
-        assert parameters["run"]["receive"] == "HvbmToHvbmdpUdsDiagResponseFrame"
-
-def test_get_dut_custom():
-    """ pytest: testing get_dut_custom """
-    with pytest.raises(FileNotFoundError, match=r"Could not find .*dut_test.yml"):
-        get_dut_custom()
+def test_get_signal_broker_parameters():
+    """ pytest: testing send and receive parameters """
+    rig = get_settings().rig
+    if rig.platform == "becm":
+        assert rig.default_signal_send == "Vcu1ToBecmFront1DiagReqFrame"
+        assert rig.default_signal_receive == "BecmToVcu1Front1DiagResFrame"
+    if rig.platform == "hvbm":
+        assert rig.default_signal_send == "HvbmdpToHvbmUdsDiagRequestFrame"
+        assert rig.default_signal_receive == "HvbmToHvbmdpUdsDiagResponseFrame"

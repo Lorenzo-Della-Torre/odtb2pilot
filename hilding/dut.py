@@ -29,7 +29,6 @@ from protogenerated.network_api_pb2_grpc import NetworkServiceStub
 from supportfunctions.support_precondition import SupportPrecondition
 from supportfunctions.support_postcondition import SupportPostcondition
 from hilding.uds import Uds
-from hilding.legacy import get_parameters
 from hilding import analytics
 from hilding import get_settings
 
@@ -81,17 +80,16 @@ def analytics_test_step(func):
 class Dut:
     """ Device under test """
     # pylint: disable=too-many-instance-attributes
-    def __init__(self, custom_yml_file=None):
-        settings = get_settings()
-        self.dut_host = settings.rig.hostname
-        self.dut_port = settings.rig.signal_broker_port
+    def __init__(self):
+        rig = get_settings().rig
+        self.dut_host = rig.hostname
+        self.dut_port = rig.signal_broker_port
         self.channel = grpc.insecure_channel(f'{self.dut_host}:{self.dut_port}')
         self.network_stub = NetworkServiceStub(self.channel)
         self.system_stub = SystemServiceStub(self.channel)
 
-        parameters = get_parameters(custom_yml_file)
-        self.send = parameters["run"]["send"]
-        self.receive = parameters["run"]["receive"]
+        self.send = rig.default_signal_send
+        self.receive = rig.default_signal_receive
         self.namespace = NameSpace(name="Front1CANCfg0")
 
         self.uds = Uds(self)
@@ -279,16 +277,6 @@ class Dut:
 
             self.upload_folder(tmpdirname)
             self.reload_configuration()
-
-
-def get_dut_custom():
-    """
-    Create a dut with a custom parameters file that has the same name as the
-    caller (most commonly the name of the test file)
-    """
-    frame_info = inspect.stack()[1]
-    filename = Path(frame_info.filename)
-    return Dut(custom_yml_file=os.path.basename(filename.with_suffix(".yml")))
 
 
 def get_sha256(filename):
