@@ -14,6 +14,7 @@ from hilding.sddb import parse_sddb_file
 from hilding.sddb import get_sddb_file
 from hilding.dvm import create_dvm
 from hilding.rig import handle_rigs
+from hilding.reset_ecu import reset_ecu
 from hilding.settings import initialize_settings
 from hilding import get_settings
 
@@ -161,6 +162,9 @@ if __name__ == "__main__":
         '--update-all', action="store_true",
         help="download .vbf, .sddb, and .dbc files for all configured rigs")
 
+    reset_ecu_parser = subparsers.add_parser(
+        "reset", help="Reset the ECU to defaults"
+    )
 
     args = parser.parse_args()
 
@@ -200,3 +204,5 @@ if __name__ == "__main__":
         did_report()
     elif args.command == 'rigs':
         handle_rigs(args)
+    elif args.command == 'reset':
+        reset_ecu()

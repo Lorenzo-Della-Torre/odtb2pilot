@@ -20,6 +20,8 @@ from hilding import get_settings
 
 SC = SupportCAN()
 
+log = logging.getLogger('uds')
+
 global_timestamp_dd00 = bytes.fromhex('DD00')
 
 @dataclass
@@ -87,7 +89,7 @@ class UdsResponse:
             # to the data dictionary in a better way than this. Maybe use
             # nibble 5 and 6?
             self.data["details"]["mode"] = 3
-            logging.info("The ECU was successfully set to mode 3")
+            log.info("The ECU was successfully set to mode 3")
             return
 
         response_patterns = [
@@ -231,7 +233,7 @@ class UdsResponse:
         elif report_type == '06':
             self.__process_dtc_extended_data_records(content)
         else:
-            logging.warning("dtc report type not supported by UdsResponse")
+            log.warning("dtc report type not supported by UdsResponse")
 
     def __process_dtc_by_status_mask(self, content):
         dtc_status_list_match = re.match(
@@ -354,7 +356,7 @@ class UdsResponse:
                 if 'compare_value' in resp_item:
                     compare_value = resp_item['compare_value']
                     if compare(scaled_value, compare_value):
-                        logging.debug('Equal! Comparing %s with %s', str(compare_value),
+                        log.debug('Equal! Comparing %s with %s', str(compare_value),
                                       scaled_value)
                     continue
 
@@ -397,7 +399,7 @@ class UdsResponse:
         self.extract_dids(self.details['item'])
 
         if not 'F12E' in self.details:
-            logging.error('No F12E part numbers found')
+            log.error('No F12E part numbers found')
             return
 
         remaining = self.details['F12E']
@@ -411,7 +413,7 @@ class UdsResponse:
         remaining = remaining[2:]
 
         if not records * part_num_len == len(remaining):
-            logging.warning(
+            log.warning(
                 "Record length of F12E in EDA0 appears incorrect in SDDB file")
             # attempting to recover by ignoreing SDDB record for F12E
             # `format` will replace the two outer most curly braces with a single
@@ -547,7 +549,7 @@ class Uds:
         }
         assert mode in modes.keys()
         payload = bytes([0x10, mode])
-        logging.info(
+        log.info(
             "Set %s with payload %s", modes[mode], payload.hex())
 
         try:
@@ -579,11 +581,13 @@ class Uds:
                 "You need to be in programming mode to change from pbl to sbl")
 
         sbl = SupportSBL()
-        f_names = get_settings().rig.vbf_path.glob("*.vbf")
-        if not sbl.read_vbf_param(f_names):
+        rig = get_settings().rig
+        vbf_files = [str(f.resolve()) for f in rig.vbf_path.glob("*.vbf")]
+        log.info(vbf_files)
+        if not sbl.read_vbf_param(vbf_files):
             UdsError("Could not load vbf files")
         if not sbl.sbl_activation(
-            self.dut, fixed_key='FFFFFFFFFF', stepno=self.dut.step,
+            self.dut, fixed_key=rig.fixed_key, stepno=self.dut.step,
                 purpose="Activate Secondary bootloader"):
             UdsError("Could not set ecu in sbl mode")
 
@@ -653,17 +657,17 @@ def populate_formula(formula, value, size):
 
     # It is a bitwise-and HEX
     if and_pos_hex != -1:
-        logging.debug('Formula = %s and_pos_hex = %s', formula, and_pos_hex)
+        log.debug('Formula = %s and_pos_hex = %s', formula, and_pos_hex)
         hex_value = formula[and_pos_hex + 1:and_pos_hex + 3 + int(size) * 2]
         formula = formula.replace(hex_value, str(int(hex_value, 16)) + ')')
         populated_formula = formula.replace('X', '(' +str(value))
     # It is a bitwise-and bit-mapping
     elif and_pos_bit != -1:
-        logging.debug('Formula = %s and_pos_bit = %s', formula, and_pos_bit)
+        log.debug('Formula = %s and_pos_bit = %s', formula, and_pos_bit)
         bit_value = bin(value)
         populated_formula = formula.replace('X', '(' +str(bit_value) + ')')
     else:
-        logging.debug('Value = %s', value)
+        log.debug('Value = %s', value)
         populated_formula = formula.replace('X', str(value))
     return populated_formula
 
@@ -683,27 +687,27 @@ def get_scaled_value(resp_item, sub_payload):
     if 'formula' in resp_item:
         size = resp_item['size']
         formula = resp_item['formula']
-        logging.debug('Formula = %s', formula)
+        log.debug('Formula = %s', formula)
         populated_formula = populate_formula(formula, int_value, size)
-        logging.debug('Populated formula = %s', populated_formula)
+        log.debug('Populated formula = %s', populated_formula)
 
         try:
             result = str(eval(populated_formula)) # pylint: disable=eval-used
             int_result = int(float(result))
-            logging.debug('Formula = %s => %s', formula, result)
+            log.debug('Formula = %s => %s', formula, result)
             return int_result
         except RuntimeError as runtime_error:
-            logging.fatal(runtime_error)
+            log.fatal(runtime_error)
         except SyntaxError as syntax_error:
-            logging.fatal(syntax_error)
+            log.fatal(syntax_error)
         except OverflowError as overflow_error:
-            logging.fatal(overflow_error)
+            log.fatal(overflow_error)
     else:
         # If we reach this, then there is no formula.
         # That is an issue, formula should be mandatory
-        logging.fatal('No formula!')
-        logging.fatal(resp_item)
-        logging.fatal(sub_payload)
+        log.fatal('No formula!')
+        log.fatal(resp_item)
+        log.fatal(sub_payload)
         raise RuntimeError('No formula!')
     return int_value
 
@@ -725,7 +729,7 @@ def compare(scaled_value, compare_value):
         # pylint: disable=eval-used
         result = eval(str(scaled_value) + str(improved_compare_value))
     except NameError as name_error:
-        logging.error(name_error)
+        log.error(name_error)
     except SyntaxError as syntax_error:
-        logging.error(syntax_error)
+        log.error(syntax_error)
     return result
