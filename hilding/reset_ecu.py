@@ -86,7 +86,7 @@ def software_download(dut):
         raise DutTestError("Failed check complete and compatible")
 
 
-def reset_ecu():
+def reset_and_flash_ecu():
     """ reset ecu """
     dut = Dut()
     start_time = dut.start()

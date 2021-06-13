@@ -14,7 +14,7 @@ from hilding.sddb import parse_sddb_file
 from hilding.sddb import get_sddb_file
 from hilding.dvm import create_dvm
 from hilding.rig import handle_rigs
-from hilding.reset_ecu import reset_ecu
+from hilding.reset_ecu import reset_and_flash_ecu
 from hilding.settings import initialize_settings
 from hilding import get_settings
 
@@ -205,4 +205,4 @@ if __name__ == "__main__":
     elif args.command == 'rigs':
         handle_rigs(args)
     elif args.command == 'reset':
-        reset_ecu()
+        reset_and_flash_ecu()
