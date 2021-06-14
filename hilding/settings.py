@@ -103,6 +103,7 @@ class Settings:
 
 
 SETTINGS_YML_TEMPLATE = """
+# note: settings.yml should never be committed to the repo
 default_rig: piX
 rigs:
     piX:

@@ -81,15 +81,15 @@ class Dut:
     """ Device under test """
     # pylint: disable=too-many-instance-attributes
     def __init__(self):
-        rig = get_settings().rig
-        self.dut_host = rig.hostname
-        self.dut_port = rig.signal_broker_port
-        self.channel = grpc.insecure_channel(f'{self.dut_host}:{self.dut_port}')
+        self.settings = get_settings()
+        self.channel = grpc.insecure_channel(
+            f'{self.settings.rig.hostname}:'
+            f'{self.settings.rig.signal_broker_port}')
         self.network_stub = NetworkServiceStub(self.channel)
         self.system_stub = SystemServiceStub(self.channel)
 
-        self.send = rig.default_signal_send
-        self.receive = rig.default_signal_receive
+        self.send = self.settings.rig.default_signal_send
+        self.receive = self.settings.rig.default_signal_receive
         self.namespace = NameSpace(name="Front1CANCfg0")
 
         self.uds = Uds(self)
@@ -119,7 +119,9 @@ class Dut:
         """ log the current time and return a timestamp """
         start_time = datetime.now()
         timestamp = start_time.timestamp()
-        logging.info("Running test on: %s:%s", self.dut_host, self.dut_port)
+        logging.info("Running test on: %s:%s",
+                     self.settings.rig.hostname,
+                     self.settings.rig.signal_broker_port)
         logging.info("Testcase start: %s", start_time)
         logging.info("Time: %s \n", timestamp)
         return timestamp

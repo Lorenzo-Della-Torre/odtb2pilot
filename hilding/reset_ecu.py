@@ -46,23 +46,29 @@ def software_download(dut):
 
     sbl = SupportSBL()
 
+    vbf_files = [str(f.resolve()) for f in dut.settings.rig.vbf_path.glob("*.vbf")]
+    log.info(vbf_files)
+    if not sbl.read_vbf_param(vbf_files):
+        DutTestError("Could not load vbf files")
+
     ess_vbf_file = sbl.get_ess_filename()
     if ess_vbf_file:
         # Some ECU like HLCM don't have ESS vbf file
         # if no ESS file present: skip download
+        sbl2 = SupportSBL()
         log.info("ess file software download: %s", ess_vbf_file)
-        vbf_version, vbf_header, vbf_data, vbf_offset = sbl.read_vbf_file(ess_vbf_file)
+        vbf_version, vbf_header, vbf_data, vbf_offset = sbl2.read_vbf_file(ess_vbf_file)
 
         #convert vbf header so values can be used directly
-        sbl.vbf_header_convert(vbf_header)
+        sbl2.vbf_header_convert(vbf_header)
         log.info("ESS VBF version: %s", vbf_version)
 
         # Erase Memory
-        if not sbl.flash_erase(dut, vbf_header, 101):
+        if not sbl2.flash_erase(dut, vbf_header, 101):
             raise DutTestError("Failed transfer data block")
 
         # Iteration to Download the Software by blocks
-        if not sbl.transfer_data_block(dut, vbf_header, vbf_data, vbf_offset):
+        if not sbl2.transfer_data_block(dut, vbf_header, vbf_data, vbf_offset):
             raise DutTestError("Failed transfer data block")
 
         if not SupportService31.check_memory(dut, vbf_header, 102):
