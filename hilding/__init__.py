@@ -1,2 +1,2 @@
 """ hilding package module """
-from hilding.settings import get_settings
+from hilding.conf import get_conf

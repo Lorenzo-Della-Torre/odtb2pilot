@@ -19,7 +19,6 @@ import sys
 
 from hilding.dut import Dut
 from hilding.dut import DutTestError
-from hilding import get_settings
 
 def step_1(dut):
     """
@@ -40,10 +39,9 @@ def step_1(dut):
     # note: 2047 decimal = 0x7ff
     # hence, we set the addressing as follows:
 
-    settings = get_settings()
-    if settings.rig.platform == 'spa1':
+    if dut.conf.rig.platform == 'becm':
         dut.send = 'Vcu1ToAllFuncFront1DiagReqFrame'
-    elif settings.rig.platform == 'spa2':
+    elif dut.conf.rig.platform == 'hvbm':
         dut.send = 'HvbmdpToAllUdsDiagRequestFrame'
     else:
         raise DutTestError("Your platform is not supported in this test")

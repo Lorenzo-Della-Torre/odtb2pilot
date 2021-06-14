@@ -15,8 +15,8 @@ from hilding.sddb import get_sddb_file
 from hilding.dvm import create_dvm
 from hilding.rig import handle_rigs
 from hilding.reset_ecu import reset_and_flash_ecu
-from hilding.settings import initialize_settings
-from hilding import get_settings
+from hilding.conf import initialize_conf
+from hilding import get_conf
 
 def config_environ():
     """automatically set pythonpath and environment variables"""
@@ -24,7 +24,7 @@ def config_environ():
     sys.path.append(join(dirname(__file__), "test_folder/automated"))
     sys.path.append(join(dirname(__file__), "test_folder/manual"))
     if not "ODTBPROJPARAM" in environ:
-        platform = get_settings().rig.platform.upper()
+        platform = get_conf().rig.platform.upper()
         odtb_proj_parm = join(dirname(__file__), f"projects/MEP2_{platform}")
         # setting environment variables for process internal settings is not
         # that pretty, but let's do it like this for now to get away from
@@ -175,10 +175,10 @@ if __name__ == "__main__":
         level=getattr(logging, args.loglevel.upper()))
 
     if args.rig:
-        initialize_settings(args.rig)
+        initialize_conf(args.rig)
 
-    # needs to be done after initialize_settings,
-    # since it uses the settings module
+    # needs to be done after initialize_conf,
+    # since it uses the conf module
     config_environ()
 
     if not args.command:

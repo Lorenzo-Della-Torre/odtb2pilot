@@ -7,7 +7,7 @@ from secrets import token_urlsafe
 from datetime import datetime
 
 import epsmsgbus
-from hilding import get_settings
+from hilding import get_conf
 
 # we choose to use 7 bytes here to use the same token length as pmt
 TOKEN_LENGTH = 7
@@ -21,12 +21,12 @@ def lack_testcases():
 
 def get_analytics():
     """ Get analytics config """
-    return get_settings().rig.analytics
+    return get_conf().rig.analytics
 
 def require_use_epsmsgbus(func):
     """ Decorator to disable func if analytics is not configured """
     def wrapper_require_use_epsmsgbus(*args, **kwargs):
-        if get_analytics().config:
+        if get_analytics().analytics:
             func(*args, **kwargs)
     return wrapper_require_use_epsmsgbus
 

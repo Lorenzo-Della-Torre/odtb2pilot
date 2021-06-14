@@ -30,7 +30,7 @@ from supportfunctions.support_precondition import SupportPrecondition
 from supportfunctions.support_postcondition import SupportPostcondition
 from hilding.uds import Uds
 from hilding import analytics
-from hilding import get_settings
+from hilding import get_conf
 
 # pylint: disable=no-member
 import protogenerated.system_api_pb2
@@ -81,15 +81,15 @@ class Dut:
     """ Device under test """
     # pylint: disable=too-many-instance-attributes
     def __init__(self):
-        self.settings = get_settings()
+        self.conf = get_conf()
         self.channel = grpc.insecure_channel(
-            f'{self.settings.rig.hostname}:'
-            f'{self.settings.rig.signal_broker_port}')
+            f'{self.conf.rig.hostname}:'
+            f'{self.conf.rig.signal_broker_port}')
         self.network_stub = NetworkServiceStub(self.channel)
         self.system_stub = SystemServiceStub(self.channel)
 
-        self.send = self.settings.rig.default_signal_send
-        self.receive = self.settings.rig.default_signal_receive
+        self.send = self.conf.rig.default_signal_send
+        self.receive = self.conf.rig.default_signal_receive
         self.namespace = NameSpace(name="Front1CANCfg0")
 
         self.uds = Uds(self)
@@ -120,8 +120,8 @@ class Dut:
         start_time = datetime.now()
         timestamp = start_time.timestamp()
         logging.info("Running test on: %s:%s",
-                     self.settings.rig.hostname,
-                     self.settings.rig.signal_broker_port)
+                     self.conf.rig.hostname,
+                     self.conf.rig.signal_broker_port)
         logging.info("Testcase start: %s", start_time)
         logging.info("Time: %s \n", timestamp)
         return timestamp
@@ -251,7 +251,7 @@ class Dut:
         Remember to set it back to default once you are done as it affects
         subsequent tests and users
         """
-        dbpath = get_settings().rig.dbc_path
+        dbpath = get_conf().rig.dbc_path
 
         with TemporaryDirectory() as tmpdirname:
             config_dir = Path(tmpdirname)

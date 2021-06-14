@@ -2,58 +2,58 @@
 Handle rig configuration
 """
 import importlib
-from hilding.analytics_config import Analytics
+from hilding.conf_analytics import Analytics
 
 class Rig:
     """ hilding rig management """
-    def __init__(self, settings):
-        self.settings = settings
+    def __init__(self, conf):
+        self.conf = conf
         self.analytics = Analytics(self)
         self.__sddb_module_cache = {}
 
     @property
     def hostname(self):
-        """ settings hostname """
-        return self.settings.selected_rig_dict.get('hostname')
+        """ conf hostname """
+        return self.conf.selected_rig_dict.get('hostname')
 
     @property
     def user(self):
-        """ settings user """
-        return self.settings.selected_rig_dict.get('user', 'pi')
+        """ conf user """
+        return self.conf.selected_rig_dict.get('user', 'pi')
 
     @property
     def platform(self):
-        """ settings platform """
-        return self.settings.selected_rig_dict.get('platform')
+        """ conf platform """
+        return self.conf.selected_rig_dict.get('platform')
 
     @property
     def signal_broker_port(self):
-        """ settings signal broker port number """
-        return str(self.settings.selected_rig_dict.get('signal_broker_port', 50051))
+        """ conf signal broker port number """
+        return str(self.conf.selected_rig_dict.get('signal_broker_port', 50051))
 
     @property
     def fixed_key(self):
-        """ settings platform fixed key """
-        platform_data = self.settings.settings.get(self.platform, {})
+        """ conf platform fixed key """
+        platform_data = self.conf.platforms.get(self.platform, {})
         return platform_data.get("fixed_key", "0102030405")
 
     @property
     def default_signal_send(self):
-        """ settings platform default signal send """
-        platform_data = self.settings.settings.get(self.platform, {})
+        """ conf platform default signal send """
+        platform_data = self.conf.platforms.get(self.platform, {})
         return platform_data.get("default_signal_send")
 
     @property
     def default_signal_receive(self):
-        """ settings platform default signal receive """
-        platform_data = self.settings.settings.get(self.platform, {})
+        """ conf platform default signal receive """
+        platform_data = self.conf.platforms.get(self.platform, {})
         return platform_data.get("default_signal_receive")
 
     @property
     def rig_path(self):
         """ get the path to the default rig """
-        rigs = self.settings.hilding_root.joinpath("rigs")
-        return ensure_exists(rigs.joinpath(self.settings.default_rig))
+        rigs = self.conf.hilding_root.joinpath("rigs")
+        return ensure_exists(rigs.joinpath(self.conf.default_rig))
 
     @property
     def vbf_path(self):

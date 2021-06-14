@@ -16,7 +16,7 @@ from supportfunctions.support_can import CanTestExtra
 from supportfunctions.support_SBL import SupportSBL
 
 from hilding.status_bits import DtcStatus
-from hilding import get_settings
+from hilding import get_conf
 
 SC = SupportCAN()
 
@@ -76,8 +76,8 @@ class UdsResponse:
         self.data['details'] = {}
         self.all_defined_dids = {}
         self.__did_regex = {}
-        self.__sddb_dids = get_settings().rig.sddb_dids
-        self.__sddb_dtcs = get_settings().rig.sddb_dtcs.get("sddb_dtcs")
+        self.__sddb_dids = get_conf().rig.sddb_dids
+        self.__sddb_dtcs = get_conf().rig.sddb_dtcs.get("sddb_dtcs")
         self.__process_message()
 
 
@@ -581,7 +581,7 @@ class Uds:
                 "You need to be in programming mode to change from pbl to sbl")
 
         sbl = SupportSBL()
-        rig = get_settings().rig
+        rig = get_conf().rig
         vbf_files = [str(f.resolve()) for f in rig.vbf_path.glob("*.vbf")]
         log.info(vbf_files)
         if not sbl.read_vbf_param(vbf_files):

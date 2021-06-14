@@ -8,13 +8,13 @@ import pytest
 from hilding import uds
 from hilding.uds import UdsResponse
 from hilding.uds import extract_fields
-from hilding.settings_test import mock_get_settings
+from hilding.conf_test import mock_get_conf
 
 
 @pytest.fixture(autouse=True)
-def setup(mock_get_settings):
-    """ mock get user settings for all tests """
-    uds.get_settings = mock_get_settings
+def setup(mock_get_conf):
+    """ mock get user conf for all tests """
+    uds.get_conf = mock_get_conf
 
 def test_uds_response():
     """ pytest: UdsResponse """

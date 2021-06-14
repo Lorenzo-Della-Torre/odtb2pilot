@@ -7,22 +7,22 @@ from pathlib import Path
 
 from paramiko import SSHClient
 
-from hilding.settings import initialize_settings
-from hilding import get_settings
+from hilding.conf import initialize_conf
+from hilding import get_conf
 
 
 log = logging.getLogger('rig')
 
 def handle_rigs(args):
     """ rig management command handler """
-    settings = get_settings()
+    conf = get_conf()
     if args.list:
-        print(settings)
+        print(conf)
     if args.update:
         get_rig_delivery_files()
     if args.update_all:
-        for rig in settings.rigs.keys():
-            initialize_settings(rig, force=True)
+        for rig in conf.rigs.keys():
+            initialize_conf(rig, force=True)
             get_rig_delivery_files()
 
 
@@ -45,9 +45,9 @@ def get_rig_delivery_files():
     """
     ssh = SSHClient()
     ssh.load_system_host_keys()
-    settings = get_settings()
-    user = settings.rig.user
-    hostname = settings.rig.hostname
+    conf = get_conf()
+    user = conf.rig.user
+    hostname = conf.rig.hostname
     log.info("Connecting to: %s@%s", user, hostname)
     ssh.connect(hostname, username=user)
     sftp = ssh.open_sftp()
@@ -59,13 +59,13 @@ def get_rig_delivery_files():
     for filename in delivery_files:
         remote_file = remote_delivery_path.joinpath(filename)
         if filename.endswith('.vbf'):
-            local_file = settings.rig.vbf_path.joinpath(filename)
+            local_file = conf.rig.vbf_path.joinpath(filename)
             sftp_copy(sftp, remote_file, local_file)
         if filename.endswith('.sddb'):
-            local_file = settings.rig.sddb_path.joinpath(filename)
+            local_file = conf.rig.sddb_path.joinpath(filename)
             sftp_copy(sftp, remote_file, local_file)
         if filename.endswith('.dbc'):
-            local_file = settings.rig.dbc_path.joinpath(filename)
+            local_file = conf.rig.dbc_path.joinpath(filename)
             sftp_copy(sftp, remote_file, local_file)
 
 # check md5sum for ~/delivery/*.{vbf,sddb}

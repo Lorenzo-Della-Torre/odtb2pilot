@@ -34,7 +34,6 @@ details: >
 import sys
 import logging
 
-from hilding import get_settings
 from hilding.dut import Dut
 from hilding.dut import DutTestError
 from hilding.uds import IoVmsDid
@@ -138,7 +137,7 @@ def verify_f12c(dut: Dut, eda0_f12c_valid):
         raise DutTestError("No software structure part number received")
 
     f12c_valid = f12c_response.data["details"]["F12C_valid"]
-    if get_settings().rig.platform == "becm":
+    if dut.conf.rig.platform == "becm":
         assert eda0_f12c_valid == f12c_valid, \
             "ecu software structure part numbers does not match: " + \
             "\neda0: %s\nf12c: %s" % (

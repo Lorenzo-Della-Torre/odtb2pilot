@@ -38,6 +38,7 @@ credentials.
 Next step is to get all dependencies:
 
 ```shell
+  sudo apt update
   sudo apt install libxslt-dev unixodbc-dev tdsodbc libopenjp2-7 sqlite3 fzf
   pip3 install -r requirements.txt
 ```

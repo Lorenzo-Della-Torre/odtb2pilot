@@ -6,7 +6,7 @@
 *.html
 *.sddb
 *.docx
-settings.yml
+conf_local.yml
 did_dict.py
 .DS_Store
 rigs/*

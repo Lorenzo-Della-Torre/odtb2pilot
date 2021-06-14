@@ -20,7 +20,7 @@ from hilding.uds import EicDid
 from hilding.uds import IoSssDid
 from hilding.uds import UdsEmptyResponse
 from hilding.sddb import write
-from hilding import get_settings
+from hilding import get_conf
 
 log = logging.getLogger('did_report')
 
@@ -77,8 +77,8 @@ def write_to_testrun_data_file(git_hash_res, part_numbers_res):
     due to this setup, the did_report always need to run before the
     logs_to_html script.
     """
-    settings = get_settings()
-    testrun_data_file = settings.rig.build_path.joinpath('testrun_data.py')
+    conf = get_conf()
+    testrun_data_file = conf.rig.build_path.joinpath('testrun_data.py')
     git_hash = 'no git hash available'
     if 'response_items' in git_hash_res.details:
         response_items = git_hash_res.details['response_items']

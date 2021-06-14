@@ -1,7 +1,5 @@
 """ legacy configuration file for old scripts """
-from hilding.settings import Settings
+from hilding import get_conf
 
-settings = Settings()
-
-ODTB2_DUT = settings.rig.hostname
-ODTB2_PORT = settings.rig.signal_broker_port
+ODTB2_DUT = get_conf().rig.hostname
+ODTB2_PORT = get_conf().rig.signal_broker_port

@@ -6,7 +6,7 @@ import os
 
 from hilding.dut import Dut
 from hilding.dut import DutTestError
-from hilding import get_settings
+from hilding import get_conf
 
 from protogenerated.common_pb2 import Empty
 import protogenerated.system_api_pb2
@@ -55,7 +55,7 @@ def test_upload_folder():
 
 def test_get_signal_broker_parameters():
     """ pytest: testing send and receive parameters """
-    rig = get_settings().rig
+    rig = get_conf().rig
     if rig.platform == "becm":
         assert rig.default_signal_send == "Vcu1ToBecmFront1DiagReqFrame"
         assert rig.default_signal_receive == "BecmToVcu1Front1DiagResFrame"

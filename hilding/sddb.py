@@ -17,12 +17,12 @@ from pprint import pformat
 from lxml import etree
 from inflection import underscore
 
-from hilding import get_settings
+from hilding import get_conf
 
 
 def get_sddb_file():
     """Get the current sddb file from the release directory"""
-    sddb_path = get_settings().rig.sddb_path
+    sddb_path = get_conf().rig.sddb_path
     sddb_glob = sddb_path.glob("*.sddb")
     try:
         sddb_file = next(sddb_glob)
@@ -144,7 +144,7 @@ def process_did_content(root):
 
     # Write all information to file. First file mode should be w+ so we start
     # with empty file, then we append to that file.
-    did_file = Path(get_settings().rig.build_path).joinpath('sddb_dids.py')
+    did_file = Path(get_conf().rig.build_path).joinpath('sddb_dids.py')
     write(did_file, 'pbl_diag_part_num', quotify(pbl_diag_part_num), 'w')
     write(did_file, 'pbl_did_dict', pformat(pbl_dict), 'a')
     write(did_file, 'sbl_diag_part_num', quotify(sbl_diag_part_num), 'a')
@@ -206,7 +206,7 @@ def process_dtc_content(root):
     dtc_dict = extract_dtcs(root)
     report_dtc = extract_report_dtc(root)
 
-    dtc_file = Path(get_settings().rig.build_path).joinpath('sddb_dtcs.py')
+    dtc_file = Path(get_conf().rig.build_path).joinpath('sddb_dtcs.py')
     write(dtc_file, 'sddb_dtcs', pformat(dtc_dict), 'w')
     write(dtc_file, 'sddb_report_dtc', pformat(report_dtc), 'a')
 
@@ -444,7 +444,7 @@ def process_service_content(root):
     """ Get services for each software level and write to file. """
     pbl_services, sbl_services, app_services = extract_defined_services(root)
 
-    service_file = Path(get_settings().rig.build_path).joinpath('sddb_services.py')
+    service_file = Path(get_conf().rig.build_path).joinpath('sddb_services.py')
     write(service_file, 'pbl', pformat(pbl_services), 'w')
     write(service_file, 'sbl', pformat(sbl_services), 'a')
     write(service_file, 'app', pformat(app_services), 'a')

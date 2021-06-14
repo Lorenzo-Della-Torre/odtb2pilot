@@ -46,7 +46,7 @@ def software_download(dut):
 
     sbl = SupportSBL()
 
-    vbf_files = [str(f.resolve()) for f in dut.settings.rig.vbf_path.glob("*.vbf")]
+    vbf_files = [str(f.resolve()) for f in dut.conf.rig.vbf_path.glob("*.vbf")]
     log.info(vbf_files)
     if not sbl.read_vbf_param(vbf_files):
         DutTestError("Could not load vbf files")

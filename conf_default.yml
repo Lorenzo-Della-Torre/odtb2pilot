@@ -1,0 +1,10 @@
+platforms:
+    becm:
+        fixed_key: 'FFFFFFFFFF'
+        default_signal_send: Vcu1ToBecmFront1DiagReqFrame
+        default_signal_receive: BecmToVcu1Front1DiagResFrame
+
+    hvbm:
+        fixed_key: 'FFFFFFFFFF'
+        default_signal_send: HvbmdpToHvbmUdsDiagRequestFrame
+        default_signal_receive: HvbmToHvbmdpUdsDiagResponseFrame
