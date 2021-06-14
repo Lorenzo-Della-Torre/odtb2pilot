@@ -57,24 +57,25 @@ def software_download(dut):
         sbl.vbf_header_convert(vbf_header)
         log.info("ESS VBF version: %s", vbf_version)
 
-    # Erase Memory
-    if not sbl.flash_erase(dut, vbf_header, 101):
-        raise DutTestError("Failed transfer data block")
+        # Erase Memory
+        if not sbl.flash_erase(dut, vbf_header, 101):
+            raise DutTestError("Failed transfer data block")
 
-    # Iteration to Download the Software by blocks
-    if not sbl.transfer_data_block(dut, vbf_header, vbf_data, vbf_offset):
-        raise DutTestError("Failed transfer data block")
+        # Iteration to Download the Software by blocks
+        if not sbl.transfer_data_block(dut, vbf_header, vbf_data, vbf_offset):
+            raise DutTestError("Failed transfer data block")
 
+        if not SupportService31.check_memory(dut, vbf_header, 102):
+            raise DutTestError("Failed check memory")
 
-    if not SupportService31.check_memory(dut, vbf_header, 102):
-        raise DutTestError("Failed check memory")
+        log.info("ess vbf files downloaded: %s", ess_vbf_file)
 
     # download the rest of the vbf files
     vbf_files = sbl.get_df_filenames()
     if not vbf_files:
         raise DutTestError("Could not find the rest of the vbf files")
 
-    log.info("vbf files software download: %s", ess_vbf_file)
+    log.info("commencing vbf files software download: %s", vbf_files)
     for vbf_file in vbf_files:
         res = dut.uds.read_data_by_id_22(EicDid.complete_ecu_part_number_eda0)
         log.info(res)
