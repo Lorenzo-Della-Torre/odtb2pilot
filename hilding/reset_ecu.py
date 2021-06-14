@@ -47,14 +47,15 @@ def software_download(dut):
     sbl = SupportSBL()
 
     ess_vbf_file = sbl.get_ess_filename()
-    if not ess_vbf_file:
-        raise DutTestError("Could not find ess vbf file")
+    if ess_vbf_file:
+        # Some ECU like HLCM don't have ESS vbf file
+        # if no ESS file present: skip download
+        log.info("ess file software download: %s", ess_vbf_file)
+        vbf_version, vbf_header, vbf_data, vbf_offset = sbl.read_vbf_file(ess_vbf_file)
 
-    log.info("ess file software download: %s", ess_vbf_file)
-    vbf_version, vbf_header, vbf_data, vbf_offset = sbl.read_vbf_file(ess_vbf_file)
-    #convert vbf header so values can be used directly
-    sbl.vbf_header_convert(vbf_header)
-    log.info("VBF version: %s", vbf_version)
+        #convert vbf header so values can be used directly
+        sbl.vbf_header_convert(vbf_header)
+        log.info("ESS VBF version: %s", vbf_version)
 
     # Erase Memory
     if not sbl.flash_erase(dut, vbf_header, 101):
