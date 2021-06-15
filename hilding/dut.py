@@ -16,6 +16,7 @@ from glob import glob
 from pathlib import Path
 from datetime import datetime
 from tempfile import TemporaryDirectory
+import yaml
 
 import grpc
 import requests
@@ -279,6 +280,20 @@ class Dut:
 
             self.upload_folder(tmpdirname)
             self.reload_configuration()
+
+    def get_platform_yml_parameters(self, test_filename_py):
+        """
+        get test_filename_<platform>.yml file from the same directory as the
+        main test if you really want to add external parameters to the test
+
+        usage example:
+            parameters = dut.get_platform_yml_parameters(__file__)
+            dut.send = parameters["send"]
+        """
+        test_filename = Path(test_filename_py).with_suffix("")
+        platform = self.conf.rig.platform
+        test_filename_platform_yml = f"{test_filename}_{platform}.yml"
+        return yaml.safe_load(test_filename_platform_yml)
 
 
 def get_sha256(filename):
