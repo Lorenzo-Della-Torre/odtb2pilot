@@ -43,8 +43,8 @@ def test_conf(tmp_path, monkeypatch):
             signal_broker_port: 50051 #optional
     platforms:
         hvbm:
-            default_signal_send: sendsignal
-            default_signal_receive: receivesignal
+            signal_send: sendsignal
+            signal_receive: receivesignal
     """
     tmp_path.joinpath("conf_local.yml").write_text(conf_file_content)
     tmp_path.joinpath("conf_default.yml").write_text(conf_file_content)
@@ -57,8 +57,8 @@ def test_conf(tmp_path, monkeypatch):
     assert conf.rig.user == "pi"
     assert conf.rig.platform == "hvbm"
     assert conf.rig.signal_broker_port == "50051"
-    assert conf.rig.default_signal_send == "sendsignal"
-    assert conf.rig.default_signal_receive == "receivesignal"
+    assert conf.rig.signal_send == "sendsignal"
+    assert conf.rig.signal_receive == "receivesignal"
 
 def test_get_sddb(mock_get_conf):
     """ pytest: testing sddb access """

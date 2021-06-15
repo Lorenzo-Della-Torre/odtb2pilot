@@ -57,8 +57,8 @@ def test_get_signal_broker_parameters():
     """ pytest: testing send and receive parameters """
     rig = get_conf().rig
     if rig.platform == "becm":
-        assert rig.default_signal_send == "Vcu1ToBecmFront1DiagReqFrame"
-        assert rig.default_signal_receive == "BecmToVcu1Front1DiagResFrame"
+        assert rig.signal_send == "Vcu1ToBecmFront1DiagReqFrame"
+        assert rig.signal_receive == "BecmToVcu1Front1DiagResFrame"
     if rig.platform == "hvbm":
-        assert rig.default_signal_send == "HvbmdpToHvbmUdsDiagRequestFrame"
-        assert rig.default_signal_receive == "HvbmToHvbmdpUdsDiagResponseFrame"
+        assert rig.signal_send == "HvbmdpToHvbmUdsDiagRequestFrame"
+        assert rig.signal_receive == "HvbmToHvbmdpUdsDiagResponseFrame"
