@@ -42,6 +42,10 @@ if hasattr(protogenerated.system_api_pb2, "License"):
     from protogenerated.system_api_pb2 import FileDescription # pylint: disable=no-name-in-module
     from protogenerated.system_api_pb2 import FileUploadRequest # pylint: disable=no-name-in-module
 
+
+log = logging.getLogger('dut')
+
+
 class DutTestError(BaseException):
     """ Exception class for test errors """
 
@@ -49,7 +53,7 @@ def beamy_feature(func):
     """ Decorator to mark which functions require the beamy signal broker """
     def wrapper_beamy_feature(*args, **kwargs):
         if not hasattr(protogenerated.system_api_pb2, "License"):
-            logging.error("you try to access %s, but it requires beamy broker "
+            log.error("you try to access %s, but it requires beamy broker "
                           "which is not supported", func.__name__)
             raise DutTestError
         func(*args, **kwargs)
@@ -120,11 +124,11 @@ class Dut:
         """ log the current time and return a timestamp """
         start_time = datetime.now()
         timestamp = start_time.timestamp()
-        logging.info("Running test on: %s:%s",
+        log.info("Running test on: %s:%s",
                      self.conf.rig.hostname,
                      self.conf.rig.signal_broker_port)
-        logging.info("Testcase start: %s", start_time)
-        logging.info("Time: %s \n", timestamp)
+        log.info("Testcase start: %s", start_time)
+        log.info("Time: %s \n", timestamp)
         return timestamp
 
     @analytics_test_step
@@ -155,20 +159,20 @@ class Dut:
         """
         request = Empty()
         response = self.system_stub.ReloadConfiguration(request, timeout=60000)
-        logging.info(response)
+        log.info(response)
 
     @beamy_feature
     def upload_file(self, path, dest_path):
         """ Upload configuration file to the beamy signal broker """
         sha256 = get_sha256(path)
-        logging.info(sha256)
+        log.info(sha256)
         with open(path, "rb") as f:
             # make sure path is unix style (necessary for windows, and does no harm
             # on linux)
             upload_iterator = generate_data(
                 f, dest_path.replace(ntpath.sep, posixpath.sep), 1000000, sha256)
         response = self.system_stub.UploadFile(upload_iterator)
-        logging.info("uploaded: %s %s", path, response)
+        log.info("uploaded: %s %s", path, response)
 
     @beamy_feature
     def upload_folder(self, folder):
@@ -204,7 +208,7 @@ class Dut:
         # pylint: disable=no-member
         assert resp_request.status_code == requests.codes.ok, \
             "Response code not ok, code: %d" % (resp_request.status_code)
-        logging.info("License requested check your mail: %s", id_value)
+        log.info("License requested check your mail: %s", id_value)
 
 
     @beamy_feature
