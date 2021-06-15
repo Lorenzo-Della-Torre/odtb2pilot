@@ -292,8 +292,16 @@ class Dut:
         """
         test_filename = Path(test_filename_py).with_suffix("")
         platform = self.conf.rig.platform
-        test_filename_platform_yml = f"{test_filename}_{platform}.yml"
-        return yaml.safe_load(test_filename_platform_yml)
+        test_filename_platform_yml = Path(f"{test_filename}_{platform}.yml")
+        if not test_filename_platform_yml.exists():
+            raise DutTestError(
+                f"Your platform is not supported for this test. Please add "
+                f"{test_filename_platform_yml} in the same directory as the test")
+        with open(test_filename_platform_yml) as yml:
+            parameters = yaml.safe_load(yml)
+        return parameters
+
+
 
 
 def get_sha256(filename):
