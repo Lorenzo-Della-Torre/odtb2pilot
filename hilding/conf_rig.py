@@ -38,16 +38,28 @@ class Rig:
         return platform_data.get("fixed_key", "0102030405")
 
     @property
-    def default_signal_send(self):
-        """ conf platform default signal send """
+    def signal_send(self):
+        """ conf platform signal send """
         platform_data = self.conf.platforms.get(self.platform, {})
-        return platform_data.get("default_signal_send")
+        return platform_data.get("signal_send")
 
     @property
-    def default_signal_receive(self):
-        """ conf platform default signal receive """
+    def signal_receive(self):
+        """ conf platform signal receive """
         platform_data = self.conf.platforms.get(self.platform, {})
-        return platform_data.get("default_signal_receive")
+        return platform_data.get("signal_receive")
+
+    @property
+    def signal_periodic(self):
+        """ conf platform signal periodic """
+        platform_data = self.conf.platforms.get(self.platform, {})
+        return platform_data.get("signal_periodic")
+
+    @property
+    def signal_tester_present(self):
+        """ conf platform signal tester present """
+        platform_data = self.conf.platforms.get(self.platform, {})
+        return platform_data.get("signal_tester_present")
 
     @property
     def rig_path(self):

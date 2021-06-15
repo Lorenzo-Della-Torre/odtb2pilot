@@ -82,12 +82,16 @@ class UdsResponse:
 
 
     def __process_message(self):
-        if self.raw == "065003001901F400":
-            # Setting the ecu in mode 1 or 2 does not give us any response at
-            # all, but this the response we get when setting the ecu in mode 3.
+        if self.raw == "065001003201F400":
+            # Setting the ecu in mode 2 does not give us any response at
+            # all, but this is the response we get when setting the ecu in mode 1.
             # We should be able to parse this response and add the information
             # to the data dictionary in a better way than this. Maybe use
             # nibble 5 and 6?
+            self.data["details"]["mode"] = 1
+            log.info("The ECU was successfully set to mode 1")
+            return
+        if self.raw == "065003001901F400":
             self.data["details"]["mode"] = 3
             log.info("The ECU was successfully set to mode 3")
             return
@@ -463,6 +467,7 @@ class Uds:
             "min_no_messages": -1,
             "max_no_messages": -1
         }
+        log.info("Request with payload: %s", payload.hex())
         SupportTestODTB2().teststep(self.dut, cpay, etp)
 
         response = SC.can_messages[self.dut['receive']]
@@ -560,14 +565,16 @@ class Uds:
             pass
 
         if mode in [1, 2]:
+            # changing mode can take some time
+            time.sleep(2)
             res_mode = self.active_diag_session_f186()
-            self.mode = res_mode.data["details"]["mode"]
+            self.mode = res_mode.details["mode"]
             return
 
         # since we actually get a reply when changing to mode 3 we don't
         # need to do any extra call to f186 in order to ensure that the
         # mode change went well.
-        if mode == 3 and response.data["details"]["mode"] == 3:
+        if mode == 3 and response.details["mode"] == 3:
             self.mode = 3
             return
 

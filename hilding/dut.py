@@ -4,6 +4,7 @@ Support device under test module
 
 import os
 import re
+import time
 import logging
 import inspect
 import json
@@ -27,9 +28,14 @@ from protogenerated.common_pb2 import NameSpace
 from protogenerated.system_api_pb2_grpc import SystemServiceStub
 from protogenerated.network_api_pb2_grpc import NetworkServiceStub
 
-from supportfunctions.support_precondition import SupportPrecondition
-from supportfunctions.support_postcondition import SupportPostcondition
+from supportfunctions.support_can import SupportCAN
+from supportfunctions.support_can import CanParam
+from supportfunctions.support_can import PerParam
+from supportfunctions.support_can import CanMFParam
+from supportfunctions.support_service3e import SupportService3e
 from hilding.uds import Uds
+from hilding.uds import EicDid
+from hilding.uds import IoVmsDid
 from hilding import analytics
 from hilding import get_conf
 
@@ -92,11 +98,7 @@ class Dut:
             f'{self.conf.rig.signal_broker_port}')
         self.network_stub = NetworkServiceStub(self.channel)
         self.system_stub = SystemServiceStub(self.channel)
-
-        self.send = self.conf.rig.default_signal_send
-        self.receive = self.conf.rig.default_signal_receive
         self.namespace = NameSpace(name="Front1CANCfg0")
-
         self.uds = Uds(self)
 
     def __getitem__(self, key):
@@ -105,20 +107,99 @@ class Dut:
         if key == "netstub":
             return self.network_stub
         if key == "send":
-            return self.send
+            return self.conf.rig.signal_send
         if key == "receive":
-            return self.receive
+            return self.conf.rig.signal_receive
         if key == "namespace":
             return self.namespace
         raise KeyError(key)
 
     def precondition(self, timeout=30):
         """ run preconditions and start heartbeat """
-        return SupportPrecondition().precondition(self, timeout)
+        self.uds.step = 100
+        # start heartbeat, repeat every 0.8 second
+        hb_param: PerParam = {
+            "name" : "Heartbeat",
+            "send" : True,
+            "id" : self.conf.rig.signal_periodic,
+            "nspace" : self.namespace.name,
+            "frame" : b'\x1A\x40\xC3\xFF\x01\x00\x00\x00',
+            "intervall" : 0.4
+            }
+        log.debug("hb_param %s", hb_param)
+
+        iso_tp = SupportCAN()
+
+        # start heartbeat, repeat every x second
+        iso_tp.start_heartbeat(self["netstub"], hb_param)
+
+        # start testerpresent without reply
+        tp_name = self.conf.rig.signal_tester_present
+        SupportService3e.start_periodic_tp_zero_suppress_prmib(self, tp_name)
+
+        # record signal we send as well
+        iso_tp.subscribe_signal(self, timeout)
+        log.debug("precondition can_p2 %s", self)
+
+        # record signal we send as well
+        can_p2: CanParam = {"netstub": self["netstub"],
+                            "send": self["receive"],
+                            "receive": self["send"],
+                            "namespace": self["namespace"]
+                           }
+        iso_tp.subscribe_signal(can_p2, timeout)
+
+        # do not generate FC frames for signals we generated:
+        time.sleep(1)
+        can_mf: CanMFParam = {
+            "block_size": 0,
+            "separation_time": 0,
+            "frame_control_delay": 10,
+            "frame_control_flag": 48,
+            "frame_control_auto": False
+            }
+        iso_tp.change_mf_fc(can_p2["receive"], can_mf)
+
+        res = self.uds.read_data_by_id_22(EicDid.complete_ecu_part_number_eda0)
+        log.info("Precondition eda0: %s\n", res)
+
+        res = self.uds.read_data_by_id_22(IoVmsDid.pbl_software_part_num_f125)
+        log.info("Precondition f125: %s\n", res)
+        self.uds.step = 0
 
     def postcondition(self, start_time, result):
         """ run postconditions and change to mode 1 """
-        return SupportPostcondition().postcondition(self, start_time, result)
+        log.info("Postcondition: Display current mode/session, change to mode1 (default)")
+        self.uds.step = 200
+        res_mode = self.uds.active_diag_session_f186()
+        log.info("Current mode/session: %s", res_mode.details["mode"])
+
+        self.uds.set_mode(1)
+        if self.uds.mode != 1:
+            DutTestError("Could not set the ECU to mode 1 (default)")
+
+        log.debug("\nTime: %s \n", time.time())
+        log.info("Testcase end: %s", datetime.now())
+        log.info("Time needed for testrun (seconds): %s", int(time.time() - start_time))
+
+        log.info("Do cleanup now...")
+        log.info("Stop all periodic signals sent")
+
+        iso_tp = SupportCAN()
+        iso_tp.stop_periodic_all()
+
+        # deregister signals
+        iso_tp.unsubscribe_signals()
+
+        # if threads should remain: try to stop them
+        iso_tp.thread_stop()
+
+        log.info("Test cleanup end: %s\n", datetime.now())
+
+        if result:
+            log.info("Testcase result: PASSED")
+        else:
+            log.info("Testcase result: FAILED")
 
     def start(self):
         """ log the current time and return a timestamp """
@@ -355,4 +436,4 @@ interfaces = {
     },
     'reflectors': [],
     'support_dut_test_config': 'yes'
-}
+}#

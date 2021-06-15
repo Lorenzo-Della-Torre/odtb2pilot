@@ -20,7 +20,7 @@ import sys
 from hilding.dut import Dut
 from hilding.dut import DutTestError
 
-def step_1(dut):
+def step_1(dut: Dut):
     """
     action:
         Change ECU mode using functional addresssing
@@ -50,6 +50,9 @@ def step_1(dut):
 
     if dut.uds.mode != 2:
         raise DutTestError("Could not change mode using functional addressing")
+
+    # reset the send signal to original setting
+    dut.send = dut.conf.rig.signal_send
 
 def run():
     """ Supporting functional requests """
