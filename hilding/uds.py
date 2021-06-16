@@ -91,6 +91,10 @@ class UdsResponse:
             self.data["details"]["mode"] = 1
             log.info("The ECU was successfully set to mode 1")
             return
+        if self.raw == "065002001901F400":
+            self.data["details"]["mode"] = 2
+            log.info("The ECU was successfully set to mode 2")
+            return
         if self.raw == "065003001901F400":
             self.data["details"]["mode"] = 3
             log.info("The ECU was successfully set to mode 3")
