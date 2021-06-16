@@ -23,15 +23,27 @@ def config_environ():
     sys.path.append(dirname(__file__))
     sys.path.append(join(dirname(__file__), "test_folder/automated"))
     sys.path.append(join(dirname(__file__), "test_folder/manual"))
+
     if not "ODTBPROJPARAM" in environ:
-        platform = get_conf().rig.platform.upper()
-        odtb_proj_parm = join(dirname(__file__), f"projects/MEP2_{platform}")
-        # setting environment variables for process internal settings is not
+        project_dir_mapping = {
+            "becm": "MEP2_SPA1",
+            "hvbm": "MEP2_SPA2",
+            "hlcm": "MEP2_HLCM",
+            "ihfa": "MEP2_ED_IHFA",
+        }
+        platform = get_conf().rig.platform
+        if not platform in project_dir_mapping:
+            raise NotImplementedError("Platform not in project_dir_mapping")
+
+        project_dir = project_dir_mapping[platform]
+        odtb_proj_parm = join(dirname(__file__), f"projects/{project_dir}")
+        # setting environment variables for process internal use is not
         # that pretty, but let's do it like this for now to get away from
-        # having to set these all the time in the shell.
+        # having to set ODTBPROJPARAM and PYTHONPATH all the time in the shell.
         environ["ODTBPROJPARAM"] = odtb_proj_parm
         if not odtb_proj_parm in sys.path:
             sys.path.append(odtb_proj_parm)
+
 
 def check_install():
     """ Make sure that the installation is setup and configured properly """
@@ -152,8 +164,8 @@ if __name__ == "__main__":
         "rigs", help="Handle the rigs"
     )
     rig_parser.add_argument(
-        '--list', action="store_true",
-        help="list all the configured rigs")
+        '--config', action="store_true",
+        help="the combined config dict for all the configured rigs")
     rig_parser.add_argument(
         '--update', action="store_true",
         help="download .vbf, .sddb, and .dbc files for the selected rig "

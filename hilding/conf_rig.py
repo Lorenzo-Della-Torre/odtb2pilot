@@ -115,7 +115,6 @@ class Rig:
             self.__sddb_module_cache[content] = {
                 k:v for k,v in vars(sddb_module).items()
                 if not k.startswith('__')}
-
         return self.__sddb_module_cache[content]
 
     def get_testrun_data(self):

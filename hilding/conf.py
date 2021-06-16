@@ -29,12 +29,20 @@ def get_conf():
 
 
 def initialize_conf(rig, force=False):
-    """ initialize the conf with a given rig """
+    """
+    initialize the conf with a given rig
+
+    reinitialize of the force parameter is True
+
+    note: you will have to run another conf = get_conf() for any existing
+    instances of conf or use the return value from this function
+    """
     # pylint: disable=global-statement
     global _CONF
     if _CONF and not force:
         raise ReferenceError("The conf module has already been initialized")
     _CONF = Conf(select_rig=rig)
+    return _CONF
 
 _CONF = None
 

@@ -16,14 +16,22 @@ log = logging.getLogger('rig')
 def handle_rigs(args):
     """ rig management command handler """
     conf = get_conf()
-    if args.list:
+
+    if args.config:
         print(conf)
+        return
     if args.update:
         get_rig_delivery_files()
+        return
     if args.update_all:
         for rig in conf.rigs.keys():
             initialize_conf(rig, force=True)
             get_rig_delivery_files()
+        return
+    for rig in conf.rigs.keys():
+        conf = initialize_conf(rig, force=True)
+        print(f"{rig:8} {conf.rig.platform:6} "
+              f"{conf.rig.user}@{conf.rig.hostname}")
 
 
 def print_totals(transferred, total):
