@@ -69,9 +69,9 @@ class UdsError(Exception):
 
 class UdsResponse:
     """ UDS response """
-    def __init__(self, raw, mode=None):
+    def __init__(self, raw, incoming_mode=None):
         self.raw = raw
-        self.mode = mode
+        self.incoming_mode = incoming_mode
         self.data = {}
         self.data['details'] = {}
         self.all_defined_dids = {}
@@ -149,20 +149,21 @@ class UdsResponse:
 
     def __positive_response(self):
         self.all_defined_dids = {}
-        if not self.mode:
+        if not self.incoming_mode:
             self.all_defined_dids.update(self.__sddb_dids["app_did_dict"])
             self.all_defined_dids.update(self.__sddb_dids["pbl_did_dict"])
             self.all_defined_dids.update(self.__sddb_dids["sbl_did_dict"])
-        elif self.mode in [1, 3]:
+        elif self.incoming_mode in [1, 3]:
             self.all_defined_dids.update(self.__sddb_dids["app_did_dict"])
-        elif self.mode == 2:
+        elif self.incoming_mode == 2:
             # it would be good to separate these two and we can do that if we
             # add a state to the class indicating which programming mode it's
             # in.
             self.all_defined_dids.update(self.__sddb_dids["pbl_did_dict"])
             self.all_defined_dids.update(self.__sddb_dids["sbl_did_dict"])
         else:
-            sys.exit(f"Incorrect mode set: {self.mode}. Exiting...")
+            sys.exit(f"Incorrect incoming_mode set: {self.incoming_mode}. "
+                     f"Exiting...")
 
         for did, item in self.all_defined_dids.items():
             # each byte takes two hexadecimal characters
@@ -203,6 +204,7 @@ class UdsResponse:
     def __mode_change(self):
         mode = self.data["body"][:2]
         self.details['mode'] = int(mode)
+        self.details['session_parameter_record'] = self.data["body"][2:]
 
     def __process_dids(self):
         did = self.data["body"][0:4]
@@ -470,7 +472,7 @@ class Uds:
         if len(response) == 0:
             raise UdsEmptyResponse()
 
-        return UdsResponse(response[0][2], self.mode)
+        return UdsResponse(response[0][2], incoming_mode=self.mode)
 
 
     def ecu_reset_1101(self, delay=1):

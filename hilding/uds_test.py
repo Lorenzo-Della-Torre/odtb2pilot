@@ -35,10 +35,10 @@ def test_uds_reponse_with_mode():
     """ pytest: make sure uds response with mode works properly """
     # test the did F122
     f122_response = "XXXX62F122"
-    response = UdsResponse(f122_response, mode=2)
+    response = UdsResponse(f122_response, incoming_mode=2)
     assert response.data['did'] == "F122"
     with pytest.raises(KeyError):
-        UdsResponse(f122_response, mode=1)
+        UdsResponse(f122_response, incoming_mode=1)
 
 def test_dtc_snapshot():
     """ pytest: test parsing of dtc snapshots """
@@ -133,7 +133,5 @@ def test_diagnostic_session_control():
     assert UdsResponse("065001003201F400").details['mode'] == 1
     assert UdsResponse("065002001901F400").details['mode'] == 2
     assert UdsResponse("065003001901F400").details['mode'] == 3
-    assert UdsResponse("065001001901F400").mode == 1
-    assert UdsResponse("065001003201F400").mode == 1
-    assert UdsResponse("065002001901F400").mode == 2
-    assert UdsResponse("065003001901F400").mode == 3
+    assert UdsResponse("065003001901F400").details[
+        'session_parameter_record'] == "001901F400"
