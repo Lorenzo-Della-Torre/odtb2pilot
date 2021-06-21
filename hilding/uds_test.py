@@ -125,8 +125,15 @@ def test_extract_fields():
 
 def test_active_session():
     """ pytest: test mode/session state changes in response """
-    response = UdsResponse("0462F18601000000")
-    assert response.data['details']['mode'] == 1
-    # set mode/session to 3 (extended) gives us actually a proper reply
-    response = UdsResponse("065003001901F400")
-    assert response.data['details']['mode'] == 3
+    assert UdsResponse("0462F18601000000").details['mode'] == 1
+
+def test_diagnostic_session_control():
+    """ pytest: test diagnostic session control uds parsing """
+    assert UdsResponse("065001001901F400").details['mode'] == 1
+    assert UdsResponse("065001003201F400").details['mode'] == 1
+    assert UdsResponse("065002001901F400").details['mode'] == 2
+    assert UdsResponse("065003001901F400").details['mode'] == 3
+    assert UdsResponse("065001001901F400").mode == 1
+    assert UdsResponse("065001003201F400").mode == 1
+    assert UdsResponse("065002001901F400").mode == 2
+    assert UdsResponse("065003001901F400").mode == 3

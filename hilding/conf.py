@@ -112,8 +112,8 @@ class Conf:
 
 
 
-CONF_LOCAL_YML_TEMPLATE = """
-# note: conf_local.yml should never be committed to the repo
+CONF_LOCAL_YML_TEMPLATE = \
+"""# note: conf_local.yml should never be committed to the repo
 default_rig: piX
 rigs:
     piX:

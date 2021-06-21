@@ -28,6 +28,28 @@ Example ART rig host names:
  - bsw-pi1
  - eps-pi1
 
+## Setting up SSH keys locally and on remote
+
+run:
+  ssh-keygen
+
+and accept the defaults
+
+copy content of id_rsa.pub and add it to ~/.ssh/authenticated_keys on the
+remote raspberry pi (or on the same if you are configuring a raspberry pi
+target)
+
+now connect to the raspberry pi and you should not need to enter the password
+since you are already authenticated.
+for example:
+  ssh pi@bsw-piX.dhcp.nordic.volocars.net
+
+run:
+  ./manage.py rigs --update
+
+and all the vbf, dbf, and sddb files will be copied over to the rigs/<rigname>/
+directories.
+
 
 ### Configuring the software on the raspberry pi
 

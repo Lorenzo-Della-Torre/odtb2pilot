@@ -59,7 +59,7 @@ def get_rig_delivery_files():
     log.info("Connecting to: %s@%s", user, hostname)
     ssh.connect(hostname, username=user)
     sftp = ssh.open_sftp()
-    remote_delivery_path = Path('/home/pi/delivery')
+    remote_delivery_path = Path('/home/{user}/delivery')
     delivery_files = sftp.listdir(remote_delivery_path.as_posix())
     log.info("Copy remote %s/*.{vbf,sddb,dbc} files to this host",
              remote_delivery_path)

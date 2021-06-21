@@ -82,27 +82,12 @@ class UdsResponse:
 
 
     def __process_message(self):
-        if self.raw == "065001003201F400":
-            # Setting the ecu in mode 2 does not give us any response at
-            # all, but this is the response we get when setting the ecu in mode 1.
-            # We should be able to parse this response and add the information
-            # to the data dictionary in a better way than this. Maybe use
-            # nibble 5 and 6?
-            self.data["details"]["mode"] = 1
-            log.info("The ECU was successfully set to mode 1")
-            return
-        if self.raw == "065002001901F400":
-            self.data["details"]["mode"] = 2
-            log.info("The ECU was successfully set to mode 2")
-            return
-        if self.raw == "065003001901F400":
-            self.data["details"]["mode"] = 3
-            log.info("The ECU was successfully set to mode 3")
-            return
 
         response_patterns = [
-            (r'.{2}7F(?P<service_id>.{2})(?P<nrc>.{2})', self.__negative_response),
-            (r'.{2,4}(?P<sid>51|59|62|6F|71)(?P<body>.*)', self.__positive_response)
+            (r'.{2}7F(?P<service_id>.{2})(?P<nrc>.{2})',
+             self.__negative_response),
+            (r'.{2,4}(?P<sid>50|51|59|62|6F|71)(?P<body>.*)',
+             self.__positive_response)
         ]
         for pattern, processor in response_patterns:
             match = re.match(pattern, self.raw)
@@ -196,6 +181,7 @@ class UdsResponse:
             self.__did_regex[did] = r'{}(.{{{}}})'.format(did, length)
 
         service_types = {
+            "50": "DiagnosticSessionControl",
             "51": "ECUReset",
             "59": "ReadDTCInformation",
             "62": "ReadDataByIdentifier",
@@ -207,11 +193,16 @@ class UdsResponse:
             service = service_types[sid]
             self.data["service"] = service
 
+            if service == "DiagnosticSessionControl":
+                self.__mode_change()
             if service == "ReadDataByIdentifier":
                 self.__process_dids()
             if service == "ReadDTCInformation":
                 self.__process_dtc_report()
 
+    def __mode_change(self):
+        mode = self.data["body"][:2]
+        self.details['mode'] = int(mode)
 
     def __process_dids(self):
         did = self.data["body"][0:4]
@@ -448,7 +439,7 @@ class UdsResponse:
         item = details['item']
         length = int(details['size']) * 2
         if len(item) >= length:
-            self.data['details']['mode'] = int(item[:length])
+            self.details['mode'] = int(item[:length])
 
 
 class Uds:
@@ -562,27 +553,20 @@ class Uds:
             "Set %s with payload %s", modes[mode], payload.hex())
 
         try:
-            response = self.__make_call(payload)
+            res = self.__make_call(payload)
         except UdsEmptyResponse:
             # set mode 1 and 2 calls might not give us any response, so this is
             # fine
-            pass
+            res = None
 
-        if mode in [1, 2]:
-            # changing mode can take some time
+        if not res or not "mode" in res.details:
+            # mode change can take a little while so let's sleep a bit before
+            # we request the active diagnostic session number
             time.sleep(2)
-            res_mode = self.active_diag_session_f186()
-            self.mode = res_mode.details["mode"]
-            return
-
-        # since we actually get a reply when changing to mode 3 we don't
-        # need to do any extra call to f186 in order to ensure that the
-        # mode change went well.
-        if mode == 3 and response.details["mode"] == 3:
-            self.mode = 3
-            return
-
-        raise UdsError(f"Failure occurred when setting mode: {mode}")
+            res = self.active_diag_session_f186()
+            if not "mode" in res.details:
+                raise UdsError(f"Failure occurred when setting mode: {mode}")
+        self.mode = res.details["mode"]
 
 
     def enter_sbl(self):
