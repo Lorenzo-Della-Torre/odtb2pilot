@@ -564,7 +564,7 @@ class Uds:
         try:
             response = self.__make_call(payload)
         except UdsEmptyResponse:
-            # set mode 1 and 2 calls does not give us any response, so this is
+            # set mode 1 and 2 calls might not give us any response, so this is
             # fine
             pass
 

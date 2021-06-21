@@ -14,7 +14,7 @@ from hilding.uds import EicDid
 
 log = logging.getLogger('reset_ecu')
 
-def reset_ecu_mode(dut):
+def reset_ecu_mode(dut: Dut):
     """ reset ecu mode """
     res = dut.uds.active_diag_session_f186()
     log.info(res)
@@ -30,13 +30,7 @@ def reset_ecu_mode(dut):
     }
     log.info("The ECU is in %s", modes[mode])
 
-    if mode == 3:
-        dut.uds.set_mode(1)
-    if mode == 2:
-        dut.uds.set_mode(1)
-        # not sure why we do the next three steps, but this is how it was done
-        # in the original "set ecu to default" script
-        dut.uds.set_mode(3)
+    if mode in [2, 3]:
         dut.uds.set_mode(1)
         dut.uds.read_data_by_id_22(EicDid.complete_ecu_part_number_eda0)
     time.sleep(1)
