@@ -1,5 +1,5 @@
 """
-Reset and flash the ECU
+Reset and reflash (do a software download to) the ECU if necessary
 """
 import logging
 import time
@@ -32,8 +32,21 @@ def reset_ecu_mode(dut: Dut):
 
     if mode in [2, 3]:
         dut.uds.set_mode(1)
+        mode = dut.uds.mode
         dut.uds.read_data_by_id_22(EicDid.complete_ecu_part_number_eda0)
     time.sleep(1)
+    if mode != 1:
+        dut.uds.ecu_reset_1101(delay=5)
+        dut.uds.set_mode(1)
+        mode = dut.uds.mode
+    if mode != 1:
+        dut.uds.enter_sbl()
+        software_download(dut)
+        dut.uds.ecu_reset_1101(delay=5)
+        dut.uds.set_mode(1)
+        mode = dut.uds.mode
+    if mode != 1:
+        raise DutTestError("Could not reset the ECU to mode/session 1")
 
 def software_download(dut):
     """ software download """
@@ -96,11 +109,6 @@ def reset_and_flash_ecu():
     try:
         dut.precondition(timeout=3600)
         dut.step(reset_ecu_mode)
-        dut.uds.ecu_reset_1101(delay=5)
-        dut.uds.enter_sbl()
-        dut.step(software_download)
-        dut.uds.ecu_reset_1101(delay=5)
-        dut.uds.set_mode(1)
         result = True
     except: # pylint: disable=bare-except
         error = traceback.format_exc()
