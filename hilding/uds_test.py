@@ -3,10 +3,18 @@ Pytest unit tests for support_uds.py
 
 The class takes replies as hex strings from the ECU and parses out the relevant parts.
 """
+#pylint: disable=redefined-outer-name, unused-import
 import pytest
+from hilding import uds
 from hilding.uds import UdsResponse
 from hilding.uds import extract_fields
+from hilding.conf_test import mock_get_conf
 
+
+@pytest.fixture(autouse=True)
+def setup(mock_get_conf):
+    """ mock get user conf for all tests """
+    uds.get_conf = mock_get_conf
 
 def test_uds_response():
     """ pytest: UdsResponse """
@@ -27,10 +35,10 @@ def test_uds_reponse_with_mode():
     """ pytest: make sure uds response with mode works properly """
     # test the did F122
     f122_response = "XXXX62F122"
-    response = UdsResponse(f122_response, mode=3)
+    response = UdsResponse(f122_response, incoming_mode=2)
     assert response.data['did'] == "F122"
     with pytest.raises(KeyError):
-        UdsResponse(f122_response, mode=1)
+        UdsResponse(f122_response, incoming_mode=1)
 
 def test_dtc_snapshot():
     """ pytest: test parsing of dtc snapshots """
@@ -117,8 +125,13 @@ def test_extract_fields():
 
 def test_active_session():
     """ pytest: test mode/session state changes in response """
-    response = UdsResponse("0462F18601000000")
-    assert response.data['details']['mode'] == 1
-    # set mode/session to 3 (extended) gives us actually a proper reply
-    response = UdsResponse("065003001901F400")
-    assert response.data['details']['mode'] == 3
+    assert UdsResponse("0462F18601000000").details['mode'] == 1
+
+def test_diagnostic_session_control():
+    """ pytest: test diagnostic session control uds parsing """
+    assert UdsResponse("065001001901F400").details['mode'] == 1
+    assert UdsResponse("065001003201F400").details['mode'] == 1
+    assert UdsResponse("065002001901F400").details['mode'] == 2
+    assert UdsResponse("065003001901F400").details['mode'] == 3
+    assert UdsResponse("065003001901F400").details[
+        'session_parameter_record'] == "001901F400"

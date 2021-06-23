@@ -9,26 +9,41 @@ from os.path import join
 from argparse import ArgumentParser
 from pathlib import Path
 
-from hilding.platform import get_platform_dir
+from hilding.legacy import get_platform_dir
 from hilding.sddb import parse_sddb_file
 from hilding.sddb import get_sddb_file
 from hilding.dvm import create_dvm
+from hilding.rig import handle_rigs
+from hilding.reset_ecu import reset_and_flash_ecu
+from hilding.conf import initialize_conf
+from hilding import get_conf
 
-def config_environ(platform):
+def config_environ():
     """automatically set pythonpath and environment variables"""
     sys.path.append(dirname(__file__))
     sys.path.append(join(dirname(__file__), "test_folder/automated"))
     sys.path.append(join(dirname(__file__), "test_folder/manual"))
-    if not ("ODTBPROJ" in environ and "ODTBPROJPARAM" in environ):
-        odtb_proj = f"MEP2_{platform}"
-        odtb_proj_parm = join(dirname(__file__), f"projects/{odtb_proj}")
-        # setting environment variables for process internal settings is not
+
+    if not "ODTBPROJPARAM" in environ:
+        project_dir_mapping = {
+            "becm": "MEP2_SPA1",
+            "hvbm": "MEP2_SPA2",
+            "hlcm": "MEP2_HLCM",
+            "ihfa": "MEP2_ED_IHFA",
+        }
+        platform = get_conf().rig.platform
+        if not platform in project_dir_mapping:
+            raise NotImplementedError("Platform not in project_dir_mapping")
+
+        project_dir = project_dir_mapping[platform]
+        odtb_proj_parm = join(dirname(__file__), f"projects/{project_dir}")
+        # setting environment variables for process internal use is not
         # that pretty, but let's do it like this for now to get away from
-        # having to set these all the time in the shell.
-        environ["ODTBPROJ"] = odtb_proj
+        # having to set ODTBPROJPARAM and PYTHONPATH all the time in the shell.
         environ["ODTBPROJPARAM"] = odtb_proj_parm
         if not odtb_proj_parm in sys.path:
             sys.path.append(odtb_proj_parm)
+
 
 def check_install():
     """ Make sure that the installation is setup and configured properly """
@@ -58,7 +73,7 @@ def check_install():
         sys.exit(error)
     logging.info("DUT port: %s", port)
 
-    # implicitlly also check that ODTBPROJPARAM is set
+    # implicitly also check that ODTBPROJPARAM is set
     platform_dir = get_platform_dir()
 
     vbf_dir = Path(platform_dir).joinpath("VBF")
@@ -106,8 +121,7 @@ if __name__ == "__main__":
         help="set logging level")
 
     parser.add_argument(
-        '-p', dest="platform", default="spa2",
-        choices=["spa1", "spa2", "hlcm", "ed_ifha"], help="set platform")
+        '-r', dest="rig", help="set which rig to run against")
 
     subparsers = parser.add_subparsers(dest="command")
     subparsers.add_parser(
@@ -120,7 +134,7 @@ if __name__ == "__main__":
     )
 
     dvm_parser = subparsers.add_parser(
-        "dvm", help="generate a new dvm document from the test script"
+        "dvm", help="Generate a new dvm document from the test script"
     )
     dvm_parser.add_argument('test_script')
 
@@ -146,6 +160,24 @@ if __name__ == "__main__":
         "defined in the sddb database against the ECU"
     )
 
+    rig_parser = subparsers.add_parser(
+        "rigs", help="Handle the rigs"
+    )
+    rig_parser.add_argument(
+        '--config', action="store_true",
+        help="the combined config dict for all the configured rigs")
+    rig_parser.add_argument(
+        '--update', action="store_true",
+        help="download .vbf, .sddb, and .dbc files for the selected rig "
+        "(to select rig: ./manage.py -r <rigname> rig update)")
+    rig_parser.add_argument(
+        '--update-all', action="store_true",
+        help="download .vbf, .sddb, and .dbc files for all configured rigs")
+
+    reset_ecu_parser = subparsers.add_parser(
+        "reset", help="Reset the ECU to defaults"
+    )
+
     args = parser.parse_args()
 
     # we probably want to make all of the logging user configurable, but right
@@ -154,7 +186,12 @@ if __name__ == "__main__":
         format='%(levelname)s %(name)s %(message)s', stream=sys.stdout,
         level=getattr(logging, args.loglevel.upper()))
 
-    config_environ(args.platform.upper())
+    if args.rig:
+        initialize_conf(args.rig)
+
+    # needs to be done after initialize_conf,
+    # since it uses the conf module
+    config_environ()
 
     if not args.command:
         parser.print_help()
@@ -177,3 +214,7 @@ if __name__ == "__main__":
     elif args.command == 'did_report':
         from reports.did_report import did_report
         did_report()
+    elif args.command == 'rigs':
+        handle_rigs(args)
+    elif args.command == 'reset':
+        reset_and_flash_ecu()

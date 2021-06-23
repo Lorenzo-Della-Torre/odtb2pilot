@@ -152,18 +152,18 @@ def step_7(dut: Dut):
 
 def __call_f18c(dut: Dut):
     ecu_serial_number_f18c = bytes.fromhex('F18C')
-    response = dut.uds.read_data_by_id_22(ecu_serial_number_f18c)
-    if response.empty() or not response.data["did"] == "F18C":
+    res = dut.uds.read_data_by_id_22(ecu_serial_number_f18c)
+    if res.empty() or not res.data["did"] == "F18C":
         raise DutTestError("Could not retrieve ECU serial number")
 
-    logging.info(response)
+    logging.info(res)
 
-    item = response.data["details"]["item"]
+    item = res.details["item"]
 
     if len(item) != 8:
         raise DutTestError("ECU has incorrect length")
 
-    size = response.data["details"]["size"]
+    size = res.details["size"]
     if size != 4:
         raise DutTestError(f"SDDB contains wrong ECU serial number "
                            f"length definition: {size}")

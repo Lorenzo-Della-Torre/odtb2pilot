@@ -4,6 +4,7 @@ Support device under test module
 
 import os
 import re
+import time
 import logging
 import inspect
 import json
@@ -16,12 +17,10 @@ from glob import glob
 from pathlib import Path
 from datetime import datetime
 from tempfile import TemporaryDirectory
+import yaml
 
-import pytest
 import grpc
 import requests
-
-import odtb_conf
 
 from protogenerated.common_pb2 import Empty
 from protogenerated.common_pb2 import NameSpace
@@ -29,13 +28,16 @@ from protogenerated.common_pb2 import NameSpace
 from protogenerated.system_api_pb2_grpc import SystemServiceStub
 from protogenerated.network_api_pb2_grpc import NetworkServiceStub
 
-from supportfunctions.support_precondition import SupportPrecondition
-from supportfunctions.support_postcondition import SupportPostcondition
-from hilding import analytics
+from supportfunctions.support_can import SupportCAN
+from supportfunctions.support_can import CanParam
+from supportfunctions.support_can import PerParam
+from supportfunctions.support_can import CanMFParam
+from supportfunctions.support_service3e import SupportService3e
 from hilding.uds import Uds
-from hilding.platform import get_platform
-from hilding.platform import get_release_dir
-from hilding.platform import get_parameters
+from hilding.uds import EicDid
+from hilding.uds import IoVmsDid
+from hilding import analytics
+from hilding import get_conf
 
 # pylint: disable=no-member
 import protogenerated.system_api_pb2
@@ -46,6 +48,10 @@ if hasattr(protogenerated.system_api_pb2, "License"):
     from protogenerated.system_api_pb2 import FileDescription # pylint: disable=no-name-in-module
     from protogenerated.system_api_pb2 import FileUploadRequest # pylint: disable=no-name-in-module
 
+
+log = logging.getLogger('dut')
+
+
 class DutTestError(BaseException):
     """ Exception class for test errors """
 
@@ -53,7 +59,7 @@ def beamy_feature(func):
     """ Decorator to mark which functions require the beamy signal broker """
     def wrapper_beamy_feature(*args, **kwargs):
         if not hasattr(protogenerated.system_api_pb2, "License"):
-            logging.error("you try to access %s, but it requires beamy broker "
+            log.error("you try to access %s, but it requires beamy broker "
                           "which is not supported", func.__name__)
             raise DutTestError
         func(*args, **kwargs)
@@ -85,18 +91,14 @@ def analytics_test_step(func):
 class Dut:
     """ Device under test """
     # pylint: disable=too-many-instance-attributes
-    def __init__(self, custom_yml_file=None):
-        self.dut_host = odtb_conf.ODTB2_DUT
-        self.dut_port = odtb_conf.ODTB2_PORT
-        self.channel = grpc.insecure_channel(f'{self.dut_host}:{self.dut_port}')
+    def __init__(self):
+        self.conf = get_conf()
+        self.channel = grpc.insecure_channel(
+            f'{self.conf.rig.hostname}:'
+            f'{self.conf.rig.signal_broker_port}')
         self.network_stub = NetworkServiceStub(self.channel)
         self.system_stub = SystemServiceStub(self.channel)
-
-        parameters = get_parameters(custom_yml_file)
-        self.send = parameters["run"]["send"]
-        self.receive = parameters["run"]["receive"]
         self.namespace = NameSpace(name="Front1CANCfg0")
-
         self.uds = Uds(self)
 
     def __getitem__(self, key):
@@ -105,28 +107,109 @@ class Dut:
         if key == "netstub":
             return self.network_stub
         if key == "send":
-            return self.send
+            return self.conf.rig.signal_send
         if key == "receive":
-            return self.receive
+            return self.conf.rig.signal_receive
         if key == "namespace":
             return self.namespace
         raise KeyError(key)
 
     def precondition(self, timeout=30):
         """ run preconditions and start heartbeat """
-        return SupportPrecondition().precondition(self, timeout)
+        self.uds.step = 100
+        # start heartbeat, repeat every 0.8 second
+        hb_param: PerParam = {
+            "name" : "Heartbeat",
+            "send" : True,
+            "id" : self.conf.rig.signal_periodic,
+            "nspace" : self.namespace.name,
+            "frame" : b'\x1A\x40\xC3\xFF\x01\x00\x00\x00',
+            "intervall" : 0.4
+            }
+        log.debug("hb_param %s", hb_param)
+
+        iso_tp = SupportCAN()
+
+        # start heartbeat, repeat every x second
+        iso_tp.start_heartbeat(self["netstub"], hb_param)
+
+        # start testerpresent without reply
+        tp_name = self.conf.rig.signal_tester_present
+        SupportService3e.start_periodic_tp_zero_suppress_prmib(self, tp_name)
+
+        # record signal we send as well
+        iso_tp.subscribe_signal(self, timeout)
+        log.debug("precondition can_p2 %s", self)
+
+        # record signal we send as well
+        can_p2: CanParam = {"netstub": self["netstub"],
+                            "send": self["receive"],
+                            "receive": self["send"],
+                            "namespace": self["namespace"]
+                           }
+        iso_tp.subscribe_signal(can_p2, timeout)
+
+        # do not generate FC frames for signals we generated:
+        time.sleep(1)
+        can_mf: CanMFParam = {
+            "block_size": 0,
+            "separation_time": 0,
+            "frame_control_delay": 10,
+            "frame_control_flag": 48,
+            "frame_control_auto": False
+            }
+        iso_tp.change_mf_fc(can_p2["receive"], can_mf)
+
+        res = self.uds.read_data_by_id_22(EicDid.complete_ecu_part_number_eda0)
+        log.info("Precondition eda0: %s\n", res)
+
+        res = self.uds.read_data_by_id_22(IoVmsDid.pbl_software_part_num_f125)
+        log.info("Precondition f125: %s\n", res)
+        self.uds.step = 0
 
     def postcondition(self, start_time, result):
         """ run postconditions and change to mode 1 """
-        return SupportPostcondition().postcondition(self, start_time, result)
+        log.info("Postcondition: Display current mode/session, change to mode1 (default)")
+        self.uds.step = 200
+        res_mode = self.uds.active_diag_session_f186()
+        log.info("Current mode/session: %s", res_mode.details["mode"])
+
+        self.uds.set_mode(1)
+        if self.uds.mode != 1:
+            DutTestError("Could not set the ECU to mode 1 (default)")
+
+        log.debug("\nTime: %s \n", time.time())
+        log.info("Testcase end: %s", datetime.now())
+        log.info("Time needed for testrun (seconds): %s", int(time.time() - start_time))
+
+        log.info("Do cleanup now...")
+        log.info("Stop all periodic signals sent")
+
+        iso_tp = SupportCAN()
+        iso_tp.stop_periodic_all()
+
+        # deregister signals
+        iso_tp.unsubscribe_signals()
+
+        # if threads should remain: try to stop them
+        iso_tp.thread_stop()
+
+        log.info("Test cleanup end: %s\n", datetime.now())
+
+        if result:
+            log.info("Testcase result: PASSED")
+        else:
+            log.info("Testcase result: FAILED")
 
     def start(self):
         """ log the current time and return a timestamp """
         start_time = datetime.now()
         timestamp = start_time.timestamp()
-        logging.info("Running test on: %s:%s", self.dut_host, self.dut_port)
-        logging.info("Testcase start: %s", start_time)
-        logging.info("Time: %s \n", timestamp)
+        log.info("Running test on: %s:%s",
+                     self.conf.rig.hostname,
+                     self.conf.rig.signal_broker_port)
+        log.info("Testcase start: %s", start_time)
+        log.info("Time: %s \n", timestamp)
         return timestamp
 
     @analytics_test_step
@@ -157,20 +240,20 @@ class Dut:
         """
         request = Empty()
         response = self.system_stub.ReloadConfiguration(request, timeout=60000)
-        logging.info(response)
+        log.info(response)
 
     @beamy_feature
     def upload_file(self, path, dest_path):
         """ Upload configuration file to the beamy signal broker """
         sha256 = get_sha256(path)
-        logging.info(sha256)
+        log.info(sha256)
         with open(path, "rb") as f:
             # make sure path is unix style (necessary for windows, and does no harm
             # on linux)
             upload_iterator = generate_data(
                 f, dest_path.replace(ntpath.sep, posixpath.sep), 1000000, sha256)
         response = self.system_stub.UploadFile(upload_iterator)
-        logging.info("uploaded: %s %s", path, response)
+        log.info("uploaded: %s %s", path, response)
 
     @beamy_feature
     def upload_folder(self, folder):
@@ -206,7 +289,7 @@ class Dut:
         # pylint: disable=no-member
         assert resp_request.status_code == requests.codes.ok, \
             "Response code not ok, code: %d" % (resp_request.status_code)
-        logging.info("License requested check your mail: %s", id_value)
+        log.info("License requested check your mail: %s", id_value)
 
 
     @beamy_feature
@@ -254,7 +337,7 @@ class Dut:
         Remember to set it back to default once you are done as it affects
         subsequent tests and users
         """
-        dbpath = get_release_dir()
+        dbpath = get_conf().rig.dbc_path
 
         with TemporaryDirectory() as tmpdirname:
             config_dir = Path(tmpdirname)
@@ -283,15 +366,27 @@ class Dut:
             self.upload_folder(tmpdirname)
             self.reload_configuration()
 
+    def get_platform_yml_parameters(self, test_filename_py):
+        """
+        get test_filename_<platform>.yml file from the same directory as the
+        main test if you really want to add external parameters to the test
 
-def get_dut_custom():
-    """
-    Create a dut with a custom parameters file that has the same name as the
-    caller (most commonly the name of the test file)
-    """
-    frame_info = inspect.stack()[1]
-    filename = Path(frame_info.filename)
-    return Dut(custom_yml_file=os.path.basename(filename.with_suffix(".yml")))
+        usage example:
+            parameters = dut.get_platform_yml_parameters(__file__)
+            dut.send = parameters["send"]
+        """
+        test_filename = Path(test_filename_py).with_suffix("")
+        platform = self.conf.rig.platform
+        test_filename_platform_yml = Path(f"{test_filename}_{platform}.yml")
+        if not test_filename_platform_yml.exists():
+            raise DutTestError(
+                f"Your platform is not supported for this test. Please add "
+                f"{test_filename_platform_yml} in the same directory as the test")
+        with open(test_filename_platform_yml) as yml:
+            parameters = yaml.safe_load(yml)
+        return parameters
+
+
 
 
 def get_sha256(filename):
@@ -341,84 +436,4 @@ interfaces = {
     },
     'reflectors': [],
     'support_dut_test_config': 'yes'
-}
-
-
-
-##################################
-# Pytest unit tests starts here
-##################################
-
-def test_dut():
-    """ pytest: testing dut """
-    dut = Dut()
-    # list available signals
-    configuration = dut.system_stub.GetConfiguration(Empty())
-    ns = [ni.namespace for ni in configuration.networkInfo]
-    platform = os.getenv("ODTBPROJ")
-    if platform == "MEP2_SPA1":
-        assert ns[0].name == "BecmRmsCanFr1"
-        assert ns[1].name == "Front1CANCfg0"
-        assert ns[2].name == "RpiGPIO"
-
-        front_can_signals = dut.system_stub.ListSignals(ns[1])
-        front_can_signal_names = [
-            frame.signalInfo.id.name for frame in front_can_signals.frame]
-
-        assert "Vcu1ToBecmFront1DiagReqFrame" in front_can_signal_names
-        assert "BecmToVcu1Front1DiagResFrame" in front_can_signal_names
-
-    status = dut.system_stub.GetLicenseInfo(Empty()).status
-    assert status == LicenseStatus.VALID, \
-        "Check your license, status is: %d" % status
-
-
-def test_upload_folder():
-    """ pytest: testing upload_folder """
-    dut = Dut()
-    dut.reconfigure_broker(
-        "BO_ 1875 HvbmdpToHvbmUdsDiagRequestFrame : 8 HVBMdp",
-        "BO_ 1875 HvbmdpToHvbmUdsDiagRequestFrame : 7 HVBMdp"
-    )
-
-
-def test_get_platform():
-    """ pytest: testing get_platform """
-    old_odtbproj = os.getenv("ODTBPROJ")
-
-    os.environ["ODTBPROJ"] = "MEP2_SPA1"
-    assert get_platform() == "spa1"
-    os.environ["ODTBPROJ"] = "MEP2_SPA2"
-    assert get_platform() == "spa2"
-    os.environ["ODTBPROJ"] = "MEP2_HLCM"
-    assert get_platform() == "hlcm"
-    os.environ["ODTBPROJ"] = "MEP2_ED_IFHA"
-    assert get_platform() == "ed_ifha"
-    os.environ["ODTBPROJ"] = ""
-    with pytest.raises(EnvironmentError, match=r".*not set"):
-        get_platform()
-    os.environ["ODTBPROJ"] = "NONESENSE"
-    with pytest.raises(EnvironmentError, match=r"Unknown ODTBPROJ.*"):
-        get_platform()
-
-    os.environ["ODTBPROJ"] = old_odtbproj
-
-
-def test_get_parameters():
-    """ pytest: testing get_parameters """
-    parameters = get_parameters()
-    assert "run" in parameters
-    assert "send" in parameters["run"]
-    assert "receive" in parameters["run"]
-    platform = os.getenv("ODTBPROJ")
-    if platform == "MEP2_SPA1":
-        assert parameters["run"]["send"] == "Vcu1ToBecmFront1DiagReqFrame"
-        assert parameters["run"]["receive"] == "BecmToVcu1Front1DiagResFrame"
-    if platform == "MEP2_SPA2":
-        assert parameters["run"]["send"] == "HvbmdpToHvbmUdsDiagRequestFrame"
-        assert parameters["run"]["receive"] == "HvbmToHvbmdpUdsDiagResponseFrame"
-
-def test_get_dut_custom():
-    """ pytest: testing get_dut_custom """
-    with pytest.raises(FileNotFoundError, match=r"Could not find .*support_dut.yml"):
-        get_dut_custom()
+}#

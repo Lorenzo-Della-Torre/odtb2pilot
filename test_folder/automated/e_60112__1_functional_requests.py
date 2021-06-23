@@ -17,11 +17,10 @@ details:
 import logging
 import sys
 
-from hilding.platform import get_platform
 from hilding.dut import Dut
 from hilding.dut import DutTestError
 
-def step_1(dut):
+def step_1(dut: Dut):
     """
     action:
         Change ECU mode using functional addresssing
@@ -40,9 +39,9 @@ def step_1(dut):
     # note: 2047 decimal = 0x7ff
     # hence, we set the addressing as follows:
 
-    if get_platform() == 'spa1':
+    if dut.conf.rig.platform == 'becm':
         dut.send = 'Vcu1ToAllFuncFront1DiagReqFrame'
-    elif get_platform() == 'spa2':
+    elif dut.conf.rig.platform == 'hvbm':
         dut.send = 'HvbmdpToAllUdsDiagRequestFrame'
     else:
         raise DutTestError("Your platform is not supported in this test")
@@ -51,6 +50,9 @@ def step_1(dut):
 
     if dut.uds.mode != 2:
         raise DutTestError("Could not change mode using functional addressing")
+
+    # reset the send signal to original setting
+    dut.send = dut.conf.rig.signal_send
 
 def run():
     """ Supporting functional requests """

@@ -34,7 +34,6 @@ details:
 import sys
 import logging
 
-from hilding.platform import get_platform
 from hilding.dut import Dut
 from hilding.dut import DutTestError
 from hilding.uds import global_timestamp_dd00
@@ -55,14 +54,14 @@ def step_2(dut):
     Attempt to get the global timestamp with DLC set to 7 bytes
     """
 
-    platform = get_platform()
-    if platform == "spa1":
+    platform = dut.conf.rig.platform
+    if platform == "becm":
         dut.reconfigure_broker(
             "BO_ 1845 Vcu1ToBecmFront1DiagReqFrame: 8 VCU1",
             "BO_ 1845 Vcu1ToBecmFront1DiagReqFrame: 7 VCU1",
             can0_dbc_file='SPA3010_ConfigurationsSPA3_Front1CANCfg_180615_Prototype.dbc'
         )
-    elif platform == "spa2":
+    elif platform == "hvbm":
         dut.reconfigure_broker(
             "BO_ 1875 HvbmdpToHvbmUdsDiagRequestFrame : 8 HVBMdp",
             "BO_ 1875 HvbmdpToHvbmUdsDiagRequestFrame : 7 HVBMdp",

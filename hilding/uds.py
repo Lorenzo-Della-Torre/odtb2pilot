@@ -7,14 +7,7 @@ import sys
 import time
 import logging
 import textwrap
-from glob import glob
 from dataclasses import dataclass
-
-from build.did import pbl_did_dict
-from build.did import sbl_did_dict
-from build.did import app_did_dict
-from build.did import resp_item_dict
-from build.dtc import sddb_dtcs
 
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
 from supportfunctions.support_can import SupportCAN
@@ -23,13 +16,11 @@ from supportfunctions.support_can import CanTestExtra
 from supportfunctions.support_SBL import SupportSBL
 
 from hilding.status_bits import DtcStatus
-from hilding.platform import get_platform_dir
+from hilding import get_conf
 
-
-SUTE = SupportTestODTB2()
 SC = SupportCAN()
 
-
+log = logging.getLogger('uds')
 
 global_timestamp_dd00 = bytes.fromhex('DD00')
 
@@ -78,29 +69,25 @@ class UdsError(Exception):
 
 class UdsResponse:
     """ UDS response """
-    def __init__(self, raw, mode=None):
+    def __init__(self, raw, incoming_mode=None):
         self.raw = raw
-        self.mode = mode
+        self.incoming_mode = incoming_mode
         self.data = {}
         self.data['details'] = {}
         self.all_defined_dids = {}
         self.__did_regex = {}
+        self.__sddb_dids = get_conf().rig.sddb_dids
+        self.__sddb_dtcs = get_conf().rig.sddb_dtcs.get("sddb_dtcs")
         self.__process_message()
 
+
     def __process_message(self):
-        if self.raw == "065003001901F400":
-            # Setting the ecu in mode 1 or 2 does not give us any response at
-            # all, but this the response we get when setting the ecu in mode 3.
-            # We should be able to parse this response and add the information
-            # to the data dictionary in a better way than this. Maybe use
-            # nibble 5 and 6?
-            self.data["details"]["mode"] = 3
-            logging.info("The ECU was successfully set to mode 3")
-            return
 
         response_patterns = [
-            (r'.{2}7F(?P<service_id>.{2})(?P<nrc>.{2})', self.__negative_response),
-            (r'.{2,4}(?P<sid>51|59|62|6F|71)(?P<body>.*)', self.__positive_response)
+            (r'.{2}7F(?P<service_id>.{2})(?P<nrc>.{2})',
+             self.__negative_response),
+            (r'.{2,4}(?P<sid>50|51|59|62|6F|71)(?P<body>.*)',
+             self.__positive_response)
         ]
         for pattern, processor in response_patterns:
             match = re.match(pattern, self.raw)
@@ -162,20 +149,21 @@ class UdsResponse:
 
     def __positive_response(self):
         self.all_defined_dids = {}
-        if not self.mode:
-            self.all_defined_dids.update(app_did_dict)
-            self.all_defined_dids.update(pbl_did_dict)
-            self.all_defined_dids.update(sbl_did_dict)
-        elif self.mode in [1, 3]:
-            self.all_defined_dids.update(app_did_dict)
-        elif self.mode == 2:
+        if not self.incoming_mode:
+            self.all_defined_dids.update(self.__sddb_dids["app_did_dict"])
+            self.all_defined_dids.update(self.__sddb_dids["pbl_did_dict"])
+            self.all_defined_dids.update(self.__sddb_dids["sbl_did_dict"])
+        elif self.incoming_mode in [1, 3]:
+            self.all_defined_dids.update(self.__sddb_dids["app_did_dict"])
+        elif self.incoming_mode == 2:
             # it would be good to separate these two and we can do that if we
             # add a state to the class indicating which programming mode it's
             # in.
-            self.all_defined_dids.update(pbl_did_dict)
-            self.all_defined_dids.update(sbl_did_dict)
+            self.all_defined_dids.update(self.__sddb_dids["pbl_did_dict"])
+            self.all_defined_dids.update(self.__sddb_dids["sbl_did_dict"])
         else:
-            sys.exit(f"Incorrect mode set: {self.mode}. Exiting...")
+            sys.exit(f"Incorrect incoming_mode set: {self.incoming_mode}. "
+                     f"Exiting...")
 
         for did, item in self.all_defined_dids.items():
             # each byte takes two hexadecimal characters
@@ -194,6 +182,7 @@ class UdsResponse:
             self.__did_regex[did] = r'{}(.{{{}}})'.format(did, length)
 
         service_types = {
+            "50": "DiagnosticSessionControl",
             "51": "ECUReset",
             "59": "ReadDTCInformation",
             "62": "ReadDataByIdentifier",
@@ -205,11 +194,17 @@ class UdsResponse:
             service = service_types[sid]
             self.data["service"] = service
 
+            if service == "DiagnosticSessionControl":
+                self.__mode_change()
             if service == "ReadDataByIdentifier":
                 self.__process_dids()
             if service == "ReadDTCInformation":
                 self.__process_dtc_report()
 
+    def __mode_change(self):
+        mode = self.data["body"][:2]
+        self.details['mode'] = int(mode)
+        self.details['session_parameter_record'] = self.data["body"][2:]
 
     def __process_dids(self):
         did = self.data["body"][0:4]
@@ -239,7 +234,7 @@ class UdsResponse:
         elif report_type == '06':
             self.__process_dtc_extended_data_records(content)
         else:
-            logging.warning("dtc report type not supported by UdsResponse")
+            log.warning("dtc report type not supported by UdsResponse")
 
     def __process_dtc_by_status_mask(self, content):
         dtc_status_list_match = re.match(
@@ -278,8 +273,8 @@ class UdsResponse:
         if match:
             dtc = match.groupdict()["dtc"]
             self.data['dtc'] = dtc
-            if dtc in sddb_dtcs:
-                self.details.update(sddb_dtcs[dtc])
+            if dtc in self.__sddb_dtcs:
+                self.details.update(self.__sddb_dtcs[dtc])
             self.data["dtc_status_bits"] = DtcStatus(
                 match.groupdict()["dtc_status_bits"])
 
@@ -293,8 +288,8 @@ class UdsResponse:
             group = match.groupdict()
             dtc = group["dtc"]
             self.data['dtc'] = dtc
-            if dtc in sddb_dtcs:
-                self.details.update(sddb_dtcs[dtc])
+            if dtc in self.__sddb_dtcs:
+                self.details.update(self.__sddb_dtcs[dtc])
 
             self.data["dtc_status_bits"] = DtcStatus(
                 group["dtc_status_bits"])
@@ -351,7 +346,8 @@ class UdsResponse:
 
     def add_response_items(self, did, payload):
         """ add response items """
-        if did in resp_item_dict:
+        if did in self.__sddb_dids["resp_item_dict"]:
+            resp_item_dict = self.__sddb_dids["resp_item_dict"]
             response_items = []
             for resp_item in resp_item_dict[did]:
                 offset = resp_item['offset']
@@ -361,7 +357,7 @@ class UdsResponse:
                 if 'compare_value' in resp_item:
                     compare_value = resp_item['compare_value']
                     if compare(scaled_value, compare_value):
-                        logging.debug('Equal! Comparing %s with %s', str(compare_value),
+                        log.debug('Equal! Comparing %s with %s', str(compare_value),
                                       scaled_value)
                     continue
 
@@ -404,7 +400,7 @@ class UdsResponse:
         self.extract_dids(self.details['item'])
 
         if not 'F12E' in self.details:
-            logging.error('No F12E part numbers found')
+            log.error('No F12E part numbers found')
             return
 
         remaining = self.details['F12E']
@@ -418,7 +414,7 @@ class UdsResponse:
         remaining = remaining[2:]
 
         if not records * part_num_len == len(remaining):
-            logging.warning(
+            log.warning(
                 "Record length of F12E in EDA0 appears incorrect in SDDB file")
             # attempting to recover by ignoreing SDDB record for F12E
             # `format` will replace the two outer most curly braces with a single
@@ -445,7 +441,7 @@ class UdsResponse:
         item = details['item']
         length = int(details['size']) * 2
         if len(item) >= length:
-            self.data['details']['mode'] = int(item[:length])
+            self.details['mode'] = int(item[:length])
 
 
 class Uds:
@@ -468,14 +464,15 @@ class Uds:
             "min_no_messages": -1,
             "max_no_messages": -1
         }
-        SUTE.teststep(self.dut, cpay, etp)
+        log.info("Request with payload: %s", payload.hex())
+        SupportTestODTB2().teststep(self.dut, cpay, etp)
 
         response = SC.can_messages[self.dut['receive']]
 
         if len(response) == 0:
             raise UdsEmptyResponse()
 
-        return UdsResponse(response[0][2], self.mode)
+        return UdsResponse(response[0][2], incoming_mode=self.mode)
 
 
     def ecu_reset_1101(self, delay=1):
@@ -554,29 +551,24 @@ class Uds:
         }
         assert mode in modes.keys()
         payload = bytes([0x10, mode])
-        logging.info(
+        log.info(
             "Set %s with payload %s", modes[mode], payload.hex())
 
         try:
-            response = self.__make_call(payload)
+            res = self.__make_call(payload)
         except UdsEmptyResponse:
-            # set mode 1 and 2 calls does not give us any response, so this is
+            # set mode 1 and 2 calls might not give us any response, so this is
             # fine
-            pass
+            res = None
 
-        if mode in [1, 2]:
-            res_mode = self.active_diag_session_f186()
-            self.mode = res_mode.data["details"]["mode"]
-            return
-
-        # since we actually get a reply when changing to mode 3 we don't
-        # need to do any extra call to f186 in order to ensure that the
-        # mode change went well.
-        if mode == 3 and response.data["details"]["mode"] == 3:
-            self.mode = 3
-            return
-
-        raise UdsError(f"Failure occurred when setting mode: {mode}")
+        if not res or not "mode" in res.details:
+            # mode change can take a little while so let's sleep a bit before
+            # we request the active diagnostic session number
+            time.sleep(2)
+            res = self.active_diag_session_f186()
+            if not "mode" in res.details:
+                raise UdsError(f"Failure occurred when setting mode: {mode}")
+        self.mode = res.details["mode"]
 
 
     def enter_sbl(self):
@@ -586,11 +578,13 @@ class Uds:
                 "You need to be in programming mode to change from pbl to sbl")
 
         sbl = SupportSBL()
-        f_names = glob(get_platform_dir() + "/VBF/*.vbf")
-        if not sbl.read_vbf_param(f_names):
+        rig = get_conf().rig
+        vbf_files = [str(f.resolve()) for f in rig.vbf_path.glob("*.vbf")]
+        log.info(vbf_files)
+        if not sbl.read_vbf_param(vbf_files):
             UdsError("Could not load vbf files")
         if not sbl.sbl_activation(
-            self.dut, fixed_key='FFFFFFFFFF', stepno=self.dut.step,
+            self.dut, fixed_key=rig.fixed_key, stepno=self.dut.step,
                 purpose="Activate Secondary bootloader"):
             UdsError("Could not set ecu in sbl mode")
 
@@ -660,17 +654,17 @@ def populate_formula(formula, value, size):
 
     # It is a bitwise-and HEX
     if and_pos_hex != -1:
-        logging.debug('Formula = %s and_pos_hex = %s', formula, and_pos_hex)
+        log.debug('Formula = %s and_pos_hex = %s', formula, and_pos_hex)
         hex_value = formula[and_pos_hex + 1:and_pos_hex + 3 + int(size) * 2]
         formula = formula.replace(hex_value, str(int(hex_value, 16)) + ')')
         populated_formula = formula.replace('X', '(' +str(value))
     # It is a bitwise-and bit-mapping
     elif and_pos_bit != -1:
-        logging.debug('Formula = %s and_pos_bit = %s', formula, and_pos_bit)
+        log.debug('Formula = %s and_pos_bit = %s', formula, and_pos_bit)
         bit_value = bin(value)
         populated_formula = formula.replace('X', '(' +str(bit_value) + ')')
     else:
-        logging.debug('Value = %s', value)
+        log.debug('Value = %s', value)
         populated_formula = formula.replace('X', str(value))
     return populated_formula
 
@@ -690,27 +684,27 @@ def get_scaled_value(resp_item, sub_payload):
     if 'formula' in resp_item:
         size = resp_item['size']
         formula = resp_item['formula']
-        logging.debug('Formula = %s', formula)
+        log.debug('Formula = %s', formula)
         populated_formula = populate_formula(formula, int_value, size)
-        logging.debug('Populated formula = %s', populated_formula)
+        log.debug('Populated formula = %s', populated_formula)
 
         try:
             result = str(eval(populated_formula)) # pylint: disable=eval-used
             int_result = int(float(result))
-            logging.debug('Formula = %s => %s', formula, result)
+            log.debug('Formula = %s => %s', formula, result)
             return int_result
         except RuntimeError as runtime_error:
-            logging.fatal(runtime_error)
+            log.fatal(runtime_error)
         except SyntaxError as syntax_error:
-            logging.fatal(syntax_error)
+            log.fatal(syntax_error)
         except OverflowError as overflow_error:
-            logging.fatal(overflow_error)
+            log.fatal(overflow_error)
     else:
         # If we reach this, then there is no formula.
         # That is an issue, formula should be mandatory
-        logging.fatal('No formula!')
-        logging.fatal(resp_item)
-        logging.fatal(sub_payload)
+        log.fatal('No formula!')
+        log.fatal(resp_item)
+        log.fatal(sub_payload)
         raise RuntimeError('No formula!')
     return int_value
 
@@ -732,7 +726,7 @@ def compare(scaled_value, compare_value):
         # pylint: disable=eval-used
         result = eval(str(scaled_value) + str(improved_compare_value))
     except NameError as name_error:
-        logging.error(name_error)
+        log.error(name_error)
     except SyntaxError as syntax_error:
-        logging.error(syntax_error)
+        log.error(syntax_error)
     return result

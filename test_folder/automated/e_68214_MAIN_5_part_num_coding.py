@@ -39,7 +39,6 @@ import logging
 from hilding.dut import Dut
 from hilding.dut import DutTestError
 from hilding.uds import IoVmsDid
-from supportfunctions.support_SBL import SupportSBL
 
 
 def step_1(dut: Dut):
@@ -96,12 +95,7 @@ def step_4(dut: Dut):
 
     comment: Mode 2 should be set and in sbl mode
     """
-    sbl = SupportSBL()
-    sbl.get_vbf_files()
-    if not sbl.sbl_activation(
-        dut, fixed_key='FFFFFFFFFF', stepno='4',
-            purpose="Activate Secondary bootloader"):
-        DutTestError("Could not set ecu in sbl mode")
+    dut.uds.enter_sbl()
 
 def step_5(dut: Dut):
     """

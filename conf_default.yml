@@ -1,0 +1,13 @@
+platforms:
+    becm:
+        fixed_key: 'FFFFFFFFFF'
+        signal_send: Vcu1ToBecmFront1DiagReqFrame
+        signal_receive: BecmToVcu1Front1DiagResFrame
+        signal_periodic: MvcmFront1NMFr
+        signal_tester_present: Vcu1ToAllFuncFront1DiagReqFrame
+    hvbm:
+        fixed_key: 'FFFFFFFFFF'
+        signal_send: HvbmdpToHvbmUdsDiagRequestFrame
+        signal_receive: HvbmToHvbmdpUdsDiagResponseFrame
+        signal_periodic: HvbmdpNmFrame
+        signal_tester_present: HvbmdpToAllUdsDiagRequestFrame

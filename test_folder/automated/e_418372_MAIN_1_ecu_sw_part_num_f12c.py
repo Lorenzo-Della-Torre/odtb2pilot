@@ -34,7 +34,6 @@ details: >
 import sys
 import logging
 
-from hilding.platform import get_platform
 from hilding.dut import Dut
 from hilding.dut import DutTestError
 from hilding.uds import IoVmsDid
@@ -134,11 +133,13 @@ def verify_f12c(dut: Dut, eda0_f12c_valid):
         IoVmsDid.ecu_software_structure_part_number_f12c)
     logging.info(f12c_response)
 
-    if f12c_response.empty() or "F12E_valid" in f12c_response.data['details']:
+    if f12c_response.empty() or "F12E_valid" in f12c_response.details:
         raise DutTestError("No software structure part number received")
 
-    f12c_valid = f12c_response.data["details"]["F12C_valid"]
-    if get_platform() == "spa1":
+    f12c_valid = f12c_response.details["F12C_valid"]
+
+    logging.info("platform: %s", dut.conf.rig.platform)
+    if dut.conf.rig.platform == "becm":
         assert eda0_f12c_valid == f12c_valid, \
             "ecu software structure part numbers does not match: " + \
             "\neda0: %s\nf12c: %s" % (

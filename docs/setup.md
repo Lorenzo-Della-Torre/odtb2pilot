@@ -28,6 +28,28 @@ Example ART rig host names:
  - bsw-pi1
  - eps-pi1
 
+## Setting up SSH keys locally and on remote
+
+run:
+  ssh-keygen
+
+and accept the defaults
+
+copy content of id_rsa.pub and add it to ~/.ssh/authenticated_keys on the
+remote raspberry pi (or on the same if you are configuring a raspberry pi
+target)
+
+now connect to the raspberry pi and you should not need to enter the password
+since you are already authenticated.
+for example:
+  ssh pi@bsw-piX.dhcp.nordic.volocars.net
+
+run:
+  ./manage.py rigs --update
+
+and all the vbf, dbf, and sddb files will be copied over to the rigs/<rigname>/
+directories.
+
 
 ### Configuring the software on the raspberry pi
 
@@ -38,9 +60,13 @@ credentials.
 Next step is to get all dependencies:
 
 ```shell
-  sudo apt install libxslt-dev unixodbc-dev tdsodbc libopenjp2-7 sqlite3
+  sudo apt update
+  sudo apt install libxslt-dev unixodbc-dev tdsodbc libopenjp2-7 sqlite3 fzf
   pip3 install -r requirements.txt
 ```
+
+Make sure you run the pip3 install in the Hilding root directory (odtb2pilot or
+whatever you've called it) to include the packeges/epsmsgbus as well.
 
 NOTE: `<platform>` has to be replaced with the name of the platform that you are
 using in the text below (for example: MEP2_SPA1, MEP2_SPA2, or MEP2_HLCM). The

@@ -12,8 +12,9 @@ from pathlib import Path
 from iterfzf import iterfzf
 
 from hilding import analytics
+from hilding.reset_ecu import reset_and_flash_ecu
 
-import test_folder.on_the_fly_test.BSW_Set_ECU_to_default as set_ecu_to_default
+
 
 log = logging.getLogger('testrunner')
 
@@ -149,12 +150,9 @@ def run_reset_between():
     """
     this is to make sure that each test are not affected by the previous test
     """
-    # this is a bit hacky, but let's keep it for now
-    sys.argv = [set_ecu_to_default.__file__]
-
     # run the reset test script
     try:
-        set_ecu_to_default.run()
+        reset_and_flash_ecu()
     except Exception as e: # pylint: disable=broad-except
         logging.critical(
             "Set ecu to default failed:\n%s", e)
