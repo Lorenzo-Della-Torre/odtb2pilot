@@ -34,8 +34,13 @@ class Rig:
     @property
     def fixed_key(self):
         """ conf platform fixed key """
-        platform_data = self.conf.platforms.get(self.platform, {})
-        return platform_data.get("fixed_key", "0102030405")
+        local_fixed_key = self.conf.selected_rig_dict.get('fixed_key')
+        if local_fixed_key:
+            fixed_key = local_fixed_key
+        else:
+            platform_data = self.conf.platforms.get(self.platform, {})
+            fixed_key = platform_data.get("fixed_key", "0102030405")
+        return fixed_key
 
     @property
     def signal_send(self):
@@ -60,6 +65,12 @@ class Rig:
         """ conf platform signal tester present """
         platform_data = self.conf.platforms.get(self.platform, {})
         return platform_data.get("signal_tester_present")
+
+    @property
+    def wakeup_frame(self):
+        """ conf platform wakeup frame """
+        platform_data = self.conf.platforms.get(self.platform, {})
+        return bytes.fromhex(platform_data.get("wakeup_frame", ""))
 
     @property
     def rig_path(self):

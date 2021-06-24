@@ -118,20 +118,20 @@ class Dut:
         """ run preconditions and start heartbeat """
         self.uds.step = 100
         # start heartbeat, repeat every 0.8 second
-        hb_param: PerParam = {
+        heartbeat_param: PerParam = {
             "name" : "Heartbeat",
             "send" : True,
             "id" : self.conf.rig.signal_periodic,
             "nspace" : self.namespace.name,
-            "frame" : b'\x1A\x40\xC3\xFF\x01\x00\x00\x00',
+            "frame" : self.conf.rig.wakeup_frame,
             "intervall" : 0.4
             }
-        log.debug("hb_param %s", hb_param)
+        log.debug("heartbeat_param %s", heartbeat_param)
 
         iso_tp = SupportCAN()
 
         # start heartbeat, repeat every x second
-        iso_tp.start_heartbeat(self["netstub"], hb_param)
+        iso_tp.start_heartbeat(self["netstub"], heartbeat_param)
 
         # start testerpresent without reply
         tp_name = self.conf.rig.signal_tester_present
