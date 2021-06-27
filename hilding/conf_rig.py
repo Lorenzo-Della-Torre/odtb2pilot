@@ -11,6 +11,22 @@ class Rig:
         self.analytics = Analytics(self)
         self.__sddb_module_cache = {}
 
+    def __str__(self):
+        __str = f"Rig({self.user}@{self.hostname}):\n"
+        composite_attr = [
+            'sddb_dids',
+            'sddb_dtcs',
+            'sddb_services',
+        ]
+        for attr in dir(self):
+            if hasattr(Rig, attr) and isinstance(getattr(Rig, attr), property):
+                if attr in composite_attr:
+                    __str += f"{attr}: <contains {len(getattr(self, attr))} " \
+                             f"items>\n"
+                else:
+                    __str += f"{attr}: {getattr(self, attr)}\n"
+        return __str
+
     @property
     def hostname(self):
         """ conf hostname """
@@ -33,44 +49,51 @@ class Rig:
 
     @property
     def fixed_key(self):
-        """ conf platform fixed key """
-        local_fixed_key = self.conf.selected_rig_dict.get('fixed_key')
-        if local_fixed_key:
-            fixed_key = local_fixed_key
-        else:
-            platform_data = self.conf.platforms.get(self.platform, {})
-            fixed_key = platform_data.get("fixed_key", "0102030405")
-        return fixed_key
+        """ conf platform fixed key or local fixed key override """
+        platform_data = self.conf.platforms.get(self.platform, {})
+        platform_fixed_key = platform_data.get("fixed_key", "0102030405")
+        return self.conf.selected_rig_dict.get("fixed_key", platform_fixed_key)
 
     @property
     def signal_send(self):
         """ conf platform signal send """
         platform_data = self.conf.platforms.get(self.platform, {})
-        return platform_data.get("signal_send")
+        platform_signal_send = platform_data.get("signal_send")
+        return self.conf.selected_rig_dict.get(
+            "signal_send", platform_signal_send)
 
     @property
     def signal_receive(self):
         """ conf platform signal receive """
         platform_data = self.conf.platforms.get(self.platform, {})
-        return platform_data.get("signal_receive")
+        platform_signal_receive = platform_data.get("signal_receive")
+        return self.conf.selected_rig_dict.get(
+            "signal_receive", platform_signal_receive)
 
     @property
     def signal_periodic(self):
         """ conf platform signal periodic """
         platform_data = self.conf.platforms.get(self.platform, {})
-        return platform_data.get("signal_periodic")
+        platform_signal_periodic = platform_data.get("signal_periodic")
+        return self.conf.selected_rig_dict.get(
+            "signal_periodic", platform_signal_periodic)
 
     @property
     def signal_tester_present(self):
         """ conf platform signal tester present """
         platform_data = self.conf.platforms.get(self.platform, {})
-        return platform_data.get("signal_tester_present")
+        platform_signal_tester_present = platform_data.get("signal_tester_present")
+        return self.conf.selected_rig_dict.get(
+            "signal_tester_present", platform_signal_tester_present)
+
 
     @property
     def wakeup_frame(self):
         """ conf platform wakeup frame """
         platform_data = self.conf.platforms.get(self.platform, {})
-        return bytes.fromhex(platform_data.get("wakeup_frame", ""))
+        platform_wakeup_frame = platform_data.get("wakeup_frame", "")
+        return self.conf.selected_rig_dict.get(
+            "wakeup_frame", platform_wakeup_frame)
 
     @property
     def rig_path(self):

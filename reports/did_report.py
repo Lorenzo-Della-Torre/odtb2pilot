@@ -80,7 +80,7 @@ def write_to_testrun_data_file(git_hash_res, part_numbers_res):
     """
     conf = get_conf()
     testrun_data_file = conf.rig.build_path.joinpath('testrun_data.py')
-    git_hash = 'no git hash available'
+    git_hash = quotify('no git hash available')
     if 'response_items' in git_hash_res.details:
         response_items = git_hash_res.details['response_items']
         if len(response_items) > 0:
