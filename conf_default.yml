@@ -8,7 +8,6 @@ platforms:
         wakeup_frame: 1A40C3FF01000000
     hvbm:
         fixed_key: FFFFFFFFFF
-        wakeup_frame: 1A40C3FF01000000
         signal_send: HvbmdpToHvbmUdsDiagRequestFrame
         signal_receive: HvbmToHvbmdpUdsDiagResponseFrame
         signal_periodic: HvbmdpNmFrame
