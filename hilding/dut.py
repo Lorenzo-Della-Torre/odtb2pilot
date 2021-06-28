@@ -118,20 +118,20 @@ class Dut:
         """ run preconditions and start heartbeat """
         self.uds.step = 100
         # start heartbeat, repeat every 0.8 second
-        hb_param: PerParam = {
+        heartbeat_param: PerParam = {
             "name" : "Heartbeat",
             "send" : True,
             "id" : self.conf.rig.signal_periodic,
             "nspace" : self.namespace.name,
-            "frame" : b'\x1A\x40\xC3\xFF\x01\x00\x00\x00',
+            "frame" : bytes.fromhex(self.conf.rig.wakeup_frame),
             "intervall" : 0.4
             }
-        log.debug("hb_param %s", hb_param)
+        log.debug("heartbeat_param %s", heartbeat_param)
 
         iso_tp = SupportCAN()
 
         # start heartbeat, repeat every x second
-        iso_tp.start_heartbeat(self["netstub"], hb_param)
+        iso_tp.start_heartbeat(self.network_stub, heartbeat_param)
 
         # start testerpresent without reply
         tp_name = self.conf.rig.signal_tester_present
@@ -141,11 +141,12 @@ class Dut:
         iso_tp.subscribe_signal(self, timeout)
         log.debug("precondition can_p2 %s", self)
 
-        # record signal we send as well
-        can_p2: CanParam = {"netstub": self["netstub"],
-                            "send": self["receive"],
-                            "receive": self["send"],
-                            "namespace": self["namespace"]
+        # record signal we send as well. Do notice the reverse order of the
+        # send and receive signals!
+        can_p2: CanParam = {"netstub": self.network_stub,
+                            "send": self.conf.rig.signal_receive,
+                            "receive": self.conf.rig.signal_send,
+                            "namespace": self.namespace
                            }
         iso_tp.subscribe_signal(can_p2, timeout)
 

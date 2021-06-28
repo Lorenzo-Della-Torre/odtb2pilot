@@ -58,7 +58,7 @@ def parse_test_file_name(test_file_py):
 def get_test_case_name(test_file_py):
     """ parse file name and compose test case name """
     t = parse_test_file_name(test_file_py)
-    # it might seem abit silly to basically recreate the filename again, but
+    # it might seem a bit silly to basically recreate the filename again, but
     # let's keep it like this until we have settled on a good way to name our
     # testcases using epsmsgbus and epsdb
     return f"e_{t['reqprod']}_{t['variant']}_{t['revision']}_{t['description']}"
