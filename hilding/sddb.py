@@ -19,6 +19,7 @@ from inflection import underscore
 
 from hilding import get_conf
 
+log = logging.getLogger('sddb')
 
 def get_sddb_file():
     """Get the current sddb file from the release directory"""
@@ -31,7 +32,7 @@ def get_sddb_file():
 
     try:
         next(sddb_glob)
-        logging.warning(
+        log.warning(
             "More than one sddb file in %s. "
             "%s was selected.", sddb_path, sddb_file)
     except StopIteration:
@@ -60,11 +61,11 @@ def extract_service22_dids(root, type_str):
     with "22".
     """
     service22_dids = {}
-    logging.debug(root.attrib)
+    log.debug(root.attrib)
 
     # Determine which ECU the SDDB is for
     ecu = ecu_determination(root, type_str)
-    logging.debug('\n ECU: %s\n', ecu)
+    log.debug('\n ECU: %s\n', ecu)
 
     diagnostic_part_number = str()
     for ecu_app in root.findall(ecu):
@@ -85,36 +86,36 @@ def extract_service22_response_items(root, type_str):
     """
     # Determine which ECU the SDDB is for
     ecu = ecu_determination(root, type_str)
-    logging.debug('\n ECU: %s\n', ecu)
+    log.debug('\n ECU: %s\n', ecu)
 
     data_dict = {}
     for ecu_app in root.findall(ecu):
-        logging.info('Name= %s', ecu_app.attrib["Name"])
+        log.info('Name= %s', ecu_app.attrib["Name"])
         for did in ecu_app.findall(SERVICE22):
             # did.attrib is a dict containing the info we need
-            logging.debug('%s', did.attrib["Name"])
+            log.debug('%s', did.attrib["Name"])
             did_key = did.attrib["ID"]
             data_dict[did_key] = []
 
             for response_item in did.findall('.//ResponseItems/ResponseItem'):
-                logging.debug('attrib = %s', response_item.attrib)
-                logging.debug('Name = %s', response_item.attrib['Name'])
+                log.debug('attrib = %s', response_item.attrib)
+                log.debug('Name = %s', response_item.attrib['Name'])
 
                 # Makes a new dict with the response_item as a base
                 resp_item = {k.lower():v for k, v in response_item.attrib.items()}
 
                 # Adding the rest of the information
                 for formula in response_item.findall('Formula'):
-                    logging.debug('FORMULA = %s', formula.text)
+                    log.debug('FORMULA = %s', formula.text)
                     resp_item['formula'] = formula.text
                 for unit in response_item.findall('Unit'):
-                    logging.debug('UNIT = %s', unit.text)
+                    log.debug('UNIT = %s', unit.text)
                     resp_item['unit'] = unit.text
                 for compare_value in response_item.findall('CompareValue'):
-                    logging.debug('COMPARE_VALUE = %s', compare_value.text)
+                    log.debug('COMPARE_VALUE = %s', compare_value.text)
                     resp_item['compare_value'] = compare_value.text
                 for software_label in response_item.findall('SoftwareLabel'):
-                    logging.debug('SOFTWARE_LABEL = %s', software_label.text)
+                    log.debug('SOFTWARE_LABEL = %s', software_label.text)
                     resp_item['software_label'] = software_label.text
                 data_dict[did_key].append(resp_item)
     return data_dict
@@ -123,7 +124,7 @@ def extract_service22_response_items(root, type_str):
 def write(path, variable_name, data, mode):
     """ Writing python data structure to file """
     with open(path, mode) as file:
-        logging.debug('Writing python data structure to %s', path)
+        log.debug('Writing python data structure to %s', path)
         variable_name = "\n\n" + variable_name + " = "
         file.write(variable_name + str(data))
 
@@ -153,6 +154,7 @@ def process_did_content(root):
     write(did_file, 'app_did_dict', pformat(app_dict), 'a')
     write(did_file, 'resp_item_dict', pformat(data_dict), 'a')
 
+    log.info("DID info has been saved at:\n %s", did_file)
 
 def extract_dtcs(root):
     """
@@ -210,6 +212,7 @@ def process_dtc_content(root):
     write(dtc_file, 'sddb_dtcs', pformat(dtc_dict), 'w')
     write(dtc_file, 'sddb_report_dtc', pformat(report_dtc), 'a')
 
+    log.info(f"DTC info has been saved at:\n %s", dtc_file)
 
 def extract_pbl_services(root):
     """ Get primary bootloader services"""
@@ -240,7 +243,7 @@ def extract_pbl_services(root):
             pbl_services[service_id]['negative_response_code'] = nrc_lst
 
         except:
-            logging.debug("PBL: Service (%s) does not have any NRC defined.", service_id)
+            log.debug("PBL: Service (%s) does not have any NRC defined.", service_id)
 
         # Get subfunctions
         try:
@@ -275,7 +278,7 @@ def extract_pbl_services(root):
             pbl_services[service_id]['sub_functions'] = sub_fn_lst
 
         except:
-            logging.debug("PBL: No subfunction in service (%s).", service_id)
+            log.debug("PBL: No subfunction in service (%s).", service_id)
 
     return pbl_services
 
@@ -309,7 +312,7 @@ def extract_sbl_services(root):
             sbl_services[service_id]['negative_response_code'] = nrc_lst
 
         except:
-            logging.debug("SBL: Service (%s) does not have any NRC defined.", service_id)
+            log.debug("SBL: Service (%s) does not have any NRC defined.", service_id)
 
         # Get subfunctions
         try:
@@ -344,7 +347,7 @@ def extract_sbl_services(root):
             sbl_services[service_id]['sub_functions'] = sub_fn_lst
 
         except:
-            logging.debug("SBL: No subfunction in service (%s).", service_id)
+            log.debug("SBL: No subfunction in service (%s).", service_id)
 
     return sbl_services
 
@@ -382,7 +385,7 @@ def extract_app_services(root):
             app_services[service_id]['negative_response_code'] = nrc_lst
 
         except:
-            logging.debug("APP: Service (%s) does not have any NRC defined.", service_id)
+            log.debug("APP: Service (%s) does not have any NRC defined.", service_id)
 
         # Get subfunctions
         try:
@@ -417,7 +420,7 @@ def extract_app_services(root):
             app_services[service_id]['sub_functions'] = sub_fn_lst
 
         except:
-            logging.debug("APP: No subfunction in service (%s).", service_id)
+            log.debug("APP: No subfunction in service (%s).", service_id)
 
     return app_services
 
@@ -449,8 +452,8 @@ def process_service_content(root):
     write(service_file, 'sbl', pformat(sbl_services), 'a')
     write(service_file, 'app', pformat(app_services), 'a')
 
-    logging.info("Services for primary bootloader, secondary bootloader, and application " \
-                 "has been saved at:\n %s", service_file)
+    log.info("Services for primary bootloader, secondary bootloader, and "
+             "application has been saved at:\n %s", service_file)
 
 
 def parse_sddb_file():
@@ -476,11 +479,11 @@ def parse_sddb_file():
                 line = line.replace(u'\xa0', u' ') #non-breaking space
                 tf.write(line)
 
-        logging.info("Parse sddb file")
+        log.info("Parse sddb file")
         tf.seek(0)
         tree = etree.parse(tf) # pylint: disable=c-extension-no-member
     root = tree.getroot()
-    logging.debug(root.attrib)
+    log.debug(root.attrib)
 
     process_did_content(root)
     process_dtc_content(root)

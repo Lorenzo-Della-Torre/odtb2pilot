@@ -30,16 +30,16 @@ Example ART rig host names:
 
 ## Setting up SSH keys locally and on remote
 
-run:
+run (only once):
   ssh-keygen
 
 and accept the defaults
 
-copy content of id_rsa.pub and add it to ~/.ssh/authenticated_keys on the
-remote raspberry pi (or on the same if you are configuring a raspberry pi
-target)
+Copy content of id_rsa.pub and add it to ~/.ssh/authorized_keys on the
+remote raspberry pi (or on the same host if you are configuring a raspberry pi
+rig).
 
-now connect to the raspberry pi and you should not need to enter the password
+Now connect to the raspberry pi and you should not need to enter the password
 since you are already authenticated.
 for example:
   ssh pi@bsw-piX.dhcp.nordic.volocars.net
@@ -50,6 +50,13 @@ run:
 and all the vbf, dbf, and sddb files will be copied over to the rigs/<rigname>/
 directories.
 
+do add the rigs that you typically use to ~/.ssh/config:
+
+        Host pX
+          Hostname bsw-piX.dhcp.nordic.volvocars.net
+          User ci
+
+Then you can directly connect to the rig with the user 'ci' as follows: ssh pX
 
 ### Configuring the software on the raspberry pi
 

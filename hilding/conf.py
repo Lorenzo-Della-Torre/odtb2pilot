@@ -41,7 +41,7 @@ def initialize_conf(rig, force=False):
     global _CONF
     if _CONF and not force:
         raise ReferenceError("The conf module has already been initialized")
-    _CONF = Conf(select_rig=rig)
+    _CONF = Conf(selected_rig=rig)
     return _CONF
 
 _CONF = None
@@ -49,10 +49,11 @@ _CONF = None
 
 class Conf:
     """ Hilding configuration """
-    def __init__(self, select_rig=None):
+    def __init__(self, selected_rig=None):
         self.__conf = self.get_default_conf()
+        self.__selected_rig = selected_rig
         self.selected_rig_dict = {}
-        self.add_local_conf(select_rig)
+        self.add_local_conf()
         self.rig = Rig(self)
 
     def get_default_conf(self):
@@ -62,7 +63,7 @@ class Conf:
             conf_default = yaml.safe_load(conf_default_file)
         return conf_default
 
-    def add_local_conf(self, select_rig):
+    def add_local_conf(self):
         """ add conf_local.yml values over conf_default.yml settings """
         conf_local_yml = self.hilding_root.joinpath("conf_local.yml")
         if not conf_local_yml.exists():
@@ -77,15 +78,10 @@ class Conf:
             if not 'rigs' in self.__conf:
                 sys.exit(f"No rigs configured in {conf_local_file.name}")
             rigs = self.__conf['rigs']
-            if not select_rig:
-                if not self.default_rig:
-                    sys.exit(f"The default_rig has not been configured "
-                             f"in {conf_local_file.name}")
-                select_rig = self.default_rig
-            if not select_rig in rigs:
-                sys.exit(f"Could not find the requested rig {select_rig} "
+            if not self.selected_rig in rigs:
+                sys.exit(f"Could not find the requested rig {self.selected_rig} "
                          f"in the rigs configuration")
-            self.selected_rig_dict = rigs[select_rig]
+            self.selected_rig_dict = rigs[self.selected_rig]
 
     @property
     def default_rig(self):
@@ -93,13 +89,18 @@ class Conf:
         return self.__conf.get('default_rig')
 
     @property
+    def selected_rig(self):
+        """ conf selected rig """
+        return self.__selected_rig or self.default_rig
+
+    @property
     def rigs(self):
-        """ conf default rig """
+        """ conf rigs """
         return self.__conf.get('rigs', {})
 
     @property
     def platforms(self):
-        """ conf default rig """
+        """ conf platforms """
         return self.__conf.get('platforms', {})
 
     @property
