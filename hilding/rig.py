@@ -7,6 +7,7 @@ from pathlib import Path
 
 from paramiko import SSHClient
 
+from hilding.sddb import parse_sddb_file
 from hilding.conf import initialize_conf
 from hilding import get_conf
 
@@ -64,6 +65,7 @@ def get_rig_delivery_files():
     log.info("Copy remote %s/*.{vbf,sddb,dbc} files to this host",
              remote_delivery_path)
 
+    sddb_file_downloaded = False
     for filename in delivery_files:
         remote_file = remote_delivery_path.joinpath(filename)
         if filename.endswith('.vbf'):
@@ -72,8 +74,13 @@ def get_rig_delivery_files():
         if filename.endswith('.sddb'):
             local_file = conf.rig.sddb_path.joinpath(filename)
             sftp_copy(sftp, remote_file, local_file)
+            sddb_file_downloaded = True
         if filename.endswith('.dbc'):
             local_file = conf.rig.dbc_path.joinpath(filename)
             sftp_copy(sftp, remote_file, local_file)
+
+    if sddb_file_downloaded:
+        # automatically run the sddb parsing after downloading a new sddb file
+        parse_sddb_file()
 
 # check md5sum for ~/delivery/*.{vbf,sddb}

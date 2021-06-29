@@ -97,9 +97,9 @@ class Rig:
 
     @property
     def rig_path(self):
-        """ get the path to the default rig """
+        """ get the path to the selected rig """
         rigs = self.conf.hilding_root.joinpath("rigs")
-        return ensure_exists(rigs.joinpath(self.conf.default_rig))
+        return ensure_exists(rigs.joinpath(self.conf.selected_rig))
 
     @property
     def vbf_path(self):
