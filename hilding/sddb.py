@@ -212,7 +212,7 @@ def process_dtc_content(root):
     write(dtc_file, 'sddb_dtcs', pformat(dtc_dict), 'w')
     write(dtc_file, 'sddb_report_dtc', pformat(report_dtc), 'a')
 
-    log.info(f"DTC info has been saved at:\n %s", dtc_file)
+    log.info("DTC info has been saved at:\n %s", dtc_file)
 
 def extract_pbl_services(root):
     """ Get primary bootloader services"""
