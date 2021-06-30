@@ -6,8 +6,8 @@ The class takes replies as hex strings from the ECU and parses out the relevant 
 #pylint: disable=redefined-outer-name, unused-import
 import pytest
 from hilding import uds
-from hilding.uds import UdsResponse
-from hilding.uds import extract_fields
+from hilding.uds_response import UdsResponse
+from hilding.uds_response import extract_fields
 from hilding.conf_test import mock_get_conf
 
 
