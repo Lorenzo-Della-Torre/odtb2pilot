@@ -3,9 +3,11 @@ Rig handling routines
 """
 import sys
 import logging
+from getpass import getpass
 from pathlib import Path
 
 from paramiko import SSHClient
+from paramiko import AuthenticationException
 
 from hilding.sddb import parse_sddb_file
 from hilding.conf import initialize_conf
@@ -58,7 +60,14 @@ def get_rig_delivery_files():
     user = conf.rig.user
     hostname = conf.rig.hostname
     log.info("Connecting to: %s@%s", user, hostname)
-    ssh.connect(hostname, username=user)
+    try:
+        # first try to connect using pre-authorized_keys
+        ssh.connect(hostname, username=user)
+    except AuthenticationException:
+        # if that doesn't work prompt the user for a password
+        password = getpass()
+        ssh.connect(hostname, username=user, password=password)
+
     sftp = ssh.open_sftp()
     remote_delivery_path = Path(f'/home/{user}/delivery')
     delivery_files = sftp.listdir(remote_delivery_path.as_posix())
