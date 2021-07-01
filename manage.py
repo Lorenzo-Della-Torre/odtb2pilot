@@ -15,6 +15,7 @@ from hilding.sddb import get_sddb_file
 from hilding.dvm import create_dvm
 from hilding.rig import handle_rigs
 from hilding.reset_ecu import reset_and_flash_ecu
+from hilding.flash import flash
 from hilding.conf import initialize_conf
 from hilding import get_conf
 
@@ -178,6 +179,10 @@ if __name__ == "__main__":
         "reset", help="Reset the ECU to defaults"
     )
 
+    flash_parser = subparsers.add_parser(
+        "flash", help="Flash (download) all the vbf files to the ECU"
+    )
+
     args = parser.parse_args()
 
     # we probably want to make all of the logging user configurable, but right
@@ -218,3 +223,5 @@ if __name__ == "__main__":
         handle_rigs(args)
     elif args.command == 'reset':
         reset_and_flash_ecu()
+    elif args.command == 'flash':
+        flash()
