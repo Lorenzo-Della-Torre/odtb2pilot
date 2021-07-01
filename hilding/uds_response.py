@@ -308,11 +308,12 @@ class UdsResponse:
                                       scaled_value)
                     continue
 
+                item = {k: v for k, v in resp_item.items() if k in
+                        ['name', 'software_label', 'unit']}
+                item['sub_payload'] = sub_payload
+                item['scaled_value'] = scaled_value
 
-                resp_item['sub_payload'] = sub_payload
-                resp_item['scaled_value'] = scaled_value
-
-                response_items.append(resp_item)
+                response_items.append(item)
 
             self.details['response_items'] = response_items
 
