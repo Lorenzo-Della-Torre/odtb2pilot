@@ -10,6 +10,7 @@ from supportfunctions.support_SBL import SupportSBL
 from hilding.dut import Dut
 from hilding.dut import DutTestError
 from hilding.uds import EicDid
+from hilding.uds import UdsError
 
 
 log = logging.getLogger('reset_ecu')
