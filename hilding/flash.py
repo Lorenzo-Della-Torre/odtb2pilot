@@ -16,10 +16,13 @@ log = logging.getLogger('sw_download')
 def software_download(dut):
     """ software download """
 
-    sbl = SupportSBL()
+    dut.uds.set_mode(2)
+    dut.uds.enter_sbl()
 
     vbf_files = [str(f.resolve()) for f in dut.conf.rig.vbf_path.glob("*.vbf")]
     log.info(vbf_files)
+
+    sbl = SupportSBL()
     if not sbl.read_vbf_param(vbf_files):
         DutTestError("Could not load vbf files")
 

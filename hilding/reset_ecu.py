@@ -39,7 +39,6 @@ def reset_ecu_mode(dut: Dut):
         dut.uds.set_mode(1)
         mode = dut.uds.mode
     if mode != 1:
-        dut.uds.enter_sbl()
         software_download(dut)
         dut.uds.ecu_reset_1101(delay=5)
         dut.uds.set_mode(1)
