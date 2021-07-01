@@ -8,6 +8,7 @@ import traceback
 from hilding.dut import Dut
 from hilding.dut import DutTestError
 from hilding.uds import EicDid
+from hilding.uds import UdsError
 from hilding.flash import software_download
 
 
@@ -29,20 +30,37 @@ def reset_ecu_mode(dut: Dut):
     }
     log.info("The ECU is in %s", modes[mode])
 
-    if mode in [2, 3]:
+    if mode == 2:
         dut.uds.set_mode(1)
-        mode = dut.uds.mode
+        dut.uds.set_mode(3)
+        dut.uds.set_mode(1)
+        res = dut.uds.active_diag_session_f186()
+        if not "mode" in res.details:
+            raise UdsError("Failure occurred when getting mode via f186")
+        mode = res.details["mode"]
+    if mode == 3:
+        dut.uds.set_mode(1)
+        res = dut.uds.active_diag_session_f186()
+        if not "mode" in res.details:
+            raise UdsError("Failure occurred when getting mode via f186")
+        mode = res.details["mode"]
         dut.uds.read_data_by_id_22(EicDid.complete_ecu_part_number_eda0)
     time.sleep(1)
     if mode != 1:
         dut.uds.ecu_reset_1101(delay=5)
         dut.uds.set_mode(1)
-        mode = dut.uds.mode
+        res = dut.uds.active_diag_session_f186()
+        if not "mode" in res.details:
+            raise UdsError("Failure occurred when getting mode via f186")
+        mode = res.details["mode"]
     if mode != 1:
         software_download(dut)
         dut.uds.ecu_reset_1101(delay=5)
         dut.uds.set_mode(1)
-        mode = dut.uds.mode
+        res = dut.uds.active_diag_session_f186()
+        if not "mode" in res.details:
+            raise UdsError("Failure occurred when getting mode via f186")
+        mode = res.details["mode"]
     if mode != 1:
         raise DutTestError("Could not reset the ECU to mode/session 1")
 
