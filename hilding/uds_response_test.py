@@ -5,7 +5,7 @@ The class takes replies as hex strings from the ECU and parses out the relevant 
 """
 #pylint: disable=redefined-outer-name, unused-import
 import pytest
-from hilding import uds
+from hilding import uds_response
 from hilding.uds_response import UdsResponse
 from hilding.uds_response import extract_fields
 from hilding.conf_test import mock_get_conf
@@ -14,7 +14,7 @@ from hilding.conf_test import mock_get_conf
 @pytest.fixture(autouse=True)
 def setup(mock_get_conf):
     """ mock get user conf for all tests """
-    uds.get_conf = mock_get_conf
+    uds_response.get_conf = mock_get_conf
 
 def test_uds_response():
     """ pytest: UdsResponse """
