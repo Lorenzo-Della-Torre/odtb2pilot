@@ -8,8 +8,12 @@ import traceback
 from hilding.dut import Dut
 from hilding.dut import DutTestError
 from hilding.uds import EicDid
-from hilding.uds import UdsError
+<<<<<<< HEAD
 from hilding.flash import software_download
+||||||| bfc69b87
+=======
+from hilding.uds import UdsError
+>>>>>>> origin/master
 
 
 log = logging.getLogger('reset_ecu')
@@ -31,9 +35,6 @@ def reset_ecu_mode(dut: Dut):
     log.info("The ECU is in %s", modes[mode])
 
     if mode == 2:
-        # this mode switch order is inherited from the legacy
-        # BSW_Set_ECU_to_default.py script, so there is probably a reason for
-        # doing it this way :)
         dut.uds.set_mode(1)
         dut.uds.set_mode(3)
         dut.uds.set_mode(1)
