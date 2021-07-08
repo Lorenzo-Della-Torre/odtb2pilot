@@ -206,6 +206,6 @@ class Uds:
         if not sbl.read_vbf_param(vbf_files):
             UdsError("Could not load vbf files")
         if not sbl.sbl_activation(
-            self.dut, fixed_key=rig.fixed_key, stepno=self.dut.step,
+            self.dut, fixed_key=rig.fixed_key, stepno=self.step,
                 purpose="Activate Secondary bootloader"):
             UdsError("Could not set ecu in sbl mode")
