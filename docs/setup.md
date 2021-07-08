@@ -30,10 +30,14 @@ Example ART rig host names:
 
 ## Setting up SSH keys locally and on remote
 
+If you are on windows use Powershell as administrator and add ssh according to
+the instructions you find here:
+https://jcutrer.com/windows/install-openssh-on-windows10
+
 run (only once):
   ssh-keygen
 
-and accept the defaults
+and accept the defaults. There is no need to set any password for the key.
 
 Copy content of id_rsa.pub and add it to ~/.ssh/authorized_keys on the
 remote raspberry pi (or on the same host if you are configuring a raspberry pi
@@ -47,16 +51,22 @@ for example:
 run:
   ./manage.py rigs --update
 
+
 and all the vbf, dbf, and sddb files will be copied over to the rigs/<rigname>/
 directories.
 
-do add the rigs that you typically use to ~/.ssh/config:
+Note: make sure that you connect with ssh to the host first so that the host
+gets added to the .ssh/knows_hosts file.
+
+To make using ssh more convenient add a config file with the rigs that you
+typically use (in ~/.ssh/config):
 
         Host pX
           Hostname bsw-piX.dhcp.nordic.volvocars.net
           User ci
 
 Then you can directly connect to the rig with the user 'ci' as follows: ssh pX
+
 
 ### Configuring the software on the raspberry pi
 
@@ -74,6 +84,22 @@ Next step is to get all dependencies:
 
 Make sure you run the pip3 install in the Hilding root directory (odtb2pilot or
 whatever you've called it) to include the packeges/epsmsgbus as well.
+
+### Enabling analytics on Hilding
+
+configure conf_local.yml...
+
+rigs:
+    p6ci:
+        hostname: bsw-pi6.dhcp.nordic.volvocars.net
+        platform: becm
+        user: ci
+        analytics:
+            project: V331
+            platform: V331
+            ecu: BECM
+            dbc: SPA3010_ConfigurationsSPA3_Front1CANCfg_180615_Prototype
+            vehicle_project: V331
 
 NOTE: `<platform>` has to be replaced with the name of the platform that you are
 using in the text below (for example: MEP2_SPA1, MEP2_SPA2, or MEP2_HLCM). The
