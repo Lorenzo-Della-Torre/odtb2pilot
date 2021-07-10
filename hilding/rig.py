@@ -3,6 +3,7 @@ Rig handling routines
 """
 import sys
 import logging
+import shutil
 from getpass import getpass
 from pathlib import Path
 
@@ -74,6 +75,8 @@ def get_rig_delivery_files():
     log.info("Copy remote %s/*.{vbf,sddb,dbc} files to this host",
              remote_delivery_path)
 
+    # remove previous file for this rig to keep things clean
+    shutil.rmtree(conf.rig.rig_path)
     sddb_file_downloaded = False
     for filename in delivery_files:
         remote_file = remote_delivery_path.joinpath(filename)
