@@ -163,10 +163,10 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         session_size = ctypes.c_uint8()
         ret = lib.sacl_get_session_size(ctypes.byref(session_size))
 
-        if not ret == SaGen2Param.SA_RET_SUCCESS:
+        if ret != SaGen2Param.SA_RET_SUCCESS:
             raise Exception("Failed to initialize sacl lib.")
 
-        if not session_size.value == SaGen2Param.SA_SESSION_BUFFER_SIZE:
+        if session_size.value != SaGen2Param.SA_SESSION_BUFFER_SIZE:
             raise Exception("Returned 'SESSION_BUFFER_SIZE' from library mismatch with API.\n"\
                             +"Recompile/update header or library DLL")
 
@@ -184,8 +184,8 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         logging.info("SSA set_keys, wanted: %s", 2*SaGen2Param.KEY_SIZE)
 
         # key is 16bytes, which gives a string av 2x16 bytes as HEX-string
-        if not (len(auth_key) == 2*SaGen2Param.KEY_SIZE
-                and len(proof_key) == 2*SaGen2Param.KEY_SIZE):
+        if (len(auth_key) != 2*SaGen2Param.KEY_SIZE
+                or len(proof_key) != 2*SaGen2Param.KEY_SIZE):
             raise Exception(f"Keys length are not {SaGen2Param.KEY_SIZE}! "\
                              "auth_key->{len(auth_key)}, proof_key->{len(proof_key)}")
 
@@ -208,7 +208,7 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
                                      level,
                                      self.g_external_proof_key,
                                      self.g_external_auth_enc_key)
-        if not ret == SaGen2Param.SA_RET_SUCCESS:
+        if ret != SaGen2Param.SA_RET_SUCCESS:
             raise Exception("Failed to set SA keys and level.")
 
         session_context_ = SaGen2SessionContext.from_buffer(self.session_buffer)
@@ -223,7 +223,7 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         """
         ret = lib.sacl_prepare_client_request_seed(ctypes.byref(self.session_buffer),
                                                    ctypes.byref(self.send_buffer))
-        if not ret == SaGen2Param.SA_RET_SUCCESS:
+        if ret != SaGen2Param.SA_RET_SUCCESS:
             raise Exception("Failed to prepare client_request_seed.")
 
         #client_request_seed_ = client_request_seed.from_buffer(self.send_buffer)
@@ -239,7 +239,7 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         logging.info("SSA response seed, length: %s", len(data))
         logging.info("SSA response seed, length expected %s",
                      SaGen2Param.SA_CLIENT_PROCESS_SERVER_RESPONSE_SEED_BUFFER_SIZE)
-        if not len(data) == SaGen2Param.SA_CLIENT_PROCESS_SERVER_RESPONSE_SEED_BUFFER_SIZE:
+        if len(data) != SaGen2Param.SA_CLIENT_PROCESS_SERVER_RESPONSE_SEED_BUFFER_SIZE:
             raise Exception("server_response_seed( is not of length "\
                             +f"{SaGen2Param.SA_CLIENT_PROCESS_SERVER_RESPONSE_SEED_BUFFER_SIZE}!"\
                             +"(len(data))")
@@ -250,9 +250,9 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         # Process server_response_seed.
         ret = lib.sacl_process_server_response_seed(ctypes.byref(self.session_buffer),
                                                     ctypes.byref(buffer))
-        if not ret == SaGen2Param.SA_RET_SUCCESS:
-            if not ret == SaGen2Param.SA_RET_SERVER_ALREADY_UNLOCKED:
-                print("*** ECU is already Unlocked ***")
+        if ret != SaGen2Param.SA_RET_SUCCESS:
+            if ret != SaGen2Param.SA_RET_SERVER_ALREADY_UNLOCKED:
+                logging.info("*** ECU is already Unlocked ***")
                 return SaGen2Param.SA_RET_SUCCESS
             raise Exception("Failed, process server response seed")
         return ret
@@ -283,7 +283,7 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         """
         added for Gen2
         """
-        if not len(data) == SaGen2Param.SA_CLIENT_PROCSS_SERVER_RESPONSE_KEY_BUFFER_SIZE:
+        if len(data) != SaGen2Param.SA_CLIENT_PROCSS_SERVER_RESPONSE_KEY_BUFFER_SIZE:
             raise Exception("server_response_key is not of length "\
                             +f"{SaGen2Param.SA_CLIENT_PROCSS_SERVER_RESPONSE_KEY_BUFFER_SIZE}!"\
                             +"(len(data))")
