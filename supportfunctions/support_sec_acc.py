@@ -211,12 +211,12 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         if ret != SaGen2Param.SA_RET_SUCCESS:
             raise Exception("Failed to set SA keys and level.")
 
-        session_context_ = SaGen2SessionContext.from_buffer(self.session_buffer)
         #for field_name, field_type in session_context_._fields_:
         #    print(field_name, getattr(session_context_, field_name))
-        
-        #accessing protected fields. removed
-        #if needed, add a print functionality in class
+
+        ###accessing protected fields. removed
+        ###if needed, add a print functionality in class
+        #session_context_ = SaGen2SessionContext.from_buffer(self.session_buffer)
         #for field_name, _ in session_context_._fields_:
         #    print(field_name, getattr(session_context_, field_name))
 
