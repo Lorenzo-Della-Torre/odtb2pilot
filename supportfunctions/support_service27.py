@@ -8,6 +8,10 @@
 #   teststep    Common teststeps moved into support for dedicated service
 #   pep8        coding is changed to confirm to pep8 (some code left, though)
 
+# date:     2021-08-13
+# version:  1.1
+# changes:  support SecAcc_Gen2
+
 # inspired by https://grpc.io/docs/tutorials/basic/python.html
 
 # Copyright 2015 gRPC authors.

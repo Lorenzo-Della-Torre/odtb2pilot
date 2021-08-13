@@ -8,6 +8,10 @@
 # version:  1.1
 # changes:  parameter support functions
 
+# date:     2021-08-13
+# version:  1.3
+# changes:  support SecAcc_Gen2
+
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
 
 # Copyright 2015 gRPC authors.

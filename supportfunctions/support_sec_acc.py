@@ -3,6 +3,10 @@
 # date:     2019-12-11
 # version:  0.1
 
+# date:     2021-08-13
+# version:  1.0
+# changes:  support SecAcc_Gen2
+
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
 
 # Copyright 2015 grPC authors.

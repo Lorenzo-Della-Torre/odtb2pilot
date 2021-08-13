@@ -18,6 +18,11 @@
 # version:  1.2
 # changes:  update better handling of ECU-mode when activating SBL
 
+# author:   HWEILER (Hans-Klaus Weiler)
+# date:     2021-08-13
+# version:  1.3
+# changes:  support SecAcc_Gen2
+
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
 
 # Copyright 2015 gRPC authors.

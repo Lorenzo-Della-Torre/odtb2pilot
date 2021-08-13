@@ -8,6 +8,10 @@
 # version:  1.1
 # changes:  parameter support functions
 
+# date:     2021-08-13
+# version:  1.3
+# changes:  support SecAcc_Gen2
+
 #inspired by https://grpc.io/docs/tutorials/basic/python.html
 
 # Copyright 2015 gRPC authors.
@@ -60,7 +64,7 @@ def step_1(can_p: CanParam, sa_keys):
     stepno = 1
     purpose = "Download and Activation of SBL"
 
-    logging.info("Step1, sa_keys: %s", sa_keys)
+    #logging.info("Step1, sa_keys: %s", sa_keys)
     result = SSBL.sbl_activation(can_p,
                                  sa_keys,
                                  stepno, purpose)
