@@ -31,13 +31,12 @@ from datetime import datetime
 import sys
 import logging
 import inspect
-import ctypes #needed for c_uint8
 
 import odtb_conf
 from supportfunctions.support_can import SupportCAN, CanParam
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
 from supportfunctions.support_SBL import SupportSBL
-from supportfunctions.support_sec_acc import SupportSecurityAccess, SaGen2Param
+from supportfunctions.support_sec_acc import SupportSecurityAccess, SecAccessParam
 from supportfunctions.support_file_io import SupportFileIO
 
 from supportfunctions.support_precondition import SupportPrecondition
@@ -60,23 +59,7 @@ def step_1(can_p: CanParam, sa_keys):
     """
     stepno = 1
     purpose = "Download and Activation of SBL"
-    #SA_GEN1:
-    # sa_keys taken as parameter now
-    #fixed_key = '0102030405'
-    #new_fixed_key = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'fixed_key')
-    ## don't set empty value if no replacement was found:
-    #if new_fixed_key:
-    #    if type(fixed_key) != type(new_fixed_key):# pylint: disable=unidiomatic-typecheck
-    #        fixed_key = eval(new_fixed_key)# pylint: disable=eval-used
-    #    else:
-    #        fixed_key = new_fixed_key
-    #else:
-    #    logging.info("Step%s new_fixed_key is empty. Discard.", stepno)
-    #logging.info("Step%s: fixed_key after YML: %s", stepno, fixed_key)
-    
-    #SA_GEN2:
-    # sa_keys taken as parameter
-    
+
     logging.info("Step1, sa_keys: %s", sa_keys)
     result = SSBL.sbl_activation(can_p,
                                  sa_keys,
@@ -149,12 +132,7 @@ def run():
     result = SSBL.get_vbf_files()
     timeout = 3600
     result = result and PREC.precondition(can_p, timeout)
-    
-    #auth_key = (ctypes.c_uint8 * SaGen2Param.KEY_SIZE)(0xFF)
-    #proof_key = (ctypes.c_uint8 * SaGen2Param.KEY_SIZE)(0xFF)
-    # carcom   "auth_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF F5F8',
-    # carcom   "proof_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF F5F8'
-    
+
     #Init parameter for SecAccess Gen1
     sa_keys: SecAccessParam = {
         "SecAcc_Gen": 'Gen1',
@@ -162,7 +140,7 @@ def run():
         "auth_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF',
         "proof_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
     }
-    
+
     #Init parameter for SecAccess Gen2
     #sa_keys: SecAccessParam = {
     #    "SecAcc_Gen": 'Gen2',
