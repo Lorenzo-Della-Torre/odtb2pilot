@@ -36,7 +36,7 @@ import odtb_conf
 from supportfunctions.support_can import SupportCAN, CanParam
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
 from supportfunctions.support_SBL import SupportSBL
-from supportfunctions.support_sec_acc import SupportSecurityAccess
+from supportfunctions.support_sec_acc import SupportSecurityAccess, SecAccessParam
 from supportfunctions.support_file_io import SupportFileIO
 
 from supportfunctions.support_precondition import SupportPrecondition
@@ -54,26 +54,16 @@ SE11 = SupportService11()
 SE22 = SupportService22()
 
 
-def step_1(can_p: CanParam):
+def step_1(can_p: CanParam, sa_keys):
     """
     Teststep 1: Activate SBL
     """
     stepno = 1
     purpose = "Download and Activation of SBL"
-    fixed_key = '0102030405'
-    new_fixed_key = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'fixed_key')
-    # don't set empty value if no replacement was found:
-    if new_fixed_key:
-        if type(fixed_key) != type(new_fixed_key):# pylint: disable=unidiomatic-typecheck
-            fixed_key = eval(new_fixed_key)# pylint: disable=eval-used
-        else:
-            fixed_key = new_fixed_key
-    else:
-        logging.info("Step%s new_fixed_key is empty. Discard.", stepno)
-    logging.info("Step%s: fixed_key after YML: %s", stepno, fixed_key)
 
+    #logging.info("Step1, sa_keys: %s", sa_keys)
     result = SSBL.sbl_activation(can_p,
-                                 fixed_key,
+                                 sa_keys,
                                  stepno, purpose)
     return result
 
@@ -100,7 +90,7 @@ def step_3(can_p: CanParam):
     result = True
     purpose = "continue Download SW"
     for i in SSBL.get_df_filenames():
-        result = result and SE22.read_did_eda0(can_p)
+        #result = result and SE22.read_did_eda0(can_p)
         result = result and SSBL.sw_part_download(can_p, i, stepno, purpose)
     return result
 
@@ -144,6 +134,23 @@ def run():
     timeout = 3600
     result = result and PREC.precondition_burst(can_p, timeout)
 
+    #Init parameter for SecAccess Gen1
+    sa_keys: SecAccessParam = {
+        "SecAcc_Gen": 'Gen1',
+        "fixed_key": '0102030405',
+        "auth_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF',
+        "proof_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
+    }
+
+    #Init parameter for SecAccess Gen2
+    #sa_keys: SecAccessParam = {
+    #    "SecAcc_Gen": 'Gen2',
+    #    "fixed_key": '0102030405',
+    #    "auth_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF',
+    #    "proof_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
+    #}
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), sa_keys)
+
     if result:
         ############################################
         # teststeps
@@ -151,7 +158,7 @@ def run():
         # step 1:
         # action: download and activate SBL
         # result:
-        result = result and step_1(can_p)
+        result = result and step_1(can_p, sa_keys)
 
         # step 2:
         # action: ESS Software Part Download
