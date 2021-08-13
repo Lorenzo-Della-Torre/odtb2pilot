@@ -48,7 +48,7 @@ import inspect
 from supportfunctions.support_carcom import SupportCARCOM
 from supportfunctions.support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
-from supportfunctions.support_sec_acc import SupportSecurityAccess
+#from supportfunctions.support_sec_acc import SupportSecurityAccess
 from supportfunctions.support_LZSS import LzssEncoder
 from supportfunctions.support_file_io import SupportFileIO
 from supportfunctions.support_service10 import SupportService10
@@ -63,7 +63,7 @@ SIO = SupportFileIO
 SC = SupportCAN()
 S_CARCOM = SupportCARCOM()
 SUTE = SupportTestODTB2()
-SSA = SupportSecurityAccess()
+#SSA = SupportSecurityAccess()
 LZSS = LzssEncoder()
 
 SE10 = SupportService10()
@@ -320,7 +320,7 @@ class SupportSBL:
                or not decompress_block:
                 # Request Download
                 #result, nbl = SE34.request_block_download(can_p, data, step_no, purpose)
-                result = SE22.read_did_eda0(can_p)
+                #result = SE22.read_did_eda0(can_p)
                 result, nbl = SE34.request_block_download(can_p, vbf_header, vbf_block)
                 if not result:
                     logging.info("Support SBL, DL block request failed")
@@ -419,11 +419,13 @@ class SupportSBL:
 
     # Support Function for Flashing and activate Secondary Bootloader from Default session
     def sbl_activation_def(self, can_p: CanParam,\
-                           fixed_key='0102030405',\
+                           sa_keys,\
                            stepno='',\
                            purpose="sbl_activation_default/ext mode"):
         """
         function used for BECM in Default or Extended mode
+        sa_keys in SA Gen1: fixed_key='0102030405'
+                   SA Gen2: auth_key, proof_key
         """
 
         # verify RoutineControlRequest is sent for Type 1
@@ -439,26 +441,33 @@ class SupportSBL:
 
         # Verify Session changed
         SE22.read_did_f186(can_p, dsession=b'\x02')
-        result = result and self.sbl_activation_prog(can_p, fixed_key, stepno, purpose)
+        #result = result and self.sbl_activation_prog(can_p, fixed_key, stepno, purpose)
+        #result = result and self.sbl_activation_prog(can_p, auth_key, proof_key, stepno, purpose)
+        result = result and self.sbl_activation_prog(can_p, sa_keys, stepno, purpose)
         return result
 
 
     # Support Function for Flashing and activate Secondary Bootloader from Programming session
     def sbl_activation_prog(self, can_p: CanParam,\
-                            fixed_key='0102030405',\
+                            sa_keys,\
                             stepno='',\
                             purpose="sbl_activation_prog"):
         """
         Function used for BECM in forced Programming mode
+        sa_keys in SA Gen1: fixed_key='0102030405'
+                   SA Gen2: auth_key, proof_key
         """
-        result = SE22.read_did_eda0(can_p)
+        result = True
 
-        message = SC.can_messages[can_p["receive"]][0][2]
-        pos = message.find('EDA0')
-        if (not message.find('F121', pos) == -1) and (not message.find('F125', pos) == -1):
+        ecu_mode = SE22.get_ecu_mode(can_p)
+        #message = SC.can_messages[can_p["receive"]][0][2]
+        #pos = message.find('EDA0')
+        #if (not message.find('F121', pos) == -1) and (not message.find('F125', pos) == -1):
+        #addon ad EDA0 not implemented in HSM
+        if ecu_mode == 'PBL':
             # Security Access Request SID
             result = result and SE27.activate_security_access_fixedkey(can_p,
-                                                                       fixed_key,
+                                                                       sa_keys,
                                                                        stepno, purpose)
 
             # SBL Download
@@ -467,57 +476,78 @@ class SupportSBL:
 
             # Activate SBL
             result = result and self.activate_sbl(can_p, vbf_sbl_header, stepno)
-        elif (not message.find('F122', pos) == -1) and (not message.find('F124', pos) == -1):
+        elif ecu_mode == 'SBL':
             logging.info("SBL already active. Don't take any actions")
+        elif ecu_mode in ('DEF', 'EXT'):
+            logging.warning("ECU does not seem to be in PROG mode: %s", ecu_mode)
         else:
-            logging.warning("ECU does not seem to be in PROG mode: %s", message)
+            logging.warning("sbl_activation: unknown ECU mode: %s", ecu_mode)
+            logging.info("sbl_activation: use PBL while EDA0 not implemented in PBL/SBL")
+            ### remove when EDA0 implemented in MEP2
+            # use ecu_mode == 'PBL' as default while EDA0 not implemented in MEP2 SA_GEN2
+            # Security Access Request SID
+            result = result and SE27.activate_security_access_fixedkey(can_p,
+                                                                       sa_keys,
+                                                                       stepno, purpose)
+
+            # SBL Download
+            tresult, vbf_sbl_header = self.sbl_download(can_p, self._sbl, stepno)
+            result = result and tresult
+
+            # Activate SBL
+            result = result and self.activate_sbl(can_p, vbf_sbl_header, stepno)
+            #result = False
         return result
 
 
     # Support Function to select Support functions to use for activating SBL based on actual mode
     def sbl_activation(self, can_p: CanParam,\
-                       fixed_key='0102030405', stepno='', purpose=""):
+                       sa_keys, stepno='', purpose=""):
         """
         Function used to activate the Secondary Bootloader
         """
         result = True
 
         # verify session
-        SE22.read_did_f186(can_p, dsession=b'')
-        if not len(SC.can_messages[can_p["receive"]]) == 1:
-            logging.info("Not expected number of messages received")
-            result = False
-        else:
-            rec_messages = SC.can_messages[can_p["receive"]][0][2].upper()
+        ecu_mode = SE22.get_ecu_mode(can_p)
+        #SE22.read_did_f186(can_p, dsession=b'')
+        #if not len(SC.can_messages[can_p["receive"]]) == 1:
+        #    logging.info("Not expected number of messages received")
+        #    result = False
+        #else:
+        #    rec_messages = SC.can_messages[can_p["receive"]][0][2].upper()
 
         #if mode1/mode3 change to mode2 (prog), then dl/activate SBL
         #if mode2 already dl/activate SBL direct
-            if ('62F18601' in rec_messages) or ('62F18603' in rec_messages):
-                result = self.sbl_activation_def(can_p, fixed_key, stepno, purpose)
-            elif '62F18602' in rec_messages:
-                result = self.sbl_activation_prog(can_p, fixed_key, stepno, purpose)
-            else:
-                logging.info("error message: %s\n", SC.can_messages[can_p["receive"]])
-                result = False
+            #if ('62F18601' in rec_messages) or ('62F18603' in rec_messages):
+        if ecu_mode in ('DEF', 'EXT'):
+            result = self.sbl_activation_def(can_p, sa_keys, stepno, purpose)
+        #elif '62F18602' in rec_messages:
+        elif ecu_mode == 'PBL':
+            result = self.sbl_activation_prog(can_p, sa_keys, stepno, purpose)
+        elif ecu_mode == 'SBL':
+            logging.info("sbl_activation: SBL already active")
+        else:
+            logging.info("sbl_activation: unknown ECU mode")
+            logging.info("sbl_activation: use PBL while EDA0 not implemented in PBL/SBL")
+            ### remove when EDA0 implemented in MEP2
+            # use ecu_mode == 'PBL' as default while EDA0 not implemented in MEP2 SA_GEN2
+            result = self.sbl_activation_prog(can_p, sa_keys, stepno, purpose)
+            #result = False
         time.sleep(0.1)
         return result
 
     # Support Function to select Support functions to use for activating SBL based on actual mode
-    def sbl_dl_activation(self, can_p: CanParam, stepno='', purpose=""):
+    def sbl_dl_activation(self, can_p: CanParam, sa_keys, stepno='', purpose=""):
         """
         Function used to download and activate the Secondary Bootloader
         """
-        fixed_key = '0102030405'
-        new_fixed_key = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'fixed_key')
-        # don't set empty value if no replacement was found:
-        if new_fixed_key != '':
-            assert isinstance(new_fixed_key, str)
-            fixed_key = new_fixed_key
-        else:
-            logging.info("Step%s: new_fixed_key is empty. Leave old value.", stepno)
-        logging.info("Step%s: fixed_key after YML: %s", stepno, fixed_key)
+        sa_keys_new = sa_keys
+        #fixed_key = '0102030405'
+        sa_keys_new = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), sa_keys_new)
+        #logging.info("Step%s: sa_keys after YML: %s", stepno, sa_keys_new)
 
-        result = self.sbl_activation(can_p, fixed_key, stepno, purpose)
+        result = self.sbl_activation(can_p, sa_keys_new, stepno, purpose)
         return result
 
 

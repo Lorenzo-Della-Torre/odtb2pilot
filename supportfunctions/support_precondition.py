@@ -56,10 +56,18 @@ class SupportPrecondition:
         """
 
         # start heartbeat, repeat every 0.8 second
+        #hb_param: PerParam = {
+        #    "name" : "Heartbeat",
+        #    "send" : True,
+        #    "id" : "MvcmFront1NMFr",
+        #    "nspace" : can_p["namespace"].name,
+        #    "frame" : b'\x1A\x40\xC3\xFF\x01\x00\x00\x00',
+        #    "intervall" : 0.4
+        #    }
         hb_param: PerParam = {
             "name" : "Heartbeat",
             "send" : True,
-            "id" : "MvcmFront1NMFr",
+            "id" : "BecmFront1NMFr",
             "nspace" : can_p["namespace"].name,
             "frame" : b'\x1A\x40\xC3\xFF\x01\x00\x00\x00',
             "intervall" : 0.4
@@ -206,6 +214,15 @@ class SupportPrecondition:
         #SC.change_mf_fc(can_p["send"], can_mf)
         SC.change_mf_fc(can_p2["receive"], can_mf)
 
-        result = SE22.read_did_eda0(can_p)
+        #pn_sn_list=[['F120', 'PN'],\
+        #            ['F12A', 'PN'],\
+        #            ['F12B', 'PN'],\
+        #            ['F18C', 'SN'],\
+        #            ['F12E', 'PN'],\
+        #            ['F126', 'VIDCV']]
+        pn_sn_list = []
+        SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'pn_sn_list')
+
+        result = SE22.read_did_eda0(can_p, pn_sn_list)
         logging.info("Precondition testok: %s\n", result)
         return result

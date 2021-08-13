@@ -296,7 +296,7 @@ class SupportCAN:
         """
         logging.debug("Active threads: %s", threading.enumerate())
         threads = [t.name for t in threading.enumerate()
-            if t.name in ["SignalThread", "PeriodicThread"]]
+                   if t.name in ["SignalThread", "PeriodicThread"]]
 
         logging.debug("Signal or periodic threads remaining: %s", len(threads))
 
@@ -501,24 +501,32 @@ class SupportCAN:
     @classmethod
     def can_receive(cls, can_send, can_extra):
         """
-        Add offset \x40 to first byte
-        Add can_extra to message
-        """
-        #print("can_receive can_send ", can_send)
-        #print("can_receive can_extra ", can_extra)
-        #print("len can_send ", len(can_send))
-        can_ret = ''
+        Services have 2byte, exept service 14, 22, 2E
+        Service 22 and 2E have a DID added (extra 2 bytes)
 
-        #print("Conditions:  len(can_send):", len(can_send), "len(can_extra):",\
-        #                   len(can_extra), "can_send0 ", can_send[0])
+        Positive reply will have \x40 added to first byte of service.
+        """
+        if can_extra == '':
+            can_extra = b''
+        can_ret = b''
+
         # check if receive frame/message can be build
-        if can_send and (len(can_send)+len(can_extra) < 7) and (can_send[0] < 192):
-            can_ret = bytes([can_send[0]+ 0x40])
-            for count in range(len(can_send)-1): # pylint: disable=consider-using-enumerate
-                can_ret = can_ret + bytes([can_send[count+1]])
-            for count in range(len(can_extra)):  # pylint: disable=consider-using-enumerate
-                can_ret = can_ret + bytes([can_extra[count]])
-        #print("payload to receive: ", str(can_ret))
+        #Determine if SF or MF request:
+        #if can_send and (len(can_send)+len(can_extra) < 7) and (can_send[0] < 192):
+        logging.debug("can_send: bytes in request      : %s", can_send)
+        logging.debug("can_send: bytes in request (hex): %s", can_send.hex())
+
+        can_ret = bytes([can_send[0]+ 0x40])
+        if can_send[0] == 0x14:
+            logging.info("can_receive: Service14 not implemented yet")
+        elif can_send[0] == 0x22 or can_send[0] == 0x2E:
+            can_ret = can_ret + can_send[1:3]
+        else:
+            can_ret = can_ret + can_send[1:2]
+        can_ret = can_ret + can_extra
+
+        logging.debug("expected in payload received      : %s", can_ret)
+        logging.debug("expected in payload received (hex): %s", can_ret.hex())
         return can_ret
 
 
@@ -654,6 +662,10 @@ class SupportCAN:
             elif frame_control_flag == 0:
                 # continue sending as stated in FC frame
                 self.__send_cf_can_ok(can_p, separation_time, block_size)
+                # not whole block sent? Wait for next FC frame and send rest
+                if self.can_mf_send[can_p["send"]][0] <\
+                    len(self.can_mf_send[can_p["send"]][1]):
+                    self.send_cf_can(can_p, frequency, timeout_ms)
             else:
                 return "FAIL: invalid value in FC"
         if self.can_mf_send[can_p["send"]][0] ==\
@@ -726,7 +738,7 @@ class SupportCAN:
             except KeyError:
                 logging.error("Key %s not found", can_p["send"])
             #print("can_mf_send2 ", self.can_mf_send)
-        elif len(self.can_mf_send[can_p["send"]][1]) < 0x7ff:
+        elif len(self.can_mf_send[can_p["send"]][1]) < 0xfff:
             logging.debug("Send payload as MF")
             # send payload as MF
 
