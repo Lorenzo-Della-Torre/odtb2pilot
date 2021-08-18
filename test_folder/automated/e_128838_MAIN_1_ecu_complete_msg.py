@@ -1,8 +1,10 @@
-'''Import script - Inherited from older version of requirement'''
+'''
+Implicitly tested script
 
-import logging
-import sys
+Tested implicitly by REQPROD 60017
+'''
 
-logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+from e_60017__1_n_as_timeout_non_prog_session import run
 
-logging.info("Testcase result: Tested implicitly by REQPROD 60017 (tested implicitly)")
+if __name__ == '__main__':
+    run()
