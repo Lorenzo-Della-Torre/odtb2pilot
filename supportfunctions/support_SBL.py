@@ -53,7 +53,6 @@ import inspect
 from supportfunctions.support_carcom import SupportCARCOM
 from supportfunctions.support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
-#from supportfunctions.support_sec_acc import SupportSecurityAccess
 from supportfunctions.support_LZSS import LzssEncoder
 from supportfunctions.support_file_io import SupportFileIO
 from supportfunctions.support_service10 import SupportService10
@@ -68,7 +67,6 @@ SIO = SupportFileIO
 SC = SupportCAN()
 S_CARCOM = SupportCARCOM()
 SUTE = SupportTestODTB2()
-#SSA = SupportSecurityAccess()
 LZSS = LzssEncoder()
 
 SE10 = SupportService10()
@@ -324,8 +322,6 @@ class SupportSBL:
             if (decompress_block and SUTE.crc16(decompr_data) == vbf_block['Checksum'])\
                or not decompress_block:
                 # Request Download
-                #result, nbl = SE34.request_block_download(can_p, data, step_no, purpose)
-                #result = SE22.read_did_eda0(can_p)
                 result, nbl = SE34.request_block_download(can_p, vbf_header, vbf_block)
                 if not result:
                     logging.info("Support SBL, DL block request failed")
@@ -446,8 +442,6 @@ class SupportSBL:
 
         # Verify Session changed
         SE22.read_did_f186(can_p, dsession=b'\x02')
-        #result = result and self.sbl_activation_prog(can_p, fixed_key, stepno, purpose)
-        #result = result and self.sbl_activation_prog(can_p, auth_key, proof_key, stepno, purpose)
         result = result and self.sbl_activation_prog(can_p, sa_keys, stepno, purpose)
         return result
 
@@ -465,10 +459,6 @@ class SupportSBL:
         result = True
 
         ecu_mode = SE22.get_ecu_mode(can_p)
-        #message = SC.can_messages[can_p["receive"]][0][2]
-        #pos = message.find('EDA0')
-        #if (not message.find('F121', pos) == -1) and (not message.find('F125', pos) == -1):
-        #addon ad EDA0 not implemented in HSM
         if ecu_mode == 'PBL':
             # Security Access Request SID
             result = result and SE27.activate_security_access_fixedkey(can_p,
@@ -515,16 +505,6 @@ class SupportSBL:
 
         # verify session
         ecu_mode = SE22.get_ecu_mode(can_p)
-        #SE22.read_did_f186(can_p, dsession=b'')
-        #if not len(SC.can_messages[can_p["receive"]]) == 1:
-        #    logging.info("Not expected number of messages received")
-        #    result = False
-        #else:
-        #    rec_messages = SC.can_messages[can_p["receive"]][0][2].upper()
-
-        #if mode1/mode3 change to mode2 (prog), then dl/activate SBL
-        #if mode2 already dl/activate SBL direct
-            #if ('62F18601' in rec_messages) or ('62F18603' in rec_messages):
         if ecu_mode in ('DEF', 'EXT'):
             result = self.sbl_activation_def(can_p, sa_keys, stepno, purpose)
         #elif '62F18602' in rec_messages:
@@ -548,7 +528,6 @@ class SupportSBL:
         Function used to download and activate the Secondary Bootloader
         """
         sa_keys_new = sa_keys
-        #fixed_key = '0102030405'
         sa_keys_new = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), sa_keys_new)
         #logging.info("Step%s: sa_keys after YML: %s", stepno, sa_keys_new)
 
@@ -725,17 +704,6 @@ class SupportSBL:
 
         data_filtered = b''
         next_cbrack = data.find(b'}', start_pos)
-
-        ## C-style comment in header data before next closing bracket
-        #next_comm_start = data.find(b'/*', data_header)
-        #if not next_comm_start == -1:
-        #    next_comm_stop = data.find[b'*/', next_comm_start+2]
-        #    next_scol = data.find(b';', next_comm_stop +2 )
-        #    next_cbrack = data.find(b'}', next_comm_stop + 2)
-        #    data_header = data[start_pos, next_comm_start] + data[next_comm_stop +2, next_cbrack]
-        #    header_pos = next_cbrack
-        #    next_comm_start = data.find[next_comm_stop +2, next_cbrack]
-
 
         # C++ style comment in header data before next closing bracket
         next_comm_line = data.find(b'//', start_pos, next_cbrack +1)

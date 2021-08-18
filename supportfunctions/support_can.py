@@ -532,10 +532,6 @@ class SupportCAN:
 
     @classmethod
     def __msg_status_2(cls, temp_message, mf_size_remain, i):
-        #print("update_can_message: handling of CS frame")
-        #CF_count = int(i[2][0:2], 16)
-        #print("update_can_message: secure no frames dropped via CF count:",\
-        #           CF_count, "/", mf_cf_count)
         if mf_size_remain > 7:
             temp_message[2] = temp_message[2] + i[2][2:16]
             mf_size_remain -= 7
@@ -597,13 +593,11 @@ class SupportCAN:
         """
         send_FF_CAN
         """
-        #print("Send first frame of MF")
         source = common_pb2.ClientId(id="app_identifier")
         signal = common_pb2.SignalId(name=can_p["send"], namespace=can_p["namespace"])
         signal_with_payload = network_api_pb2.Signal(id=signal)
         signal_with_payload.raw = self.can_mf_send[can_p["send"]][1][0]
 
-        #print("Signal_with_payload : ", self.can_mf_send[can_p["send"]][1][0].hex().upper())
         publisher_info = network_api_pb2.PublisherConfig(clientId=source,\
             signals=network_api_pb2.Signals(signal=[signal_with_payload]), frequency=freq)
         try:

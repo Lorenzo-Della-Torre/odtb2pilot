@@ -29,10 +29,10 @@ import ctypes
 from typing import Dict
 
 import logging
-#import struct
 
 #load the shared object file for SecAccess Gen2
 lib = ctypes.CDLL('/home/pi/Repos/security_access/build/sa2-lib/lib/libsa_client_lib.so')
+#didn't find out how to use shared object under windows environment yet.
 #lib = ctypes.CDLL('../../security_access/build/sa2-lib/lib/libsa_client_lib.dll.a')
 #lib = ctypes.CDLL('../../security_access/build/sa2-lib/cygsa_client_lib.dll')
 #SecAccess Gen2 default parameters:
@@ -232,11 +232,6 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
                                                    ctypes.byref(self.send_buffer))
         if ret != SaGen2Param.SA_RET_SUCCESS:
             raise Exception("Failed to prepare client_request_seed.")
-
-        #client_request_seed_ = client_request_seed.from_buffer(self.send_buffer)
-        #for field_name, field_type in client_request_seed_._fields_:
-        #    print(field_name, getattr(client_request_seed_, field_name))
-
         return bytearray(self.send_buffer)[0:SaGen2Param.SA_CLIENT_REQUEST_SEED_BUFFER_SIZE]
 
     def process_server_response_seed(self, data) -> bool:
@@ -264,10 +259,6 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
             raise Exception("Failed, process server response seed")
         return ret
 
-        # server_response_seed_ = server_response_seed.from_buffer(self.buffer)
-        # for field_name, field_type in server_response_seed_._fields_:
-        #     print(field_name, getattr(server_response_seed_, field_name))
-
     def prepare_client_send_key(self) -> bytearray:
         """
         added for Gen2
@@ -279,11 +270,6 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
             logging.info("SSA prep client_send_key: success")
         else:
             raise Exception("Failed, client send key.")
-
-        # client_send_key_ = client_send_key.from_buffer(self.send_buffer)
-        # for field_name, field_type in client_send_key_._fields_:
-        #     print(field_name, getattr(client_send_key_, field_name))
-
         return bytearray(self.send_buffer)[0:SaGen2Param.SA_CLIENT_PREPARE_SEND_KEY_BUFFER_SIZE]
 
     def process_server_response_key(self, data) -> bool:
@@ -306,11 +292,6 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         else:
             logging.info("SSA server_response_key failes: %s", ret)
             #raise Exception("Failed, server response key.")
-
-        # server_response_key_ = server_response_key.from_buffer(buffer)
-        # for field_name, field_type in server_response_key_._fields_:
-        #     print(field_name, getattr(server_response_key_, field_name))
-
         logging.info("SSA force server_response_key to true")
         ret = SaGen2Param.SA_RET_SUCCESS
 

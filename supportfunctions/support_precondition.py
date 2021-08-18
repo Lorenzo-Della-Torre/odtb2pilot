@@ -55,15 +55,7 @@ class SupportPrecondition:
         BECM has to be kept alive: start heartbeat
         """
 
-        # start heartbeat, repeat every 0.8 second
-        #hb_param: PerParam = {
-        #    "name" : "Heartbeat",
-        #    "send" : True,
-        #    "id" : "MvcmFront1NMFr",
-        #    "nspace" : can_p["namespace"].name,
-        #    "frame" : b'\x1A\x40\xC3\xFF\x01\x00\x00\x00',
-        #    "intervall" : 0.4
-        #    }
+        # start heartbeat, repeat every 0.4 second
         hb_param: PerParam = {
             "name" : "Heartbeat",
             "send" : True,
@@ -73,9 +65,6 @@ class SupportPrecondition:
             "intervall" : 0.4
             }
         #Read current function name from stack:
-        #logging.debug("hb_param before %s", hb_param)
-        #logging.debug("Type frame: %s", type(hb_param["frame"]))
-        #logging.debug("Read YML for %s", str(inspect.stack()[0][3]))
         SIO.extract_parameter_yml(str(inspect.stack()[0][3]), hb_param)
         logging.debug("hb_param %s", hb_param)
 
@@ -112,15 +101,8 @@ class SupportPrecondition:
             "frame_control_flag": 48,
             "frame_control_auto": False
             }
-        #SC.change_mf_fc(can_p["send"], can_mf)
         SC.change_mf_fc(can_p2["receive"], can_mf)
 
-        #pn_sn_list=[['F120', 'PN'],\
-        #            ['F12A', 'PN'],\
-        #            ['F12B', 'PN'],\
-        #            ['F18C', 'SN'],\
-        #            ['F12E', 'PN'],\
-        #            ['F126', 'VIDCV']]
         pn_sn_list = []
         SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'pn_sn_list')
 
@@ -214,12 +196,6 @@ class SupportPrecondition:
         #SC.change_mf_fc(can_p["send"], can_mf)
         SC.change_mf_fc(can_p2["receive"], can_mf)
 
-        #pn_sn_list=[['F120', 'PN'],\
-        #            ['F12A', 'PN'],\
-        #            ['F12B', 'PN'],\
-        #            ['F18C', 'SN'],\
-        #            ['F12E', 'PN'],\
-        #            ['F126', 'VIDCV']]
         pn_sn_list = []
         SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'pn_sn_list')
 
