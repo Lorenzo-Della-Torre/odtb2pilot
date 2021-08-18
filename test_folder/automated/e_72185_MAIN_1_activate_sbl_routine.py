@@ -1,9 +1,10 @@
-'''Import script - Inherited from older version of requirement'''
+'''
+Implicitly tested script
 
-import logging
-import sys
+Tested implicitly by all diagnostic tests, e.g. by REQPROD 76170
+'''
 
-logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+from e_76170_MAIN_2_service_22_dids import run
 
-logging.info("Testcase result: Tested implicitly by all diagnostic tests,\
- e.g. by REQPROD 67170 (tested implicitly)")
+if __name__ == '__main__':
+    run()
