@@ -30,9 +30,6 @@
 
 """The Python implementation of the gRPC route guide client."""
 import logging
-#import inspect
-#import time #added by Henrik
-#from binascii import hexlify #added by Henrik
 
 from supportfunctions.support_carcom import SupportCARCOM
 from supportfunctions.support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
@@ -47,7 +44,6 @@ SIO = SupportFileIO
 SUTE = SupportTestODTB2()
 S_CARCOM = SupportCARCOM()
 SE22 = SupportService22()
-#SE10 = SupportService10() #added by Henrik
 
 class SupportService27:
     """
@@ -68,8 +64,6 @@ class SupportService27:
         result = True
         ecu_mode = SE22.get_ecu_mode(can_p)
 
-        #SE22.read_did_f186(can_p)
-        #SE22.read_did_f186(can_p, dsession=b'')
         logging.info("PBL SecAcc req seed: current mode: %s",\
                      SC.can_messages[can_p["receive"]])
 
@@ -120,11 +114,6 @@ class SupportService27:
                  "extra" : ''
                 }
             ### remove when EDA0 implemented in MEP2
-
-        #    cpay: CanPayload =\
-        #        {"payload" : S_CARCOM.can_m_send("SecurityAccessRequestSeed", b'', b''),\
-        #         "extra" : ''
-        #        }
 
         etp: CanTestExtra = {"step_no": stepno,\
                              "purpose" : purpose,\
@@ -203,12 +192,6 @@ class SupportService27:
                 }
             ### remove when EDA0 implemented in MEP2
 
-            #cpay: CanPayload =\
-            #    {"payload" : S_CARCOM.can_m_send("SecurityAccessSendKey",\
-            #          payload_value, b''),\
-            #     "extra" : ''
-            #    }
-
         #SA_GEN1:
         #etp: CanTestExtra = {"step_no": stepno,\
         #                     "purpose" : purpose,\
@@ -231,31 +214,7 @@ class SupportService27:
         response = SC.can_messages[can_p["receive"]][0][2][6:(6+4)]
         return result, response
 
-    # outdated code, removed:
-    #def activate_security_access(self,
-    #                             can_p: CanParam,
-    #                             step_no=272,
-    #                             purpose='Security Access Request SID'):
-    #    """
-    #    Teststep : Activate SecurityAccess
-    #    action: Request Security Access to be able to unlock the server(s)
-    #            and run the primary bootloader.
-    #    result: Positive reply from support function if Security Access to server is activated.
-    #    """
-    #    fixed_key = '0102030405'
-    #    new_fixed_key = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'fixed_key')
-    #    # don't set empty value if no replacement was found:
-    #    if new_fixed_key != '':
-    #        assert isinstance(new_fixed_key, str)
-    #        fixed_key = new_fixed_key
-    #    else:
-    #        logging.info("Step%s: new_fixed_key is empty. Leave old value.", step_no)
-    #    logging.info("Step%s: fixed_key after YML: %s", step_no, fixed_key)
-    #    result = self.activate_security_access_fixedkey(can_p, fixed_key, step_no,
-    #                                            purpose)
-    #    return result
 
-    #def activate_security_access_fixedkey(self, can_p: CanParam, fixed_key, step_no, purpose):
     def activate_security_access_fixedkey(self, can_p: CanParam, sa_keys, step_no, purpose):
         """
         Support function to activate the Security Access
