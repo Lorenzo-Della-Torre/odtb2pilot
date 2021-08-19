@@ -310,7 +310,7 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
 
     #SecAcessGen1: Algorithm to decode the Security Access Pin
     def set_security_access_pins(self, sid, sa_keys):
-    """
+        """
         Algorithm to decode the Security Access Pin
         SID: reply from request seed
         fixed_key: fixed key, default in DSA '0102030405'
