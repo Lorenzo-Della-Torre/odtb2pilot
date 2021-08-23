@@ -171,12 +171,16 @@ def extract_dtcs(root):
         dtc_record[dtc_id] = dtc
 
         snapshot_dids_list = []
-        for snapshot_dids in dtc_node.find('.//SnapshotDIDs'):
-            snapshot_dids_item = {
-                underscore(k):v for k, v in snapshot_dids.attrib.items()}
-            did_ref = snapshot_dids.find('.//')
-            snapshot_dids_item['did_ref'] = dict(did_ref.attrib)
-            snapshot_dids_list.append(snapshot_dids_item)
+        dtc_snapshots_list = dtc_node.find('.//SnapshotDIDs')
+        if dtc_snapshots_list is not None:
+            for snapshot_dids in dtc_snapshots_list:
+                snapshot_dids_item = {
+                    underscore(k):v for k, v in snapshot_dids.attrib.items()}
+                did_ref = snapshot_dids.find('.//')
+                snapshot_dids_item['did_ref'] = dict(did_ref.attrib)
+                snapshot_dids_list.append(snapshot_dids_item)
+        else:
+            log.debug("Snapshot data for DID (%s) is not supported",dtc_id)
         dtc_record[dtc_id]['snapshot_dids'] = snapshot_dids_list
     return dtc_record
 
@@ -218,68 +222,71 @@ def extract_pbl_services(root):
     """ Get primary bootloader services"""
     # pylint: disable=bare-except
     pbl_services = {}
-    for service in root.find('.//SW[@Type="PBL"]/Services', namespaces=None):
-        # First get Service name and ID
-        service_item = dict(service.attrib)
-        service_item['Name'] = underscore(service_item['Name'])
-        service_item['name'] = service_item.pop('Name')
-        try:
-            service_id = service_item.pop('ID')
-        except:
-            pass
+    pbl_service_list = root.find('.//SW[@Type="PBL"]/Services', namespaces=None)
+    if pbl_service_list is not None:
+        for service in pbl_service_list:
+            # First get Service name and ID
+            service_item = dict(service.attrib)
+            service_item['Name'] = underscore(service_item['Name'])
+            service_item['name'] = service_item.pop('Name')
+            try:
+                service_id = service_item.pop('ID')
+            except:
+                pass
 
-        pbl_services[service_id] = service_item
+            pbl_services[service_id] = service_item
 
-        # Get the negative response codes
-        nrc_lst = []
-        try:
-            for nrc in service.find('NegativeResponseCodes'):
-                to_underscore = dict(nrc.attrib)
-                to_underscore['Name'] = underscore(to_underscore['Name'])
-                to_underscore['code'] = to_underscore.pop('Code')
-                to_underscore['name'] = to_underscore.pop('Name')
-                nrc_lst.append(to_underscore)
+            # Get the negative response codes
+            nrc_lst = []
+            try:
+                for nrc in service.find('NegativeResponseCodes'):
+                    to_underscore = dict(nrc.attrib)
+                    to_underscore['Name'] = underscore(to_underscore['Name'])
+                    to_underscore['code'] = to_underscore.pop('Code')
+                    to_underscore['name'] = to_underscore.pop('Name')
+                    nrc_lst.append(to_underscore)
 
-            pbl_services[service_id]['negative_response_code'] = nrc_lst
+                pbl_services[service_id]['negative_response_code'] = nrc_lst
 
-        except:
-            log.debug("PBL: Service (%s) does not have any NRC defined.", service_id)
+            except:
+                log.debug("PBL: Service (%s) does not have any NRC defined.", service_id)
 
-        # Get subfunctions
-        try:
-            sub_fn_lst = []
-            for sub_functions in service.find('Subfunctions'):
-                to_underscore = dict(sub_functions.attrib)
-                to_underscore['Name'] = underscore(to_underscore['Name'])
-                to_underscore['id'] = to_underscore.pop('ID')
-                to_underscore['name'] = to_underscore.pop('Name')
-
-                # Not all subfunctions have the keys below, need to check for each subfunction.
-                if 'delayTime' in to_underscore:
-                    to_underscore['delay_time'] = to_underscore.pop('delayTime')
-                    to_underscore['delay_time_on_boot'] = to_underscore.pop('delayTimeOnBoot')
-                    to_underscore['number_of_attempts'] = to_underscore.pop('numberOfAttempts')
-
-                sub_fn_lst.append(to_underscore)
-
-                # Get sessions
-                sess_lst = []
-                for sessions in sub_functions.find('Sessions'):
-                    to_underscore = dict(sessions.attrib)
+            # Get subfunctions
+            try:
+                sub_fn_lst = []
+                for sub_functions in service.find('Subfunctions'):
+                    to_underscore = dict(sub_functions.attrib)
                     to_underscore['Name'] = underscore(to_underscore['Name'])
                     to_underscore['id'] = to_underscore.pop('ID')
                     to_underscore['name'] = to_underscore.pop('Name')
-                    to_underscore['p2server_max'] = to_underscore.pop('P2ServerMax')
-                    to_underscore['p4server_max'] = to_underscore.pop('P4ServerMax')
 
-                    sess_lst.append(to_underscore)
+                    # Not all subfunctions have the keys below, need to check for each subfunction.
+                    if 'delayTime' in to_underscore:
+                        to_underscore['delay_time'] = to_underscore.pop('delayTime')
+                        to_underscore['delay_time_on_boot'] = to_underscore.pop('delayTimeOnBoot')
+                        to_underscore['number_of_attempts'] = to_underscore.pop('numberOfAttempts')
 
-                pbl_services[service_id]['sessions'] = sess_lst
-            pbl_services[service_id]['sub_functions'] = sub_fn_lst
+                    sub_fn_lst.append(to_underscore)
 
-        except:
-            log.debug("PBL: No subfunction in service (%s).", service_id)
+                    # Get sessions
+                    sess_lst = []
+                    for sessions in sub_functions.find('Sessions'):
+                        to_underscore = dict(sessions.attrib)
+                        to_underscore['Name'] = underscore(to_underscore['Name'])
+                        to_underscore['id'] = to_underscore.pop('ID')
+                        to_underscore['name'] = to_underscore.pop('Name')
+                        to_underscore['p2server_max'] = to_underscore.pop('P2ServerMax')
+                        to_underscore['p4server_max'] = to_underscore.pop('P4ServerMax')
 
+                        sess_lst.append(to_underscore)
+
+                    pbl_services[service_id]['sessions'] = sess_lst
+                pbl_services[service_id]['sub_functions'] = sub_fn_lst
+
+            except:
+                log.debug("PBL: No subfunction in service (%s).", service_id)
+    else:
+        log.debug("PBL: No PBL services in sddb.")
     return pbl_services
 
 
@@ -287,68 +294,71 @@ def extract_sbl_services(root):
     """ Get secondary bootloader services """
     # pylint: disable=bare-except
     sbl_services = {}
-    for service in root.find('.//SW[@Type="SBL"]/Services', namespaces=None):
-        # First get Service name and ID
-        service_item = dict(service.attrib)
-        service_item['Name'] = underscore(service_item['Name'])
-        service_item['name'] = service_item.pop('Name')
-        try:
-            service_id = service_item.pop('ID')
-        except:
-            pass
+    sbl_service_list = root.find('.//SW[@Type="SBL"]/Services', namespaces=None)
+    if sbl_service_list is not None:
+        for service in sbl_service_list:
+            # First get Service name and ID
+            service_item = dict(service.attrib)
+            service_item['Name'] = underscore(service_item['Name'])
+            service_item['name'] = service_item.pop('Name')
+            try:
+                service_id = service_item.pop('ID')
+            except:
+                pass
 
-        sbl_services[service_id] = service_item
+            sbl_services[service_id] = service_item
 
-        # Get the negative response codes
-        nrc_lst = []
-        try:
-            for nrc in service.find('NegativeResponseCodes'):
-                to_underscore = dict(nrc.attrib)
-                to_underscore['Name'] = underscore(to_underscore['Name'])
-                to_underscore['code'] = to_underscore.pop('Code')
-                to_underscore['name'] = to_underscore.pop('Name')
-                nrc_lst.append(to_underscore)
+            # Get the negative response codes
+            nrc_lst = []
+            try:
+                for nrc in service.find('NegativeResponseCodes'):
+                    to_underscore = dict(nrc.attrib)
+                    to_underscore['Name'] = underscore(to_underscore['Name'])
+                    to_underscore['code'] = to_underscore.pop('Code')
+                    to_underscore['name'] = to_underscore.pop('Name')
+                    nrc_lst.append(to_underscore)
 
-            sbl_services[service_id]['negative_response_code'] = nrc_lst
+                sbl_services[service_id]['negative_response_code'] = nrc_lst
 
-        except:
-            log.debug("SBL: Service (%s) does not have any NRC defined.", service_id)
+            except:
+                log.debug("SBL: Service (%s) does not have any NRC defined.", service_id)
 
-        # Get subfunctions
-        try:
-            sub_fn_lst = []
-            for sub_functions in service.find('Subfunctions'):
-                to_underscore = dict(sub_functions.attrib)
-                to_underscore['Name'] = underscore(to_underscore['Name'])
-                to_underscore['id'] = to_underscore.pop('ID')
-                to_underscore['name'] = to_underscore.pop('Name')
-
-                # Not all subfunctions have the keys below, need to check for each subfunction.
-                if 'delayTime' in to_underscore:
-                    to_underscore['delay_time'] = to_underscore.pop('delayTime')
-                    to_underscore['delay_time_on_boot'] = to_underscore.pop('delayTimeOnBoot')
-                    to_underscore['number_of_attempts'] = to_underscore.pop('numberOfAttempts')
-
-                sub_fn_lst.append(to_underscore)
-
-                # Get sessions
-                sess_lst = []
-                for sessions in sub_functions.find('Sessions'):
-                    to_underscore = dict(sessions.attrib)
+            # Get subfunctions
+            try:
+                sub_fn_lst = []
+                for sub_functions in service.find('Subfunctions'):
+                    to_underscore = dict(sub_functions.attrib)
                     to_underscore['Name'] = underscore(to_underscore['Name'])
                     to_underscore['id'] = to_underscore.pop('ID')
                     to_underscore['name'] = to_underscore.pop('Name')
-                    to_underscore['p2server_max'] = to_underscore.pop('P2ServerMax')
-                    to_underscore['p4server_max'] = to_underscore.pop('P4ServerMax')
 
-                    sess_lst.append(to_underscore)
+                    # Not all subfunctions have the keys below, need to check for each subfunction.
+                    if 'delayTime' in to_underscore:
+                        to_underscore['delay_time'] = to_underscore.pop('delayTime')
+                        to_underscore['delay_time_on_boot'] = to_underscore.pop('delayTimeOnBoot')
+                        to_underscore['number_of_attempts'] = to_underscore.pop('numberOfAttempts')
 
-                sbl_services[service_id]['sessions'] = sess_lst
-            sbl_services[service_id]['sub_functions'] = sub_fn_lst
+                    sub_fn_lst.append(to_underscore)
 
-        except:
-            log.debug("SBL: No subfunction in service (%s).", service_id)
+                    # Get sessions
+                    sess_lst = []
+                    for sessions in sub_functions.find('Sessions'):
+                        to_underscore = dict(sessions.attrib)
+                        to_underscore['Name'] = underscore(to_underscore['Name'])
+                        to_underscore['id'] = to_underscore.pop('ID')
+                        to_underscore['name'] = to_underscore.pop('Name')
+                        to_underscore['p2server_max'] = to_underscore.pop('P2ServerMax')
+                        to_underscore['p4server_max'] = to_underscore.pop('P4ServerMax')
 
+                        sess_lst.append(to_underscore)
+
+                    sbl_services[service_id]['sessions'] = sess_lst
+                sbl_services[service_id]['sub_functions'] = sub_fn_lst
+
+            except:
+                log.debug("SBL: No subfunction in service (%s).", service_id)
+    else:
+        log.debug("SBL services are not supported")
     return sbl_services
 
 
