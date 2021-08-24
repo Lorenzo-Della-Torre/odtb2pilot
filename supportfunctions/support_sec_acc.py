@@ -180,17 +180,17 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
             odtb_repo_param = '.'
 
         if sys.platform == 'linux':
-            lib = ctypes.CDLL(odtb_repo_param + '/sec_access_gen2_dll/libsa_client_lib.so')
+            self.lib = ctypes.CDLL(odtb_repo_param + '/sec_access_gen2_dll/libsa_client_lib.so')
         elif sys.platform == 'win32':
-            lib = ctypes.CDLL(odtb_repo_param + '/sec_access_gen2_dll/cygsa_client_lib.dll',
-                              handle=None,
-                              use_errno=False,
-                              use_last_error=False,
-                              winmode=1)
+            self.lib = ctypes.CDLL(odtb_repo_param + '/sec_access_gen2_dll/cygsa_client_lib.dll',
+                                   handle=None,
+                                   use_errno=False,
+                                   use_last_error=False,
+                                   winmode=1)
         else:
             raise Exception("Unknown operation system. Don't know which SAGen2 lib to load.")
 
-        ret = lib.sacl_get_session_size(ctypes.byref(session_size))
+        ret = self.lib.sacl_get_session_size(ctypes.byref(session_size))
 
         if ret != SaGen2Param.SA_RET_SUCCESS:
             raise Exception("Failed to initialize sacl lib.")
@@ -234,9 +234,9 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         """
         # Use external keys in app_client_sa_keys.h
         ret = self.lib.sacl_set_level_key(ctypes.byref(self.session_buffer),
-                                     level,
-                                     self.g_external_proof_key,
-                                     self.g_external_auth_enc_key)
+                                          level,
+                                          self.g_external_proof_key,
+                                          self.g_external_auth_enc_key)
         if ret != SaGen2Param.SA_RET_SUCCESS:
             raise Exception("Failed to set SA keys and level.")
 
@@ -254,7 +254,7 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         added for Gen2
         """
         ret = self.lib.sacl_prepare_client_request_seed(ctypes.byref(self.session_buffer),
-                                                   ctypes.byref(self.send_buffer))
+                                                        ctypes.byref(self.send_buffer))
         if ret != SaGen2Param.SA_RET_SUCCESS:
             raise Exception("Failed to prepare client_request_seed.")
         return bytearray(self.send_buffer)[0:SaGen2Param.SA_CLIENT_REQUEST_SEED_BUFFER_SIZE]
@@ -276,7 +276,7 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         buffer = self.recv_buffer.from_buffer(data)
         # Process server_response_seed.
         ret = self.lib.sacl_process_server_response_seed(ctypes.byref(self.session_buffer),
-                                                    ctypes.byref(buffer))
+                                                         ctypes.byref(buffer))
         if ret != SaGen2Param.SA_RET_SUCCESS:
             if ret != SaGen2Param.SA_RET_SERVER_ALREADY_UNLOCKED:
                 logging.info("*** ECU is already Unlocked ***")
@@ -290,7 +290,7 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         """
         # Prepare client_send_key.
         ret = self.lib.sacl_prepare_client_send_key(ctypes.byref(self.session_buffer),
-                                               ctypes.byref(self.send_buffer))
+                                                    ctypes.byref(self.send_buffer))
         if ret == SaGen2Param.SA_RET_SUCCESS:
             logging.info("SSA prep client_send_key: success")
         else:
@@ -311,7 +311,7 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         buffer = self.recv_buffer.from_buffer(data)
         # Process server_response_key.
         ret = self.lib.sacl_process_server_response_key(ctypes.byref(self.session_buffer),
-                                                   ctypes.byref(buffer))
+                                                        ctypes.byref(buffer))
         if ret == SaGen2Param.SA_RET_SUCCESS:
             logging.info("SSA server_response_key: success")
         else:
