@@ -53,7 +53,8 @@ import inspect
 from supportfunctions.support_carcom import SupportCARCOM
 from supportfunctions.support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
-from supportfunctions.support_LZSS import LzssEncoder
+from supportfunctions.support_lzss import LzssEncoder
+from supportfunctions.support_lzma import LzmaEncoder
 from supportfunctions.support_file_io import SupportFileIO
 from supportfunctions.support_service10 import SupportService10
 from supportfunctions.support_service22 import SupportService22
@@ -68,6 +69,7 @@ SC = SupportCAN()
 S_CARCOM = SupportCARCOM()
 SUTE = SupportTestODTB2()
 LZSS = LzssEncoder()
+LZMA = LzmaEncoder()
 
 SE10 = SupportService10()
 SE22 = SupportService22()
@@ -260,6 +262,110 @@ class SupportSBL:
         return result
 
 
+    def display_data_block(self,# pylint: disable=too-many-branches too-many-statements
+                           vbf_header: VbfHeader,
+                           vbf_data, vbf_offset):
+        """
+            display_data_block
+            support function to transfer
+            data with given offset and data_format to
+            intended destination, given by
+            stub, can_send, can_rec, can_nspace
+
+            stepno, purpose:
+                used for logging purposes
+        """
+        result = True
+        # Iteration to Download the SBL by blocks
+        logging.info("vbf_offset: %s len(data): %s", vbf_offset, len(vbf_data))
+        while vbf_offset < len(vbf_data):
+            # Extract data block
+            # new offset!
+            vbf_offset, vbf_block, vbf_block_data = (
+                self.block_data_extract(vbf_data, vbf_offset))
+
+            decompress_block = True
+            new_decompress_block =\
+                SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'decompress_block')
+            if new_decompress_block != '':
+                assert isinstance(new_decompress_block, bool)
+                decompress_block = new_decompress_block
+            #else:
+            #    logging.info("Support_SBL: new_decompress_block is empty. Leave True.")
+            #logging.info("Support_SBL: decompress_block after YML: %s", decompress_block)
+
+            #decompress data["b_data"] if needed
+            #logging.info("vbf_header:  %s", vbf_header)
+            #logging.info("data_format_identifier %s", vbf_header['data_format_identifier'])
+            #logging.info("DataFormat block: {0:02X}".format(vbf_header['data_format_identifier']))
+
+            if decompress_block:
+                if vbf_header['data_format_identifier'] == 0: # format '0x00':
+                    decompr_data = vbf_block_data
+                elif vbf_header['data_format_identifier'] == 16: # format '0x10':
+                    logging.info("Compression method 1: LZSS")
+                    decompr_data = LZSS.decode_barray(vbf_block_data)
+                elif vbf_header['data_format_identifier'] == 32: # format '0x20':
+                    logging.info("Compression method 2: LZMA")
+                    decompr_data = LZMA.decode_barray(vbf_block_data)
+                else:
+                    logging.info("Unknown compression format: {0:02X}".format\
+                                 (vbf_header['data_format_identifier']))
+
+            logging.info("Header       CRC16 block_data:  {0:04X}".format(vbf_block['Checksum']))
+            if decompress_block:
+                logging.info("Decompressed CRC16 calculation: {0:04X}".format\
+                              (SUTE.crc16(decompr_data)))
+            else:
+                logging.info("Block not decompress. No compare of CRC16.")
+            logging.info("Length block from header:  {0:08X}".format(vbf_block['Length']))
+            if decompress_block:
+                logging.info("Length block decompressed: {0:08X}".format\
+                              (len(decompr_data)))
+            else:
+                logging.info("Block not decompress. No compare of Block length.")
+
+            logging.debug("Compare compress / uncompressed data:")
+            logging.debug("Compressed: vbf_block_data")
+            logging.debug("HEX: %s", vbf_block_data.hex())
+            logging.debug("Uncompressed: decompr_data")
+            logging.debug("HEX: %s", decompr_data.hex())
+            logging.debug("\n")
+
+            if (decompress_block and SUTE.crc16(decompr_data) == vbf_block['Checksum'])\
+               or not decompress_block:
+                # Request Download
+                #result, nbl = SE34.request_block_download(can_p, vbf_header, vbf_block)
+                logging.info("When transfer: SE34.request_block_download.")
+                result = True
+                if not result:
+                    logging.info("Support SBL, DL block request failed")
+                    logging.info("DL block request - vbf_header: %s", vbf_header)
+                # Flash blocks to BECM with transfer data service 0x36
+                #result = result and SE36.flash_blocks(can_p, vbf_block_data, vbf_block, nbl)
+                logging.info("When transfer: SE36.flash_blocks.")
+                result = True
+                if not result:
+                    logging.info("Support SBL, SE36, flash_blocks failed")
+                    logging.info("DL block request - vbf_header: %s", vbf_header)
+                #Transfer data exit with service 0x37
+                #result = result and SE37.transfer_data_exit(can_p)
+                logging.info("When transfer: SE37.transfer_data_exit.")
+                result = True
+                if not result:
+                    logging.info("Support SBL, SE37, transfer_data_exit failed")
+                    logging.info("DL block request - vbf_header: %s", vbf_header)
+            else:
+                logging.info("CRC doesn't match after decompression")
+                logging.info("Header       CRC16 block_data:  {0:04X}".format\
+                                (vbf_block['Checksum']))
+                logging.info("Decompressed CRC16 calculation: {0:04X}".format\
+                                (SUTE.crc16(decompr_data)))
+                logging.info("Header       block length:  {0:08X}".format(vbf_block['Length']))
+                logging.info("Decompressed block length: {0:08X}".format(len(decompr_data)))
+                result = False
+        return result
+
     def transfer_data_block(self,# pylint: disable=too-many-branches too-many-statements
                             can_p: CanParam, vbf_header: VbfHeader,
                             vbf_data, vbf_offset):
@@ -302,6 +408,8 @@ class SupportSBL:
                     decompr_data = vbf_block_data
                 elif vbf_header['data_format_identifier'] == 16: # format '0x10':
                     decompr_data = LZSS.decode_barray(vbf_block_data)
+                elif vbf_header['data_format_identifier'] == 32: # format '0x20':
+                    decompr_data = LZMA.decode_barray(vbf_block_data)
                 else:
                     logging.info("Unknown compression format: {0:02X}".format\
                                  (vbf_header['data_format_identifier']))
@@ -564,7 +672,6 @@ class SupportSBL:
             val_c = val_cl + val_ca
         return val_c
 
-
     @classmethod
     def pp_decode_routine_check_memory(cls, message):
         """
@@ -595,7 +702,6 @@ class SupportSBL:
             val_c = switcher.get(res, 'Wrong Decoding')
         return val_c
 
-
     def check_complete_compatible_routine(self, can_p: CanParam, stepno):
         """
         Support function for Routine Complete & Compatible
@@ -606,7 +712,6 @@ class SupportSBL:
             self.pp_decode_routine_complete_compatible(SC.can_messages[can_p["receive"]][0][2]))
         logging.info(SC.can_messages[can_p["receive"]][0][2])
         return result
-
 
     @classmethod
     def vbf_header_convert(cls, header):
@@ -635,7 +740,6 @@ class SupportSBL:
                 logging.info("Oops! Value in header that can't be evaluated")
         logging.debug("Header after convert: %s", header)
 
-
     @classmethod
     def vbf_cm_filter(cls, cm_str):
         """
@@ -661,7 +765,6 @@ class SupportSBL:
             #    str_ret = cm_str
         #logging.info("string to return: %s", str_ret)
         return str_ret
-
 
     @classmethod
     def vbf_ws_filtered(cls, p_str):
@@ -701,7 +804,6 @@ class SupportSBL:
         return: data_filtererd: data until next closing bracket, without comments
                 start_pos: position in data reached
         """
-
         data_filtered = b''
         next_cbrack = data.find(b'}', start_pos)
 
@@ -729,7 +831,6 @@ class SupportSBL:
         #look if more comments in buffer
         next_comm_line = data.find(b'//', start_pos +1, next_cbrack)
         return data_filtered, start_pos
-
 
     @classmethod
     def read_vbf_file(cls, f_path_name):
@@ -797,8 +898,6 @@ class SupportSBL:
             header[v_key.decode('utf-8')] = v_arg.decode('utf-8')
 
             data_filtered = data_filtered[data_filtered.find(b';')+1:]
-
-
         # header read now, start data
         data_start = head_pos
         logging.info("vbf_version: %s", version)
@@ -809,7 +908,6 @@ class SupportSBL:
         ### check for not allowed keywords in header
 
         return version, header, data, data_start
-
 
     @classmethod
     def flash_erase(cls, can_p: CanParam, vbf_header, stepno):
@@ -822,7 +920,6 @@ class SupportSBL:
         logging.info("SSBL: flash_erase requestsid, result: %s", result)
         logging.info("SSBL: flash_erase EraseMemory, result: %s", result)
         return result
-
 
     def block_data_extract(self, vbf_data, vbf_offset):
         """
@@ -865,7 +962,6 @@ class SupportSBL:
         crc_res = 'ok'
         return "Block adr: 0x%X length: 0x%X crc %s" % (vbf_block('StartAddress'),\
                vbf_block('Length'), crc_res)
-
 
     @classmethod
     def activate_sbl(cls, can_p: CanParam, vbf_sbl_header, stepno,\

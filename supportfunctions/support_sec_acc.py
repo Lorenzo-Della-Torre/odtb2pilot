@@ -27,15 +27,20 @@
 
 """The Python implementation of the grPC route guide client."""
 
+import os
+import sys
 import ctypes
 from typing import Dict
 
 import logging
 
 #load the shared object file for SecAccess Gen2
-lib = ctypes.CDLL('/home/pi/Repos/security_access/build/sa2-lib/lib/libsa_client_lib.so')
+#lib = ctypes.CDLL('/home/pi/Repos/security_access/build/sa2-lib/lib/libsa_client_lib.so')
 #didn't find out how to use shared object under windows environment yet.
 #lib = ctypes.CDLL('../../security_access/build/sa2-lib/lib/libsa_client_lib.dll.a')
+#lib = ctypes.CDLL('../../security_access/build/sa2-lib/cygsa_client_lib.dll')
+#lib = ctypes.CDLL('C:\\security_access\\build\\sa2-lib\\cygsa_client_lib.dll', winmode=0)
+lib = ctypes.CDLL('C:\\security_access\\build\\sa2-lib\\cygsa_client_lib.dll', handle=None, use_errno=False, use_last_error=False, winmode=1)
 #lib = ctypes.CDLL('../../security_access/build/sa2-lib/cygsa_client_lib.dll')
 #SecAccess Gen2 default parameters:
 class SaGen2Param(Dict): # pylint: disable=too-few-public-methods,inherit-non-class
@@ -167,6 +172,23 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         self.g_external_proof_key = (ctypes.c_uint8 * SaGen2Param.KEY_SIZE)(0xFF)
 
         session_size = ctypes.c_uint8()
+        
+        #choose right library for SecureAccessGen2
+        odtb_repo_param = os.environ.get('TESTREPO')
+        if odtb_repo_param is None:
+            odtb_repo_param = '.'
+
+        if sys.platform == 'linux':
+            lib = ctypes.CDLL(odtb_repo_param + '/sec_access_gen2_dll/libsa_client_lib.so')
+        elif sys.platform == 'win32':
+            lib = ctypes.CDLL(odtb_repo_param + '/sec_access_gen2_dll/cygsa_client_lib.dll',
+                              handle=None,
+                              use_errno=False,
+                              use_last_error=False,
+                              winmode=1)
+        else:
+            raise Exception("Unknown operation system. Don't know which SAGen2 lib to load.")
+        
         ret = lib.sacl_get_session_size(ctypes.byref(session_size))
 
         if ret != SaGen2Param.SA_RET_SUCCESS:
