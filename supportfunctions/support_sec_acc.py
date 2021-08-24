@@ -233,7 +233,7 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         added for Gen2
         """
         # Use external keys in app_client_sa_keys.h
-        ret = lib.sacl_set_level_key(ctypes.byref(self.session_buffer),
+        ret = self.lib.sacl_set_level_key(ctypes.byref(self.session_buffer),
                                      level,
                                      self.g_external_proof_key,
                                      self.g_external_auth_enc_key)
@@ -253,7 +253,7 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         """
         added for Gen2
         """
-        ret = lib.sacl_prepare_client_request_seed(ctypes.byref(self.session_buffer),
+        ret = self.lib.sacl_prepare_client_request_seed(ctypes.byref(self.session_buffer),
                                                    ctypes.byref(self.send_buffer))
         if ret != SaGen2Param.SA_RET_SUCCESS:
             raise Exception("Failed to prepare client_request_seed.")
@@ -275,7 +275,7 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         data += b'\0' * len_diff
         buffer = self.recv_buffer.from_buffer(data)
         # Process server_response_seed.
-        ret = lib.sacl_process_server_response_seed(ctypes.byref(self.session_buffer),
+        ret = self.lib.sacl_process_server_response_seed(ctypes.byref(self.session_buffer),
                                                     ctypes.byref(buffer))
         if ret != SaGen2Param.SA_RET_SUCCESS:
             if ret != SaGen2Param.SA_RET_SERVER_ALREADY_UNLOCKED:
@@ -289,7 +289,7 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         added for Gen2
         """
         # Prepare client_send_key.
-        ret = lib.sacl_prepare_client_send_key(ctypes.byref(self.session_buffer),
+        ret = self.lib.sacl_prepare_client_send_key(ctypes.byref(self.session_buffer),
                                                ctypes.byref(self.send_buffer))
         if ret == SaGen2Param.SA_RET_SUCCESS:
             logging.info("SSA prep client_send_key: success")
@@ -310,7 +310,7 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         data += b'\0' * len_diff
         buffer = self.recv_buffer.from_buffer(data)
         # Process server_response_key.
-        ret = lib.sacl_process_server_response_key(ctypes.byref(self.session_buffer),
+        ret = self.lib.sacl_process_server_response_key(ctypes.byref(self.session_buffer),
                                                    ctypes.byref(buffer))
         if ret == SaGen2Param.SA_RET_SUCCESS:
             logging.info("SSA server_response_key: success")
