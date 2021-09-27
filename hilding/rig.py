@@ -71,28 +71,33 @@ def get_rig_delivery_files():
 
     sftp = ssh.open_sftp()
     remote_delivery_path = Path(f'/home/{user}/delivery')
-    delivery_files = sftp.listdir(remote_delivery_path.as_posix())
-    log.info("Copy remote %s/*.{vbf,sddb,dbc} files to this host",
+    try:
+        delivery_files = sftp.listdir(remote_delivery_path.as_posix())
+    except FileNotFoundError:
+        log.info("%s does not exist on HILding. If this folder exists, all vbf, sddb and dbc \
+files within it will be transferred to your local computer", str(remote_delivery_path))
+    else:
+        log.info("Copy remote %s/*.{vbf,sddb,dbc} files to this host",
              remote_delivery_path)
 
-    # remove previous file for this rig to keep things clean
-    shutil.rmtree(conf.rig.rig_path)
-    sddb_file_downloaded = False
-    for filename in delivery_files:
-        remote_file = remote_delivery_path.joinpath(filename)
-        if filename.endswith('.vbf'):
-            local_file = conf.rig.vbf_path.joinpath(filename)
-            sftp_copy(sftp, remote_file, local_file)
-        if filename.endswith('.sddb'):
-            local_file = conf.rig.sddb_path.joinpath(filename)
-            sftp_copy(sftp, remote_file, local_file)
-            sddb_file_downloaded = True
-        if filename.endswith('.dbc'):
-            local_file = conf.rig.dbc_path.joinpath(filename)
-            sftp_copy(sftp, remote_file, local_file)
+        # remove previous file for this rig to keep things clean
+        shutil.rmtree(conf.rig.rig_path)
+        sddb_file_downloaded = False
+        for filename in delivery_files:
+            remote_file = remote_delivery_path.joinpath(filename)
+            if filename.endswith('.vbf'):
+                local_file = conf.rig.vbf_path.joinpath(filename)
+                sftp_copy(sftp, remote_file, local_file)
+            if filename.endswith('.sddb'):
+                local_file = conf.rig.sddb_path.joinpath(filename)
+                sftp_copy(sftp, remote_file, local_file)
+                sddb_file_downloaded = True
+            if filename.endswith('.dbc'):
+                local_file = conf.rig.dbc_path.joinpath(filename)
+                sftp_copy(sftp, remote_file, local_file)
 
-    if sddb_file_downloaded:
-        # automatically run the sddb parsing after downloading a new sddb file
-        parse_sddb_file()
+        if sddb_file_downloaded:
+            # automatically run the sddb parsing after downloading a new sddb file
+            parse_sddb_file()
 
 # check md5sum for ~/delivery/*.{vbf,sddb}
