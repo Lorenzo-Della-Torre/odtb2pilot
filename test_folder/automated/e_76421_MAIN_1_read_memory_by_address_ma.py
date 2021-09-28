@@ -1,8 +1,11 @@
-'''Import script - Inherited from older version of requirement'''
+'''
+Implicitly tested script
 
-import logging
-import sys
+Tested implicitly by REQPROD 76173
+'''
 
-logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
-logging.info("Testcase result: Tested implicitly by REQPROD 76173")
+from e_76173_MAIN_1_readmemorybyaddress_alfid import run
+
+if __name__ == '__main__':
+    run()

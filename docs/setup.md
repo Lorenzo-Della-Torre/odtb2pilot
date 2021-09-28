@@ -1,4 +1,3 @@
-
 ## Setup
 
 ### Naming
@@ -77,7 +76,8 @@ credentials.
 Next step is to get all dependencies:
 
 ```shell
-  sudo apt update
+  sudo apt update # you might need to update url, have a look at https://pimylifeup.com/raspbian-repository-mirror/
+  sudo apt upgrade
   sudo apt install libxslt-dev unixodbc-dev tdsodbc libopenjp2-7 sqlite3 fzf
   pip3 install -r requirements.txt
 ```

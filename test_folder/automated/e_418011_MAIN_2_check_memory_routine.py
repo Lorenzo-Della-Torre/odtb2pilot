@@ -1,8 +1,10 @@
-'''Import script - Inherited from older version of requirement'''
+'''
+Implicitly tested script
 
-import logging
-import sys
+Tested implicitly by REQPROD 405174
+'''
 
-logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+from e_405174_MAIN_2_checkm_verification_programmed_data import run
 
-logging.info("Testcase result: Tested implicitly by REQPROD 405174 (tested implicitly)")
+if __name__ == '__main__':
+    run()

@@ -28,7 +28,7 @@ import sys
 
 logging.basicConfig(format='%(asctime)s - %(message)s', stream=sys.stdout, level=logging.INFO)
 
-logging.info("Testcase result: Tested implicitly by REQPRODs in in LC : "
+logging.info("Testcase result: Tested implicitly by REQPRODs in LC: "
              "VCC DoCAN - SW reqs.:"
              "Requirements from section Addressing formats:"
              "REQPROD 60112 Supporting functional requests"

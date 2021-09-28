@@ -1,8 +1,11 @@
-'''Import script - Inherited from older version of requirement'''
+'''
+Implicitly tested script
 
-import logging
-import sys
+Tested implicitly by REQPROD 53959
+'''
 
-logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
-logging.info("Testcase result: Tested implicitly by REQPROD 53959 (tested implicitly)")
+from e_53959__4_complete_and_compatible_sequence_diagram import run
+
+if __name__ == '__main__':
+    run()
