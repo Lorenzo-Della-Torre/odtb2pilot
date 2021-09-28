@@ -182,14 +182,16 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
 
         if sys.platform == 'linux':
             if platform.machine() == 'armv71':
-                self.lib = ctypes.CDLL(odtplab_repo_param + '/linux/armv71/libsa_client_lib.so')
+                self.lib = ctypes.CDLL(odtblab_repo_param + '/linux/armv71/libsa_client_lib.so')
             elif platform.machine() == 'x86_64':
-                self.lib = ctypes.CDLL(odtplab_repo_param + '/linux/x86_64/libsa_client_lib.so')
+                self.lib = ctypes.CDLL(odtblab_repo_param + '/linux/x86_64/libsa_client_lib.so')
             else:
                 logging.info("Right library version for SA Gen2 not found: %s", sys.platform)
         elif sys.platform == 'win32':
-            self.lib = ctypes.CDLL(odtb_repo_param + '/sec_access_gen2_dll/windows/cygsa_client_lib.dll')
-            #self.lib = ctypes.CDLL(odtb_repo_param + '/sec_access_gen2_dll/windows/cygsa_client_lib.dll',
+            self.lib = ctypes.CDLL(odtb_repo_param +
+                                   '/sec_access_gen2_dll/windows/cygsa_client_lib.dll')
+            #self.lib = ctypes.CDLL(odtb_repo_param +
+            #                       '/sec_access_gen2_dll/windows/cygsa_client_lib.dll',
             #                       handle=None,
             #                       use_errno=False,
             #                       use_last_error=False,
