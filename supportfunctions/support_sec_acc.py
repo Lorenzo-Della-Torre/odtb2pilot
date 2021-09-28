@@ -29,6 +29,7 @@
 
 import os
 import sys
+import platform
 import ctypes
 from typing import Dict
 
@@ -180,7 +181,12 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
             odtb_repo_param = '.'
 
         if sys.platform == 'linux':
-            self.lib = ctypes.CDLL(odtb_repo_param + '/sec_access_gen2_dll/libsa_client_lib.so')
+            if platform.machine() == 'armv71':
+                self.lib = ctypes.CDLL(odtplab_repo_param + '/linux/armv71/sec_access_gen2_dll/libsa_client_lib.so')
+            elif platform.machine() == 'x86_64':
+                self.lib = ctypes.CDLL(odtplab_repo_param + '/linux/x86_64/sec_access_gen2_dll/libsa_client_lib.so')
+            else:
+                logging.info("Right library version for SA Gen2 not found: %s", sys.platform)
         elif sys.platform == 'win32':
             self.lib = ctypes.CDLL(odtb_repo_param + '/sec_access_gen2_dll/cygsa_client_lib.dll')
             #self.lib = ctypes.CDLL(odtb_repo_param + '/sec_access_gen2_dll/cygsa_client_lib.dll',
