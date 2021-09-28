@@ -188,8 +188,8 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
             else:
                 logging.info("Right library version for SA Gen2 not found: %s", sys.platform)
         elif sys.platform == 'win32':
-            self.lib = ctypes.CDLL(odtb_repo_param + '/sec_access_gen2_dll/cygsa_client_lib.dll')
-            #self.lib = ctypes.CDLL(odtb_repo_param + '/sec_access_gen2_dll/cygsa_client_lib.dll',
+            self.lib = ctypes.CDLL(odtb_repo_param + '/sec_access_gen2_dll/windows/cygsa_client_lib.dll')
+            #self.lib = ctypes.CDLL(odtb_repo_param + '/sec_access_gen2_dll/windows/cygsa_client_lib.dll',
             #                       handle=None,
             #                       use_errno=False,
             #                       use_last_error=False,
