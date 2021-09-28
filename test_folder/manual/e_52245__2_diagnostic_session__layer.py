@@ -28,5 +28,5 @@ import sys
 logging.basicConfig(format='%(asctime)s - %(message)s',
                     stream=sys.stdout, level=logging.DEBUG)
 
-logging.info("Testcase result tested implicitly by REQPRODs in in LC : " \
+logging.info("Testcase result tested implicitly by REQPRODs in LC : " \
              "VCC UDS Session generic reqs and LC : VCC UDS Session ECU reqs.")

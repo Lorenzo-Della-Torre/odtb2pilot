@@ -1,0 +1,45 @@
+precondition:
+        id: "IhfadpNmCanFrame"
+        frame: b'\x1A\x40\xC3\xFF\x01\x00\x00\x00'
+        intervall : 0.8
+        tp_name: "IHFAdpToallUdsDiagRequestFrame"
+
+precondition_extra:
+        send: IhfaNmCanFrame
+        receive: IHFASignalFrame01
+
+run:
+        send: IHFAdpToIHFAUdsDiagRequestFrame
+        receive: IHFAToIHFAdpUdsDiagResponseFrame
+        numofframe: 7
+        
+step_2:
+        payload: b'\x22\xED\xA0'
+        hb_frame : "IHFASignalFrame01"
+step_3:
+        payload: b'\x22\xED\xA0'
+
+step_4:
+        payload: b'\x22\xED\xA0'
+step_5:
+        payload: b'\x22\xED\xA0'
+step_6:
+        payload: b'\x22\xED\xA0'
+        hb_frame : "IHFASignalFrame01"
+
+step_7:
+        hb_frame : "IHFASignalFrame01"
+
+step_8:
+        hb_frame : "IHFASignalFrame01"
+
+step_9:
+        id: "IhfadpNmCanFrame"
+        frame: b'\x1A\x40\xC3\xFF\x01\x00\x00\x00'
+        intervall : 0.8
+        payload: b'\xED\xA0\xF1\x20')
+
+step_10:
+        id: "IhfadpNmCanFrame"
+        frame: b'\x1A\x40\xC3\xFF\x01\x00\x00\x00'
+        intervall : 0.8
