@@ -86,10 +86,10 @@ class SupportFileIO:
             f_name = re.split(r"(.py)", f_name_temp)[0] + '.yml'
             #logging.info("SIO Split part2:  %s", f_name_temp)
         if os.path.exists(odtb_proj_param):
-            logging.info("Path to project: %s", odtb_proj_param)
-        logging.info("Path exists: %s", os.path.exists(odtb_proj_param + '/' + param_dir))
+            logging.debug("Path to project: %s", odtb_proj_param)
+        logging.debug("Path exists: %s", os.path.exists(odtb_proj_param + '/' + param_dir))
         if os.path.exists(odtb_proj_param + '/' + param_dir):
-            logging.info("Path: %s", odtb_proj_param + '/' + param_dir)
+            logging.debug("Path: %s", odtb_proj_param + '/' + param_dir)
         #logging.debug("Path         %s", odtb_proj_param + '/' + param_dir)
         #logging.debug("Project default: %s", odtb_proj_param + '/' param_dir + '/' + proj_default)
         logging.debug("Project default exists: %s",\
@@ -99,10 +99,11 @@ class SupportFileIO:
         logging.debug("File exists: %s",\
                       os.path.isfile(odtb_proj_param + '/' + param_dir + '/' + f_name))
         if os.path.isfile(odtb_proj_param + '/' + param_dir + '/' + f_name):
-            logging.info("Parameter file : %s", (odtb_proj_param + '/' + param_dir + '/' + f_name))
+            logging.debug("Parameter file : %s", (odtb_proj_param + '/' + param_dir + '/' + f_name))
 
         #try to find matching files in catalog holding parameter files
-        logging.info("dir_file_default: %s", odtb_proj_param + '/' + param_dir + '/' + proj_default)
+        logging.debug("dir_file_default: %s",
+                      odtb_proj_param + '/' + param_dir + '/' + proj_default)
         if os.path.exists(odtb_proj_param + '/' + param_dir)\
             and os.path.isfile(odtb_proj_param + '/' + param_dir + '/' + proj_default):
             dir_file_default = odtb_proj_param + '/' + param_dir + '/' + proj_default

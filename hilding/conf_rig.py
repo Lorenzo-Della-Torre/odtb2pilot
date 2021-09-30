@@ -48,11 +48,11 @@ class Rig:
         return str(self.conf.selected_rig_dict.get('signal_broker_port', 50051))
 
     @property
-    def fixed_key(self):
+    def sa_keys(self):
         """ conf platform fixed key or local fixed key override """
         platform_data = self.conf.platforms.get(self.platform, {})
-        platform_fixed_key = platform_data.get("fixed_key", "0102030405")
-        return self.conf.selected_rig_dict.get("fixed_key", platform_fixed_key)
+        platform_sa_keys = platform_data.get("sa_keys")
+        return self.conf.selected_rig_dict.get("fixed_key", platform_sa_keys)
 
     @property
     def signal_send(self):
