@@ -1,4 +1,7 @@
 precondition_burst:
         frame2 : b'\x1A\x40\xFF\xFF\xFF\xFF\xFF\xFF'
-step_1:
-        fixed_key : 'FFFFFFFFFF'
+run:
+        SecAcc_Gen: 'Gen1'
+        fixed_key: 'FFFFFFFFFF'
+        auth_key: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
+        proof_key: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
