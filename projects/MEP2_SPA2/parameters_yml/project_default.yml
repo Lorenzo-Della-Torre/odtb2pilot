@@ -5,7 +5,8 @@ precondition:
 run:
         send: HvbmdpToHvbmUdsDiagRequestFrame
         receive: HvbmToHvbmdpUdsDiagResponseFrame
-        SecAcc_Gen: 'Gen1'
+
+activate_security_access:
         fixed_key: 'FFFFFFFFFF'
-        auth_key: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
-        proof_key: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
+sbl_dl_activation:
+        fixed_key: 'FFFFFFFFFF'
