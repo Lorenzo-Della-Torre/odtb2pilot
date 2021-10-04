@@ -169,15 +169,13 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
         # wait for messages
         # define answer to expect
         logging.debug("Build answer can_frames to receive")
-        logging.debug("payload: %s", cpay['payload'])
-        logging.debug("pextra:  %s", cpay['extra'])
         can_answer = SC.can_receive(cpay['payload'], cpay['extra'])
         logging.debug("CAN frames to receive: %s", can_answer)
 
         # message to send
         self.__send(can_p, etp, cpay)
 
-        #logging.info("Teststep: Rec can messages: %s", SC.can_messages[can_p["receive"]])
+        logging.info("Teststep: Rec can messages: %s", SC.can_messages[can_p["receive"]])
 
         if SC.can_messages[can_p["receive"]]:
             while self.check_7f78_response(SC.can_messages[can_p["receive"]]):
@@ -237,7 +235,6 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
                 #logging.info("teststep test against len: %s", len(can_answer))
                 #logging.info("teststep test against: %s", can_answer)
                 if etp["min_no_messages"] >= 0:
-                    #logging.info("support test, testresult: %s", SC.can_messages[can_p["receive"]])
                     testresult = testresult and\
                         self.test_message(SC.can_messages[can_p["receive"]],\
                                           can_answer.hex().upper())

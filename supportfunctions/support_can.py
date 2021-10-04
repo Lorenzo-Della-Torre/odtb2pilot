@@ -296,7 +296,7 @@ class SupportCAN:
         """
         logging.debug("Active threads: %s", threading.enumerate())
         threads = [t.name for t in threading.enumerate()
-                   if t.name in ["SignalThread", "PeriodicThread"]]
+            if t.name in ["SignalThread", "PeriodicThread"]]
 
         logging.debug("Signal or periodic threads remaining: %s", len(threads))
 
@@ -501,37 +501,33 @@ class SupportCAN:
     @classmethod
     def can_receive(cls, can_send, can_extra):
         """
-        Services have 2byte, exept service 14, 22, 2E
-        Service 22 and 2E have a DID added (extra 2 bytes)
-
-        Positive reply will have \x40 added to first byte of service.
+        Add offset \x40 to first byte
+        Add can_extra to message
         """
-        if can_extra == '':
-            can_extra = b''
-        can_ret = b''
+        #print("can_receive can_send ", can_send)
+        #print("can_receive can_extra ", can_extra)
+        #print("len can_send ", len(can_send))
+        can_ret = ''
 
+        #print("Conditions:  len(can_send):", len(can_send), "len(can_extra):",\
+        #                   len(can_extra), "can_send0 ", can_send[0])
         # check if receive frame/message can be build
-        #Determine if SF or MF request:
-        #if can_send and (len(can_send)+len(can_extra) < 7) and (can_send[0] < 192):
-        logging.debug("can_send: bytes in request      : %s", can_send)
-        logging.debug("can_send: bytes in request (hex): %s", can_send.hex())
-
-        can_ret = bytes([can_send[0]+ 0x40])
-        if can_send[0] == 0x14:
-            logging.info("can_receive: Service14 not implemented yet")
-        elif can_send[0] == 0x22 or can_send[0] == 0x2E:
-            can_ret = can_ret + can_send[1:3]
-        else:
-            can_ret = can_ret + can_send[1:2]
-        can_ret = can_ret + can_extra
-
-        logging.debug("expected in payload received      : %s", can_ret)
-        logging.debug("expected in payload received (hex): %s", can_ret.hex())
+        if can_send and (len(can_send)+len(can_extra) < 7) and (can_send[0] < 192):
+            can_ret = bytes([can_send[0]+ 0x40])
+            for count in range(len(can_send)-1): # pylint: disable=consider-using-enumerate
+                can_ret = can_ret + bytes([can_send[count+1]])
+            for count in range(len(can_extra)):  # pylint: disable=consider-using-enumerate
+                can_ret = can_ret + bytes([can_extra[count]])
+        #print("payload to receive: ", str(can_ret))
         return can_ret
 
 
     @classmethod
     def __msg_status_2(cls, temp_message, mf_size_remain, i):
+        #print("update_can_message: handling of CS frame")
+        #CF_count = int(i[2][0:2], 16)
+        #print("update_can_message: secure no frames dropped via CF count:",\
+        #           CF_count, "/", mf_cf_count)
         if mf_size_remain > 7:
             temp_message[2] = temp_message[2] + i[2][2:16]
             mf_size_remain -= 7
@@ -593,11 +589,13 @@ class SupportCAN:
         """
         send_FF_CAN
         """
+        #print("Send first frame of MF")
         source = common_pb2.ClientId(id="app_identifier")
         signal = common_pb2.SignalId(name=can_p["send"], namespace=can_p["namespace"])
         signal_with_payload = network_api_pb2.Signal(id=signal)
         signal_with_payload.raw = self.can_mf_send[can_p["send"]][1][0]
 
+        #print("Signal_with_payload : ", self.can_mf_send[can_p["send"]][1][0].hex().upper())
         publisher_info = network_api_pb2.PublisherConfig(clientId=source,\
             signals=network_api_pb2.Signals(signal=[signal_with_payload]), frequency=freq)
         try:
@@ -656,10 +654,6 @@ class SupportCAN:
             elif frame_control_flag == 0:
                 # continue sending as stated in FC frame
                 self.__send_cf_can_ok(can_p, separation_time, block_size)
-                # not whole block sent? Wait for next FC frame and send rest
-                if self.can_mf_send[can_p["send"]][0] <\
-                    len(self.can_mf_send[can_p["send"]][1]):
-                    self.send_cf_can(can_p, frequency, timeout_ms)
             else:
                 return "FAIL: invalid value in FC"
         if self.can_mf_send[can_p["send"]][0] ==\
@@ -732,7 +726,7 @@ class SupportCAN:
             except KeyError:
                 logging.error("Key %s not found", can_p["send"])
             #print("can_mf_send2 ", self.can_mf_send)
-        elif len(self.can_mf_send[can_p["send"]][1]) < 0xfff:
+        elif len(self.can_mf_send[can_p["send"]][1]) < 0x7ff:
             logging.debug("Send payload as MF")
             # send payload as MF
 
