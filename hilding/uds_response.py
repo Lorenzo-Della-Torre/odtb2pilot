@@ -299,8 +299,15 @@ class UdsResponse:
             for resp_item in resp_item_dict[did]:
                 offset = resp_item['offset']
                 size = resp_item['size']
+                formula = resp_item.get('formula', '')
                 sub_payload = get_sub_payload(payload, offset, size)
-                scaled_value = get_scaled_value(resp_item, sub_payload)
+
+                scaled_value = 0
+                try:
+                    scaled_value = get_scaled_value(resp_item, sub_payload)
+                except ValueError as error:
+                    log.error('Could not scale value: %s', error)
+
                 if 'compare_value' in resp_item:
                     compare_value = resp_item['compare_value']
                     if compare(scaled_value, compare_value):
@@ -312,6 +319,7 @@ class UdsResponse:
                         ['name', 'software_label', 'unit']}
                 item['sub_payload'] = sub_payload
                 item['scaled_value'] = scaled_value
+                item['formula'] = formula
 
                 response_items.append(item)
 
@@ -420,7 +428,18 @@ def get_sub_payload(payload, offset, size):
     if len(payload) >= end:
         sub_payload = payload[start:end]
     else:
-        raise RuntimeError('Payload is to short!')
+        log.error('Payload is too short!')
+        end = start + len(payload)
+        sub_payload = payload[start:end]
+
+    log.debug('----------------')
+    log.debug('payload: %s', payload)
+    log.debug('offset: %s', offset)
+    log.debug('size: %s', size)
+    log.debug('start: %s', start)
+    log.debug('end: %s', end)
+    log.debug('sub_payload: %s', sub_payload)
+    log.debug('----------------')
     return sub_payload
 
 
