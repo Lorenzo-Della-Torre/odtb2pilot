@@ -131,7 +131,6 @@ class Uds:
         payload = bytes([0x19, 0x06]) + dtc_number + record
         return self.__make_call(payload)
 
-
     def read_data_by_id_22(self, did: bytes, mask: bytes = b''):
         """ Read Data by Identifier """
         payload = b'\x22' + did + mask
@@ -187,7 +186,12 @@ class Uds:
             # mode change can take a little while so let's sleep a bit before
             # we request the active diagnostic session number
             time.sleep(2)
-            res = self.active_diag_session_f186()
+            try:
+                res = self.active_diag_session_f186()
+            except UdsEmptyResponse as uds_error:
+                log.error(uds_error)
+                raise
+
             if not "mode" in res.details:
                 raise UdsError(f"Failure occurred when setting mode: {mode}")
         self.mode = res.details["mode"]

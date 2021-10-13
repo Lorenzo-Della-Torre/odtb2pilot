@@ -33,6 +33,10 @@
               <td class="number">{{ content.hostname }}</td>
             </tr>
             <tr>
+              <td>Hilding project</td>
+              <td class="number">{{ content.platform }}</td>
+            </tr>
+            <tr>
               <td>Report generated</td>
               <td class="number">{{ content.report_generated }}</td>
             </tr>
@@ -44,7 +48,7 @@
         <tbody>
           <tr>
             <td class="thick-row" id="part_no_match">
-              Diagnostic part number is NOT matching! Expected {{ content.sddb_app_diag_part_num }}
+              Diagnostic part number is NOT matching! In SDDB file: {{ content.sddb_app_diag_part_num }}
             </td>
           </tr>
         </tbody>
@@ -122,8 +126,8 @@
             </td>
           </tr>
           <tr>
-            <td class="thin-row">Failed</td>
-            <td class="number thin-row">
+            <td class="thick-row">Failed</td>
+            <td class="number thick-row">
             {{ content.did_counter.failed }}
             </td>
           </tr>
@@ -137,6 +141,12 @@
             <td class="thin-row">requestOutOfRange (31)</td>
             <td class="number thin-row">
             {{ content.did_counter.request_out_of_range }}
+            </td>
+          </tr>
+		  <tr>
+            <td class="thin-row">securityAccessDenied (33)</td>
+            <td class="number thin-row">
+            {{ content.did_counter.security_access_denied }}
             </td>
           </tr>
         </tbody>
