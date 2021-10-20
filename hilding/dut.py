@@ -161,6 +161,8 @@ class Dut:
             }
         iso_tp.change_mf_fc(can_p2["receive"], can_mf)
 
+        log.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Precondition started~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+
         res = self.uds.read_data_by_id_22(EicDid.complete_ecu_part_number_eda0)
         log.info("Precondition eda0: %s\n", res)
 
@@ -170,7 +172,8 @@ class Dut:
 
     def postcondition(self, start_time, result):
         """ run postconditions and change to mode 1 """
-        log.info("Postcondition: Display current mode/session, change to mode1 (default)")
+        log.info("")
+        log.info("~~~~Postcondition: Display current mode/session, change to mode1 (default)~~~~")
         self.uds.step = 200
         res_mode = self.uds.active_diag_session_f186()
         log.info("Current mode/session: %s", res_mode.details["mode"])
@@ -217,6 +220,12 @@ class Dut:
     def step(self, func, *args, purpose="", **kwargs):
         """ add test step """
         self.uds.step += 1
+
+        logging.info("")
+        logging.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Step %s started~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+        self.uds.step)
+        logging.info("Purpose: %s", purpose)
+
         self.uds.purpose = purpose
         if inspect.ismethod(func):
             # step should also works with class methods and not just functions.

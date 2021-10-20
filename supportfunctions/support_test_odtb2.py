@@ -165,7 +165,6 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
             SC.clear_all_can_frames()
             SC.clear_all_can_messages()
 
-        self.print_test_purpose(etp["step_no"], etp["purpose"])
         # wait for messages
         # define answer to expect
         logging.debug("Build answer can_frames to receive")
@@ -238,7 +237,10 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
                     testresult = testresult and\
                         self.test_message(SC.can_messages[can_p["receive"]],\
                                           can_answer.hex().upper())
-        logging.info("Step %s: Result teststep: %s", etp["step_no"], testresult)
+        logging.debug("Step %s: Result from teststep method in support_test_odtb2.py: %s",
+        etp["step_no"],
+        testresult)
+
         return testresult
 
     @staticmethod
