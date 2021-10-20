@@ -264,6 +264,58 @@ class UdsResponse:
         """ convenience property for getting response details """
         return self.data["details"]
 
+    def extract_from_did(self,attribute,get_data=True):
+        """[This method extracts information about an attribute within a did.
+
+        Ex. If info about "TotalNumberOfReportedEvents" is requested supply
+        attribute name. A dictionary containing the info will
+        be returned.
+
+        If get_data is True the returned dictionary will contain the information]
+
+        Args:
+            attribute ([string]): [Name of requested attribute]
+            get_data (bool, optional): [If True the data belonging to the attribute will be\
+            returned]. Defaults to True.
+
+        Returns:
+            [return_dictionary]: [Dictionary containing size and offset. If get_data is true
+            and data related to the attribute could be retrieved this will also be included
+            in the dictionary with key "data". If get_data is False dict["data"] will be None]
+        """
+        if "did" in self.data:
+            if self.data["did"] in self.__sddb_dids["resp_item_dict"]:
+                did_info = self.__sddb_dids["resp_item_dict"][self.data["did"]]
+            else:
+                logging.error("Did not in sddb dictionary, make sure it is implemented and that the\
+ sddb dictionary is updated")
+                return {}
+        else:
+            logging.error("The response from the ECU does not have the correct format,\
+ make sure it is implemented in the ECU SW")
+            return {}
+
+        for ent in did_info:
+            if ent["name"].lower() == attribute.lower():
+                offset = ent["offset"]
+                size = ent["size"]
+                return_dictionary = {"offset" : offset,
+                                "size" : size}
+                if get_data is True:
+                    item = self.details["item"]
+                    attribute_data = item[int(offset, base=16)*2:\
+                        int(offset, base=16)*2+int(size, base=16)*2]
+                    return_dictionary["data"] = attribute_data
+                else:
+                    return_dictionary["data"] = None
+
+                return return_dictionary
+        logging.error("The attribute %s could not be found for the did %s",
+        attribute,
+        self.data["did"])
+        return {}
+
+
 
     def empty(self):
         """ Check if the response is empty """
