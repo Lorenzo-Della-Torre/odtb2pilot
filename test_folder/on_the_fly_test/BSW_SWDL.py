@@ -40,7 +40,7 @@ import inspect
 logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
 import odtb_conf
-from supportfunctions.support_can import SupportCAN, CanParam
+from supportfunctions.support_can import SupportCAN, CanParam, PerParam
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
 from supportfunctions.support_SBL import SupportSBL
 from supportfunctions.support_sec_acc import SupportSecurityAccess, SecAccessParam
@@ -67,9 +67,6 @@ def stop_nmframe():
         teststep 7: stop heartbeat, wait for BECM to stop sending frames
     """
     result = True
-
-    stepno = 777
-    purpose = "stop sending heartbeat, verify BECM stops traffic"
 
     #nm_frame = can_af["receive"]
     #SIO.extract_parameter_yml(str(inspect.stack()[0][3]), "nm_frame")
@@ -114,13 +111,15 @@ def restart_nmframe(can_p):
     # start heartbeat, repeat every x second
 
     SC.start_heartbeat(can_p["netstub"], hb_param)
-    wait_start = time.time()
     return result
 
 
 
-def restart_heartbeat(can_p):
-    SC.stop_heartbeat()
+#def restart_heartbeat(can_p):
+#    """
+#    Restart heartbeat to keep ECU alive
+#    """
+#    SC.stop_heartbeat()
 
 
 def step_1(can_p: CanParam, sa_keys):
