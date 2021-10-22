@@ -566,7 +566,7 @@ class SupportCAN:
             mf_cf_count = ((mf_cf_count + 1) & 0xF) + 32
 
 
-    def send_mf(self, can_p: CanParam, cpay, padding, padding_byte):
+    def send_mf(self, can_p: CanParam, cpay, padding, padding_byte):# pylint: disable=too-many-branches
         """
         send_mf
         """
@@ -744,7 +744,7 @@ class SupportCAN:
 
 
     def t_send_signal_can_mf(self, can_p: CanParam, cpay: CanPayload,
-                             padding=True, padding_byte=0x00):
+                             padding=True, padding_byte=0x00):# pylint: disable=too-many-branches, too-many-statements
         """
         t_send_signal_CAN_MF
         """
@@ -818,7 +818,7 @@ class SupportCAN:
         elif can_p["protokoll"] == 'can_fd':
             logging.info("Send payload as CAN_FD frames")
             # if single_frame:
-            if mess_length < framelength_max-1:
+            if mess_length < can_p["framelength_max"]-1:
                 self.__send_sf(can_p, cpay, padding, padding_byte)
             # if multi_frame (max 4GB)
             elif mess_length < 0x1000000000000000000000000:
@@ -997,7 +997,7 @@ class SupportCAN:
         return can_mess_updated
 
 
-    def update_can_messages(self, can_p): # pylint: disable=too-many-branches
+    def update_can_messages(self, can_p): # pylint: disable=too-many-branches, too-many-statements
         """
         update list of messages for a given can_p["receive"]
 
@@ -1030,8 +1030,8 @@ class SupportCAN:
                         mf_size_remain = 0
                         #logging.debug("Single frame message received")
                     elif det_mf == 1:
-                        # Todo for CAN / CAN_FD:
-                        # 1. detect if FirstFrame is CAN/CAN_FD 
+                        # added for CAN / CAN_FD:
+                        # 1. detect if FirstFrame is CAN/CAN_FD
                         #    (https://en.wikipedia.org/wiki/CAN_FD)
                         # 2. get payload length of message
                         #logging.debug("detect if CAN/CAN_FD multiframe")
@@ -1073,7 +1073,10 @@ class SupportCAN:
                             #logging.debug("first payload CAN %s", temp_message)
                             #logging.debug("CAN message size %s", mf_mess_size)
                             mf_size_remain = mf_mess_size - mess_bytes_received
-                            #logging.debug("mf_mess_size: %s, received %s, new size %s.", mf_mess_size, mess_bytes_received, mf_size_remain)
+                            #logging.debug("mf_mess_size: %s, received %s, new size %s.",
+                            #                                 mf_mess_size,
+                            #                                 mess_bytes_received,
+                            #                                 mf_size_remain)
                             mf_cf_count = ((mf_cf_count + 1) & 0xF) + 32
                             #logging.debug("mf_size_remain: %s", mf_size_remain)
 
