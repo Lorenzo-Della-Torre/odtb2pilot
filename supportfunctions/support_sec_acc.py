@@ -36,7 +36,7 @@ from typing import Dict
 import logging
 
 #load the shared object file for SecAccess Gen2
-#lib = ctypes.CDLL('/home/pi/Repos/security_access/build/sa2-lib/lib/libsa_client_lib.so')
+#lib = ctypes.CDLL('/home/pi/Repos/odtb2pilot/sec_access_gen2_dll/linux/armv7l/libsa_client_lib.so')
 #didn't find out how to use shared object under windows environment yet.
 #lib = ctypes.CDLL('../../security_access/build/sa2-lib/lib/libsa_client_lib.dll.a')
 #lib = ctypes.CDLL('../../security_access/build/sa2-lib/cygsa_client_lib.dll')
@@ -180,24 +180,27 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         if odtb_repo_param is None:
             odtb_repo_param = '.'
 
+        #logging.info("SSA sys.platform     %s", sys.platform)
+        #logging.info("SSA platform.machine %s", platform.machine())
+        #logging.info("**********************")
         if sys.platform == 'linux':
-            if platform.machine() == 'armv71':
+            if platform.machine() == 'armv7l':
                 self.lib = ctypes.CDLL(odtb_repo_param +
-                                       '/sec_access_gen2_dll/linux/armv71/libsa_client_lib.so')
+                                       '/sec_access_gen2_dll/linux/armv7l/libsa_client_lib.so')
             elif platform.machine() == 'x86_64':
                 self.lib = ctypes.CDLL(odtb_repo_param +
                                        '/sec_access_gen2_dll/linux/x86_64/libsa_client_lib.so')
             else:
                 logging.info("Right library version for SA Gen2 not found: %s", sys.platform)
         elif sys.platform == 'win32':
-            self.lib = ctypes.CDLL(odtb_repo_param +
-                                   '/sec_access_gen2_dll/windows/cygsa_client_lib.dll')
             #self.lib = ctypes.CDLL(odtb_repo_param +
-            #                       '/sec_access_gen2_dll/windows/cygsa_client_lib.dll',
-            #                       handle=None,
-            #                       use_errno=False,
-            #                       use_last_error=False,
-            #                       winmode=1)
+            #                       '/sec_access_gen2_dll/windows/cygsa_client_lib.dll')
+            self.lib = ctypes.CDLL(odtb_repo_param +
+                                   '/sec_access_gen2_dll/windows/cygsa_client_lib.dll',
+                                   handle=None,
+                                   use_errno=False,
+                                   use_last_error=False,
+                                   winmode=1)
         else:
             raise Exception("Unknown operation system. Don't know which SAGen2 lib to load.")
 
@@ -264,6 +267,13 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         """
         added for Gen2
         """
+        logging.info("Show data types for request_seed:")
+        logging.info("ctypes.byref(self.session_buffer) %s", type(ctypes.byref(self.session_buffer)))
+        logging.info("ctypes.byref(self.send_buffer) %s", type(ctypes.byref(self.send_buffer)))
+        logging.info("now the whole function")
+        logging.info("self.lib.sacl_prepare_client_request_seed... %s",
+                      self.lib.sacl_prepare_client_request_seed(ctypes.byref(self.session_buffer),
+                                                        ctypes.byref(self.send_buffer)))
         ret = self.lib.sacl_prepare_client_request_seed(ctypes.byref(self.session_buffer),
                                                         ctypes.byref(self.send_buffer))
         if ret != SaGen2Param.SA_RET_SUCCESS:

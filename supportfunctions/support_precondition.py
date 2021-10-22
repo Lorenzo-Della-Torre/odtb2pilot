@@ -85,11 +85,18 @@ class SupportPrecondition:
         SC.subscribe_signal(can_p, timeout)
         logging.debug("precondition can_p2 %s", can_p)
         #record signal we send as well
-        can_p2: CanParam = {"netstub": can_p["netstub"],
-                            "send": can_p["receive"],
-                            "receive": can_p["send"],
-                            "namespace": can_p["namespace"]
-                           }
+        #can_p2: CanParam = {"netstub": can_p["netstub"],
+        #                    "system_stub" : can_p["system_stub"],
+        #                    "send": can_p["receive"],
+        #                    "receive": can_p["send"],
+        #                    "namespace": can_p["namespace"]
+        #                   }
+        can_p2: CanParam = {}
+        for i in can_p:
+            can_p2[i] = can_p[i]
+        can_p2["send"] = can_p["receive"]
+        can_p2["receive"] = can_p["send"]
+
         SC.subscribe_signal(can_p2, timeout)
         #Don't generate FC frames for signals we generated:
         time.sleep(1)
@@ -178,6 +185,7 @@ class SupportPrecondition:
         SC.subscribe_signal(can_p, timeout)
         #record signal we send as well
         can_p2: CanParam = {"netstub": can_p["netstub"],
+                            "system_stub": can_p["system_stub"],
                             "send": can_p["receive"],
                             "receive": can_p["send"],
                             "namespace": can_p["namespace"],

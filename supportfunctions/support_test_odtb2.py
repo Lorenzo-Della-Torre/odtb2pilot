@@ -118,13 +118,13 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
         #wait timeout for getting subscribed data
         if (wait_max or (etp["max_no_messages"] == -1)):
             time.sleep(etp["timeout"])
-            SC.update_can_messages(can_p["receive"])
+            SC.update_can_messages(can_p)
         else:
-            SC.update_can_messages(can_p["receive"])
+            SC.update_can_messages(can_p)
             while((time.time()-wait_start <= etp["timeout"])
                   and (len(SC.can_messages[can_p["receive"]]) < etp["max_no_messages"])):
                 SC.clear_can_message(can_p["receive"])
-                SC.update_can_messages(can_p["receive"])
+                SC.update_can_messages(can_p)
                 time.sleep(0.05) #pause a bit to receive frames in background
 
 
@@ -221,7 +221,7 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
                                  max_7fxx78, (wait_loop <= max_7fxx78))
                 logging.info("Rec can frames after loop: %s", SC.can_frames[can_p["receive"]])
                 SC.clear_can_message(can_p["receive"])
-                SC.update_can_messages(can_p["receive"])
+                SC.update_can_messages(can_p)
 
         if len(SC.can_messages[can_p["receive"]]) < etp["min_no_messages"]:
             logging.warning("Bad: min_no_messages not reached: %s",

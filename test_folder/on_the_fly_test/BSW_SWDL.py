@@ -36,6 +36,9 @@ import sys
 import logging
 import inspect
 
+# start logging
+logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+
 import odtb_conf
 from supportfunctions.support_can import SupportCAN, CanParam
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
@@ -46,6 +49,7 @@ from supportfunctions.support_file_io import SupportFileIO
 from supportfunctions.support_precondition import SupportPrecondition
 from supportfunctions.support_service11 import SupportService11
 from supportfunctions.support_service22 import SupportService22
+from supportfunctions.support_service3e import SupportService3e
 
 SIO = SupportFileIO
 SC = SupportCAN()
@@ -56,6 +60,68 @@ SSA = SupportSecurityAccess()
 PREC = SupportPrecondition()
 SE11 = SupportService11()
 SE22 = SupportService22()
+SE3E = SupportService3e()
+
+def stop_nmframe():
+    """
+        teststep 7: stop heartbeat, wait for BECM to stop sending frames
+    """
+    result = True
+
+    stepno = 777
+    purpose = "stop sending heartbeat, verify BECM stops traffic"
+
+    #nm_frame = can_af["receive"]
+    #SIO.extract_parameter_yml(str(inspect.stack()[0][3]), "nm_frame")
+    #logging.info("Step No. {:d}: purpose: {}".format(stepno, purpose))
+
+    #if  frames_received(nm_frame, 0.2) < numofframe:
+    #    result = False
+    #    logging.info("No NM-frames: test failed.")
+    #logging.info("Stop heartbeat sent.")
+    SC.stop_heartbeat()
+
+    time.sleep(1)
+    # Shouldn't recevie frames any longer now
+    #if  frames_received(nm_frame, 0.2) > 0:
+    #    result = False
+    #    logging.info("No NM-frames: test failed.")
+    #logging.info("Step %s: result: %s\n", stepno, result)
+    return result
+
+
+def restart_nmframe(can_p):
+    """
+        teststep 9: send wakeup frame, followed by FD71/FD72 requests
+    """
+    #global Last_Step9_message
+    result = True
+
+    stepno = 999
+    purpose = "send wakeup frames again, wait for BECM to be awake again"
+
+    logging.info("Step No. {:d}: purpose: {}".format(stepno, purpose))
+
+    hb_param: PerParam = {
+        "name" : "Heartbeat",
+        "send" : True,
+        "id" : "EcmFront1NMFr",
+        "nspace" : can_p["namespace"].name,
+        "frame" : b'\x1A\x40\xC3\xFF\x01\x00\x00\x00',
+        "intervall" : 0.8
+        }
+    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), hb_param)
+    # start heartbeat, repeat every x second
+
+    SC.start_heartbeat(can_p["netstub"], hb_param)
+    wait_start = time.time()
+    return result
+
+
+
+def restart_heartbeat(can_p):
+    SC.stop_heartbeat()
+
 
 def step_1(can_p: CanParam, sa_keys):
     """
@@ -65,6 +131,8 @@ def step_1(can_p: CanParam, sa_keys):
     purpose = "Download and Activation of SBL"
 
     #logging.info("Step1, sa_keys: %s", sa_keys)
+    #stop_nmframe()
+    #SE3E.stop_periodic_tp_zero_suppress_prmib()
     result = SSBL.sbl_activation(can_p,
                                  sa_keys,
                                  stepno, purpose)
@@ -83,6 +151,8 @@ def step_2(can_p: CanParam):
                                        stepno, purpose)
     else:
         result = True
+    #SE3E.start_periodic_tp_zero_suppress_prmib(can_p)
+    #restart_nmframe(can_p)
     return result
 
 def step_3(can_p: CanParam):
@@ -121,7 +191,10 @@ def run():
         "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
         "send" : "Vcu1ToBecmFront1DiagReqFrame",
         "receive" : "BecmToVcu1Front1DiagResFrame",
-        "namespace" : SC.nspace_lookup("Front1CANCfg0")
+        "namespace" : SC.nspace_lookup("Front1CANCfg0"),
+        "protokoll" : 'can',
+        "framelength_max" : 8,
+        "padding" : True
         }
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
 
@@ -181,7 +254,10 @@ def run():
         # step 5:
         # action: ECU reset - Restart with downloaded SW
         # result: ECU accepts reset request
-        result = result and SE11.ecu_hardreset_5sec_delay(can_p)
+        SE3E.stop_periodic_tp_zero_suppress_prmib()
+        # timeout more than 5 sec should trigger timeout, causing reset
+        time.sleep(10)
+        #result = result and SE11.ecu_hardreset_5sec_delay(can_p)
 
         # step 6:
         # action: Check which Mode ECU is in after reset
