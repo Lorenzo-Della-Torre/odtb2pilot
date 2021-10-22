@@ -628,7 +628,8 @@ class SupportCAN:
                                                 bytes([pl_fcount]) + pl_work[0:])
                     pl_work = []
         else:
-            logging.info("support_can, send_mf: unknown format to build frames from messages in send_mf")
+            logging.info("support_can, send_mf: unknown format to build "\
+                         "frames from messages in send_mf")
 
 
     def __send_sf(self, can_p: CanParam, cpay, padding, padding_byte):
@@ -1030,7 +1031,8 @@ class SupportCAN:
                         #logging.debug("Single frame message received")
                     elif det_mf == 1:
                         # Todo for CAN / CAN_FD:
-                        # 1. detect if FirstFrame is CAN/CAN_FD (https://en.wikipedia.org/wiki/CAN_FD)
+                        # 1. detect if FirstFrame is CAN/CAN_FD 
+                        #    (https://en.wikipedia.org/wiki/CAN_FD)
                         # 2. get payload length of message
                         #logging.debug("detect if CAN/CAN_FD multiframe")
                         if int(i[2][1:4], 16) == 0:
@@ -1043,10 +1045,10 @@ class SupportCAN:
                             protokoll = 'can'
                             mf_mess_size = int(i[2][1:4], 16)
                             mess_bytes_received = (len(i[2]) / 2)-4 #payload starts byte2
-                        # 3. 
+                        # 3.
                         # First frame of MF-message, change to status=2 consective frames to follow
                         message_status = 2
-                        mf_cf_count = 32 # CF franes start with 0x20..0x2F for CAN and CAN_FD 
+                        mf_cf_count = 32 # CF franes start with 0x20..0x2F for CAN and CAN_FD
 
                         # get size of message to receive:
                         if protokoll == 'can_fd':
@@ -1111,8 +1113,10 @@ class SupportCAN:
                         logging.debug("Last frame to add")
                         #logging.debug("slice indices: i[2] %s", type(i[2]))
                         #logging.debug("slice indices: mf_size_remain %s", type(mf_size_remain))
-                        #logging.debug("slice indices: 2+mf_size_remain*2 %s", type(2+mf_size_remain*2))
-                        #logging.debug("slice indices: mess_bytes_received %s", type(mess_bytes_received))
+                        #logging.debug("slice indices: 2+mf_size_remain*2 %s",
+                        #              type(2+mf_size_remain*2))
+                        #logging.debug("slice indices: mess_bytes_received %s",
+                        #              type(mess_bytes_received))
                         #logging.debug("slice indices: mf_mess_size %s", type(mf_mess_size))
                         temp_message[2] = temp_message[2] + i[2][2:(2+mf_size_remain*2)]
                         mf_size_remain = 0
