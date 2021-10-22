@@ -743,8 +743,8 @@ class SupportCAN:
         self.can_mf_send[signal_name][1].append(frame) # SF_Data_Length + payload
 
 
-    def t_send_signal_can_mf(self, can_p: CanParam, cpay: CanPayload,
-                             padding=True, padding_byte=0x00):# pylint: disable=too-many-branches, too-many-statements
+    def t_send_signal_can_mf(self, can_p: CanParam, cpay: CanPayload,# pylint: disable=too-many-branches, too-many-statements
+                             padding=True, padding_byte=0x00):
         """
         t_send_signal_CAN_MF
         """
