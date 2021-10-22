@@ -37,7 +37,7 @@ import logging
 import inspect
 
 # start logging
-logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+#logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
 import odtb_conf
 from supportfunctions.support_can import SupportCAN, CanParam, PerParam
