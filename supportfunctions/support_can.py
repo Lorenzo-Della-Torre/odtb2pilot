@@ -529,7 +529,7 @@ class SupportCAN:
     @classmethod
     def can_receive(cls, can_send, can_extra):
         """
-        Services have 2byte, exept service 14, 22, 2E
+        Services have 2byte, except service 14, 22, 2E
         Service 22 and 2E have a DID added (extra 2 bytes)
 
         Positive reply will have \x40 added to first byte of service.
@@ -544,11 +544,14 @@ class SupportCAN:
         logging.debug("can_send: bytes in request      : %s", can_send)
         logging.debug("can_send: bytes in request (hex): %s", can_send.hex())
 
+        #add 0x40 to CAN_ID for positive reply
         can_ret = bytes([can_send[0]+ 0x40])
         if can_send[0] == 0x14:
             logging.info("can_receive: Service14 not implemented yet")
+        #UDS requests have 2 byte commands (like EDA0) which appear in reply
         elif can_send[0] == 0x22 or can_send[0] == 0x2E:
             can_ret = can_ret + can_send[1:3]
+        #other request only have 1 byte command (as 1001, 1002, 1003, 1101
         else:
             can_ret = can_ret + can_send[1:2]
         can_ret = can_ret + can_extra
@@ -573,7 +576,9 @@ class SupportCAN:
         if can_p["protokoll"] == "can":
             logging.info("support_can, send_mf: build framelist for can_fd")
             pl_fcount = 0x21
+            #get parameters for message to send: length of payload, DLC
             mess_length = len(cpay["payload"])
+            #copy of payload
             pl_work = cpay["payload"]
             fl_max = can_p["framelength_max"]
 
