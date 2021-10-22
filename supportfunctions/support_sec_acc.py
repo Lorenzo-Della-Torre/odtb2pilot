@@ -195,12 +195,12 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         elif sys.platform == 'win32':
             #self.lib = ctypes.CDLL(odtb_repo_param +
             #                       '/sec_access_gen2_dll/windows/cygsa_client_lib.dll')
-            self.lib = ctypes.CDLL(odtb_repo_param +
-                                   '/sec_access_gen2_dll/windows/cygsa_client_lib.dll',
-                                   handle=None,
-                                   use_errno=False,
-                                   use_last_error=False,
-                                   winmode=1)
+            self.lib = ctypes.WinDLL(odtb_repo_param +
+                                     '/sec_access_gen2_dll/windows/cygsa_client_lib.dll',
+                                     handle=None,
+                                     use_errno=False,
+                                     use_last_error=False,
+                                     winmode=1)
         else:
             raise Exception("Unknown operation system. Don't know which SAGen2 lib to load.")
 
