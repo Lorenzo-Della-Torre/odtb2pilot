@@ -195,7 +195,7 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         elif sys.platform == 'win32':
             #self.lib = ctypes.CDLL(odtb_repo_param +
             #                       '/sec_access_gen2_dll/windows/cygsa_client_lib.dll')
-            self.lib = ctypes.WinDLL(odtb_repo_param +
+            self.lib = ctypes.WinDLL(odtb_repo_param +# pylint: disable=unexpected-keyword-arg
                                      '/sec_access_gen2_dll/windows/cygsa_client_lib.dll',
                                      handle=None,
                                      use_errno=False,
