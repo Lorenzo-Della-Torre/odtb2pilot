@@ -1020,26 +1020,26 @@ class SupportCAN:
         #print("frames received ", self.can_frames[can_rec])
         if self.can_frames[can_rec]:
             for i in self.can_frames[can_rec]:
-                logging.debug("Whole can_frame : %s", i)
+                #logging.debug("Whole can_frame : %s", i)
                 if message_status == 0:
                     det_mf = int(i[2][0:1], 16)
                     if det_mf == 0:
                         #Single frame message, add frame as message
                         temp_message = i
                         mf_size_remain = 0
-                        logging.debug("Single frame message received")
+                        #logging.debug("Single frame message received")
                     elif det_mf == 1:
                         # Todo for CAN / CAN_FD:
                         # 1. detect if FirstFrame is CAN/CAN_FD (https://en.wikipedia.org/wiki/CAN_FD)
                         # 2. get payload length of message
-                        logging.info("detect if CAN/CAN_FD multiframe")
+                        #logging.debug("detect if CAN/CAN_FD multiframe")
                         if int(i[2][1:4], 16) == 0:
-                            logging.info("decode CAN_FD multiframe")
+                            #logging.debug("decode CAN_FD multiframe")
                             protokoll = 'can_fd'
                             mf_mess_size = int(i[2][4:12], 16)
                             mess_bytes_received = (len(i[2]) / 2)-12 #payload starts byte6
                         else:
-                            logging.info("decode CAN multiframe")
+                            #logging.debug("decode CAN multiframe")
                             protokoll = 'can'
                             mf_mess_size = int(i[2][1:4], 16)
                             mess_bytes_received = (len(i[2]) / 2)-4 #payload starts byte2
@@ -1051,29 +1051,29 @@ class SupportCAN:
                         # get size of message to receive:
                         if protokoll == 'can_fd':
                             # CAN_FD message
-                            logging.info("add first payload CAN_FD")
+                            #logging.debug("add first payload CAN_FD")
                             mess_bytes_received = (len(i[2]) // 2)-12 #payload starts byte6
                         # add first payload
                             temp_message = i[:]
-                            logging.info("first payload CAN_FD %s", temp_message)
-                            logging.info("CAN_FD message size %s", mf_mess_size)
+                            #logging.debug("first payload CAN_FD %s", temp_message)
+                            #logging.debug("CAN_FD message size %s", mf_mess_size)
                             mf_size_remain = mf_mess_size - mess_bytes_received
                             mf_cf_count = ((mf_cf_count + 1) & 0xF) + 32
-                            logging.info("mf_size_remain: %s", mf_size_remain)
+                            #logging.debug("mf_size_remain: %s", mf_size_remain)
                         else:
-                            logging.info("add first payload CAN")
+                            logging.debug("add first payload CAN")
                             # CAN message
                             mf_mess_size = int(i[2][1:4], 16)
                             #mess_bytes_received = 6
                             mess_bytes_received = (len(i[2]) // 2)-2 #payload starts byte2
                         # add first payload
                             temp_message = i[:]
-                            logging.info("first payload CAN %s", temp_message)
-                            logging.info("CAN message size %s", mf_mess_size)
+                            #logging.debug("first payload CAN %s", temp_message)
+                            #logging.debug("CAN message size %s", mf_mess_size)
                             mf_size_remain = mf_mess_size - mess_bytes_received
-                            logging.info("mf_mess_size: %s, received %s, new size %s.", mf_mess_size, mess_bytes_received, mf_size_remain)
+                            #logging.debug("mf_mess_size: %s, received %s, new size %s.", mf_mess_size, mess_bytes_received, mf_size_remain)
                             mf_cf_count = ((mf_cf_count + 1) & 0xF) + 32
-                            logging.info("mf_size_remain: %s", mf_size_remain)
+                            #logging.debug("mf_size_remain: %s", mf_size_remain)
 
                         #print("update_can_message: message_size ", mf_mess_size)
                         # add first payload
@@ -1103,17 +1103,17 @@ class SupportCAN:
                     if mf_size_remain > can_p["framelength_max"]-1:
                         #temp_message[2] = temp_message[2] + i[2][2:16]
                         temp_message[2] = temp_message[2] + i[2][2:]
-                        logging.info("Update temp_message: %s", temp_message[2])
+                        #logging.debug("Update temp_message: %s", temp_message[2])
                         mf_size_remain -= can_p["framelength_max"]-1
                         mf_cf_count = ((mf_cf_count + 1) & 0xF) + 32
-                        logging.info("mf_size_remain: %s", mf_size_remain)
+                        #logging.debug("mf_size_remain: %s", mf_size_remain)
                     else:
-                        logging.info("Last frame to add")
-                        logging.info("slice indices: i[2] %s", type(i[2]))
-                        logging.info("slice indices: mf_size_remain %s", type(mf_size_remain))
-                        logging.info("slice indices: 2+mf_size_remain*2 %s", type(2+mf_size_remain*2))
-                        logging.info("slice indices: mess_bytes_received %s", type(mess_bytes_received))
-                        logging.info("slice indices: mf_mess_size %s", type(mf_mess_size))
+                        logging.debug("Last frame to add")
+                        #logging.debug("slice indices: i[2] %s", type(i[2]))
+                        #logging.debug("slice indices: mf_size_remain %s", type(mf_size_remain))
+                        #logging.debug("slice indices: 2+mf_size_remain*2 %s", type(2+mf_size_remain*2))
+                        #logging.debug("slice indices: mess_bytes_received %s", type(mess_bytes_received))
+                        #logging.debug("slice indices: mf_mess_size %s", type(mf_mess_size))
                         temp_message[2] = temp_message[2] + i[2][2:(2+mf_size_remain*2)]
                         mf_size_remain = 0
                 else:

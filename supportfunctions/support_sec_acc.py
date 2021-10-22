@@ -267,13 +267,16 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         """
         added for Gen2
         """
-        logging.info("Show data types for request_seed:")
-        logging.info("ctypes.byref(self.session_buffer) %s", type(ctypes.byref(self.session_buffer)))
-        logging.info("ctypes.byref(self.send_buffer) %s", type(ctypes.byref(self.send_buffer)))
-        logging.info("now the whole function")
-        logging.info("self.lib.sacl_prepare_client_request_seed... %s",
-                      self.lib.sacl_prepare_client_request_seed(ctypes.byref(self.session_buffer),
-                                                        ctypes.byref(self.send_buffer)))
+        #logging.info("Show data types for request_seed:")
+        #logging.info("ctypes.byref(self.session_buffer) %s",
+        #             type(ctypes.byref(self.session_buffer)))
+        #logging.info("ctypes.byref(self.send_buffer) %s",
+        #             type(ctypes.byref(self.send_buffer)))
+        #logging.info("now the whole function")
+        #logging.info("self.lib.sacl_prepare_client_request_seed... %s",
+        #              self.lib.sacl_prepare_client_request_seed(
+        #                                                ctypes.byref(self.session_buffer),
+        #                                                ctypes.byref(self.send_buffer)))
         ret = self.lib.sacl_prepare_client_request_seed(ctypes.byref(self.session_buffer),
                                                         ctypes.byref(self.send_buffer))
         if ret != SaGen2Param.SA_RET_SUCCESS:
