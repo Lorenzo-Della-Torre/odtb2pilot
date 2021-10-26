@@ -15,7 +15,8 @@ from hilding import get_conf
 log = logging.getLogger('uds_response')
 
 class UdsResponse:
-    """ UDS response """
+    """ UDS response, this is a class that handles one response
+    """
     def __init__(self, raw, incoming_mode=None):
         self.raw = raw
         self.incoming_mode = incoming_mode
@@ -261,7 +262,11 @@ class UdsResponse:
 
     @property
     def details(self):
-        """ convenience property for getting response details """
+        """Convenience property for getting response details
+
+        Returns:
+            dict: Dictionary containing details
+        """
         return self.data["details"]
 
     def extract_from_did(self,attribute,get_data=True):
@@ -318,12 +323,20 @@ class UdsResponse:
 
 
     def empty(self):
-        """ Check if the response is empty """
+        """Check if the response is empty
+
+        Returns:
+            boolean: True if raw is empty, otherwise False
+        """
         return len(self.raw) == 0
 
 
     def extract_dids(self, content):
-        """ find all the defined dids in the content """
+        """Find all the defined DIDs in the content
+
+        Args:
+            content (content): Content to search through
+        """
         for did, regex in self.__did_regex.items():
             match = re.search(regex, content)
             if match:
@@ -336,7 +349,12 @@ class UdsResponse:
 
 
     def validate_part_num(self, did, item):
-        """ validate part number and add convert it to text format """
+        """Validate part number and add convert it to test format
+
+        Args:
+            did (string): [description]
+            item (string): [description]
+        """
         if did in ['F120', 'F121', 'F122', 'F124', 'F125', 'F12A', 'F12B',
                    'F12C', 'F12E']:
             if SupportTestODTB2.validate_part_number_record(item):
@@ -344,7 +362,15 @@ class UdsResponse:
                     SupportTestODTB2.pp_partnumber(item)
 
     def add_response_items(self, did, payload):
-        """ add response items """
+        """Add response items
+
+        This methods extracts all attributes in the sddb from the can response to
+        details['response_items']
+
+        Args:
+            did (string): DID to find response items for
+            payload ([type]): Can payload
+        """
         if did in self.__sddb_dids["resp_item_dict"]:
             resp_item_dict = self.__sddb_dids["resp_item_dict"]
             response_items = []
@@ -453,9 +479,15 @@ class UdsResponse:
 
 
 def extract_fields(hexstring, regex_fields: list):
-    """
-    Match regex_fields against the hexstring, add them to the fields
+    """Match regex_fields against the hexstring, add them to the fields
     dictionary, and remove the record from the original string representation.
+
+    Args:
+        hexstring ([type]): [description]
+        regex_fields (list): [description]
+
+    Returns:
+        dict: [description]
     """
     fields = {}
     for regex in regex_fields:
@@ -468,10 +500,17 @@ def extract_fields(hexstring, regex_fields: list):
 
 
 def get_sub_payload(payload, offset, size):
-    """
-    Returns the chosen sub part of the payload based on the offset and size
+    """Returns the chosen sub part of the payload based on the offset and size
     Payload, offset and size is hexadecimal (16 base)
     Every byte is two characters (multiplying with two)
+
+    Args:
+        payload ([type]): Can payload
+        offset ([type]): Attributes offset
+        size ([type]): Attribute size
+
+    Returns:
+        [type]: Part of payload that was extracted using offset and size
     """
     start = int(offset, 16)*2
     end = start+(int(size, 16)*2)
@@ -496,8 +535,7 @@ def get_sub_payload(payload, offset, size):
 
 
 def populate_formula(formula, value, size):
-    '''
-    Replaces X in a formula with a value.
+    """Replaces X in a formula with a value.
     Input:  formula = Example: X*1
             value   = Any value
             size    = size of bitmask/payload when it was in hex
@@ -518,7 +556,15 @@ def populate_formula(formula, value, size):
                         Value: 56
                         Size: 2 (doesn't matter in this example)
                 Output: (56 & 65534)/2
-    '''
+
+    Args:
+        formula ([type]): The formula that is to be used. Usually found in sddb
+        value ([type]): Value that is used as input to formula
+        size ([type]): [description]
+
+    Returns:
+        [type]: Whatever is calculated using the formula
+    """
 
     # Check for "Bitwise AND"
     # Removing characters we don't want
@@ -544,10 +590,19 @@ def populate_formula(formula, value, size):
 
 
 def get_scaled_value(resp_item, sub_payload):
-    """
-    Input - Response Item with at least formula
+    """ Input - Response Item with at least formula
             Value which should converted from raw data
     Returns the string with converted data
+
+    Args:
+        resp_item ([type]): An entry from response_items
+        sub_payload ([type]): Part of can payload
+
+    Raises:
+        RuntimeError: Raised if formula is not found
+
+    Returns:
+        string: String containing converted data
     """
     if 'outdatatype' in resp_item and resp_item['outdatatype'] == '06':
         sub_payload = sub_payload.rstrip("0") # Removing trailing zeros
@@ -584,12 +639,18 @@ def get_scaled_value(resp_item, sub_payload):
 
 
 def compare(scaled_value, compare_value):
-    """
-    Comparing two values. Returns boolean.
+    """Comparing two values. Returns boolean.
     If the compare value contains '=', then we add an '='
     Example:    Scaled value:    0x40
                 Compare value:  =0x40
                 Result: eval('0x40==0x40') which gives True
+
+    Args:
+        scaled_value ([type]): [description]
+        compare_value ([type]): [description]
+
+    Returns:
+        boolean: Result from the comparison between the two inputs
     """
     improved_compare_value = compare_value
     result = False # If not True, then default is False
