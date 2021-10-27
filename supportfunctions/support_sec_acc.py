@@ -27,7 +27,6 @@
 
 """The Python implementation of the grPC route guide client."""
 
-import os
 import sys
 import platform
 import ctypes
