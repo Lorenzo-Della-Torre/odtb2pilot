@@ -83,14 +83,6 @@ class SupportService27:
             elif sa_keys["SecAcc_Gen"] == 'Gen2':
                 SSA.set_level_key(1)
                 payload = SSA.prepare_client_request_seed()
-                #payload = bytearray.fromhex('2701'\
-                #                            +'0001000177862BBA'\
-                #                            +'7DE6704BE596E493'\
-                #                            +'014DC551342E4273'\
-                #                            +'4884B4F3FCAD0499'\
-                #                            +'55E5C63420EF7BFF'\
-                #                            +'35CDFBEDEADC3E8F'\
-                #                            +'F3B743A7')
                 cpay: CanPayload =\
                       {"payload" : payload,\
                        "extra" : ''
@@ -115,10 +107,10 @@ class SupportService27:
                 }
             ### remove when EDA0 implemented in MEP2
 
-        etp: CanTestExtra = {"step_no": stepno,\
-                             "purpose" : purpose,\
-                             "timeout" : 1,\
-                             "min_no_messages" : 1,\
+        etp: CanTestExtra = {"step_no": stepno,
+                             "purpose" : purpose,
+                             "timeout" : 1,
+                             "min_no_messages" : 1,
                              "max_no_messages" : 1
                             }
         if ecu_mode == 'SBL':
@@ -192,14 +184,6 @@ class SupportService27:
                 }
             ### remove when EDA0 implemented in MEP2
 
-        #SA_GEN1:
-        #etp: CanTestExtra = {"step_no": stepno,\
-        #                     "purpose" : purpose,\
-        #                     "timeout" : 0.1,\
-        #                     "min_no_messages" : -1,\
-        #                     "max_no_messages" : -1
-        #                    }
-        ##SA_GEN2:
         etp: CanTestExtra = {"step_no": stepno,\
                              "purpose" : purpose,\
                              "timeout" : 1,\
@@ -227,10 +211,11 @@ class SupportService27:
         if sa_keys["SecAcc_Gen"] == 'Gen1':
             #Security Access request seed
             result, seed = self.security_access_request_seed(can_p, sa_keys, step_no, purpose)
-            r_0 = SSA.set_security_access_pins(seed, sa_keys)
+            #solve task for SecAccess Gen1 using reply to seed and fixed_key
+            sa_key_calculated = SSA.set_security_access_pins(seed, sa_keys)
 
             #Security Access Send Key
-            result = result and self.security_access_send_key(can_p, sa_keys, r_0,
+            result = result and self.security_access_send_key(can_p, sa_keys, sa_key_calculated,
                                                               step_no, purpose)
 
         #SA_GEN2:

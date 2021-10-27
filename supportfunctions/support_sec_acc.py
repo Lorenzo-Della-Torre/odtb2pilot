@@ -34,6 +34,7 @@ import ctypes
 from typing import Dict
 
 import logging
+import git
 
 #load the shared object file for SecAccess Gen2
 #lib = ctypes.CDLL('/home/pi/Repos/odtb2pilot/sec_access_gen2_dll/linux/armv7l/libsa_client_lib.so')
@@ -176,13 +177,15 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         session_size = ctypes.c_uint8()
 
         #choose right library for SecureAccessGen2
-        odtb_repo_param = os.environ.get('TESTREPO')
+        #odtb_repo_param = os.environ.get('TESTREPO')
+        repo = git.Repo('.', search_parent_directories=True)
+        odtb_repo_param = repo.working_tree_dir
         if odtb_repo_param is None:
             odtb_repo_param = '.'
 
-        #logging.info("SSA sys.platform     %s", sys.platform)
-        #logging.info("SSA platform.machine %s", platform.machine())
-        #logging.info("**********************")
+        logging.debug("SSA sys.platform     %s", sys.platform)
+        logging.debug("SSA platform.machine %s", platform.machine())
+        logging.debug("**********************")
         if sys.platform == 'linux':
             if platform.machine() == 'armv7l':
                 self.lib = ctypes.CDLL(odtb_repo_param +
@@ -217,14 +220,15 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
 
     def set_keys(self, sa_keys):
         """
-        added for Gen2
+        added for Gen2 from VCC SA-Gen2 library
+        Set auth+proof key to start SecAccessGen calculation
         """
         auth_key = sa_keys['auth_key']
         proof_key = sa_keys['proof_key']
         logging.info("SSA sa_keys %s", sa_keys)
-        logging.info("SSA set_keys, len auth_key: %s", len(auth_key))
-        logging.info("SSA set_keys, len proof_key: %s", len(proof_key))
-        logging.info("SSA set_keys, wanted: %s", 2*SaGen2Param.KEY_SIZE)
+        logging.debug("SSA set_keys, len auth_key: %s", len(auth_key))
+        logging.debug("SSA set_keys, len proof_key: %s", len(proof_key))
+        logging.debug("SSA set_keys, wanted: %s", 2*SaGen2Param.KEY_SIZE)
 
         # key is 16bytes, which gives a string av 2x16 bytes as HEX-string
         if (len(auth_key) != 2*SaGen2Param.KEY_SIZE
@@ -244,7 +248,8 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
 
     def set_level_key(self, level):
         """
-        added for Gen2
+        added for Gen2 from VCC SA-Gen2 library
+        Set level for SecAccess request using VCC library
         """
         # Use external keys in app_client_sa_keys.h
         ret = self.lib.sacl_set_level_key(ctypes.byref(self.session_buffer),
@@ -254,29 +259,10 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         if ret != SaGen2Param.SA_RET_SUCCESS:
             raise Exception("Failed to set SA keys and level.")
 
-        #for field_name, field_type in session_context_._fields_:
-        #    print(field_name, getattr(session_context_, field_name))
-
-        ###accessing protected fields. removed
-        ###if needed, add a print functionality in class
-        #session_context_ = SaGen2SessionContext.from_buffer(self.session_buffer)
-        #for field_name, _ in session_context_._fields_:
-        #    print(field_name, getattr(session_context_, field_name))
-
     def prepare_client_request_seed(self) -> bytearray:
         """
-        added for Gen2
-        """
-        #logging.info("Show data types for request_seed:")
-        #logging.info("ctypes.byref(self.session_buffer) %s",
-        #             type(ctypes.byref(self.session_buffer)))
-        #logging.info("ctypes.byref(self.send_buffer) %s",
-        #             type(ctypes.byref(self.send_buffer)))
-        #logging.info("now the whole function")
-        #logging.info("self.lib.sacl_prepare_client_request_seed... %s",
-        #              self.lib.sacl_prepare_client_request_seed(
-        #                                                ctypes.byref(self.session_buffer),
-        #                                                ctypes.byref(self.send_buffer)))
+        added for Gen2 from VCC SA-Gen2 library
+        Request SecAccess seed using VCC SecAccess Gen2 library"""
         ret = self.lib.sacl_prepare_client_request_seed(ctypes.byref(self.session_buffer),
                                                         ctypes.byref(self.send_buffer))
         if ret != SaGen2Param.SA_RET_SUCCESS:
@@ -285,11 +271,12 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
 
     def process_server_response_seed(self, data) -> bool:
         """
-        added for Gen2
+        added for Gen2 from VCC SA-Gen2 library
+        After receiving response to seed request, solve task to get SecAccess
         """
-        logging.info("SSA response seed, length: %s", len(data))
-        logging.info("SSA response seed, length expected %s",
-                     SaGen2Param.SA_CLIENT_PROCESS_SERVER_RESPONSE_SEED_BUFFER_SIZE)
+        logging.debug("SSA response seed, length: %s", len(data))
+        logging.debug("SSA response seed, length expected %s",
+                       SaGen2Param.SA_CLIENT_PROCESS_SERVER_RESPONSE_SEED_BUFFER_SIZE)
         if len(data) != SaGen2Param.SA_CLIENT_PROCESS_SERVER_RESPONSE_SEED_BUFFER_SIZE:
             raise Exception("server_response_seed( is not of length "\
                             +f"{SaGen2Param.SA_CLIENT_PROCESS_SERVER_RESPONSE_SEED_BUFFER_SIZE}!"\
@@ -310,7 +297,8 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
 
     def prepare_client_send_key(self) -> bytearray:
         """
-        added for Gen2
+        added for Gen2 from VCC SA-Gen2 library
+        Send calculated SA key if no error occured in calculation
         """
         # Prepare client_send_key.
         ret = self.lib.sacl_prepare_client_send_key(ctypes.byref(self.session_buffer),
@@ -324,6 +312,7 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
     def process_server_response_key(self, data) -> bool:
         """
         added for Gen2
+        Check if SA-key was accepted
         """
         if len(data) != SaGen2Param.SA_CLIENT_PROCSS_SERVER_RESPONSE_KEY_BUFFER_SIZE:
             raise Exception("server_response_key is not of length "\
@@ -339,7 +328,7 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         if ret == SaGen2Param.SA_RET_SUCCESS:
             logging.info("SSA server_response_key: success")
         else:
-            logging.info("SSA server_response_key failes: %s", ret)
+            logging.info("SSA server_response_key failed: %s", ret)
             #raise Exception("Failed, server response key.")
         logging.info("SSA force server_response_key to true")
         ret = SaGen2Param.SA_RET_SUCCESS
@@ -355,17 +344,16 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         return result
 
 
-    #SecAcessGen1: Algorithm to decode the Security Access Pin
     def set_security_access_pins(self, sid, sa_keys):
         """
-        Algorithm to decode the Security Access Pin
+        Algorithm to decode the Security Access Pin (SA Gen1)
         SID: reply from request seed
-        fixed_key: fixed key, default in DSA '0102030405'
+        Used from sa_keys: fixed key, default in DSA '0102030405'
         """
         #step1: load the challenge bytes, bit by bit, into a 64-bit variable space
-        #insert fivefixed bytes and 3 seed
+        # insert five fixed bytes and 3 seed
         # set LoadChallengeBits: fixed_key + forrandom_seed
-        #change bit order so it matches SecAccess algorithm:
+        # change bit order so it matches SecAccess algorithm:
         fixed_key = sa_keys["fixed_key"]
         load = fixed_key[8:10] + fixed_key[6:8] + fixed_key[4:6] +\
                fixed_key[2:4] + fixed_key[0:2] +\

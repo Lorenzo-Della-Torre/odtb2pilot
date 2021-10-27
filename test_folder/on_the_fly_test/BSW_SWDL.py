@@ -64,34 +64,21 @@ SE3E = SupportService3e()
 
 def stop_nmframe():
     """
-        teststep 7: stop heartbeat, wait for BECM to stop sending frames
+        stop sending nm_frames  (heartbeat)
     """
     result = True
 
-    #nm_frame = can_af["receive"]
-    #SIO.extract_parameter_yml(str(inspect.stack()[0][3]), "nm_frame")
-    #logging.info("Step No. {:d}: purpose: {}".format(stepno, purpose))
-
-    #if  frames_received(nm_frame, 0.2) < numofframe:
-    #    result = False
-    #    logging.info("No NM-frames: test failed.")
-    #logging.info("Stop heartbeat sent.")
+    logging.debug("Stop heartbeat sent.")
     SC.stop_heartbeat()
 
     time.sleep(1)
-    # Shouldn't recevie frames any longer now
-    #if  frames_received(nm_frame, 0.2) > 0:
-    #    result = False
-    #    logging.info("No NM-frames: test failed.")
-    #logging.info("Step %s: result: %s\n", stepno, result)
     return result
 
 
 def restart_nmframe(can_p):
     """
-        teststep 9: send wakeup frame, followed by FD71/FD72 requests
+        start sending nmframes (heartbeat) again
     """
-    #global Last_Step9_message
     result = True
 
     stepno = 999
@@ -114,17 +101,14 @@ def restart_nmframe(can_p):
     return result
 
 
-
-#def restart_heartbeat(can_p):
-#    """
-#    Restart heartbeat to keep ECU alive
-#    """
-#    SC.stop_heartbeat()
-
-
 def step_1(can_p: CanParam, sa_keys):
     """
     Teststep 1: Activate SBL
+    Download of SBL to ECU and activation.
+    
+    If running into problems activating SBL:
+    Check if not sending nm_frame and/or TesterPresent helps
+    uncomment 'stop_nmframe', SE3E.stop_periodic
     """
     stepno = 1
     purpose = "Download and Activation of SBL"
@@ -140,11 +124,14 @@ def step_1(can_p: CanParam, sa_keys):
 def step_2(can_p: CanParam):
     """
     Teststep 2: ESS Software Part Download
+
+    Some ECU like HLCM don't have ESS vbf file
+    if no ESS file present: skip download
+
+    If needed: start sending TesterPresent/ heartbeat again
     """
     stepno = 2
     purpose = "ESS Software Part Download"
-    # Some ECU like HLCM don't have ESS vbf file
-    # if no ESS file present: skip download
     if SSBL.get_ess_filename():
         result = SSBL.sw_part_download(can_p, SSBL.get_ess_filename(),
                                        stepno, purpose)
@@ -162,6 +149,7 @@ def step_3(can_p: CanParam):
     result = True
     purpose = "continue Download SW"
     for i in SSBL.get_df_filenames():
+        # if needed: actiate DID EDA0 to check which mode ecu is in:
         #result = result and SE22.read_did_eda0(can_p)
         result = result and SSBL.sw_part_download(can_p, i, stepno, purpose)
     return result
@@ -209,7 +197,7 @@ def run():
     timeout = 3600
     result = result and PREC.precondition(can_p, timeout)
 
-    #Init parameter for SecAccess Gen1
+    #Init parameter for SecAccess Gen1 / Gen2 (current default: Gen1)
     sa_keys: SecAccessParam = {
         "SecAcc_Gen": 'Gen1',
         "fixed_key": '0102030405',
@@ -217,13 +205,6 @@ def run():
         "proof_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
     }
 
-    #Init parameter for SecAccess Gen2
-    #sa_keys: SecAccessParam = {
-    #    "SecAcc_Gen": 'Gen2',
-    #    "fixed_key": '0102030405',
-    #    "auth_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF',
-    #    "proof_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
-    #}
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), sa_keys)
 
     if result:
@@ -251,15 +232,17 @@ def run():
         result = result and step_4(can_p)
 
         # step 5:
-        # action: ECU reset - Restart with downloaded SW
-        # result: ECU accepts reset request
+        # action: Stop sending TesterPresent
+        # result: ECU fallback to Mode1 after timeout
         SE3E.stop_periodic_tp_zero_suppress_prmib()
         # timeout more than 5 sec should trigger timeout, causing reset
+        # time.sleep(7) wasn't enough with HVBM ecu.
         time.sleep(10)
+        # Reset not done anymore. Fallback after timeout should do the job
         #result = result and SE11.ecu_hardreset_5sec_delay(can_p)
 
         # step 6:
-        # action: Check which Mode ECU is in after reset
+        # action: Check which Mode ECU is in after timeout/reset
         # result: All went well. Boot up to Mode 1
         result = result and SE22.read_did_f186(can_p, dsession=b'\x01')
     ############################################
