@@ -105,7 +105,7 @@ def step_1(can_p: CanParam, sa_keys):
     """
     Teststep 1: Activate SBL
     Download of SBL to ECU and activation.
-    
+
     If running into problems activating SBL:
     Check if not sending nm_frame and/or TesterPresent helps
     uncomment 'stop_nmframe', SE3E.stop_periodic
