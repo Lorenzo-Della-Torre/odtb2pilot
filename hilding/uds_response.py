@@ -320,8 +320,6 @@ class UdsResponse:
         self.data["did"])
         return {}
 
-
-
     def empty(self):
         """Check if the response is empty
 
