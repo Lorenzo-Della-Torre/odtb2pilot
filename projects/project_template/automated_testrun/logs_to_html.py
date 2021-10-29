@@ -36,7 +36,6 @@ if __name__ == "__main__" and __package__ is None:
     __package__ = "autotest" # pylint: disable=redefined-builtin
 
 testrun_data = get_conf().rig.get_testrun_data()
-git_hash = testrun_data.get("git_hash")
 eda0_dict = testrun_data.get("eda0_dict")
 
 
@@ -380,6 +379,7 @@ def generate_html(folderinfo_result_tuple_list, outfile, verif_d,  # pylint: dis
             git_revision_hash = get_git_revision_hash()
             hostname = socket.gethostname()
             current_time = get_current_time()
+            platform = get_conf().rig.platform
 
             with tag('div', klass='flex-container'):
                 with tag('div', klass='metadata_box'):
@@ -394,6 +394,11 @@ def generate_html(folderinfo_result_tuple_list, outfile, verif_d,  # pylint: dis
                                     text(hostname)
                             with tag('tr'):
                                 with tag('td'):
+                                    text('Hilding project')
+                                with tag('td', klass='number'):
+                                    text(platform)
+                            with tag('tr'):
+                                with tag('td'):
                                     text('Report generated')
                                 with tag('td', klass='number'):
                                     text(current_time)
@@ -403,11 +408,6 @@ def generate_html(folderinfo_result_tuple_list, outfile, verif_d,  # pylint: dis
                                 text('logs_to_html GIT Hash')
                             with tag('td', klass='thin-row number'):
                                 text(git_revision_hash)
-                        with tag('tr'):
-                            with tag('td', klass='thick-row'):
-                                text('ECU GIT Hash')
-                            with tag('td', klass='ecu_git_hash thick-row number'):
-                                text(git_hash)
 
                     with tag('table', klass='metadata_table'):
                         for name in eda0_dict:

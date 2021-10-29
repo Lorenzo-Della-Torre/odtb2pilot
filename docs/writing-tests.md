@@ -33,37 +33,44 @@ def run():
         dut.postcondition(start_time, result)
 ```
 
-## Device Under Test (DUT)
+### A couple of words about the test script structure
+
+The test scripts have a structure containing steps. Each step should only test a delimited functionality. A step is taken by inputting a function into the dut.step method, additional arguments can also be sent together with the function, they will then be forwarded to the function itself. See below how the step method is implemented.
+```python
+    def step(self, func, *args, purpose="", **kwargs):
+        """ add test step """
+        self.uds.step += 1
+        self.uds.purpose = purpose
+        if inspect.ismethod(func):
+            # step should also works with class methods and not just functions.
+            # e.g. dut.step(dut.uds.set_mode, 2)
+            return func(*args, **kwargs)
+        return func(self, *args, **kwargs)
+```
+The verdict of the test is in the end decided based on the second argument given to the method "postcondition". One way of writing tests is shown above, another way could be to instead have a return value from each step that is evaluated in the run function. In that case the run function might have a slightly different implementation than what is seen above.
+
+## Things to consider when writing tests
+
+### Device Under Test (DUT)
 
 In an attempt to simplify test writing the Dut API was created. At the time of
 writing there are still many test written using the old way of writing tests,
 but do use the Dut API when writing new tests since that makes your work easier
 and avoids code duplication.
 
-## Basic configuration
+There are several measures taken to make the old and new way compatible. One thing that might be worth noting is that where ever can_p was previously used Dut can now be used in its place.
 
-You will find the basic configuration in
-`projects/<platform>/parameters_yml/project_default.yml` where you can configure
-the request and result frame to use for the ECU under test.
+### Accessing the sddb files
 
-## Supporting multiple platforms with the same test
+Info from the sddb file is used in many tests. When the steps in the Introduction guide on confluence has been taken your local repository will contain python representations of the sddb file. There are several methods that utilizes these files already but in the case you want to access a file as a whole, the following way is suggested: dut.conf.rig.sddb.
 
-Althought the ODTB2 platform was created to initially test our BECM and the
-newer HVBM ECU, it is by no means limited to those. Many of the test that we
-create can be reused when testing various platform, however we might need to
-provide the test with different parameters. That can be accomplished in test
-itself by calling `get_platform()` or you can use yaml configuration files for
-each platform that you place in the `projects/<platform>/parameters_yml`
-directory.
-
-
-## How to handle responses from the ECU
+### How to handle responses from the ECU
 
 The reply from the ECU is basically just a hexstring and it can take some time
 to decipher what the different bytes represent. Therefore, the framework
 provides a mechnism for decomposing the reply from the ECU according to the UDS
 standard (ISO-14229-1). One basic did is EDA0 that gives us the complete set of
-ECU part/serial numbers. 
+ECU part/serial numbers.
 
 ```python
 response = dut.uds.read_data_by_id_22(EicDid.complete_ecu_part_number_eda0)
@@ -78,7 +85,7 @@ The raw response can look like this:
 
 That is not the most comprehensible chunk of data, so instead of interpreting
 this in the test itself the framework can help us here. When we use the dut to
-make a call to the ECU we actually get an UdsResponse object back.
+make a call to the ECU we actually get an UdsResponse object back. Have a look at the UdsResponse class since it contains a lot of good functionality!
 
 ```
 UdsResponse:
@@ -126,4 +133,25 @@ extended to support other dids. It is also implemented for the following DTC req
  - Report DTC snapshots ids (1903)
  - Report DTC snapshot (1904)
  - Report DTC extended data records (1906)
+
+## Misc. stuff related to creating tests
+
+### Basic configuration
+
+You will find the basic configuration in
+`projects/<platform>/parameters_yml/project_default.yml` where you can configure
+the request and result frame to use for the ECU under test.
+
+### Supporting multiple platforms with the same test
+
+Althought the ODTB2 platform was created to initially test our BECM and the
+newer HVBM ECU, it is by no means limited to those. Many of the test that we
+create can be reused when testing various platform, however we might need to
+provide the test with different parameters. That can be accomplished in test
+itself by calling `get_platform()` or you can use yaml configuration files for
+each platform that you place in the `projects/<platform>/parameters_yml`
+directory.
+
+
+
 

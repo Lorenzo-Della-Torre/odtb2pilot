@@ -98,67 +98,136 @@ class Uds:
 
 
     def ecu_reset_1101(self, delay=1):
-        """ Reset the ECU """
+        """Reset the ECU
+
+        Args:
+            delay (int, optional): Delay just before method returns. Defaults to 1.
+
+        Returns:
+            UdsResponse: This is a response from the ECU
+        """
         payload = bytes([0x11, 0x01])
         reply =  self.__make_call(payload)
         time.sleep(delay)
         return reply
 
     def ecu_reset_noreply_1181(self, delay=1):
-        """ Reset the ECU with no reply """
+        """Reset the ECU with no reply
+
+        Args:
+            delay (int, optional): Delay before method returns. Defaults to 1.
+
+        Returns:
+            UdsResponse: This is a response from the ECU
+        """
         payload = bytes([0x11, 0x81])
         reply =  self.__make_call(payload)
         time.sleep(delay)
         return reply
 
     def dtc_by_status_mask_1902(self, mask: DtcStatus):
-        """ Read dtc by status mask """
+        """Read DTC by status mask
+
+        Args:
+            mask (DtcStatus): [description]
+
+        Returns:
+            UdsResponse: This is a response from the ECU
+        """
         payload = bytes([0x19, 0x02]) + mask.bytes
         return self.__make_call(payload)
 
     def dtc_snapshot_ids_1903(self):
-        """ Read snapshot id and DTC pairs currently in the ECU """
+        """Read snapshot id and DTC pairs currently in the ECU
+
+        Returns:
+            UdsResponse: This is a response from the ECU
+        """
         payload = bytes([0x19, 0x03])
         return self.__make_call(payload)
 
     def dtc_snapshot_1904(self, dtc_number: bytes, record: bytes = b'\xff'):
-        """ Report DTC snapshot record by DTC Number """
+        """Resport the DTC snapshot recorded by the DTC number
+
+        Args:
+            dtc_number (bytes): [description]
+            record (bytes, optional): [description]. Defaults to 0xff.
+
+        Returns:
+            UdsResponse: This is a response from the ECU
+        """
         payload = bytes([0x19, 0x04]) + dtc_number + record
         return self.__make_call(payload)
 
     def dtc_extended_1906(self, dtc_number: bytes, record: bytes = b'\xff'):
-        """ Report DTC extended data record by DTC number """
+        """Report the DTC extended data record by DTC number
+
+        Args:
+            dtc_number (bytes): [description]
+            record (bytes, optional): [description]. Defaults to 0xff.
+
+        Returns:
+            UdsResponse: This is a response from the ECU
+        """
         payload = bytes([0x19, 0x06]) + dtc_number + record
         return self.__make_call(payload)
 
-
     def read_data_by_id_22(self, did: bytes, mask: bytes = b''):
-        """ Read Data by Identifier """
+        """Read data by identifier
+
+        Args:
+            did (bytes): DID to be read
+            mask (bytes, optional): [description]. Defaults to 0.
+
+        Returns:
+            UdsResponse: This is a response from the ECU
+        """
         payload = b'\x22' + did + mask
         return self.__make_call(payload)
 
     def active_diag_session_f186(self):
-        """ Read active diagnostic session/mode """
+        """Read active diagnostic session/mode (DID F186)
+
+        Returns:
+            UdsResponse: This is a response from the ECU
+        """
         return self.read_data_by_id_22(b'\xf1\x86')
 
     def generic_ecu_call(self, payload: bytes = b''):
-        """
-        Generic ECU call
+        """Generic ECU call
         Use the service specific methods if you can instead of this method
+
+        Args:
+            payload (bytes, optional): Payload that is to be sent to the ECU. Defaults to 0.
+
+        Returns:
+            UdsResponse: This is a response from the ECU
         """
         return self.__make_call(payload)
 
     def milliseconds_since_request(self):
-        """
-        Elapsed time since last sent frame to first received frame with
+        """Elapsed time since last sent frame to first received frame with
         millisecond resolution.
+
+        Returns:
+            int: Time delta between last sent and last received frame
         """
         t_sent = float(SC.can_frames[self.dut['send']][0][0])
         t_received = float(SC.can_frames[self.dut['receive']][0][0])
         return int((t_received - t_sent) * 1000)
 
     def set_mode(self, mode=1, change_check=True):
-        """ Read Data by Identifier """
+        """Set mode of ECU
+
+        Args:
+            mode (int, optional): Mode the ECU should be set to. Defaults to 1.
+            change_check (bool, optional): If this is True some check are made to make sure the
+            transition is valid. Defaults to True.
+
+        Raises:
+            UdsError: If invalid transition is requested
+            UdsError: If transtition between modes fails
+        """
 
         if change_check and mode == 3 and self.mode == 2:
             raise UdsError(
@@ -187,14 +256,20 @@ class Uds:
             # mode change can take a little while so let's sleep a bit before
             # we request the active diagnostic session number
             time.sleep(2)
-            res = self.active_diag_session_f186()
+            try:
+                res = self.active_diag_session_f186()
+            except UdsEmptyResponse as uds_error:
+                log.error(uds_error)
+                raise
+
             if not "mode" in res.details:
                 raise UdsError(f"Failure occurred when setting mode: {mode}")
         self.mode = res.details["mode"]
 
 
     def enter_sbl(self):
-        """ enter the secondary bootloader """
+        """Enter the secondary bootloader
+        """
         if self.mode != 2:
             UdsError(
                 "You need to be in programming mode to change from pbl to sbl")
