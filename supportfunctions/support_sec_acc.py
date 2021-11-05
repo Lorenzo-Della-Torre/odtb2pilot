@@ -28,12 +28,14 @@
 """The Python implementation of the grPC route guide client."""
 
 import sys
+import os
 import platform
 import ctypes
 from typing import Dict
 
 import logging
-import git
+### import git used if wanting to get path to repo via gitpython
+#import git
 
 #load the shared object file for SecAccess Gen2
 #lib = ctypes.CDLL('/home/pi/Repos/odtb2pilot/sec_access_gen2_dll/linux/armv7l/libsa_client_lib.so')
@@ -176,15 +178,17 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         session_size = ctypes.c_uint8()
 
         #choose right library for SecureAccessGen2
-        #odtb_repo_param = os.environ.get('TESTREPO')
-        repo = git.Repo('.', search_parent_directories=True)
-        odtb_repo_param = repo.working_tree_dir
+        # we thought about gettint path to repo via 'gitpython'
+        # but that would cause support function to be called within repo.
+        odtb_repo_param = os.environ.get('TESTREPO')
+        #repo = git.Repo('.', search_parent_directories=True)
+        #odtb_repo_param = repo.working_tree_dir
         if odtb_repo_param is None:
             odtb_repo_param = '.'
 
-        logging.debug("SSA sys.platform     %s", sys.platform)
-        logging.debug("SSA platform.machine %s", platform.machine())
-        logging.debug("**********************")
+        #logging.debug("SSA sys.platform     %s", sys.platform)
+        #logging.debug("SSA platform.machine %s", platform.machine())
+        #logging.debug("**********************")
         if sys.platform == 'linux':
             if platform.machine() == 'armv7l':
                 self.lib = ctypes.CDLL(odtb_repo_param +

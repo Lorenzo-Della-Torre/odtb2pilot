@@ -52,7 +52,7 @@ class Rig:
         """ conf platform fixed key or local fixed key override """
         platform_data = self.conf.platforms.get(self.platform, {})
         platform_sa_keys = platform_data.get("sa_keys")
-        return self.conf.selected_rig_dict.get("fixed_key", platform_sa_keys)
+        return self.conf.selected_rig_dict.get("sa_keys", platform_sa_keys)
 
     @property
     def signal_send(self):

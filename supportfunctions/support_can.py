@@ -1021,9 +1021,9 @@ class SupportCAN:
         temp_message = [] #empty list as default
 
         can_rec = can_p["receive"]
-        #print("records received ", can_rec)
-        #print("number of frames ", len(self.can_frames[can_rec]))
-        #print("frames received ", self.can_frames[can_rec])
+        #logging.debug("records received %s", can_rec)
+        #logging.debug("number of frames %s", len(self.can_frames[can_rec]))
+        #logging.debug("frames received %s", self.can_frames[can_rec])
         if self.can_frames[can_rec]:
             for i in self.can_frames[can_rec]:
                 #logging.debug("Whole can_frame : %s", i)
@@ -1085,10 +1085,10 @@ class SupportCAN:
                             mf_cf_count = ((mf_cf_count + 1) & 0xF) + 32
                             #logging.debug("mf_size_remain: %s", mf_size_remain)
 
-                        #print("update_can_message: message_size ", mf_mess_size)
+                        #logging.debug("update_can_message: message_size %s", mf_mess_size)
                         # add first payload
-                        #print("update_can_message: whole frame ", i[2])
-                        #print("update_can_message firstpayload ", i[2][10:])
+                        #logging.debug("update_can_message: whole frame %s", i[2])
+                        #logging.debug("update_can_message firstpayload %s", i[2][10:])
 #                        temp_message = i[:]
                         # calculate bytes to be removed from mf_mess_size
                         #mf_size_remain = mf_mess_size - 6

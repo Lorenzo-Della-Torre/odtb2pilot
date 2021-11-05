@@ -99,6 +99,9 @@ class Dut:
         self.network_stub = NetworkServiceStub(self.channel)
         self.system_stub = SystemServiceStub(self.channel)
         self.namespace = NameSpace(name="Front1CANCfg0")
+        self.protokoll = 'can'
+        self.framelength_max = 8
+        self.padding = True
         self.uds = Uds(self)
 
     def __getitem__(self, key):
@@ -112,10 +115,22 @@ class Dut:
             return self.conf.rig.signal_receive
         if key == "namespace":
             return self.namespace
+        if key == 'protokoll':
+            return self.protokoll
+        if key == 'framelength_max':
+            return self.framelength_max
+        if key == 'padding':
+            return self.padding
         raise KeyError(key)
 
     def precondition(self, timeout=30):
-        """ run preconditions and start heartbeat """
+        """Run preconditions and start heartbeat
+
+        Args:
+            timeout (int, optional): Decides for how long the test is allowed to run.
+            Defaults to 30.
+        """
+
         self.uds.step = 100
         # start heartbeat, repeat every 0.8 second
         heartbeat_param: PerParam = {
@@ -169,7 +184,12 @@ class Dut:
         self.uds.step = 0
 
     def postcondition(self, start_time, result):
-        """ run postconditions and change to mode 1 """
+        """Run postconditions and change to mode 1
+
+        Args:
+            start_time (float): Used to calculate time needed for test
+            result (boolean): Result of the test script
+        """
         log.info("Postcondition: Display current mode/session, change to mode1 (default)")
         self.uds.step = 200
         res_mode = self.uds.active_diag_session_f186()
@@ -203,7 +223,12 @@ class Dut:
             log.info("Testcase result: FAILED")
 
     def start(self):
-        """ log the current time and return a timestamp """
+        """Log the current time and return a timestamp
+
+        Returns:
+            float: Current time
+        """
+
         start_time = datetime.now()
         timestamp = start_time.timestamp()
         log.info("Running test on: %s:%s",
@@ -215,7 +240,17 @@ class Dut:
 
     @analytics_test_step
     def step(self, func, *args, purpose="", **kwargs):
-        """ add test step """
+        """Add a test step. This method runs the function func with arguments *args and **kwargs.
+
+        This method also increase the value of step
+
+        Args:
+            func (function): A function or method that should be run in the step
+            purpose (str, optional): The purpose will be added to the log. Defaults to "".
+
+        Returns:
+            any: This method will return whatever is returned by func
+        """
         self.uds.step += 1
         self.uds.purpose = purpose
         if inspect.ismethod(func):
@@ -226,7 +261,9 @@ class Dut:
 
     @beamy_feature
     def check_licence(self):
-        """ check the beamy check_licence with beamylabs """
+        """
+        Check the beamy check_license with beamylabs
+        """
         # pylint: disable=no-member
         status = self.system_stub.GetLicenseInfo(Empty()).status
         assert status == LicenseStatus.VALID, \
@@ -245,7 +282,9 @@ class Dut:
 
     @beamy_feature
     def upload_file(self, path, dest_path):
-        """ Upload configuration file to the beamy signal broker """
+        """
+        Upload configuration file to the beamy signal broker
+        """
         sha256 = get_sha256(path)
         log.info(sha256)
         with open(path, "rb") as f:
@@ -258,7 +297,9 @@ class Dut:
 
     @beamy_feature
     def upload_folder(self, folder):
-        """ Upload configuration folder to the beamy signal broker """
+        """
+        Upload configuration folder to the beamy signal broker
+        """
         files = [y for x in os.walk(folder)
                  for y in glob(os.path.join(x[0], '*'))
                  if not os.path.isdir(y)]
@@ -333,7 +374,7 @@ class Dut:
 
         This build a new configuration directory and uploads it to the beamy
         signal broker. Once that done, it also issues a reload_configuration to
-        finally activate the new configuation.
+        finally activate the new configuration.
 
         Remember to set it back to default once you are done as it affects
         subsequent tests and users
@@ -368,13 +409,21 @@ class Dut:
             self.reload_configuration()
 
     def get_platform_yml_parameters(self, test_filename_py):
-        """
-        get test_filename_<platform>.yml file from the same directory as the
+        """Get test_filename_<platform>.yml file from the same directory as the
         main test if you really want to add external parameters to the test
 
         usage example:
             parameters = dut.get_platform_yml_parameters(__file__)
             dut.send = parameters["send"]
+
+        Args:
+            test_filename_py (string):
+
+        Raises:
+            DutTestError: If platform is not currently supported
+
+        Returns:
+            any: Parameters from yml-file
         """
         test_filename = Path(test_filename_py).with_suffix("")
         platform = self.conf.rig.platform
