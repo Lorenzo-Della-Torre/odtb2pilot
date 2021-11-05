@@ -104,7 +104,7 @@ class Dut:
         self.padding = True
         self.uds = Uds(self)
 
-    def __getitem__(self, key):
+    def __getitem__(self, key):# pylint: disable=too-many-return-statements
         # Legacy subscript access to dut object for old code
         # Do not use this for new features!
         if key == "netstub":
