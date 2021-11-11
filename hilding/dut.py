@@ -161,11 +161,14 @@ class Dut:
 
         # record signal we send as well. Do notice the reverse order of the
         # send and receive signals!
-        can_p2: CanParam = {}
-        for i in can_p:
-            can_p2[i] = can_p[i]
-        can_p2["send"] = can_p["receive"]
-        can_p2["receive"] = can_p["send"]
+        can_p2: CanParam = {"netstub": self.network_stub,
+                            "send": self.conf.rig.signal_receive,
+                            "receive": self.conf.rig.signal_send,
+                            "namespace": self.namespace,
+                            "protocol": self.conf.protokol,
+                            "framelength_max": self.conf.framelength_max,
+                            "padding" : self.conf.padding
+                           }
         iso_tp.subscribe_signal(can_p2, timeout)
 
         # do not generate FC frames for signals we generated:
