@@ -99,7 +99,7 @@ class Dut:
         self.network_stub = NetworkServiceStub(self.channel)
         self.system_stub = SystemServiceStub(self.channel)
         self.namespace = NameSpace(name="Front1CANCfg0")
-        self.protokoll = 'can'
+        self.protocol = 'can'
         self.framelength_max = 8
         self.padding = True
         self.uds = Uds(self)
@@ -115,8 +115,8 @@ class Dut:
             return self.conf.rig.signal_receive
         if key == "namespace":
             return self.namespace
-        if key == 'protokoll':
-            return self.protokoll
+        if key == 'protocol':
+            return self.protocol
         if key == 'framelength_max':
             return self.framelength_max
         if key == 'padding':
@@ -138,6 +138,9 @@ class Dut:
             "send" : True,
             "id" : self.conf.rig.signal_periodic,
             "nspace" : self.namespace.name,
+            "protocol" : "can",
+            "framelength_max" : 8,
+            "padding" : True,
             "frame" : bytes.fromhex(self.conf.rig.wakeup_frame),
             "intervall" : 0.4
             }
@@ -158,11 +161,11 @@ class Dut:
 
         # record signal we send as well. Do notice the reverse order of the
         # send and receive signals!
-        can_p2: CanParam = {"netstub": self.network_stub,
-                            "send": self.conf.rig.signal_receive,
-                            "receive": self.conf.rig.signal_send,
-                            "namespace": self.namespace
-                           }
+        can_p2: CanParam = {}
+        for i in can_p:
+            can_p2[i] = can_p[i]
+        can_p2["send"] = can_p["receive"]
+        can_p2["receive"] = can_p["send"]
         iso_tp.subscribe_signal(can_p2, timeout)
 
         # do not generate FC frames for signals we generated:
