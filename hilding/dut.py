@@ -165,9 +165,9 @@ class Dut:
                             "send": self.conf.rig.signal_receive,
                             "receive": self.conf.rig.signal_send,
                             "namespace": self.namespace,
-                            "protocol": self.conf.protocol,
-                            "framelength_max": self.conf.framelength_max,
-                            "padding" : self.conf.padding
+                            "protocol": self.protocol,
+                            "framelength_max": self.framelength_max,
+                            "padding" : self.padding
                            }
         iso_tp.subscribe_signal(can_p2, timeout)
 
