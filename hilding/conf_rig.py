@@ -2,7 +2,10 @@
 Handle rig configuration
 """
 import importlib
+from supportfunctions.support_sec_acc import SecAccessParam
+
 from hilding.conf_analytics import Analytics
+#SSA = SupportSecurityAccess()
 
 class Rig:
     """ hilding rig management """
@@ -51,7 +54,12 @@ class Rig:
     def sa_keys(self):
         """ conf platform fixed key or local fixed key override """
         platform_data = self.conf.platforms.get(self.platform, {})
-        platform_sa_keys = platform_data.get("sa_keys")
+        platform_sa_keys : SecAccessParam = {
+            "SecAcc_Gen": platform_data.get("SecAcc_Gen"),
+            "fixed_key": platform_data.get("fixed_key"),
+            "auth_key": platform_data.get("auth_key"),
+            "proof_key": platform_data.get("proof_key")
+        }
         return self.conf.selected_rig_dict.get("sa_keys", platform_sa_keys)
 
     @property
