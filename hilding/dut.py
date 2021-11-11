@@ -165,7 +165,7 @@ class Dut:
                             "send": self.conf.rig.signal_receive,
                             "receive": self.conf.rig.signal_send,
                             "namespace": self.namespace,
-                            "protocol": self.conf.protokol,
+                            "protocol": self.conf.protocol,
                             "framelength_max": self.conf.framelength_max,
                             "padding" : self.conf.padding
                            }
