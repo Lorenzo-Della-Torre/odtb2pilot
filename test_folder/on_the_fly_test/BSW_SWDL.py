@@ -36,9 +36,6 @@ import sys
 import logging
 import inspect
 
-# start logging
-#logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
-
 import odtb_conf
 from supportfunctions.support_can import SupportCAN, CanParam, PerParam
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
@@ -179,7 +176,7 @@ def run():
         "send" : "Vcu1ToBecmFront1DiagReqFrame",
         "receive" : "BecmToVcu1Front1DiagResFrame",
         "namespace" : SC.nspace_lookup("Front1CANCfg0"),
-        "protokoll" : 'can',
+        "protocol" : 'can',
         "framelength_max" : 8,
         "padding" : True
         }

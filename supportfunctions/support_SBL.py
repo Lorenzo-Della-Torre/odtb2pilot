@@ -290,14 +290,15 @@ class SupportSBL:
             if new_decompress_block != '':
                 assert isinstance(new_decompress_block, bool)
                 decompress_block = new_decompress_block
-            #else:
-            #    logging.info("Support_SBL: new_decompress_block is empty. Leave True.")
-            #logging.info("Support_SBL: decompress_block after YML: %s", decompress_block)
+            else:
+                logging.debug("Support_SBL: new_decompress_block is empty. Leave True.")
+            #show data block after decompress
+            logging.debug("Support_SBL: decompress_block after YML: %s", decompress_block)
 
-            #decompress data["b_data"] if needed
-            #logging.info("vbf_header:  %s", vbf_header)
-            #logging.info("data_format_identifier %s", vbf_header['data_format_identifier'])
-            #logging.info("DataFormat block: {0:02X}".format(vbf_header['data_format_identifier']))
+            #show header details
+            logging.info("vbf_header:  %s", vbf_header)
+            logging.info("data_format_identifier %s", vbf_header['data_format_identifier'])
+            logging.info("DataFormat block: {0:02X}".format(vbf_header['data_format_identifier']))
 
             if decompress_block:
                 if vbf_header['data_format_identifier'] == 0: # format '0x00':
@@ -309,28 +310,28 @@ class SupportSBL:
                     logging.info("Compression method 2: LZMA")
                     decompr_data = LZMA.decode_barray(vbf_block_data)
                 else:
-                    logging.info("Unknown compression format: {0:02X}".format\
-                                 (vbf_header['data_format_identifier']))
+                    logging.warning("Unknown compression format: {0:02X}".format\
+                                    (vbf_header['data_format_identifier']))
 
-            logging.info("Header       CRC16 block_data:  {0:04X}".format(vbf_block['Checksum']))
+            logging.debug("Header       CRC16 block_data:  {0:04X}".format(vbf_block['Checksum']))
             if decompress_block:
-                logging.info("Decompressed CRC16 calculation: {0:04X}".format\
+                logging.debug("Decompressed CRC16 calculation: {0:04X}".format\
                               (SUTE.crc16(decompr_data)))
             else:
-                logging.info("Block not decompress. No compare of CRC16.")
-            logging.info("Length block from header:  {0:08X}".format(vbf_block['Length']))
+                logging.debug("Block not decompress. No compare of CRC16.")
+            logging.debug("Length block from header:  {0:08X}".format(vbf_block['Length']))
             if decompress_block:
-                logging.info("Length block decompressed: {0:08X}".format\
+                logging.debug("Length block decompressed: {0:08X}".format\
                               (len(decompr_data)))
             else:
-                logging.info("Block not decompress. No compare of Block length.")
+                logging.debug("Block not decompress. No compare of Block length.")
 
-            logging.debug("Compare compress / uncompressed data:")
-            logging.debug("Compressed: vbf_block_data")
-            logging.debug("HEX: %s", vbf_block_data.hex())
-            logging.debug("Uncompressed: decompr_data")
-            logging.debug("HEX: %s", decompr_data.hex())
-            logging.debug("\n")
+            logging.info("Compare compress / uncompressed data:")
+            logging.info("Compressed: vbf_block_data")
+            logging.info("HEX: %s", vbf_block_data.hex())
+            logging.info("Uncompressed: decompr_data")
+            logging.info("HEX: %s", decompr_data.hex())
+            logging.info("\n")
 
             if (decompress_block and SUTE.crc16(decompr_data) == vbf_block['Checksum'])\
                or not decompress_block:
@@ -637,7 +638,6 @@ class SupportSBL:
         """
         sa_keys_new = sa_keys
         sa_keys_new = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), sa_keys_new)
-        #logging.info("Step%s: sa_keys after YML: %s", stepno, sa_keys_new)
 
         result = self.sbl_activation(can_p, sa_keys_new, stepno, purpose)
         return result
@@ -726,9 +726,7 @@ class SupportSBL:
             #convert into a python list
             if header[keys][0] == '{' and header[keys][-1] == '}':
                 #convert multiple values into python list
-                #logging.debug("Header part: %s: %s", keys, header[keys])
                 cvert = header[keys].replace('{', '[')
-                #logging.debug("Header part 'cvert': %s", cvert)
                 cvert = cvert.replace('}', ']')
                 header[keys] = cvert
 

@@ -59,7 +59,7 @@ class CanParam(Dict): # pylint: disable=too-few-public-methods,inherit-non-class
     send: str
     receive: str
     namespace: str
-    protokoll: str
+    protocol: str
     framelength_max: int
     padding: bool
 
@@ -573,7 +573,7 @@ class SupportCAN:
         """
         send_mf
         """
-        if can_p["protokoll"] == "can":
+        if can_p["protocol"] == "can":
             logging.info("support_can, send_mf: build framelist for can_fd")
             pl_fcount = 0x21
             #get parameters for message to send: length of payload, DLC
@@ -603,7 +603,7 @@ class SupportCAN:
                         self.add_canframe_tosend(can_p["send"],
                                                 bytes([pl_fcount]) + pl_work[0:])
                     pl_work = []
-        elif can_p["protokoll"] == "can_fd":
+        elif can_p["protocol"] == "can_fd":
             logging.info("support_can, send_mf: build framelist for can_fd")
             pl_fcount = 0x21
             mess_length = len(cpay["payload"])
@@ -774,7 +774,7 @@ class SupportCAN:
         # build array of frames to send:
         mess_length = len(cpay["payload"])
 
-        if can_p["protokoll"] == 'can':
+        if can_p["protocol"] == 'can':
             logging.info("Send payload as CAN frames")
             # if single_frame:
             if mess_length < can_p["framelength_max"]:
@@ -820,7 +820,7 @@ class SupportCAN:
                 # send accordingly
             else:
                 logging.debug("Payload doesn't fit in one MF message")
-        elif can_p["protokoll"] == 'can_fd':
+        elif can_p["protocol"] == 'can_fd':
             logging.info("Send payload as CAN_FD frames")
             # if single_frame:
             if mess_length < can_p["framelength_max"]-1:
@@ -1042,12 +1042,12 @@ class SupportCAN:
                         #logging.debug("detect if CAN/CAN_FD multiframe")
                         if int(i[2][1:4], 16) == 0:
                             #logging.debug("decode CAN_FD multiframe")
-                            protokoll = 'can_fd'
+                            protocol = 'can_fd'
                             mf_mess_size = int(i[2][4:12], 16)
                             mess_bytes_received = (len(i[2]) / 2)-12 #payload starts byte6
                         else:
                             #logging.debug("decode CAN multiframe")
-                            protokoll = 'can'
+                            protocol = 'can'
                             mf_mess_size = int(i[2][1:4], 16)
                             mess_bytes_received = (len(i[2]) / 2)-4 #payload starts byte2
                         # 3.
@@ -1056,7 +1056,7 @@ class SupportCAN:
                         mf_cf_count = 32 # CF franes start with 0x20..0x2F for CAN and CAN_FD
 
                         # get size of message to receive:
-                        if protokoll == 'can_fd':
+                        if protocol == 'can_fd':
                             # CAN_FD message
                             #logging.debug("add first payload CAN_FD")
                             mess_bytes_received = (len(i[2]) // 2)-12 #payload starts byte6
