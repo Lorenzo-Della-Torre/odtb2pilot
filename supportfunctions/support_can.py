@@ -62,19 +62,22 @@ class CanParam(Dict): # pylint: disable=too-few-public-methods,inherit-non-class
         #self.network_stub = NetworkServiceStub(self.channel)
         #self.system_stub = SystemServiceStub(self.channel)
         #self.namespace = namespace(name="Front1CANCfg0")
+        self netstub: ""
+        self.system_stub: ""
+        self.send: ""
+        self.receive: ""
         self.namespace = "Front1CANCfg0"
         self.protocol = 'can'
         self.framelength_max = 8
         self.padding = True
-
-    netstub: str
-    system_stub: str
-    send: str
-    receive: str
-    namespace: str
-    protocol: str
-    framelength_max: int
-    padding: bool
+#    netstub: str
+#    system_stub: str
+#    send: str
+#    receive: str
+#    namespace: str
+#    protocol: str
+#    framelength_max: int
+#    padding: bool
 
 
 class CanTestExtra(Dict): # pylint: disable=too-few-public-methods,inherit-non-class
