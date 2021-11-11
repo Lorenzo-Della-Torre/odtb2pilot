@@ -54,6 +54,18 @@ class CanParam(Dict): # pylint: disable=too-few-public-methods,inherit-non-class
         CanParam
         All CAN send/receive parameters
     """
+    def __init__(self):
+        #self.conf = get_conf()
+        #self.channel = grpc.insecure_channel(
+        #    f'{self.conf.rig.hostname}:'
+        #    f'{self.conf.rig.signal_broker_port}')
+        #self.network_stub = NetworkServiceStub(self.channel)
+        #self.system_stub = SystemServiceStub(self.channel)
+        self.namespace = NameSpace(name="Front1CANCfg0")
+        self.protocol = 'can'
+        self.framelength_max = 8
+        self.padding = True
+
     netstub: str
     system_stub: str
     send: str
