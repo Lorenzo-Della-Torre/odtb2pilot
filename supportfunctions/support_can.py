@@ -75,14 +75,14 @@ class CanParam(Dict): # pylint: disable=too-few-public-methods,inherit-non-class
         self._dict["framelength_max"] = 8
         self._dict["padding"] = True
 
-#    netstub: ""
-#    system_stub: ""
-#    send: ""
-#    receive: ""
-#    namespace = "Front1CANCfg0"
-#    protocol = 'can'
-#    framelength_max = 8
-#    padding = True
+    netstub: ""
+    system_stub: ""
+    send: ""
+    receive: ""
+    namespace = "Front1CANCfg0"
+    protocol = 'can'
+    framelength_max = 8
+    padding = True
         #Dict.__init__(self)
 
 #    netstub: str
