@@ -54,7 +54,9 @@ class CanParam(Dict): # pylint: disable=too-few-public-methods,inherit-non-class
         CanParam
         All CAN send/receive parameters
     """
-    def __init__(self):
+    def __init__(self, *arg, **kw):
+        super(CanParam, self).__init__(*arg, **kw)
+
         #self.conf = get_conf()
         #self.channel = grpc.insecure_channel(
         #    f'{self.conf.rig.hostname}:'
@@ -62,14 +64,27 @@ class CanParam(Dict): # pylint: disable=too-few-public-methods,inherit-non-class
         #self.network_stub = NetworkServiceStub(self.channel)
         #self.system_stub = SystemServiceStub(self.channel)
         #self.namespace = namespace(name="Front1CANCfg0")
-        self netstub: ""
-        self.system_stub: ""
-        self.send: ""
-        self.receive: ""
-        self.namespace = "Front1CANCfg0"
-        self.protocol = 'can'
-        self.framelength_max = 8
-        self.padding = True
+#        self._dict = {}
+
+        self._dict["netstub"] = ""
+        self._dict["system_stub"] = ""
+        self._dict["send"] = ""
+        self._dict["receive"] = ""
+        self._dict["namespace"] = "Front1CANCfg0"
+        self._dict["protocol"] = 'can'
+        self._dict["framelength_max"] = 8
+        self._dict["padding"] = True
+
+#    netstub: ""
+#    system_stub: ""
+#    send: ""
+#    receive: ""
+#    namespace = "Front1CANCfg0"
+#    protocol = 'can'
+#    framelength_max = 8
+#    padding = True
+        #Dict.__init__(self)
+
 #    netstub: str
 #    system_stub: str
 #    send: str
@@ -608,7 +623,7 @@ class SupportCAN:
             # still bytes to take
                 if len(pl_work) > fl_max-1:
                     self.add_canframe_tosend(can_p["send"],
-                                            (bytes([pl_fcount]) + pl_work[0:fl_max-1]))
+                                             (bytes([pl_fcount]) + pl_work[0:fl_max-1]))
                     pl_work = pl_work[fl_max-1:]
                     pl_fcount = (pl_fcount + 1) & 0x2F
                 else:
@@ -617,7 +632,7 @@ class SupportCAN:
                             self.fill_payload((bytes([pl_fcount]) + pl_work[0:]), padding_byte))
                     else:
                         self.add_canframe_tosend(can_p["send"],
-                                                bytes([pl_fcount]) + pl_work[0:])
+                                                 bytes([pl_fcount]) + pl_work[0:])
                     pl_work = []
         elif can_p["protocol"] == "can_fd":
             logging.info("support_can, send_mf: build framelist for can_fd")
@@ -629,7 +644,7 @@ class SupportCAN:
             # add first frame
             self.add_canframe_tosend(can_p["send"],\
                 (int(0x100000000000000000000000000000000000 | mess_length).to_bytes(2, 'big')
-                     + pl_work[0:fl_max-2]))
+                 + pl_work[0:fl_max-2]))
             pl_work = pl_work[fl_max-2:]
             logging.debug("Payload stored first frame: %s", self.can_mf_send)
             # add  remaining frames:
@@ -637,7 +652,7 @@ class SupportCAN:
             # still bytes to take
                 if len(pl_work) > fl_max-1:
                     self.add_canframe_tosend(can_p["send"],
-                                            (bytes([pl_fcount]) + pl_work[0:fl_max-1]))
+                                             (bytes([pl_fcount]) + pl_work[0:fl_max-1]))
                     pl_work = pl_work[fl_max-1:]
                     pl_fcount = (pl_fcount + 1) & 0x2F
                 else:
@@ -646,7 +661,7 @@ class SupportCAN:
                             self.fill_payload((bytes([pl_fcount]) + pl_work[0:]), padding_byte))
                     else:
                         self.add_canframe_tosend(can_p["send"],
-                                                bytes([pl_fcount]) + pl_work[0:])
+                                                 bytes([pl_fcount]) + pl_work[0:])
                     pl_work = []
         else:
             logging.info("support_can, send_mf: unknown format to build "\
