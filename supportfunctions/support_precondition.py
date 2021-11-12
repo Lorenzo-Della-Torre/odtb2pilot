@@ -132,6 +132,11 @@ class SupportPrecondition:
         """
         # start heartbeat, repeat every 0.8 second
 
+        #Temporary fix - add missing parameters in can_p
+        for key in CanParam():
+            if not key in can_p:
+                can_p[key] = CanParam()[key]
+
         #send burst for 10seconds (10000 x 0.01 sec)
         #to enter prog
         logging.info("Precondition: Sending burst")
