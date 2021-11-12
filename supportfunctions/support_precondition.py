@@ -55,6 +55,11 @@ class SupportPrecondition:
         BECM has to be kept alive: start heartbeat
         """
 
+        #Temporary fix - add missing parameters in can_p
+        for key in CanParam():
+        if not key in can_p:
+            can_p[key] = CanParam()[key]
+
         # start heartbeat, repeat every 0.4 second
         hb_param: PerParam = {
             "name" : "Heartbeat",
@@ -91,7 +96,7 @@ class SupportPrecondition:
         #                    "receive": can_p["send"],
         #                    "namespace": can_p["namespace"]
         #                   }
-        can_p2: CanParam = {}
+        can_p2 = CanParam()
         for i in can_p:
             can_p2[i] = can_p[i]
         can_p2["send"] = can_p["receive"]
