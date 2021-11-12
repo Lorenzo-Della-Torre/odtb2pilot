@@ -54,45 +54,16 @@ class CanParam(Dict): # pylint: disable=too-few-public-methods,inherit-non-class
         CanParam
         All CAN send/receive parameters
     """
-    def __init__(self, *arg, **kw):
-        super(CanParam, self).__init__(*arg, **kw)
-
-        #self.conf = get_conf()
-        #self.channel = grpc.insecure_channel(
-        #    f'{self.conf.rig.hostname}:'
-        #    f'{self.conf.rig.signal_broker_port}')
-        #self.network_stub = NetworkServiceStub(self.channel)
-        #self.system_stub = SystemServiceStub(self.channel)
-        #self.namespace = namespace(name="Front1CANCfg0")
-#        self._dict = {}
-
-        self._dict["netstub"] = ""
-        self._dict["system_stub"] = ""
-        self._dict["send"] = ""
-        self._dict["receive"] = ""
-        self._dict["namespace"] = "Front1CANCfg0"
-        self._dict["protocol"] = 'can'
-        self._dict["framelength_max"] = 8
-        self._dict["padding"] = True
-
-    netstub: ""
-    system_stub: ""
-    send: ""
-    receive: ""
-    namespace = "Front1CANCfg0"
-    protocol = 'can'
-    framelength_max = 8
-    padding = True
-        #Dict.__init__(self)
-
-#    netstub: str
-#    system_stub: str
-#    send: str
-#    receive: str
-#    namespace: str
-#    protocol: str
-#    framelength_max: int
-#    padding: bool
+    def __init__(self):
+        super(CanParam, self).__init__(
+        {'netstub': '',
+         'sytem_stub': '',
+         'send': '',
+         'receive': '',
+         'namespace': '',
+         'padding': True,
+         'framelength_max': 8,
+         'protocol': 'can'})
 
 
 class CanTestExtra(Dict): # pylint: disable=too-few-public-methods,inherit-non-class
