@@ -42,8 +42,8 @@ eda0_dict = testrun_data.get("eda0_dict")
 SUPPORT_TEST = SupportTestODTB2()
 
 RE_DATE_START = re.compile(r'\s*Testcase\s+start:\s+(?P<date>\d+-\d+-\d+)\s+(?P<time>\d+:\d+:\d+)')
-RE_RESULT = re.compile(r'.*(?P<result>FAILED|PASSED|To be inspected|tested implicitly|'\
-                       'Tested implicitly|Not applicable).*')
+RE_RESULT = re.compile(r'.*(?P<result>FAILED|PASSED|MANUAL|To be inspected|tested implicitly|\
+                       Tested implicitly|Not applicable).*')
 RE_FOLDER_TIME = re.compile(r'.*Testrun_(?P<date>\d+_\d+)')
 RE_REQPROD_ID = re.compile(r'\s*e_(?P<reqprod>\d+)_', flags=re.IGNORECASE)
 # case insensetive
@@ -60,6 +60,7 @@ PASSED_STATUS = 'PASSED'
 FAILED_STATUS = 'FAILED'
 MISSING_STATUS = 'MISSING'
 UNKNOWN_STATUS = 'UNKNOWN'
+MANUAL_STATUS = 'MANUAL'
 
 # Use the keys when regex-matching in log-files
 MATCH_DICT = {'Not applicable': NA_STATUS,
@@ -70,12 +71,21 @@ MATCH_DICT = {'Not applicable': NA_STATUS,
               'PASSED': PASSED_STATUS,
               'FAILED': FAILED_STATUS,
               'MISSING': MISSING_STATUS,
+              'MANUAL': MANUAL_STATUS,
               'UNKNOWN': UNKNOWN_STATUS}
 
 # Which color to use for the status
-COLOR_DICT = {PASSED_STATUS:'#94f7a2', FAILED_STATUS:'#f54949', NA_STATUS:'DarkSeaGreen',
-              MISSING_STATUS:'WHITE', NO_RES_STATUS:'#94c4f7', INSPECTION_STATUS:'Wheat',
-              IMPLICIT_STATUS:'PaleGreen', UNKNOWN_STATUS: 'BurlyWood'}
+# ----------------------------------
+# Apricot: #fbd7c9
+# Pale, light grayish lime green: #d8ed96
+# Light brilliant red: #ff585d
+# Duva: #b9d3dc
+# Light lime greenish gray: #d9d9d6
+# Light blue: #94c4f7
+# Sunshine: #f6eb61
+COLOR_DICT = {PASSED_STATUS:'#d8ed96', FAILED_STATUS:'#ff585d', NA_STATUS:'DarkSeaGreen',
+              MISSING_STATUS:'WHITE', NO_RES_STATUS:'#d9d9d6', INSPECTION_STATUS:'Wheat',
+              IMPLICIT_STATUS:'#b9d3dc', UNKNOWN_STATUS:'BurlyWood', MANUAL_STATUS:'#fbd7c9'}
 
 DESC_DICT = {PASSED_STATUS:'Passed',
              FAILED_STATUS:'Failed',
@@ -84,6 +94,7 @@ DESC_DICT = {PASSED_STATUS:'Passed',
              NO_RES_STATUS:'Did not reach the end of the script. No status found.',
              INSPECTION_STATUS:'Test by inspection',
              IMPLICIT_STATUS:'Implicitly tested by another testscript',
+             MANUAL_STATUS:'Manual test needed. Example: Using debugger',
              UNKNOWN_STATUS: 'Unknown error or status'}
 
 BROKEN_URL_COLOR = 'BlanchedAlmond'
@@ -102,15 +113,7 @@ SWRS_LINK_IDX = 3
 FOLDER_TIME_IDX = 0
 TESTRES_DICT_IDX = 1
 FOLDER_NAME_IDX = 2
-
 FIRST_PART_IDX = 0
-
-# Adding some style to this page ;)
-# Example:  Making every other row in a different colour
-#           Customizing padding
-#           Customizing links
-
-
 
 ### Code ###
 def parse_some_args():
