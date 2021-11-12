@@ -158,7 +158,8 @@ def run():
     result = False
 
     #Init parameter for SecAccess Gen1 / Gen2 (current default: Gen1)
-    sa_keys: SecAccessParam = {
+    #sa_keys: SecAccessParam = {
+    sa_keys: = {
         "SecAcc_Gen": 'Gen1',
         "fixed_key": '0102030405',
         "auth_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF',
