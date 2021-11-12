@@ -57,8 +57,8 @@ class SupportPrecondition:
 
         #Temporary fix - add missing parameters in can_p
         for key in CanParam():
-        if not key in can_p:
-            can_p[key] = CanParam()[key]
+            if not key in can_p:
+                can_p[key] = CanParam()[key]
 
         # start heartbeat, repeat every 0.4 second
         hb_param: PerParam = {
