@@ -39,6 +39,7 @@ from hilding.dut import DutTestError
 from hilding.uds import IoVmsDid
 from hilding.uds import EicDid
 from supportfunctions.support_SBL import SupportSBL
+from supportfunctions.support_sec_acc import SecAccessParam
 
 
 def step_1(dut):
@@ -92,7 +93,7 @@ def step_3(dut, eda0_f12c_valid):
     verify_f12c(dut, eda0_f12c_valid)
 
 
-def step_4(dut: Dut):
+def step_4(dut: Dut, sa_keys):
     """
     action:
         Set ecu to programming mode (sbl)
@@ -105,7 +106,7 @@ def step_4(dut: Dut):
     sbl = SupportSBL()
     sbl.get_vbf_files()
     if not sbl.sbl_activation(
-        dut, fixed_key='FFFFFFFFFF', stepno='4',
+        dut, sa_keys, stepno='4',
             purpose="Activate Secondary bootloader"):
         DutTestError("Could not set ecu in sbl mode")
 
@@ -156,6 +157,16 @@ def run():
     start_time = dut.start()
     result = False
 
+    #Init parameter for SecAccess Gen1 / Gen2 (current default: Gen1)
+    sa_keys: SecAccessParam = {
+        "SecAcc_Gen": 'Gen1',
+        "fixed_key": '0102030405',
+        "auth_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF',
+        "proof_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
+    }
+
+    #SIO.extract_parameter_yml(str(inspect.stack()[0][3]), sa_keys)
+
     try:
         dut.precondition(timeout=200)
 
@@ -167,7 +178,7 @@ def run():
         dut.step(step_3, eda0_f12c_valid,
                  purpose="get f12c and compare values in pbl")
 
-        dut.step(step_4,
+        dut.step(step_4, sa_keys,
                  purpose="set programming mode (sbl)")
 
         dut.step(step_5, eda0_f12c_valid,
