@@ -57,7 +57,7 @@ class CanParam(Dict): # pylint: disable=too-few-public-methods,inherit-non-class
     def __init__(self):
         super(CanParam, self).__init__(
             {'netstub': '',
-             'sytem_stub': '',
+             'system_stub': '',
              'send': '',
              'receive': '',
              'namespace': '',
