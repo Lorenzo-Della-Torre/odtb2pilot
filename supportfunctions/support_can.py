@@ -55,7 +55,7 @@ class CanParam(Dict): # pylint: disable=too-few-public-methods,inherit-non-class
         All CAN send/receive parameters
     """
     def __init__(self):
-        super(CanParam).__init__(
+        super(CanParam, self).__init__(
             {'netstub': '',
              'sytem_stub': '',
              'send': '',
@@ -64,6 +64,7 @@ class CanParam(Dict): # pylint: disable=too-few-public-methods,inherit-non-class
              'padding': True,
              'framelength_max': 8,
              'protocol': 'can'})
+
 
 
 class CanTestExtra(Dict): # pylint: disable=too-few-public-methods,inherit-non-class
