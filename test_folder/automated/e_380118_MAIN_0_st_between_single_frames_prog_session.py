@@ -83,7 +83,7 @@ def step_2(can_p):
                          cpay_2["payload_2"])
 
     time.sleep(1)
-    SC.update_can_messages(can_p["receive"])
+    SC.update_can_messages(can_p)
     logging.info("Time first request sent: %s \n", SC.can_frames[can_p["send"]][0][0])
     logging.info("Time second request sent: %s \n", SC.can_frames[can_p["send"]][1][0])
     logging.info("Time difference between two frame sent: %s \n",
