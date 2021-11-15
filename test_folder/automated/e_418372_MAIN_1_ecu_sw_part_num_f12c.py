@@ -39,7 +39,6 @@ from hilding.dut import DutTestError
 from hilding.uds import IoVmsDid
 from hilding.uds import EicDid
 from supportfunctions.support_SBL import SupportSBL
-from supportfunctions.support_sec_acc import SecAccessParam
 
 
 def step_1(dut):
@@ -159,7 +158,7 @@ def run():
 
     #Init parameter for SecAccess Gen1 / Gen2 (current default: Gen1)
     #sa_keys: SecAccessParam = {
-    sa_keys: = {
+    sa_keys = {
         "SecAcc_Gen": 'Gen1',
         "fixed_key": '0102030405',
         "auth_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF',

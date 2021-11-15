@@ -83,7 +83,7 @@ MATCH_DICT = {'Not applicable': NA_STATUS,
 # Light lime greenish gray: #d9d9d6
 # Light blue: #94c4f7
 # Sunshine: #f6eb61
-COLOR_DICT = {PASSED_STATUS:'#d8ed96', FAILED_STATUS:'#ff585d', NA_STATUS:'DarkSeaGreen',
+COLOR_DICT = {PASSED_STATUS:'#d8ed96', FAILED_STATUS:'#ff585d', NA_STATUS:'#f6eb61',
               MISSING_STATUS:'WHITE', NO_RES_STATUS:'#d9d9d6', INSPECTION_STATUS:'Wheat',
               IMPLICIT_STATUS:'#b9d3dc', UNKNOWN_STATUS:'BurlyWood', MANUAL_STATUS:'#fbd7c9'}
 
