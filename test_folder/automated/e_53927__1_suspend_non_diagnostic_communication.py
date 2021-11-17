@@ -84,7 +84,7 @@ def step_1(can_p, timeout):
     SC.clear_all_can_messages()
     #logging.debug("all can messages cleared")
     SC.clear_all_can_frames()
-    SC.update_can_messages(can_p["receive"])
+    SC.update_can_messages(can_p)
     #logging.debug("all can messages updated")
     time.sleep(WAITING_TIME)
     #logging.info("Step%s: messages received %s", etp["step_no"],
@@ -109,11 +109,10 @@ def step_3(can_p, can_p_ex):
     purpose = "Verify subscribed non-diagnostic signal is suspended"
     SUTE.print_test_purpose(stepno, purpose)
     can_rec = can_p_ex["receive"]
-    #SC.update_can_messages(r)
     SC.clear_all_can_messages()
     logging.info("all can messages cleared")
     SC.clear_all_can_frames()
-    SC.update_can_messages(can_p["receive"])
+    SC.update_can_messages(can_p)
     logging.info("all can messages updated")
     time.sleep(WAITING_TIME)
     logging.info("Step %s frames received %s", stepno, len(SC.can_frames[can_rec]))
@@ -133,11 +132,10 @@ def step_5(can_p, frame_step1, can_p_ex):
     purpose = "Verify subscribed non-diagnostic signal is received"
     SUTE.print_test_purpose(stepno, purpose)
     can_rec = can_p_ex["receive"]
-    #SC.update_can_messages(r)
     SC.clear_all_can_messages()
     logging.info("all can messages cleared")
     SC.clear_all_can_frames()
-    SC.update_can_messages(can_p["receive"])
+    SC.update_can_messages(can_p)
     logging.info("all can messages updated")
     time.sleep(WAITING_TIME)
     logging.info("Step %s frames received %s", stepno, len(SC.can_frames[can_rec]))

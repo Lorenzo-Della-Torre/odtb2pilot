@@ -296,6 +296,36 @@ class SupportService22:
 
         return result
 
+    def get_ecu_mode(self, can_p: CanParam,\
+                            stepno='226',\
+                            purpose="get ECU mode (DEF/PBL/SBL/EXT)"):
+        """
+        Function used determine ECU mode using EDA0 reply
+        return: ECU_mode (DEF/PBL/SBL/EXT)
+        """
+        logging.info("Step_no: %s", stepno)
+        logging.info("Purpose: %s", purpose)
+        self.read_did_eda0(can_p)
+
+        message = SC.can_messages[can_p["receive"]][0][2]
+        ecu_mode = 'unknown'
+        pos = message.find('EDA0')
+        if (not message.find('F121', pos) == -1) and (not message.find('F125', pos) == -1):
+            # Security Access Request SID
+            ecu_mode = 'PBL'
+        elif (not message.find('F122', pos) == -1) and (not message.find('F123', pos) == -1):
+            ecu_mode = 'SBL'
+        elif (not message.find('F120', pos) == -1) and (not message.find('F12E', pos) == -1):
+            self.read_did_f186(can_p, dsession=b'')
+
+            if SUPPORT_TEST.test_message(SC.can_messages[can_p["receive"]],
+                                         teststring='62F18601'):
+                ecu_mode = 'DEF'
+            elif SUPPORT_TEST.test_message(SC.can_messages[can_p["receive"]],
+                                           teststring='62F18603'):
+                ecu_mode = 'EXT'
+        return ecu_mode
+
     @classmethod
     def __pp_frame_info(cls, msg, did_struct, frame, size, sid):
         ''' Pretty print the frame information '''

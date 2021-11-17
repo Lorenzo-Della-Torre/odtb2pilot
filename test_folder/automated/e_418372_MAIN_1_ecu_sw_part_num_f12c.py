@@ -39,6 +39,8 @@ from hilding.dut import DutTestError
 from hilding.uds import IoVmsDid
 from hilding.uds import EicDid
 from supportfunctions.support_SBL import SupportSBL
+###SecAccessParam only available after SecAccGen2 merge
+#from supportfunctions.support_sec_acc import SecAccessParam
 
 
 def step_1(dut):

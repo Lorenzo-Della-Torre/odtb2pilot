@@ -75,7 +75,7 @@ def step_1(can_p):
     SC.clear_all_can_messages()
     logging.debug("all can messages cleared")
     SC.clear_all_can_frames()
-    SC.update_can_messages(can_p["receive"])
+    SC.update_can_messages(can_p)
     logging.debug("all can messages updated")
     time.sleep(WAITING_TIME)
 
@@ -150,7 +150,7 @@ def step_3(can_p, can_p_ex, frames_step1):
     SC.clear_all_can_messages()
     logging.debug("Step %s: all can messages cleared", etp["step_no"])
     SC.clear_all_can_frames()
-    SC.update_can_messages(can_p["receive"])
+    SC.update_can_messages(can_p)
     logging.debug("Step %s: all can messages updated", etp["step_no"])
     time.sleep(WAITING_TIME)
 

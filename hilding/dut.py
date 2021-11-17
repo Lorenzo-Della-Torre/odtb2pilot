@@ -99,9 +99,12 @@ class Dut:
         self.network_stub = NetworkServiceStub(self.channel)
         self.system_stub = SystemServiceStub(self.channel)
         self.namespace = NameSpace(name="Front1CANCfg0")
+        self.protocol = 'can'
+        self.framelength_max = 8
+        self.padding = True
         self.uds = Uds(self)
 
-    def __getitem__(self, key):
+    def __getitem__(self, key):# pylint: disable=too-many-return-statements
         # Legacy subscript access to dut object for old code
         # Do not use this for new features!
         if key == "netstub":
@@ -112,6 +115,12 @@ class Dut:
             return self.conf.rig.signal_receive
         if key == "namespace":
             return self.namespace
+        if key == 'protocol':
+            return self.protocol
+        if key == 'framelength_max':
+            return self.framelength_max
+        if key == 'padding':
+            return self.padding
         raise KeyError(key)
 
     def precondition(self, timeout=30):
@@ -129,6 +138,9 @@ class Dut:
             "send" : True,
             "id" : self.conf.rig.signal_periodic,
             "nspace" : self.namespace.name,
+            "protocol" : "can",
+            "framelength_max" : 8,
+            "padding" : True,
             "frame" : bytes.fromhex(self.conf.rig.wakeup_frame),
             "intervall" : 0.4
             }
@@ -152,7 +164,10 @@ class Dut:
         can_p2: CanParam = {"netstub": self.network_stub,
                             "send": self.conf.rig.signal_receive,
                             "receive": self.conf.rig.signal_send,
-                            "namespace": self.namespace
+                            "namespace": self.namespace,
+                            "protocol": self.protocol,
+                            "framelength_max": self.framelength_max,
+                            "padding" : self.padding
                            }
         iso_tp.subscribe_signal(can_p2, timeout)
 

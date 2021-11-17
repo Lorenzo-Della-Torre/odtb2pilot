@@ -55,19 +55,21 @@ class SupportPrecondition:
         BECM has to be kept alive: start heartbeat
         """
 
-        # start heartbeat, repeat every 0.8 second
+        #Temporary fix - add missing parameters in can_p
+        for key in CanParam():
+            if not key in can_p:
+                can_p[key] = CanParam()[key]
+
+        # start heartbeat, repeat every 0.4 second
         hb_param: PerParam = {
             "name" : "Heartbeat",
             "send" : True,
-            "id" : "MvcmFront1NMFr",
+            "id" : "BecmFront1NMFr",
             "nspace" : can_p["namespace"].name,
             "frame" : b'\x1A\x40\xC3\xFF\x01\x00\x00\x00',
             "intervall" : 0.4
             }
         #Read current function name from stack:
-        #logging.debug("hb_param before %s", hb_param)
-        #logging.debug("Type frame: %s", type(hb_param["frame"]))
-        #logging.debug("Read YML for %s", str(inspect.stack()[0][3]))
         SIO.extract_parameter_yml(str(inspect.stack()[0][3]), hb_param)
         logging.debug("hb_param %s", hb_param)
 
@@ -88,11 +90,18 @@ class SupportPrecondition:
         SC.subscribe_signal(can_p, timeout)
         logging.debug("precondition can_p2 %s", can_p)
         #record signal we send as well
-        can_p2: CanParam = {"netstub": can_p["netstub"],
-                            "send": can_p["receive"],
-                            "receive": can_p["send"],
-                            "namespace": can_p["namespace"]
-                           }
+        #can_p2: CanParam = {"netstub": can_p["netstub"],
+        #                    "system_stub" : can_p["system_stub"],
+        #                    "send": can_p["receive"],
+        #                    "receive": can_p["send"],
+        #                    "namespace": can_p["namespace"]
+        #                   }
+        can_p2 = CanParam()
+        for i in can_p:
+            can_p2[i] = can_p[i]
+        can_p2["send"] = can_p["receive"]
+        can_p2["receive"] = can_p["send"]
+
         SC.subscribe_signal(can_p2, timeout)
         #Don't generate FC frames for signals we generated:
         time.sleep(1)
@@ -104,15 +113,8 @@ class SupportPrecondition:
             "frame_control_flag": 48,
             "frame_control_auto": False
             }
-        #SC.change_mf_fc(can_p["send"], can_mf)
         SC.change_mf_fc(can_p2["receive"], can_mf)
 
-        #pn_sn_list=[['F120', 'PN'],\
-        #            ['F12A', 'PN'],\
-        #            ['F12B', 'PN'],\
-        #            ['F18C', 'SN'],\
-        #            ['F12E', 'PN'],\
-        #            ['F126', 'VIDCV']]
         pn_sn_list = []
         SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'pn_sn_list')
 
@@ -129,6 +131,11 @@ class SupportPrecondition:
         BECM has to be kept alive: start heartbeat
         """
         # start heartbeat, repeat every 0.8 second
+
+        #Temporary fix - add missing parameters in can_p
+        for key in CanParam():
+            if not key in can_p:
+                can_p[key] = CanParam()[key]
 
         #send burst for 10seconds (10000 x 0.01 sec)
         #to enter prog
@@ -188,6 +195,7 @@ class SupportPrecondition:
         SC.subscribe_signal(can_p, timeout)
         #record signal we send as well
         can_p2: CanParam = {"netstub": can_p["netstub"],
+                            "system_stub": can_p["system_stub"],
                             "send": can_p["receive"],
                             "receive": can_p["send"],
                             "namespace": can_p["namespace"],
@@ -206,6 +214,9 @@ class SupportPrecondition:
         #SC.change_mf_fc(can_p["send"], can_mf)
         SC.change_mf_fc(can_p2["receive"], can_mf)
 
-        result = SE22.read_did_eda0(can_p)
+        pn_sn_list = []
+        SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'pn_sn_list')
+
+        result = SE22.read_did_eda0(can_p, pn_sn_list)
         logging.info("Precondition testok: %s\n", result)
         return result
