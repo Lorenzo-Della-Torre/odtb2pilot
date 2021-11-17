@@ -217,16 +217,19 @@ class Uds:
         return int((t_received - t_sent) * 1000)
 
     def set_mode(self, mode=1, change_check=True):
-        """Set mode of ECU
+        """Set the mode of the ECU to one of the following:
+
+            1: "default session/mode",
+            2: "programming session/mode",
+            3: "extended session/mode"
 
         Args:
             mode (int, optional): Mode the ECU should be set to. Defaults to 1.
-            change_check (bool, optional): If this is True some check are made to make sure the
-            transition is valid. Defaults to True.
+            change_check (bool, optional): Check if requested change is legal. Defaults to True.
 
         Raises:
-            UdsError: If invalid transition is requested
-            UdsError: If transtition between modes fails
+            UdsError: If requested change is illegal
+            UdsError: If failure occurred when setting mode
         """
 
         if change_check and mode == 3 and self.mode == 2:
