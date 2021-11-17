@@ -96,7 +96,7 @@ def step_3(can_p):
     logging.info("Step3: frames received %s", len(SC.can_frames[can_p["receive"]]))
 
     SC.clear_all_can_messages()
-    SC.update_can_messages(can_p["receive"])
+    SC.update_can_messages(can_p)
 
     time_stamp[0] = SC.can_frames[can_p["send"]][0][0]
     frame_stamp[0] = "Sent: " + SC.can_frames[can_p["send"]][0][2]

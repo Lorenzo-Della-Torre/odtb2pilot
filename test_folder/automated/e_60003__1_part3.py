@@ -167,7 +167,7 @@ def step_5(can_p):
     sig = can_p["receive"]
 
     SC.clear_all_can_messages()
-    SC.update_can_messages(sig)
+    SC.update_can_messages(can_p)
 
     logging.info("Step5: messages received %s", len(SC.can_messages))
     logging.info("Step5: messages:")

@@ -49,13 +49,13 @@ class CanMFParam(Dict): # pylint: disable=too-few-public-methods,inherit-non-cla
     frame_control_auto: bool
 
 
-class CanParam(Dict): # pylint: disable=too-few-public-methods,inherit-non-class
+class CanParam(dict): # pylint: disable=too-few-public-methods
     """
         CanParam
         All CAN send/receive parameters
     """
     def __init__(self):
-        super(CanParam, self).__init__(
+        super().__init__(
             {'netstub': '',
              'system_stub': '',
              'send': '',
