@@ -29,3 +29,13 @@ platforms:
         fixed_key: 0102030405
         auth_key: FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
         proof_key: FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+    ihfa:
+        signal_send: IHFAdpToIHFAUdsDiagRequestFrame
+        signal_receive: IHFAToIHFAdpUdsDiagResponseFrame
+        signal_periodic: IHFAdpNmFrame
+        signal_tester_present: IHFAdpToallUdsDiagRequestFrame
+        wakeup_frame: 1A40C3FF01000000
+        SecAcc_Gen: Gen2
+        fixed_key: FFFFFFFFFF
+        auth_key: FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+        proof_key: FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
