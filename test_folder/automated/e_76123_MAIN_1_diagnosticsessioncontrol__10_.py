@@ -92,7 +92,7 @@ def step_4(can_p):
     time_1 = datetime.now()
     SC.t_send_signal_can_mf(can_p, cpay, True, 0x00)
     time.sleep(sleep_time)
-    SC.update_can_messages(can_p["receive"])
+    SC.update_can_messages(can_p)
     time_2 = datetime.now()
 
     time.sleep(1)

@@ -77,7 +77,7 @@ def step_1(can_p):
     SC.clear_all_can_messages()
     logging.info("all can messages cleared")
     SC.clear_all_can_frames()
-    SC.update_can_messages(can_p["receive"])
+    SC.update_can_messages(can_p)
     logging.info("all can messages updated")
     time.sleep(4)
     logging.info("Step%s: messages received %s", stepno,
@@ -111,7 +111,7 @@ def step_2(can_p, can_p_ex, num_frames_step1):
     now = int(time.time())
     print(now)
 
-    SC.update_can_messages(can_p["receive"])
+    SC.update_can_messages(can_p)
 
     cpay: CanPayload = {
         "payload": SC_CARCOM.can_m_send("ReadDataByIdentifier",
@@ -137,10 +137,9 @@ def step_3(can_p_ex, num_frames_step1):
     purpose = "Verify subscribed non-diagnostic signal is still sent as in step 1"
     SUTE.print_test_purpose(step_no, purpose)
     #can_rec = "BECMFront1Fr02"
-    #SC.update_can_messages(r)
     logging.debug("All can messages cleared")
     SC.clear_all_can_frames()
-    SC.update_can_messages(can_p_ex["receive"])
+    SC.update_can_messages(can_p_ex)
     logging.info("all can messages updated")
     time.sleep(4)
     logging.info("Step%s received: %s", step_no, len(SC.can_frames[can_p_ex["receive"]]))

@@ -520,6 +520,10 @@ def run():
     #logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.DEBUG)
 
     # where to connect to signal_broker
+
+    # where to connect to signal_broker
+    logging.info("\nConnect to ODTB2_DUT %s\n", odtb_conf.ODTB2_DUT)
+
     can_p: CanParam = {
         "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
         "send" : "Vcu1ToBecmFront1DiagReqFrame",

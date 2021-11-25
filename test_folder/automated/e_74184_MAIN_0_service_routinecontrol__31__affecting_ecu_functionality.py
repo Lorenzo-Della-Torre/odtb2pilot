@@ -80,7 +80,7 @@ def step_2(can_p, timeout):
     SC.clear_all_can_messages()
     #logging.debug("all can messages cleared")
     SC.clear_all_can_frames()
-    SC.update_can_messages(can_p["receive"])
+    SC.update_can_messages(can_p)
     #logging.debug("all can messages updated")
     time.sleep(1)
     #logging.info("Step%s: messages received %s", etp["step_no"],
@@ -185,7 +185,7 @@ def step_5(can_p, can_p_ex, frames_step2):
     SC.clear_all_can_frames()
 
     now = int(time.time())
-    SC.update_can_messages(can_p["receive"])
+    SC.update_can_messages(can_p)
 
     while now + WAITING_TIME > int(time.time()):
         result = result and SUTE.teststep(can_p, cpay, etp)
@@ -209,11 +209,10 @@ def step_6(can_p, can_p_ex, frames_step2):
     purpose = "Verify subscribed non-diagnostic signal is still sent as in step 1"
     SUTE.print_test_purpose(step_no, purpose)
     #can_rec = "BECMFront1Fr02"
-    #SC.update_can_messages(r)
     SC.clear_all_can_messages()
     logging.info("Step%s: all can messages cleared", step_no)
     SC.clear_all_can_frames()
-    SC.update_can_messages(can_p["receive"])
+    SC.update_can_messages(can_p)
     logging.info("Step%s: all can messages updated", step_no)
     time.sleep(WAITING_TIME)
 

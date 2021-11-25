@@ -33,6 +33,7 @@ sys.path.append('generated')
 import protogenerated.network_api_pb2 as network_api_pb2 # pylint: disable=wrong-import-position
 import protogenerated.network_api_pb2_grpc as network_api_pb2_grpc # pylint: disable=wrong-import-position
 import protogenerated.functional_api_pb2_grpc as functional_api_pb2_grpc # pylint: disable=wrong-import-position
+import protogenerated.system_api_pb2_grpc as system_api_pb2_grpc # pylint: disable=wrong-import-position
 import protogenerated.common_pb2 as common_pb2 # pylint: disable=wrong-import-position
 
 
@@ -48,15 +49,22 @@ class CanMFParam(Dict): # pylint: disable=too-few-public-methods,inherit-non-cla
     frame_control_auto: bool
 
 
-class CanParam(Dict): # pylint: disable=too-few-public-methods,inherit-non-class
+class CanParam(dict): # pylint: disable=too-few-public-methods
     """
         CanParam
         All CAN send/receive parameters
     """
-    netstub: str
-    send: str
-    receive: str
-    namespace: str
+    def __init__(self):
+        super().__init__(
+            {'netstub': '',
+             'system_stub': '',
+             'send': '',
+             'receive': '',
+             'namespace': '',
+             'padding': True,
+             'framelength_max': 8,
+             'protocol': 'can'})
+
 
 
 class CanTestExtra(Dict): # pylint: disable=too-few-public-methods,inherit-non-class
@@ -190,6 +198,20 @@ class SupportCAN:
         return ([sig_time, my_signal.signal[0].id.name,\
             "{0:016X}".format(my_signal.signal[0].integer)])
 
+    @classmethod
+    def display_signals_available(cls, can_p: CanParam):
+        """
+        display_signals_available
+        display all signals beamybroker can access in namespaces
+        """
+        logging.info("can_p setup: %s", can_p)
+        configuration = can_p["system_stub"].GetConfiguration(common_pb2.Empty())
+        for network_info in configuration.networkInfo:
+            logging.info(
+                "signals in namespace %s %s",
+                network_info.namespace.name,
+                can_p["system_stub"].ListSignals(network_info.namespace),
+                )
 
     def subscribe_to_sig(self, can_p: CanParam, timeout=5):
         """
@@ -296,7 +318,7 @@ class SupportCAN:
         """
         logging.debug("Active threads: %s", threading.enumerate())
         threads = [t.name for t in threading.enumerate()
-            if t.name in ["SignalThread", "PeriodicThread"]]
+                   if t.name in ["SignalThread", "PeriodicThread"]]
 
         logging.debug("Signal or periodic threads remaining: %s", len(threads))
 
@@ -432,10 +454,19 @@ class SupportCAN:
         """
         connect_to_signalbroker
         """
+        network_stub, _ = cls.connect_to_signalbroker_new(sb_address, sb_port)
+        return network_stub
+
+    @classmethod
+    def connect_to_signalbroker_new(cls, sb_address, sb_port):
+        """
+        connect_to_signalbroker
+        """
         channel = grpc.insecure_channel(sb_address + ':' + sb_port)
         functional_api_pb2_grpc.FunctionalServiceStub(channel)
         network_stub = network_api_pb2_grpc.NetworkServiceStub(channel)
-        return network_stub
+        system_stub = system_api_pb2_grpc.SystemServiceStub(channel)
+        return network_stub, system_stub
 
 
     @classmethod
@@ -501,68 +532,112 @@ class SupportCAN:
     @classmethod
     def can_receive(cls, can_send, can_extra):
         """
-        Add offset \x40 to first byte
-        Add can_extra to message
-        """
-        #print("can_receive can_send ", can_send)
-        #print("can_receive can_extra ", can_extra)
-        #print("len can_send ", len(can_send))
-        can_ret = ''
+        Services have 2byte, except service 14, 22, 2E
+        Service 22 and 2E have a DID added (extra 2 bytes)
 
-        #print("Conditions:  len(can_send):", len(can_send), "len(can_extra):",\
-        #                   len(can_extra), "can_send0 ", can_send[0])
+        Positive reply will have \x40 added to first byte of service.
+        """
+        if can_extra == '':
+            can_extra = b''
+        can_ret = b''
+
         # check if receive frame/message can be build
-        if can_send and (len(can_send)+len(can_extra) < 7) and (can_send[0] < 192):
-            can_ret = bytes([can_send[0]+ 0x40])
-            for count in range(len(can_send)-1): # pylint: disable=consider-using-enumerate
-                can_ret = can_ret + bytes([can_send[count+1]])
-            for count in range(len(can_extra)):  # pylint: disable=consider-using-enumerate
-                can_ret = can_ret + bytes([can_extra[count]])
-        #print("payload to receive: ", str(can_ret))
+        #Determine if SF or MF request:
+        #if can_send and (len(can_send)+len(can_extra) < 7) and (can_send[0] < 192):
+        logging.debug("can_send: bytes in request      : %s", can_send)
+        logging.debug("can_send: bytes in request (hex): %s", can_send.hex())
+
+        #add 0x40 to CAN_ID for positive reply
+        can_ret = bytes([can_send[0]+ 0x40])
+        if can_send[0] == 0x14:
+            logging.info("can_receive: Service14 not implemented yet")
+        #UDS requests have 2 byte commands (like EDA0) which appear in reply
+        elif can_send[0] == 0x22 or can_send[0] == 0x2E:
+            can_ret = can_ret + can_send[1:3]
+        #other request only have 1 byte command (as 1001, 1002, 1003, 1101
+        else:
+            can_ret = can_ret + can_send[1:2]
+        can_ret = can_ret + can_extra
+
+        logging.debug("expected in payload received      : %s", can_ret)
+        logging.debug("expected in payload received (hex): %s", can_ret.hex())
         return can_ret
 
 
     @classmethod
     def __msg_status_2(cls, temp_message, mf_size_remain, i):
-        #print("update_can_message: handling of CS frame")
-        #CF_count = int(i[2][0:2], 16)
-        #print("update_can_message: secure no frames dropped via CF count:",\
-        #           CF_count, "/", mf_cf_count)
         if mf_size_remain > 7:
             temp_message[2] = temp_message[2] + i[2][2:16]
             mf_size_remain -= 7
             mf_cf_count = ((mf_cf_count + 1) & 0xF) + 32
 
 
-    def send_mf(self, can_p: CanParam, cpay, padding, padding_byte):
+    def send_mf(self, can_p: CanParam, cpay, padding, padding_byte):# pylint: disable=too-many-branches
         """
         send_mf
         """
-        pl_fcount = 0x21
-        mess_length = len(cpay["payload"])
-        pl_work = cpay["payload"]
+        if can_p["protocol"] == "can":
+            logging.info("support_can, send_mf: build framelist for can_fd")
+            pl_fcount = 0x21
+            #get parameters for message to send: length of payload, DLC
+            mess_length = len(cpay["payload"])
+            #copy of payload
+            pl_work = cpay["payload"]
+            fl_max = can_p["framelength_max"]
 
-        # add first frame
-        self.add_canframe_tosend(can_p["send"],\
-            (int(0x1000 | mess_length).to_bytes(2, 'big') + pl_work[0:6]))
-        pl_work = pl_work[6:]
-        logging.debug("Payload stored: %s", self.can_mf_send)
-        # add  remaining frames:
-        while pl_work:
-        # still bytes to take
-            if len(pl_work) > 7:
-                self.add_canframe_tosend(can_p["send"],
-                                         (bytes([pl_fcount]) + pl_work[0:7]))
-                pl_work = pl_work[7:]
-                pl_fcount = (pl_fcount + 1) & 0x2F
-            else:
-                if padding:
-                    self.add_canframe_tosend(can_p["send"],\
-                        self.fill_payload((bytes([pl_fcount]) + pl_work[0:]), padding_byte))
-                else:
+            # add first frame
+            self.add_canframe_tosend(can_p["send"],\
+                (int(0x1000 | mess_length).to_bytes(2, 'big') + pl_work[0:fl_max-2]))
+            pl_work = pl_work[fl_max-2:]
+            logging.debug("Payload stored first frame: %s", self.can_mf_send)
+            # add  remaining frames:
+            while pl_work:
+            # still bytes to take
+                if len(pl_work) > fl_max-1:
                     self.add_canframe_tosend(can_p["send"],
-                                             bytes([pl_fcount]) + pl_work[0:])
-                pl_work = []
+                                             (bytes([pl_fcount]) + pl_work[0:fl_max-1]))
+                    pl_work = pl_work[fl_max-1:]
+                    pl_fcount = (pl_fcount + 1) & 0x2F
+                else:
+                    if padding:
+                        self.add_canframe_tosend(can_p["send"],\
+                            self.fill_payload((bytes([pl_fcount]) + pl_work[0:]), padding_byte))
+                    else:
+                        self.add_canframe_tosend(can_p["send"],
+                                                 bytes([pl_fcount]) + pl_work[0:])
+                    pl_work = []
+        elif can_p["protocol"] == "can_fd":
+            logging.info("support_can, send_mf: build framelist for can_fd")
+            pl_fcount = 0x21
+            mess_length = len(cpay["payload"])
+            pl_work = cpay["payload"]
+            fl_max = can_p["framelength_max"]
+
+            # add first frame
+            self.add_canframe_tosend(can_p["send"],\
+                (int(0x100000000000000000000000000000000000 | mess_length).to_bytes(2, 'big')
+                 + pl_work[0:fl_max-2]))
+            pl_work = pl_work[fl_max-2:]
+            logging.debug("Payload stored first frame: %s", self.can_mf_send)
+            # add  remaining frames:
+            while pl_work:
+            # still bytes to take
+                if len(pl_work) > fl_max-1:
+                    self.add_canframe_tosend(can_p["send"],
+                                             (bytes([pl_fcount]) + pl_work[0:fl_max-1]))
+                    pl_work = pl_work[fl_max-1:]
+                    pl_fcount = (pl_fcount + 1) & 0x2F
+                else:
+                    if padding:
+                        self.add_canframe_tosend(can_p["send"],\
+                            self.fill_payload((bytes([pl_fcount]) + pl_work[0:]), padding_byte))
+                    else:
+                        self.add_canframe_tosend(can_p["send"],
+                                                 bytes([pl_fcount]) + pl_work[0:])
+                    pl_work = []
+        else:
+            logging.info("support_can, send_mf: unknown format to build "\
+                         "frames from messages in send_mf")
 
 
     def __send_sf(self, can_p: CanParam, cpay, padding, padding_byte):
@@ -589,13 +664,11 @@ class SupportCAN:
         """
         send_FF_CAN
         """
-        #print("Send first frame of MF")
         source = common_pb2.ClientId(id="app_identifier")
         signal = common_pb2.SignalId(name=can_p["send"], namespace=can_p["namespace"])
         signal_with_payload = network_api_pb2.Signal(id=signal)
         signal_with_payload.raw = self.can_mf_send[can_p["send"]][1][0]
 
-        #print("Signal_with_payload : ", self.can_mf_send[can_p["send"]][1][0].hex().upper())
         publisher_info = network_api_pb2.PublisherConfig(clientId=source,\
             signals=network_api_pb2.Signals(signal=[signal_with_payload]), frequency=freq)
         try:
@@ -654,6 +727,10 @@ class SupportCAN:
             elif frame_control_flag == 0:
                 # continue sending as stated in FC frame
                 self.__send_cf_can_ok(can_p, separation_time, block_size)
+                # not whole block sent? Wait for next FC frame and send rest
+                if self.can_mf_send[can_p["send"]][0] <\
+                    len(self.can_mf_send[can_p["send"]][1]):
+                    self.send_cf_can(can_p, frequency, timeout_ms)
             else:
                 return "FAIL: invalid value in FC"
         if self.can_mf_send[can_p["send"]][0] ==\
@@ -674,7 +751,7 @@ class SupportCAN:
         self.can_mf_send[signal_name][1].append(frame) # SF_Data_Length + payload
 
 
-    def t_send_signal_can_mf(self, can_p: CanParam, cpay: CanPayload,
+    def t_send_signal_can_mf(self, can_p: CanParam, cpay: CanPayload,# pylint: disable=too-many-branches, too-many-statements
                              padding=True, padding_byte=0x00):
         """
         t_send_signal_CAN_MF
@@ -699,46 +776,97 @@ class SupportCAN:
 
         # build array of frames to send:
         mess_length = len(cpay["payload"])
-        # if single_frame:
-        if mess_length < 8:
-            self.__send_sf(can_p, cpay, padding, padding_byte)
-        # if multi_frame:
-        elif mess_length < 4096:
-            self.send_mf(can_p, cpay, padding, padding_byte)
-        if self.can_mf_send[can_p["send"]][1] == []:
-            logging.debug("payload empty: nothing to send")
+
+        if can_p["protocol"] == 'can':
+            logging.info("Send payload as CAN frames")
             # if single_frame:
-        elif len(self.can_mf_send[can_p["send"]][1]) == 1:
-            #print("Send first frame SF: ", self.can_mf_send[signal_name][1][0])
-            signal_with_payload.raw = self.can_mf_send[can_p["send"]][1][0]
-            #print("source: ", source, " signal_with_PL: ",  signal_with_payload.raw)
-            publisher_info = network_api_pb2.PublisherConfig(clientId=source,\
-                signals=network_api_pb2.Signals(signal=[signal_with_payload]), frequency=0)
-            try:
-                can_p["netstub"].PublishSignals(publisher_info)
-            except grpc._channel._Rendezvous as err: # pylint: disable=protected-access
-                logging.error(err)
-            #remove payload after it's been sent
-            logging.debug("Remove payload after being sent")
-            #print("can_mf_send ", self.can_mf_send)
-            try:
-                self.can_mf_send.pop(can_p["send"])
-            except KeyError:
-                logging.error("Key %s not found", can_p["send"])
-            #print("can_mf_send2 ", self.can_mf_send)
-        elif len(self.can_mf_send[can_p["send"]][1]) < 0x7ff:
-            logging.debug("Send payload as MF")
-            # send payload as MF
+            if mess_length < can_p["framelength_max"]:
+                self.__send_sf(can_p, cpay, padding, padding_byte)
+            # if multi_frame:
+            elif mess_length < 0x1000:
+                #build list of frames to send
+                self.send_mf(can_p, cpay, padding, padding_byte)
 
-            #send FirstFrame:
-            self.send_ff_can(can_p, freq=0)
-            #send ConsecutiveFrames:
-            self.send_cf_can(can_p)
+            ### send all frames built
+            if self.can_mf_send[can_p["send"]][1] == []:
+                logging.debug("payload empty: nothing to send")
+            # if single_frame:
+            elif len(self.can_mf_send[can_p["send"]][1]) == 1:
+                #print("Send first frame SF: ", self.can_mf_send[signal_name][1][0])
+                signal_with_payload.raw = self.can_mf_send[can_p["send"]][1][0]
+                #print("source: ", source, " signal_with_PL: ",  signal_with_payload.raw)
+                publisher_info = network_api_pb2.PublisherConfig(clientId=source,\
+                    signals=network_api_pb2.Signals(signal=[signal_with_payload]), frequency=0)
+                try:
+                    can_p["netstub"].PublishSignals(publisher_info)
+                except grpc._channel._Rendezvous as err: # pylint: disable=protected-access
+                    logging.error(err)
+                #remove payload after it's been sent
+                logging.debug("Remove payload after being sent")
+                #print("can_mf_send ", self.can_mf_send)
+                try:
+                    self.can_mf_send.pop(can_p["send"])
+                except KeyError:
+                    logging.error("Key %s not found", can_p["send"])
+                #print("can_mf_send2 ", self.can_mf_send)
+            # check if payload fits into block to send
+            elif len(self.can_mf_send[can_p["send"]][1]) < 0x1000:
+                logging.debug("Send payload as MF")
+                # send payload as MF
 
-            # wait for FC
-            # send accordingly
+                #send FirstFrame:
+                self.send_ff_can(can_p, freq=0)
+                #send ConsecutiveFrames:
+                self.send_cf_can(can_p)
+
+                # wait for FC
+                # send accordingly
+            else:
+                logging.debug("Payload doesn't fit in one MF message")
+        elif can_p["protocol"] == 'can_fd':
+            logging.info("Send payload as CAN_FD frames")
+            # if single_frame:
+            if mess_length < can_p["framelength_max"]-1:
+                self.__send_sf(can_p, cpay, padding, padding_byte)
+            # if multi_frame (max 4GB)
+            elif mess_length < 0x1000000000000000000000000:
+                self.send_mf(can_p, cpay, padding, padding_byte)
+            if self.can_mf_send[can_p["send"]][1] == []:
+                logging.debug("payload empty: nothing to send")
+            # if single_frame:
+            elif len(self.can_mf_send[can_p["send"]][1]) == 1:
+                #print("Send first frame SF: ", self.can_mf_send[signal_name][1][0])
+                signal_with_payload.raw = self.can_mf_send[can_p["send"]][1][0]
+                #print("source: ", source, " signal_with_PL: ",  signal_with_payload.raw)
+                publisher_info = network_api_pb2.PublisherConfig(clientId=source,\
+                    signals=network_api_pb2.Signals(signal=[signal_with_payload]), frequency=0)
+                try:
+                    can_p["netstub"].PublishSignals(publisher_info)
+                except grpc._channel._Rendezvous as err: # pylint: disable=protected-access
+                    logging.error(err)
+                #remove payload after it's been sent
+                logging.debug("Remove payload after being sent")
+                #print("can_mf_send ", self.can_mf_send)
+                try:
+                    self.can_mf_send.pop(can_p["send"])
+                except KeyError:
+                    logging.error("Key %s not found", can_p["send"])
+                #print("can_mf_send2 ", self.can_mf_send)
+            elif len(self.can_mf_send[can_p["send"]][1]) < 0x1000000000000000000000000:
+                logging.debug("Send payload as MF message")
+                # send payload as MF
+
+                #send FirstFrame:
+                self.send_ff_can(can_p, freq=0)
+                #send ConsecutiveFrames:
+                self.send_cf_can(can_p)
+
+                # wait for FC
+                # send accordingly
+            else:
+                logging.debug("Payload doesn't fit in one MF")
         else:
-            logging.debug("Payload doesn't fit in one MF")
+            logging.info("Unknown format for sending payload")
 
 
     @classmethod
@@ -877,12 +1005,12 @@ class SupportCAN:
         return can_mess_updated
 
 
-    def update_can_messages(self, can_rec): # pylint: disable=too-many-branches
+    def update_can_messages(self, can_p): # pylint: disable=too-many-branches, too-many-statements
         """
-        update list of messages for a given can_rec
+        update list of messages for a given can_p["receive"]
 
         parameter:
-        can_rec :   dict() containing frames
+        can_p :   dict() containing can parameters and received frames
 
         return:
         can_mess_updated :  True if messages could be build from CAN-frames in can_rec
@@ -895,31 +1023,80 @@ class SupportCAN:
         mf_mess_size = 0
         temp_message = [] #empty list as default
 
-        #print("records received ", can_rec)
-        #print("number of frames ", len(self.can_frames[can_rec]))
+        can_rec = can_p["receive"]
+        #logging.debug("records received %s", can_rec)
+        #logging.debug("number of frames %s", len(self.can_frames[can_rec]))
+        #logging.debug("frames received %s", self.can_frames[can_rec])
         if self.can_frames[can_rec]:
             for i in self.can_frames[can_rec]:
-                logging.debug("Whole can_frame : %s", i)
+                #logging.debug("Whole can_frame : %s", i)
                 if message_status == 0:
                     det_mf = int(i[2][0:1], 16)
                     if det_mf == 0:
                         #Single frame message, add frame as message
                         temp_message = i
                         mf_size_remain = 0
-                        logging.debug("Single frame message received")
+                        #logging.debug("Single frame message received")
                     elif det_mf == 1:
+                        # added for CAN / CAN_FD:
+                        # 1. detect if FirstFrame is CAN/CAN_FD
+                        #    (https://en.wikipedia.org/wiki/CAN_FD)
+                        # 2. get payload length of message
+                        #logging.debug("detect if CAN/CAN_FD multiframe")
+                        if int(i[2][1:4], 16) == 0:
+                            #logging.debug("decode CAN_FD multiframe")
+                            protocol = 'can_fd'
+                            mf_mess_size = int(i[2][4:12], 16)
+                            mess_bytes_received = (len(i[2]) / 2)-12 #payload starts byte6
+                        else:
+                            #logging.debug("decode CAN multiframe")
+                            protocol = 'can'
+                            mf_mess_size = int(i[2][1:4], 16)
+                            mess_bytes_received = (len(i[2]) / 2)-4 #payload starts byte2
+                        # 3.
                         # First frame of MF-message, change to status=2 consective frames to follow
                         message_status = 2
-                        mf_cf_count = 32
+                        mf_cf_count = 32 # CF franes start with 0x20..0x2F for CAN and CAN_FD
+
                         # get size of message to receive:
-                        mf_mess_size = int(i[2][1:4], 16)
-                        #print("update_can_message: message_size ", mf_mess_size)
+                        if protocol == 'can_fd':
+                            # CAN_FD message
+                            #logging.debug("add first payload CAN_FD")
+                            mess_bytes_received = (len(i[2]) // 2)-12 #payload starts byte6
                         # add first payload
-                        #print("update_can_message: whole frame ", i[2])
-                        #print("update_can_message firstpayload ", i[2][10:])
-                        temp_message = i[:]
-                        mf_size_remain = mf_mess_size - 6
-                        mf_cf_count = ((mf_cf_count + 1) & 0xF) + 32
+                            temp_message = i[:]
+                            #logging.debug("first payload CAN_FD %s", temp_message)
+                            #logging.debug("CAN_FD message size %s", mf_mess_size)
+                            mf_size_remain = mf_mess_size - mess_bytes_received
+                            mf_cf_count = ((mf_cf_count + 1) & 0xF) + 32
+                            #logging.debug("mf_size_remain: %s", mf_size_remain)
+                        else:
+                            logging.debug("add first payload CAN")
+                            # CAN message
+                            mf_mess_size = int(i[2][1:4], 16)
+                            #mess_bytes_received = 6
+                            mess_bytes_received = (len(i[2]) // 2)-2 #payload starts byte2
+                        # add first payload
+                            temp_message = i[:]
+                            #logging.debug("first payload CAN %s", temp_message)
+                            #logging.debug("CAN message size %s", mf_mess_size)
+                            mf_size_remain = mf_mess_size - mess_bytes_received
+                            #logging.debug("mf_mess_size: %s, received %s, new size %s.",
+                            #                                 mf_mess_size,
+                            #                                 mess_bytes_received,
+                            #                                 mf_size_remain)
+                            mf_cf_count = ((mf_cf_count + 1) & 0xF) + 32
+                            #logging.debug("mf_size_remain: %s", mf_size_remain)
+
+                        #logging.debug("update_can_message: message_size %s", mf_mess_size)
+                        # add first payload
+                        #logging.debug("update_can_message: whole frame %s", i[2])
+                        #logging.debug("update_can_message firstpayload %s", i[2][10:])
+#                        temp_message = i[:]
+                        # calculate bytes to be removed from mf_mess_size
+                        #mf_size_remain = mf_mess_size - 6
+#                        mf_size_remain = mf_mess_size - mess_bytes_received
+#                        mf_cf_count = ((mf_cf_count + 1) & 0xF) + 32
                     elif det_mf == 2:
                         logging.error("Consecutive frame not expected without FC")
                     elif det_mf == 3:
@@ -936,11 +1113,22 @@ class SupportCAN:
                 elif message_status == 1:
                     logging.error("message not expected")
                 elif message_status == 2:
-                    if mf_size_remain > 7:
-                        temp_message[2] = temp_message[2] + i[2][2:16]
-                        mf_size_remain -= 7
+                    if mf_size_remain > can_p["framelength_max"]-1:
+                        #temp_message[2] = temp_message[2] + i[2][2:16]
+                        temp_message[2] = temp_message[2] + i[2][2:]
+                        #logging.debug("Update temp_message: %s", temp_message[2])
+                        mf_size_remain -= can_p["framelength_max"]-1
                         mf_cf_count = ((mf_cf_count + 1) & 0xF) + 32
+                        #logging.debug("mf_size_remain: %s", mf_size_remain)
                     else:
+                        logging.debug("Last frame to add")
+                        #logging.debug("slice indices: i[2] %s", type(i[2]))
+                        #logging.debug("slice indices: mf_size_remain %s", type(mf_size_remain))
+                        #logging.debug("slice indices: 2+mf_size_remain*2 %s",
+                        #              type(2+mf_size_remain*2))
+                        #logging.debug("slice indices: mess_bytes_received %s",
+                        #              type(mess_bytes_received))
+                        #logging.debug("slice indices: mf_mess_size %s", type(mf_mess_size))
                         temp_message[2] = temp_message[2] + i[2][2:(2+mf_size_remain*2)]
                         mf_size_remain = 0
                 else:

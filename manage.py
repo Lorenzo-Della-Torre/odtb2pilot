@@ -31,6 +31,7 @@ def config_environ():
             "hvbm": "MEP2_SPA2",
             "hlcm": "MEP2_HLCM",
             "ihfa": "MEP2_ED_IHFA",
+            "hvbm_sa2": "MEP2_SPA2_SAGen2"
         }
         platform = get_conf().rig.platform
         if not platform in project_dir_mapping:

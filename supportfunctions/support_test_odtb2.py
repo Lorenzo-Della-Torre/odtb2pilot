@@ -118,13 +118,13 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
         #wait timeout for getting subscribed data
         if (wait_max or (etp["max_no_messages"] == -1)):
             time.sleep(etp["timeout"])
-            SC.update_can_messages(can_p["receive"])
+            SC.update_can_messages(can_p)
         else:
-            SC.update_can_messages(can_p["receive"])
+            SC.update_can_messages(can_p)
             while((time.time()-wait_start <= etp["timeout"])
                   and (len(SC.can_messages[can_p["receive"]]) < etp["max_no_messages"])):
                 SC.clear_can_message(can_p["receive"])
-                SC.update_can_messages(can_p["receive"])
+                SC.update_can_messages(can_p)
                 time.sleep(0.05) #pause a bit to receive frames in background
 
 
@@ -168,14 +168,15 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
         # wait for messages
         # define answer to expect
         logging.debug("Build answer can_frames to receive")
+        logging.debug("payload: %s", cpay['payload'])
+        logging.debug("pextra:  %s", cpay['extra'])
         can_answer = SC.can_receive(cpay['payload'], cpay['extra'])
         logging.debug("CAN frames to receive: %s", can_answer)
 
         # message to send
         self.__send(can_p, etp, cpay)
 
-        logging.info("Teststep: Rec can messages: %s", SC.can_messages[can_p["receive"]])
-
+        logging.debug("Teststep: Rec can messages: %s", SC.can_messages[can_p["receive"]])
         if SC.can_messages[can_p["receive"]]:
             while self.check_7f78_response(SC.can_messages[can_p["receive"]]):
 
@@ -218,7 +219,7 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
                                  max_7fxx78, (wait_loop <= max_7fxx78))
                 logging.info("Rec can frames after loop: %s", SC.can_frames[can_p["receive"]])
                 SC.clear_can_message(can_p["receive"])
-                SC.update_can_messages(can_p["receive"])
+                SC.update_can_messages(can_p)
 
         if len(SC.can_messages[can_p["receive"]]) < etp["min_no_messages"]:
             logging.warning("Bad: min_no_messages not reached: %s",
@@ -230,9 +231,9 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
             testresult = False
         else:
             if SC.can_messages[can_p["receive"]]:
-                #logging.info("teststep test message: %s", SC.can_messages[can_p["receive"]])
-                #logging.info("teststep test against len: %s", len(can_answer))
-                #logging.info("teststep test against: %s", can_answer)
+                logging.debug("teststep test message: %s", SC.can_messages[can_p["receive"]])
+                logging.debug("teststep test against len: %s", len(can_answer))
+                logging.debug("teststep test against: %s", can_answer)
                 if etp["min_no_messages"] >= 0:
                     testresult = testresult and\
                         self.test_message(SC.can_messages[can_p["receive"]],\

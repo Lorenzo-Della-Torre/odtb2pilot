@@ -209,7 +209,7 @@ def register_non_diagnostic_signal(can_p, step_no):
     logging.debug("All can messages cleared")
 
     SC.clear_all_can_frames()
-    SC.update_can_messages(can_p["receive"])
+    SC.update_can_messages(can_p)
     logging.debug("All can messages updated")
 
     time.sleep(4)
@@ -230,7 +230,7 @@ def verify_registred_signal(can_p_ex, num_frames, step_no):
     SUTE.print_test_purpose(step_no, purpose)
 
     SC.clear_all_can_frames()
-    SC.update_can_messages(can_p_ex["receive"])
+    SC.update_can_messages(can_p_ex)
 
     time.sleep(4)
 

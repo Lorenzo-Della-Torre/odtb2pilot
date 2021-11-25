@@ -37,6 +37,8 @@ def parse_some_args():
         type=str, action='store', dest='rif', required=True)
     parser.add_argument("--out", help="Name of the generated file",
         dest='out', default= OUTFOLDER + 'gen_swrs_out.xlsx')
+    parser.add_argument("--out_csv", help="Name of the generated file",
+        dest='outcsv', default= OUTFOLDER + 'bt_req.csv')
     parser.add_argument("--neoname", help="Username for graph db.", type=str,
         dest='neoname', default='neo4j')
     parser.add_argument("--neopw", help="Password for graph db.", type=str,
@@ -250,6 +252,26 @@ def create_col_names(sp_dict, type_list):
 
     return col_list
 
+def write_minimum_bt_req(filepath, sp_dict, spobj_reqp_dict):
+    """ Generate what the test report requires (REQPROD id etc) """
+    BT_CSV_HEADER = "REQPROD;TEST_METHOD;ELEKTRA;LINK\n"
+    logger.info("Writing data to BT REQPROD-csv...")
+    with open(filepath, 'w') as csv_file:
+        csv_file.write(BT_CSV_HEADER)
+        for obj_id in spobj_reqp_dict:
+            # REQPROD ID
+            write_line = ""
+            write_line += spobj_reqp_dict[obj_id].get('ID', "-_-") + ";"
+            # Test method from categorization (not available in this scope)
+            write_line += "-;"
+            # Elektra test method is not currently being extracted from the arxml
+            write_line += "-;"
+            # Elektra link
+            ver_id_value = spobj_reqp_dict[obj_id].get("Version id", "-_-")
+            write_line += f"easee:VCC_EEDM,{ver_id_value}\n"
+            csv_file.write(write_line)
+    logger.info("Data has been written to %s", filepath)
+
 ###### Neo4j stuff ######
 def neo_fix(node_dict, c2p_dict, neousr, neopw):
     """ Interact with the graph db """
@@ -290,6 +312,9 @@ def main(margs):
     """ Main function """
     logger.debug("In main!")
     sp_dict, spobj_dict, child_to_parent_dict = parse_rif_to_dicts(margs.rif)
+    # Quick hack to get the csv required by test report generator
+    write_minimum_bt_req(margs.outcsv, sp_dict['REQPROD']['ATTRIB'], spobj_dict["REQPROD"])
+
     # Map the data per node in order to generate an excel file
     # Need to set the graph adding here as well.
     # Must have FOLDER in order to create the tree structure.

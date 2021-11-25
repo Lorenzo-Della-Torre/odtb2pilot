@@ -15,7 +15,7 @@ description: >
 	(Ex. The ECU shall only support the diagnostic services specified in the
 	requirement sections from Volvo Car Corporation.)
 
-details:
+details: >
 	<Write your own description of the test>
 
 	(Ex. Read which serives are defined in the sddb file.

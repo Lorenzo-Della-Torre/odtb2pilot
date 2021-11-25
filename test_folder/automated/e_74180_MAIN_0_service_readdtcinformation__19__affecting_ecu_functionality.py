@@ -71,7 +71,7 @@ def step_1(can_p):
     SC.clear_all_can_messages()
     logging.info("all can messages cleared")
     SC.clear_all_can_frames()
-    SC.update_can_messages(can_p["receive"])
+    SC.update_can_messages(can_p)
     logging.info("all can messages updated")
     time.sleep(1)
     logging.info("Step%s: messages received %s", etp["step_no"],
@@ -113,7 +113,7 @@ def step_2(can_p, can_p_ex, frame_step_2):
     logging.info("all can messages cleared")
     SC.clear_all_can_frames()
     now = int(time.time())
-    SC.update_can_messages(can_p["receive"])
+    SC.update_can_messages(can_p)
     while now + waiting_time > int(time.time()):
         result = SUTE.teststep(can_p, cpay, etp)
         result = result and SUTE.test_message(SC.can_messages[can_p["receive"]],
@@ -136,7 +136,7 @@ def step_3(can_p, can_p_ex, frame_step_2):
     SC.clear_all_can_messages()
     logging.info("all can messages cleared")
     SC.clear_all_can_frames()
-    SC.update_can_messages(can_p["receive"])
+    SC.update_can_messages(can_p)
     logging.info("all can messages updated")
     time.sleep(1)
     logging.info("Step%s: messages received %s", stepno,\
