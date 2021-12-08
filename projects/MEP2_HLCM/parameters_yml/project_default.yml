@@ -5,16 +5,13 @@ precondition:
 run:
         send: HlcmdpToHlcmUdsDiagRequestFrame
         receive: HlcmToHlcmdpUdsDiagResponseFrame
-        protocol: 'canfd'
-        framelength_max: 8
-        padding : True
-        SecAcc_Gen: 'Gen1'
-        fixed_key: '0102030405'
-        auth_key: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
-        proof_key: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
 show_filenames:
         ess_needed : False
 teststep:
         max_7fxx78 : 12
 transfer_data_block:
         decompress_block: True
+activate_security_access:
+        fixed_key: '0102030405'
+sbl_dl_activation:
+        fixed_key: '0102030405'

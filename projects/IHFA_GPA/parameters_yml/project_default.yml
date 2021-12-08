@@ -5,11 +5,8 @@ precondition:
 run:
         send: IHFAdpToIHFAUdsDiagRequestFrame
         receive: IHFAToIHFAdpUdsDiagResponseFrame
-        protocol: 'can'
-        framelength_max: 8
-        padding : True
-        SecAcc_Gen: 'Gen2'
-        fixed_key: '0102030405'
-        auth_key: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
-        proof_key: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
 
+activate_security_access:
+        fixed_key: 'FFFFFFFFFF'
+sbl_dl_activation:
+        fixed_key: 'FFFFFFFFFF'
