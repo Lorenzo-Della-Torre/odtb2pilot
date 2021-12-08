@@ -1,11 +1,11 @@
 precondition:
-        id: "IhfadpNmCanFrame"
-        tp_name: "IHFAdpToallUdsDiagRequestFrame"
+        id: "FiocdpFioc1canNMFr"
+        tp_name: "FiocdpToAllFioc1canUdsDiagRequestFrame"
 
 run:
-        send: IHFAdpToIHFAUdsDiagRequestFrame
-        receive: IHFAToIHFAdpUdsDiagResponseFrame
-        protocol: 'can'
+        send: FiocdpToFiocFioc1canUdsDiagRequestFrame
+        receive: FiocToFiocdpFioc1canUdsDiagResponseFrame
+        protocol: 'canfd'
         framelength_max: 8
         padding : True
         SecAcc_Gen: 'Gen2'

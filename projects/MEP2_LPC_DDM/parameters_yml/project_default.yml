@@ -1,14 +1,14 @@
 precondition:
-        id: "IhfadpNmCanFrame"
-        tp_name: "IHFAdpToallUdsDiagRequestFrame"
+        id: "DdmLpc3CanNMFr"
+        tp_name: "LpcToAllUdsLpc3canDiagRequestFrame"
 
 run:
-        send: IHFAdpToIHFAUdsDiagRequestFrame
-        receive: IHFAToIHFAdpUdsDiagResponseFrame
+        send: LpcToDdmLpc3canUdsDiagRequestFrame
+        receive: DdmToLpcLpc3canUdsDiagResponseFrame
         protocol: 'can'
         framelength_max: 8
         padding : True
-        SecAcc_Gen: 'Gen1'
+        SecAcc_Gen: 'Gen2'
         fixed_key: '0102030405'
         auth_key: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
         proof_key: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'

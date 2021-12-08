@@ -5,6 +5,9 @@ precondition:
 run:
         send: HvbmdpToHvbmUdsDiagRequestFrame
         receive: HvbmToHvbmdpUdsDiagResponseFrame
+        protocol: 'can'
+        framelength_max: 8
+        padding : True
         SecAcc_Gen: 'Gen1'
         fixed_key: 'FFFFFFFFFF'
         auth_key: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'

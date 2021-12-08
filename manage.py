@@ -27,6 +27,14 @@ def config_environ():
 
     if not "ODTBPROJPARAM" in environ:
         project_dir_mapping = {
+            "IHFA_GPA" : "IHFA_GPA",
+            "MEP2_ED_IHFA" : "MEP2_ED_IHFA",
+            "MEP2_FIOC": "MEP2_FIOC",
+            "MEP2_HLCM" : "MEP2_HLCM",
+            "MEP2_LPC_DDM" : "MEP2_LPC_DDM",
+            "MEP2_SPA1" : "MEP2_SPA1",
+            "MEP2_SPA2" : "MEP2_SPA2",
+            "MEP2_SPA2_SAGen2" : "MEP2_SPA2_SAGen2",
             "becm": "MEP2_SPA1",
             "hvbm": "MEP2_SPA2",
             "hlcm": "MEP2_HLCM",
