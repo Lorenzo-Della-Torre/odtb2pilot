@@ -18,7 +18,6 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
 
 # project:  Hilding testenvironment using SignalBroker
 # author:   HWEILER (Hans-Klaus Weiler)
