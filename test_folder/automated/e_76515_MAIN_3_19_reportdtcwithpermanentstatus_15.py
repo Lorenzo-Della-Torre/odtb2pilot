@@ -17,10 +17,9 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
+
+Import script - Inherited from older version of requirement
 """
-
-'''Import script - Inherited from older version of requirement'''
-
 from e_76515_MAIN_2_19_reportdtcwithpermanentstatus_15 import run
 
 if __name__ == '__main__':

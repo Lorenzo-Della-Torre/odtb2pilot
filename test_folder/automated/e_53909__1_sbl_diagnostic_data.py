@@ -17,7 +17,6 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
 
 # Testscript Hilding MEPII
 # project:  BECM basetech MEPII
@@ -44,7 +43,8 @@ Any unauthorized copying or distribution of content from this file is prohibited
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""The Python implementation of the gRPC route guide client."""
+The Python implementation of the gRPC route guide client.
+"""
 
 import time
 from datetime import datetime

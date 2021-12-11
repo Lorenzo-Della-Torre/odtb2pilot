@@ -17,9 +17,7 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
 
-"""
 title:   Secondary Bootloader Software Version Number data record
 reqprod: 129845
 version: 1

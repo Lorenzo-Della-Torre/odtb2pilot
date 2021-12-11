@@ -17,13 +17,11 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
 
-'''
 Implicitly tested script
 
 Tested implicitly by REQPROD 53959
-'''
+"""
 
 
 from e_53959__4_complete_and_compatible_sequence_diagram import run

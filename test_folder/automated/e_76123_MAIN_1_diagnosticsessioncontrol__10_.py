@@ -17,7 +17,6 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
 
 # Testscript Hilding MEPII
 # project:  BECM basetech MEPII
@@ -26,7 +25,6 @@ Any unauthorized copying or distribution of content from this file is prohibited
 # version:  1.0
 # reqprod:  76123
 
-"""
 General:        REQPROD 76123 / MAIN ; 2
 Title:          DiagnosticSessionControl (10)
 Purpose:        -

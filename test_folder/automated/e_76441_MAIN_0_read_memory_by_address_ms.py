@@ -17,9 +17,7 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
 
-"""
 version: 0
 reqprod: 76441
 
@@ -44,7 +42,7 @@ details: >
     set as the memorySize. The data is being read from the memory address
     0x70000000 in each session using the folling payload: 0x232470000000000A.
     The last 0x0A corresponds to the 10 bytes of data that is requested.
- """
+"""
 
 import logging
 import sys

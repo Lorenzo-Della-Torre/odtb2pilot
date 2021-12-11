@@ -17,9 +17,9 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
 
-'''Import script - Inherited from older version of requirement'''
+Import script - Inherited from older version of requirement
+"""
 
 from e_76601_MAIN_1_rc31_ext import run
 
