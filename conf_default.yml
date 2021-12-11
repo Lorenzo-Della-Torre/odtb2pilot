@@ -9,6 +9,7 @@ platforms:
         fixed_key: FFFFFFFFFF
         auth_key: FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
         proof_key: FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+        FC_Separation_time : '0A'
     hvbm:
         signal_send: HvbmdpToHvbmUdsDiagRequestFrame
         signal_receive: HvbmToHvbmdpUdsDiagResponseFrame
@@ -19,6 +20,7 @@ platforms:
         fixed_key: FFFFFFFFFF
         auth_key: FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
         proof_key: FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+        FC_Separation_time : '05'
     hvbm_sa2:
         signal_send: HvbmdpToHvbmUdsDiagRequestFrame
         signal_receive: HvbmToHvbmdpUdsDiagResponseFrame
@@ -29,6 +31,7 @@ platforms:
         fixed_key: 0102030405
         auth_key: FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
         proof_key: FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+        FC_Separation_time : '05'
     ihfa:
         signal_send: IHFAdpToIHFAUdsDiagRequestFrame
         signal_receive: IHFAToIHFAdpUdsDiagResponseFrame
