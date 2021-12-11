@@ -1,4 +1,5 @@
 """
+Reset and reflash (do a software download to) the ECU if necessary
 
 /*********************************************************************************/
 
@@ -17,10 +18,6 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
-
-"""
-Reset and reflash (do a software download to) the ECU if necessary
 """
 import logging
 import time

@@ -1,4 +1,9 @@
 """
+this module provides an interface to the relevant platform directories
+
+use these access functions instead of directly using the environment variables
+as we want to gradually move away from that way of working in favor of defining
+all in a single conf.yml for all rigs with their respective platforms
 
 /*********************************************************************************/
 
@@ -17,14 +22,6 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
-
-"""
-this module provides an interface to the relevant platform directories
-
-use these access functions instead of directly using the environment variables
-as we want to gradually move away from that way of working in favor of defining
-all in a single conf.yml for all rigs with their respective platforms
 """
 import os
 import sys

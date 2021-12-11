@@ -1,4 +1,5 @@
 """
+Handle rig configuration
 
 /*********************************************************************************/
 
@@ -17,10 +18,6 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
-
-"""
-Handle rig configuration
 """
 import importlib
 from supportfunctions.support_sec_acc import SecAccessParam

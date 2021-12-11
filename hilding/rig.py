@@ -1,4 +1,5 @@
 """
+Rig handling routines
 
 /*********************************************************************************/
 
@@ -17,10 +18,6 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
-
-"""
-Rig handling routines
 """
 import sys
 import logging

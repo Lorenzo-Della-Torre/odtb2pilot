@@ -1,4 +1,5 @@
 """
+Unified diagnostic services (ISO-14229-1)
 
 /*********************************************************************************/
 
@@ -17,10 +18,6 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
-
-"""
-Unified diagnostic services (ISO-14229-1)
 """
 
 import time

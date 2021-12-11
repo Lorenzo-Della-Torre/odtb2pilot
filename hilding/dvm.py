@@ -1,4 +1,7 @@
 """
+Module for creating DVMs from appropriately formatted yaml contained in the
+module and function docstrings.
+
 
 /*********************************************************************************/
 
@@ -17,11 +20,6 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
-
-"""
-Module for creating DVMs from appropriately formatted yaml contained in the
-module and function docstrings.
 """
 
 import importlib.util

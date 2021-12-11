@@ -1,4 +1,13 @@
 """
+Hilding conf module
+
+usage example:
+> from hilding import get_conf
+> get_conf().rig.hostname
+
+in tests you could use:
+> dut.conf.rig.hostname
+
 
 /*********************************************************************************/
 
@@ -17,18 +26,6 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
-
-"""
-Hilding conf module
-
-usage example:
-> from hilding import get_conf
-> get_conf().rig.hostname
-
-in tests you could use:
-> dut.conf.rig.hostname
-
 """
 import sys
 import logging

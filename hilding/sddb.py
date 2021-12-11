@@ -1,4 +1,10 @@
 """
+project:  Hilding
+author:   DHJELM (Daniel Hjelm)
+date:     2020-12-09
+
+Support function for importing sddb data and store it as python data
+structures in <platform>/build/.
 
 /*********************************************************************************/
 
@@ -18,16 +24,6 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 """
-
-"""
-project:  Hilding
-author:   DHJELM (Daniel Hjelm)
-date:     2020-12-09
-
-Support function for importing sddb data and store it as python data
-structures in <platform>/build/.
-"""
-
 import sys
 import codecs
 import logging

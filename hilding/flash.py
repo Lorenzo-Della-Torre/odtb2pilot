@@ -1,4 +1,5 @@
 """
+ECU software download
 
 /*********************************************************************************/
 
@@ -17,10 +18,6 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
-
-"""
-ECU software download
 """
 import logging
 import traceback

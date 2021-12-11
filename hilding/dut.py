@@ -1,4 +1,5 @@
 """
+Support device under test module
 
 /*********************************************************************************/
 
@@ -17,10 +18,6 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
-
-"""
-Support device under test module
 """
 
 import os

@@ -1,4 +1,5 @@
 """
+Add results from Hilding test to JAKOB db and the cynosure message bus
 
 /*********************************************************************************/
 
@@ -17,10 +18,6 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
-
-"""
-Add results from Hilding test to JAKOB db and the cynosure message bus
 """
 
 import logging

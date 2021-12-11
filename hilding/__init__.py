@@ -1,4 +1,5 @@
 """
+hilding package module
 
 /*********************************************************************************/
 
@@ -18,6 +19,4 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 """
-
-""" hilding package module """
 from hilding.conf import get_conf

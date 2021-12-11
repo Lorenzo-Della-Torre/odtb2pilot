@@ -1,4 +1,8 @@
 """
+analytics test cases
+
+do make sure that these tests never writes to production db
+
 
 /*********************************************************************************/
 
@@ -17,12 +21,6 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
-
-"""
-analytics test cases
-
-do make sure that these tests never writes to production db
 """
 from hilding import analytics
 
