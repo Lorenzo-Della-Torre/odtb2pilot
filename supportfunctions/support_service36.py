@@ -45,7 +45,7 @@ Any unauthorized copying or distribution of content from this file is prohibited
 # limitations under the License.
 
 The Python implementation of the gRPC route guide client.
-###
+"""
 
 import logging
 from supportfunctions.support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
