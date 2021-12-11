@@ -1,4 +1,5 @@
 """
+The Python implementation of the gRPC route guide client.
 
 /*********************************************************************************/
 
@@ -17,7 +18,6 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
 
 # project:  Hilding testenvironment using SignalBroker
 # author:   HWEILER (Hans-Klaus Weiler)
@@ -44,8 +44,7 @@ Any unauthorized copying or distribution of content from this file is prohibited
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""The Python implementation of the gRPC route guide client."""
+"""
 
 import logging
 import inspect

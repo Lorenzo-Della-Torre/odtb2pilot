@@ -1,4 +1,6 @@
 """
+GUI for pretty print
+"Might be updated to contain more GUIs to Dut
 
 /*********************************************************************************/
 
@@ -19,9 +21,6 @@ Any unauthorized copying or distribution of content from this file is prohibited
 /*********************************************************************************/
 """
 
-"""GUI for pretty print
-Might be updated to contain more GUIs to Dut
-"""
 import time
 import logging
 

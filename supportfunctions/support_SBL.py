@@ -17,7 +17,6 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
 
 # project:  Hilding testenvironment using SignalBroker
 # author:   LDELLATO (Lorenzo Della Torre)
@@ -60,7 +59,8 @@ Any unauthorized copying or distribution of content from this file is prohibited
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""The Python implementation of the gRPC route guide client."""
+The Python implementation of the gRPC route guide client.
+"""
 
 import time
 import logging

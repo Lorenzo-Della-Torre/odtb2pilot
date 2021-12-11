@@ -17,9 +17,8 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
 
-""" project:  Hilding testenvironment using SignalBroker
+    project:  Hilding testenvironment using SignalBroker
     author:   hweiler (Hans-Klaus Weiler)
     date:     2020-09-25
     version:  1.0

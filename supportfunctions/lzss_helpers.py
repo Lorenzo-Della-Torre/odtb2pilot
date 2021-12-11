@@ -17,9 +17,6 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
-
-"""
     LZSS helpers taken from
     #https://stackoverflow.com/a/10691412
 

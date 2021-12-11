@@ -1,4 +1,5 @@
 """
+The Python implementation of the grPC route guide client.
 
 /*********************************************************************************/
 
@@ -40,7 +41,7 @@ Any unauthorized copying or distribution of content from this file is prohibited
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""The Python implementation of the grPC route guide client."""
+"""
 
 import io
 from supportfunctions.lzss_bitio import BitReader, BitWriter
