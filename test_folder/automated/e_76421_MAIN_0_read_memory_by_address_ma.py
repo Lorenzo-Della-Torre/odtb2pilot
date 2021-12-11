@@ -17,9 +17,7 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
 
-"""
 version:  1
 reqprod:  76421
 
