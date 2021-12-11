@@ -1,4 +1,5 @@
 """
+Status of DTC (UDS: ISO-14229-1:2006) and Status Indicators SI30 (Autosar)i
 
 /*********************************************************************************/
 
@@ -17,10 +18,6 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
-
-"""
-Status of DTC (UDS: ISO-14229-1:2006) and Status Indicators SI30 (Autosar)
 """
 
 class StatusBits:
