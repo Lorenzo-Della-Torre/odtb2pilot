@@ -1,6 +1,0 @@
-precondition:
-        id: "HvbmdpNmFrame"
-        tp_name: "HvbmdpToAllUdsDiagRequestFrame"
-run:
-        send: HvbmdpToHvbmUdsDiagRequestFrame
-        receive: HvbmToHvbmdpUdsDiagResponseFrame
