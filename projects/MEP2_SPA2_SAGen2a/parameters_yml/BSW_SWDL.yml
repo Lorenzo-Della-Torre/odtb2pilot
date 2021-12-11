@@ -1,0 +1,5 @@
+run:
+        SecAcc_Gen: 'Gen2'
+        fixed_key: '0102030405'
+        auth_key: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
+        proof_key: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'

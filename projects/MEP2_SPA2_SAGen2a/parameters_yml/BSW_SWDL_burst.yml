@@ -1,0 +1,10 @@
+precondition_burst:
+        id: "HvbmdpNmFrame"
+        tp_name: "HvbmdpToAllUdsDiagRequestFrame"
+        id_burst: "HvbmdpToAllUdsDiagRequestFrame"
+        frame : b'\x1A\x40\xFF\xFF\xFF\xFF\xFF\xFF'
+run:
+        SecAcc_Gen: 'Gen2'
+        fixed_key: '0102030405'
+        auth_key: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
+        proof_key: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'

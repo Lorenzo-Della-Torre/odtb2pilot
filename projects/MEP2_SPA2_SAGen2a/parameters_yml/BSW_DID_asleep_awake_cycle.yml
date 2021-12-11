@@ -1,0 +1,42 @@
+precondition:
+        id: "HvbmdpNmFrame"
+        intervall : 0.8
+        tp_name: "HvbmdpToAllUdsDiagRequestFrame"
+
+precondition_extra:
+        send: HvbmNmFrame
+        receive: HvbmHvbm1canFrame53_20
+
+run:
+        send: HvbmdpToHvbmUdsDiagRequestFrame
+        receive: HvbmToHvbmdpUdsDiagResponseFrame
+        numofframe: 7
+        
+step_2:
+        payload: b'\x22\xED\xA0'
+        hb_frame : "HvbmHvbm1canFrame53_20"
+step_3:
+        payload: b'\x22\xED\xA0'
+
+step_4:
+        payload: b'\x22\xED\xA0'
+step_5:
+        payload: b'\x22\xED\xA0'
+step_6:
+        payload: b'\x22\xED\xA0'
+        hb_frame : "HvbmHvbm1canFrame53_20"
+
+step_7:
+        hb_frame : "HvbmHvbm1canFrame53_20"
+
+step_8:
+        hb_frame : "HvbmHvbm1canFrame53_20"
+
+step_9:
+        id: "HvbmdpNmFrame"
+        intervall : 0.8
+        payload: b'\x22\xED\xA0\xF1\x20'
+
+step_10:
+        id: "HvbmdpNmFrame"
+        intervall : 0.8
