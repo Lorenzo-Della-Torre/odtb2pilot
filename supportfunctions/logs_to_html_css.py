@@ -17,9 +17,9 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
 
-''' This is the cascading style sheet (css) for the python generated html reports (Log & DID) '''
+This is the cascading style sheet (css) for the python generated html reports (Log & DID)
+"""
 # Disabling Wrong hanging indentation - This format is more read friendly
 
 STYLE = (

@@ -17,9 +17,7 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
 
-"""
     LZSS bitio taken from
     #https://stackoverflow.com/a/10691412
 

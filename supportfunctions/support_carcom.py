@@ -17,9 +17,8 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
 
-""" project:  Hilding testenvironment using SignalBroker
+    project:  Hilding testenvironment using SignalBroker
     author:   fjansso8 (Fredrik Jansson)
     date:     2020-05-12
     version:  1.0
