@@ -17,9 +17,7 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
 
-"""
 reqprod: 469465
 version: 0
 title: Authentication Data calculation

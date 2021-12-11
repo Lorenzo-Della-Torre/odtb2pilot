@@ -17,9 +17,9 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
 
-'''Import script - Inherited from older version of requirement'''
+Import script - Inherited from older version of requirement
+"""
 
 from e_68230_MAIN_1_ecu_sn_dr import run
 
