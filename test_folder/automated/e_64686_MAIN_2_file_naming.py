@@ -17,14 +17,12 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
 
 #!/usr/bin/env python3
 
 # Date: 2020-01-08
 # Authors: Fredrik Jansson (fjansso8)
 
-"""
 Used for checking that delivered or released VBF files are named the same as the corresponding
 released software part number which consist of (sw_part_number and sw_version) with an extension
 of ".VBF
