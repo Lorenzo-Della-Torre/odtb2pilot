@@ -17,9 +17,7 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
 
-"""
 reqprod: 486706
 version: 0
 title: Distribution of the Security Log Authentication keys to ECU suppliers

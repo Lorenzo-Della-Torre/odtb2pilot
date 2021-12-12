@@ -17,9 +17,7 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
 
-'''
 project:  HVBM basetech MEPII
 author:   jpiousmo (Jenefer Liban)
 date:     2021-11-11
@@ -39,7 +37,7 @@ details: >
     Read the DID 'DD0A' in both default and extended session
     and make sure that we get a positive response with the
     DID(DD0A) in the response.
-'''
+"""
 
 import sys
 import logging

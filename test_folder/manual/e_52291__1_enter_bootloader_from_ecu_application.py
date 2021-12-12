@@ -17,13 +17,11 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
 
-'''
 Implicitly tested script
 
 Tested implicitly by REQ_74450
-'''
+"""
 
 from e_74450_MAIN_2_entry_conditions_for_service_10_changing_to_programmingsession import run
 

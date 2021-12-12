@@ -17,9 +17,7 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
 
-"""
 testscript: Hilding MEPII
 project:   BECM basetech MEPII
 author:    GANDER10 (Gustav Andersson)

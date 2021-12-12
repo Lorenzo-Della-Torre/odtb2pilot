@@ -17,13 +17,11 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
 
-'''
 Implicitly tested script
 
 Tested implicitly by all diagnostic tests, e.g. by REQPROD 76170
-'''
+"""
 
 from e_76170_MAIN_2_service_22_dids import run
 

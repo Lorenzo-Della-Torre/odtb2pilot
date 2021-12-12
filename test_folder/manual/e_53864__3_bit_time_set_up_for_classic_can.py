@@ -17,9 +17,8 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
 
-""" Testscript for a requirement which needs to be tested by code inspection (To be inspected).
+    Testscript for a requirement which needs to be tested by code inspection (To be inspected).
     For example: Test multiple processors when you only have one.
 
     Testscript Hilding MEPII

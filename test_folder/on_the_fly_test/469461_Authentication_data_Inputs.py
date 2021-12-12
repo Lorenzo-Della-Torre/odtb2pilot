@@ -17,9 +17,7 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
 
-"""
 title: Supporting functional requests
 reqprod: 60112
 version: 1
@@ -35,12 +33,17 @@ details:
     as well. However, writing the test like we have done here makes it more
     explicit.
 """
+
 import logging
 
 from hilding.dut import Dut
 from hilding.dut import DutTestError
 
 def step_1(dut: Dut):
+    """
+    Read did DOC7 and D047
+    in mode1 and 2
+    """
     dut.uds.read_data_by_id_22(b'\xd0\xc7')
     dut.uds.read_data_by_id_22(b'\xd0\x47')
     dut.uds.set_mode(mode=1)

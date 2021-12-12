@@ -17,9 +17,8 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
 
-""" Testscript for a requirement which can't be automated and needs to be manually tested.
+    Testscript for a requirement which can't be automated and needs to be manually tested.
 
     Testscript  Hilding MEPII
     project     BECM basetech MEPII

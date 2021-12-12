@@ -17,9 +17,7 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
 
-"""
 This is a script that starts the didalyzer GUI (pretty print of DIDs).
 
 The didalyzer is a graphical interface to read dids using the hilding hardware.

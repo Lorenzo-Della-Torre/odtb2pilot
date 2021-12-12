@@ -17,7 +17,6 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
 
 # Testscript Hilding MEPII
 # project:  BECM basetech MEPII
@@ -41,7 +40,8 @@ Any unauthorized copying or distribution of content from this file is prohibited
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" Python implementation of REQPROD 74182"""
+Python implementation of REQPROD 74182
+"""
 
 from datetime import datetime
 import time

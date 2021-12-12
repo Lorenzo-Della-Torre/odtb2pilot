@@ -17,10 +17,9 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
+
+Import script - Inherited from older version of requirement
 """
-
-'''Import script - Inherited from older version of requirement'''
-
 from e_76685_MAIN_1_requestupload_dataformatidentifier import run
 
 if __name__ == '__main__':

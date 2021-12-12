@@ -17,9 +17,8 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
 
-""" Testscript Hilding MEPII
+    Testscript Hilding MEPII
     project:  BECM basetech MEPII
     author:   NOA (ANDREAS NORRSTIG)
     date:     2020-11-13

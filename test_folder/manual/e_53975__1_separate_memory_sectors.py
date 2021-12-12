@@ -17,9 +17,8 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
 
-"""  Testscript for an implicitly tested requirement (tested implicitly)
+    Testscript for an implicitly tested requirement (tested implicitly)
 
     Testscript  Hilding MEPII
     project     BECM basetech MEPII

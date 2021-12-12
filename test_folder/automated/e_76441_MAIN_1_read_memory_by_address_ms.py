@@ -17,13 +17,11 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
 
-'''
 Implicitly tested script
 
 Tested implicitly by REQPROD 76173
-'''
+"""
 
 from e_76173_MAIN_1_readmemorybyaddress_alfid import run
 
