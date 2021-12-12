@@ -42,7 +42,7 @@ Any unauthorized copying or distribution of content from this file is prohibited
 # limitations under the License.
 
 The Python implementation of the gRPC route guide client.
-###
+"""
 
 from datetime import datetime
 import time
