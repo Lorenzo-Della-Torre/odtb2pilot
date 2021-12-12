@@ -17,9 +17,7 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
 
-"""
 title: Supporting functional requests
 reqprod: 60112
 version: 1
@@ -35,6 +33,7 @@ details:
     as well. However, writing the test like we have done here makes it more
     explicit.
 """
+
 import logging
 
 from hilding.dut import Dut
