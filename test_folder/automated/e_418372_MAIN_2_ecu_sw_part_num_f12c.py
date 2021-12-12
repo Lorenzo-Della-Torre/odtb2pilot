@@ -17,9 +17,9 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
 
-'''Import script - Inherited from older version of requirement'''
+Import script - Inherited from older version of requirement
+"""
 
 from e_418372_MAIN_1_ecu_sw_part_num_f12c import run
 
