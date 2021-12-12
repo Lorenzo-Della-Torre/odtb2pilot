@@ -40,6 +40,10 @@ from hilding.dut import Dut
 from hilding.dut import DutTestError
 
 def step_1(dut: Dut):
+    """
+    Read did DOC7 and D047
+    in mode1 and 2
+    """
     dut.uds.read_data_by_id_22(b'\xd0\xc7')
     dut.uds.read_data_by_id_22(b'\xd0\x47')
     dut.uds.set_mode(mode=1)
