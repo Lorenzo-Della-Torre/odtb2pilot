@@ -17,9 +17,8 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
 
-""" Testscript Hilding MEPII
+    Testscript Hilding MEPII
     project:  BECM basetech MEPII
     author:   fjansso8 (Fredrik Jansson)
     date:     2020-03-26
