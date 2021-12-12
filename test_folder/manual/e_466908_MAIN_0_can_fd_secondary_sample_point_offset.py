@@ -17,9 +17,8 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
 
-""" Testscript for a requirement which is not applicable for us (Not applicable).
+    Testscript for a requirement which is not applicable for us (Not applicable).
     For example: Test multiple processors when you only have one.
 
     Testscript Hilding MEPII
