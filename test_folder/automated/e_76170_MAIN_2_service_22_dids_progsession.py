@@ -17,9 +17,9 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
 
-'''Import script - Inherited from older version of requirement'''
+Import script - Inherited from older version of requirement
+"""
 
 from e_76170_MAIN_1_service_22_dids_progsession import run
 

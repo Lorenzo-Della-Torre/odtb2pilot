@@ -17,9 +17,7 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
 
-"""
 reqprod:  60006
 version:  3
 title:    BlockSize parameter non-programming session server side
