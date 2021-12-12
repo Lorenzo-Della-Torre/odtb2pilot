@@ -17,9 +17,7 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
 
-"""
 reqprod: 486601
 version: 0
 title: Event Type - Debugger Authentication
