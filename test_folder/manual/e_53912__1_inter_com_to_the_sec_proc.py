@@ -17,9 +17,10 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
+
+ Testscript for a not testable requirement (not applicable)
 """
 
-""" Testscript for a not testable requirement (not applicable) """
 # Testscript Hilding MEPII
 # project:  BECM basetech MEPII
 # author:   fjansso8 (Fredrik Jansson)

@@ -17,13 +17,11 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
 
-'''
 Implicitly tested script
 
 Tested implicitly by REQPROD_405174
-'''
+"""
 
 from e_405174_MAIN_2_checkm_verification_programmed_data import run
 
