@@ -17,13 +17,11 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
 
-'''
 Implicitly tested script
 
 Tested implicitly by REQPROD 60017
-'''
+"""
 
 from e_60017__1_n_as_timeout_non_prog_session import run
 

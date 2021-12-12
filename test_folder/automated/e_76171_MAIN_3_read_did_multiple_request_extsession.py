@@ -17,9 +17,9 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-"""
 
-'''Import script - Inherited from older version of requirement'''
+Import script - Inherited from older version of requirement
+"""
 
 from e_76171_MAIN_2_read_did_multiple_request_extsession import run
 
