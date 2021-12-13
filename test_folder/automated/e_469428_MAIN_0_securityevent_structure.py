@@ -165,18 +165,24 @@ def __find_events(res):
     Returns:
         list: A list with dictionaries containing all the events found in the response
     """
-    nbr_events = int(res.details["response_items"][-2]['name'][0:2])
+    name_of_last_event = res.details["response_items"][-2]['name']
+    nbr_events_string = ""
+    for char in name_of_last_event:
+        if char.isdigit():
+            nbr_events_string += char
+    nbr_events = int(nbr_events_string)
 
     header_type = 0
     resp_items = res.details["response_items"]
-    if 'Total number of reported Events' in resp_items[0]['name']:
+    if 'Total number of reported Events'.lower() in resp_items[0]['name'].lower():
         header_type = 1
-    elif 'Total number of successful events' in resp_items[0]['name']:
-        if 'Total number of rejected events' in resp_items[1]['name']:
-            header_type = 2
-            nbr_events = nbr_events * 2
+    elif 'Total number of successful events'.lower() in resp_items[0]['name'].lower()\
+            and 'Total number of rejected events'.lower() in resp_items[1]['name'].lower():
+
+        header_type = 2
+        nbr_events = nbr_events * 2
     else:
-        logging.error("Neither header type 1 or type 2 found \n %s \n %s",
+        logging.error("Neither header type 1 or type 2 found in \n %s \n %s",
             res.details["response_items"][0]['name'],
             res.details["response_items"][1]['name'])
         return []
@@ -248,7 +254,8 @@ def __validate_number_of_response_items(events, did):
                 if i < 2 and not ok_to_exclude_time:
                     logging.error("Time is missing in the structure for DID %s", did)
                     return False
-                logging.error("The following event(s) has faulty structure for did %s:", did)
+                logging.error("The following event(s) has faulty structure for did %s in the sddb:"
+                    ,did)
                 for event in sorted_events:
                     event_name_only = list(event.keys())[0].split("-")[0]
                     logging.error(event_name_only)
@@ -272,16 +279,22 @@ def __validate_events(events, did):
     result = __validate_number_of_response_items(events, did)
 
     for event in events:
-        if "Latest successful event - Event Code" in event:
-            if int(event["Latest successful event - Event Code"], 16) < 120:
-                logging.error("Event code should be > 0x7F but is %s",
-                event["Latest successful event - Event Code"])
-                return False
-        if "Latest rejected event - Event Code" in event:
-            if int(event["Latest rejected event - Event Code"], 16) > 119:
-                logging.error("Event code should be < 0x80 but is %s",
-                event["Latest rejected event - Event Code"])
-                return False
+        for entry in event.keys():
+            if "Latest successful event - Event Code".lower() in entry.lower():
+                event_code = event[list(event)[-2]]
+                if int(event_code, 16) < 120:
+                    logging.error("Event code for '%s' should be > 0x7F but is %s",
+                    entry,
+                    event[entry])
+                    return False
+
+            if "Latest rejected event - Event Code".lower() in entry.lower():
+                event_code = event[list(event)[-2]]
+                if int(event_code, 16) > 119:
+                    logging.error("Event code for '%s' should be < 0x80 but is %s",
+                    entry,
+                    event["Latest rejected event - Event Code"])
+                    return False
 
     return True and result
 
@@ -304,10 +317,11 @@ def __evaluate_did(dut: Dut, did: str):
     for i,event in enumerate(events):
         logging.debug(event)
         if not event:
-            logging.error("No response_items found for event number %s", str(i))
+            logging.error("No response_items found for event number %s", str(i+1))
             result = False
 
-    result = __validate_events(events, did) and result
+    if result:
+        result = __validate_events(events, did)
 
     return result
 
