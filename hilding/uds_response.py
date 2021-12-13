@@ -389,6 +389,7 @@ class UdsResponse:
         if did in self.__sddb_dids["resp_item_dict"]:
             resp_item_dict = self.__sddb_dids["resp_item_dict"]
             response_items = []
+            unscaleable_values = str()
             for resp_item in resp_item_dict[did]:
                 offset = resp_item['offset']
                 size = resp_item['size']
@@ -398,8 +399,10 @@ class UdsResponse:
                 scaled_value = 0
                 try:
                     scaled_value = get_scaled_value(resp_item, sub_payload)
-                except ValueError as error:
-                    log.error('Could not scale value: %s', error)
+                except ValueError:
+                    unscaleable_values += '\n' + resp_item.get('name')
+                    if sub_payload == '':
+                        unscaleable_values += " - because payload is to short"
 
                 if 'compare_value' in resp_item:
                     compare_value = resp_item['compare_value']
@@ -415,6 +418,10 @@ class UdsResponse:
                 item['formula'] = formula
 
                 response_items.append(item)
+
+            if unscaleable_values:
+                log.error("The following response items could not be extracted\
+                    \nfrom the payload received from the ECU: %s", unscaleable_values)
 
             self.details['response_items'] = response_items
 
@@ -534,12 +541,12 @@ def get_sub_payload(payload, offset, size):
     if len(payload) >= end:
         sub_payload = payload[start:end]
     else:
-        log.error('Payload is too short!')
         end = start + len(payload)
         sub_payload = payload[start:end]
 
     log.debug('----------------')
     log.debug('payload: %s', payload)
+    log.debug('payload len: %s', len(payload))
     log.debug('offset: %s', offset)
     log.debug('size: %s', size)
     log.debug('start: %s', start)
