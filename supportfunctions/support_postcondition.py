@@ -72,7 +72,9 @@ class SupportPostcondition: # pylint: disable=too-few-public-methods
         Precondition for test running:
         BECM has to be kept alive: start heartbeat
         """
-        logging.info("Postcondition: Display current session, change to mode1 (default)")
+        logging.info("")
+        logging.info("~~~Postcondition: Display current mode/session, change to mode1(default)~~~")
+
         result = SE22.read_did_f186(can_p) and result
         SE10.diagnostic_session_control_mode1(can_p)
         #if coming from mode2 it may take a bit
@@ -83,12 +85,20 @@ class SupportPostcondition: # pylint: disable=too-few-public-methods
         logging.info("Testcase end: %s", datetime.now())
         logging.info("Time needed for testrun (seconds): %s", int(time.time() - starttime))
 
-        logging.info("Do cleanup now...")
-        logging.info("Stop all periodic signals sent")
+        logging.debug("Do cleanup now...")
+        logging.debug("Stop all periodic signals sent")
         SC.stop_periodic_all()
+
+        #There is an issue in unsubscribe_signals() that generates a lot of errors in the log.
+        #In order to not confuse users this was simply removed from the log by disabling the logger
+        logger = logging.getLogger()
+        logger.disabled = True
 
         # deregister signals
         SC.unsubscribe_signals()
+
+        logger.disabled = False
+
         # if threads should remain: try to stop them
         SC.thread_stop()
 

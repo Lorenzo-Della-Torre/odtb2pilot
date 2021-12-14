@@ -219,7 +219,7 @@ def run():
     result = False
     try:
         # Communication with ECU lasts 60 seconds.
-        dut.precondition(timeout=60)
+        dut.precondition(timeout=30)
 
         #List containing dids to be tested.
         dids = ["D046",
@@ -232,9 +232,8 @@ def run():
 
         dut.uds.set_mode(3)
 
-        result = True
         result = dut.step(step_1,dids[0],
-        purpose = "Test that "+dids[0]+" has the correct header") and result
+        purpose = "Test that "+dids[0]+" has the correct header")
 
         if result:
             result = dut.step(step_2,dids[1],

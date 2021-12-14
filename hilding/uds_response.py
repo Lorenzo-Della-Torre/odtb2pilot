@@ -24,6 +24,7 @@ import re
 import sys
 import logging
 import textwrap
+import string
 
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
 from hilding.status_bits import DtcStatus
@@ -372,9 +373,40 @@ class UdsResponse:
         """
         if did in ['F120', 'F121', 'F122', 'F124', 'F125', 'F12A', 'F12B',
                    'F12C', 'F12E']:
-            if SupportTestODTB2.validate_part_number_record(item):
-                self.details[did+'_valid'] = \
-                    SupportTestODTB2.pp_partnumber(item)
+
+            # F12E contains more than one part number and therefore must be divided
+            items = []
+            if did == "F12E":
+                number_of_part_numbers = int(item[0:2]) # Defined in the SWRS
+                item = item[2:] # Since the first two chars are
+                                # "Total number of ECU Software Part Numbers"
+
+                # Used to extract size of part number from sddb. Letters and _ use one byte,
+                # digits use one. Note: One byte = 2 hex chars
+                part_number = self.__sddb_dids["pbl_diag_part_num"]
+                part_number_size = 0
+                for char in part_number:
+                    if char in string.ascii_uppercase + "_":
+                        part_number_size += 2
+                    if char in string.digits:
+                        part_number_size += 1
+
+                for i in range(number_of_part_numbers):
+                    items.append(item[i*part_number_size:part_number_size+i*part_number_size])
+            else:
+                items.append(item)
+
+            for itm in items:
+                if SupportTestODTB2.validate_part_number_record(itm):
+                    self.details[did+'_valid'] = \
+                        SupportTestODTB2.pp_partnumber(itm)
+                else:
+                    did_name = ""
+                    if did in self.__sddb_dids['app_did_dict']:
+                        did_name = self.__sddb_dids['app_did_dict'][did]['name']
+                    logging.info("^^^^^^^^^ The previous line is related to DID %s (%s) ^^^^^^^^",
+                        did,
+                        did_name)
 
     def add_response_items(self, did, payload):
         """Add response items
@@ -482,7 +514,9 @@ class UdsResponse:
         part_nums = textwrap.wrap(remaining, part_num_len)
         self.details['F12E_list'] = part_nums
 
-        # validate the part numbers
+        logging.debug("Part nums: %s", part_nums)
+
+        # validate the part numbers. This is also done in self.extract_dids()...
         f12e_valid = []
         for pn in part_nums:
             if SupportTestODTB2.validate_part_number_record(pn):

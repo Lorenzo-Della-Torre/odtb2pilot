@@ -798,7 +798,7 @@ class SupportCAN:
         mess_length = len(cpay["payload"])
 
         if can_p["protocol"] == 'can':
-            logging.info("Send payload as CAN frames")
+            logging.debug("Send payload as CAN frames")
             # if single_frame:
             if mess_length < can_p["framelength_max"]:
                 self.__send_sf(can_p, cpay, padding, padding_byte)
@@ -844,7 +844,7 @@ class SupportCAN:
             else:
                 logging.debug("Payload doesn't fit in one MF message")
         elif can_p["protocol"] == 'can_fd':
-            logging.info("Send payload as CAN_FD frames")
+            logging.debug("Send payload as CAN_FD frames")
             # if single_frame:
             if mess_length < can_p["framelength_max"]-1:
                 self.__send_sf(can_p, cpay, padding, padding_byte)

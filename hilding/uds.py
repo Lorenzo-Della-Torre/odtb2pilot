@@ -104,7 +104,7 @@ class Uds:
             "min_no_messages": -1,
             "max_no_messages": -1
         }
-        log.info("Request with payload: %s", payload.hex())
+        log.info("--> Request with payload: %s", payload.hex())
         SupportTestODTB2().teststep(self.dut, cpay, etp)
 
         response = SC.can_messages[self.dut['receive']]
