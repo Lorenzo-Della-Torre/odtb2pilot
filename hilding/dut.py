@@ -121,6 +121,7 @@ class Dut:
         self.framelength_max = 8
         self.padding = True
         self.uds = Uds(self)
+        self.fail_purpose = ""
 
     def __getitem__(self, key):# pylint: disable=too-many-return-statements
         # Legacy subscript access to dut object for old code
@@ -203,10 +204,10 @@ class Dut:
         log.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Precondition started~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
         res = self.uds.read_data_by_id_22(EicDid.complete_ecu_part_number_eda0)
-        log.info("Precondition eda0: %s\n", res)
+        log.debug("Precondition eda0: %s\n", res)
 
         res = self.uds.read_data_by_id_22(IoVmsDid.pbl_software_part_num_f125)
-        log.info("Precondition f125: %s\n", res)
+        log.debug("Precondition f125: %s\n", res)
         self.uds.step = 0
 
     def postcondition(self, start_time, result):
@@ -230,14 +231,21 @@ class Dut:
         log.info("Testcase end: %s", datetime.now())
         log.info("Time needed for testrun (seconds): %s", int(time.time() - start_time))
 
-        log.info("Do cleanup now...")
-        log.info("Stop all periodic signals sent")
+        log.debug("Do cleanup now...")
+        log.debug("Stop all periodic signals sent")
 
         iso_tp = SupportCAN()
         iso_tp.stop_periodic_all()
 
+        #There is an issue in unsubscribe_signals() that generates a lot of errors in the log.
+        #In order to not confuse users this was simply removed from the log by disabling the logger
+        logger = logging.getLogger()
+        logger.disabled = True
+
         # deregister signals
         iso_tp.unsubscribe_signals()
+
+        logger.disabled = False
 
         # if threads should remain: try to stop them
         iso_tp.thread_stop()
@@ -248,6 +256,8 @@ class Dut:
             log.info("Testcase result: PASSED")
         else:
             log.info("Testcase result: FAILED")
+        if self.fail_purpose != "":
+            log.info("Fail occurred at: %s ", self.fail_purpose)
 
     def start(self):
         """Log the current time and return a timestamp
@@ -286,11 +296,22 @@ class Dut:
         logging.info("Purpose: %s", purpose)
 
         self.uds.purpose = purpose
+        ret = None
         if inspect.ismethod(func):
             # step should also works with class methods and not just functions.
             # e.g. dut.step(dut.uds.set_mode, 2)
-            return func(*args, **kwargs)
-        return func(self, *args, **kwargs)
+            ret = func(*args, **kwargs)
+        ret = func(self, *args, **kwargs)
+
+        #If a test step fails we save the purpose so that it can be given as feedback later
+        if isinstance(ret, tuple):
+            step_result = ret[0]
+        else:
+            step_result = ret
+        if step_result is False:
+            self.fail_purpose = "´" + purpose + "´," + " in step: " + str(self.uds.step)
+
+        return ret
 
     @beamy_feature
     def check_licence(self):

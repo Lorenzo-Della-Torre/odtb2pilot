@@ -66,6 +66,34 @@ class SupportFileIO:
         SupportFileIO
     """
 
+    @classmethod
+    def __argv_to_string(cls, argv):
+        """Transforms a list of strings to a print friendly string
+            If argv is already a string it will be returned as is.
+
+            Example:
+            argv = ({'name': 'Heartbeat', 'send': True, 'id': 'HvbmdpNmFrame'},)
+
+            as input would generate
+            ´name, send, id´
+
+            as output
+        Args:
+            argv (str, list): argv that is input to extract_parameter_yml
+
+        Returns:
+            str: a printer friendly representation of argv
+        """
+        ret = "´"
+        entries = argv[0]
+        if not isinstance(entries, str):
+            for entry in entries:
+                ret += entry + ", "
+            ret = ret[0:-2] #to remove the last ","
+            ret += "´"
+        else:
+            ret = "´" + entries + "´"
+        return ret
 
     @classmethod
     def extract_parameter_yml(cls, key, *argv):
@@ -154,10 +182,6 @@ class SupportFileIO:
                 data_default = yaml.safe_load(file)
                 default_par_open = True
         except IOError:
-            logging.warn("Could not open default parameter file for project\n")
-            logging.info("Parameter path: %s", param_dir)
-            logging.info("Parameter default file: %s", proj_default)
-            logging.info("path+Parameter default file: %s", dir_file_default)
             #sys.exit(1)
             #sys.exit is to hard, skip reading parameter, don't exit python
             default_par_open = False
@@ -174,14 +198,13 @@ class SupportFileIO:
                 data = yaml.safe_load(file)
                 file_par_open = True
         except IOError:
-            logging.warn("Could not open parameter file for testscript\n")
-            logging.info("Parameter path: %s", param_dir)
-            logging.info("Parameter file: %s", f_name)
-            logging.info("path+Parameter testscript file: %s", dir_file)
             #sys.exit(1)
             #sys.exit is to hard, skip reading parameter, don't exit python
             file_par_open = False
         if not (default_par_open or file_par_open):
+            logging.info("Config file used for extracting %s: %s",
+                cls.__argv_to_string(argv),
+                dir_file + dir_file_default)
             return value
 
         #logging.debug("YML key", key)
@@ -263,4 +286,7 @@ class SupportFileIO:
                 #      arg, data[key].get(arg))
                 value = data[key].get(arg)
                 logging.debug("new value variable: %s", value)
+        logging.info("Config file used for extracting %s: %s",
+            cls.__argv_to_string(argv),
+            dir_file + dir_file_default)
         return value

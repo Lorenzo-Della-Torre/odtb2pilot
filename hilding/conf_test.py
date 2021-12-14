@@ -34,11 +34,13 @@ def mock_get_conf(monkeypatch):
         monkeypatch.setitem(
             conf.rig._Rig__sddb_module_cache, "dids",
             {"pbl_diag_part_num": "",
-             "app_did_dict": {"F186": {'size': '1'},
-                              "EDA0": {'size': '110'},
-                              "F12E": {'size': '7'}},
-             "pbl_did_dict": {"F12C": {'size': '7'}},
-             "sbl_did_dict": {"F122": {'size': '7'}},
+             "app_did_dict": {"F186": {'name': 'Active Diagnostic Session', 'size': '1'},
+                              "EDA0": {'name': 'Complete ECU Part/Serial Number(s)', 'size': '110'},
+                              "F12E": {'name': 'ECU Software Part Numbers', 'size': '22'}},
+             "pbl_did_dict": {"F12C": {'name': 'ECU Software Structure Part Number', 'size': '7'}},
+             "sbl_did_dict": {'F122': {
+                                'name': 'Secondary Bootloader Diagnostic Database Part Number',
+                                'size': '7'}},
              "resp_item_dict": {}})
         monkeypatch.setitem(
             conf.rig._Rig__sddb_module_cache, "dtcs",

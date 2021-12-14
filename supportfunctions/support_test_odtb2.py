@@ -76,14 +76,12 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
     Class for supporting sending/receiving CAN frames
     """
 
-
-
     @classmethod
     def print_test_purpose(cls, stepno, purpose):
         """
         print_test_purpose
         """
-        logging.info("Step:    %s", stepno)
+        logging.debug("stepno passed to print_test_purpose: %s", stepno)
         logging.info("Purpose: %s", purpose)
 
 
@@ -173,6 +171,18 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
         Return:
         testresult       bool    result of teststep is as expected
         """
+
+        # Only log test step number if it is an actual test step in a script calling this function
+        # If this function is called from uds.py no print is required since it is handled in dut.py
+        try:
+            called_from_uds = "uds.py" in inspect.stack()[1][1]
+            if int(etp['step_no']) < 100 and not called_from_uds:
+                logging.info(
+                    "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Step %s started~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+                    etp['step_no'])
+        except ValueError:
+            pass
+
         testresult = True
 
         SC.clear_old_cf_frames()
@@ -198,6 +208,7 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
         self.__send(can_p, etp, cpay)
 
         logging.debug("Teststep: Rec can messages: %s", SC.can_messages[can_p["receive"]])
+
         if SC.can_messages[can_p["receive"]]:
             while self.check_7f78_response(SC.can_messages[can_p["receive"]]):
 
@@ -351,11 +362,10 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
         3 ASCII encoded uppercase letters or spaces.
         The version suffix can start with 0, 1 or 2 spaces before the letters.
         """
-
         # Validate 7 bytes of data (14 character hex string)
         result = len(part_number_record) == 14
         if not result:
-            logging.info("validate PN failed - wrong length: %s", len(part_number_record))
+            logging.info("validate part number failed - wrong length: %s", len(part_number_record))
 
         if result:
             # First 4 bytes is part number, rest is version suffix
@@ -364,7 +374,8 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
             # Validate BCD coding in first 4 bytes (8 nibbles), right justified, 0 padded
             result = result and all(nibble in string.digits for nibble in part_number)
             if not result:
-                logging.info("validate PN failed - BCD part: %s", part_number_record)
+                logging.info("validate part number failed - part number (first 4 bytes) should\
+ only contain digits but is: %s", part_number_record)
 
             # Validate version suffix
             suffix_chars = [chr(byte) for byte in bytes.fromhex(version_suffix_hex)]
@@ -377,8 +388,10 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
 
             # Last suffix character can not be space
             result = result and suffix_chars[2] != ' '
+
             if not result:
-                logging.info("validate PN failed - suffix part: %s", part_number_record)
+                logging.info("validate part number failed - suffix part (last 3 chars)\
+ have wrong format: %s", part_number_record)
         return result
 
 
@@ -500,7 +513,8 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
         Pretty Print function support for part numbers
         """
         if not SupportTestODTB2.validate_part_number_record(i):
-            logging.warning("Warning: Invalid part number: %s %s", title, i)
+            logging.info("^^^^^^^^^ The previous line is related to DID %s ^^^^^^^^",
+                        title)
             return title + i
 
         return title + i[0:8] + bytes.fromhex(i[8:14]).decode('utf-8')
@@ -964,7 +978,7 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
             return False
         message = message_el[0][2]
         result = False
-        logging.info("check_7f78_response message: %s", message)
+        logging.debug("check_7f78_response message: %s", message)
         mess_len = len(message)
         if mess_len == 0:
             return False
@@ -979,6 +993,8 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
         logging.debug("check_7f78 returncode: %s", return_code)
         logging.debug("check_7f78 [6:8] %s", message[6:8])
         if message[6:8] == '78':
+            logging.info("negative response (7F) received with event code 78\
+                \n (requestCorrectlyReceived-ResponsePending)")
             logging.info("Code 78: ResponsePending")
             result = True
         return result
