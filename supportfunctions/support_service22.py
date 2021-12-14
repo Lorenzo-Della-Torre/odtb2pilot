@@ -324,8 +324,8 @@ class SupportService22:
         Function used determine ECU mode using EDA0 reply
         return: ECU_mode (DEF/PBL/SBL/EXT)
         """
-        logging.info("Step_no: %s", stepno)
-        logging.info("Purpose: %s", purpose)
+        logging.debug("Step_no: %s", stepno)
+        logging.debug("Purpose: %s", purpose)
         self.read_did_eda0(can_p)
 
         message = SC.can_messages[can_p["receive"]][0][2]
