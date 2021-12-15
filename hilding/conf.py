@@ -107,6 +107,11 @@ class Conf:
         return self.__conf.get('default_rig')
 
     @property
+    def default_platform(self):
+        """ conf default rig """
+        return self.rigs.get(self.default_rig).get('platform')
+
+    @property
     def selected_rig(self):
         """ conf selected rig """
         return self.__selected_rig or self.default_rig
@@ -125,6 +130,11 @@ class Conf:
     def hilding_root(self):
         """ get the root directory of the hilding instance """
         return Path(__file__).parent.parent
+
+    @property
+    def default_rig_config(self):
+        """ get conf for default rig """
+        return self.platforms.get(self.default_platform)
 
     def __str__(self):
         return pprint.pformat(self.__conf)

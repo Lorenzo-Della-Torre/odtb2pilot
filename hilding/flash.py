@@ -70,14 +70,9 @@ def activate_sbl(dut):
     logging.info("~~~~~~~~ Activate SBL started ~~~~~~~~")
 
     # Setting up keys
-    sa_keys: SecAccessParam = {
-        "SecAcc_Gen": 'Gen1',
-        "fixed_key": '0102030405',
-        "auth_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF',
-        "proof_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
-    }
+    sa_keys: SecAccessParam = dut.conf.default_rig_config
 
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), sa_keys)
+    print("sa keys: ", sa_keys)
 
     # Activate SBL
     result = SSBL.sbl_activation(dut,
