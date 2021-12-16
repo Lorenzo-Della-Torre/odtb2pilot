@@ -22,37 +22,23 @@ Any unauthorized copying or distribution of content from this file is prohibited
 from os import listdir
 import logging
 import traceback
-import inspect
 
-from supportfunctions.support_service31 import SupportService31
-from supportfunctions.support_SBL import SupportSBL
 from hilding.dut import Dut
-from hilding.dut import DutTestError
-from hilding.uds import EicDid
 
-from supportfunctions.support_can import SupportCAN, CanParam, PerParam
-from supportfunctions.support_test_odtb2 import SupportTestODTB2
 from supportfunctions.support_SBL import SupportSBL
-from supportfunctions.support_sec_acc import SupportSecurityAccess, SecAccessParam
-from supportfunctions.support_file_io import SupportFileIO
+from supportfunctions.support_sec_acc import SecAccessParam
 
-from supportfunctions.support_precondition import SupportPrecondition
-from supportfunctions.support_service11 import SupportService11
-from supportfunctions.support_service22 import SupportService22
-from supportfunctions.support_service3e import SupportService3e
-
-SIO = SupportFileIO
-SC = SupportCAN()
-SUTE = SupportTestODTB2()
 SSBL = SupportSBL()
-SSA = SupportSecurityAccess()
-
-PREC = SupportPrecondition()
-SE11 = SupportService11()
-SE22 = SupportService22()
-SE3E = SupportService3e()
 
 def load_vbf_files(dut):
+    """Loads the rig specific VBF files found in rigs/<default-rig-name>/VBFs
+
+    Args:
+        dut (Dut): An instance of Dut
+
+    Returns:
+        boolean: True if vbfs were loaded successfully, otherwise False
+    """
     logging.info("~~~~~~~~ Loading VBFs started ~~~~~~~~")
     vbfs = listdir(dut.conf.rig.vbf_path)
 
@@ -67,6 +53,15 @@ def load_vbf_files(dut):
     return result
 
 def activate_sbl(dut):
+    """Downloads and activates SBL on the ECU using supportfunction from support_SBL
+
+    Args:
+        dut (Dut): An instance of Dut
+
+    Returns:
+        boolean: Result from support_SBL.sbl_activation. Should be True if sbl is activated successfully,
+        otherwise False
+    """
     logging.info("~~~~~~~~ Activate SBL started ~~~~~~~~")
 
     # Setting up keys
@@ -81,6 +76,14 @@ def activate_sbl(dut):
     return result
 
 def download_ess(dut):
+    """Download the ESS file to the ECU
+
+    Args:
+        dut (Dut): An instance of Dut
+
+    Returns:
+        boolean: True if download software part was successful, otherwise False
+    """
 
     if SSBL.get_ess_filename():
         logging.info("~~~~~~~~ Download ESS started ~~~~~~~~")
@@ -96,22 +99,38 @@ def download_ess(dut):
     return result
 
 def download_application_and_data(dut):
+    """Download the application to the ECU
+
+    Args:
+        dut (Dut): An instance of Dut
+
+    Returns:
+        boolean: True of download was successful, otherwise False
+    """
 
     logging.info("~~~~~~~~ Download application and data started ~~~~~~~~")
     result = True
     purpose = "Download application and data"
     for vbf_file in SSBL.get_df_filenames():
-        # if needed: actiate DID EDA0 to check which mode ecu is in:
-        #result = result and SE22.read_did_eda0(can_p)
         result = result and SSBL.sw_part_download(dut, vbf_file, purpose=purpose)
+
     return result
 
 def check_and_complete(dut):
     logging.info("~~~~~~~~ Check Complete And Compatible started ~~~~~~~~")
 
-    return SSBL.check_complete_compatible_routine(dut)
+    return SSBL.check_complete_compatible_routine(dut, stepno=1)
 
 def software_download(dut):
+    """The function that handles all the sub-steps when performing software download.
+    This function will keep track of the progress and give error indications if a step fails
+
+    Args:
+        dut (Dut): An instance of Dut
+
+    Returns:
+        boolean: Result of software download
+    """
 
     # Load vbfs
     vbf_result = load_vbf_files(dut)
@@ -120,8 +139,8 @@ def software_download(dut):
      Result: %s", vbf_result)
 
     if vbf_result is False:
-        logging.error("Aborting software download")
-        return
+        logging.error("Aborting software download due to problems when loading VBFs")
+        return False
 
     # Activate sbl
     sbl_result = activate_sbl(dut)
@@ -130,8 +149,8 @@ def software_download(dut):
      Result: %s", sbl_result)
 
     if sbl_result is False:
-        logging.error("Aborting software download")
-        return
+        logging.error("Aborting software download due to problems when activating SBL")
+        return False
 
     # Download ess (if needed)
     ess_result = download_ess(dut)
@@ -140,8 +159,8 @@ def software_download(dut):
      Result: %s", ess_result)
 
     if ess_result is False:
-        logging.error("Aborting software download")
-        return
+        logging.error("Aborting software download due to problems when downloading ESS")
+        return False
 
     # Download application and data
     app_result = download_application_and_data(dut)
@@ -150,8 +169,8 @@ def software_download(dut):
      Result: %s", app_result)
 
     if app_result is False:
-        logging.error("Aborting software download")
-        return
+        logging.error("Aborting software download due to problems when downloading application")
+        return False
 
     # Check Complete And Compatible
     check_result = download_application_and_data(dut)
@@ -160,13 +179,16 @@ def software_download(dut):
      Result: %s", check_result)
 
     if check_result is False:
-        logging.error("Aborting software download")
-        return
+        logging.error("Aborting software download due to problems when checking C & C")
+        return False
+
+    return True
 
 
 
 def flash():
-    """ flash the ecu """
+    """Flashes the ECU with VBF files found in the rigs folder
+    """
     dut = Dut()
     start_time = dut.start()
     result = False
