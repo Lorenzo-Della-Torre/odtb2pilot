@@ -196,7 +196,9 @@ def software_download(dut):
 
 
 def flash():
-    """Flashes the ECU with VBF files found in the rigs folder
+    """Flashes the ECU with VBF files found in the rigs folder.
+    If the script is executed on a remote computer the remote computers VBF files will be used.
+    If executed locally on a hilding the VBF files on that hilding will be used.
     """
     dut = Dut()
     start_time = dut.start()
