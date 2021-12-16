@@ -59,7 +59,8 @@ def activate_sbl(dut):
         dut (Dut): An instance of Dut
 
     Returns:
-        boolean: Result from support_SBL.sbl_activation. Should be True if sbl is activated successfully,
+        boolean: Result from support_SBL.sbl_activation.
+        Should be True if sbl is activated successfully,
         otherwise False
     """
     logging.info("~~~~~~~~ Activate SBL started ~~~~~~~~")
@@ -117,6 +118,14 @@ def download_application_and_data(dut):
     return result
 
 def check_and_complete(dut):
+    """Run complete and compatible routine
+
+    Args:
+        dut (Dut): Instance of Dut
+
+    Returns:
+        boolean: Result of complete and compatible
+    """
     logging.info("~~~~~~~~ Check Complete And Compatible started ~~~~~~~~")
 
     return SSBL.check_complete_compatible_routine(dut, stepno=1)
@@ -173,7 +182,7 @@ def software_download(dut):
         return False
 
     # Check Complete And Compatible
-    check_result = download_application_and_data(dut)
+    check_result = check_and_complete(dut)
 
     logging.info("Step 5/5 of software download (Check Complete And Compatible) done. \
      Result: %s", check_result)

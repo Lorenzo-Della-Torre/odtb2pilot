@@ -83,7 +83,7 @@ def get_rig_delivery_files():
     try:
         # first try to connect using pre-authorized_keys
         ssh.connect(hostname, username=user)
-    except AuthenticationException and SSHException:
+    except (AuthenticationException, SSHException):
         # if that doesn't work prompt the user for a password
         password = getpass()
         ssh.connect(hostname, username=user, password=password)
