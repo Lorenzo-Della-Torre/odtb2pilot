@@ -51,7 +51,6 @@ import time
 from datetime import datetime
 import sys
 import logging
-import inspect
 
 import odtb_conf
 from supportfunctions.support_can import SupportCAN, CanParam, CanTestExtra, CanPayload
@@ -120,7 +119,7 @@ def step_1(can_p):
     stepno = 1
     purpose = "Download and Activation of SBL"
     fixed_key = '0102030405'
-    new_fixed_key = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'fixed_key')
+    new_fixed_key = SIO.parameter_adopt_teststep('fixed_key')
     # don't set empty value if no replacement was found:
     if new_fixed_key:
         if type(fixed_key) != type(new_fixed_key):# pylint: disable=unidiomatic-typecheck
@@ -205,7 +204,7 @@ def run():# pylint: disable=too-many-statements
         "receive" : "BecmToVcu1Front1DiagResFrame",
         "namespace" : SC.nspace_lookup("Front1CANCfg0")
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
+    SIO.parameter_adopt_teststep(can_p)
 
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()

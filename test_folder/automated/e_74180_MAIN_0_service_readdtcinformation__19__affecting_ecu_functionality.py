@@ -47,7 +47,6 @@ import time
 from datetime import datetime
 import sys
 import logging
-import inspect
 
 import odtb_conf
 from supportfunctions.support_can import SupportCAN, CanParam, CanTestExtra, CanPayload
@@ -78,14 +77,14 @@ def step_1(can_p):
         "min_no_messages": -1,
         "max_no_messages": -1
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    SIO.parameter_adopt_teststep(etp)
     can_p_ex: CanParam = {
         "netstub": can_p["netstub"],
         "send": "ECMFront1Fr02",
         "receive": "BECMFront1Fr02",
         "namespace": can_p["namespace"]
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p_ex)
+    SIO.parameter_adopt_teststep(can_p_ex)
 
     SC.subscribe_signal(can_p_ex, etp["timeout"])
     time.sleep(1)
@@ -119,7 +118,7 @@ def step_2(can_p, can_p_ex, frame_step_2):
         "payload": SC_CARCOM.can_m_send("ReadDTCInfoSnapshotIdentification", b'', b''),
         "extra": ''
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    SIO.parameter_adopt_teststep(cpay)
     etp: CanTestExtra = {
         "step_no": 2,
         "purpose": "verify ReadDTCInfoSnapshotIdentification reply positively",
@@ -191,7 +190,7 @@ def run():
         "receive" : "BecmToVcu1Front1DiagResFrame",
         "namespace" : SC.nspace_lookup("Front1CANCfg0")
     }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
+    SIO.parameter_adopt_teststep(can_p)
 
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()

@@ -48,7 +48,6 @@ import time
 from datetime import datetime
 import sys
 import logging
-import inspect
 import odtb_conf
 
 from supportfunctions.support_can import SupportCAN, CanParam, CanTestExtra, CanPayload
@@ -91,7 +90,7 @@ def send_request_f12b(can_p, step_no):
                                         b''),
         "extra": ''
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    SIO.parameter_adopt_teststep(cpay)
     etp: CanTestExtra = {
         "step_no": step_no,
         "purpose": "Request DID F12B",
@@ -99,7 +98,7 @@ def send_request_f12b(can_p, step_no):
         "min_no_messages": -1,
         "max_no_messages": -1
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    SIO.parameter_adopt_teststep(etp)
 
     result = SUTE.teststep(can_p, cpay, etp)
     time.sleep(1)
@@ -157,7 +156,7 @@ def run():
         "receive" : "BecmToVcu1Front1DiagResFrame",
         "namespace" : SC.nspace_lookup("Front1CANCfg0")
     }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
+    SIO.parameter_adopt_teststep(can_p)
 
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()

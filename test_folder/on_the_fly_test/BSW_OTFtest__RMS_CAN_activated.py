@@ -47,7 +47,6 @@ The Python implementation of the gRPC route guide client.
 
 from datetime import datetime
 import logging
-import inspect
 import sys
 import time
 
@@ -79,7 +78,7 @@ def step_1(can_p, can_receive, can_namespace):
         "receive" : can_receive,
         "namespace" : can_namespace,
     }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
+    SIO.parameter_adopt_teststep(can_p)
 
     SC.subscribe_signal(can_p, timeout=60)
     time.sleep(1)
@@ -112,7 +111,7 @@ def run():
         "receive" : "BecmToVcu1Front1DiagResFrame",
         "namespace" : SC.nspace_lookup("Front1CANCfg0")
     }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
+    SIO.parameter_adopt_teststep(can_p)
 
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()

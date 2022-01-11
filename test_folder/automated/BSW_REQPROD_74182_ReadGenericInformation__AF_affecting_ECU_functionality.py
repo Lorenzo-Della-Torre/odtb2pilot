@@ -47,7 +47,6 @@ from datetime import datetime
 import time
 import logging
 import sys
-import inspect
 import odtb_conf
 from supportfunctions.support_can import SupportCAN, CanParam, CanTestExtra, CanPayload
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
@@ -78,7 +77,7 @@ def step_1(can_p):
         'receive': "BECMFront1Fr02",
         'namespace': SC.nspace_lookup("Front1CANCfg0")
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p_ex)
+    SIO.parameter_adopt_teststep(can_p_ex)
     etp: CanTestExtra = {
         'step_no': 1,
         'purpose': "Subscribe non-diagnostic signal and verify received frames",
@@ -86,7 +85,7 @@ def step_1(can_p):
         'min_no_messages': -1,
         'max_no_messages': -1
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    SIO.parameter_adopt_teststep(etp)
 
     logging.info("Step:     %s", etp["step_no"])
     logging.info("Purpose:  %s", etp["purpose"])
@@ -124,7 +123,7 @@ def step_2(can_p, can_p_ex, frames_step1):
                                         b'\xFF'),
         "extra": ''
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    SIO.parameter_adopt_teststep(cpay)
     etp: CanTestExtra = {
         "step_no": 2,
         "purpose": 'Send Read Generic Information cyclically in between. '    \
@@ -134,7 +133,7 @@ def step_2(can_p, can_p_ex, frames_step1):
         "min_no_messages": -1,
         "max_no_messages": -1
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    SIO.parameter_adopt_teststep(etp)
     result = SUTE.teststep(can_p, cpay, etp)
 
     SC.clear_all_can_messages()
@@ -166,7 +165,7 @@ def step_3(can_p, can_p_ex, frames_step1):
         'min_no_messages': -1,
         'max_no_messages': -1
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    SIO.parameter_adopt_teststep(etp)
 
     SC.clear_all_can_messages()
     logging.debug("Step %s: all can messages cleared", etp["step_no"])
@@ -199,7 +198,7 @@ def run():
         "receive" : "BecmToVcu1Front1DiagResFrame",
         "namespace" : SC.nspace_lookup("Front1CANCfg0")
     }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
+    SIO.parameter_adopt_teststep(can_p)
 
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()

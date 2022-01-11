@@ -48,7 +48,6 @@ The Python implementation of the gRPC route guide client.
 """
 
 import logging
-import inspect
 import time
 from collections import namedtuple
 from supportfunctions.support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
@@ -80,7 +79,7 @@ class SupportService22:
                                                              b'\xED\xA0', b''),
                             "extra" : ''
                            }
-        SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+        SIO.parameter_adopt_teststep(cpay)
 
         etp: CanTestExtra = {"step_no": stepno,
                              "purpose" : "Service22: Complete ECU Part/Serial Number(s)",
@@ -88,7 +87,7 @@ class SupportService22:
                              "min_no_messages" : -1,
                              "max_no_messages" : -1
                             }
-        SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+        SIO.parameter_adopt_teststep(etp)
 
         #pn_sn_list=[['F120', 'PN'],\
         #            ['F12A', 'PN'],\
@@ -96,7 +95,7 @@ class SupportService22:
         #            ['F18C', 'SN'],\
         #            ['F12E', 'PN'],\
         #            ['F126', 'VIDCV']]
-        SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'pn_sn_list')
+        SIO.parameter_adopt_teststep('pn_sn_list')
 
         result = SUPPORT_TEST.teststep(can_p, cpay, etp)
         if SC.can_messages[can_p["receive"]]:

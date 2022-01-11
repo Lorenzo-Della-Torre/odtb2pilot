@@ -45,7 +45,6 @@ The Python implementation of the gRPC route guide client.
 """
 
 from datetime import datetime
-import inspect
 import logging
 import time
 import sys
@@ -84,7 +83,7 @@ def step_2(can_p):
         "payload": SC_CARCOM.can_m_send( "ReadDataByIdentifier", b'\xED\xA0', b""),
         "extra": b'',
     }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    SIO.parameter_adopt_teststep(cpay)
 
     etp: CanTestExtra = {
         "step_no": 2,
@@ -93,7 +92,7 @@ def step_2(can_p):
         "min_no_messages": -1,
         "max_no_messages": -1,
     }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    SIO.parameter_adopt_teststep(etp)
 
     can_mf: CanMFParam = {
         "block_size": 0,
@@ -102,7 +101,7 @@ def step_2(can_p):
         "frame_control_flag": 49,    # Wait
         "frame_control_auto": False,
     }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_mf)
+    SIO.parameter_adopt_teststep(can_mf)
 
     SC.change_mf_fc(can_p["send"], can_mf)
 
@@ -120,7 +119,7 @@ def step_3(can_p):
         "min_no_messages": -1,
         "max_no_messages": -1,
     }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    SIO.parameter_adopt_teststep(etp)
 
     can_mf: CanMFParam = {
         "block_size": 0,
@@ -129,7 +128,7 @@ def step_3(can_p):
         "frame_control_flag": 0x31,  # Wait
         "frame_control_auto": False,
     }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_mf)
+    SIO.parameter_adopt_teststep(can_mf)
 
     SUTE.print_test_purpose(etp['step_no'], etp['purpose'])
 
@@ -160,7 +159,7 @@ def step_4(can_p):
         "min_no_messages": -1,
         "max_no_messages": -1,
     }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    SIO.parameter_adopt_teststep(etp)
 
     can_mf: CanMFParam = {
         "block_size": 0,
@@ -169,7 +168,7 @@ def step_4(can_p):
         "frame_control_flag": 0x30,
         "frame_control_auto": True,
     }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_mf)
+    SIO.parameter_adopt_teststep(can_mf)
 
     SUTE.print_test_purpose(etp['step_no'], etp['purpose'])
     sig = can_p["send"]
@@ -224,7 +223,7 @@ def run():
         "receive" : "BecmToVcu1Front1DiagResFrame",
         "namespace" : SC.nspace_lookup("Front1CANCfg0")
     }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
+    SIO.parameter_adopt_teststep(can_p)
 
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()

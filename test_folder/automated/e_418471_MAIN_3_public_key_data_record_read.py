@@ -48,7 +48,6 @@ import time
 from datetime import datetime
 import sys
 import logging
-import inspect
 import odtb_conf
 from supportfunctions.support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
@@ -88,7 +87,7 @@ def step_3(can_p):
         "min_no_messages": -1,
         "max_no_messages": -1,
     }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    SIO.parameter_adopt_teststep(etp)
     result = SUTE.teststep(can_p,cpay, etp)
     logging.info("Public Key data record in PBL : %s",\
                             SC.can_messages[can_p["receive"]][0][2])
@@ -113,7 +112,7 @@ def step_7(can_p):
                         "min_no_messages" : -1,
                         "max_no_messages" : -1
     }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    SIO.parameter_adopt_teststep(etp)
     result = SUTE.teststep(can_p, cpay, etp)
     logging.info("Public Key Data record in SBL : %s",\
                             SC.can_messages[can_p["receive"]][0][2])
@@ -135,7 +134,7 @@ def run():
         "receive" : "ECUToVcu1Front1DiagResFrame",
         "namespace" : SC.nspace_lookup("Front1CANCfg0")
     }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
+    SIO.parameter_adopt_teststep(can_p)
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
     logging.info("Time: %s \n", time.time())
