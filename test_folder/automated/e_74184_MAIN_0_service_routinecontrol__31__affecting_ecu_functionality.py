@@ -50,7 +50,6 @@ import time
 from datetime import datetime
 import sys
 import logging
-import inspect
 
 import odtb_conf
 from supportfunctions.support_can import SupportCAN, CanParam, CanTestExtra, CanPayload
@@ -94,7 +93,7 @@ def step_2(can_p, timeout):
         'receive': "BECMFront1Fr02",
         'namespace': SC.nspace_lookup("Front1CANCfg0")
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p_ex)
+    SIO.parameter_adopt_teststep(can_p_ex)
 
     SC.subscribe_signal(can_p_ex, etp["timeout"])
     time.sleep(1)
@@ -129,7 +128,7 @@ def step_3(can_p):
                                         b'\x01'),
         "extra": ''
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    SIO.parameter_adopt_teststep(cpay)
     etp: CanTestExtra = {
         "step_no": 3,
         "purpose": "verify RoutineControl start(01) is sent in Extended Session",
@@ -137,7 +136,7 @@ def step_3(can_p):
         "min_no_messages": -1,
         "max_no_messages": -1
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    SIO.parameter_adopt_teststep(etp)
 
     result = SUTE.teststep(can_p, cpay, etp)
     logging.info("Step%s: can_m_send %s", etp["step_no"], cpay["payload"])
@@ -158,7 +157,7 @@ def step_4(can_p):
                                         b'\x02'),
         "extra": ''
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    SIO.parameter_adopt_teststep(cpay)
     etp: CanTestExtra = {
         "step_no": 4,
         "purpose": "verify RoutineControl start(01) is sent in Extended Session",
@@ -166,7 +165,7 @@ def step_4(can_p):
         "min_no_messages": -1,
         "max_no_messages": -1
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    SIO.parameter_adopt_teststep(etp)
 
     logging.info("Step%s: can_m_send %s", etp["step_no"], cpay["payload"])
     result = SUTE.teststep(can_p, cpay, etp)
@@ -188,7 +187,7 @@ def step_5(can_p, can_p_ex, frames_step2):
                                         b'\x03'),
         "extra": ''
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    SIO.parameter_adopt_teststep(cpay)
     etp: CanTestExtra = {
         "step_no": 5,
         "purpose": "verify that while service 31 is cyclically sent non-diagnostic signal"\
@@ -197,7 +196,7 @@ def step_5(can_p, can_p_ex, frames_step2):
         "min_no_messages": 1,
         "max_no_messages": 1
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    SIO.parameter_adopt_teststep(etp)
     result = SUTE.teststep(can_p, cpay, etp)
 
     number_of_frames_received = 0
@@ -262,7 +261,7 @@ def run():
         "receive" : "BecmToVcu1Front1DiagResFrame",
         "namespace" : SC.nspace_lookup("Front1CANCfg0")
     }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
+    SIO.parameter_adopt_teststep(can_p)
 
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()

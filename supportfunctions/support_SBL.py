@@ -70,7 +70,6 @@ import sys
 import glob
 from typing import Dict
 import traceback
-import inspect
 
 from supportfunctions.support_carcom import SupportCARCOM
 from supportfunctions.support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
@@ -178,7 +177,7 @@ class SupportSBL:
         # Some ECU like HLCM don't include ESS vbf
         # if so, state that in project or testscript parameters (yml file)
         ess_needed = True
-        new_ess_needed = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'ess_needed')
+        new_ess_needed = SIO.parameter_adopt_teststep('ess_needed')
         if new_ess_needed != '':
             assert isinstance(new_ess_needed, bool)
             ess_needed = new_ess_needed
@@ -308,7 +307,7 @@ class SupportSBL:
 
             decompress_block = True
             new_decompress_block =\
-                SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'decompress_block')
+                SIO.parameter_adopt_teststep('decompress_block')
             if new_decompress_block != '':
                 assert isinstance(new_decompress_block, bool)
                 decompress_block = new_decompress_block
@@ -413,7 +412,7 @@ class SupportSBL:
 
             decompress_block = True
             new_decompress_block =\
-                SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'decompress_block')
+                SIO.parameter_adopt_teststep('decompress_block')
             if new_decompress_block != '':
                 assert isinstance(new_decompress_block, bool)
                 decompress_block = new_decompress_block
@@ -657,9 +656,13 @@ class SupportSBL:
     def sbl_dl_activation(self, can_p: CanParam, sa_keys, stepno='', purpose=""):
         """
         Function used to download and activate the Secondary Bootloader
+
+        function allows to change sa_keys via YML parameter.
+        This is done by making a copy of sa_keys to not change those.
+        (would happen as sa_keys is dict)
         """
         sa_keys_new = sa_keys
-        sa_keys_new = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), sa_keys_new)
+        sa_keys_new = SIO.parameter_adopt_teststep(sa_keys_new)
 
         result = self.sbl_activation(can_p, sa_keys_new, stepno, purpose)
         return result

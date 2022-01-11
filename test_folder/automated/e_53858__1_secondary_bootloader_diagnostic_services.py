@@ -53,7 +53,6 @@ import time
 from datetime import datetime
 import sys
 import logging
-import inspect
 
 import odtb_conf
 from supportfunctions.support_can import SupportCAN, CanParam, CanTestExtra, CanPayload
@@ -98,7 +97,7 @@ def step_1(can_p: CanParam):
     stepno = 1
     purpose = "Download and Activation of SBL"
     fixed_key = '0102030405'
-    new_fixed_key = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'fixed_key')
+    new_fixed_key = SIO.parameter_adopt_teststep('fixed_key')
     # don't set empty value if no replacement was found:
     if new_fixed_key != '':
         assert isinstance(new_fixed_key, str)
@@ -124,13 +123,13 @@ def step_4(can_p):
                          "max_no_messages" : -1
                         }
 
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    SIO.parameter_adopt_teststep(etp)
 
     cpay: CanPayload = {"payload" : b'\x2E\xF1\x86\x02',
                         "extra" : ''
                        }
 
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    SIO.parameter_adopt_teststep(cpay)
 
     result = SUTE.teststep(can_p, cpay, etp)
 
@@ -161,7 +160,7 @@ def step_6(can_p, seed):
                          "max_no_messages" : -1
                         }
 
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    SIO.parameter_adopt_teststep(etp)
 
     fixed_key = 'FFFFFFFFFF'
     r_0 = SSA.set_security_access_pins(seed, fixed_key)
@@ -171,7 +170,7 @@ def step_6(can_p, seed):
                         "extra" : ''
                        }
 
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    SIO.parameter_adopt_teststep(cpay)
 
     result = SUTE.teststep(can_p, cpay, etp)
     result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], '7F2724')
@@ -195,7 +194,7 @@ def run():
         "receive" : "BecmToVcu1Front1DiagResFrame",
         "namespace" : SC.nspace_lookup("Front1CANCfg0")
     }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
+    SIO.parameter_adopt_teststep(can_p)
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
     logging.info("Time: %s \n", time.time())

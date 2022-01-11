@@ -53,7 +53,6 @@ import time
 from datetime import datetime
 import sys
 import logging
-import inspect
 
 import odtb_conf
 
@@ -87,7 +86,7 @@ def step_2(can_p):
                                         b''),
         "extra": ''
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    SIO.parameter_adopt_teststep(cpay)
     etp: CanTestExtra = {
         "step_no": 2,
         "purpose": "send several requests at one time - requires SF to send",
@@ -95,7 +94,7 @@ def step_2(can_p):
         "min_no_messages": -1,
         "max_no_messages": -1
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    SIO.parameter_adopt_teststep(etp)
 
     result = SUTE.teststep(can_p, cpay, etp)
     return result
@@ -137,7 +136,7 @@ def step_4(can_p):
                                         b''),
         "extra": ''
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    SIO.parameter_adopt_teststep(cpay)
     etp: CanTestExtra = {
         "step_no": 4,
         "purpose": "request 10 DID in one request - those with shortest reply (MF send, MF reply)",
@@ -145,7 +144,7 @@ def step_4(can_p):
         "min_no_messages": -1,
         "max_no_messages": -1
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    SIO.parameter_adopt_teststep(etp)
 
     result = SUTE.teststep(can_p, cpay, etp)
     return result
@@ -195,7 +194,7 @@ def step_6(can_p):
                                         b''),
         "extra": ''
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    SIO.parameter_adopt_teststep(cpay)
     etp: CanTestExtra = {
         "step_no": 6,
         "purpose": "send 11 requests at one time - fails in current version (max10)",
@@ -203,7 +202,7 @@ def step_6(can_p):
         "min_no_messages": -1,
         "max_no_messages": -1
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    SIO.parameter_adopt_teststep(etp)
     result = SUTE.teststep(can_p, cpay, etp)
     return result
 
@@ -248,7 +247,7 @@ def step_8(can_p):
                                         b''),
         "extra": ''
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    SIO.parameter_adopt_teststep(cpay)
     etp: CanTestExtra = {
         "step_no": 8,
         "purpose": "send 10 requests at one time - those with most bytes in return",
@@ -256,7 +255,7 @@ def step_8(can_p):
         "min_no_messages": -1,
         "max_no_messages": -1
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    SIO.parameter_adopt_teststep(etp)
     result = SUTE.teststep(can_p, cpay, etp)
     return result
 
@@ -313,7 +312,7 @@ def run():
         "receive" : "BecmToVcu1Front1DiagResFrame",
         "namespace" : SC.nspace_lookup("Front1CANCfg0")
     }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
+    SIO.parameter_adopt_teststep(can_p)
 
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()

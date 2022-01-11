@@ -61,7 +61,6 @@ from datetime import datetime
 import sys
 import time
 import logging
-import inspect
 
 import odtb_conf
 
@@ -103,7 +102,7 @@ def read_data_by_identifier(can_p, session, boot, step):
         "min_no_messages" : -1,
         "max_no_messages" : -1
     }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    SIO.parameter_adopt_teststep(etp)
 
     cpay: CanPayload = {
         "payload": SC_CARCOM.can_m_send("ReadDataByIdentifier",
@@ -111,7 +110,7 @@ def read_data_by_identifier(can_p, session, boot, step):
                                         b''),
         "extra": ''
     }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    SIO.parameter_adopt_teststep(cpay)
 
     result = SUTE.teststep(can_p, cpay, etp)
 
@@ -174,7 +173,7 @@ def run():
         "receive" : "BecmToVcu1Front1DiagResFrame",
         "namespace" : SC.nspace_lookup("Front1CANCfg0")
     }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
+    SIO.parameter_adopt_teststep(can_p)
 
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()

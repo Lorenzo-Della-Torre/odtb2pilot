@@ -76,7 +76,6 @@ from datetime import datetime
 import sys
 import time
 import logging
-import inspect
 import odtb_conf
 
 from supportfunctions.support_can import SupportCAN
@@ -129,7 +128,7 @@ def read_memory_by_address(can_p, session, step_no, cyclical=False):
         "min_no_messages" : -1,
         "max_no_messages" : -1
     }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    SIO.parameter_adopt_teststep(etp)
 
     # Construct the message
     service_call = bytearray(b'\x23')
@@ -138,7 +137,7 @@ def read_memory_by_address(can_p, session, step_no, cyclical=False):
         "payload": service_call,
         "extra": ''
     }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    SIO.parameter_adopt_teststep(cpay)
 
     result = SUTE.teststep(can_p, cpay, etp)
 
@@ -206,7 +205,7 @@ def register_non_diagnostic_signal(can_p, step_no):
         "min_no_messages" : -1,
         "max_no_messages" : -1
     }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    SIO.parameter_adopt_teststep(etp)
 
     can_p_ex: CanParam = {
         "netstub" : SC.connect_to_signalbroker(
@@ -215,7 +214,7 @@ def register_non_diagnostic_signal(can_p, step_no):
         "receive" : "BECMFront1Fr02",
         "namespace" : SC.nspace_lookup("Front1CANCfg0")
     }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p_ex)
+    SIO.parameter_adopt_teststep(can_p_ex)
 
     purpose = 'Register a non-diagnostic signal.'
     SUTE.print_test_purpose(step_no, purpose)
@@ -302,7 +301,7 @@ def run():
         "receive" : "BecmToVcu1Front1DiagResFrame",
         "namespace" : SC.nspace_lookup("Front1CANCfg0")
     }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
+    SIO.parameter_adopt_teststep(can_p)
 
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
