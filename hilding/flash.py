@@ -68,8 +68,6 @@ def activate_sbl(dut):
     # Setting up keys
     sa_keys: SecAccessParam = dut.conf.default_rig_config
 
-    print("sa keys: ", sa_keys)
-
     # Activate SBL
     result = SSBL.sbl_activation(dut,
                                  sa_keys)
@@ -117,7 +115,7 @@ def download_application_and_data(dut):
 
     return result
 
-def check_and_complete(dut):
+def check_complete_and_complete(dut):
     """Run complete and compatible routine
 
     Args:
@@ -182,7 +180,7 @@ def software_download(dut):
         return False
 
     # Check Complete And Compatible
-    check_result = check_and_complete(dut)
+    check_result = check_complete_and_complete(dut)
 
     logging.info("Step 5/5 of software download (Check Complete And Compatible) done. \
      Result: %s", check_result)

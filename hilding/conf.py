@@ -108,7 +108,7 @@ class Conf:
 
     @property
     def default_platform(self):
-        """ conf default rig """
+        """ conf default platform (the default rigs platform type) """
         return self.rigs.get(self.default_rig).get('platform')
 
     @property
