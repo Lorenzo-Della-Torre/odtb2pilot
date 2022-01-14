@@ -31,6 +31,8 @@ import sys
 import re
 import req_parser.rif_swrs_to_graph as rif_mod
 
+from blacklisted_tests_handler import match_swrs_with_yml
+
 # Logging has different levels: DEBUG, INFO, WARNING, ERROR, and CRITICAL
 # Set the level you want to have printout in the console.
 logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
@@ -193,6 +195,18 @@ def pp_result(included):
     for script in included:
         print(script)
 
+def pp_dict_result(include):
+    """Print a dictionary to stdout
+
+    Args:
+        include (dictionary): A dictionary containing dictionaries
+    """
+
+    for category, scripts in include.items():
+        print(category)
+        for reqprod_id, info in scripts.items():
+            print(reqprod_id + " | " + info)
+
 
 def complete_test(script_folder):
     """
@@ -224,9 +238,11 @@ def execute(swrs, txt_file, scripts, script_folder):
 
     included = list()
     if swrs: #SWRS argument
-        reqprod_dict = swrs_parse(swrs)
-        included, excluded = filter_files(reqprod_dict, script_folder)
+        swrs_dict = swrs_parse(swrs)
+        matching_reqprods, swrs_dict_modified = match_swrs_with_yml(swrs_dict)
+        included, excluded = filter_files(swrs_dict_modified, script_folder)
         pp_result(included)
+        pp_dict_result(matching_reqprods)
     elif txt_file: #Textfile argument
         files_from_file = read_file(txt_file)
         included, excluded = match_list(files_from_file, script_folder)
