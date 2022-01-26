@@ -1,0 +1,12 @@
+MEP2_SPA1:
+        step_1:
+                receive: HvbmHvbm1canFrame53_20
+                send: HvbmNmFrame
+MEP2_SPA2:
+        step_1:
+                receive: HvbmHvbm1canFrame53_20
+                send: HvbmNmFrame
+MEP2_SPA2_SAGen2:
+        step_1:
+                receive: HvbmHvbm1canFrame53_20
+                send: HvbmNmFrame
