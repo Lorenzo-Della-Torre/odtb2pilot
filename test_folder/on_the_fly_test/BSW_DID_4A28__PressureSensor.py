@@ -110,9 +110,6 @@ def run():
     # start logging
     # to be implemented
 
-    # did_pressure = b'\x4A\x28'
-    # SIO.parameter_adopt_teststep('did_pressure')
-
     # where to connect to signal_broker
     can_p: CanParam = {
         'netstub': SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
@@ -140,7 +137,7 @@ def run():
     # read VBF param when testscript is s started, if empty take default param
     #SSBL.get_vbf_files()
     timeout = 60
-    #result = PREC.precondition(can_p, timeout)
+    result = PREC.precondition(can_p, timeout)
     #result = PREC.precondition_spa2(can_p, timeout)
 
 
@@ -151,7 +148,7 @@ def run():
     # step1:
     # action:  Request read pressure sensor (DID 4A28)
     # result:
-    result = step_1(can_p)
+    result = result and step_1(can_p)
 
     ############################################
     # postCondition
