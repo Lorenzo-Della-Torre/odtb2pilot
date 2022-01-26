@@ -34,9 +34,39 @@ from tkinter import Button
 from tkinter import Checkbutton
 from tkinter import Tk
 from tkinter import Text
-
 from tkinter import ttk
+
+from functools import partial
+
+from supportfunctions.extra_tkinter_windows import popup_update_list
 import supportfunctions.pretty_print as pp
+
+def get_dids_from_file(file_path="pretty_print_GUI_dids.txt", category=""):
+    """If there is a file called file_path it is used to load saved dids
+
+    Args:
+        file_path (str, optional): Path to the text file.
+        Defaults to "pretty_print_GUI_dids.txt".
+        category (str, optional): What category to fetch, ex: "CMS", "CVTN". Defaults to "".
+
+    Returns:
+        list: A list containing all the dids found in the file
+    """
+    ret_list = []
+    try:
+        with open(file_path, "r") as load_file:
+            cat_found = False
+            for line in load_file:
+                if cat_found and "--" in line:
+                    break
+                if category in line:
+                    cat_found = True
+                if cat_found and line != "\n":
+                    ret_list.append(line)
+    except FileNotFoundError:
+        pass # Just return empty list if file is not found
+
+    return ret_list
 
 class MainWindow():
     # pylint: disable=too-many-instance-attributes, too-few-public-methods
@@ -48,33 +78,37 @@ class MainWindow():
         self.dut = dut
         self.window = window
 
-        #Variables
+        # Variables
 
-        #The variable shown on screen as "Currently active did:"
+        # The variable shown on screen as "Currently active did:"
         self.did_id = StringVar()
         self.did_id.set("")
 
-        #Used for dropdown selection. Feel free to add more options
-        self.did_list_cms = ["",
-                            "FD40",
-                            "FD41",
-                            "FD61",
-                            "FD62",
-                            "DB8A",
-                            "DB8B",
-                            "DAE4"]
+        # Used for dropdown selection. Feel free to add more options
+        self.did_list_cms = get_dids_from_file(category="CMS")
+        if not self.did_list_cms:
+            self.did_list_cms = ["",
+                                "FD40",
+                                "FD41",
+                                "FD61",
+                                "FD62",
+                                "DB8A",
+                                "DB8B",
+                                "DAE4"]
 
-        self.did_list_cvtn = ["",
-                            "DAE6",
-                            "DAE7",
-                            "DBA0",
-                            "DBF0",
-                            "FD09",
-                            "FD0B",
-                            "FD0C",
-                            "FD0E",
-                            "FD0F",
-                            "FD10"]
+        self.did_list_cvtn = get_dids_from_file(category="CVTN")
+        if not self.did_list_cvtn:
+            self.did_list_cvtn = ["",
+                                "DAE6",
+                                "DAE7",
+                                "DBA0",
+                                "DBF0",
+                                "FD09",
+                                "FD0B",
+                                "FD0C",
+                                "FD0E",
+                                "FD0F",
+                                "FD10"]
 
         #Connected to the checkbox that decides if did value should be continiously updated
         self.subscribe = IntVar()
@@ -113,8 +147,8 @@ class MainWindow():
         self.text_pretty_print = Text(self.pretty_print_frame,
             bg = "white",
             font="Consolas 12 bold",
-            width='70',
-            height='40',
+            width='100',
+            height='38',
             wrap='none')
         self.text_pretty_print.insert("1.0",
             "DID info will appear here once Monitor DID is pressed")
@@ -134,8 +168,14 @@ class MainWindow():
         self.entry_select_did = Entry(self.grid_0_0, text = "")
         self.entry_select_did.grid(column=1, row=0)
 
-        self.button_start_monitoring = Button(window, text = "Monitor DID", command=self.monitor)
-        self.button_start_monitoring.grid(column=1, row=0)
+        self.button_start_monitoring = Button(window,
+                                            text = "Monitor DID",
+                                            command=self.monitor,
+                                            bg='white',
+                                            bd='4',
+                                            height='3',
+                                            width='20')
+        self.button_start_monitoring.grid(column=1, row=0, padx=5, pady=5)
 
         #Row 2
         self.grid_2_1 = Frame()
@@ -159,6 +199,13 @@ class MainWindow():
         self.dropdown_cms.grid(column=1, row=0)
         self.label_dropdown_cms = Label(self.grid_1_2, text = "CMS dids:")
         self.label_dropdown_cms.grid(column=0, row=0)
+        self.button_customize_CVTN_list = Button(self.grid_1_2,
+                                                text = 'Customize list with CMS dids',
+                                                command=partial(self.update_list,
+                                                self.did_list_cms,
+                                                "CMS",
+                                                self.dropdown_cms))
+        self.button_customize_CVTN_list.grid(column=1, row=1)
 
         self.grid_2_2 = Frame()
         self.grid_2_2.grid(column=2, row=2)
@@ -167,6 +214,32 @@ class MainWindow():
         self.dropdown_cvtn.grid(column=1, row=0)
         self.label_dropdown_cvtn = Label(self.grid_2_2, text = "CVTN dids:")
         self.label_dropdown_cvtn.grid(column=0, row=0)
+        self.button_customize_CVTN_list = Button(self.grid_2_2,
+                                                text = 'Customize list with CVTN dids',
+                                                command=partial(self.update_list,
+                                                self.did_list_cvtn,
+                                                "CVTN",
+                                                self.dropdown_cvtn))
+        self.button_customize_CVTN_list.grid(column=1, row=1)
+
+    def update_list(self, lst, category, dropdown):
+        # pylint: disable=attribute-defined-outside-init
+        """Updates the list containing dids.
+        When this function is done it will both have updated the list variable and the text file.
+
+        Args:
+            lst (list): The list to be modified
+            category (string): Category of list that is being modified. Ex: "CMS", "CVTN"
+            dropdown (Combobox): The dropdown menu showing the list. Needed to update the dropdown
+            without restarting program
+        """
+        self.popup = popup_update_list(self.window, lst, category)
+
+        self.window.wait_window(self.popup.top)
+
+        lst = get_dids_from_file(category=category)
+
+        dropdown.config(values=lst)
 
     def monitor(self):
         """Function that is triggered when "monitor button" is pressed.
@@ -198,8 +271,8 @@ class MainWindow():
         #If more than one input is used
         if check_inputs.count(True) > 1:
             __empty_all_input()
-            messagebox.showerror('error', "More than one way of choosing DID used.\
-             Either use ONE of the dropdowns OR enter did ID manually")
+            messagebox.showerror('error', "More than one way of choosing DID used."
+            "Either use ONE of the dropdowns OR enter did ID manually")
 
         #If only one is used we go for it
         elif True in check_inputs:
@@ -237,6 +310,7 @@ def run(dut):
     """
     #Initial setup of window
     window = Tk()
+    ttk.Style().theme_use('xpnative')
     MainWindow(window, dut)
     window.title("DIDalyzer")
     window.geometry("1200x1000+100+100")
