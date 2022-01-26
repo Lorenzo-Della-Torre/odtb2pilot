@@ -1,7 +1,0 @@
-precondition_burst:
-        id: "IhfadpNmCanFrame"
-        tp_name: "IHFAdpToallUdsDiagRequestFrame"
-        id_burst: "IHFAdpToallUdsDiagRequestFrame"
-        frame : b'\x1A\x40\xFF\xFF\xFF\xFF\xFF\xFF'
-step_1:
-        fixed_key : 'FFFFFFFFFF'
