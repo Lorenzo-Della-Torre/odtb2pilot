@@ -10,6 +10,7 @@ hvbm_sa2:
     --Inspection--:
         e_52314_-_5 : diagnostic_trouble_code_for_can_bus_off | <Reason>
         e_161873_MAIN_2 : car_mode_data_record | <Reason>
+        e_481875_MAIN_0 : random_number_generator_validation | This can't be tested with standard SW. Need special tools.
 
     --Manual--:
         Test_reprod : Test_info
