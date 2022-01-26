@@ -422,12 +422,18 @@ class UdsResponse:
             resp_item_dict = self.__sddb_dids["resp_item_dict"]
             response_items = []
             unscaleable_values = str()
+            if resp_item_dict[did]:
+                # Used to find entries with containing compare values that are only False.
+                # (See the explanation below for more info)
+                compare_variables = {'previous_resp_item_name' : resp_item_dict[did][0]['name'],
+                        'previous_resp_item_value' : False,
+                        'previous_compare_value' : resp_item_dict[did][0].get('compare_value')}
+
             for resp_item in resp_item_dict[did]:
                 offset = resp_item['offset']
                 size = resp_item['size']
                 formula = resp_item.get('formula', '')
                 sub_payload = get_sub_payload(payload, offset, size)
-
                 scaled_value = 0
                 try:
                     scaled_value = get_scaled_value(resp_item, sub_payload)
@@ -437,10 +443,36 @@ class UdsResponse:
                         unscaleable_values += " - because payload is to short"
 
                 if 'compare_value' in resp_item:
-                    compare_value = resp_item['compare_value']
-                    if compare(scaled_value, compare_value):
-                        log.debug('Equal! Comparing %s with %s', str(compare_value),
-                                      scaled_value)
+                    compare_result = compare(scaled_value, resp_item['compare_value'])
+
+                    # Used to keep track of entries where everything is False.
+                    # Ex: If
+                    # Voltage Sense 1                         |   Disable = False
+                    # Voltage Sense 1                         |   Module = False
+                    # Voltage Sense 1                         |   Busbar = False
+                    # the the following will be added to response_items for Voltage Sense 1:
+                    # Voltage Sense 1                         |   False
+
+                    if resp_item['name'] != compare_variables['previous_resp_item_name']:
+                        if compare_variables['previous_resp_item_value'] is False and\
+                                compare_variables['previous_compare_value'] is not None:
+                            item = {}
+                            item['name'] = compare_variables['previous_resp_item_name']
+                            item['scaled_value'] = "False"
+                            response_items.append(item)
+
+                        compare_variables['previous_resp_item_value'] = False
+
+                    if compare_result:
+                        item = {}
+                        item['name'] = resp_item['name']
+                        item['scaled_value'] = resp_item['unit']
+                        response_items.append(item)
+
+                        compare_variables['previous_resp_item_value'] = True
+
+                    compare_variables['previous_resp_item_name'] = resp_item['name']
+
                     continue
 
                 item = {k: v for k, v in resp_item.items() if k in
@@ -456,7 +488,6 @@ class UdsResponse:
                     \nfrom the payload received from the ECU: %s", unscaleable_values)
 
             self.details['response_items'] = response_items
-
 
     def __str__(self):
         s = (
@@ -696,7 +727,7 @@ def get_scaled_value(resp_item, sub_payload):
 
 def compare(scaled_value, compare_value):
     """Comparing two values. Returns boolean.
-    If the compare value contains '=', then we add an '='
+    If the compare value contains '=' and if condition is not >= or <=, then we add an '='
     Example:    Scaled value:    0x40
                 Compare value:  =0x40
                 Result: eval('0x40==0x40') which gives True
@@ -710,8 +741,8 @@ def compare(scaled_value, compare_value):
     """
     improved_compare_value = compare_value
     result = False # If not True, then default is False
-    # To be able to compare we need to change '=' to '=='
-    if '=' in compare_value:
+    # To be able to compare we need to change '=' to '==', if condition is not >= or <=
+    if '=' in compare_value and ">" not in compare_value and "<" not in compare_value:
         improved_compare_value = compare_value.replace('=', '==')
     try:
         # pylint: disable=eval-used

@@ -27,16 +27,21 @@ import logging
 def __get_spaces(name : str):
     """Function used to get correct layout in the print.
     It adds to correct amount of spaces so that the string "name" + spaces
-    are 44 chars long.
+    are 50 chars long.
+
+    If name is longer than 46 chars only the first 46 will be shown
 
     Args:
         name (str): Input string, only used to know how many spaces that are needed
 
     Returns:
         string: string containing 43-len(name) spaces and one delimiter "|" in index
-        number_of_spaces - 4
+        [number_of_spaces - 4]
     """
-    number_of_spaces = 40 - len(name) + 4
+    if len(name) > 46:
+        name = name[0:46]
+
+    number_of_spaces = 50 - len(name) + 4
     ret_string = ""
     for i in range(number_of_spaces):
         if i == number_of_spaces - 4:
@@ -61,8 +66,8 @@ def __uds_response_2_string(uds_response):
         response_items = uds_response.details["response_items"]
 
         #First two lines in the pretty print
-        ret_string = "Name                                    | Value \n"
-        ret_string += "----------------------------------------|------------- \n"
+        ret_string = "Name                                              | Value \n"
+        ret_string += "--------------------------------------------------|------------- \n"
 
         #If this part in unclear, try printing response_items to understand its structure.
         for response_item in response_items:
