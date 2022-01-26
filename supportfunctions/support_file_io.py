@@ -74,7 +74,7 @@ class SupportFileIO:
             argv = ({'name': 'Heartbeat', 'send': True, 'id': 'HvbmdpNmFrame'},)
 
             as input would generate
-            ´name, send, id´
+            [name, send, id]
 
             as output
         Args:
@@ -83,15 +83,15 @@ class SupportFileIO:
         Returns:
             str: a printer friendly representation of argv
         """
-        ret = "´"
+        ret = "["
         entries = argv[0]
         if not isinstance(entries, str):
             for entry in entries:
                 ret += entry + ", "
             ret = ret[0:-2] #to remove the last ","
-            ret += "´"
+            ret += "]"
         else:
-            ret = "´" + entries + "´"
+            ret = "[" + entries + "]"
         return ret
 
     @classmethod
