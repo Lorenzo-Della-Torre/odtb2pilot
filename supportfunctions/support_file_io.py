@@ -128,7 +128,7 @@ def _find_value_in_testspecific_yml(caller, dictionary_to_modify, changed_keys):
                         logging.info("Value of %s changed to %s found in %s",
                                                                     key,
                                                                     value,
-                                                                    path_to_test_specific_yml))
+                                                                    path_to_test_specific_yml)
 
     return dictionary_to_modify, changed_keys
 
