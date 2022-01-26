@@ -1,9 +1,0 @@
-step_2:
-    payload : b'\x31\x01\xDC\x09'
-    payload_reply : '057101DC0932'
-    routine_response : 'Type3,Currently active'
-    
-step_3:
-    payload : b'\x31\x02\xDC\x09'
-    payload_reply : '057102DC0930'
-    routine_response : 'Type3,Completed'

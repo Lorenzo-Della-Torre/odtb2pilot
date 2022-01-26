@@ -1,4 +1,7 @@
 MEP2_SPA2:
+        step_1:
+                did_pressure: b'\xFD\x35'
+MEP2_SPA2_SAGen2:
         precondition:
                 id: HvbmdpNmFrame
                 tp_name: HvbmdpToAllUdsDiagRequestFrame
@@ -6,4 +9,4 @@ MEP2_SPA2:
                 receive: HvbmToHvbmdpUdsDiagResponseFrame
                 send: HvbmdpToHvbmUdsDiagRequestFrame
         step_1:
-                did_pressure: b'\x4A\x28'
+                did_pressure: b'\xFD\x35'
