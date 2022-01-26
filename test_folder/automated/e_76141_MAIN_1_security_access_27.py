@@ -92,7 +92,6 @@ details:
 from datetime import datetime
 
 import time
-import inspect
 import sys
 import logging
 import odtb_conf
@@ -144,14 +143,14 @@ def security_access_def_session(can_p, step_no):
         "min_no_messages" : -1,
         "max_no_messages" : -1
     }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    SIO.parameter_adopt_teststep(etp)
 
     # Send RequestSeed with 0x01.
     cpay: CanPayload = {
         "payload": b'\x27\x01',
         "extra": ''
     }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    SIO.parameter_adopt_teststep(cpay)
 
     # Send message
     result = SUTE.teststep(can_p, cpay, etp)
@@ -181,14 +180,14 @@ def security_access_prg_session(can_p, step_no):
         "min_no_messages" : -1,
         "max_no_messages" : -1
     }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    SIO.parameter_adopt_teststep(etp)
 
     # RequestSeed 0x01
     cpay: CanPayload = {
         "payload": b'\x27\x01',
         "extra": ''
     }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    SIO.parameter_adopt_teststep(cpay)
 
     # Send message.
     result = SUTE.teststep(can_p, cpay, etp)
@@ -222,14 +221,14 @@ def security_access_prg_session(can_p, step_no):
         "min_no_messages" : -1,
         "max_no_messages" : -1
     }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    SIO.parameter_adopt_teststep(etp)
 
     # SendKey 0x02.
     cpay: CanPayload = {
         "payload": service_call,
         "extra": ''
     }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    SIO.parameter_adopt_teststep(cpay)
 
     # Send message.
     result = result and SUTE.teststep(can_p, cpay, etp)
@@ -273,7 +272,7 @@ def security_access_ext_session(can_p, step_no):
         "min_no_messages" : -1,
         "max_no_messages" : -1
     }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    SIO.parameter_adopt_teststep(etp)
 
     list_length = len(s_key)
     # Loop through all seed and key combinations.
@@ -286,14 +285,14 @@ def security_access_ext_session(can_p, step_no):
             "min_no_messages" : -1,
             "max_no_messages" : -1
         }
-        SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+        SIO.parameter_adopt_teststep(etp)
 
         # Send Request seed.
         cpay: CanPayload = {
             "payload": r_seed[i],
             "extra": ''
         }
-        SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+        SIO.parameter_adopt_teststep(cpay)
 
         # Send message
         SUTE.teststep(can_p, cpay, etp)
@@ -325,14 +324,14 @@ def security_access_ext_session(can_p, step_no):
             "min_no_messages" : -1,
             "max_no_messages" : -1
         }
-        SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+        SIO.parameter_adopt_teststep(etp)
 
         # Send 'SendKey'
         cpay: CanPayload = {
             "payload": s_key[i],
             "extra": ''
         }
-        SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+        SIO.parameter_adopt_teststep(cpay)
 
         # Send message
         SUTE.teststep(can_p, cpay, etp)
@@ -359,14 +358,14 @@ def security_access_cyclically(can_p, step_no):
         "min_no_messages" : -1,
         "max_no_messages" : -1
     }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    SIO.parameter_adopt_teststep(etp)
 
     # Send Request seed with 0x01.
     cpay: CanPayload = {
         "payload": b'\x27\x05',
         "extra": ''
     }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    SIO.parameter_adopt_teststep(cpay)
 
     result = SUTE.teststep(can_p, cpay, etp)
 
@@ -426,7 +425,7 @@ def register_non_diagnostic_signal(can_p, step_no):
         "min_no_messages" : -1,
         "max_no_messages" : -1
     }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    SIO.parameter_adopt_teststep(etp)
 
     can_p_ex: CanParam = {
         "netstub" : SC.connect_to_signalbroker(
@@ -435,7 +434,7 @@ def register_non_diagnostic_signal(can_p, step_no):
         "receive" : "BECMFront1Fr02",
         "namespace" : SC.nspace_lookup("Front1CANCfg0")
     }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p_ex)
+    SIO.parameter_adopt_teststep(can_p_ex)
 
     purpose = 'Register a non-diagnostic signal.'
     SUTE.print_test_purpose(step_no, purpose)
@@ -526,7 +525,7 @@ def run():
         "receive" : "BecmToVcu1Front1DiagResFrame",
         "namespace" : SC.nspace_lookup("Front1CANCfg0")
     }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
+    SIO.parameter_adopt_teststep(can_p)
 
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()

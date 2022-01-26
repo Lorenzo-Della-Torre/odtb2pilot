@@ -57,11 +57,10 @@ import os
 import sys
 import re
 import logging
+import inspect
 import yaml # Not installed? pylint: disable=import-error
 
 class SupportFileIO:
-    # Disable the too-few-public-methods violation. I'm sure we will have more methods later.
-    # pylint: disable=too-few-public-methods
     """
         SupportFileIO
     """
@@ -290,3 +289,17 @@ class SupportFileIO:
             cls.__argv_to_string(argv),
             dir_file + dir_file_default)
         return value
+
+
+
+    @classmethod
+    def parameter_adopt_teststep(cls, dict_name):
+        """
+            parameter_adopt_teststep
+            allows you to change variable values in a specific teststep
+
+            parameters:
+            inspect.stack()[1][3]   contains name of calling function
+            dict_name               dict which values should be replaced
+        """
+        return cls.extract_parameter_yml(str(inspect.stack()[1][3]), dict_name)

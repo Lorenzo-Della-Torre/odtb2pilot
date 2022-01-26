@@ -32,6 +32,7 @@ from iterfzf import iterfzf
 from hilding import analytics
 from hilding.reset_ecu import reset_and_flash_ecu
 
+from autotest.blacklisted_tests_handler import add_to_result, create_logs, get_dictionary_from_yml
 
 
 log = logging.getLogger('testrunner')
@@ -191,7 +192,7 @@ def run_tests(test_files):
         run_test(test_file_py)
 
 
-def run_tests_and_save_results(test_files, use_db=False, use_mq=False,
+def run_tests_and_save_results(test_files, result_dir, use_db=False, use_mq=False,
                                reset_between=False):
     """
     run tests from list of tests and save to message bus and/or db
@@ -200,9 +201,7 @@ def run_tests_and_save_results(test_files, use_db=False, use_mq=False,
     analytics.messagehandler(use_db=use_db, use_mq=use_mq)
     analytics.testsuite_started()
 
-    test_res_dir = get_test_res_dir()
-    result_file = test_res_dir.joinpath('Result.txt')
-    configure_progress_log(test_res_dir)
+    configure_progress_log(result_dir)
 
     for test_file_py in test_files:
         if reset_between:
@@ -210,11 +209,10 @@ def run_tests_and_save_results(test_files, use_db=False, use_mq=False,
 
         test_case_name = get_test_case_name(test_file_py)
         analytics.testcase_started(test_case_name)
-        verdict = run_test_and_parse_log_to_result(test_file_py, result_file)
+        verdict = run_test_and_parse_log_to_result(test_file_py, result_dir.joinpath('Result.txt'))
         analytics.testcase_ended(verdict)
 
     analytics.testsuite_ended()
-    add_testsuite_endtime(result_file)
 
 
 def get_ecutest_files(glob_pattern):
@@ -261,8 +259,53 @@ def runner(args):
 
 
 def nightly(args):
-    """ run the nighly test from list """
+    """This function runs the nightly tests.
+    The list that is used to pick tests in passed as an argument to this function.
+    The every line in the list might contain a path to a test or data about a
+    black listed requirement.
+
+    The list must have the following structure:
+
+    <path_to_script>
+    <path_to_script>
+    <path_to_script>
+    --Category1--
+    <info_about_requirement_of_type_category1>
+    <info_about_requirement_of_type_category1>
+    --Category2--
+    <info_about_requirement_of_type_category2>
+
+    Args:
+        args (list): A list containing paths and data about black listed requirements
+    """
+
+    test_res_dir = get_test_res_dir()
+    result_file = test_res_dir.joinpath('Result.txt')
     with open(args.testfile_list) as testfile_list:
-        test_files = [Path(t.strip()) for t in testfile_list.readlines()]
-        run_tests_and_save_results(
-            test_files, args.use_db, args.use_mq, reset_between=True)
+        test_files = []
+        blacklisted_reqprods = {}
+        # This will keep track of what category of reqs. we are currently
+        # dealing with (NA, Implicit, etc.)
+        current_category = ""
+        # Read from yml file what categories we have in the current default project
+        existing_categories = get_dictionary_from_yml().keys()
+        for line in testfile_list.readlines():
+            stripped_line = line.strip()
+            if stripped_line in existing_categories:
+                current_category = stripped_line
+                blacklisted_reqprods[current_category] = {}
+            elif current_category == "":
+                test_files.append(Path(stripped_line))
+            else:
+                split_line = stripped_line.split("|", maxsplit=1)
+                reqprod_id = split_line[0]
+                info = split_line[1]
+                blacklisted_reqprods[current_category][reqprod_id] = info
+
+    add_to_result(blacklisted_reqprods, result_file)
+    create_logs(blacklisted_reqprods, test_res_dir)
+
+    run_tests_and_save_results(
+        test_files, test_res_dir, args.use_db, args.use_mq, reset_between=True)
+
+    add_testsuite_endtime(result_file)

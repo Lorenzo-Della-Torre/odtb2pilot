@@ -48,7 +48,6 @@ import time
 from datetime import datetime
 import sys
 import logging
-import inspect
 
 import odtb_conf
 from supportfunctions.support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
@@ -80,19 +79,19 @@ def step_2(can_p):
         "payload_1": b'\x03\x22\xF1\x8C\x00\x00\x00\x00',
         "extra": ''
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay_1)
+    SIO.parameter_adopt_teststep(cpay_1)
 
     cpay_2: CanPayload = {
         "payload_2": b'\x03\x22\xF1\x2B\x00\x00\x00\x00',
         "extra": ''
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay_2)
+    SIO.parameter_adopt_teststep(cpay_2)
 
     etp: CanTestExtra = {"step_no": 2,
                          "purpose" : "verify that two single frame can be sent with ST = 0",
                         }
 
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    SIO.parameter_adopt_teststep(etp)
 
     SC.clear_all_can_messages()
     SC.clear_all_can_frames()
@@ -123,14 +122,10 @@ def step_2(can_p):
                  frame_to_comp_second_rep)
 
     # use YML to specifying the expected reply if a different request is sended
-    first_reply_cont_new = SIO.extract_parameter_yml(str(inspect.stack()[0][3]),
-                                                     'first_reply_cont')
-    frame_to_comp_first_rep_new = SIO.extract_parameter_yml(str(inspect.stack()[0][3]),
-                                                            'frame_to_comp_first_rep')
-    second_reply_cont_new = SIO.extract_parameter_yml(str(inspect.stack()[0][3]),
-                                                      'second_reply_cont')
-    frame_to_comp_second_rep_new = SIO.extract_parameter_yml(str(inspect.stack()[0][3]),
-                                                             'frame_to_comp_second_rep')
+    first_reply_cont_new = SIO.parameter_adopt_teststep('first_reply_cont')
+    frame_to_comp_first_rep_new = SIO.parameter_adopt_teststep('frame_to_comp_first_rep')
+    second_reply_cont_new = SIO.parameter_adopt_teststep('second_reply_cont')
+    frame_to_comp_second_rep_new = SIO.parameter_adopt_teststep('frame_to_comp_second_rep')
 
     # don't set empty value if no replacement was found for first reply:
     if first_reply_cont_new:
@@ -173,7 +168,7 @@ def run():
         "receive" : "BecmToVcu1Front1DiagResFrame",
         "namespace" : SC.nspace_lookup("Front1CANCfg0")
     }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
+    SIO.parameter_adopt_teststep(can_p)
 
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()

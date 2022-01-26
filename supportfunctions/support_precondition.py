@@ -56,46 +56,12 @@ from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_service3e import SupportService3e
 from supportfunctions.support_file_io import SupportFileIO
 
-from hilding.uds_response import UdsResponse
-
 
 SC = SupportCAN()
 SUTE = SupportTestODTB2()
 SE22 = SupportService22()
 SE3E = SupportService3e()
 SIO = SupportFileIO
-
-def read_did(can_p, payload):
-    """reads a did from ECU using SupportsTestODTB2s teststep function
-    Reading a did this way is cleaner than what was previously used in this file.
-
-    Args:
-        can_p ([type]): [description]
-        payload ([type]): Should be a did id
-
-    Returns:
-        uds_response, boolean: Returns an instance of uds_Response and a boolean
-    """
-    cpay = {
-        "payload": b'\x22' + payload,
-        "extra": ''
-    }
-
-    etp = {
-        "step_no": "N/A",
-        "purpose": "Read a did in SupportPrecondition",
-        "timeout": 1,
-        "min_no_messages": -1,
-        "max_no_messages": -1
-    }
-
-    result = SUTE.teststep(can_p, cpay, etp)
-
-    response = SC.can_messages[can_p['receive']]
-
-    uds_response = UdsResponse(response[0][2])
-
-    return uds_response, result
 
 class SupportPrecondition:
     """
@@ -175,15 +141,16 @@ class SupportPrecondition:
             }
         SC.change_mf_fc(can_p2["receive"], can_mf)
 
-        SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'pn_sn_list')
+        pn_sn_list = []
+        SIO.parameter_adopt_teststep('pn_sn_list')
 
-        uds_response, eda0_result = read_did(can_p, b'\xED\xA0')
-        logging.debug(uds_response)
+        result = SE22.read_did_eda0(can_p, pn_sn_list)
+        logging.info("Precondition EDA0: %s\n", result)
 
-        uds_response, f125_result = read_did(can_p, b'\xF1\x25')
-        logging.debug(uds_response)
+        result = SE22.read_did_pbl_pn(can_p) and result
+        logging.info("Precondition testok: %s\n", result)
 
-        return eda0_result and f125_result
+        return result
 
     @staticmethod
     def precondition_burst(can_p: CanParam, timeout=300):
@@ -235,8 +202,8 @@ class SupportPrecondition:
             "intervall" : 0.4
             }
         #Read current function name from stack:
-        logging.debug("Read YML for %s", str(inspect.stack()[0][3]))
-        SIO.extract_parameter_yml(str(inspect.stack()[0][3]), hb_param)
+        #logging.debug("Read YML for %s", str(inspect.stack()[0][3]))
+        SIO.parameter_adopt_teststep(hb_param)
         logging.debug("hp_param %s", hb_param)
 
         # start heartbeat, repeat every x second

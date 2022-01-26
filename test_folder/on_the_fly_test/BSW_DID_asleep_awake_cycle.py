@@ -48,7 +48,6 @@ import time
 from datetime import datetime
 import sys
 import logging
-import inspect
 
 import re
 import subprocess
@@ -157,7 +156,7 @@ def precondition_extra(can_p: CanParam, timeout=300):
                         "receive": "BECMFront1Fr01",
                         "namespace": can_p["namespace"]
                        }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_af)
+    SIO.parameter_adopt_teststep(can_af)
     logging.debug("can_af %s", can_af)
 
     SC.subscribe_signal(can_af, timeout)
@@ -174,14 +173,14 @@ def step_2(can_p, can_af, numofframe):
                                                          b'\xD0\x34', b''),
                         "extra" : b''
                        }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    SIO.parameter_adopt_teststep(cpay)
     etp: CanTestExtra = {"step_no": stepno,\
                          "purpose" : "request DID Counter for number of software resets",\
                          "timeout" : 0.4,\
                          "min_no_messages" : 1,\
                          "max_no_messages" : 1
                         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    SIO.parameter_adopt_teststep(etp)
 
     result = SUTE.teststep(can_p, cpay, etp)
 
@@ -207,14 +206,14 @@ def step_3(can_p, can_af, numofframe):
                                                          b'\xDA\xC3', b''),
                         "extra" : b''
                        }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    SIO.parameter_adopt_teststep(cpay)
     etp: CanTestExtra = {"step_no": stepno,\
                          "purpose" : "request DID SW reset type",\
                          "timeout" : 0.4,\
                          "min_no_messages" : 1,\
                          "max_no_messages" : 1
                         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    SIO.parameter_adopt_teststep(etp)
     result = SUTE.teststep(can_p, cpay, etp)
 
     if not result:
@@ -240,14 +239,14 @@ def step_4(can_p, can_af, numofframe):
                                                          b'\xDA\xC6', b''),
                         "extra" : b''
                        }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    SIO.parameter_adopt_teststep(cpay)
     etp: CanTestExtra = {"step_no": stepno,
                          "purpose" : "request DID 5 last reset types",
                          "timeout" : 1,
                          "min_no_messages" : 1,
                          "max_no_messages" : 1
                         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    SIO.parameter_adopt_teststep(etp)
     result = SUTE.teststep(can_p, cpay, etp)
 
     if not result:
@@ -275,14 +274,14 @@ def step_5(can_p, can_af, numofframe, la_ma):
                                                          b'\xFD\x71', b''),
                         "extra" : b''
                        }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    SIO.parameter_adopt_teststep(cpay)
     etp: CanTestExtra = {"step_no": stepno,
                          "purpose" : "Lear special: request DID 5 last reset types",
                          "timeout" : 3.5,
                          "min_no_messages" : 1,
                          "max_no_messages" : -1
                         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    SIO.parameter_adopt_teststep(etp)
     result = SUTE.teststep(can_p, cpay, etp)
 
     if not result:
@@ -328,17 +327,17 @@ def step_6(can_p: CanParam, can_af, numofframe, la_ma):
                                                          b'\xFD\x72', b''),
                         "extra" : b''
                        }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    SIO.parameter_adopt_teststep(cpay)
     etp: CanTestExtra = {"step_no": stepno,
                          "purpose" : "Lear special: request DID 5 last reset types",
                          "timeout" : 3,
                          "min_no_messages" : 1,
                          "max_no_messages" : -1
                         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    SIO.parameter_adopt_teststep(etp)
     result = SUTE.teststep(can_p, cpay, etp)
     nm_frame = can_af["receive"]
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), "nm_frame")
+    SIO.parameter_adopt_teststep("nm_frame")
 
     if not result:
         logging.info("Received frames: %s:", SC.can_frames[can_p["receive"]])
@@ -380,7 +379,7 @@ def step_7(can_af, numofframe):
     purpose = "stop sending heartbeat, verify BECM stops traffic"
 
     nm_frame = can_af["receive"]
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), "nm_frame")
+    SIO.parameter_adopt_teststep("nm_frame")
     logging.info("Step No. {:d}: purpose: {}".format(stepno, purpose))
     if  frames_received(nm_frame, 0.2) < numofframe:
         result = False
@@ -410,7 +409,7 @@ def step_8(can_af):
 
     # Shouldn't recevie frames any longer now
     nm_frame = can_af["receive"]
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), "nm_frame")
+    SIO.parameter_adopt_teststep("nm_frame")
     if  frames_received(nm_frame, 0.2) > 0:
         result = False
         logging.info("No NM-frames: test failed.")
@@ -430,9 +429,9 @@ def step_9(can_p, can_af, numofframe, la_ma):
     logging.info("Step No. {:d}: purpose: {}".format(stepno, purpose))
 
     nspace_burst = can_p["namespace"]
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), "nspace_burst")
+    SIO.parameter_adopt_teststep("nspace_burst")
     frame_burst = b'\x20\x40\x00\xFF\x00\x00\x00\x00'
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), "frame_burst")
+    SIO.parameter_adopt_teststep("frame_burst")
     burst_param: PerParam = {
         "name" : "Burst",
         "send" : True,
@@ -442,7 +441,7 @@ def step_9(can_p, can_af, numofframe, la_ma):
         "intervall" : 0.1
         }
     #double names - extract separately
-    #SIO.extract_parameter_yml(str(inspect.stack()[0][3]), burst_param)
+    #SIO.parameter_adopt_teststep(burst_param)
     hb_param: PerParam = {
         "name" : "Heartbeat",
         "send" : True,
@@ -451,7 +450,7 @@ def step_9(can_p, can_af, numofframe, la_ma):
         "frame" : b'\x1A\x40\xC3\xFF\x01\x00\x00\x00',
         "intervall" : 0.8
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), hb_param)
+    SIO.parameter_adopt_teststep(hb_param)
     # start heartbeat, repeat every x second
 
     cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("ReadDataByIdentifier",
@@ -459,14 +458,14 @@ def step_9(can_p, can_af, numofframe, la_ma):
                         "extra" : b''
                        }
     #print("Step9, payload: ", cpay)
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    SIO.parameter_adopt_teststep(cpay)
     etp: CanTestExtra = {"step_no": stepno,
                          "purpose" : "Lear special: request DID 5 last reset types",
                          "timeout" : 8,
                          "min_no_messages" : -1,
                          "max_no_messages" : -1
                         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    SIO.parameter_adopt_teststep(etp)
 
     SC.send_burst(can_p["netstub"], burst_param, 3)
     SC.start_heartbeat(can_p["netstub"], hb_param)
@@ -519,7 +518,7 @@ def step_10(can_p, can_af, numofframe):
         "frame" : b'\x1A\x40\xC3\xFF\x01\x00\x00\x00',
         "intervall" : 0.8
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), hb_param)
+    SIO.parameter_adopt_teststep(hb_param)
     # start heartbeat, repeat every x second
     SC.start_heartbeat(can_p["netstub"], hb_param)
     time.sleep(1)
@@ -551,8 +550,7 @@ def run():
         "receive" : "BecmToVcu1Front1DiagResFrame",
         "namespace" : SC.nspace_lookup("Front1CANCfg0")
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
-    logging.debug("Stack output %s", inspect.stack())
+    SIO.parameter_adopt_teststep(can_p)
 
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
@@ -563,7 +561,7 @@ def run():
     ############################################
     timeout = 0 #(run forever)
     numofframe = 15
-    numofframe2 = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), "numofframe")
+    numofframe2 = SIO.parameter_adopt_teststep("numofframe")
     if numofframe2 != '':
         numofframe = numofframe2
     # don't take standard precondition, no TP needed

@@ -57,7 +57,6 @@ import os
 import binascii
 from datetime import datetime
 import string
-import inspect
 
 #sys.path.append('generated')
 from supportfunctions.support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
@@ -172,17 +171,6 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
         testresult       bool    result of teststep is as expected
         """
 
-        # Only log test step number if it is an actual test step in a script calling this function
-        # If this function is called from uds.py no print is required since it is handled in dut.py
-        try:
-            called_from_uds = "uds.py" in inspect.stack()[1][1]
-            if int(etp['step_no']) < 100 and not called_from_uds:
-                logging.info(
-                    "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Step %s started~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
-                    etp['step_no'])
-        except ValueError:
-            pass
-
         testresult = True
 
         SC.clear_old_cf_frames()
@@ -231,8 +219,7 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
                 wait_loop = 0
                 max_7fxx78 = 10
 
-                new_max_7fxx78 = SIO.extract_parameter_yml(str(inspect.stack()[0][3]),
-                                                           'max_7fxx78')
+                new_max_7fxx78 = SIO.parameter_adopt_teststep('max_7fxx78')
                 if new_max_7fxx78 != '':
                     assert isinstance(new_max_7fxx78, int)
                     max_7fxx78 = new_max_7fxx78

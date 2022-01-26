@@ -5,3 +5,6 @@ precondition:
 run:
         send: HvbmdpToHvbmUdsDiagRequestFrame
         receive: HvbmToHvbmdpUdsDiagResponseFrame
+
+step_1:
+        did_pressure : b'\xFD\x35'

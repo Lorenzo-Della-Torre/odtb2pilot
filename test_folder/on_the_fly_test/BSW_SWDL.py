@@ -55,7 +55,6 @@ import time
 from datetime import datetime
 import sys
 import logging
-import inspect
 
 import odtb_conf
 from supportfunctions.support_can import SupportCAN, CanParam, PerParam
@@ -112,7 +111,7 @@ def restart_nmframe(can_p):
         "frame" : b'\x1A\x40\xC3\xFF\x01\x00\x00\x00',
         "intervall" : 0.8
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), hb_param)
+    SIO.parameter_adopt_teststep(hb_param)
     # start heartbeat, repeat every x second
 
     SC.start_heartbeat(can_p["netstub"], hb_param)
@@ -201,7 +200,7 @@ def run():
         "framelength_max" : 8,
         "padding" : True
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
+    SIO.parameter_adopt_teststep(can_p)
 
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
@@ -223,7 +222,7 @@ def run():
         "proof_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
     }
 
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), sa_keys)
+    SIO.parameter_adopt_teststep(sa_keys)
 
     if result:
         ############################################

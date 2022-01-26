@@ -285,6 +285,11 @@ class Uds:
 
             if not "mode" in res.details:
                 raise UdsError(f"Failure occurred when setting mode: {mode}")
+
+        #This is added since the transition to application takes some time
+        if self.mode == 2:
+            time.sleep(2)
+
         self.mode = res.details["mode"]
 
 

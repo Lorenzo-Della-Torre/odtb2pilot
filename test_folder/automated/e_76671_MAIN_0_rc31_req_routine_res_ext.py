@@ -53,7 +53,6 @@ import time
 from datetime import datetime
 import sys
 import logging
-import inspect
 
 import odtb_conf
 from supportfunctions.support_can import SupportCAN, CanParam, CanTestExtra, CanPayload
@@ -84,7 +83,7 @@ def step_2(can_p):
                                         b'\x01'),
         "extra": ''
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    SIO.parameter_adopt_teststep(cpay)
     etp: CanTestExtra = {
         "step_no": 2,
         "purpose": "verify RoutineControl start(01) reply positive",
@@ -92,12 +91,12 @@ def step_2(can_p):
         "min_no_messages": -1,
         "max_no_messages": -1
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    SIO.parameter_adopt_teststep(etp)
 
     payload_reply = '057101DC0032'
     routine_response = 'Type3,Currently active'
 
-    payload_reply_new = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'payload_reply')
+    payload_reply_new = SIO.parameter_adopt_teststep('payload_reply')
     # don't set empty value if no replacement was found:
     if payload_reply_new:
         payload_reply = payload_reply_new
@@ -105,7 +104,7 @@ def step_2(can_p):
         logging.info("Step%s payload_reply_new is empty. Discard.", etp["step_no"])
     logging.info("Step%s: payload_reply after YML: %s", etp["step_no"], payload_reply)
 
-    routine_response_new = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'routine_response')
+    routine_response_new = SIO.parameter_adopt_teststep('routine_response')
     # don't set empty value if no replacement was found:
     if routine_response_new:
         routine_response = routine_response_new
@@ -134,7 +133,7 @@ def step_3(can_p):
                                         b'\x03'),
         "extra": ''
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    SIO.parameter_adopt_teststep(cpay)
     etp: CanTestExtra = {
         "step_no": 3,
         "purpose": "verify RoutineControl Request Routine Result (03) reply positiv"\
@@ -143,12 +142,12 @@ def step_3(can_p):
         "min_no_messages": 1,
         "max_no_messages": 1
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    SIO.parameter_adopt_teststep(etp)
 
     payload_reply = '057103DC0032'
     routine_response = 'Type3,Currently active'
 
-    payload_reply_new = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'payload_reply')
+    payload_reply_new = SIO.parameter_adopt_teststep('payload_reply')
     # don't set empty value if no replacement was found:
     if payload_reply_new:
         payload_reply = payload_reply_new
@@ -156,7 +155,7 @@ def step_3(can_p):
         logging.info("Step%s payload_reply_new is empty. Discard.", etp["step_no"])
     logging.info("Step%s: payload_reply after YML: %s", etp["step_no"], payload_reply)
 
-    routine_response_new = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'routine_response')
+    routine_response_new = SIO.parameter_adopt_teststep('routine_response')
     # don't set empty value if no replacement was found:
     if routine_response_new:
         routine_response = routine_response_new
@@ -186,7 +185,7 @@ def step_4(can_p):
                                         b'\x02'),
         "extra": ''
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    SIO.parameter_adopt_teststep(cpay)
     etp: CanTestExtra = {
         "step_no": 4,
         "purpose": "verify RoutineControl start(01) reply positive",
@@ -194,12 +193,12 @@ def step_4(can_p):
         "min_no_messages": -1,
         "max_no_messages": -1
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    SIO.parameter_adopt_teststep(etp)
 
     payload_reply = '057102DC0030'
     routine_response = 'Type3,Completed'
 
-    payload_reply_new = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'payload_reply')
+    payload_reply_new = SIO.parameter_adopt_teststep('payload_reply')
     # don't set empty value if no replacement was found:
     if payload_reply_new:
         payload_reply = payload_reply_new
@@ -207,7 +206,7 @@ def step_4(can_p):
         logging.info("Step%s payload_reply_new is empty. Discard.", etp["step_no"])
     logging.info("Step%s: payload_reply after YML: %s", etp["step_no"], payload_reply)
 
-    routine_response_new = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'routine_response')
+    routine_response_new = SIO.parameter_adopt_teststep('routine_response')
     # don't set empty value if no replacement was found:
     if routine_response_new:
         routine_response = routine_response_new
@@ -236,7 +235,7 @@ def step_5(can_p):
                                         b'\x03'),
         "extra": ''
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    SIO.parameter_adopt_teststep(cpay)
     etp: CanTestExtra = {
         "step_no": 5,
         "purpose": "verify RoutineControl Request Routine Result (03) reply positiv"\
@@ -245,12 +244,12 @@ def step_5(can_p):
         "min_no_messages": 1,
         "max_no_messages": 1
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    SIO.parameter_adopt_teststep(etp)
 
     payload_reply = '057103DC0030'
     routine_response = 'Type3,Completed'
 
-    payload_reply_new = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'payload_reply')
+    payload_reply_new = SIO.parameter_adopt_teststep('payload_reply')
     # don't set empty value if no replacement was found:
     if payload_reply_new:
         payload_reply = payload_reply_new
@@ -258,7 +257,7 @@ def step_5(can_p):
         logging.info("Step%s payload_reply_new is empty. Discard.", etp["step_no"])
     logging.info("Step%s: payload_reply after YML: %s", etp["step_no"], payload_reply)
 
-    routine_response_new = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'routine_response')
+    routine_response_new = SIO.parameter_adopt_teststep('routine_response')
     # don't set empty value if no replacement was found:
     if routine_response_new:
         routine_response = routine_response_new
@@ -292,7 +291,7 @@ def run():
         "receive" : "BecmToVcu1Front1DiagResFrame",
         "namespace" : SC.nspace_lookup("Front1CANCfg0")
     }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
+    SIO.parameter_adopt_teststep(can_p)
 
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()

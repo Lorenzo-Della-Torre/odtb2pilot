@@ -53,7 +53,6 @@ import time
 from datetime import datetime
 import sys
 import logging
-import inspect
 
 import odtb_conf
 from supportfunctions.support_can import SupportCAN, CanParam, CanTestExtra
@@ -93,7 +92,7 @@ def step_1(can_p, timeout):
         'receive': "BECMFront1Fr02",
         'namespace': SC.nspace_lookup("Front1CANCfg0")
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p_ex)
+    SIO.parameter_adopt_teststep(can_p_ex)
 
     SC.subscribe_signal(can_p_ex, etp["timeout"])
     time.sleep(1)
@@ -164,8 +163,7 @@ def run():
         'namespace': SC.nspace_lookup("Front1CANCfg0")
         }
     #Read YML parameter for current function (get it from stack)
-    logging.debug("Read YML for %s", str(inspect.stack()[0][3]))
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
+    SIO.parameter_adopt_teststep(can_p)
 
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
