@@ -1,0 +1,146 @@
+IHFA_GPA:
+        precondition:
+                frame: b'\x1A\x40\xC3\xFF\x01\x00\x00\x00'
+                id: IhfadpNmCanFrame
+                intervall: 0.8
+                tp_name: IHFAdpToallUdsDiagRequestFrame
+        precondition_extra:
+                receive: IHFASignalFrame01
+                send: IhfaNmCanFrame
+        run:
+                numofframe: 7
+                receive: IHFAToIHFAdpUdsDiagResponseFrame
+                send: IHFAdpToIHFAUdsDiagRequestFrame
+        step_10:
+                frame: b'\x1A\x40\xC3\xFF\x01\x00\x00\x00'
+                id: IhfadpNmCanFrame
+                intervall: 0.8
+        step_2:
+                hb_frame: IHFASignalFrame01
+                payload: b'\x22\xED\xA0'
+        step_3:
+                payload: b'\x22\xED\xA0'
+        step_4:
+                payload: b'\x22\xED\xA0'
+        step_5:
+                payload: b'\x22\xED\xA0'
+        step_6:
+                hb_frame: IHFASignalFrame01
+                payload: b'\x22\xED\xA0'
+        step_7:
+                hb_frame: IHFASignalFrame01
+        step_8:
+                hb_frame: IHFASignalFrame01
+        step_9:
+                frame: b'\x1A\x40\xC3\xFF\x01\x00\x00\x00'
+                id: IhfadpNmCanFrame
+                intervall: 0.8
+                payload: b'\xED\xA0\xF1\x20')
+MEP2_ED_IHFA:
+        precondition:
+                frame: b'\x1A\x40\xC3\xFF\x01\x00\x00\x00'
+                id: IhfadpNmCanFrame
+                intervall: 0.8
+                tp_name: IHFAdpToallUdsDiagRequestFrame
+        precondition_extra:
+                receive: IHFASignalFrame01
+                send: IhfaNmCanFrame
+        run:
+                numofframe: 7
+                receive: IHFAToIHFAdpUdsDiagResponseFrame
+                send: IHFAdpToIHFAUdsDiagRequestFrame
+        step_10:
+                frame: b'\x1A\x40\xC3\xFF\x01\x00\x00\x00'
+                id: IhfadpNmCanFrame
+                intervall: 0.8
+        step_2:
+                hb_frame: IHFASignalFrame01
+                payload: b'\x22\xED\xA0'
+        step_3:
+                payload: b'\x22\xED\xA0'
+        step_4:
+                payload: b'\x22\xED\xA0'
+        step_5:
+                payload: b'\x22\xED\xA0'
+        step_6:
+                hb_frame: IHFASignalFrame01
+                payload: b'\x22\xED\xA0'
+        step_7:
+                hb_frame: IHFASignalFrame01
+        step_8:
+                hb_frame: IHFASignalFrame01
+        step_9:
+                frame: b'\x1A\x40\xC3\xFF\x01\x00\x00\x00'
+                id: IhfadpNmCanFrame
+                intervall: 0.8
+                payload: b'\xED\xA0\xF1\x20')
+MEP2_HLCM:
+        precondition:
+                id: HvbmdpNmFrame
+                intervall: 0.8
+                tp_name: HvbmdpToAllUdsDiagRequestFrame
+        precondition_extra:
+                receive: HvbmHvbm1canFrame53_20
+                send: HvbmNmFrame
+        run:
+                numofframe: 7
+                receive: HvbmToHvbmdpUdsDiagResponseFrame
+                send: HvbmdpToHvbmUdsDiagRequestFrame
+        step_10:
+                id: HvbmdpNmFrame
+                intervall: 0.8
+        step_2:
+                hb_frame: HvbmHvbm1canFrame53_20
+                payload: b'\x22\xED\xA0'
+        step_3:
+                payload: b'\x22\xED\xA0'
+        step_4:
+                payload: b'\x22\xED\xA0'
+        step_5:
+                payload: b'\x22\xED\xA0'
+        step_6:
+                hb_frame: HvbmHvbm1canFrame53_20
+                payload: b'\x22\xED\xA0'
+        step_7:
+                hb_frame: HvbmHvbm1canFrame53_20
+        step_8:
+                hb_frame: HvbmHvbm1canFrame53_20
+        step_9:
+                id: HvbmdpNmFrame
+                intervall: 0.8
+                payload: b'\x22\xED\xA0\xF1\x20'
+MEP2_SPA2:
+        precondition:
+                id: HvbmdpNmFrame
+                intervall: 0.8
+                tp_name: HvbmdpToAllUdsDiagRequestFrame
+        precondition_extra:
+                receive: HvbmHvbm1canFrame53_20
+                send: HvbmNmFrame
+        run:
+                numofframe: 7
+                receive: HvbmToHvbmdpUdsDiagResponseFrame
+                send: HvbmdpToHvbmUdsDiagRequestFrame
+        step_10:
+                id: HvbmdpNmFrame
+                intervall: 0.8
+        step_2:
+                hb_frame: HvbmHvbm1canFrame53_20
+                payload: b'\x22\xED\xA0'
+        step_3:
+                payload: b'\x22\xED\xA0'
+        step_4:
+                payload: b'\x22\xED\xA0'
+        step_5:
+                payload: b'\x22\xED\xA0'
+        step_6:
+                hb_frame: HvbmHvbm1canFrame53_20
+                payload: b'\x22\xED\xA0'
+        step_7:
+                hb_frame: HvbmHvbm1canFrame53_20
+        step_8:
+                hb_frame: HvbmHvbm1canFrame53_20
+        step_9:
+                id: HvbmdpNmFrame
+                intervall: 0.8
+                payload: b'\x22\xED\xA0\xF1\x20'

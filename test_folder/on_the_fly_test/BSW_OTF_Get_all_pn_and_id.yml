@@ -1,0 +1,14 @@
+IHFA_GPA:
+        precondition:
+                id: IhfadpNmCanFrame
+                tp_name: IHFAdpToallUdsDiagRequestFrame
+        run:
+                receive: IHFAToIHFAdpUdsDiagResponseFrame
+                send: IHFAdpToIHFAUdsDiagRequestFrame
+MEP2_ED_IHFA:
+        precondition:
+                id: IhfadpNmCanFrame
+                tp_name: IHFAdpToallUdsDiagRequestFrame
+        run:
+                receive: IHFAToIHFAdpUdsDiagResponseFrame
+                send: IHFAdpToIHFAUdsDiagRequestFrame
