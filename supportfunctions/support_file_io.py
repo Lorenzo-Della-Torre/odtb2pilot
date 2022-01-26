@@ -58,7 +58,32 @@ import sys
 import re
 import logging
 import inspect
-import yaml # Not installed? pylint: disable=import-error
+import yaml
+from os import environ
+
+from hilding.conf import Conf
+
+dut_configuration = Conf()
+
+def _find_yml_file(dir, file_names):
+    """Try to find a yml file matching list of files
+
+    Args:
+        dir (str): Root of where the function should look
+        file_names (list): List of python files the function should try to match
+        with a test specific yml
+
+    Returns:
+        str: A path to test specific yml alt. empty string if none was found
+    """
+    walker = os.walk(dir)
+
+    for root, dirs, files in walker:
+        for file_name in file_names:
+            if f"{file_name}.yml" in files:
+                return os.path.join(root, f"{file_name}.yml")
+
+    return ""
 
 class SupportFileIO:
     """
@@ -95,6 +120,76 @@ class SupportFileIO:
         return ret
 
     @classmethod
+    def extract_parameters_from_yml(cls, caller, input_dictionary):
+        """Function that tries to update all keys in "input_dictionary" with values
+        found in either a test specific yml or conf_default
+
+        Args:
+            caller (str): Name of step in which values should be replaced. I.e: "run", "step_1"
+            input_dictionary (dict): A dictionary in which values should be updated
+
+        Returns:
+            dict: A dictionary with updated values, or of no values were updated,
+            "input_dictionary" will be returned
+            list: List containing keys to all values that were updated.
+        """
+
+        dictionary_to_modify = {}
+
+        # Used to make sure that values already changed using test specific yml
+        # are not changed again using conf_default
+        changed_keys = []
+
+        if not isinstance(input_dictionary[0], dict):
+            dictionary_to_modify[input_dictionary[0]] = ""
+        else:
+            dictionary_to_modify = input_dictionary[0]
+
+        # First we try to find the content of the dictionary in the test specific yml file
+        file_names_in_callstack = []
+        for level in inspect.stack():
+            path_to_file = level[1]
+            name_of_file = os.path.basename(path_to_file).split(".")[0]
+            file_names_in_callstack.append(name_of_file)
+
+        path_to_test_specific_yml = _find_yml_file("test_folder", file_names_in_callstack)
+
+        if path_to_test_specific_yml:
+
+            with open(path_to_test_specific_yml) as yml_file:
+                yml_dictionary = yaml.safe_load(yml_file)
+
+            platform = os.path.basename(environ["ODTBPROJPARAM"])
+            platform_specific_yml_dict = yml_dictionary.get(platform)
+
+            if platform_specific_yml_dict is not None:
+                for key in dictionary_to_modify:
+
+                    # Make sure the step is found in the yml i.e: "run", "step_1"
+                    if platform_specific_yml_dict.get(caller) is not None:
+                        value = platform_specific_yml_dict.get(caller).get(key)
+
+                        if value is not None:
+                            dictionary_to_modify[key] = value
+                            changed_keys.append(key)
+                            logging.info(f"Value of {key} changed to {value} found in {path_to_test_specific_yml}")
+
+        # If value was not found in the test specific we try conf_default instead
+        default_conf = dut_configuration.default_rig_config
+
+        for key in dictionary_to_modify:
+            value = default_conf.get(key)
+
+            if value is not None and key not in changed_keys:
+                dictionary_to_modify[key] = value
+                changed_keys.append(key)
+                logging.info(f"Value of {key} changed to {value} found in conf_default")
+
+        return dictionary_to_modify, changed_keys
+
+
+
+    @classmethod
     def extract_parameter_yml(cls, key, *argv):
         # pylint: disable=too-many-locals
         # pylint: disable=deprecated-method
@@ -107,6 +202,19 @@ class SupportFileIO:
         - a file specific one
         If parameters exist in both, the file specific overrides the project specific
         """
+
+        # This function is a tad hard to follow and needs to be replaced. For legacy reasons
+        # it will be kept for now. We will first try to find the parameter in either
+        # conf_default or the test script specific file using extract_parameters_from_yml().
+        # If neither work the old function will give it a try.
+
+        modified_dictionary, changed_keys = cls.extract_parameters_from_yml(key, argv)
+
+        if len(changed_keys) > 0:
+            return modified_dictionary
+
+        # The old function starts here
+
         odtb_proj_param = os.environ.get('ODTBPROJPARAM')
         if odtb_proj_param is None:
             odtb_proj_param = '.'
