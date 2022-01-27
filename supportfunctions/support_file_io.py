@@ -125,7 +125,7 @@ def _find_value_in_testspecific_yml(caller, dictionary_to_modify, changed_keys):
                     if value is not None:
                         dictionary_to_modify[key] = value
                         changed_keys.append(key)
-                        logging.info("Value of %s changed to %s found in %s",
+                        logging.info("Value of ´%s´ changed to ´%s´ found in %s",
                                                                     key,
                                                                     value,
                                                                     path_to_test_specific_yml)
@@ -167,37 +167,44 @@ class SupportFileIO:
         return ret
 
     @classmethod
-    def extract_parameters_from_yml(cls, caller, input_dictionary):
+    def extract_parameters_from_yml(cls, caller, requested_data):
         """Function that tries to update all keys in "input_dictionary" with values
-        found in either a test specific yml or conf_default
+        found in either a test specific yml or conf_default.
+
+        To be backwards compatible "requested_data" might also be a string.
+        In that case whatever data is found in a yml with key "requested_data"
+        will be returned.
 
         Args:
             caller (str): Name of step in which values should be replaced. I.e: "run", "step_1"
-            input_dictionary (dict, str): A dictionary in which values should be updated,
-            might also be string
+            requested_data (dict, str): A dictionary in which values should be updated,
+            might also be string - see description above
 
         Returns:
-            dict: A dictionary with updated values, or of no values were updated,
-            "input_dictionary" will be returned
+            dict/any: A dictionary with updated values, or if no values were updated,
+            "input_dictionary" will be returned. If "requested_data" is a string
+            the data found with key "requested_data" in a yml file will be returned as is.
+
             list: List containing keys to all values that were updated.
         """
 
-        dictionary_to_modify = {}
-        input_is_dict = True
+        requested_data_dict = {}
+        return_should_be_dict = True
 
         # Used to make sure that values already changed using test specific yml
         # are not changed again using conf_default
         changed_keys = []
 
-        if not isinstance(input_dictionary[0], dict):
-            dictionary_to_modify[input_dictionary[0]] = ""
-            input_is_dict = False
+        if not isinstance(requested_data[0], dict):
+            requested_data_dict[requested_data[0]] = ""
+            return_should_be_dict = False
+
         else:
-            dictionary_to_modify = input_dictionary[0]
+            requested_data_dict = requested_data[0]
 
         # First we try to find the content of the dictionary in the test specific yml file
         dictionary_to_modify, changed_keys = _find_value_in_testspecific_yml(caller,
-                                                                            dictionary_to_modify,
+                                                                            requested_data_dict,
                                                                             changed_keys)
 
         # If value was not found in the test specific we try conf_default instead
@@ -209,10 +216,10 @@ class SupportFileIO:
             if value is not None and key not in changed_keys:
                 dictionary_to_modify[key] = value
                 changed_keys.append(key)
-                logging.info("Value of %s changed to %s found in conf_default", key, value)
+                logging.info("Value of ´%s´ changed to ´%s´ found in conf_default", key, value)
 
-        # If input was not a dictionary but a i.e a string
-        if not input_is_dict:
+        # If input was not a dictionary but a string
+        if not return_should_be_dict:
             for key, value in dictionary_to_modify.items():
                 return value, changed_keys
 
