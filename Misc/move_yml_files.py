@@ -5,8 +5,6 @@ import sys
 
 from pprint import pprint
 
-
-
 def get_projects():
 	walker = os.walk("projects")
 	projects = []
@@ -205,7 +203,3 @@ if __name__ == "__main__":
 			print("THE FOLLOWING FILES WERE NOT TAKEN CARE OF FOR ", project)
 			for file in untracked_files:
 				print(file)
-
-
-
-
