@@ -143,8 +143,8 @@ def software_download(dut):
     # Load vbfs
     vbf_result = load_vbf_files(dut)
 
-    logging.info("~~~~~~ Step 1/5 of software download (loading vbfs) done. \
-     Result: %s", vbf_result)
+    logging.info("~~~~~~ Step 1/5 of software download (loading vbfs) done."
+    " Result: %s", vbf_result)
 
     if vbf_result is False:
         logging.error("Aborting software download due to problems when loading VBFs")
@@ -153,8 +153,8 @@ def software_download(dut):
     # Activate sbl
     sbl_result = activate_sbl(dut)
 
-    logging.info("Step 2/5 of software download (downloading and activating sbl) done. \
-     Result: %s", sbl_result)
+    logging.info("Step 2/5 of software download (downloading and activating sbl) done."
+    " Result: %s", sbl_result)
 
     if sbl_result is False:
         logging.error("Aborting software download due to problems when activating SBL")
@@ -173,8 +173,8 @@ def software_download(dut):
     # Download application and data
     app_result = download_application_and_data(dut)
 
-    logging.info("Step 4/5 of software download (downloading application and data) done. \
-     Result: %s", app_result)
+    logging.info("Step 4/5 of software download (downloading application and data) done."
+    " Result: %s", app_result)
 
     if app_result is False:
         logging.error("Aborting software download due to problems when downloading application")
@@ -183,8 +183,8 @@ def software_download(dut):
     # Check Complete And Compatible
     check_result = check_complete_and_compatible(dut)
 
-    logging.info("Step 5/5 of software download (Check Complete And Compatible) done. \
-     Result: %s", check_result)
+    logging.info("Step 5/5 of software download (Check Complete And Compatible) done."
+    " Result: %s", check_result)
 
     if check_result is False:
         logging.error("Aborting software download due to problems when checking C & C")
@@ -214,8 +214,7 @@ def flash():
     result = False
     try:
         dut.precondition(timeout=3600)
-        dut.step(software_download, purpose="Perform software download")
-        result = True
+        result = dut.step(software_download, purpose="Perform software download")
     except: # pylint: disable=bare-except
         error = traceback.format_exc()
         logging.error("Software download failed: %s", error)
