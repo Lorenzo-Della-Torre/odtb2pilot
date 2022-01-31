@@ -62,6 +62,8 @@ import yaml
 
 from hilding.conf import Conf
 
+from hilding.predefined_variables import project_default_to_conf_default
+
 dut_configuration = Conf()
 
 def _find_yml_file(directory, file_names):
@@ -120,6 +122,14 @@ def _find_value_in_testspecific_yml(caller, dictionary_to_modify, changed_keys):
                 # Make sure the step is found in the yml i.e: "run", "step_1"
                 if platform_specific_yml_dict.get(caller) is not None:
                     value = platform_specific_yml_dict.get(caller).get(key)
+
+                    # The keys in the old yml-files (now removed) sometimes missmatches with
+                    # the keys in the new ones.
+                    # Therefore we swap any old keys for the corresponding new key if old key
+                    # is not found
+                    if value is None:
+                        swapped_key = project_default_to_conf_default.get(key)
+                        value = platform_specific_yml_dict.get(caller).get(swapped_key)
 
                     if value is not None:
                         dictionary_to_modify[key] = value
@@ -211,6 +221,13 @@ class SupportFileIO:
 
         for key in dictionary_to_modify:
             value = default_conf.get(key)
+
+            # The keys in the old "project_default" (now removed) sometimes missmatches with
+            # the keys in conf_default.
+            # Therefore we swap any old keys for the corresponding new key if old key is not found
+            if value is None:
+                swapped_key = project_default_to_conf_default.get(key)
+                value = default_conf.get(swapped_key)
 
             if value is not None and key not in changed_keys:
                 dictionary_to_modify[key] = value
