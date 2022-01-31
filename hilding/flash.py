@@ -194,12 +194,13 @@ def software_download(dut):
     time.sleep(10)
     uds_response = dut.uds.active_diag_session_f186()
     mode = uds_response.data['details'].get('mode')
+    correct_mode = True
     if mode != 1:
         logging.error("Software download complete "
         "but ECU did not end up in mode 1 (default session)")
-        return False
+        correct_mode = False
 
-    return True
+    return correct_mode
 
 
 
