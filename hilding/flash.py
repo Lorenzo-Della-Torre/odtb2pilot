@@ -22,6 +22,7 @@ Any unauthorized copying or distribution of content from this file is prohibited
 from os import listdir
 import logging
 import traceback
+import time
 
 from hilding.dut import Dut
 
@@ -115,7 +116,7 @@ def download_application_and_data(dut):
 
     return result
 
-def check_complete_and_complete(dut):
+def check_complete_and_compatible(dut):
     """Run complete and compatible routine
 
     Args:
@@ -180,13 +181,22 @@ def software_download(dut):
         return False
 
     # Check Complete And Compatible
-    check_result = check_complete_and_complete(dut)
+    check_result = check_complete_and_compatible(dut)
 
     logging.info("Step 5/5 of software download (Check Complete And Compatible) done. \
      Result: %s", check_result)
 
     if check_result is False:
         logging.error("Aborting software download due to problems when checking C & C")
+        return False
+
+    # Check that the ECU ends up in mode 1 (default session)
+    time.sleep(10)
+    uds_response = dut.uds.active_diag_session_f186()
+    mode = uds_response.data['details'].get('mode')
+    if mode != 1:
+        logging.error("Software download complete "
+        "but ECU did not end up in mode 1 (default session)")
         return False
 
     return True
