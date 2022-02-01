@@ -1,0 +1,5 @@
+hvbm:
+        send: HvbmdpToAllUdsDiagRequestFrame
+becm:
+        send: Vcu1ToAllFuncFront1DiagReqFrame
+

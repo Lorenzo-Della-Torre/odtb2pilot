@@ -1,4 +1,4 @@
-MEP2_SPA2:
+hvbm:
         precondition:
                 id: HvbmdpNmFrame
                 tp_name: HvbmdpToAllUdsDiagRequestFrame

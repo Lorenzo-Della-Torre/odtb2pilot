@@ -1,4 +1,4 @@
-MEP2_SPA2:
+hvbm:
         step_3:
                 id: HvbmdpHvbm1canFrame02_40
                 name: VehSpdLgtSafeVehSpdLgt
@@ -8,7 +8,7 @@ MEP2_SPA2:
         step_7:
                 id: HvbmdpHvbm1canFrame02_40
                 name: VehSpdLgtSafeVehSpdLgt
-MEP2_SPA2_SAGen2:
+hvbm_sa2:
         step_3:
                 id: HvbmdpHvbm1canFrame02_40
                 name: VehSpdLgtSafeVehSpdLgt

@@ -1,4 +1,4 @@
-MEP2_SPA1:
+becm:
         step_1:
                 p2_server_timing: 065003001901F400
         step_11:
@@ -9,7 +9,7 @@ MEP2_SPA1:
                 p2_server_timing: 065001001901F400
         step_7:
                 p2_server_timing: 065002001901F400
-MEP2_SPA2:
+hvbm:
         step_1:
                 p2_server_timing: 065003003201F400
         step_11:
@@ -20,7 +20,7 @@ MEP2_SPA2:
                 p2_server_timing: 065001003201F400
         step_7:
                 p2_server_timing: 065002001901F400
-MEP2_SPA2_SAGen2:
+hvbm_sa2:
         step_1:
                 p2_server_timing: 065003003201F400
         step_11:

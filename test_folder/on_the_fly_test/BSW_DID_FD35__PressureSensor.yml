@@ -1,7 +1,7 @@
-MEP2_SPA2:
+hvbm:
         step_1:
                 did_pressure: b'\xFD\x35'
-MEP2_SPA2_SAGen2:
+hvbm_sa2:
         precondition:
                 id: HvbmdpNmFrame
                 tp_name: HvbmdpToAllUdsDiagRequestFrame

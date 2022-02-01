@@ -1,9 +1,6 @@
-IHFA_GPA:
+ihfa:
         step_1:
                 fixed_key: FFFFFFFFFF
-MEP2_ED_IHFA:
-        step_1:
-                fixed_key: FFFFFFFFFF
-MEP2_HLCM:
+hlcm:
         step_1:
                 fixed_key: '0102030405'

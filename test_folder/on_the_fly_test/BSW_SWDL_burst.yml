@@ -1,4 +1,4 @@
-IHFA_GPA:
+ihfa:
         precondition_burst:
                 frame: b'\x1A\x40\xFF\xFF\xFF\xFF\xFF\xFF'
                 id: IhfadpNmCanFrame
@@ -6,25 +6,17 @@ IHFA_GPA:
                 tp_name: IHFAdpToallUdsDiagRequestFrame
         step_1:
                 fixed_key: FFFFFFFFFF
-MEP2_ED_IHFA:
-        precondition_burst:
-                frame: b'\x1A\x40\xFF\xFF\xFF\xFF\xFF\xFF'
-                id: IhfadpNmCanFrame
-                id_burst: IHFAdpToallUdsDiagRequestFrame
-                tp_name: IHFAdpToallUdsDiagRequestFrame
-        step_1:
-                fixed_key: FFFFFFFFFF
-MEP2_HLCM:
+hlcm:
         precondition_burst:
                 frame: b'\x3F\x40\xFF\xFF\xFF\xFF\xFF\xFF'
                 id: HlcmdpToallUdsDiagRequestFrame
                 tp_name: HlcmdpToallUdsDiagRequestFrame
         step_1:
                 fixed_key: '0102030405'
-MEP2_SPA1:
+becm:
         precondition_burst:
                 frame2: b'\x1A\x40\xFF\xFF\xFF\xFF\xFF\xFF'
-MEP2_SPA2:
+hvbm:
         precondition_burst:
                 frame: b'\x1A\x40\xFF\xFF\xFF\xFF\xFF\xFF'
                 id: HvbmdpNmFrame
@@ -35,7 +27,7 @@ MEP2_SPA2:
                 auth_key: FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
                 fixed_key: FFFFFFFFFF
                 proof_key: FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
-MEP2_SPA2_SAGen2:
+hvbm_sa2:
         precondition_burst:
                 frame: b'\x1A\x40\xFF\xFF\xFF\xFF\xFF\xFF'
                 id: HvbmdpNmFrame

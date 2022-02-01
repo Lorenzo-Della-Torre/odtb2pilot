@@ -1,4 +1,4 @@
-MEP2_SPA2:
+hvbm:
         step_2:
                 payload: b'\x31\x01\xDC\x09'
                 payload_reply: 057101DC0932
@@ -15,7 +15,7 @@ MEP2_SPA2:
                 payload: b'\x31\x03\xDC\x09'
                 payload_reply: 057103DC0930
                 routine_response: Type3,Completed
-MEP2_SPA2_SAGen2:
+hvbm_sa2:
         step_2:
                 payload: b'\x31\x01\xDC\x09'
                 payload_reply: 057101DC0932
