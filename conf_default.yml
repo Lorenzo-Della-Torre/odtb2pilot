@@ -42,3 +42,12 @@ platforms:
         fixed_key: FFFFFFFFFF
         auth_key: 38722e65542d756d5f6f30626c36654e
         proof_key: 2b7e151628aed2a6abf7158809cf4f3c
+    hclm:
+        signal_send: HlcmdpToHlcmUdsDiagRequestFrame
+        signal_receive: HlcmToHlcmdpUdsDiagResponseFrame
+        signal_tester_present: "HlcmdpToallUdsDiagRequestFrame"
+        SecAcc_Gen: Gen1
+        fixed_key: '0102030405'
+        ess_needed : False
+        max_7fxx78 : 12
+
