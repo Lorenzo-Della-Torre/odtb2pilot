@@ -112,7 +112,7 @@ def _find_value_in_testspecific_yml(caller, dictionary_to_modify, changed_keys):
         with open(path_to_test_specific_yml) as yml_file:
             yml_dictionary = yaml.safe_load(yml_file)
 
-        platform = Conf.default_platform
+        platform = dut_configuration.default_platform
         platform_specific_yml_dict = yml_dictionary.get(platform)
 
         if platform_specific_yml_dict is not None:
