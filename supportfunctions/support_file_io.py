@@ -58,7 +58,6 @@ import sys
 import re
 import logging
 import inspect
-from os import environ
 import yaml
 
 from hilding.conf import Conf
