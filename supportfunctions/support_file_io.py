@@ -54,8 +54,6 @@ Any unauthorized copying or distribution of content from this file is prohibited
 """
 
 import os
-import sys
-import re
 import logging
 import inspect
 import yaml
@@ -240,8 +238,7 @@ class SupportFileIO:
 
         if not isinstance(argv[0], dict):
             return ""
-        else:
-            return argv[0]
+        return argv[0]
 
     @classmethod
     def parameter_adopt_teststep(cls, dict_name):
