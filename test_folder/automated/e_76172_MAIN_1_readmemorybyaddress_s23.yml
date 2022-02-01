@@ -1,0 +1,8 @@
+hvbm:
+        register_non_diagnostic_signal:
+                receive: HvbmHvbm1canFrame53_20
+                send: HvbmNmFrame
+hvbm_sa2:
+        register_non_diagnostic_signal:
+                receive: HvbmHvbm1canFrame53_20
+                send: HvbmNmFrame

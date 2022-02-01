@@ -1,3 +1,0 @@
-precondition_burst:
-        frame2 : b'\x1A\x40\xFF\xFF\xFF\xFF\xFF\xFF'
-

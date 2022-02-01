@@ -1,0 +1,9 @@
+hvbm:
+        precondition:
+                id: HvbmdpNmFrame
+                tp_name: HvbmdpToAllUdsDiagRequestFrame
+        run:
+                receive: HvbmToHvbmdpUdsDiagResponseFrame
+                send: HvbmdpToHvbmUdsDiagRequestFrame
+        step_1:
+                did_pressure: b'\x4A\x28'

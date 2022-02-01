@@ -1,0 +1,12 @@
+becm:
+        step_1:
+                receive: HvbmHvbm1canFrame53_20
+                send: HvbmNmFrame
+hvbm:
+        step_1:
+                receive: HvbmHvbm1canFrame53_20
+                send: HvbmNmFrame
+hvbm_sa2:
+        step_1:
+                receive: HvbmHvbm1canFrame53_20
+                send: HvbmNmFrame

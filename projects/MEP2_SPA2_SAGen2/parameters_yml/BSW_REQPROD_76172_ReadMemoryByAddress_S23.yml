@@ -1,3 +1,0 @@
-register_non_diagnostic_signal:
-        send: HvbmNmFrame
-        receive: HvbmHvbm1canFrame53_20

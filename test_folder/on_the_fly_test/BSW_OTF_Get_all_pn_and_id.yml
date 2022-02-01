@@ -1,0 +1,7 @@
+ihfa:
+        precondition:
+                id: IhfadpNmCanFrame
+                tp_name: IHFAdpToallUdsDiagRequestFrame
+        run:
+                receive: IHFAToIHFAdpUdsDiagResponseFrame
+                send: IHFAdpToIHFAUdsDiagRequestFrame

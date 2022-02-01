@@ -1,0 +1,33 @@
+becm:
+        step_1:
+                p2_server_timing: 065003001901F400
+        step_11:
+                p2_server_timing: 065001003201F400
+        step_2:
+                p2_server_timing: 065003001901F400
+        step_3:
+                p2_server_timing: 065001001901F400
+        step_7:
+                p2_server_timing: 065002001901F400
+hvbm:
+        step_1:
+                p2_server_timing: 065003003201F400
+        step_11:
+                p2_server_timing: 065001003201F400
+        step_2:
+                p2_server_timing: 065003003201F400
+        step_3:
+                p2_server_timing: 065001003201F400
+        step_7:
+                p2_server_timing: 065002001901F400
+hvbm_sa2:
+        step_1:
+                p2_server_timing: 065003003201F400
+        step_11:
+                p2_server_timing: 065001003201F400
+        step_2:
+                p2_server_timing: 065003003201F400
+        step_3:
+                p2_server_timing: 065001003201F400
+        step_7:
+                p2_server_timing: 065002001901F400

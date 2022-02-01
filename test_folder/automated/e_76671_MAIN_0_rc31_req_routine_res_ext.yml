@@ -1,0 +1,34 @@
+hvbm:
+        step_2:
+                payload: b'\x31\x01\xDC\x09'
+                payload_reply: 057101DC0932
+                routine_response: Type3,Currently active
+        step_3:
+                payload: b'\x31\x03\xDC\x09'
+                payload_reply: 057103DC0932
+                routine_response: Type3,Currently active
+        step_4:
+                payload: b'\x31\x02\xDC\x09'
+                payload_reply: 057102DC0930
+                routine_response: Type3,Completed
+        step_5:
+                payload: b'\x31\x03\xDC\x09'
+                payload_reply: 057103DC0930
+                routine_response: Type3,Completed
+hvbm_sa2:
+        step_2:
+                payload: b'\x31\x01\xDC\x09'
+                payload_reply: 057101DC0932
+                routine_response: Type3,Currently active
+        step_3:
+                payload: b'\x31\x03\xDC\x09'
+                payload_reply: 057103DC0932
+                routine_response: Type3,Currently active
+        step_4:
+                payload: b'\x31\x02\xDC\x09'
+                payload_reply: 057102DC0930
+                routine_response: Type3,Completed
+        step_5:
+                payload: b'\x31\x03\xDC\x09'
+                payload_reply: 057103DC0930
+                routine_response: Type3,Completed

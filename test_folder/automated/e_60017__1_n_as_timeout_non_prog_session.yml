@@ -1,0 +1,7 @@
+hlcm:
+        precondition:
+                id: HvbmdpNmFrame
+                tp_name: HvbmdpToAllUdsDiagRequestFrame
+        run:
+                receive: HvbmToHvbmdpUdsDiagResponseFrame
+                send: HvbmdpToHvbmUdsDiagRequestFrame

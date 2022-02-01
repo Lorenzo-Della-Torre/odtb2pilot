@@ -1,0 +1,6 @@
+ihfa:
+        step_1:
+                fixed_key: FFFFFFFFFF
+hlcm:
+        step_1:
+                fixed_key: '0102030405'

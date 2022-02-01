@@ -1,0 +1,35 @@
+ihfa:
+        precondition_burst:
+                frame: b'\x1A\x40\xFF\xFF\xFF\xFF\xFF\xFF'
+                id: IhfadpNmCanFrame
+                id_burst: IHFAdpToallUdsDiagRequestFrame
+                tp_name: IHFAdpToallUdsDiagRequestFrame
+        step_1:
+                fixed_key: FFFFFFFFFF
+hlcm:
+        precondition_burst:
+                frame: b'\x3F\x40\xFF\xFF\xFF\xFF\xFF\xFF'
+                id: HlcmdpToallUdsDiagRequestFrame
+                tp_name: HlcmdpToallUdsDiagRequestFrame
+        step_1:
+                fixed_key: '0102030405'
+becm:
+        precondition_burst:
+                frame2: b'\x1A\x40\xFF\xFF\xFF\xFF\xFF\xFF'
+hvbm:
+        precondition_burst:
+                frame: b'\x1A\x40\xFF\xFF\xFF\xFF\xFF\xFF'
+                id: HvbmdpNmFrame
+                id_burst: HvbmdpToAllUdsDiagRequestFrame
+                tp_name: HvbmdpToAllUdsDiagRequestFrame
+        run:
+                SecAcc_Gen: Gen1
+                auth_key: FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+                fixed_key: FFFFFFFFFF
+                proof_key: FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+hvbm_sa2:
+        precondition_burst:
+                frame: b'\x1A\x40\xFF\xFF\xFF\xFF\xFF\xFF'
+                id: HvbmdpNmFrame
+                id_burst: HvbmdpToAllUdsDiagRequestFrame
+                tp_name: HvbmdpToAllUdsDiagRequestFrame

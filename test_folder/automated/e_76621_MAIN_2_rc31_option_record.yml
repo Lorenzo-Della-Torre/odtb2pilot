@@ -1,0 +1,10 @@
+hvbm:
+        step_2:
+                payload: b'\x31\x01\xDC\x09'
+                payload_reply: 057101DC0932
+                routine_response: Type3,Currently active
+hvbm_sa2:
+        step_2:
+                payload: b'\x31\x01\xDC\x09'
+                payload_reply: 057101DC0932
+                routine_response: Type3,Currently active
