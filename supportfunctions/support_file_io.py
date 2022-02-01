@@ -145,36 +145,6 @@ class SupportFileIO:
     """
         SupportFileIO
     """
-
-    @classmethod
-    def __argv_to_string(cls, argv):
-        """Transforms a list of strings to a print friendly string
-            If argv is already a string it will be returned as is.
-
-            Example:
-            argv = ({'name': 'Heartbeat', 'send': True, 'id': 'HvbmdpNmFrame'},)
-
-            as input would generate
-            [name, send, id]
-
-            as output
-        Args:
-            argv (str, list): argv that is input to extract_parameter_yml
-
-        Returns:
-            str: a printer friendly representation of argv
-        """
-        ret = "["
-        entries = argv[0]
-        if not isinstance(entries, str):
-            for entry in entries:
-                ret += entry + ", "
-            ret = ret[0:-2] #to remove the last ","
-            ret += "]"
-        else:
-            ret = "[" + entries + "]"
-        return ret
-
     @classmethod
     def extract_parameters_from_yml(cls, caller, requested_data):
         """Function that tries to update all keys in "input_dictionary" with values
@@ -241,8 +211,6 @@ class SupportFileIO:
 
         return dictionary_to_modify, changed_keys
 
-
-
     @classmethod
     def extract_parameter_yml(cls, key, *argv):
         """
@@ -274,8 +242,6 @@ class SupportFileIO:
             return ""
         else:
             return argv[0]
-
-
 
     @classmethod
     def parameter_adopt_teststep(cls, dict_name):
