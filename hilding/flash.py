@@ -28,8 +28,10 @@ from hilding.dut import Dut
 
 from supportfunctions.support_SBL import SupportSBL
 from supportfunctions.support_sec_acc import SecAccessParam
+from supportfunctions.support_service3e import SupportService3e
 
 SSBL = SupportSBL()
+SS3E = SupportService3e()
 
 def load_vbf_files(dut):
     """Loads the rig specific VBF files found in rigs/<default-rig-name>/VBFs
@@ -191,13 +193,14 @@ def software_download(dut):
         return False
 
     # Check that the ECU ends up in mode 1 (default session)
+    SS3E.stop_periodic_tp_zero_suppress_prmib()
     time.sleep(10)
     uds_response = dut.uds.active_diag_session_f186()
     mode = uds_response.data['details'].get('mode')
     correct_mode = True
     if mode != 1:
         logging.error("Software download complete "
-        "but ECU did not end up in mode 1 (default session)")
+        "but ECU did not end up in mode 1 (default session), current mode is: %s", mode)
         correct_mode = False
 
     return correct_mode
@@ -213,7 +216,7 @@ def flash():
     start_time = dut.start()
     result = False
     try:
-        dut.precondition(timeout=3600)
+        dut.precondition(timeout=1800)
         result = dut.step(software_download, purpose="Perform software download")
     except: # pylint: disable=bare-except
         error = traceback.format_exc()
