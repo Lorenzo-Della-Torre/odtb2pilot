@@ -1,0 +1,9 @@
+sa_levels_dids_programming:
+  '01': "F103"
+  '19': "F115"
+
+sa_levels_dids_extended:
+  '05': "F10A"
+  '19': "F115"
+  '23': "F112"
+  '27': "F117"
