@@ -19,85 +19,207 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 """
+from os import listdir
 import logging
 import traceback
+import time
 
-from supportfunctions.support_service31 import SupportService31
-from supportfunctions.support_SBL import SupportSBL
 from hilding.dut import Dut
-from hilding.dut import DutTestError
-from hilding.uds import EicDid
 
+from supportfunctions.support_SBL import SupportSBL
+from supportfunctions.support_sec_acc import SecAccessParam
+from supportfunctions.support_service3e import SupportService3e
 
-log = logging.getLogger('sw_download')
+SSBL = SupportSBL()
+SS3E = SupportService3e()
+
+def load_vbf_files(dut):
+    """Loads the rig specific VBF files found in rigs/<default-rig-name>/VBFs
+
+    Args:
+        dut (Dut): An instance of Dut
+
+    Returns:
+        boolean: True if vbfs were loaded successfully, otherwise False
+    """
+    logging.info("~~~~~~~~ Loading VBFs started ~~~~~~~~")
+    vbfs = listdir(dut.conf.rig.vbf_path)
+
+    paths_to_vbfs = [str(dut.conf.rig.vbf_path) + "/" + x for x in vbfs]
+
+    if not paths_to_vbfs:
+        logging.error("VBFs not found, expected in %s ... aborting", dut.conf.rig.vbf_path)
+        return False
+
+    result = SSBL.read_vbf_param(paths_to_vbfs)
+
+    return result
+
+def activate_sbl(dut):
+    """Downloads and activates SBL on the ECU using supportfunction from support_SBL
+
+    Args:
+        dut (Dut): An instance of Dut
+
+    Returns:
+        boolean: Result from support_SBL.sbl_activation.
+        Should be True if sbl is activated successfully,
+        otherwise False
+    """
+    logging.info("~~~~~~~~ Activate SBL started ~~~~~~~~")
+
+    # Setting up keys
+    sa_keys: SecAccessParam = dut.conf.default_rig_config
+
+    # Activate SBL
+    result = SSBL.sbl_activation(dut,
+                                 sa_keys)
+
+    return result
+
+def download_ess(dut):
+    """Download the ESS file to the ECU
+
+    Args:
+        dut (Dut): An instance of Dut
+
+    Returns:
+        boolean: True if download software part was successful, otherwise False
+    """
+
+    if SSBL.get_ess_filename():
+        logging.info("~~~~~~~~ Download ESS started ~~~~~~~~")
+
+        purpose = "Download ESS"
+        result = SSBL.sw_part_download(dut, SSBL.get_ess_filename(),
+                                       purpose=purpose)
+
+    else:
+        result = True
+        logging.info("ESS file not needed for this project, skipping...")
+
+    return result
+
+def download_application_and_data(dut):
+    """Download the application to the ECU
+
+    Args:
+        dut (Dut): An instance of Dut
+
+    Returns:
+        boolean: True of download was successful, otherwise False
+    """
+
+    logging.info("~~~~~~~~ Download application and data started ~~~~~~~~")
+    result = True
+    purpose = "Download application and data"
+    for vbf_file in SSBL.get_df_filenames():
+        result = result and SSBL.sw_part_download(dut, vbf_file, purpose=purpose)
+
+    return result
+
+def check_complete_and_compatible(dut):
+    """Run complete and compatible routine
+
+    Args:
+        dut (Dut): Instance of Dut
+
+    Returns:
+        boolean: Result of complete and compatible
+    """
+    logging.info("~~~~~~~~ Check Complete And Compatible started ~~~~~~~~")
+
+    return SSBL.check_complete_compatible_routine(dut, stepno=1)
 
 def software_download(dut):
-    """ software download """
+    """The function that handles all the sub-steps when performing software download.
+    This function will keep track of the progress and give error indications if a step fails
 
-    dut.uds.set_mode(2)
-    dut.uds.enter_sbl()
+    Args:
+        dut (Dut): An instance of Dut
 
-    vbf_files = [str(f.resolve()) for f in dut.conf.rig.vbf_path.glob("*.vbf")]
-    log.info(vbf_files)
+    Returns:
+        boolean: Result of software download
+    """
 
-    sbl = SupportSBL()
-    if not sbl.read_vbf_param(vbf_files):
-        DutTestError("Could not load vbf files")
+    # Load vbfs
+    vbf_result = load_vbf_files(dut)
 
-    ess_vbf_file = sbl.get_ess_filename()
-    if ess_vbf_file:
-        # Some ECU like HLCM don't have ESS vbf file
-        # if no ESS file present: skip download
-        sbl2 = SupportSBL()
-        log.info("ess file software download: %s", ess_vbf_file)
-        vbf_version, vbf_header, vbf_data, vbf_offset = sbl2.read_vbf_file(ess_vbf_file)
+    logging.info("~~~~~~ Step 1/5 of software download (loading vbfs) done."
+    " Result: %s", vbf_result)
 
-        #convert vbf header so values can be used directly
-        sbl2.vbf_header_convert(vbf_header)
-        log.info("ESS VBF version: %s", vbf_version)
+    if vbf_result is False:
+        logging.error("Aborting software download due to problems when loading VBFs")
+        return False
 
-        # Erase Memory
-        if not sbl2.flash_erase(dut, vbf_header, 101):
-            raise DutTestError("Failed transfer data block")
+    # Activate sbl
+    sbl_result = activate_sbl(dut)
 
-        # Iteration to Download the Software by blocks
-        if not sbl2.transfer_data_block(dut, vbf_header, vbf_data, vbf_offset):
-            raise DutTestError("Failed transfer data block")
+    logging.info("Step 2/5 of software download (downloading and activating sbl) done."
+    " Result: %s", sbl_result)
 
-        if not SupportService31.check_memory(dut, vbf_header, 102):
-            raise DutTestError("Failed check memory")
+    if sbl_result is False:
+        logging.error("Aborting software download due to problems when activating SBL")
+        return False
 
-        log.info("ess vbf files downloaded: %s", ess_vbf_file)
+    # Download ess (if needed)
+    ess_result = download_ess(dut)
 
-    # download the rest of the vbf files
-    vbf_files = sbl.get_df_filenames()
-    if not vbf_files:
-        raise DutTestError("Could not find the rest of the vbf files")
+    logging.info("Step 3/5 of software download (downloading ess) done. \
+     Result: %s", ess_result)
 
-    log.info("commencing vbf files software download: %s", vbf_files)
-    for vbf_file in vbf_files:
-        res = dut.uds.read_data_by_id_22(EicDid.complete_ecu_part_number_eda0)
-        log.info(res)
-        if not 'name' in res.details:
-            raise DutTestError(f"Failed before downloading vbf file: {vbf_file}")
-        if not sbl.sw_part_download(dut, vbf_file, 103, purpose="sw part download"):
-            raise DutTestError(f"Could not download vbf file: {vbf_file}")
+    if ess_result is False:
+        logging.error("Aborting software download due to problems when downloading ESS")
+        return False
 
-    if not sbl.check_complete_compatible_routine(dut, 104):
-        raise DutTestError("Failed check complete and compatible")
+    # Download application and data
+    app_result = download_application_and_data(dut)
+
+    logging.info("Step 4/5 of software download (downloading application and data) done."
+    " Result: %s", app_result)
+
+    if app_result is False:
+        logging.error("Aborting software download due to problems when downloading application")
+        return False
+
+    # Check Complete And Compatible
+    check_result = check_complete_and_compatible(dut)
+
+    logging.info("Step 5/5 of software download (Check Complete And Compatible) done."
+    " Result: %s", check_result)
+
+    if check_result is False:
+        logging.error("Aborting software download due to problems when checking C & C")
+        return False
+
+    # Check that the ECU ends up in mode 1 (default session)
+    SS3E.stop_periodic_tp_zero_suppress_prmib()
+    time.sleep(10)
+    uds_response = dut.uds.active_diag_session_f186()
+    mode = uds_response.data['details'].get('mode')
+    correct_mode = True
+    if mode != 1:
+        logging.error("Software download complete "
+        "but ECU did not end up in mode 1 (default session), current mode is: %s", mode)
+        correct_mode = False
+
+    return correct_mode
+
 
 
 def flash():
-    """ flash the ecu """
+    """Flashes the ECU with VBF files found in the rigs folder.
+    If the script is executed on a remote computer the remote computers VBF files will be used.
+    If executed locally on a hilding the VBF files on that hilding will be used.
+    """
     dut = Dut()
     start_time = dut.start()
     result = False
     try:
-        dut.precondition(timeout=3600)
-        dut.step(software_download)
-        result = True
+        dut.precondition(timeout=1800)
+        result = dut.step(software_download, purpose="Perform software download")
     except: # pylint: disable=bare-except
         error = traceback.format_exc()
-        log.error("Flashing (that is, doing software download to) the ECU failed: %s", error)
+        logging.error("Software download failed: %s", error)
     finally:
         dut.postcondition(start_time, result)

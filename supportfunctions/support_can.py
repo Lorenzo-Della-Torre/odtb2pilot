@@ -597,7 +597,7 @@ class SupportCAN:
         send_mf
         """
         if can_p["protocol"] == "can":
-            logging.info("support_can, send_mf: build framelist for can_fd")
+            logging.info("support_can, send_mf: build framelist for can")
             pl_fcount = 0x21
             #get parameters for message to send: length of payload, DLC
             mess_length = len(cpay["payload"])

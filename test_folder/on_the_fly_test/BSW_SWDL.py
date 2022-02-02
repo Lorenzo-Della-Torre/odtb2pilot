@@ -288,4 +288,6 @@ def run():
 
 
 if __name__ == '__main__':
-    run()
+    logging.error("This way of doing SWDL should not be used. Run manage.py flash instead\
+        \n This script is kept for now but should soon be removed")
+    #run()

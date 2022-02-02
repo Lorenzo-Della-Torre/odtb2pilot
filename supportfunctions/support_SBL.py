@@ -182,8 +182,8 @@ class SupportSBL:
             assert isinstance(new_ess_needed, bool)
             ess_needed = new_ess_needed
         else:
-            logging.info("Support_SBL: new_ess_needed is empty. Leave True.")
-        logging.info("Support_SBL: ess_needed after YML: %s", ess_needed)
+            logging.debug("Support_SBL: new_ess_needed is empty. Leave True.")
+        logging.debug("Support_SBL: ess_needed after YML: %s", ess_needed)
 
         if (len(self._sbl) == 0) or\
             (ess_needed and (len(self._ess) == 0)) or (len(self._df) == 0):
@@ -236,7 +236,7 @@ class SupportSBL:
         f_df = []
         for f_name in f_names:
             if not f_name.find('.vbf') == -1:
-                logging.info("Filename to DL:  %s", f_name)
+                logging.debug("Filename to DL:  %s", f_name)
 
                 vbf_version, vbf_header, _, _ = self.read_vbf_file(f_name)
                 self.vbf_header_convert(vbf_header)
@@ -863,7 +863,7 @@ class SupportSBL:
         """
         Read and decode vbf files for Software Parts
         """
-        logging.info("File to read: %s", f_path_name)
+        logging.debug("File to read: %s", f_path_name)
         # read to EOF:
         data = SUTE.read_f(f_path_name)
         vers_pos = data.find(b'vbf_version')
@@ -923,9 +923,9 @@ class SupportSBL:
             data_filtered = data_filtered[data_filtered.find(b';')+1:]
         # header read now, start data
         data_start = head_pos
-        logging.info("vbf_version: %s", version)
-        logging.info('Header: %s', header)
-        logging.info("Data_Start: %s", data_start)
+        logging.debug("vbf_version: %s", version)
+        logging.debug('Header: %s', header)
+        logging.debug("Data_Start: %s", data_start)
 
         ### optional to add:
         ### check for not allowed keywords in header

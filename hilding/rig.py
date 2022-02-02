@@ -27,6 +27,7 @@ from pathlib import Path
 
 from paramiko import SSHClient
 from paramiko import AuthenticationException
+from paramiko.ssh_exception import SSHException
 
 from hilding.sddb import parse_sddb_file
 from hilding.conf import initialize_conf
@@ -82,7 +83,7 @@ def get_rig_delivery_files():
     try:
         # first try to connect using pre-authorized_keys
         ssh.connect(hostname, username=user)
-    except AuthenticationException:
+    except (AuthenticationException, SSHException):
         # if that doesn't work prompt the user for a password
         password = getpass()
         ssh.connect(hostname, username=user, password=password)
