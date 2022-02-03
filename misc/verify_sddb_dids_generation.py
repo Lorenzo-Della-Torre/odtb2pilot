@@ -70,23 +70,3 @@ print(f"{len(sddb_dids_no_duplicates)} dids found in sddb \n{nbr_of_data_identif
 f"\nMissing dids found: {nbr_missing_dids}")
 
 print("Missing dids: ", missing_dids)
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Finding all instances of tag   
-# b_unique = bs_data.find_all('Version') 
-# print("Version: ", b_unique) 
-
-# Using find() to extract attributes of the first instance of the tag 
-# b_name = bs_data.find('child', {'name':'Acer'}) 
-# print("child: ", b_name) 
