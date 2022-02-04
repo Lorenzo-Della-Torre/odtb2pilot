@@ -8,14 +8,14 @@ Only lower case letters are allowed. For rigs that are used for a specific
 project, use the following naming scheme:
 
 ```
-<project-name>-<ecu-type>-pi<number>
+<ecu-name>-<vehicle-project>-pi<number>
 ```
 
 Example project rig host names:
- - p519-hvbm_p519_sa1-pi1
- - p319-becm_p319-pi1
- - p519-hlcm_p519-pi1
- - p519-ed-ihfa_V436-pi1
+ - hvbm_p519_sa1-pi1
+ - becm_p319-pi1
+ - hlcm_p519-pi1
+ - ihfa_V436-pi1
 
 For rigs that are used by a specific ART:
 
