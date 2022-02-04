@@ -160,7 +160,7 @@ def verify_f12c(dut: Dut, eda0_f12c_valid):
     f12c_valid = f12c_response.details["F12C_valid"]
 
     logging.info("platform: %s", dut.conf.rig.platform)
-    if dut.conf.rig.platform == "becm":
+    if dut.conf.rig.platform == "becm_p319":
         assert eda0_f12c_valid == f12c_valid, \
             "ecu software structure part numbers does not match: " + \
             "\neda0: %s\nf12c: %s" % (

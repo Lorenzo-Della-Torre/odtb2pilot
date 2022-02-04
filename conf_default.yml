@@ -1,5 +1,5 @@
 platforms:
-    becm:
+    becm_p319:
         signal_send: Vcu1ToBecmFront1DiagReqFrame
         signal_receive: BecmToVcu1Front1DiagResFrame
         signal_periodic: MvcmFront1NMFr
@@ -10,7 +10,7 @@ platforms:
         auth_key: FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
         proof_key: FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
         FC_Separation_time : '0A'
-    hvbm:
+    hvbm_p519_sa1:
         signal_send: HvbmdpToHvbmUdsDiagRequestFrame
         signal_receive: HvbmToHvbmdpUdsDiagResponseFrame
         signal_periodic: HvbmdpNmFrame
@@ -21,7 +21,7 @@ platforms:
         auth_key: FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
         proof_key: FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
         FC_Separation_time : '05'
-    hvbm_sa2:
+    hvbm_p519:
         signal_send: HvbmdpToHvbmUdsDiagRequestFrame
         signal_receive: HvbmToHvbmdpUdsDiagResponseFrame
         signal_periodic: HvbmdpNmFrame
@@ -32,7 +32,7 @@ platforms:
         auth_key: FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
         proof_key: FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
         FC_Separation_time : '05'
-    ihfa:
+    ihfa_V436:
         signal_send: IHFAdpToIHFAUdsDiagRequestFrame
         signal_receive: IHFAToIHFAdpUdsDiagResponseFrame
         signal_periodic: IHFAdpNmFrame

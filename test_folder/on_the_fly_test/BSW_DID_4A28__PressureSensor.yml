@@ -1,4 +1,4 @@
-hvbm:
+hvbm_p519_sa1:
         precondition:
                 id: HvbmdpNmFrame
                 tp_name: HvbmdpToAllUdsDiagRequestFrame

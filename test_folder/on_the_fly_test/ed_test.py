@@ -58,7 +58,7 @@ def step_1(dut: Dut):
     # note: 2047 decimal = 0x7ff
     # hence, we set the addressing as follows:
 
-   # if dut.conf.rig.platform == 'ihfa':
+   # if dut.conf.rig.platform == 'ihfa_V436':
    #     dut.send = "IHFAdpToIHFAUdsDiagRequestFrame"
    # else:
    #     raise DutTestError("Your platform is not supported in this test")

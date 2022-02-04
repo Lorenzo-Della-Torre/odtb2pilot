@@ -148,6 +148,6 @@ rigs:
     piX:
         hostname: bsw-piX.dhcp.nordic.volvocars.net
         user: pi #optional
-        platform: hvbm
+        platform: hvbm_p519_sa1
         signal_broker_port: 50051 #optional
 """

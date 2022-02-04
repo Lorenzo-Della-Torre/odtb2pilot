@@ -1,5 +1,5 @@
-hvbm:
+hvbm_p519_sa1:
         send: HvbmdpToAllUdsDiagRequestFrame
-becm:
+becm_p319:
         send: Vcu1ToAllFuncFront1DiagReqFrame
 

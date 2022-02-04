@@ -1,4 +1,4 @@
-ihfa:
+ihfa_V436:
         precondition:
                 frame: b'\x1A\x40\xC3\xFF\x01\x00\x00\x00'
                 id: IhfadpNmCanFrame
@@ -36,7 +36,7 @@ ihfa:
                 id: IhfadpNmCanFrame
                 intervall: 0.8
                 payload: b'\xED\xA0\xF1\x20')
-hlcm:
+hlcm_p519:
         precondition:
                 id: HvbmdpNmFrame
                 intervall: 0.8
@@ -71,7 +71,7 @@ hlcm:
                 id: HvbmdpNmFrame
                 intervall: 0.8
                 payload: b'\x22\xED\xA0\xF1\x20'
-hvbm:
+hvbm_p519_sa1:
         precondition:
                 id: HvbmdpNmFrame
                 intervall: 0.8

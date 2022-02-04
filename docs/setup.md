@@ -12,10 +12,10 @@ project, use the following naming scheme:
 ```
 
 Example project rig host names:
- - p519-hvbm-pi1
- - p319-becm-pi1
- - p519-hlcm-pi1
- - p519-ed-ihfa-pi1
+ - p519-hvbm_p519_sa1-pi1
+ - p319-becm_p319-pi1
+ - p519-hlcm_p519-pi1
+ - p519-ed-ihfa_V436-pi1
 
 For rigs that are used by a specific ART:
 
@@ -92,7 +92,7 @@ configure conf_local.yml...
 rigs:
     p6ci:
         hostname: bsw-pi6.dhcp.nordic.volvocars.net
-        platform: becm
+        platform: becm_p319
         user: ci
         analytics:
             project: V331

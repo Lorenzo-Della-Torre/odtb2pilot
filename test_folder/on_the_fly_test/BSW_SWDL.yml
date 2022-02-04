@@ -1,6 +1,6 @@
-ihfa:
+ihfa_V436:
         step_1:
                 fixed_key: FFFFFFFFFF
-hlcm:
+hlcm_p519:
         step_1:
                 fixed_key: '0102030405'
