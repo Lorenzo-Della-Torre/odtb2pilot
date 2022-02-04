@@ -1,4 +1,4 @@
-ihfa_V436:
+ihfa_v436:
         precondition:
                 frame: b'\x1A\x40\xC3\xFF\x01\x00\x00\x00'
                 id: IhfadpNmCanFrame

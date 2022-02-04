@@ -15,7 +15,7 @@ Example project rig host names:
  - hvbm_p519_sa1-pi1
  - becm_p319-pi1
  - hlcm_p519-pi1
- - ihfa_V436-pi1
+ - ihfa_v436-pi1
 
 For rigs that are used by a specific ART:
 

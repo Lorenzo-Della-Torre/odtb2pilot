@@ -2,8 +2,9 @@
 
 ### token and pass created for tht repo
     TESTREPO=~/Repos/odtb2pilot
-    export ODTBPROJ=MEP2_SPA2
-    echo export ODTBPROJ=MEP2_SPA2
+    export TESTREPO=$TESTREPO
+    export ODTBPROJ=hvbm_p519
+    echo export ODTBPROJ=hvbm_p519
 
     export ODTBPROJPARAM=$TESTREPO/projects/$ODTBPROJ/
     echo export ODTBPROJPARAM=$ODTBPROJPARAM

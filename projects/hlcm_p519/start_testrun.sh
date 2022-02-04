@@ -9,7 +9,7 @@ else
 
     ### token and pass created for tht repo
     export TESTREPO=~/Repos/odtb2pilot
-    export ODTBPROJ=MEP2_HLCM
+    export ODTBPROJ=hlcm_p519
     export ODTBPROJPARAM=$TESTREPO/projects/$ODTBPROJ
     export PYTHONPATH=$TESTREPO:$ODTBPROJPARAM:.
     echo TESTREPO: $TESTREPO

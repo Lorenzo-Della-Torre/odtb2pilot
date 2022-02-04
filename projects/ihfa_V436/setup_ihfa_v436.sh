@@ -2,7 +2,7 @@
 
 ### token and pass created for tht repo
     TESTREPO=~/Repos/odtb2pilot
-    ODTBPROJ=IHFA_GPA
+    ODTBPROJ=ihfa_v436
 
     export ODTBPROJPARAM=$TESTREPO/projects/$ODTBPROJ/
     echo export ODTBPROJPARAM=$ODTBPROJPARAM
