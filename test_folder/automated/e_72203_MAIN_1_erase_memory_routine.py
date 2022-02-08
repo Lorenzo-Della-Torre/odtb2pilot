@@ -63,8 +63,6 @@ details:
     Implicitly tested by:
         REQPROD 53854 Support of erase and write data to non-volatile memory.
 """
-import logging
-import sys
 
 def run():
     """
