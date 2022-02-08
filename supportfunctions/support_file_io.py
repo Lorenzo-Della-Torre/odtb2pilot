@@ -58,6 +58,7 @@ import sys
 import re
 import logging
 import inspect
+from ast import literal_eval
 import yaml
 
 from hilding.conf import Conf
@@ -83,6 +84,28 @@ def _find_yml_file(directory, file_names):
                 return os.path.join(root, f"{file_name}.yml")
 
     return ""
+
+def _convert_type(var_with_required_type, variable):
+    """A funky little function that makes sure we return values with the correct type.
+    If we try to replace a value with info from an yml we will make sure it is the same
+    type as the original data.
+
+    If the types are different we try to make it into the correct type.
+
+    Args:
+        var_with_required_type (any): A arbitrary variable. The type of this
+        variable will be the one we want for "variable" as well
+        variable (any): We will make sure variable is the same type as
+        "var_with_required_type"
+
+    Returns:
+        any: "variable" that is of the same type as "var_with_required_type"
+    """
+    required_type = type(var_with_required_type)
+    if not isinstance(variable, required_type):
+        variable_correct_type = literal_eval(variable)
+        return variable_correct_type
+    return variable
 
 def _find_value_in_testspecific_yml(caller, dictionary_to_modify, changed_keys):
     """Try to replace values in input with values from test specific yml
@@ -122,11 +145,12 @@ def _find_value_in_testspecific_yml(caller, dictionary_to_modify, changed_keys):
                     value = platform_specific_yml_dict.get(caller).get(key)
 
                     if value is not None:
-                        dictionary_to_modify[key] = value
+                        value_correct_type = _convert_type(dictionary_to_modify[key], value)
+                        dictionary_to_modify[key] = value_correct_type
                         changed_keys.append(key)
                         logging.info("Value of ´%s´ changed to ´%s´ found in %s",
                                                                     key,
-                                                                    value,
+                                                                    value_correct_type,
                                                                     path_to_test_specific_yml)
 
     return dictionary_to_modify, changed_keys
@@ -174,6 +198,13 @@ class SupportFileIO:
         In that case whatever data is found in a yml with key "requested_data"
         will be returned.
 
+        note: This function makes sure we return values with the correct type.
+        If we try to replace a value with info from an yml we will make sure it is the same
+        type as the original data.
+
+        If the types are different we try to make it into the correct type. If this fails
+        it might cause a crash.
+
         Args:
             caller (str): Name of step in which values should be replaced. I.e: "run", "step_1"
             requested_data (dict, str): A dictionary in which values should be updated,
@@ -213,9 +244,12 @@ class SupportFileIO:
             value = default_conf.get(key)
 
             if value is not None and key not in changed_keys:
-                dictionary_to_modify[key] = value
+                value_correct_type = _convert_type(dictionary_to_modify[key], value)
+                dictionary_to_modify[key] = value_correct_type
                 changed_keys.append(key)
-                logging.info("Value of ´%s´ changed to ´%s´ found in conf_default", key, value)
+                logging.info("Value of ´%s´ changed to ´%s´ found in conf_default",
+                                                                            key,
+                                                                            value_correct_type)
 
         # If input was not a dictionary but a string
         if not return_should_be_dict:
