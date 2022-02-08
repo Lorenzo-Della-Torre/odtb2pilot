@@ -1,0 +1,8 @@
+rid:
+  programming: ['0212']
+  extended: ['4000', '401C']
+
+subfunctions:
+- "\x01"
+- "\x02"
+- "\x03"
