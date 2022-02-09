@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -210,19 +210,31 @@ class SupportCAN:
 
 
     @classmethod
-    def signal2message(cls, sig_time, my_signal):
+    def signal2message(cls, my_signal):
         """
-        signal2message
+        Takes signal received, extracts data we use in hilding for testing.
+
+        Action: extracts info from my_signal
+        Data extracted timestamp, CAN_ID, payload
+                       timestamp from broker is int, therefor div 1000000 to match time.time()
+
+        Args: my_signal - Frame received from beamybroker
+
+        Returns: extracts values as list
         """
         # Format signal to be better readable
-        return ([sig_time, my_signal.signal[0].id.name,\
-            "{0:016X}".format(my_signal.signal[0].integer)])
+        return ([my_signal.signal[0].timestamp/1000000,\
+                 my_signal.signal[0].id.name,\
+                 "{0:016X}".format(my_signal.signal[0].integer)])
 
     @classmethod
     def display_signals_available(cls, can_p: CanParam):
         """
-        display_signals_available
-        display all signals beamybroker can access in namespaces
+        Action: display signals available in DBC for can_p('namespace')
+
+        Args: communication parameter can_p
+
+        Returns: none
         """
         logging.info("can_p setup: %s", can_p)
         configuration = can_p["system_stub"].GetConfiguration(common_pb2.Empty())
@@ -235,9 +247,12 @@ class SupportCAN:
 
     def subscribe_to_sig(self, can_p: CanParam, timeout=5):
         """
-        Subscribe to signal sig in namespace nsp
+        Action: subscribe to signal sig in can_p('namespace')
+                starts thread listening to signal names in can_p('receive')
+        Args: communication parameter can_p
+        Returns: none
         """
-        source = common_pb2.ClientId(id="app_identifier")
+        source = common_pb2.ClientId(id="hilding_support_can")
         signal = common_pb2.SignalId(name=can_p["receive"], namespace=can_p["namespace"])
         sub_info = network_api_pb2.SubscriberConfig(clientId=source,\
         signals=network_api_pb2.SignalIds(signalId=[signal]), onChange=False)
@@ -286,8 +301,7 @@ class SupportCAN:
                 if (det_mf == 3) and\
                    (can_p["send"] in self.can_mf_send and self.can_mf_send[can_p["send"]] == []):
                     logging.warning("No CF was expected for %s", can_p["send"])
-                self.can_frames[can_p["receive"]].append(self.signal2message(time.time(), response))
-                #print("received: ", self.can_frames[can_p["receive"]])
+                self.can_frames[can_p["receive"]].append(self.signal2message(response))
         except grpc._channel._Rendezvous as err: # pylint: disable=protected-access
             # suppress 'Deadline Exceeded', show other errors
             if not err._state.details == "Deadline Exceeded": # pylint: disable=protected-access

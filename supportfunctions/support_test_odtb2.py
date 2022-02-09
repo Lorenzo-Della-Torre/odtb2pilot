@@ -183,6 +183,7 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
             logging.debug("Clear old messages")
             SC.clear_all_can_frames()
             SC.clear_all_can_messages()
+        self.print_test_purpose(etp['step_no'], etp['purpose'])
 
         # wait for messages
         # define answer to expect
@@ -195,7 +196,10 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
         # message to send
         self.__send(can_p, etp, cpay)
 
-        logging.debug("Teststep: Rec can messages: %s", SC.can_messages[can_p["receive"]])
+        logging.debug("Teststep: CAN frames: %s", SC.can_frames)
+        # currently we don't build messages for frames sent
+        #logging.info("Teststep: CAN messages send: %s", SC.can_messages[can_p["send"]])
+        logging.debug("Teststep: CAN messages receive: %s", SC.can_messages[can_p["receive"]])
 
         if SC.can_messages[can_p["receive"]]:
             while self.check_7f78_response(SC.can_messages[can_p["receive"]]):
