@@ -223,9 +223,15 @@ def run():
         # Step 3:
         # Action: Activate secondary bootloader.
         # Result: ECU responds with a positive message.
+        sa_keys = {
+            "SecAcc_Gen": 'Gen1',
+            "fixed_key": '0102030405',
+            "auth_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF',
+            "proof_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
+        }
+        sa_keys = SIO.parameter_adopt_teststep(sa_keys)
         result = result and SSBL.sbl_activation(
-            can_p, fixed_key='FFFFFFFFFF', stepno='3', purpose="Activate secondary bootloader")
-
+            can_p, sa_keys=sa_keys, stepno='3', purpose="Activate secondary bootloader")
         # Step 4:
         # Action: Read data by identifier F125
         # Result: ECU responds with a positive message and valid part num. format.
