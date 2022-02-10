@@ -13,7 +13,7 @@ hvbm_sa2:
         e_481875_MAIN_0 : random_number_generator_validation | This can't be tested with standard SW. Need special tools.
 
     --Manual--:
-        Test_reprod : Test_info
+        e_60107__2 : n_cs_performance_requirement_in_programming_session |
 
     --dSpace--:
 
