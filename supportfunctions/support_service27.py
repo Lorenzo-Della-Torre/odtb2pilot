@@ -220,7 +220,8 @@ class SupportService27:
         return result, response
 
 
-    def activate_security_access_fixedkey(self, can_p: CanParam, sa_keys, step_no, purpose):
+    def activate_security_access_fixedkey(self, can_p: CanParam, sa_keys, step_no=272,\
+                                            purpose="SecurityAccess"):
         """
         Support function to activate the Security Access
         SA_GEN1:
