@@ -1,0 +1,9 @@
+ hvbm_p519 :
+    did_list_cvtn : ["","DAE6","DAE7","DBA0","DBF0","FD09","FD0B","FD0C","FD0E","FD0F","FD10"]
+    did_list_cms : ["","FD40","FD41","FD61","FD62","DB8A","DB8B","DAE4"]
+hvbm_p519_sa1 :
+    did_list_cvtn : ["","DAE6","DAE7","DBA0","DBF0","FD09","FD0B","FD0C","FD0E","FD0F","FD10"]
+    did_list_cms : ["","FD40","FD41","FD61","FD62","DB8A","DB8B","DAE4"]
+becm_p319:
+    did_list_cvtn : ["","DB9F","DBA1","DBA2","DBA3","DBA4","DBA5","DBA6","DBA7","DBA8","DBA9","DBB1","DBB2","DBB3","DBB4","DBB5","DBB6","DBB7","DBB8","DBB9","492A","DB72","DB73","DB74","DB75","DB76","DB77","DB78","DB79","DB7A","4803","4804","4806","480E","483F","48B4","4907","4908","4945","4946","4990","4996","4997","4998","4999","499A","49A0","49A1","49FF","4A24","4A27","4A28","4A29","4A2A","4A2B","4A2C","4A2D","4A2E","4A2F","4A30","4A31","4A32","4A33","4A34","4A35","4A36","4A37","4A38","4A39","4A3A","4B10","4B11", "4B12"]
+    did_list_cms : ["", "DB95","DB8A","DB8B","4802","48B5"]

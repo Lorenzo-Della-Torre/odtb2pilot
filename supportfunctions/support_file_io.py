@@ -56,6 +56,7 @@ Any unauthorized copying or distribution of content from this file is prohibited
 import os
 import logging
 import inspect
+from ast import literal_eval
 import yaml
 
 from hilding.conf import Conf
@@ -83,6 +84,28 @@ def _find_yml_file(directory, file_names):
                 return os.path.join(root, f"{file_name}.yml")
 
     return ""
+
+def _convert_type(var_with_required_type, variable):
+    """A funky little function that makes sure we return values with the correct type.
+    If we try to replace a value with info from an yml we will make sure it is the same
+    type as the original data.
+
+    If the types are different we try to make it into the correct type.
+
+    Args:
+        var_with_required_type (any): A arbitrary variable. The type of this
+        variable will be the one we want for "variable" as well
+        variable (any): We will make sure variable is the same type as
+        "var_with_required_type"
+
+    Returns:
+        any: "variable" that is of the same type as "var_with_required_type"
+    """
+    required_type = type(var_with_required_type)
+    if not isinstance(variable, required_type):
+        variable_correct_type = literal_eval(variable)
+        return variable_correct_type
+    return variable
 
 def _find_value_in_testspecific_yml(caller, dictionary_to_modify, changed_keys):
     """Try to replace values in input with values from test specific yml
@@ -114,12 +137,19 @@ def _find_value_in_testspecific_yml(caller, dictionary_to_modify, changed_keys):
         platform = dut_configuration.default_platform
         platform_specific_yml_dict = yml_dictionary.get(platform)
 
-        if platform_specific_yml_dict is not None:
-            for key in dictionary_to_modify:
+        def __extract_from_subdict(sub_dict):
+            """Exchange all values in "dictionary_to_modify" found in
+            "sub_dict"
 
-                # Make sure the step is found in the yml i.e: "run", "step_1"
-                if platform_specific_yml_dict.get(caller) is not None:
-                    value = platform_specific_yml_dict.get(caller).get(key)
+            Args:
+                sub_dict (dict): Dictionary is which new values might be found
+
+            Returns:
+                boolean: Boolean that indicates if any values where exchanged
+            """
+            if isinstance(sub_dict, dict):
+                for key in dictionary_to_modify:
+                    value = sub_dict.get(key)
 
                     # The keys in the old yml-files (now removed) sometimes missmatches with
                     # the keys in the new ones.
@@ -130,12 +160,28 @@ def _find_value_in_testspecific_yml(caller, dictionary_to_modify, changed_keys):
                         value = platform_specific_yml_dict.get(caller).get(swapped_key)
 
                     if value is not None:
-                        dictionary_to_modify[key] = value
+                        value_correct_type = _convert_type(dictionary_to_modify[key], value)
+                        dictionary_to_modify[key] = value_correct_type
                         changed_keys.append(key)
                         logging.info("Value of ´%s´ changed to ´%s´ found in %s",
                                                                     key,
-                                                                    value,
+                                                                    value_correct_type,
                                                                     path_to_test_specific_yml)
+            if changed_keys:
+                return True
+            return False
+
+        if platform_specific_yml_dict is not None:
+            # If any step or no step at all is okay
+            if caller == "*":
+                data_modified = __extract_from_subdict(platform_specific_yml_dict)
+                if not data_modified:
+                    for sub_dict in platform_specific_yml_dict.values():
+                        __extract_from_subdict(sub_dict)
+            else:
+                # Make sure the step is found in the yml i.e: "run", "step_1"
+                sub_dict = platform_specific_yml_dict.get(caller)
+                __extract_from_subdict(sub_dict)
 
     return dictionary_to_modify, changed_keys
 
@@ -151,6 +197,20 @@ class SupportFileIO:
         To be backwards compatible "requested_data" might also be a string.
         In that case whatever data is found in a yml with key "requested_data"
         will be returned.
+
+        If any value of caller is okay, use caller="*". This will return the value(s) of
+        requested_data that was first found (if found at all). The step could also be skipped
+        all together i.e yml could look like this:
+
+        <platform>:
+            requested_data:
+
+        note: This function makes sure we return values with the correct type.
+        If we try to replace a value with info from an yml we will make sure it is the same
+        type as the original data.
+
+        If the types are different we try to make it into the correct type. If this fails
+        it might cause a crash.
 
         Args:
             caller (str): Name of step in which values should be replaced. I.e: "run", "step_1"
@@ -172,12 +232,12 @@ class SupportFileIO:
         # are not changed again using conf_default
         changed_keys = []
 
-        if not isinstance(requested_data[0], dict):
-            requested_data_dict[requested_data[0]] = ""
+        if not isinstance(requested_data, dict):
+            requested_data_dict[requested_data] = ""
             return_should_be_dict = False
 
         else:
-            requested_data_dict = requested_data[0]
+            requested_data_dict = requested_data
 
         # First we try to find the content of the dictionary in the test specific yml file
         dictionary_to_modify, changed_keys = _find_value_in_testspecific_yml(caller,
@@ -198,9 +258,12 @@ class SupportFileIO:
                 value = default_conf.get(swapped_key)
 
             if value is not None and key not in changed_keys:
-                dictionary_to_modify[key] = value
+                value_correct_type = _convert_type(dictionary_to_modify[key], value)
+                dictionary_to_modify[key] = value_correct_type
                 changed_keys.append(key)
-                logging.info("Value of ´%s´ changed to ´%s´ found in conf_default", key, value)
+                logging.info("Value of ´%s´ changed to ´%s´ found in conf_default",
+                                                                            key,
+                                                                            value_correct_type)
 
         # If input was not a dictionary but a string
         if not return_should_be_dict:
@@ -212,6 +275,13 @@ class SupportFileIO:
     @classmethod
     def extract_parameter_yml(cls, key, *argv):
         """
+        If any value of key is okay, use key="*". This will return the value(s) of
+        argv that was first found (if found at all). The step could also be skipped
+        all together i.e yml could look like this:
+
+        <platform>:
+            requested_data:
+
         This function is kept since some old scripts might use it.
         I doesn't really have any purpose except from calling extract_parameters_from_yml()
 
@@ -228,7 +298,7 @@ class SupportFileIO:
             list: List containing keys to all values that were updated.
         """
 
-        modified_dictionary, changed_keys = cls.extract_parameters_from_yml(key, argv)
+        modified_dictionary, changed_keys = cls.extract_parameters_from_yml(key, argv[0])
 
         if len(changed_keys) > 0:
             return modified_dictionary
