@@ -40,6 +40,9 @@ from functools import partial
 
 from supportfunctions.extra_tkinter_windows import popup_update_list
 import supportfunctions.pretty_print as pp
+from supportfunctions.support_file_io import SupportFileIO
+
+SupportFileIO = SupportFileIO()
 
 def get_dids_from_file(file_path="pretty_print_GUI_dids.txt", category=""):
     """If there is a file called file_path it is used to load saved dids
@@ -59,10 +62,10 @@ def get_dids_from_file(file_path="pretty_print_GUI_dids.txt", category=""):
             for line in load_file:
                 if cat_found and "--" in line:
                     break
-                if category in line:
-                    cat_found = True
                 if cat_found and line != "\n":
                     ret_list.append(line)
+                if category in line:
+                    cat_found = True
     except FileNotFoundError:
         pass # Just return empty list if file is not found
 
@@ -84,31 +87,18 @@ class MainWindow():
         self.did_id = StringVar()
         self.did_id.set("")
 
-        # Used for dropdown selection. Feel free to add more options
-        self.did_list_cms = get_dids_from_file(category="CMS")
+        # Used for dropdown selection. Taken from the test specific yml-file
+        self.did_list_cms = SupportFileIO.extract_parameter_yml("*", "did_list_cms")
         if not self.did_list_cms:
-            self.did_list_cms = ["",
-                                "FD40",
-                                "FD41",
-                                "FD61",
-                                "FD62",
-                                "DB8A",
-                                "DB8B",
-                                "DAE4"]
+            self.did_list_cms = ["Check didalyzer.yml"]
 
-        self.did_list_cvtn = get_dids_from_file(category="CVTN")
+        self.did_list_cvtn = SupportFileIO.extract_parameter_yml("*", "did_list_cvtn")
         if not self.did_list_cvtn:
-            self.did_list_cvtn = ["",
-                                "DAE6",
-                                "DAE7",
-                                "DBA0",
-                                "DBF0",
-                                "FD09",
-                                "FD0B",
-                                "FD0C",
-                                "FD0E",
-                                "FD0F",
-                                "FD10"]
+            self.did_list_cvtn = ["Check didalyzer.yml"]
+
+        self.did_list = get_dids_from_file(category="Custom")
+        if not self.did_list:
+            self.did_list = ["None defined"]
 
         #Connected to the checkbox that decides if did value should be continiously updated
         self.subscribe = IntVar()
@@ -161,10 +151,10 @@ class MainWindow():
         self.text_pretty_print.grid(column=0, row=0)
         self.scrollbar.grid(column=0, row=1, sticky="NESW")
 
-        #Content 2. This split (between content 1 and 2)
-        #is needed because of a bug with threading causing
-        #variables not to be accessable if defined after use.
-        #Row 1
+        # Content 2. This split (between content 1 and 2)
+        # is needed because of a bug with threading causing
+        # variables not to be accessable if defined after use.
+        # Row 1
         self.entry_select_did = Entry(self.grid_0_0, text = "")
         self.entry_select_did.grid(column=1, row=0)
 
@@ -178,49 +168,53 @@ class MainWindow():
         self.button_start_monitoring.grid(column=1, row=0, padx=5, pady=5)
 
         #Row 2
-        self.grid_2_1 = Frame()
-        self.grid_2_1.grid(column=2, row=1)
+        self.grid_0_1 = Frame()
+        self.grid_0_1.grid(column=0, row=1)
 
-        self.chk_button_subscribe = Checkbutton(self.grid_2_1, variable=self.subscribe)
-        self.chk_button_subscribe.grid(column=1, row=0)
+        self.chk_button_subscribe = Checkbutton(self.grid_0_1, variable=self.subscribe)
+        self.chk_button_subscribe.grid(column=0, row=0)
 
-        self.label_subscribe_info_static = Label(self.grid_2_1,
+        self.label_subscribe_info_static = Label(self.grid_0_1,
                                         text = "Subscribe to DID info for seconds:")
-        self.label_subscribe_info_static.grid(column=2, row=0)
+        self.label_subscribe_info_static.grid(column=1, row=0)
 
-        self.entry_subscribe_for = Entry(self.grid_2_1, textvariable=self.subscribe_time)
-        self.entry_subscribe_for.grid(column=3, row=0)
+        self.entry_subscribe_for = Entry(self.grid_0_1, textvariable=self.subscribe_time)
+        self.entry_subscribe_for.grid(column=2, row=0)
 
-        #Row 3
-        self.grid_1_2 = Frame()
-        self.grid_1_2.grid(column=1, row=2)
+        # Dropdowns
+        self.grid_dropdown = Frame()
+        self.grid_dropdown.grid(column=1, row=2)
+
+        self.grid_1_2 = Frame(self.grid_dropdown)
+        self.grid_1_2.grid(column=0, row=0)
 
         self.dropdown_cms = ttk.Combobox(self.grid_1_2, values=self.did_list_cms)
         self.dropdown_cms.grid(column=1, row=0)
         self.label_dropdown_cms = Label(self.grid_1_2, text = "CMS dids:")
         self.label_dropdown_cms.grid(column=0, row=0)
-        self.button_customize_CVTN_list = Button(self.grid_1_2,
-                                                text = 'Customize list with CMS dids',
-                                                command=partial(self.update_list,
-                                                self.did_list_cms,
-                                                "CMS",
-                                                self.dropdown_cms))
-        self.button_customize_CVTN_list.grid(column=1, row=1)
 
-        self.grid_2_2 = Frame()
-        self.grid_2_2.grid(column=2, row=2)
+        self.grid_2_2 = Frame(self.grid_dropdown)
+        self.grid_2_2.grid(column=1, row=0)
 
         self.dropdown_cvtn = ttk.Combobox(self.grid_2_2, values=self.did_list_cvtn)
         self.dropdown_cvtn.grid(column=1, row=0)
         self.label_dropdown_cvtn = Label(self.grid_2_2, text = "CVTN dids:")
         self.label_dropdown_cvtn.grid(column=0, row=0)
-        self.button_customize_CVTN_list = Button(self.grid_2_2,
-                                                text = 'Customize list with CVTN dids',
+
+        self.grid_1_3 = Frame(self.grid_dropdown)
+        self.grid_1_3.grid(column=0, row=1, pady=20)
+
+        self.dropdown_custom = ttk.Combobox(self.grid_1_3, values=self.did_list)
+        self.dropdown_custom.grid(column=1, row=0)
+        self.label_dropdown_custom = Label(self.grid_1_3, text = "Custom dids:")
+        self.label_dropdown_custom.grid(column=0, row=0)
+        self.button_customize_list = Button(self.grid_1_3,
+                                                text = 'Customize DID list',
                                                 command=partial(self.update_list,
-                                                self.did_list_cvtn,
-                                                "CVTN",
-                                                self.dropdown_cvtn))
-        self.button_customize_CVTN_list.grid(column=1, row=1)
+                                                self.did_list,
+                                                "Custom",
+                                                self.dropdown_custom))
+        self.button_customize_list.grid(column=1, row=1)
 
     def update_list(self, lst, category, dropdown):
         # pylint: disable=attribute-defined-outside-init
@@ -237,8 +231,9 @@ class MainWindow():
 
         self.window.wait_window(self.popup.top)
 
-        lst = get_dids_from_file(category=category)
-
+        lst.clear()
+        new_lst = get_dids_from_file(category=category)
+        lst.extend(new_lst)
         dropdown.config(values=lst)
 
     def monitor(self):
@@ -250,11 +245,12 @@ class MainWindow():
             self.entry_select_did.delete(0, len(self.entry_select_did.get()))
             self.dropdown_cvtn.set("")
             self.dropdown_cms.set("")
+            self.dropdown_custom.set("")
 
         def __update_pretty_print():
             """Updates the textbox with pretty print
             """
-            pp_string = pp.get_did_pretty_print(self.dut, self.did_id.get())
+            pp_string = pp.get_did_pretty_print(self.dut, self.did_id.get().replace(" ",""))
             logging.info("\n %s", pp_string)
             self.text_pretty_print.delete("1.0","end")
             self.text_pretty_print.insert("1.0", pp_string)
@@ -266,13 +262,14 @@ class MainWindow():
         #are empty or not
         check_inputs = [self.entry_select_did.get() != "",
                         self.dropdown_cms.get() != "",
-                        self.dropdown_cvtn.get() != ""]
+                        self.dropdown_cvtn.get() != "",
+                        self.dropdown_custom.get() != ""]
 
         #If more than one input is used
         if check_inputs.count(True) > 1:
             __empty_all_input()
             messagebox.showerror('error', "More than one way of choosing DID used."
-            "Either use ONE of the dropdowns OR enter did ID manually")
+            " Either use ONE of the dropdowns OR enter did ID manually")
 
         #If only one is used we go for it
         elif True in check_inputs:
@@ -282,6 +279,8 @@ class MainWindow():
                 self.did_id.set(self.dropdown_cvtn.get())
             if self.dropdown_cms.get() != "":
                 self.did_id.set(self.dropdown_cms.get())
+            if self.dropdown_custom.get() != "":
+                self.did_id.set(self.dropdown_custom.get())
 
             if __update_pretty_print():
                 self.label_active_did_dynamic.configure(text = self.did_id.get(), bg = "green")
@@ -290,7 +289,7 @@ class MainWindow():
             subscribe_time_copy = self.subscribe_time.get()
 
             start_time = time.time()
-            #Keep updating until time has passed ot checkbox in unticket
+            #Keep updating until time has passed or checkbox in unticket
             while self.subscribe.get() and time.time() - start_time < int(subscribe_time_copy):
                 self.subscribe_time.set(str(int(subscribe_time_copy) - (time.time() - start_time)))
                 __update_pretty_print()
