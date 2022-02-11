@@ -103,7 +103,12 @@ def _convert_type(var_with_required_type, variable):
     """
     required_type = type(var_with_required_type)
     if not isinstance(variable, required_type):
-        variable_correct_type = literal_eval(variable)
+        try:
+            variable_correct_type = literal_eval(variable)
+        except ValueError:
+            logging.error("Could not convert %s (%s) to %s. Returned type is not the same as "
+            "original type!!", variable, type(variable), required_type)
+            return variable
         return variable_correct_type
     return variable
 
