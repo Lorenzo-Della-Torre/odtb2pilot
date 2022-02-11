@@ -137,13 +137,19 @@ def _find_value_in_testspecific_yml(caller, dictionary_to_modify, changed_keys):
         platform = dut_configuration.default_platform
         platform_specific_yml_dict = yml_dictionary.get(platform)
 
-        if platform_specific_yml_dict is not None:
-            for key in dictionary_to_modify:
+        def __extract_from_subdict(sub_dict):
+            """Exchange all values in "dictionary_to_modify" found in
+            "sub_dict"
 
-                # Make sure the step is found in the yml i.e: "run", "step_1"
-                if platform_specific_yml_dict.get(caller) is not None:
-                    value = platform_specific_yml_dict.get(caller).get(key)
+            Args:
+                sub_dict (dict): Dictionary is which new values might be found
 
+            Returns:
+                boolean: Boolean that indicates if any values where exchanged
+            """
+            if isinstance(sub_dict, dict):
+                for key in dictionary_to_modify:
+                    value = sub_dict.get(key)
                     if value is not None:
                         value_correct_type = _convert_type(dictionary_to_modify[key], value)
                         dictionary_to_modify[key] = value_correct_type
@@ -152,6 +158,21 @@ def _find_value_in_testspecific_yml(caller, dictionary_to_modify, changed_keys):
                                                                     key,
                                                                     value_correct_type,
                                                                     path_to_test_specific_yml)
+            if changed_keys:
+                return True
+            return False
+
+        if platform_specific_yml_dict is not None:
+            # If any step or no step at all is okay
+            if caller == "*":
+                data_modified = __extract_from_subdict(platform_specific_yml_dict)
+                if not data_modified:
+                    for sub_dict in platform_specific_yml_dict.values():
+                        __extract_from_subdict(sub_dict)
+            else:
+                # Make sure the step is found in the yml i.e: "run", "step_1"
+                sub_dict = platform_specific_yml_dict.get(caller)
+                __extract_from_subdict(sub_dict)
 
     return dictionary_to_modify, changed_keys
 
@@ -198,6 +219,13 @@ class SupportFileIO:
         In that case whatever data is found in a yml with key "requested_data"
         will be returned.
 
+        If any value of caller is okay, use caller="*". This will return the value(s) of
+        requested_data that was first found (if found at all). The step could also be skipped
+        all together i.e yml could look like this:
+
+        <platform>:
+            requested_data:
+
         note: This function makes sure we return values with the correct type.
         If we try to replace a value with info from an yml we will make sure it is the same
         type as the original data.
@@ -225,12 +253,12 @@ class SupportFileIO:
         # are not changed again using conf_default
         changed_keys = []
 
-        if not isinstance(requested_data[0], dict):
-            requested_data_dict[requested_data[0]] = ""
+        if not isinstance(requested_data, dict):
+            requested_data_dict[requested_data] = ""
             return_should_be_dict = False
 
         else:
-            requested_data_dict = requested_data[0]
+            requested_data_dict = requested_data
 
         # First we try to find the content of the dictionary in the test specific yml file
         dictionary_to_modify, changed_keys = _find_value_in_testspecific_yml(caller,
@@ -272,6 +300,14 @@ class SupportFileIO:
         - a project specific default one
         - a file specific one
         If parameters exist in both, the file specific overrides the project specific
+
+        If any value of key is okay, use key="*". This will return the value(s) of
+        argv that was first found (if found at all). The step could also be skipped
+        all together i.e yml could look like this:
+
+        <platform>:
+            requested_data:
+
         """
 
         # This function is a tad hard to follow and needs to be replaced. For legacy reasons
@@ -279,7 +315,7 @@ class SupportFileIO:
         # conf_default or the test script specific file using extract_parameters_from_yml().
         # If neither work the old function will give it a try.
 
-        modified_dictionary, changed_keys = cls.extract_parameters_from_yml(key, argv)
+        modified_dictionary, changed_keys = cls.extract_parameters_from_yml(key, argv[0])
 
         if len(changed_keys) > 0:
             return modified_dictionary
