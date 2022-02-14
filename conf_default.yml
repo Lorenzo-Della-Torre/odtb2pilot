@@ -28,7 +28,7 @@ platforms:
         signal_tester_present: HvbmdpToAllUdsDiagRequestFrame
         wakeup_frame: 1A40C3FF01000000
         SecAcc_Gen: Gen2
-        fixed_key: 0102030405
+        fixed_key: '0102030405'
         auth_key: FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
         proof_key: FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
         FC_Separation_time : '05'
@@ -42,3 +42,16 @@ platforms:
         fixed_key: FFFFFFFFFF
         auth_key: 38722e65542d756d5f6f30626c36654e
         proof_key: 2b7e151628aed2a6abf7158809cf4f3c
+    psmd_spa2:
+        signal_send: PsmddpToPsmdUdsDiagRequestFrame
+        signal_receive: PsmdToPsmddpUdsDiagResponseFrame
+        signal_periodic: PsmddpNmFrame
+        signal_tester_present: PsmddpToallUdsDiagRequestFrame
+        wakeup_frame: 1A40C3FF01000000
+        protocol: canfd
+        framelength_max: 64
+        padding: true
+        SecAcc_Gen: Gen2
+        fixed_key: FFFFFFFFFF
+        auth_key: FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+        proof_key: FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
