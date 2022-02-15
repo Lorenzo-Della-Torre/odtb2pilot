@@ -568,38 +568,38 @@ def run():
 
         # Step 5:
         # Action: Security access in extended session and verify response time.
-        # Result: Positive reply from becm.
+        # Result: Positive reply from becm_p319.
         result = result and \
             security_access_ext_session(can_p, 5)
 
         # Step 6:
         # Action: Change to default session
-        # Result: Positive reply from becm
+        # Result: Positive reply from becm_p319
         result = result and \
             SE10.diagnostic_session_control_mode1(can_p, 6)
 
         # Step 7:
         # Action: Security access in default session and verify response time.
-        # Result: Negative reply from becm
+        # Result: Negative reply from becm_p319
         result = result and \
             security_access_def_session(can_p, 7)
 
         # Step 8:
         # Action: Change to programming session
-        # Result: Positive reply from becm
+        # Result: Positive reply from becm_p319
         result = result and \
             SE10.diagnostic_session_control_mode2(can_p, 8)
 
         # Step 9:
         # Action: Security access in programming session
         #         (Primary bootloader) and verify response time.
-        # Result: Positive reply from becm
+        # Result: Positive reply from becm_p319
         result = result and \
             security_access_prg_session(can_p, 9)
 
         # Step 10:
         # Action: Active secondary bootloader
-        # Result: Positive reply from becm
+        # Result: Positive reply from becm_p319
         result = result and SSBL.sbl_activation(
             can_p, fixed_key='FFFFFFFFFF', stepno='11', purpose='Activate secondary bootloader')
 

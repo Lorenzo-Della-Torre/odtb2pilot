@@ -1,6 +1,6 @@
-hvbm:
+hvbm_p519_sa1:
         step_2:
                 payload_reply: 037F3112
-hvbm_sa2:
+hvbm_p519:
         step_2:
                 payload_reply: 037F3112

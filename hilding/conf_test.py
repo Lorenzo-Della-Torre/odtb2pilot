@@ -59,10 +59,10 @@ def test_conf(tmp_path, monkeypatch):
         p2:
             hostname: host2.domain
             user: pi #optional
-            platform: hvbm
+            platform: hvbm_p519_sa1
             signal_broker_port: 50051 #optional
     platforms:
-        hvbm:
+        hvbm_p519_sa1:
             signal_send: sendsignal
             signal_receive: receivesignal
     """
@@ -75,7 +75,7 @@ def test_conf(tmp_path, monkeypatch):
     assert conf.default_rig == "p2"
     assert conf.rig.hostname == "host2.domain"
     assert conf.rig.user == "pi"
-    assert conf.rig.platform == "hvbm"
+    assert conf.rig.platform == "hvbm_p519_sa1"
     assert conf.rig.signal_broker_port == "50051"
     assert conf.rig.signal_send == "sendsignal"
     assert conf.rig.signal_receive == "receivesignal"

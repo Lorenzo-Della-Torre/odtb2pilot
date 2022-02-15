@@ -1,8 +1,8 @@
-becm:
+becm_p319:
 
-hvbm:
+hvbm_p519_sa1:
 
-hvbm_sa2:
+hvbm_p519:
     --NA--:
         e_441876_MAIN_1 : software_authentication_security_classes | EOL testing. We will use the second security class. All security classes are NA for us.
         e_435017_MAIN_0 : production_key_programming | Encryption and decryption will be on raw data and not on compressed data. Tool verification?
@@ -18,5 +18,5 @@ hvbm_sa2:
 
     --dSpace--:
 
-ihfa:
+ihfa_v436:
 

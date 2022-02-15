@@ -1,4 +1,4 @@
-hvbm:
+hvbm_p519_sa1:
         step_3:
                 id: HvbmdpHvbm1canFrame02_40
                 name: VehSpdLgtSafeVehSpdLgt
@@ -8,7 +8,7 @@ hvbm:
         step_7:
                 id: HvbmdpHvbm1canFrame02_40
                 name: VehSpdLgtSafeVehSpdLgt
-hvbm_sa2:
+hvbm_p519:
         step_3:
                 id: HvbmdpHvbm1canFrame02_40
                 name: VehSpdLgtSafeVehSpdLgt

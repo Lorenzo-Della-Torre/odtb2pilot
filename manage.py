@@ -47,19 +47,8 @@ def config_environ():
     sys.path.append(join(dirname(__file__), "test_folder/manual"))
 
     if not "ODTBPROJPARAM" in environ:
-        project_dir_mapping = {
-            "becm": "MEP2_SPA1",
-            "hvbm": "MEP2_SPA2",
-            "hlcm": "MEP2_HLCM",
-            "ihfa": "MEP2_ED_IHFA",
-            "hvbm_sa2": "MEP2_SPA2_SAGen2"
-        }
         platform = get_conf().rig.platform
-        if not platform in project_dir_mapping:
-            raise NotImplementedError("Platform not in project_dir_mapping")
-
-        project_dir = project_dir_mapping[platform]
-        odtb_proj_parm = join(dirname(__file__), f"projects/{project_dir}")
+        odtb_proj_parm = join(dirname(__file__), f"projects/{platform}")
         # setting environment variables for process internal use is not
         # that pretty, but let's do it like this for now to get away from
         # having to set ODTBPROJPARAM and PYTHONPATH all the time in the shell.

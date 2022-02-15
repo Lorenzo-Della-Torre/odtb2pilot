@@ -73,9 +73,9 @@ def test_upload_folder():
 def test_get_signal_broker_parameters():
     """ pytest: testing send and receive parameters """
     rig = get_conf().rig
-    if rig.platform == "becm":
+    if rig.platform == "becm_p319":
         assert rig.signal_send == "Vcu1ToBecmFront1DiagReqFrame"
         assert rig.signal_receive == "BecmToVcu1Front1DiagResFrame"
-    if rig.platform == "hvbm":
+    if rig.platform == "hvbm_p519_sa1":
         assert rig.signal_send == "HvbmdpToHvbmUdsDiagRequestFrame"
         assert rig.signal_receive == "HvbmToHvbmdpUdsDiagResponseFrame"
