@@ -288,7 +288,10 @@ def nightly(args):
         # dealing with (NA, Implicit, etc.)
         current_category = ""
         # Read from yml file what categories we have in the current default project
-        existing_categories = get_dictionary_from_yml().keys()
+        if get_dictionary_from_yml() is not None:
+            existing_categories = get_dictionary_from_yml().keys()
+        else:
+            existing_categories = {}
         for line in testfile_list.readlines():
             stripped_line = line.strip()
             if stripped_line in existing_categories:
