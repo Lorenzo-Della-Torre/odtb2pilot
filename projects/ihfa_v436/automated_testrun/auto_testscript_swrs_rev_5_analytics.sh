@@ -12,10 +12,10 @@
     echo PATH: $PATH
 
 ### VBF files update in $TESTREPO/projects/$ODTBPROJ
-    [ ! -d $TESTREPO/projects/$ODTBPROJ/VBF ] && mkdir $TESTREPO/projects/$ODTBPROJ/VBF
-    rm -f $TESTREPO/projects/$ODTBPROJ/VBF/*
-    cp ~/delivery/*.vbf $TESTREPO/projects/$ODTBPROJ/VBF
-    cp ~/SBL/*.vbf $TESTREPO/projects/$ODTBPROJ/VBF
+    # [ ! -d $TESTREPO/projects/$ODTBPROJ/VBF ] && mkdir $TESTREPO/projects/$ODTBPROJ/VBF
+    # rm -f $TESTREPO/projects/$ODTBPROJ/VBF/*
+    # cp ~/delivery/*.vbf $TESTREPO/projects/$ODTBPROJ/VBF
+    # cp ~/SBL/*.vbf $TESTREPO/projects/$ODTBPROJ/VBF
 
 
 ### uncomment if VBF should be updated in local catalog:
