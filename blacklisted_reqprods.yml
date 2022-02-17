@@ -21,6 +21,7 @@ hvbm_p519:
         e_52314_-_5 : diagnostic_trouble_code_for_can_bus_off | <Reason>
         e_161873_MAIN_2 : car_mode_data_record | <Reason>
         e_481875_MAIN_0 : random_number_generator_validation | This can't be tested with standard SW. Need special tools.
+        e_60111__1 : can_frame_identifier_length | Look in CanIf and CAN configuration to validate that all outgoing frames is set to classic can with 11 bit addressing.
 
     --Manual--:
         e_60107__2 : n_cs_performance_requirement_in_programming_session |
