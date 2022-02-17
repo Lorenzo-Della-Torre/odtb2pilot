@@ -18,20 +18,6 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-title: Supporting functional requests
-reqprod: 60112
-version: 1
-purpose:
-    Define support for functional requests
-description:
-    Functional requests shall be supported
-details:
-    This test is validated using a functional (broadcast) call using the
-    address 0x7ff setting the mode on the ECU. Actually, just starting and
-    stopping the test would validate the requirement since the heartbeat that
-    we wake up the ECU and keeps it awake with, is using functional addressing
-    as well. However, writing the test like we have done here makes it more
-    explicit.
 """
 
 import logging
@@ -63,11 +49,11 @@ def step_1(dut: Dut):
    # else:
    #     raise DutTestError("Your platform is not supported in this test")
 
-    parameters = dut.get_platform_yml_parameters(__file__)
-    dut.send = parameters.get("send")
-    logging.info("dut.send = %s", dut.send)
-    if not dut.send:
-        raise DutTestError("Your platform is not supported in this test")
+    # parameters = dut.get_platform_yml_parameters(__file__)
+    # dut.send = parameters.get("send")
+    # logging.info("dut.send = %s", dut.send)
+    # if not dut.send:
+    #     raise DutTestError("Your platform is not supported in this test")
 
     dut.uds.set_mode(1)
 
@@ -75,7 +61,7 @@ def step_1(dut: Dut):
         raise DutTestError("Could not change mode using functional addressing")
 
     # reset the send signal to original setting
-    dut.send = dut.conf.rig.signal_send
+    # dut.send = dut.conf.rig.signal_send
 
 def run():
     """ Supporting functional requests """
