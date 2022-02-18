@@ -54,13 +54,15 @@ Any unauthorized copying or distribution of content from this file is prohibited
 """
 
 import os
+import sys
 import logging
 import inspect
 from ast import literal_eval
 import yaml
 
+sys.path.append(os.path.join(os.path.dirname(__file__),".."))
+# pylint: disable=wrong-import-position
 from hilding.conf import Conf
-
 from hilding.predefined_variables import project_default_to_conf_default
 
 dut_configuration = Conf()
@@ -251,24 +253,28 @@ class SupportFileIO:
 
         # If value was not found in the test specific we try conf_default instead
         default_conf = dut_configuration.default_rig_config
+        if default_conf is not None:
+            for key in dictionary_to_modify:
+                value = default_conf.get(key)
 
-        for key in dictionary_to_modify:
-            value = default_conf.get(key)
+                # The keys in the old "project_default" (now removed) sometimes missmatches with
+                # the keys in conf_default.
+                # Therefore we swap any old keys for the corresponding new key if old key
+                # is not found
+                if value is None:
+                    swapped_key = project_default_to_conf_default.get(key)
+                    value = default_conf.get(swapped_key)
 
-            # The keys in the old "project_default" (now removed) sometimes missmatches with
-            # the keys in conf_default.
-            # Therefore we swap any old keys for the corresponding new key if old key is not found
-            if value is None:
-                swapped_key = project_default_to_conf_default.get(key)
-                value = default_conf.get(swapped_key)
-
-            if value is not None and key not in changed_keys:
-                value_correct_type = _convert_type(dictionary_to_modify[key], value)
-                dictionary_to_modify[key] = value_correct_type
-                changed_keys.append(key)
-                logging.info("Value of ´%s´ changed to ´%s´ found in conf_default",
-                                                                            key,
-                                                                            value_correct_type)
+                if value is not None and key not in changed_keys:
+                    value_correct_type = _convert_type(dictionary_to_modify[key], value)
+                    dictionary_to_modify[key] = value_correct_type
+                    changed_keys.append(key)
+                    logging.info("Value of ´%s´ changed to ´%s´ found in conf_default",
+                                                                                key,
+                                                                                value_correct_type)
+        else:
+            logging.error("No default configuration found. Please make sure the default_rig in "
+            "conf_local matches with a platform in conf_default")
 
         # If input was not a dictionary but a string
         if not return_should_be_dict:
