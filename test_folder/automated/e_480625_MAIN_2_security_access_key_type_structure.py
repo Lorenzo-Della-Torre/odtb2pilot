@@ -115,9 +115,11 @@ from hilding.dut import Dut
 from hilding.dut import DutTestError
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
 from supportfunctions.support_carcom import SupportCARCOM
+from supportfunctions.support_file_io import SupportFileIO
 
 SUTE = SupportTestODTB2()
 SC_CARCOM = SupportCARCOM()
+SIO = SupportFileIO()
 
 
 def write_data_by_identifier_with_wrong_crc(dut: Dut, did):
@@ -162,7 +164,10 @@ def read_yml_parameters(dut: Dut):
     Args: dut (class object): Dut instance
     Returns: parameters(dict): yml parameters
     """
-    parameters = dut.get_platform_yml_parameters(__file__)
+    # pylint: disable=unused-argument
+    parameters = {"sa_levels_dids_programming" : {},
+                "sa_levels_dids_extended" : {}}
+    parameters = SIO.extract_parameter_yml("*", parameters)
 
     if parameters is None:
         logging.error("Security Access parameters Levels and DIDs not found")
