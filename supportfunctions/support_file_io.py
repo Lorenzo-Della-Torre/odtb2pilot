@@ -126,6 +126,40 @@ def _find_value_in_testspecific_yml(caller, dictionary_to_modify, changed_keys):
         "input_dictionary" will be returned
         list: List containing keys to all values that were updated.
     """
+    def __extract_from_subdict(sub_dict):
+        """Exchange all values in "dictionary_to_modify" found in
+        "sub_dict"
+
+        Args:
+            sub_dict (dict): Dictionary is which new values might be found
+
+        Returns:
+            boolean: Boolean that indicates if any values where exchanged
+        """
+        if isinstance(sub_dict, dict):
+            for key in dictionary_to_modify:
+                value = sub_dict.get(key)
+
+                # The keys in the old yml-files (now removed) sometimes missmatches with
+                # the keys in the new ones.
+                # Therefore we swap any old keys for the corresponding new key if old key
+                # is not found
+                if value is None:
+                    swapped_key = project_default_to_conf_default.get(key)
+                    value = sub_dict.get(swapped_key)
+
+                if value is not None:
+                    value_correct_type = _convert_type(dictionary_to_modify[key], value)
+                    dictionary_to_modify[key] = value_correct_type
+                    changed_keys.append(key)
+                    logging.info("Value of ´%s´ changed to ´%s´ found in %s",
+                                                                key,
+                                                                value_correct_type,
+                                                                path_to_test_specific_yml)
+        if changed_keys:
+            return True
+        return False
+
     file_names_in_callstack = []
     for level in inspect.stack():
         path_to_file = level[1]
@@ -141,40 +175,6 @@ def _find_value_in_testspecific_yml(caller, dictionary_to_modify, changed_keys):
 
         platform = dut_configuration.default_platform
         platform_specific_yml_dict = yml_dictionary.get(platform)
-
-        def __extract_from_subdict(sub_dict):
-            """Exchange all values in "dictionary_to_modify" found in
-            "sub_dict"
-
-            Args:
-                sub_dict (dict): Dictionary is which new values might be found
-
-            Returns:
-                boolean: Boolean that indicates if any values where exchanged
-            """
-            if isinstance(sub_dict, dict):
-                for key in dictionary_to_modify:
-                    value = sub_dict.get(key)
-
-                    # The keys in the old yml-files (now removed) sometimes missmatches with
-                    # the keys in the new ones.
-                    # Therefore we swap any old keys for the corresponding new key if old key
-                    # is not found
-                    if value is None:
-                        swapped_key = project_default_to_conf_default.get(key)
-                        value = platform_specific_yml_dict.get(caller).get(swapped_key)
-
-                    if value is not None:
-                        value_correct_type = _convert_type(dictionary_to_modify[key], value)
-                        dictionary_to_modify[key] = value_correct_type
-                        changed_keys.append(key)
-                        logging.info("Value of ´%s´ changed to ´%s´ found in %s",
-                                                                    key,
-                                                                    value_correct_type,
-                                                                    path_to_test_specific_yml)
-            if changed_keys:
-                return True
-            return False
 
         if platform_specific_yml_dict is not None:
             # If any step or no step at all is okay
@@ -195,7 +195,7 @@ class SupportFileIO:
         SupportFileIO
     """
     @classmethod
-    def extract_parameters_from_yml(cls, caller, requested_data):
+    def _extract_parameters_from_yml(cls, caller, requested_data):
         """Function that tries to update all keys in "input_dictionary" with values
         found in either a test specific yml or conf_default.
 
@@ -278,9 +278,9 @@ class SupportFileIO:
         return dictionary_to_modify, changed_keys
 
     @classmethod
-    def extract_parameter_yml(cls, key, *argv):
+    def extract_parameter_yml(cls, step, *argv):
         """
-        If any value of key is okay, use key="*". This will return the value(s) of
+        If any value of step is okay, use step="*". This will return the value(s) of
         argv that was first found (if found at all). The step could also be skipped
         all together i.e yml could look like this:
 
@@ -291,7 +291,7 @@ class SupportFileIO:
         I doesn't really have any purpose except from calling extract_parameters_from_yml()
 
         Args:
-            key (str): Name of step in which values should be replaced. I.e: "run", "step_1"
+            step (str): Name of step in which values should be replaced. I.e: "run", "step_1"
             *argv (dict, str): A dictionary in which values should be updated,
             might also be string
 
@@ -303,7 +303,7 @@ class SupportFileIO:
             list: List containing keys to all values that were updated.
         """
 
-        modified_dictionary, changed_keys = cls.extract_parameters_from_yml(key, argv[0])
+        modified_dictionary, changed_keys = cls._extract_parameters_from_yml(step, argv[0])
 
         if len(changed_keys) > 0:
             return modified_dictionary

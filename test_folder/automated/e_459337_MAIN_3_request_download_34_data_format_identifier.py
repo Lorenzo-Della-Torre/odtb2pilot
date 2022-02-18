@@ -60,7 +60,9 @@ from hilding.dut import Dut
 from hilding.dut import DutTestError
 from supportfunctions.support_SBL import SupportSBL
 from supportfunctions.support_service27 import SupportService27
+from supportfunctions.support_file_io import SupportFileIO
 
+SIO = SupportFileIO()
 CNF = Conf()
 SSBL = SupportSBL()
 SE27 = SupportService27()
@@ -99,7 +101,10 @@ def read_yml_parameters(dut: Dut):
     Returns:
         parameters (dict): dictionary containing yml parameters
     """
-    parameters = dut.get_platform_yml_parameters(__file__)
+    # pylint: disable=unused-argument
+    parameters = {"allowed_data_format_identifiers" : {},
+                "supported_data_format_identifiers" : []}
+    parameters = SIO.extract_parameter_yml("*", parameters)
     if parameters is None:
         logging.error("Test failed: yml parameters are not present")
         return False

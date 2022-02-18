@@ -49,9 +49,11 @@ from hilding.conf import Conf
 from hilding.dut import DutTestError
 from hilding.dut import Dut
 from supportfunctions.support_sec_acc import SupportSecurityAccess
+from supportfunctions.support_file_io import SupportFileIO
 
 CNF = Conf()
 SSA = SupportSecurityAccess()
+SIO = SupportFileIO()
 
 
 def security_access_method(dut: Dut):
@@ -92,9 +94,9 @@ def step_1(dut: Dut):
             message identifiers.
     expected_result: Positive response with valid message identifier.
     """
-    parameters = dut.get_platform_yml_parameters(__file__)
+    parameters = SIO.extract_parameter_yml("*", "message_identifier")
     if parameters is not None:
-        message_identifier = parameters['message_identifier']
+        message_identifier = parameters
         dut.uds.set_mode(2)
         # Security Access to ECU
         payload_dict = security_access_method(dut)

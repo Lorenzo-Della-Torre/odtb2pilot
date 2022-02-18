@@ -38,6 +38,9 @@ import sys
 
 from hilding.dut import Dut
 from hilding.dut import DutTestError
+from supportfunctions.support_file_io import SupportFileIO
+
+SIO = SupportFileIO()
 
 def step_1(dut: Dut):
     """
@@ -57,8 +60,8 @@ def step_1(dut: Dut):
     #   "" HVBM
     # note: 2047 decimal = 0x7ff
     # hence, we set the addressing as follows:
-    parameters = dut.get_platform_yml_parameters(__file__)
-    dut.send = parameters.get("send")
+    parameter = SIO.extract_parameter_yml("*", "send")
+    dut.send = parameter
     logging.info("dut.send = %s", dut.send)
     if not dut.send:
         raise DutTestError("Your platform is not supported in this test")
