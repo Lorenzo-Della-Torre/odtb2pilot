@@ -65,7 +65,6 @@ The Python implementation of the gRPC route guide client.
 
 import time
 import logging
-import os
 import sys
 import glob
 from typing import Dict
@@ -84,6 +83,7 @@ from supportfunctions.support_service31 import SupportService31
 from supportfunctions.support_service34 import SupportService34
 from supportfunctions.support_service36 import SupportService36
 from supportfunctions.support_service37 import SupportService37
+from hilding.conf import get_conf
 
 SIO = SupportFileIO
 SC = SupportCAN()
@@ -99,6 +99,7 @@ SE31 = SupportService31()
 SE34 = SupportService34()
 SE36 = SupportService36()
 SE37 = SupportService37()
+CONF = get_conf()
 
 
 class VbfHeader(Dict): # pylint: disable=inherit-non-class
@@ -261,10 +262,7 @@ class SupportSBL:
         sets filenames found in dict vbf_header
         This can be used if you want to avoid the sys.argv part
         """
-        odtb_proj_param = os.environ.get('ODTBPROJPARAM')
-        if odtb_proj_param is None:
-            odtb_proj_param = '.'
-        f_names = glob.glob(odtb_proj_param + "/VBF/*.vbf")
+        f_names = glob.glob(str(CONF.rig.vbf_path) + "/*.vbf")
         result = self.read_vbf_param(f_names)
         return result
 
