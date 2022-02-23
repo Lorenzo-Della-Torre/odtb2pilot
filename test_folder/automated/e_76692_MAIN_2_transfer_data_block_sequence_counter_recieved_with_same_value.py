@@ -48,7 +48,6 @@ from hilding.conf import Conf
 from hilding.dut import Dut
 from hilding.dut import DutTestError
 
-from supportfunctions.support_can import SupportCAN
 from supportfunctions.support_SBL import SupportSBL
 from supportfunctions.support_service34 import SupportService34
 from supportfunctions.support_service27 import SupportService27
@@ -56,7 +55,6 @@ from supportfunctions.support_service37 import SupportService37
 from supportfunctions.support_service31 import SupportService31
 
 CNF = Conf()
-SC = SupportCAN()
 SE34 = SupportService34()
 SSBL = SupportSBL()
 SE27 = SupportService27()
@@ -275,27 +273,6 @@ def transfer_data(dut, transfer_data_parameters, manipulated_block=False):
     return False
 
 
-def check_complete_compatible(dut):
-    """
-    Verifying Complete & Compatible
-    Args:
-        dut (class object): dut instance
-
-    Returns:
-        (bool): True if both Complete and Compatible
-    """
-    result = False
-    response_msg = SC.can_messages[dut["receive"]][0][2]
-    # Find '0205' from response message
-    idx_pos = response_msg.find('0205')
-    response = response_msg[idx_pos+6:idx_pos+16]
-    # convert response to binary
-    value = "{:040b}".format(int(response, 16))
-    if value[38] == '0' and value[39] == '0':
-        result = True
-    return result
-
-
 def check_routines(dut, vbf_header, step_number):
     """
     Verifying check memory and Complete&Compatible
@@ -311,12 +288,16 @@ def check_routines(dut, vbf_header, step_number):
         logging.error("Test failed: Check memory routine failed")
         return False
 
-    result_complete_compatible = check_complete_compatible(dut)
-    if not result_complete_compatible:
-        logging.error("Test failed: Check complete&compatible failed")
-        return False
+    # Check Complete&Compatible
+    result_complete_compatible = SSBL.check_complete_compatible_routine(dut, step_number)
+    complete_compatible_list = result_complete_compatible.split(",")
+    if complete_compatible_list[0] == 'Complete' and \
+        complete_compatible_list[1].strip() == 'Compatible':
+        return True
 
-    return True
+    logging.error("Test failed: Check complete&compatible failed, received %s",
+                  result_complete_compatible)
+    return False
 
 
 def step_1(dut: Dut):
