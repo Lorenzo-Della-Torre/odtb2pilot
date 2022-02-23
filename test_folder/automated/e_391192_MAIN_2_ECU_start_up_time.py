@@ -35,7 +35,7 @@ description: >
     2.	An ECU hard reset is triggered.
 
 details: >
-    Verify CAN frame response within 2500ms for ECU hard reset
+    Verify CAN frame response within 2500ms for ECU hard reset.
 """
 
 import logging
