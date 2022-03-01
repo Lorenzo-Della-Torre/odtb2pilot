@@ -504,6 +504,11 @@ def parse_sddb_file():
                 line = line.replace('°C', 'degC')
                 line = line.replace('µC', 'uC')
                 line = line.replace(u'\xa0', u' ') #non-breaking space
+
+                #Found in IHFA sddb, seems to use latin1-Supplement
+                line = line.replace(u'\x85', '\n')
+                line = line.replace(u'\x96', 'SPA')
+
                 tf.write(line)
 
         log.info("Parse sddb file")
