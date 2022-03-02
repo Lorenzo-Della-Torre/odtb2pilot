@@ -42,6 +42,7 @@ platforms:
         fixed_key: FFFFFFFFFF
         auth_key: 38722e65542d756d5f6f30626c36654e
         proof_key: 2b7e151628aed2a6abf7158809cf4f3c
+        ess_needed: False
     hlcm_p519:
         signal_send: HlcmdpToHlcmUdsDiagRequestFrame
         signal_receive: HlcmToHlcmdpUdsDiagResponseFrame
