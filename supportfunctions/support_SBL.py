@@ -178,7 +178,7 @@ class SupportSBL:
         # Some ECU like HLCM don't include ESS vbf
         # if so, state that in project or testscript parameters (yml file)
         ess_needed = True
-        new_ess_needed = SIO.parameter_adopt_teststep('ess_needed')
+        new_ess_needed = SIO.extract_parameter_yml("*", 'ess_needed')
         if new_ess_needed != '':
             assert isinstance(new_ess_needed, bool)
             ess_needed = new_ess_needed
