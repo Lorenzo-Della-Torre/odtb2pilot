@@ -90,8 +90,8 @@ def compare_negative_response(response, session, nrc_code):
 
     else:
         logging.error("Test Failed: Expected NRC %s for request"
-                      " dynamicallyDefineDataIdentifier(0x2C)-defineByIdentifier(01, 81) in %s session, received %s",
-                        nrc_code, response, session)
+                      " dynamicallyDefineDataIdentifier(0x2C)-defineByIdentifier(01, 81) in"
+                      " %s session, received %s",nrc_code, response, session)
         result = False
 
     return result
@@ -119,8 +119,8 @@ def request_dynamically_define_data_identifier(dut, parameters):
 
 def step_1(dut: Dut):
     """
-    action: Verify dynamicallyDefineDataIdentifier(0x2C)-defineByIdentifier(01, 81) request in default
-            mode
+    action: Verify dynamicallyDefineDataIdentifier(0x2C)-defineByIdentifier(01, 81) request in
+            default session
     expected_result: ECU should send positive response
     """
     # Define did from yml file
@@ -209,8 +209,9 @@ def run():
                                   '(01, 81) response in programming session')
 
         if result_step:
-            result_step = dut.step(step_3, parameters, purpose='Verify dynamicallyDefineDataIdentifier'
-                                  '(0x2C)-defineByIdentifier(01, 81) response in extended session')
+            result_step = dut.step(step_3, parameters, purpose='Verify '
+                                  'dynamicallyDefineDataIdentifier(0x2C)-defineByIdentifier'
+                                  '(01, 81) response in extended session')
         result = result_step
 
     except DutTestError as error:
