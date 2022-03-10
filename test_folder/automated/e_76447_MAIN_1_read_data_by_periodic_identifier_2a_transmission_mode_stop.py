@@ -25,13 +25,13 @@ purpose:
     since if a session change is done a lot of other functionality might reset as well.
 
 description: >
-    The ECU shall support the service readDataByPeriodicIdentifier with the data parameter 
-    transmissionMode set to stop in all sessions where the ECU supports the service 
+    The ECU shall support the service readDataByPeriodicIdentifier with the data parameter
+    transmissionMode set to stop in all sessions where the ECU supports the service
     readDataByPeriodicIdentifier.
 
 details: >
     1. Checking response for ReadDataByPeriodicIdentifier(0x2A) in extendedDiagnosticSession with
-       response code 0x6A and it should not support defaultSession and programmingSession. 
+       response code 0x6A and it should not support defaultSession and programmingSession.
     2. Verify transmission mode parameter slow in ReadDataByPeriodicIdentifier(0x2A) service.
 """
 
@@ -111,7 +111,7 @@ def request_read_data_periodic_identifier(dut: Dut, periodic_did):
 
 def step_1(dut: Dut):
     """
-    action: Set to extended mode and verify ReadDataByPeriodicIdentifier(0x2A) response  
+    action: Set to extended mode and verify ReadDataByPeriodicIdentifier(0x2A) response
             with transmission mode parameter set to stop.
 
     expected_result: ECU should send positive response
