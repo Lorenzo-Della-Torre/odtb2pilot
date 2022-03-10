@@ -28,11 +28,6 @@ description: >
     sessions where the ECU supports the service dynamicallyDefineDataIdentifier.
 
 details: >
-    Verify ECU may support the service dynamicallyDefineDataIdentifier - defineByIdentifier in all
-    sessions
-
-
-details: >
     Verify response for dynamicallyDefineDataIdentifier(0x2C) in default & extended session with
     response code 0x6C and it should not support in programming session.
 
