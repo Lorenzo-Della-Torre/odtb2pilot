@@ -17,21 +17,21 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-reqprod: 76445
+reqprod: 76447
 version: 1
-title: ReadDataByPeriodicIdentifier (2A) - transmissionMode medium (02)
+title: ReadDataByPeriodicIdentifier (2A) - transmissionMode stop (04)
 purpose:
-    Purpose	Define the transmissionMode medium
+    Shall be possible to stop reading periodic identifiers without for example changing session 
+    since if a session change is done a lot of other functionality might reset as well.
 
 description: >
-    The ECU may support the service readDataByPeriodicIdentifier with the data parameter
-    transmissionMode set to medium in all sessions where the ECU supports the service
-    readDataByPeriodicIdentifier. The implementer defines the value of the transmission
-    rate in the transmissionMode medium.
+    The ECU shall support the service readDataByPeriodicIdentifier with the data parameter 
+    transmissionMode set to stop in all sessions where the ECU supports the service 
+    readDataByPeriodicIdentifier
 
 details: >
     Checking response for ReadDataByPeriodicIdentifier(0x2A) in extendedDiagnosticSession and
-    the data parameter transmissionMode set to medium and it should not support defaultSession
+    the data parameter transmissionMode set to stop and it should not support defaultSession
     and programmingSession.
 
     Also the maximum response time for the service ReadDataByPeriodicIdentifier(0x2A) should
@@ -108,7 +108,7 @@ def compare_negative_response(response, session):
 def request_read_data_periodic_identifier(dut: Dut, periodic_did):
     """
     Request ReadDataByPeriodicIdentifier(0x2A)  with the data parameter transmissionMode set to
-    medium and get the ECU response
+    stop and get the ECU response
 
     Args:
         dut(class object): Dut instance
@@ -117,7 +117,7 @@ def request_read_data_periodic_identifier(dut: Dut, periodic_did):
     Returns: ECU response of ReadDataByPeriodicIdentifier request
     """
 
-    payload = SC_CARCOM.can_m_send("ReadDataByPeriodicIdentifier", b'\x02' +
+    payload = SC_CARCOM.can_m_send("ReadDataByPeriodicIdentifier", b'\x04' +
                                    bytes.fromhex(periodic_did), b'')
     response = dut.uds.generic_ecu_call(payload)
 
@@ -126,8 +126,8 @@ def request_read_data_periodic_identifier(dut: Dut, periodic_did):
 
 def step_1(dut: Dut):
     """
-    action: Set to extended mode and verify ReadDataByPeriodicIdentifier(0x2A) response  
-            with transmission mode parameter set to medium.
+    action: Set to extended mode and verify ReadDataByPeriodicIdentifier(0x2A) response
+            with transmission mode parameter set to stop.
 
     expected_result: ECU should send positive response within 200ms
     """
@@ -142,8 +142,7 @@ def step_1(dut: Dut):
         return False, None
 
     # Initiate ReadDataByPeriodicIdentifier
-    response = request_read_data_periodic_identifier(
-        dut, parameters['periodic_did'])
+    response = request_read_data_periodic_identifier(dut, parameters['periodic_did'])
     time_elapsed = dut.uds.milliseconds_since_request()
 
     result = compare_positive_response(
@@ -155,8 +154,7 @@ def step_1(dut: Dut):
 def step_2(dut: Dut, periodic_did):
     """
     action: Set to default session and verify ReadDataByPeriodicIdentifier(0x2A) negative response
-            with transmission mode parameter set to medium.
-
+            with transmission mode parameter set to stop.
     expected_result: ECU should not support ReadDataByPeriodicIdentifier(0x2A) in default session
     """
 
@@ -171,7 +169,7 @@ def step_2(dut: Dut, periodic_did):
 def step_3(dut: Dut, periodic_did):
     """
     action: Set to programming session and verify ReadDataByPeriodicIdentifier(0x2A) negative
-            response with transmission mode parameter set to medium.
+            response with transmission mode parameter set to stop.
 
     expected_result: ECU should not support ReadDataByPeriodicIdentifier(0x2A) in
                      programming session
@@ -187,7 +185,7 @@ def step_3(dut: Dut, periodic_did):
 
 def run():
     """
-    Verify transmission mode medium parameter in ReadDataByPeriodicIdentifier(0x2A) service
+    Verify transmission mode stop parameter in ReadDataByPeriodicIdentifier(0x2A) service
     """
     dut = Dut()
 
@@ -199,17 +197,17 @@ def run():
         result_step, parameters = dut.step(step_1, purpose='Verify '
                                            'ReadDataByPeriodicIdentifier(0x2A) response '
                                            'in extended session with the data parameter '
-                                           'transmissionMode set to medium ')
+                                           'transmissionMode set to stop (04) ')
         if result_step:
             result_step = dut.step(step_2, parameters['periodic_did'], purpose='verify '
                                    'ReadDataByPeriodicIdentifier(0x2A) negative response '
                                    'in default session with the data parameter '
-                                   'transmissionMode set to medium ')
+                                   'transmissionMode set to stop (04) ')
         if result_step:
             result_step = dut.step(step_3, parameters['periodic_did'], purpose='verify '
                                    'ReadDataByPeriodicIdentifier(0x2A) negative response '
                                    'in programming session with the data parameter '
-                                   'transmissionMode set to medium ')
+                                   'transmissionMode set to stop (04) ')
 
         result = result_step
     except DutTestError as error:
