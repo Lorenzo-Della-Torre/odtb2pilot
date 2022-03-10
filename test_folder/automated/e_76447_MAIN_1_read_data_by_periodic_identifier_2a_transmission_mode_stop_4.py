@@ -134,8 +134,7 @@ def step_1(dut: Dut):
         return False, None
 
     # Initiate ReadDataByPeriodicIdentifier
-    response = request_read_data_periodic_identifier(
-        dut, parameters['periodic_did'])
+    response = request_read_data_periodic_identifier(dut, parameters['periodic_did'])
 
     result = compare_positive_response(response, parameters, 'extended')
 
