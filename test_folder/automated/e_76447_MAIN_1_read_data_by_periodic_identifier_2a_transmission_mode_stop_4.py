@@ -34,8 +34,6 @@ details: >
     the data parameter transmissionMode set to stop and it should not support defaultSession
     and programmingSession.
 
-    Also the maximum response time for the service ReadDataByPeriodicIdentifier(0x2A) should
-    be less than 200ms.
 """
 
 import logging
