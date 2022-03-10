@@ -126,7 +126,8 @@ def request_read_data_periodic_identifier(dut: Dut, periodic_did):
 
 def step_1(dut: Dut):
     """
-    action: Set to extended mode and verify ReadDataByPeriodicIdentifier(0x2A) response
+    action: Set to extended mode and verify ReadDataByPeriodicIdentifier(0x2A) response  
+            with transmission mode parameter set to medium.
 
     expected_result: ECU should send positive response within 200ms
     """
@@ -154,6 +155,7 @@ def step_1(dut: Dut):
 def step_2(dut: Dut, periodic_did):
     """
     action: Set to default session and verify ReadDataByPeriodicIdentifier(0x2A) negative response
+            with transmission mode parameter set to medium.
 
     expected_result: ECU should not support ReadDataByPeriodicIdentifier(0x2A) in default session
     """
@@ -169,7 +171,7 @@ def step_2(dut: Dut, periodic_did):
 def step_3(dut: Dut, periodic_did):
     """
     action: Set to programming session and verify ReadDataByPeriodicIdentifier(0x2A) negative
-            response
+            response with transmission mode parameter set to medium.
 
     expected_result: ECU should not support ReadDataByPeriodicIdentifier(0x2A) in
                      programming session
@@ -185,8 +187,7 @@ def step_3(dut: Dut, periodic_did):
 
 def run():
     """
-    Verify the possible to read out data with periodic transmission from ECUs withing 200ms.
-    securityAccess
+    Verify transmission mode medium parameter in ReadDataByPeriodicIdentifier(0x2A) service
     """
     dut = Dut()
 
