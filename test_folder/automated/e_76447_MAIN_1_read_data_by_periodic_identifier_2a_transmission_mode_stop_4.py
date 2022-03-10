@@ -53,28 +53,23 @@ SE27 = SupportService27()
 SIO = SupportFileIO()
 
 
-def compare_positive_response(response, time_elapsed, parameters, session):
+def compare_positive_response(response, parameters, session):
     """
     Compare ReadDataByPeriodicIdentifier(0x2A) positive response
     Args:
         response (str): ECU response code
-        time_elapsed(int): elapsed response time
-        parameters (dict): maximum response time and periodic did
+        parameters (dict): Periodic did
         session (str): diagnostic session
     Returns:
         (bool): True on Success
     """
     result = False
     if response[2:6] == parameters['periodic_did']:
-        if time_elapsed <= parameters['max_response_time']:
-            logging.info("Received %s within %sms for request "
-                         "ReadDataByPeriodicIdentifier(0x2A) in %s session as expected",
-                         parameters['periodic_did'], parameters['max_response_time'], session)
-            result = True
-        else:
-            logging.error("Test failed: Time elapsed %sms is greater than %sms in %s",
-                          time_elapsed, parameters['max_response_time'], session)
-            result = False
+        logging.info("Received %s for request "
+                     "ReadDataByPeriodicIdentifier(0x2A) in %s session as expected",
+                     parameters['periodic_did'], session)
+        result = True
+
     else:
         logging.error("Test Failed: Expected positive response %s, received %s in %s session",
                       parameters['periodic_did'], response, session)
@@ -134,19 +129,17 @@ def step_1(dut: Dut):
 
     dut.uds.set_mode(3)
     # Read maximum response time and periodic did from yml file
-    parameters_dict = {'max_response_time': 0,
-                       'periodic_did': ''}
+    parameters_dict = {'periodic_did': ''}
     parameters = SIO.parameter_adopt_teststep(parameters_dict)
     if not all(list(parameters.values())):
         logging.error("Test Failed: yml parameter not found")
         return False, None
 
     # Initiate ReadDataByPeriodicIdentifier
-    response = request_read_data_periodic_identifier(dut, parameters['periodic_did'])
-    time_elapsed = dut.uds.milliseconds_since_request()
+    response = request_read_data_periodic_identifier(
+        dut, parameters['periodic_did'])
 
-    result = compare_positive_response(
-        response, time_elapsed, parameters, 'extended')
+    result = compare_positive_response(response, parameters, 'extended')
 
     return result, parameters
 
