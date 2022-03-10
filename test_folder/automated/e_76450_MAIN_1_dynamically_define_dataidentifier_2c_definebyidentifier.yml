@@ -1,6 +1,5 @@
 hvbm_p519:
     step_1:
-        max_response_time: 200
         define_did: 'F281'
         source_data_identifier: '1A3B'
         position_in_source_data_record: '03'
