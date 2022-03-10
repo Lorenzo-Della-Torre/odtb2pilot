@@ -28,8 +28,8 @@ description: >
     sessions where the ECU supports the service dynamicallyDefineDataIdentifier.
 
 details: >
-    Verify response for dynamicallyDefineDataIdentifier(0x2C) in default & extended session with
-    response code 0x6C and it should not support in programming session.
+    Verify response for dynamicallyDefineDataIdentifier(0x2C) - defineByIdentifier in default 
+    & extended session with response code 0x6C and it should not support in programming session.
 
     Also the maximum response time for the service dynamicallyDefineDataIdentifier(0x2C) should
     be less than 200ms.
