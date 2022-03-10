@@ -21,7 +21,7 @@ reqprod: 76447
 version: 1
 title: ReadDataByPeriodicIdentifier (2A) - transmissionMode slow (04)
 purpose:
-    Shall be possible to stop reading periodic identifiers without for example changing session 
+    Shall be possible to stop reading periodic identifiers without for example changing session
     since if a session change is done a lot of other functionality might reset as well.
 
 description: >
