@@ -35,7 +35,7 @@ description: >
     2.	An ECU hard reset is triggered.
 
 details: >
-    Verify CAN frame response within 2500ms for ECU hard reset.
+    Verify CAN frame response within 2500ms for ECU hard reset
 """
 
 import logging
@@ -57,7 +57,8 @@ def step_1(dut):
     parameters_dict = {'wakeup_time': '',
                        'pbl_sw_did': ''}
     parameters = SIO.parameter_adopt_teststep(parameters_dict)
-    if parameters is None:
+
+    if not all(list(parameters.values())):
         logging.error("Test Failed: yml parameter not found")
         return False
 
