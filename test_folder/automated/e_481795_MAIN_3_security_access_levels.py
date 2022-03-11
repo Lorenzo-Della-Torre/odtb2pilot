@@ -127,7 +127,7 @@ def step_1(dut: Dut):
     parameters_dict = {'sa_levels_programming': '',
                        'sa_levels_extended': ''}
     parameters = SIO.parameter_adopt_teststep(parameters_dict)
-    if parameters is None:
+    if not all(list(parameters.values())):
         logging.error("Test Failed: yml parameter not found")
         return False, None
     # Verify supported programming session security access level

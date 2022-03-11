@@ -27,6 +27,7 @@ from pathlib import Path
 
 from paramiko import SSHClient
 from paramiko import AuthenticationException
+from paramiko import AutoAddPolicy
 from paramiko.ssh_exception import SSHException
 
 from hilding.sddb import parse_sddb_file
@@ -86,7 +87,14 @@ def get_rig_delivery_files():
     except (AuthenticationException, SSHException):
         # if that doesn't work prompt the user for a password
         password = getpass()
-        ssh.connect(hostname, username=user, password=password)
+        try:
+            ssh.connect(hostname, username=user, password=password)
+        except SSHException:
+            print(f"Do you want do add {hostname} to known hosts? (y/n)")
+            resp = input()
+            if resp.lower() == "y":
+                ssh.set_missing_host_key_policy(AutoAddPolicy())
+                ssh.connect(hostname, username=user, password=password)
 
     sftp = ssh.open_sftp()
     remote_delivery_path = Path(f'/home/{user}/delivery')
