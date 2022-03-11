@@ -10,6 +10,24 @@ platforms:
         auth_key: FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
         proof_key: FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
         FC_Separation_time : '0A'
+    fioc_p519:
+        signal_send: 'FiocdpToFiocFioc1canUdsDiagRequestFrame'
+        signal_receive: 'FiocToFiocdpFioc1canUdsDiagResponseFrame'
+        signal_periodic: 'FiocdpFioc1canNMFr'
+        signal_tester_present: 'FiocdpToAllFioc1canUdsDiagRequestFrame'
+        send: 'FiocdpToFiocFioc1canUdsDiagRequestFrame'
+        receive: 'FiocToFiocdpFioc1canUdsDiagResponseFrame'
+        id: 'FiocdpFioc1canNMFr'
+        tp_name: 'FiocdpToAllFioc1canUdsDiagRequestFrame'
+        wakeup_frame: '1A40C3FF01000000'
+        protocol: 'canfd'
+        framelength_max: 64
+        padding : 'True'
+        SecAcc_Gen: 'Gen2'
+        fixed_key: 'FFFFFFFFFF'
+        auth_key: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
+        proof_key: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
+        FC_Separation_time : '05'
     hvbm_p519_sa1:
         signal_send: HvbmdpToHvbmUdsDiagRequestFrame
         signal_receive: HvbmToHvbmdpUdsDiagResponseFrame
