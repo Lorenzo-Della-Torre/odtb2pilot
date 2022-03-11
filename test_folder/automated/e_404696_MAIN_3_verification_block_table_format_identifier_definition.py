@@ -20,7 +20,7 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 reqprod: 404696
 version: 3
-title: Verification Block Table Format Identifier - Definition 
+title: Verification Block Table Format Identifier-Definition
 purpose: >
     Define the applicable value of the Verification Block Table Format Identifier
 
