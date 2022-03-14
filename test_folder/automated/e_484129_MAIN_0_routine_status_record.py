@@ -22,24 +22,23 @@ reqprod: 484129
 version: 0
 title: RoutineStatusRecord (RSR)
 
-purpose: >
+purpose: > 
+    nil
 
 description: >
 	The control routine may support data parameter routineStatusRecord (RSR). If implemented,
     the routineStatusRecord shall at least be included in the positive response for:
-	sub-function startRoutine if the routine type = 1 (short routine) and the routine does not
-    support sub-function requestRoutineResults
-	sub-function requestRoutineResults
+    	> sub-function startRoutine if the routine type = 1 (short routine) and the routine does
+          not support sub-function requestRoutineResults
+	    > sub-function requestRoutineResults
 	The routineStatusRecord shall contain information regarding:
-	Result from the routine (if the routine was successful)
-	Detailed exit information (in the case the routine was stopped due to entry or exit conditions
-    or if the routine failed its completion due to other reasons)
-
+	    > Result from the routine (if the routine was successful)
+	    > Detailed exit information (in the case the routine was stopped due to entry or exit
+          conditions or if the routine failed its completion due to other reasons)
 
 details: >
-    Verify Check Memory operation services routine 0x31,
-    and get the RoutineType and RoutineStatus for security
-    access in programming session and extended session
+    Verify Check Memory operation services routine 0x31, and get the RoutineType and RoutineStatus
+    for security access in programming session and extended session
 """
 
 
@@ -52,69 +51,58 @@ from supportfunctions.support_SBL import S_CARCOM, SupportSBL
 from supportfunctions.support_can import  CanPayload, CanTestExtra
 from supportfunctions.support_service27 import SupportService27
 from supportfunctions.support_service31 import SupportService31
+from supportfunctions.support_file_io import SupportFileIO
 
 CNF = Conf()
 SSBL = SupportSBL()
 SE27 = SupportService27()
 SE31 = SupportService31()
+SIO = SupportFileIO
 
 
-def get_yml_parameters(dut: Dut, parameters):
+def get_sw_signature_dev(dut:Dut):
     """
-    Get yml parameters to Dut object
+    To Extract sw_signature from vbf headers of VBF file
     Args:
-		dut (class object): dut instance
-        parameters(dict): rid and subfunctions
-
-    Returns: True
-    """
-    try:
-        dut.rid = parameters['rid']
-        dut.subfunctions = parameters['subfunctions']
-    except KeyError:
-        logging.error("Test Failed: rid or subfunctions not present in the yml file")
-        return False
-    return True
-
-def get_vbf_header(dut:Dut):
-    """
-    To Extract vbf headers from VBF file
-    Args:
-        dut (class object): dut instance
-
+        dut (class obj): dut instance
     Returns:
-      vbf_header(dict): dictionary containing vbf header
+        sw_signature (bytes): bytes of sw signature
     """
-
     rig_vbf_path = dut.conf.rig.vbf_path
-    vbf_paths = glob(str(rig_vbf_path) + "/*.vbf")
-    if len(vbf_paths) == 0:
-        msg = "No vbf file found in path: {}".format(rig_vbf_path)
-        logging.error(msg)
-        return False, None
+    vbf_file_paths = glob(str(rig_vbf_path) + "/*.vbf")
 
-    vbf_header = SSBL.read_vbf_file(vbf_paths[0])[1]
-    SSBL.vbf_header_convert(vbf_header)
-    return vbf_header
+    if len(vbf_file_paths) > 0:
+        for vbf_file_path in vbf_file_paths:
+            vbf_header = SSBL.read_vbf_file(vbf_file_path)[1]
+            SSBL.vbf_header_convert(vbf_header)
+            sw_signature_dev = vbf_header['sw_signature_dev'].to_bytes(256, 'big')
+            return sw_signature_dev
+
+    logging.error("No %s VBF found in %s", rig_vbf_path)
+    return False, None
 
 
-def check_memory_session_routine_type_status(dut:Dut, vbf_header, stepno, prog_rid):
+def check_memory_session_routine_type_status(dut:Dut, sw_signature_dev, stepno, prog_rid, index,
+                                             subfunctions):
     """
-    To get Routine type  and Routine status
+    To get Routine type and Routine status
     Args:
         dut (class object): dut instance
-        vbf_header : dictionary containing vbf header
+        sw_signature_dev (bytes) : sw_signature_dev
         step no : stepno
-        prog_rid : rid from yml file for specific session
+        prog_rid (str): rid_programming/rid_extended from yml file for specific session
+        subfunctions (str): subfunction values from yml
     Returns:
         bool: True if data extraction is completed
     """
     result = []
-    sw_signature = vbf_header['sw_signature_dev'].to_bytes(256, 'big')
-    for index_sf in range(len(dut.subfunctions)):
+    sw_signature = sw_signature_dev
+
+    for index_sf in range(len(subfunctions)):
+
         cpay: CanPayload = {"payload" : S_CARCOM.can_m_send("RoutineControlRequestSID",
-                             prog_rid + sw_signature, bytes(dut.subfunctions[index_sf], 'utf-8')),
-                            "extra" : ''
+                             bytes.fromhex(prog_rid[index]) + sw_signature,
+                             bytes.fromhex(subfunctions[index_sf])), "extra" : ''
                             }
         etp: CanTestExtra = {"step_no": stepno,
                                 "purpose" : "SE31 CheckMemory",
@@ -123,7 +111,8 @@ def check_memory_session_routine_type_status(dut:Dut, vbf_header, stepno, prog_r
                                 "max_no_messages" : -1
                             }
         result.append(SE31.routinecontrol_request_sid(dut, cpay, etp))
-    if all(result):
+
+    if len(result) != 0 and all(result):
         return True
     logging.error('Test Failed: routine control request not successful')
     return False
@@ -131,62 +120,82 @@ def check_memory_session_routine_type_status(dut:Dut, vbf_header, stepno, prog_r
 
 def step_1(dut: Dut):
     """
-    action: Read yml file and get neccessary parameters
-    expected_result: True
+    action: Read yml file to get necessary parameters and Set programming session,
+            security access to ECU
+    expected_result: ECU is in programming session and security access is granted
     """
-    parameters = dut.get_platform_yml_parameters(__file__)
-    if parameters is None:
-        raise DutTestError("Cannot read yml file or file not exist")
+    # Define did from yml file
+    parameters_dict = { 'rid_programming': '',
+                        'rid_extended':'',
+                        'subfunctions':''
+                     }
+    parameters = SIO.parameter_adopt_teststep(parameters_dict)
+    if not all(list(parameters.values())):
+        logging.error("Test Failed: yml parameter not found")
+        return False, None
 
-    return get_yml_parameters(dut, parameters)
-
-def step_2(dut: Dut):
-    """
-    action: set programming session , security access to ECU and
-    verify check memory with routine control 0x31 service
-    to get the routine type and Routine status
-    expected_result: positive response
-
-    """
-    vbf_header = get_vbf_header(dut)
+    # Setting Programming session
     dut.uds.set_mode(2)
-    if dut.uds.mode == 2:
-        response = SE27.activate_security_access_fixedkey(dut, CNF.default_rig_config, 2,
-                                                         'Security Access')
-        if response is None:
-            logging.error("Test Failed: Security Access Failed")
-            return False
-        result = check_memory_session_routine_type_status(
-            dut,vbf_header,2,bytes.fromhex(dut.rid["programming"][0]))
-    if result:
+
+    response = SE27.activate_security_access_fixedkey(dut, sa_keys=CNF.default_rig_config,
+                                                    step_no=272, purpose="SecurityAccess")
+    if response is None:
+        logging.error("Test Failed: Security access Failed")
+        return False
+    return True, parameters
+
+
+def step_2(dut: Dut, parameters):
+    """
+    action: Verify check memory with routine control 0x31 service
+            to get the routine type and Routine status
+    expected_result: Positive response
+
+    """
+    sw_signature_dev = get_sw_signature_dev(dut)
+    result = []
+
+    for index in range (len(parameters["rid_programming"])):
+        result.append(check_memory_session_routine_type_status(dut, sw_signature_dev, 2,
+             parameters["rid_programming"], index, parameters["subfunctions"]))
+
+    if len(result) != 0 and all(result):
         return True
-    logging.error('Test Failed: routine control request not successful for programming session')
+    logging.error('Test Failed: routine control request not successful for Extended session')
     return False
+
 
 def step_3(dut: Dut):
     """
-    action: set extended session , security access to ECU and
-    verify check memory with routine control 0x31 service
-    to get the routine type and Routine status
-    expected_result: positive response
+    action: Set Extended session, security access to ECU
+    expected_result: ECU is in programming session and security access is granted
 
     """
-    vbf_header = get_vbf_header(dut)
     dut.uds.set_mode()
     dut.uds.set_mode(3)
+    #line no 178 line to be removed when Security access is supported in extended session
+    logging.error("Test Failed: Security access not supported in extended session")
+    response = SE27.activate_security_access_fixedkey(dut, sa_keys=CNF.default_rig_config,
+                                                    step_no=272, purpose="SecurityAccess")
+    if response is None:
+        logging.error("Test Failed: Security access Failed")
+        return False
+
+
+def step_4(dut: Dut, parameters):
+    """
+    action: Verify check memory with routine control 0x31 service
+    to get the routine type and Routine status
+    expected_result: Positive response
+
+    """
+    sw_signature_dev = get_sw_signature_dev(dut)
     result = []
-    if dut.uds.mode == 3:
-        #line no 225 line to be removed when Security access is supported
-        logging.error("Test Failed: Security access not supported in extended sesssion")
-        response = SE27.activate_security_access_fixedkey(dut, CNF.default_rig_config, 3,
-                                                         'Security Access')
-        if response is None:
-            logging.error("Test Failed: Security access Failed")
-            return False
-        for index in range (len(dut.rid["extended"])):
-            result.append(check_memory_session_routine_type_status(
-                dut,vbf_header,3,bytes.fromhex(dut.rid["extended"][index])))
-    if len (result) != 0 and all(result):
+    for index in range (len(parameters["rid_extended"])):
+        result.append(check_memory_session_routine_type_status(dut, sw_signature_dev, 2,
+             parameters["rid_extended"], index, parameters["subfunctions"]))
+
+    if len(result) != 0 and all(result):
         return True
     logging.error('Test Failed: routine control request not successful for Extended session')
     return False
@@ -195,25 +204,31 @@ def step_3(dut: Dut):
 def run():
     """
     Verifying positive response for service routineControl (0x31)
-    request, regardless of sub-functione with service
+    request, regardless of sub-function with service
     to get the routine type and Routine status to check Routine Status Record.
     """
     dut = Dut()
     start_time = dut.start()
     result = False
+    result_step = False
     try:
         dut.precondition(timeout=60)
-        result = dut.step(step_1, purpose="Read the data from yml file")
 
-        if result:
-            result = dut.step(step_2, purpose='Verifying routine with service 0x31 to get'
-                            ' the routine type and Routine status in programming session'
-                            ' to check Routine Status Record')
+        result_step, parameters = dut.step(step_1, purpose="Read the data from yml file and set "
+                                           " programming session & security access to ECU")
 
-        if result:
-            result = dut.step(step_3, purpose='Verifying routine with service 0x31 to get'
-                            ' the routine type and Routine status in Extended session'
-                            ' to check Routine Status Record')
+        if result_step:
+            result_step = dut.step(step_2, parameters, purpose='Verifying routine with service '
+                                  '0x31 to get the routine type and Routine status to check '
+                                  'Routine Status Record')
+
+        if result_step:
+            result_step = dut.step(step_3, purpose='Set Extended session & security access to ECU')
+
+        if result_step:
+            result_step = dut.step(step_4, parameters, purpose='Verifying routine with service '
+                                  '0x31 to get the routine type and Routine status to check '
+                                  'RoutineStatus Record')
 
     except DutTestError as error:
         logging.error("Test failed: %s", error)

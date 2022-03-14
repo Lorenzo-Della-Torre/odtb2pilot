@@ -1,8 +1,8 @@
-rid:
-  programming: ['0212']
-  extended: ['4000', '401C']
-
-subfunctions:
-- "\x01"
-- "\x02"
-- "\x03"
+hvbm_p519:
+    step_1:
+        rid_programming: ['0212']
+        rid_extended: ['4000', '401C']
+        subfunctions:
+        - "01"
+        - "02"
+        - "03"
