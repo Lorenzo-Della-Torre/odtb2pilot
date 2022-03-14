@@ -22,7 +22,7 @@ reqprod: 484129
 version: 0
 title: RoutineStatusRecord (RSR)
 
-purpose: > 
+purpose: >
     nil
 
 description: >
@@ -78,12 +78,12 @@ def get_sw_signature_dev(dut:Dut):
             sw_signature_dev = vbf_header['sw_signature_dev'].to_bytes(256, 'big')
             return sw_signature_dev
 
-    logging.error("No %s VBF found in %s", rig_vbf_path)
+    logging.error("No VBF file found in %s", rig_vbf_path)
     return False, None
 
 
-def check_memory_session_routine_type_status(dut:Dut, sw_signature_dev, stepno, prog_rid, index,
-                                             subfunctions):
+def check_memory_session_routine_type_status(dut:Dut, sw_signature_dev, stepno, parameters,
+                                             rid_index):
     """
     To get Routine type and Routine status
     Args:
@@ -96,14 +96,13 @@ def check_memory_session_routine_type_status(dut:Dut, sw_signature_dev, stepno, 
         bool: True if data extraction is completed
     """
     result = []
-    sw_signature = sw_signature_dev
-
-    for index_sf in range(len(subfunctions)):
+    for index_sf in range(len(parameters['subfunctions'])):
 
         cpay: CanPayload = {"payload" : S_CARCOM.can_m_send("RoutineControlRequestSID",
-                             bytes.fromhex(prog_rid[index]) + sw_signature,
-                             bytes.fromhex(subfunctions[index_sf])), "extra" : ''
+                             bytes.fromhex(rid_index) + sw_signature_dev,
+                             bytes.fromhex(parameters['subfunctions'][index_sf])), "extra" : ''
                             }
+
         etp: CanTestExtra = {"step_no": stepno,
                                 "purpose" : "SE31 CheckMemory",
                                 "timeout" : 2,
@@ -141,7 +140,7 @@ def step_1(dut: Dut):
                                                     step_no=272, purpose="SecurityAccess")
     if response is None:
         logging.error("Test Failed: Security access Failed")
-        return False
+        return False, None
     return True, parameters
 
 
@@ -155,9 +154,10 @@ def step_2(dut: Dut, parameters):
     sw_signature_dev = get_sw_signature_dev(dut)
     result = []
 
-    for index in range (len(parameters["rid_programming"])):
+    for rid_programming in parameters["rid_programming"]:
         result.append(check_memory_session_routine_type_status(dut, sw_signature_dev, 2,
-             parameters["rid_programming"], index, parameters["subfunctions"]))
+             parameters, rid_programming))
+
 
     if len(result) != 0 and all(result):
         return True
@@ -180,7 +180,7 @@ def step_3(dut: Dut):
     if response is None:
         logging.error("Test Failed: Security access Failed")
         return False
-
+    return True
 
 def step_4(dut: Dut, parameters):
     """
@@ -191,9 +191,9 @@ def step_4(dut: Dut, parameters):
     """
     sw_signature_dev = get_sw_signature_dev(dut)
     result = []
-    for index in range (len(parameters["rid_extended"])):
+    for rid_extended in parameters["rid_extended"]:
         result.append(check_memory_session_routine_type_status(dut, sw_signature_dev, 2,
-             parameters["rid_extended"], index, parameters["subfunctions"]))
+             parameters, rid_extended))
 
     if len(result) != 0 and all(result):
         return True
@@ -219,16 +219,16 @@ def run():
 
         if result_step:
             result_step = dut.step(step_2, parameters, purpose='Verifying routine with service '
-                                  '0x31 to get the routine type and Routine status to check '
-                                  'Routine Status Record')
+                                    '0x31 to get the routine type and Routine status to check '
+                                    'Routine Status Record')
 
         if result_step:
             result_step = dut.step(step_3, purpose='Set Extended session & security access to ECU')
 
         if result_step:
             result_step = dut.step(step_4, parameters, purpose='Verifying routine with service '
-                                  '0x31 to get the routine type and Routine status to check '
-                                  'RoutineStatus Record')
+                                    '0x31 to get the routine type and Routine status to check '
+                                    'RoutineStatus Record')
 
     except DutTestError as error:
         logging.error("Test failed: %s", error)
