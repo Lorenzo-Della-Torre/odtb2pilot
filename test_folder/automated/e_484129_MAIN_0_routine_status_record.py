@@ -90,8 +90,8 @@ def check_memory_session_routine_type_status(dut:Dut, sw_signature_dev, stepno, 
         dut (class object): dut instance
         sw_signature_dev (bytes) : sw_signature_dev
         step no : stepno
-        prog_rid (str): rid_programming/rid_extended from yml file for specific session
-        subfunctions (str): subfunction values from yml
+        prog_rid (list): rid_programming/rid_extended from yml file for specific session
+        subfunctions (list): subfunction values from yml
     Returns:
         bool: True if data extraction is completed
     """
@@ -153,7 +153,6 @@ def step_2(dut: Dut, parameters):
     """
     sw_signature_dev = get_sw_signature_dev(dut)
     result = []
-
     for rid_programming in parameters["rid_programming"]:
         result.append(check_memory_session_routine_type_status(dut, sw_signature_dev, 2,
              parameters, rid_programming))
