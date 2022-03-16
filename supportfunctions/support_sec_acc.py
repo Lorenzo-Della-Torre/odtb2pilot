@@ -287,20 +287,11 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         """
         added for Gen2 from VCC SA-Gen2 library
         Request SecAccess seed using VCC SecAccess Gen2 library"""
-        try:
-            ret = self.lib.sacl_prepare_client_request_seed(ctypes.byref(self.session_buffer),
-                                                            ctypes.byref(self.send_buffer))
-            if ret != SaGen2Param.SA_RET_SUCCESS:
-                raise Exception("Failed to prepare client_request_seed.")
-            return bytearray(self.send_buffer)[0:SaGen2Param.SA_CLIENT_REQUEST_SEED_BUFFER_SIZE]
-
-        except OSError as err:
-            logging.error("An error occurred, most likely since the script was executed "
-                "on a windows machine."
-                " Please note that windows in not yet supported for Security Access generation 2."
-                " \n %s", err)
-
-            raise err
+        ret = self.lib.sacl_prepare_client_request_seed(ctypes.byref(self.session_buffer),
+                                                        ctypes.byref(self.send_buffer))
+        if ret != SaGen2Param.SA_RET_SUCCESS:
+            raise Exception("Failed to prepare client_request_seed.")
+        return bytearray(self.send_buffer)[0:SaGen2Param.SA_CLIENT_REQUEST_SEED_BUFFER_SIZE]
 
     def process_server_response_seed(self, data) -> bool:
         """
@@ -311,11 +302,9 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         logging.debug("SSA response seed, length expected %s",
                        SaGen2Param.SA_CLIENT_PROCESS_SERVER_RESPONSE_SEED_BUFFER_SIZE)
         if len(data) != SaGen2Param.SA_CLIENT_PROCESS_SERVER_RESPONSE_SEED_BUFFER_SIZE:
-            logging.error("server_response_seed should be length %s but is %s",
-                SaGen2Param.SA_CLIENT_PROCESS_SERVER_RESPONSE_SEED_BUFFER_SIZE,
-                len(data))
-
-            return -1
+            raise Exception("server_response_seed( is not of length "\
+                            +f"{SaGen2Param.SA_CLIENT_PROCESS_SERVER_RESPONSE_SEED_BUFFER_SIZE}!"\
+                            +"(len(data))")
 
         len_diff = SaGen2Param.NET_BUFFER_SIZE - len(data)
         data += b'\0' * len_diff
