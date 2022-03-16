@@ -78,63 +78,15 @@ class SupportService27:
         """
             Support function: request seed for calculating security access pin
         """
-        def __prepare_request_PBL(sa_keys):
-            #SA_GEN1:
-            if sa_keys["SecAcc_Gen"] == 'Gen1':
-                cpay: CanPayload =\
-                        {"payload" : S_CARCOM.can_m_send("SecurityAccessRequestSeed", b'', b''),\
-                        "extra" : ''
-                        }
-            #SA_GEN2:
-            elif sa_keys["SecAcc_Gen"] == 'Gen2':
-                SSA.set_level_key(1)
 
-                try:
-                    payload = SSA.prepare_client_request_seed()
-                except OSError:
-                    return dict()
-
-                cpay: CanPayload =\
-                        {"payload" : payload,\
-                        "extra" : ''
-                        }
-            else:
-                logging.info("SA Gen not set.")
-                logging.info("SS27, security_access_request_seed, sa_keys: %s", sa_keys)
-                raise Exception("Failed:  SecurityAccess parameters not set.")
-
-            logging.info("Seed requested from ECU using the following message: %s",payload)
-            return cpay
-
-        def __evaluate_response(sa_keys):
-            internal_response = SC.can_messages[can_p["receive"]][0][2]
-
-            # Find if ECU replied with NRC
-            if internal_response[2:4] == "7F":
-                logging.error("The ECU replied with NRC when requesting seed. ECU response: %s",
-                    internal_response)
-                return False, ""
-            #SA_GEN1:
-            # return payload without request reply (6701)
-            if sa_keys["SecAcc_Gen"] == 'Gen1':
-                seed = SC.can_messages[can_p["receive"]][0][2][6:12]
-            #SA_GEN2:
-            # return complete payload from CAN-message (multiframe) with request reply (6701)
-            # (implemented in SA2 c-library)
-            elif sa_keys["SecAcc_Gen"] == 'Gen2':
-                seed = SC.can_messages[can_p["receive"]][0][2][4:]
-
-            return True, seed
-
-        # Different request in mode 1/3 and mode2
+        #different request in mode 1/3 and mode2
         logging.info("PBL SecAcc req seed: determine current mode")
 
-        result = False
-        seed = ""
+        result = True
         ecu_mode = SE22.get_ecu_mode(can_p)
 
-        logging.info("PBL SecAcc req seed: current mode: %s",
-            ecu_mode)
+        logging.info("PBL SecAcc req seed: current mode: %s",\
+                     SC.can_messages[can_p["receive"]])
 
         if ecu_mode in ('DEF', 'EXT'):
             cpay: CanPayload =\
@@ -142,10 +94,24 @@ class SupportService27:
                "extra" : ''
               }
         elif ecu_mode == 'PBL':
-
-            cpay = __prepare_request_PBL(sa_keys)
-            if bool(cpay) is False:
-                return False, ""
+            #SA_GEN1:
+            if sa_keys["SecAcc_Gen"] == 'Gen1':
+                cpay: CanPayload =\
+                      {"payload" : S_CARCOM.can_m_send("SecurityAccessRequestSeed", b'', b''),\
+                       "extra" : ''
+                      }
+            #SA_GEN2:
+            elif sa_keys["SecAcc_Gen"] == 'Gen2':
+                SSA.set_level_key(1)
+                payload = SSA.prepare_client_request_seed()
+                cpay: CanPayload =\
+                      {"payload" : payload,\
+                       "extra" : ''
+                      }
+            else:
+                logging.info("SA Gen not set.")
+                logging.info("SS27, security_access_request_seed, sa_keys: %s", sa_keys)
+                raise Exception("Failed:  SecurityAccess parameters not set.")
 
         elif ecu_mode == 'SBL':
             logging.info("SS27 sec_acc_req_seed: SBL already activated")
@@ -154,9 +120,12 @@ class SupportService27:
             ### remove when EDA0 implemented in MEP2
             # use ecu_mode == 'PBL' as default while EDA0 not implemented in MEP2 SA_GEN2
             #SA_GEN2:
-            cpay = __prepare_request_PBL(sa_keys)
-            if bool(cpay) is False:
-                return False, ""
+            SSA.set_level_key(1)
+            payload = SSA.prepare_client_request_seed()
+            cpay: CanPayload =\
+                {"payload" : payload,\
+                 "extra" : ''
+                }
             ### remove when EDA0 implemented in MEP2
 
         etp: CanTestExtra = {"step_no": stepno,
@@ -165,9 +134,25 @@ class SupportService27:
                              "min_no_messages" : 1,
                              "max_no_messages" : 1
                             }
-        SUTE.teststep(can_p, cpay, etp)
-
-        result, seed = __evaluate_response(sa_keys)
+        if ecu_mode == 'SBL':
+            logging.info("SBL already active. Don't try to activate again.")
+        else:
+            result = SUTE.teststep(can_p, cpay, etp)
+        #SA_GEN1:
+        # return payload without request reply (6701)
+        if sa_keys["SecAcc_Gen"] == 'Gen1':
+            seed = SC.can_messages[can_p["receive"]][0][2][6:12]
+        #SA_GEN2:
+        # return complete payload from CAN-message (multiframe) with request reply (6701)
+        # (implemented in SA2 c-library)
+        elif sa_keys["SecAcc_Gen"] == 'Gen2':
+            seed = SC.can_messages[can_p["receive"]][0][2][4:]
+        #return payload from CAN-message (multiframe) without request reply (6701)
+        #seed = SC.can_messages[can_p["receive"]][0][2][8:]
+        else:
+            logging.info("SA Gen not set.")
+            logging.info("SS27, security_access_request_seed, sa_keys: %s", sa_keys)
+            raise Exception("Failed:  SecurityAccess parameters not set.")
 
         return result, seed
 
@@ -179,24 +164,6 @@ class SupportService27:
         """
             Support function: request seed for calculating security access pin
         """
-        def __evaluate_response(sa_keys):
-            # SA_GEN1:
-            if sa_keys["SecAcc_Gen"] == 'Gen1':
-                result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], '6702')
-                return result, ""
-            # SA_GEN2:
-            if sa_keys["SecAcc_Gen"] == 'Gen2':
-                internal_response = SC.can_messages[can_p["receive"]][0][2]
-
-                if internal_response[2:4] == "7F":
-                    logging.error("The ECU replied with NRC when sending key to the ECU. "
-                        "Response from the ECU: %s", internal_response)
-                    return False, ""
-
-                return True, internal_response[6:(6+4)]
-
-            return False, ""
-
         ecu_mode = SE22.get_ecu_mode(can_p)
         logging.info("Current ecu mode: %s", ecu_mode)
         #Security Access Send Key
@@ -245,10 +212,11 @@ class SupportService27:
                              "max_no_messages" : 1
                             }
         result = SUTE.teststep(can_p, cpay, etp)
-
-        if result:
-            result, response = __evaluate_response(sa_keys)
-
+        #result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], '6702')
+        #SA_GEN1:
+        # return result
+        #SA_GEN2:
+        response = SC.can_messages[can_p["receive"]][0][2][6:(6+4)]
         return result, response
 
 
@@ -270,7 +238,7 @@ class SupportService27:
 
             #Security Access Send Key
             result = result and self.security_access_send_key(can_p, sa_keys, sa_key_calculated,
-                                                              step_no, purpose)[0]
+                                                              step_no, purpose)
 
         #SA_GEN2:
         elif sa_keys["SecAcc_Gen"] == 'Gen2':
@@ -281,10 +249,6 @@ class SupportService27:
 
             #Security Access request seed
             result, response = self.security_access_request_seed(can_p, sa_keys, step_no, purpose)
-
-            if not result:
-                logging.error("Security access request seed failed.")
-                return False
 
             logging.info("SA_Gen2: request seed result: %s", result)
             logging.info("SA_Gen2: request seed response: %s", response)
