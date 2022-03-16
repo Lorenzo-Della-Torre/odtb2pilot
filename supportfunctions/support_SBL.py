@@ -594,8 +594,9 @@ class SupportSBL:
                                                                        stepno, purpose)
 
             # SBL Download
-            tresult, vbf_sbl_header = self.sbl_download(can_p, self._sbl, stepno)
-            result = result and tresult
+            if result:
+                tresult, vbf_sbl_header = self.sbl_download(can_p, self._sbl, stepno)
+                result = result and tresult
 
             # Activate SBL
             result = result and self.activate_sbl(can_p, vbf_sbl_header, stepno)
@@ -614,8 +615,9 @@ class SupportSBL:
                                                                        stepno, purpose)
 
             # SBL Download
-            tresult, vbf_sbl_header = self.sbl_download(can_p, self._sbl, stepno)
-            result = result and tresult
+            if result:
+                tresult, vbf_sbl_header = self.sbl_download(can_p, self._sbl, stepno)
+                result = result and tresult
 
             # Activate SBL
             result = result and self.activate_sbl(can_p, vbf_sbl_header, stepno)
