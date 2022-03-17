@@ -266,9 +266,9 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         self.g_external_auth_enc_key = (ctypes.c_uint8 * SaGen2Param.KEY_SIZE)(*b_auth_key)
         self.g_external_proof_key = (ctypes.c_uint8 * SaGen2Param.KEY_SIZE)(*b_proof_key)
 
-        logging.info("SSA set_keys. Init of auth/proof key")
-        logging.info("SSA set_keys, auth_key init: %s", self.g_external_auth_enc_key)
-        logging.info("SSA set_keys, proof_key init: %s", self.g_external_proof_key)
+        logging.debug("SSA set_keys. Initializing auth/proof key")
+        logging.debug("SSA set_keys, auth_key init: %s", self.g_external_auth_enc_key)
+        logging.debug("SSA set_keys, proof_key init: %s", self.g_external_proof_key)
 
     def set_level_key(self, level):
         """
@@ -328,7 +328,7 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         ret = self.lib.sacl_prepare_client_send_key(ctypes.byref(self.session_buffer),
                                                     ctypes.byref(self.send_buffer))
         if ret == SaGen2Param.SA_RET_SUCCESS:
-            logging.info("SSA prep client_send_key: success")
+            logging.info("SSA prepare client_send_key: success")
         else:
             raise Exception("Failed, client send key.")
         return bytearray(self.send_buffer)[0:SaGen2Param.SA_CLIENT_PREPARE_SEND_KEY_BUFFER_SIZE]
@@ -350,11 +350,11 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         ret = self.lib.sacl_process_server_response_key(ctypes.byref(self.session_buffer),
                                                         ctypes.byref(buffer))
         if ret == SaGen2Param.SA_RET_SUCCESS:
-            logging.info("SSA server_response_key: success")
+            logging.debug("SSA Process server_response_key: success")
         else:
-            logging.info("SSA server_response_key failed: %s", ret)
+            logging.debug("SSA Process server_response_key failed: %s", ret)
             #raise Exception("Failed, server response key.")
-        logging.info("SSA force server_response_key to true")
+        logging.debug("SSA force server_response_key to true")
         ret = SaGen2Param.SA_RET_SUCCESS
 
         return ret
