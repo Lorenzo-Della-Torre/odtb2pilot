@@ -80,13 +80,12 @@ class SupportService27:
         """
 
         #different request in mode 1/3 and mode2
-        logging.info("PBL SecAcc req seed: determine current mode")
+        logging.debug("PBL SecAcc req seed: determine current mode")
 
         result = True
         ecu_mode = SE22.get_ecu_mode(can_p)
 
-        logging.info("PBL SecAcc req seed: current mode: %s",\
-                     SC.can_messages[can_p["receive"]])
+        logging.info("SecAcc req seed: Current ECU Session : %s",ecu_mode)
 
         if ecu_mode in ('DEF', 'EXT'):
             cpay: CanPayload =\
@@ -109,14 +108,14 @@ class SupportService27:
                        "extra" : ''
                       }
             else:
-                logging.info("SA Gen not set.")
+                logging.info("SA Gen not set properly")
                 logging.info("SS27, security_access_request_seed, sa_keys: %s", sa_keys)
-                raise Exception("Failed:  SecurityAccess parameters not set.")
+                raise Exception("Failed:  SecurityAccess parameters not set properly")
 
         elif ecu_mode == 'SBL':
             logging.info("SS27 sec_acc_req_seed: SBL already activated")
         else:
-            logging.info("SS27 sec_acc_req_seed: unknown status")
+            logging.debug("SS27 sec_acc_req_seed: ECU current session Unknown")
             ### remove when EDA0 implemented in MEP2
             # use ecu_mode == 'PBL' as default while EDA0 not implemented in MEP2 SA_GEN2
             #SA_GEN2:
@@ -195,10 +194,10 @@ class SupportService27:
         elif ecu_mode == 'SBL':
             logging.info("SS27 sec_acc_req_seed: SBL already activated")
         else:
-            logging.info("SS27 sec_acc_req_seed: unknown status")
+            logging.debug("SS27 sec_acc_req_seed: unknown status")
             ### remove when EDA0 implemented in MEP2
             # use ecu_mode == 'PBL' as default while EDA0 not implemented in MEP2 SA_GEN2
-            logging.info("SS27 act as if PBL, SA Gen2. Payload: %s", payload_value)
+            logging.info("SS27 act as if PBL, SA Gen2. Payload: %s", payload_value.hex())
             cpay: CanPayload =\
                 {"payload" : payload_value,\
                  "extra" : ''
@@ -244,28 +243,28 @@ class SupportService27:
         elif sa_keys["SecAcc_Gen"] == 'Gen2':
             # Set keys in SSA
             #SSA.set_keys(auth_key, proof_key)
-            logging.info("SSA sa_keys param %s", sa_keys)
+            logging.debug("SSA sa_keys param %s", sa_keys)
             SSA.set_keys(sa_keys)
 
             #Security Access request seed
             result, response = self.security_access_request_seed(can_p, sa_keys, step_no, purpose)
 
-            logging.info("SA_Gen2: request seed result: %s", result)
+            logging.debug("SA_Gen2: request seed result: %s", result)
             logging.info("SA_Gen2: request seed response: %s", response)
             success = SSA.process_server_response_seed(bytearray.fromhex(response))
 
             if success == 0:
-                logging.info("SA_Gen2: process_server_response_seed %s", success)
-                logging.info("SA_Gen2: success = 0 (ok)")
+                logging.debug("SA_Gen2: process_server_response_seed %s", success)
+                logging.info("SA_Gen2: Process Server Response Seed Successful")
             else:
                 logging.info("SA_Gen2: success = %s (not ok)", success)
                 return False
 
             payload = SSA.prepare_client_send_key()
-            logging.info("SA_Gen2: activate SBL: prepareclient sendkey: %s", payload)
+            logging.debug("SA_Gen2: activate SBL: prepareclient sendkey: %s", payload)
             logging.info("SA_Gen2: activate SBL: prepareclient sendkey (hex): %s", payload.hex())
-            logging.info("SA_Gen2: activate SBL: status before send %s", result)
-            logging.info("SA_Gen2: activate SBL: security_access_send_key")
+            logging.debug("SA_Gen2: activate SBL: status before send %s", result)
+            logging.info("SA_Gen2: activate SBL: Sending Security access key...")
 
             #Security Access Send Key
             result2, response = self.security_access_send_key(can_p,
@@ -273,13 +272,15 @@ class SupportService27:
                                                               payload, step_no, purpose)
 
             result = result and result2
-            logging.info("SA_Gen2: activate SBL: status after send %s", result2)
-            logging.info("SA_Gen2 send key response %s", response)
+            logging.debug("SA_Gen2: activate SBL: status after send %s", result2)
+            logging.debug("SA_Gen2 send key response %s", response)
             success = SSA.process_server_response_key(bytearray.fromhex(response))
 
-            logging.info("SA_Gen2: activate SBL: process_server_response_key %s", success)
             if success != 0:
                 result = False
+                logging.info("SA_Gen2: activate SBL: process_server_response_key not successful")
+            else:
+                logging.info("SA_Gen2: activate SBL: process_server_response_key successful")
         else:
             logging.info("SA Gen not set.")
             logging.info("SS27, security_access_send_key, sa_keys: %s", sa_keys)

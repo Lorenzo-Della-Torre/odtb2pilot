@@ -146,7 +146,7 @@ def software_download(dut):
     vbf_result = load_vbf_files(dut)
 
     logging.info("~~~~~~ Step 1/5 of software download (loading vbfs) done."
-    " Result: %s", vbf_result)
+    " Result: %s\n\n", vbf_result)
 
     if vbf_result is False:
         logging.error("Aborting software download due to problems when loading VBFs")
@@ -156,7 +156,7 @@ def software_download(dut):
     sbl_result = activate_sbl(dut)
 
     logging.info("Step 2/5 of software download (downloading and activating sbl) done."
-    " Result: %s", sbl_result)
+    " Result: %s\n\n", sbl_result)
 
     if sbl_result is False:
         logging.error("Aborting software download due to problems when activating SBL")
@@ -166,7 +166,7 @@ def software_download(dut):
     ess_result = download_ess(dut)
 
     logging.info("Step 3/5 of software download (downloading ess) done. \
-     Result: %s", ess_result)
+     Result: %s\n\n", ess_result)
 
     if ess_result is False:
         logging.error("Aborting software download due to problems when downloading ESS")
@@ -176,7 +176,7 @@ def software_download(dut):
     app_result = download_application_and_data(dut)
 
     logging.info("Step 4/5 of software download (downloading application and data) done."
-    " Result: %s", app_result)
+    " Result: %s\n\n", app_result)
 
     if app_result is False:
         logging.error("Aborting software download due to problems when downloading application")
@@ -186,7 +186,7 @@ def software_download(dut):
     check_result = check_complete_and_compatible(dut)
 
     logging.info("Step 5/5 of software download (Check Complete And Compatible) done."
-    " Result: %s", check_result)
+    " Result: %s\n\n", check_result)
 
     if check_result is False:
         logging.error("Aborting software download due to problems when checking C & C")
