@@ -81,8 +81,9 @@ class SupportService27:
         def __prepare_request_PBL(sa_keys):
             #SA_GEN1:
             if sa_keys["SecAcc_Gen"] == 'Gen1':
+                payload = S_CARCOM.can_m_send("SecurityAccessRequestSeed", b'', b'')
                 cpay: CanPayload =\
-                        {"payload" : S_CARCOM.can_m_send("SecurityAccessRequestSeed", b'', b''),\
+                        {"payload" : payload,\
                         "extra" : ''
                         }
             #SA_GEN2:
@@ -181,7 +182,7 @@ class SupportService27:
         def __evaluate_response(sa_keys):
             # SA_GEN1:
             if sa_keys["SecAcc_Gen"] == 'Gen1':
-                result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], '6702')
+                result = SUTE.test_message(SC.can_messages[can_p["receive"]], '6702')
                 return result, ""
             # SA_GEN2:
             if sa_keys["SecAcc_Gen"] == 'Gen2':
