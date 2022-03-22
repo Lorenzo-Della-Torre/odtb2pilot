@@ -76,7 +76,7 @@ def cluster_key_identifier(dut, did, cluster_id):
     cluster_key_identifier request
     Args:
         dut (class object): dut instance
-        did (str): did to be readed
+        did (str): did to be read
         cluster_id (str): cluster identifier
         parameters (dict): yml parameters
     Returns:
@@ -93,7 +93,7 @@ def cluster_key_identifier(dut, did, cluster_id):
 def step_1(dut):
     """
     action: Initiate security access in Extended session
-    expected_result: Security access succesful in extended session
+    expected_result: Security access successful in extended session
     """
     # Define did from yml file
     parameters_dict = { 'define_did': '',
