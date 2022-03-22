@@ -1,0 +1,5 @@
+hvbm_p519:
+    step_1:
+        define_did: '0234'
+        cluster_key_identifier: '0001'
+        cluster_key_identifier2: '0002'
