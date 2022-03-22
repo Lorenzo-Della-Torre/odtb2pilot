@@ -178,11 +178,11 @@ def run():
                                           " session diagnostic session")
 
         if result_step:
-            result_step = dut.step(step_2, parameters, purpose=" Verify SecOC Cluster Key Identifier"
-                               " (i.e 0001)")
+            result_step = dut.step(step_2, parameters, purpose=" Verify SecOC Cluster Key"
+                               " Identifier (i.e 0001)")
         if result_step:
-            result_step = dut.step(step_3, parameters, purpose=" Verify SecOC Cluster Key Identifier"
-                               " (i.e 0002)")
+            result_step = dut.step(step_3, parameters, purpose=" Verify SecOC Cluster Key "
+                               "Identifier (i.e 0002)")
         result = result_step
     except DutTestError as error:
         logging.error("Test failed: %s", error)
