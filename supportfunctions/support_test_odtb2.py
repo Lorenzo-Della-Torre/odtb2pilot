@@ -57,6 +57,7 @@ import os
 import binascii
 from datetime import datetime
 import string
+import inspect
 
 #sys.path.append('generated')
 from supportfunctions.support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
@@ -170,6 +171,17 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
         Return:
         testresult       bool    result of teststep is as expected
         """
+
+        # Only log test step number if it is an actual test step in a script calling this function
+        # If this function is called from uds.py no print is required since it is handled in dut.py
+        try:
+            called_from_uds = "uds.py" in inspect.stack()[1][1]
+            if int(etp['step_no']) < 100 and not called_from_uds:
+                logging.info(
+                    "\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Step %s started~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+                    etp['step_no'])
+        except ValueError:
+            pass
 
         testresult = True
 
