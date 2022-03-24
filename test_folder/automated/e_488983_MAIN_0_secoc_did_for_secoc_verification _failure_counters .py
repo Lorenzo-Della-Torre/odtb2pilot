@@ -58,8 +58,22 @@ CNF = Conf()
 SE27 = SupportService27()
 SIO = SupportFileIO
 
+def step_1(dut):
+    """
+    action: Verify security access is successful in Extended session
+    expected_result: security access successful and ECU in extended session
+    """
+    # Change to extended session
+    dut.uds.set_mode(3)
+    result = SE27.activate_security_access_fixedkey(dut, sa_keys=CNF.default_rig_config,
+                                                    step_no=1, purpose="SecurityAccess")
+    if result:
+        logging.info("Security access Successful")
+        return True
+    logging.error("Test Failed: Security access denied")
+    return False
 
-def step_1(dut: Dut):
+def step_2(dut: Dut):
     """
     action: Verify fail count value does not overflow after reaching maximum value (0xFF)
     expected_result: True on successfully verified fail count value of signals
@@ -72,13 +86,6 @@ def step_1(dut: Dut):
     if not all(list(parameters.values())):
         logging.error("Test Failed: yml parameter not found")
         return False, None
-    # Change to extended session
-    dut.uds.set_mode(3)
-    result = SE27.activate_security_access_fixedkey(dut, sa_keys=CNF.default_rig_config,
-                                                    step_no=1, purpose="SecurityAccess")
-    if result:
-        logging.info("Security access Successful")
-    logging.error("Test Failed: Security access denied")
 
     # Create a payload with SecOC failure counters DID to send to ECU
     response = dut.uds.read_data_by_id_22(bytes.fromhex(parameters['did']))
@@ -96,7 +103,8 @@ def step_1(dut: Dut):
                 dut.uds.ecu_reset_1101()
                 response = dut.uds.read_data_by_id_22(bytes.fromhex(parameters['did']))
                 if response.raw[0:2] == '62':
-                    if response.raw[parameters['signal1_pos']:parameters['signal1_pos']: + 2] == '00':
+                    if response.raw[parameters['signal1_pos']:parameters['signal1_pos']: + 2]\
+                         == '00':
                         logging.info("Fail count value for Signal-%s is reset to 0", signal_no+1)
                         result.append(True)
                     else:
@@ -122,11 +130,16 @@ def run():
     dut = Dut()
     start_time = dut.start()
     result = False
+    result_step = False
     try:
         dut.precondition(timeout=60)
 
-        result = dut.step(step_1, purpose='Verify status of signal fail count value on '
+        result_step = dut.step(step_1, purpose="Verify security Access in Extended session")
+        if result_step:
+            result_step = dut.step(step_2, purpose='Verify status of signal fail count value on '
                                            'maximum value and ECU reset in extended session')
+        result = result_step
+
     except DutTestError as error:
         logging.error("Test failed: %s", error)
     finally:
