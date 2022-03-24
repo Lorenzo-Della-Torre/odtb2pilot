@@ -79,7 +79,6 @@ def step_1(dut: Dut):
     if result:
         logging.info("Security access Successful")
     logging.error("Test Failed: Security access denied")
-    return False
 
     # Create a payload with SecOC failure counters DID to send to ECU
     response = dut.uds.read_data_by_id_22(bytes.fromhex(parameters['did']))
