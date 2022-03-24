@@ -61,6 +61,7 @@ from supportfunctions.support_postcondition import SupportPostcondition
 from supportfunctions.support_service10 import SupportService10
 from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_service3e import SupportService3e
+from hilding.conf import get_conf
 
 SIO = SupportFileIO
 SC = SupportCAN()
@@ -74,6 +75,7 @@ POST = SupportPostcondition()
 SE10 = SupportService10()
 SE22 = SupportService22()
 SE3E = SupportService3e()
+CONF = get_conf()
 
 def step_1(can_p: CanParam):
     """
@@ -81,19 +83,10 @@ def step_1(can_p: CanParam):
     """
     stepno = 1
     purpose = "Download and Activation of SBL"
-    fixed_key = '0102030405'
-    new_fixed_key = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'fixed_key')
-    # don't set empty value if no replacement was found:
-    if new_fixed_key != '':
-        assert isinstance(new_fixed_key, str)
-        fixed_key = new_fixed_key
-    else:
-        logging.info("Step%s: new_fixed_key is empty. Leave old value.", stepno)
-    logging.info("Step%s: fixed_key after YML: %s", stepno, fixed_key)
 
     result = SSBL.sbl_activation(can_p,
-                                 fixed_key,
-                                 stepno, purpose)
+                                 sa_keys=CONF.default_rig_config,
+                                 stepno=stepno, purpose=purpose)
     return result
 
 def run():

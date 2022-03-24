@@ -194,6 +194,10 @@ if __name__ == "__main__":
         "flash", help="Flash (download) all the vbf files to the ECU"
     )
 
+    config_parser = subparsers.add_parser(
+        "Config", help="Open the Configuration tool"
+    )
+
     args = parser.parse_args()
 
     # we probably want to make all of the logging user configurable, but right
@@ -234,5 +238,9 @@ if __name__ == "__main__":
         handle_rigs(args)
     elif args.command == 'reset':
         reset_and_flash_ecu()
+    elif args.command == 'Config':
+        # pylint: disable=ungrouped-imports
+        from misc.configuration_tool.ConfigurationTool import run
+        run()
     elif args.command == 'flash':
         flash()

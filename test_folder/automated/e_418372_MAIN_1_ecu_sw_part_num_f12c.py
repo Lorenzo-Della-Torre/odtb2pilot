@@ -58,9 +58,9 @@ from hilding.dut import DutTestError
 from hilding.uds import IoVmsDid
 from hilding.uds import EicDid
 from supportfunctions.support_SBL import SupportSBL
-###SecAccessParam only available after SecAccGen2 merge
-#from supportfunctions.support_sec_acc import SecAccessParam
+from supportfunctions.support_file_io import SupportFileIO
 
+SIO = SupportFileIO
 
 def step_1(dut):
     """
@@ -185,8 +185,7 @@ def run():
         "auth_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF',
         "proof_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
     }
-
-    #SIO.extract_parameter_yml(str(inspect.stack()[0][3]), sa_keys)
+    SIO.parameter_adopt_teststep(sa_keys)
 
     try:
         dut.precondition(timeout=200)

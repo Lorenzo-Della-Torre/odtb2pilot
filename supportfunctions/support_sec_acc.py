@@ -266,9 +266,9 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         self.g_external_auth_enc_key = (ctypes.c_uint8 * SaGen2Param.KEY_SIZE)(*b_auth_key)
         self.g_external_proof_key = (ctypes.c_uint8 * SaGen2Param.KEY_SIZE)(*b_proof_key)
 
-        logging.info("SSA set_keys. Init of auth/proof key")
-        logging.info("SSA set_keys, auth_key init: %s", self.g_external_auth_enc_key)
-        logging.info("SSA set_keys, proof_key init: %s", self.g_external_proof_key)
+        logging.debug("SSA set_keys. Initializing auth/proof key")
+        logging.debug("SSA set_keys, auth_key init: %s", self.g_external_auth_enc_key)
+        logging.debug("SSA set_keys, proof_key init: %s", self.g_external_proof_key)
 
     def set_level_key(self, level):
         """
@@ -287,11 +287,20 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         """
         added for Gen2 from VCC SA-Gen2 library
         Request SecAccess seed using VCC SecAccess Gen2 library"""
-        ret = self.lib.sacl_prepare_client_request_seed(ctypes.byref(self.session_buffer),
-                                                        ctypes.byref(self.send_buffer))
-        if ret != SaGen2Param.SA_RET_SUCCESS:
-            raise Exception("Failed to prepare client_request_seed.")
-        return bytearray(self.send_buffer)[0:SaGen2Param.SA_CLIENT_REQUEST_SEED_BUFFER_SIZE]
+        try:
+            ret = self.lib.sacl_prepare_client_request_seed(ctypes.byref(self.session_buffer),
+                                                            ctypes.byref(self.send_buffer))
+            if ret != SaGen2Param.SA_RET_SUCCESS:
+                raise Exception("Failed to prepare client_request_seed.")
+            return bytearray(self.send_buffer)[0:SaGen2Param.SA_CLIENT_REQUEST_SEED_BUFFER_SIZE]
+
+        except OSError as err:
+            logging.error("An error occurred when preparing seed, most likely since the script "
+                "was executed on a windows machine."
+                " Please note that windows in not yet supported for Security Access generation 2."
+                " \n %s", err)
+
+            raise err
 
     def process_server_response_seed(self, data) -> bool:
         """
@@ -302,9 +311,11 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         logging.debug("SSA response seed, length expected %s",
                        SaGen2Param.SA_CLIENT_PROCESS_SERVER_RESPONSE_SEED_BUFFER_SIZE)
         if len(data) != SaGen2Param.SA_CLIENT_PROCESS_SERVER_RESPONSE_SEED_BUFFER_SIZE:
-            raise Exception("server_response_seed( is not of length "\
-                            +f"{SaGen2Param.SA_CLIENT_PROCESS_SERVER_RESPONSE_SEED_BUFFER_SIZE}!"\
-                            +"(len(data))")
+            logging.error("server_response_seed should be length %s but is %s",
+                SaGen2Param.SA_CLIENT_PROCESS_SERVER_RESPONSE_SEED_BUFFER_SIZE,
+                len(data))
+
+            return -1
 
         len_diff = SaGen2Param.NET_BUFFER_SIZE - len(data)
         data += b'\0' * len_diff
@@ -325,13 +336,22 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         Send calculated SA key if no error occured in calculation
         """
         # Prepare client_send_key.
-        ret = self.lib.sacl_prepare_client_send_key(ctypes.byref(self.session_buffer),
+        try:
+            ret = self.lib.sacl_prepare_client_send_key(ctypes.byref(self.session_buffer),
                                                     ctypes.byref(self.send_buffer))
-        if ret == SaGen2Param.SA_RET_SUCCESS:
-            logging.info("SSA prep client_send_key: success")
-        else:
-            raise Exception("Failed, client send key.")
-        return bytearray(self.send_buffer)[0:SaGen2Param.SA_CLIENT_PREPARE_SEND_KEY_BUFFER_SIZE]
+            if ret == SaGen2Param.SA_RET_SUCCESS:
+                logging.info("SSA prep client_send_key: success")
+            else:
+                raise Exception("Failed, client send key.")
+            return bytearray(self.send_buffer)[0:SaGen2Param.SA_CLIENT_PREPARE_SEND_KEY_BUFFER_SIZE]
+
+        except OSError as err:
+            logging.error("An error occurred when preparing key, most likely since the script "
+                "was executed on a windows machine."
+                " Please note that windows in not yet supported for Security Access generation 2."
+                " \n %s", err)
+
+            raise err
 
     def process_server_response_key(self, data) -> bool:
         """
@@ -339,9 +359,11 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         Check if SA-key was accepted
         """
         if len(data) != SaGen2Param.SA_CLIENT_PROCSS_SERVER_RESPONSE_KEY_BUFFER_SIZE:
-            raise Exception("server_response_key is not of length "\
-                            +f"{SaGen2Param.SA_CLIENT_PROCSS_SERVER_RESPONSE_KEY_BUFFER_SIZE}!"\
-                            +"(len(data))")
+            logging.error("server_response_seed should be length %s but is %s",
+                SaGen2Param.SA_CLIENT_PROCSS_SERVER_RESPONSE_KEY_BUFFER_SIZE,
+                len(data))
+
+            return -1
 
         len_diff = SaGen2Param.NET_BUFFER_SIZE - len(data)
         data += b'\0' * len_diff
@@ -350,11 +372,11 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         ret = self.lib.sacl_process_server_response_key(ctypes.byref(self.session_buffer),
                                                         ctypes.byref(buffer))
         if ret == SaGen2Param.SA_RET_SUCCESS:
-            logging.info("SSA server_response_key: success")
+            logging.debug("SSA Process server_response_key: success")
         else:
-            logging.info("SSA server_response_key failed: %s", ret)
+            logging.debug("SSA Process server_response_key failed: %s", ret)
             #raise Exception("Failed, server response key.")
-        logging.info("SSA force server_response_key to true")
+        logging.debug("SSA force server_response_key to true")
         ret = SaGen2Param.SA_RET_SUCCESS
 
         return ret

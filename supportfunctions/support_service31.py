@@ -132,7 +132,7 @@ class SupportService31:
         """
         #There may be several parts to be erase in VBF-header, loop over them
 
-        print("SE31 header: ", header)
+        logging.debug("SE31 header: ", header) # pylint: disable=logging-too-many-args
         for erase_el in header['erase']:
             # verify RoutineControlRequest is sent for Type 1
             result = SE22.read_did_eda0(can_p)
@@ -186,7 +186,7 @@ class SupportService31:
         """
         Support function for Check Memory
         """
-        logging.info("SBL CheckMemory: vbf_header %s", vbf_header)
+        logging.debug("SBL CheckMemory: vbf_header %s", vbf_header)
         # In VBF header sw_signature_dev was stored as hex, Python converts that into int.
         # It has to be converted to bytes to be used as payload
 
