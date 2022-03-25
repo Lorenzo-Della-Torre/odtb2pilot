@@ -59,6 +59,7 @@ from supportfunctions.support_postcondition import SupportPostcondition
 from supportfunctions.support_SBL import SupportSBL
 from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_service10 import SupportService10
+from supportfunctions.support_sec_acc import SecAccessParam
 
 SIO = SupportFileIO
 SC = SupportCAN()
@@ -170,6 +171,15 @@ def run():
     timeout = 2000
     result = PREC.precondition(can_p, timeout)
 
+    #Init parameter for SecAccess Gen1/Gen2
+    sa_keys: SecAccessParam = {
+        "SecAcc_Gen": 'Gen1',
+        "fixed_key": 'FFFFFFFFFF',
+        "auth_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF',
+        "proof_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
+    }
+    SIO.parameter_adopt_teststep(sa_keys)
+
     if result:
     ############################################
     # teststeps
@@ -230,7 +240,7 @@ def run():
     # action: Download and Activate SBL
     # result:
         result = result and SSBL.sbl_activation(can_p,
-         fixed_key='FFFFFFFFFF', stepno='8', purpose="DL and activate SBL")
+         sa_keys, stepno='8', purpose="DL and activate SBL")
         time.sleep(3)
         logging.info("\nTest_step_8 Result: %s\n", result)
 
