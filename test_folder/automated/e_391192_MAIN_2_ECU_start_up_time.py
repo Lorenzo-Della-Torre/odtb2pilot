@@ -1,5 +1,4 @@
 """
-
 /*********************************************************************************/
 
 
@@ -35,61 +34,94 @@ description: >
     2.	An ECU hard reset is triggered.
 
 details: >
-    Verify CAN frame response within 2500ms for ECU hard reset
+    Verify CAN frame response for the following scenerios-
+        1. Verify negative response after ecu reset
+        2. Verify positive response after 2500ms since ecu reset
 """
 
 import logging
+import time
 from hilding.dut import Dut
 from hilding.dut import DutTestError
-from supportfunctions.support_can import SupportCAN
 from supportfunctions.support_file_io import SupportFileIO
 
-SC = SupportCAN()
 SIO = SupportFileIO()
 
 
-def step_1(dut):
+def step_1(dut: Dut):
     """
-    action: ECU hard reset and check CAN frame response within 2500ms
-    expected_result: Positive response
+    action: Check negative response after ecu reset
+    expected_result: True when successfully verified negative response immediately after ecu reset
     """
     # Read yml parameters
-    parameters_dict = {'wakeup_time': '',
-                       'pbl_sw_did': ''}
+    parameters_dict = {'wakeup_time': 0,
+                       'app_sw_did': ''}
     parameters = SIO.parameter_adopt_teststep(parameters_dict)
 
     if not all(list(parameters.values())):
-        logging.error("Test Failed: yml parameter not found")
+        logging.error("Test failed: yml parameter not found")
         return False
+
+    time_dict = {'ecu_reset_time': 0,
+                  'start_time': 0,}
 
     # ECU hard reset
     ecu_response = dut.uds.ecu_reset_1101()
-    start_time = SC.can_messages[dut["receive"]][0][0]
+    time_dict['ecu_reset_time'] = dut.uds.milliseconds_since_request()
+
+    # Set programming DiagnosticSession
+    dut.uds.set_mode(2)
 
     if ecu_response.raw[2:4] == '51':
-        # Read DID: pbl_software_part_num_f125
-        did_response = dut.uds.read_data_by_id_22((bytes.fromhex(parameters['pbl_sw_did'])))
+        time_dict['start_time'] = time.time()
 
-        if did_response.raw[4:6] == '62':
-            end_time = SC.can_messages[dut["receive"]][0][0]
+        # Read application_did
+        response = dut.uds.read_data_by_id_22(bytes.fromhex(parameters['app_sw_did']))
+        time_dict['did_response'] = response.raw
 
-            time_elapsed = (end_time - start_time)
-            # Elapsed time is less than 2500ms
-            if time_elapsed <= float(parameters['wakeup_time']):
-                return True
+        if time_dict['did_response'][2:4] == '7F':
+            logging.info("Received negative response %s as expected",
+                          time_dict['did_response'])
+            return True, parameters, time_dict
 
-            logging.error("Test Failed: Elapsed time is greater than %sms",
-                        parameters['wakeup_time'])
-            return False
+        logging.error("Test failed: Expected negative response, received %s",
+                       time_dict['did_response'])
+        return False, None, None
 
-    msg = "Test Failed: Expected positive response 51, received {}".format(ecu_response.raw)
-    logging.error(msg)
+    logging.error("Test failed: ECU reset not successful expected '51', received %s",
+                   ecu_response.raw)
+    return False, None, None
+
+
+def step_2(dut: Dut, parameters, time_dict):
+    """
+    action: Check positive response after 2500ms since ecu reset
+    expected_result: True when successfully verified positive response after 2500ms since ecu reset
+    """
+    # pylint: disable=unused-argument
+    end_time = time.time()
+    elapsed_time = time_dict['ecu_reset_time']+(end_time-time_dict['start_time'])
+
+    if elapsed_time <= parameters['wakeup_time']:
+        time.sleep((parameters['wakeup_time'] - elapsed_time) * 0.001)
+
+    response = dut.uds.read_data_by_id_22(bytes.fromhex(parameters['app_sw_did']))
+
+    if response.raw[4:6] == '62':
+        logging.info("Received positive response %s as expected",
+                        response.raw[4:6])
+        return True
+
+    logging.error("Test failed: Expected positive response '62', received %s",
+                    response.raw)
     return False
 
 
 def run():
     """
-    Verify sufficient response time on frame level within 2500ms after ECU reset
+    Verify CAN frame response for the following scenerios-
+        1. Verify negative response after ecu reset
+        2. Verify positive response after 2500ms since ecu reset
     """
     dut = Dut()
 
@@ -99,8 +131,11 @@ def run():
     try:
         dut.precondition(timeout=30)
 
-        result_step = dut.step(step_1, purpose="ECU hard reset and check "
-                               "CAN frame response within 2500ms")
+        result_step, parameters, ecu_param_dict = dut.step(step_1, purpose="Verify negative "
+                                                            "response after ecu reset")
+        if result_step:
+            result_step = dut.step(step_2, parameters, ecu_param_dict, purpose="Verify positive "
+                                   "response after 2500ms since ecu reset")
         result = result_step
     except DutTestError as error:
         logging.error("Test failed: %s", error)
