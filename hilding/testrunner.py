@@ -31,6 +31,7 @@ from iterfzf import iterfzf
 
 from hilding import analytics
 from hilding.reset_ecu import reset_and_flash_ecu
+from hilding.uds import UdsEmptyResponse
 
 from autotest.blacklisted_tests_handler import add_to_result, create_logs, get_dictionary_from_yml
 
@@ -119,6 +120,8 @@ def run_test(test_file_py):
         spec.loader.exec_module(module)
         if 'run' in dir(module):
             module.run()
+    except UdsEmptyResponse:
+        log.error("Aborting the test.........")
     except Exception as e: # pylint: disable=broad-except
         log.critical("Testcase failed:\n%s", e)
         verdict = "errored"
@@ -288,7 +291,10 @@ def nightly(args):
         # dealing with (NA, Implicit, etc.)
         current_category = ""
         # Read from yml file what categories we have in the current default project
-        existing_categories = get_dictionary_from_yml().keys()
+        if get_dictionary_from_yml() is not None:
+            existing_categories = get_dictionary_from_yml().keys()
+        else:
+            existing_categories = {}
         for line in testfile_list.readlines():
             stripped_line = line.strip()
             if stripped_line in existing_categories:

@@ -1,4 +1,4 @@
-becm:
+becm_p319:
         step_1:
                 p2_server_timing: 065003001901F400
         step_11:
@@ -9,7 +9,7 @@ becm:
                 p2_server_timing: 065001001901F400
         step_7:
                 p2_server_timing: 065002001901F400
-hvbm:
+hvbm_p519_sa1:
         step_1:
                 p2_server_timing: 065003003201F400
         step_11:
@@ -20,7 +20,7 @@ hvbm:
                 p2_server_timing: 065001003201F400
         step_7:
                 p2_server_timing: 065002001901F400
-hvbm_sa2:
+hvbm_p519:
         step_1:
                 p2_server_timing: 065003003201F400
         step_11:

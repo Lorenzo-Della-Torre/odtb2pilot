@@ -24,7 +24,7 @@ Support function to handle pretty print of a DID
 import time
 import logging
 
-def __get_spaces(name : str):
+def __get_spaces(name : str, max_item_length):
     """Function used to get correct layout in the print.
     It adds to correct amount of spaces so that the string "name" + spaces
     are 50 chars long.
@@ -33,15 +33,14 @@ def __get_spaces(name : str):
 
     Args:
         name (str): Input string, only used to know how many spaces that are needed
+        max_item_length (optional) (int): The maximum allowed length of a response_items name.
+        Everything after this length will be cut out
 
     Returns:
         string: string containing 43-len(name) spaces and one delimiter "|" in index
         [number_of_spaces - 4]
     """
-    if len(name) > 46:
-        name = name[0:46]
-
-    number_of_spaces = 50 - len(name) + 4
+    number_of_spaces = max_item_length - len(name) + 4
     ret_string = ""
     for i in range(number_of_spaces):
         if i == number_of_spaces - 4:
@@ -50,13 +49,15 @@ def __get_spaces(name : str):
             ret_string += " "
     return ret_string
 
-def __uds_response_2_string(uds_response):
+def __uds_response_2_string(uds_response, max_item_length = 55):
     """
     This function takes an instance of the class UdsResponse and turns in into
     a good looking string.
 
     Args:
         uds_response (UdsResponse): An instance of the class UdsReponse
+        max_item_length (optional) (int): The maximum allowed length of a response_items name.
+        Everything after this length will be cut out
 
     Returns:
         string: A string containing all the response items found in uds_response
@@ -66,13 +67,21 @@ def __uds_response_2_string(uds_response):
         response_items = uds_response.details["response_items"]
 
         #First two lines in the pretty print
-        ret_string = "Name                                              | Value \n"
-        ret_string += "--------------------------------------------------|------------- \n"
+        ret_string = "Name"
+        for _ in range(max_item_length-4):
+            ret_string += " "
+        ret_string += "| Value \n"
+        for _ in range(max_item_length):
+            ret_string += "-"
+        ret_string += "|------------- \n"
 
         #If this part in unclear, try printing response_items to understand its structure.
         for response_item in response_items:
-            ret_string += response_item['name']\
-                + __get_spaces(response_item['name'])\
+            response_name = response_item['name']
+            if len(response_name) > max_item_length:
+                response_name = response_name[0:max_item_length]
+            ret_string += response_name\
+                + __get_spaces(response_name, max_item_length)\
                 + str(response_item['scaled_value'])\
                 + "\n"
 

@@ -62,7 +62,7 @@ class popup_update_list:
         object (tkinter window): The master window to the popup
     """
     def __init__(self, master, lst, category):
-        self.list_to_update = string_from_list(lst[1:])
+        self.list_to_update = string_from_list(lst)
 
         self.category = category
 

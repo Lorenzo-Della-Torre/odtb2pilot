@@ -35,7 +35,6 @@ from glob import glob
 from pathlib import Path
 from datetime import datetime
 from tempfile import TemporaryDirectory
-import yaml
 
 import grpc
 import requests
@@ -46,10 +45,7 @@ from protogenerated.common_pb2 import NameSpace
 from protogenerated.system_api_pb2_grpc import SystemServiceStub
 from protogenerated.network_api_pb2_grpc import NetworkServiceStub
 
-from supportfunctions.support_can import SupportCAN
-from supportfunctions.support_can import CanParam
-from supportfunctions.support_can import PerParam
-from supportfunctions.support_can import CanMFParam
+from supportfunctions.support_can import SupportCAN, CanParam, PerParam, CanMFParam
 from supportfunctions.support_service3e import SupportService3e
 from hilding.uds import Uds
 from hilding.uds import EicDid
@@ -461,37 +457,6 @@ class Dut:
 
             self.upload_folder(tmpdirname)
             self.reload_configuration()
-
-    def get_platform_yml_parameters(self, test_filename_py):
-        """Get test_filename_<platform>.yml file from the same directory as the
-        main test if you really want to add external parameters to the test
-
-        usage example:
-            parameters = dut.get_platform_yml_parameters(__file__)
-            dut.send = parameters["send"]
-
-        Args:
-            test_filename_py (string):
-
-        Raises:
-            DutTestError: If platform is not currently supported
-
-        Returns:
-            any: Parameters from yml-file
-        """
-        test_filename = Path(test_filename_py).with_suffix("")
-        platform = self.conf.rig.platform
-        test_filename_platform_yml = Path(f"{test_filename}_{platform}.yml")
-        if not test_filename_platform_yml.exists():
-            raise DutTestError(
-                f"Your platform is not supported for this test. Please add "
-                f"{test_filename_platform_yml} in the same directory as the test")
-        with open(test_filename_platform_yml) as yml:
-            parameters = yaml.safe_load(yml)
-        return parameters
-
-
-
 
 def get_sha256(filename):
     """ Helper function for the file upload process """

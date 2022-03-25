@@ -20,6 +20,7 @@ Any unauthorized copying or distribution of content from this file is prohibited
 /*********************************************************************************/
 """
 
+
 import time
 import logging
 from dataclasses import dataclass
@@ -104,16 +105,29 @@ class Uds:
             "min_no_messages": -1,
             "max_no_messages": -1
         }
+
         log.info("--> Request with payload: %s", payload.hex())
         SupportTestODTB2().teststep(self.dut, cpay, etp)
 
         response = SC.can_messages[self.dut['receive']]
 
         if len(response) == 0:
-            raise UdsEmptyResponse()
+            if SC.can_cf_received[self.dut["receive"]] and "3200" in\
+                                                    SC.can_cf_received[self.dut["receive"]][0][2]:
+                log.error("Abort Flow control frame(3200) received %s",\
+                                                        SC.can_cf_received[self.dut["receive"]])
+
+            elif SC.can_cf_received[self.dut["receive"]] and "3200" not in\
+                                                    SC.can_cf_received[self.dut["receive"]][0][2]:
+                log.error("Data or Abort flow control expected from the ECU, But not received")
+                raise UdsEmptyResponse
+
+            else:
+                log.error(\
+                    "No data received from the ECU. Please check that the ECU is up and running")
+                raise UdsEmptyResponse
 
         return UdsResponse(response[0][2], incoming_mode=self.mode)
-
 
     def ecu_reset_1101(self, delay=1):
         """Reset the ECU

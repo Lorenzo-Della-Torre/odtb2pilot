@@ -333,7 +333,7 @@ class SupportService22:
         if (not message.find('F121', pos) == -1) and (not message.find('F125', pos) == -1):
             # Security Access Request SID
             ecu_mode = 'PBL'
-        elif (not message.find('F122', pos) == -1) and (not message.find('F123', pos) == -1):
+        elif (not message.find('F122', pos) == -1) and (not message.find('F124', pos) == -1):
             ecu_mode = 'SBL'
         elif (not message.find('F120', pos) == -1) and (not message.find('F12E', pos) == -1):
             self.read_did_f186(can_p, dsession=b'')

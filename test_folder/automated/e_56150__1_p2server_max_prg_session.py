@@ -41,17 +41,7 @@ details:
         REQPROD 76172 ReadMemoryByAddress (Service 23).
 """
 
-import logging
-import sys
-
-def run():
-    """
-    Run - Call other functions from here.
-    """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
-
-    logging.info("Testcase result: Implicitly tested by "\
-    "REQPROD 76172 (ReadMemoryByAddress)")
+from e_76172_MAIN_0_readmemorybyaddress_s23 import run
 
 if __name__ == '__main__':
     run()

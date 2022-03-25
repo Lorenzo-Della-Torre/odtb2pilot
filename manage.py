@@ -47,19 +47,8 @@ def config_environ():
     sys.path.append(join(dirname(__file__), "test_folder/manual"))
 
     if not "ODTBPROJPARAM" in environ:
-        project_dir_mapping = {
-            "becm": "MEP2_SPA1",
-            "hvbm": "MEP2_SPA2",
-            "hlcm": "MEP2_HLCM",
-            "ihfa": "MEP2_ED_IHFA",
-            "hvbm_sa2": "MEP2_SPA2_SAGen2"
-        }
         platform = get_conf().rig.platform
-        if not platform in project_dir_mapping:
-            raise NotImplementedError("Platform not in project_dir_mapping")
-
-        project_dir = project_dir_mapping[platform]
-        odtb_proj_parm = join(dirname(__file__), f"projects/{project_dir}")
+        odtb_proj_parm = join(dirname(__file__), f"projects/{platform}")
         # setting environment variables for process internal use is not
         # that pretty, but let's do it like this for now to get away from
         # having to set ODTBPROJPARAM and PYTHONPATH all the time in the shell.
@@ -205,6 +194,10 @@ if __name__ == "__main__":
         "flash", help="Flash (download) all the vbf files to the ECU"
     )
 
+    config_parser = subparsers.add_parser(
+        "Config", help="Open the Configuration tool"
+    )
+
     args = parser.parse_args()
 
     # we probably want to make all of the logging user configurable, but right
@@ -245,5 +238,9 @@ if __name__ == "__main__":
         handle_rigs(args)
     elif args.command == 'reset':
         reset_and_flash_ecu()
+    elif args.command == 'Config':
+        # pylint: disable=ungrouped-imports
+        from misc.configuration_tool.ConfigurationTool import run
+        run()
     elif args.command == 'flash':
         flash()

@@ -57,6 +57,7 @@ import os
 import binascii
 from datetime import datetime
 import string
+import inspect
 
 #sys.path.append('generated')
 from supportfunctions.support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
@@ -171,6 +172,17 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
         testresult       bool    result of teststep is as expected
         """
 
+        # Only log test step number if it is an actual test step in a script calling this function
+        # If this function is called from uds.py no print is required since it is handled in dut.py
+        try:
+            called_from_uds = "uds.py" in inspect.stack()[1][1]
+            if int(etp['step_no']) < 100 and not called_from_uds:
+                logging.info(
+                    "\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Step %s started~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+                    etp['step_no'])
+        except ValueError:
+            pass
+
         testresult = True
 
         SC.clear_old_cf_frames()
@@ -183,6 +195,7 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
             logging.debug("Clear old messages")
             SC.clear_all_can_frames()
             SC.clear_all_can_messages()
+        self.print_test_purpose(etp['step_no'], etp['purpose'])
 
         # wait for messages
         # define answer to expect
@@ -195,7 +208,10 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
         # message to send
         self.__send(can_p, etp, cpay)
 
-        logging.debug("Teststep: Rec can messages: %s", SC.can_messages[can_p["receive"]])
+        logging.debug("Teststep: CAN frames: %s", SC.can_frames)
+        # currently we don't build messages for frames sent
+        #logging.info("Teststep: CAN messages send: %s", SC.can_messages[can_p["send"]])
+        logging.debug("Teststep: CAN messages receive: %s", SC.can_messages[can_p["receive"]])
 
         if SC.can_messages[can_p["receive"]]:
             while self.check_7f78_response(SC.can_messages[can_p["receive"]]):
@@ -213,7 +229,7 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
                 logging.debug("Rec can messages: %s", SC.can_messages[can_p["receive"]])
 
                 logging.debug("78 - ResponsePending was received")
-                logging.info("7Fxx78 received: remove first frame received")
+                logging.debug("7Fxx78 received: remove first frame received")
                 SC.remove_first_can_frame(can_p["receive"])
                 #wait for next frame to be received
                 wait_loop = 0
@@ -224,19 +240,21 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
                     assert isinstance(new_max_7fxx78, int)
                     max_7fxx78 = new_max_7fxx78
                 else:
-                    logging.info("teststep: new_max_7Fxx78 is empty. Leave old value.")
-                logging.info("teststep: max_7Fxx78 %s", max_7fxx78)
+                    logging.debug("teststep: new_max_7Fxx78 is empty. Leave old value.")
+                logging.debug("teststep: max_7Fxx78 %s", max_7fxx78)
 
                 while (len(SC.can_frames[can_p['receive']]) == 0) and (wait_loop <= max_7fxx78):
                     time.sleep(1)
                     wait_loop += 1
-                    logging.info("7Fxx78: frames received: %s", SC.can_frames[can_p['receive']])
-                    logging.info("7Fxx78: len frames received: %s",
+                    logging.debug("7Fxx78: frames received: %s", SC.can_frames[can_p['receive']])
+                    logging.debug("7Fxx78: len frames received: %s",
                                  len(SC.can_frames[can_p['receive']]))
-                    logging.info("7Fxx78 wait for next frame: %s", wait_loop)
-                    logging.info("7Fxx78 wait_loop <=%s: %s",
+                    logging.info("Waiting for an ECU response for Diag request 0x%s....",
+                                cpay['payload'][:len(cpay['payload']) if (len(cpay['payload']) < 8)
+                                                                                    else 8].hex())
+                    logging.debug("7Fxx78 wait_loop <=%s: %s",
                                  max_7fxx78, (wait_loop <= max_7fxx78))
-                logging.info("Rec can frames after loop: %s", SC.can_frames[can_p["receive"]])
+                logging.info("Received can frames : %s", SC.can_frames[can_p["receive"]])
                 SC.clear_can_message(can_p["receive"])
                 SC.update_can_messages(can_p)
 

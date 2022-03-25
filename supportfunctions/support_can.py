@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -210,19 +210,31 @@ class SupportCAN:
 
 
     @classmethod
-    def signal2message(cls, sig_time, my_signal):
+    def signal2message(cls, my_signal):
         """
-        signal2message
+        Takes signal received, extracts data we use in hilding for testing.
+
+        Action: extracts info from my_signal
+        Data extracted timestamp, CAN_ID, payload
+                       timestamp from broker is int, therefor div 1000000 to match time.time()
+
+        Args: my_signal - Frame received from beamybroker
+
+        Returns: extracts values as list
         """
         # Format signal to be better readable
-        return ([sig_time, my_signal.signal[0].id.name,\
-            "{0:016X}".format(my_signal.signal[0].integer)])
+        return ([my_signal.signal[0].timestamp/1000000,\
+                 my_signal.signal[0].id.name,\
+                 "{0:016X}".format(my_signal.signal[0].integer)])
 
     @classmethod
     def display_signals_available(cls, can_p: CanParam):
         """
-        display_signals_available
-        display all signals beamybroker can access in namespaces
+        Action: display signals available in DBC for can_p('namespace')
+
+        Args: communication parameter can_p
+
+        Returns: none
         """
         logging.info("can_p setup: %s", can_p)
         configuration = can_p["system_stub"].GetConfiguration(common_pb2.Empty())
@@ -235,9 +247,12 @@ class SupportCAN:
 
     def subscribe_to_sig(self, can_p: CanParam, timeout=5):
         """
-        Subscribe to signal sig in namespace nsp
+        Action: subscribe to signal sig in can_p('namespace')
+                starts thread listening to signal names in can_p('receive')
+        Args: communication parameter can_p
+        Returns: none
         """
-        source = common_pb2.ClientId(id="app_identifier")
+        source = common_pb2.ClientId(id="hilding_support_can")
         signal = common_pb2.SignalId(name=can_p["receive"], namespace=can_p["namespace"])
         sub_info = network_api_pb2.SubscriberConfig(clientId=source,\
         signals=network_api_pb2.SignalIds(signalId=[signal]), onChange=False)
@@ -286,8 +301,7 @@ class SupportCAN:
                 if (det_mf == 3) and\
                    (can_p["send"] in self.can_mf_send and self.can_mf_send[can_p["send"]] == []):
                     logging.warning("No CF was expected for %s", can_p["send"])
-                self.can_frames[can_p["receive"]].append(self.signal2message(time.time(), response))
-                #print("received: ", self.can_frames[can_p["receive"]])
+                self.can_frames[can_p["receive"]].append(self.signal2message(response))
         except grpc._channel._Rendezvous as err: # pylint: disable=protected-access
             # suppress 'Deadline Exceeded', show other errors
             if not err._state.details == "Deadline Exceeded": # pylint: disable=protected-access
@@ -574,7 +588,7 @@ class SupportCAN:
         #UDS requests have 2 byte commands (like EDA0) which appear in reply
         elif can_send[0] == 0x22 or can_send[0] == 0x2E:
             can_ret = can_ret + can_send[1:3]
-        #other request only have 1 byte command (as 1001, 1002, 1003, 1101
+        #other requests only have 1 byte command (as 1001, 1002, 1003, 1101
         else:
             can_ret = can_ret + can_send[1:2]
         can_ret = can_ret + can_extra
@@ -584,17 +598,16 @@ class SupportCAN:
         return can_ret
 
 
-    @classmethod
-    def __msg_status_2(cls, temp_message, mf_size_remain, i):
-        if mf_size_remain > 7:
-            temp_message[2] = temp_message[2] + i[2][2:16]
-            mf_size_remain -= 7
-            mf_cf_count = ((mf_cf_count + 1) & 0xF) + 32
-
-
     def send_mf(self, can_p: CanParam, cpay, padding, padding_byte):# pylint: disable=too-many-branches
         """
         send_mf
+
+        parameter:
+        can_p : communication parameter
+        cpay: payload to send + extra bytes (as bytes string)
+        padding_byte: value to use for padding
+
+        builds a dict of frames to send (can_mf_send)
         """
         if can_p["protocol"] == "can":
             logging.info("support_can, send_mf: build framelist for can")
@@ -606,8 +619,11 @@ class SupportCAN:
             fl_max = can_p["framelength_max"]
 
             # add first frame
+            #check payloadlength first
+            if (0x1000 + mess_length) > 0x1fff:
+                logging.error("Payload to big to fit in message: %s ", mess_length)
             self.add_canframe_tosend(can_p["send"],\
-                (int(0x1000 | mess_length).to_bytes(2, 'big') + pl_work[0:fl_max-2]))
+                bytes.fromhex(hex(0x1000 + mess_length)[2:]) + pl_work[0:fl_max-2])
             pl_work = pl_work[fl_max-2:]
             logging.debug("Payload stored first frame: %s", self.can_mf_send)
             # add  remaining frames:
@@ -626,7 +642,7 @@ class SupportCAN:
                         self.add_canframe_tosend(can_p["send"],
                                                  bytes([pl_fcount]) + pl_work[0:])
                     pl_work = []
-        elif can_p["protocol"] == "can_fd":
+        elif can_p["protocol"] == "canfd":
             logging.info("support_can, send_mf: build framelist for can_fd")
             pl_fcount = 0x21
             mess_length = len(cpay["payload"])
@@ -634,9 +650,13 @@ class SupportCAN:
             fl_max = can_p["framelength_max"]
 
             # add first frame
+            #check payloadlength first
+            if (0x100000000000000000000000000000000000 + mess_length) > \
+                0x1fffffffffffffffffffffffffffffffffff:
+                logging.error("Payload to big to fit in message: %s ", mess_length)
             self.add_canframe_tosend(can_p["send"],\
-                (int(0x100000000000000000000000000000000000 | mess_length).to_bytes(2, 'big')
-                 + pl_work[0:fl_max-2]))
+                bytes.fromhex(hex(0x100000000000000000000000000000000000 + mess_length)[2:])
+                + pl_work[0:fl_max-2])
             pl_work = pl_work[fl_max-2:]
             logging.debug("Payload stored first frame: %s", self.can_mf_send)
             # add  remaining frames:
@@ -780,6 +800,7 @@ class SupportCAN:
         if can_p["send"] in self.can_mf_send:
             while self.can_mf_send[can_p["send"]]:
                 logging.debug("CAN_MF_send: still payload to send. Wait 1sec")
+                logging.debug("CAN_MF_payload: %s", self.can_mf_send)
                 time.sleep(1)
         else:
             self.can_mf_send[can_p["send"]] = []
@@ -823,7 +844,7 @@ class SupportCAN:
                     logging.error(err)
                 #remove payload after it's been sent
                 logging.debug("Remove payload after being sent")
-                #print("can_mf_send ", self.can_mf_send)
+                logging.debug("can_mf_send %s", self.can_mf_send)
                 try:
                     self.can_mf_send.pop(can_p["send"])
                 except KeyError:
@@ -843,7 +864,7 @@ class SupportCAN:
                 # send accordingly
             else:
                 logging.debug("Payload doesn't fit in one MF message")
-        elif can_p["protocol"] == 'can_fd':
+        elif can_p["protocol"] == 'canfd':
             logging.debug("Send payload as CAN_FD frames")
             # if single_frame:
             if mess_length < can_p["framelength_max"]-1:
@@ -887,6 +908,8 @@ class SupportCAN:
                 logging.debug("Payload doesn't fit in one MF")
         else:
             logging.info("Unknown format for sending payload")
+            logging.info("can_p protocol %s", can_p["protocol"])
+            logging.info("can_p %s", can_p)
 
 
     @classmethod
@@ -1079,7 +1102,7 @@ class SupportCAN:
                         mf_cf_count = 32 # CF franes start with 0x20..0x2F for CAN and CAN_FD
 
                         # get size of message to receive:
-                        if protocol == 'can_fd':
+                        if protocol == 'canfd':
                             # CAN_FD message
                             #logging.debug("add first payload CAN_FD")
                             mess_bytes_received = (len(i[2]) // 2)-12 #payload starts byte6
@@ -1154,4 +1177,6 @@ class SupportCAN:
                 else:
                     logging.error("Unexpected message status in can_frames")
             can_mess_updated = self.__update_msg(can_rec, temp_message, mf_size_remain)
+            logging.debug("CAN message updated: %s", can_mess_updated)
+            logging.debug("message: %s", self.can_messages[can_rec])
         return can_mess_updated

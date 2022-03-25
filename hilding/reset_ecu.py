@@ -91,7 +91,7 @@ def reset_and_flash_ecu():
     start_time = dut.start()
     result = False
     try:
-        dut.precondition(timeout=3600)
+        dut.precondition(timeout=600)
         dut.step(reset_ecu_mode)
         result = True
     except: # pylint: disable=bare-except

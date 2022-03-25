@@ -1,7 +1,7 @@
-hvbm:
+hvbm_p519_sa1:
         step_1:
                 did_pressure: b'\xFD\x35'
-hvbm_sa2:
+hvbm_p519:
         precondition:
                 id: HvbmdpNmFrame
                 tp_name: HvbmdpToAllUdsDiagRequestFrame
