@@ -72,6 +72,7 @@ from supportfunctions.support_service11 import SupportService11
 from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_service27 import SupportService27
 from supportfunctions.support_service31 import SupportService31
+from hilding.conf import get_conf
 
 
 SIO = SupportFileIO
@@ -81,6 +82,7 @@ SUTE = SupportTestODTB2()
 SSBL = SupportSBL()
 SSA = SupportSecurityAccess()
 SGPIO = SupportRpiGpio()
+CONF = get_conf()
 
 PREC = SupportPrecondition()
 POST = SupportPostcondition()
@@ -226,7 +228,9 @@ def run():
         # step 3:
         # action: Security Access Request SID
         # result: ECU sends positive reply
-        result = result and SE27.activate_security_access(can_p, 3)
+        result = result and SE27.activate_security_access_fixedkey(can_p,
+                                                    sa_keys=CONF.default_rig_config,
+                                                    step_no=3)
 
         # step 4:
         # action: Flash Erase in PBL reply with Aborted
