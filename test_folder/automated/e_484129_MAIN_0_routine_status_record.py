@@ -26,7 +26,7 @@ purpose: >
     nil
 
 description: >
-	The control routine may support data parameter routineStatusRecord (RSR). If implemented,
+    The control routine may support data parameter routineStatusRecord (RSR). If implemented,
     the routineStatusRecord shall at least be included in the positive response for:
     	> sub-function startRoutine if the routine type = 1 (short routine) and the routine does
           not support sub-function requestRoutineResults
