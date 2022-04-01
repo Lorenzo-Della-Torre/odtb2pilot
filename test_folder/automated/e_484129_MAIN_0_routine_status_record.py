@@ -120,7 +120,8 @@ def check_memory_session_routine_type_status(dut:Dut, vbf_header, parameters,
             logging.info("Rid and Routine type and Status found")
             results.append(True)
         else:
-            logging.error("Rid and Routine type and Status Not found")
+            logging.error("Rid and Routine type and Status Not found NRC:%s"\
+                            ,can_msg_check[6:16])
             results.append(False)
 
     if len(results) != 0 and all(results):
