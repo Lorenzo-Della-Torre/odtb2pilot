@@ -92,7 +92,6 @@ def check_memory_session_routine_type_status(dut:Dut, vbf_header, parameters,
     Args:
         dut (class object): dut instance
         vbf_header (dict) : vbf_header
-        step no : stepno
         rid_index (list): rid_programming/rid_extended from yml file for specific session
         parameters (list): yml parameters
     Returns:
