@@ -80,7 +80,7 @@ def transfer_data(dut, vbf_header, vbf_block, vbf_block_data):
         dut (Dut): An instance of Dut
         vbf_header (dict): VBF file header
         vbf_block (dict): dictionary containing StartAddress, Length & Checksum
-        vbf_block_data (str): VBF block data byte string
+        vbf_block_data (str): VBF block data bytes
     Returns:
         bool: True if SWDL is successful
     """
