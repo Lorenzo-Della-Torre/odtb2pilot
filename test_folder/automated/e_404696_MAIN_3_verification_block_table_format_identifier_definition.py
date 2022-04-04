@@ -33,7 +33,8 @@ description: >
 
 
 details: >
-    Verify Software Download(SWDL) fail for modified ESS VBF file.       
+    Verify Software Download (SWDL) fail for modified ESS VBF file
+           
 """
 
 import logging
