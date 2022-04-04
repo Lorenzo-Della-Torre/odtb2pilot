@@ -13,19 +13,33 @@ hvbm_p519_sa1:
 
 hvbm_p519:
     --NA--:
+        e_469472_MAIN_1 : system_hardening_strategies | NA to BL or Application. The checks are done implicitly by the BL before starting the application.
+        e_469413_MAIN_1 : nomadic_device_application_restricted_platform access | Our ECU is not capable of connecting to a nomadic device (iDevices, Android, Windows Mobile, etc.) 
         e_441876_MAIN_1 : software_authentication_security_classes | EOL testing. We will use the second security class. All security classes are NA for us.
         e_435017_MAIN_0 : production_key_programming | Encryption and decryption will be on raw data and not on compressed data. Tool verification?
         e_76515_MAIN_3 : ReadDTCInformation (19) - reportDTCWithPermanentStatus (15) | <If ECU doesn't become emission related>
 
     --Inspection--:
-        e_52314_-_5 : diagnostic_trouble_code_for_can_bus_off | <Reason>
+        e_481878_MAIN_0 : interface_to_tee_cryptographic_operations | ETAS provides API. Inspect that we have received those files
+        e_481877_MAIN_0 : hardware_enforced_trusted_execution_environment | Need to inspect that the design is using this
+        e_481880_MAIN_0 : mandatory_confidential_key_hw_protection | Need to validate it is used. Inspection of the design.
+        e_481881_MAIN_0 : mandatory_root_of_trust_public_key_protection | Public key is stored within HSM which is doing the validation. Check Mentors design documents.
+        e_469270_MAIN_2 : random_number_generator | Design requirement. This can't be tested with standard SW. Need special tools.
+        e_469269_MAIN_2 : seed_entropy_for_deterministic_random_bit_generator | Design requirement.
+        e_481930_MAIN_0 : seed_for_deterministic_random_bit_generator | Design requirement. Implemented in HW. Verify Design
+        e_481888_MAIN_0 : confidential_key_external_interface_protection | Design requirement.
+        e_481889_MAIN_0 : confidential_key_hw_protection | Design requirement. Not testable. The TEE is HSM in our case
+        e_481890_MAIN_0 : root_of_trust_public_key_external_interface_protection | Design requirement
+        e_481891_MAIN_0 : root_of_trust_public_key_protection | Design requirement. We are using the HSM.
+        e_481887_MAIN_0 : initial_confidential_key_provisioning | Design requirement. We don't do this. This is for the factory EOL.
+        e_52314_-_5 : diagnostic_trouble_code_for_can_bus_off | This is a configuration in autosar the implementation is done by Mentor. Inspect configuration
         e_161873_MAIN_2 : car_mode_data_record | <Reason>
         e_481875_MAIN_0 : random_number_generator_validation | This can't be tested with standard SW. Need special tools.
         e_60111__1 : can_frame_identifier_length | Look in CanIf and CAN configuration to validate that all outgoing frames is set to classic can with 11 bit addressing.
         e_489057_MAIN_0 : flashable_pbl_bootloader_sw_part_type | Inspect that the vbf sw_part_type is SWBP or SWBT.
 
     --Manual--:
-        e_60107__2 : n_cs_performance_requirement_in_programming_session |
+        e_60107__2 : n_cs_performance_requirement_in_programming_session | <Reason>
         e_396513_MAIN_0 : concurrency_of_functional_and_physical_messages_all_sessions | Timing must be tested with a tool that can trigger to send based on other CAN frames.
 
     --dSpace--:
