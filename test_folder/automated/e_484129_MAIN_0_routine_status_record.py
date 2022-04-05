@@ -46,7 +46,6 @@ import logging
 from glob import glob
 from hilding.dut import Dut
 from hilding.dut import DutTestError
-from hilding.conf import Conf
 from supportfunctions.support_SBL import SupportSBL
 from supportfunctions.support_carcom import SupportCARCOM
 from supportfunctions.support_can import  CanPayload, CanTestExtra
@@ -55,7 +54,6 @@ from supportfunctions.support_service31 import SupportService31
 from supportfunctions.support_file_io import SupportFileIO
 from supportfunctions.support_can import SupportCAN
 
-CNF = Conf()
 SSBL = SupportSBL()
 SIO = SupportFileIO
 SE27 = SupportService27()
@@ -140,7 +138,7 @@ def step_1(dut: Dut):
     # Setting Programming session
     dut.uds.set_mode(2)
 
-    result = SE27.activate_security_access_fixedkey(dut, sa_keys=CNF.default_rig_config,
+    result = SE27.activate_security_access_fixedkey(dut, sa_keys=dut.uds.default_rig_config,
                                                     step_no=272, purpose="SecurityAccess")
     if result:
         logging.info("Security access Successful")
