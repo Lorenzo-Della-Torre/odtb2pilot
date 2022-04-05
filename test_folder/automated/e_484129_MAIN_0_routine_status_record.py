@@ -138,7 +138,7 @@ def step_1(dut: Dut):
     # Setting Programming session
     dut.uds.set_mode(2)
 
-    result = SE27.activate_security_access_fixedkey(dut, sa_keys=dut.uds.default_rig_config,
+    result = SE27.activate_security_access_fixedkey(dut, sa_keys=dut.conf.default_rig_config,
                                                     step_no=272, purpose="SecurityAccess")
     if result:
         logging.info("Security access Successful")
@@ -186,7 +186,7 @@ def step_3(dut: Dut):
     dut.uds.set_mode(1)
     dut.uds.set_mode(3)
 
-    result = SE27.activate_security_access_fixedkey(dut, sa_keys=dut.uds.default_rig_config,
+    result = SE27.activate_security_access_fixedkey(dut, sa_keys=dut.conf.default_rig_config,
                                                     step_no=272, purpose="SecurityAccess")
 
     if result:
