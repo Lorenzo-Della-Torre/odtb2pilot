@@ -97,17 +97,17 @@ def check_memory_session_routine_type_status(dut:Dut, vbf_header, parameters,
     """
     sw_signature_dev = vbf_header['sw_signature_dev'].to_bytes(256, 'big')
     results = []
-    for index_sf in range(len(parameters['subfunctions'])):
-        if index_sf == parameters['subfunctions'][1]:
+    for sub_function in parameters['subfunctions']:
+        if sub_function == '03':
             cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("RoutineControlRequestSID",
-                             bytes.fromhex(parameters['subfunctions'][index_sf]),
+                             bytes.fromhex(sub_function),
                              bytes.fromhex(rid_index)) ,"extra" : ''
                             }
-
-        cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("RoutineControlRequestSID",
-                             bytes.fromhex(rid_index) + sw_signature_dev,
-                             bytes.fromhex(parameters['subfunctions'][index_sf])), "extra" : ''
-                            }
+        else:
+            cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("RoutineControlRequestSID",
+                                bytes.fromhex(rid_index) + sw_signature_dev,
+                                bytes.fromhex(sub_function)), "extra" : ''
+                                }
 
         etp: CanTestExtra = {"step_no": 111,
                                 "purpose" : "SE31 CheckMemory",
