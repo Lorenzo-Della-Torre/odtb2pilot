@@ -44,6 +44,9 @@ hvbm_p519:
 
     --dSpace--:
 
+    --vbf_modification--:
+        e_52282__2: complete_and_compatible_function | Need to modify VBFs to test Not Compatible part
+
 ihfa_v436:
     --NA--:
 
