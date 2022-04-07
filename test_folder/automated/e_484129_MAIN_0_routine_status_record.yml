@@ -5,7 +5,6 @@ hvbm_p519:
             status_type: '100600'
             subfunctions:
             - "01"
-            - "02"
             - "03"
     step_4:
         extended:
@@ -13,5 +12,4 @@ hvbm_p519:
             status_type: '100600'
             subfunctions:
             - "01"
-            - "02"
             - "03"
