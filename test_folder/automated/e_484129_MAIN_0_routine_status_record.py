@@ -100,9 +100,9 @@ def check_memory_session_routine_type_status(dut:Dut, vbf_header, parameters,
     for sub_function in parameters['subfunctions']:
         if sub_function == '03':
             cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("RoutineControlRequestSID",
-                             bytes.fromhex(sub_function),
-                             bytes.fromhex(rid_index)) ,"extra" : ''
-                            }
+                                bytes.fromhex(rid_index), bytes.fromhex(sub_function)),
+                                "extra" : ''
+                                }
         else:
             cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("RoutineControlRequestSID",
                                 bytes.fromhex(rid_index) + sw_signature_dev,
