@@ -1,0 +1,3 @@
+hvbm_p519:
+        step_1:
+                list_dids : ['DD00', 'DD01', 'DD02', 'DD05', 'DD06', 'DD0A']
