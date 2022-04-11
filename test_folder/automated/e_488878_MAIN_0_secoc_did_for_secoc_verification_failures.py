@@ -85,14 +85,15 @@ def step_1(dut: Dut):
     bit_pos = 0
     byte_pos = 0
 
-    for _ in range(len((did_response.raw[6:])/2)):
+    did_response = dut.uds.read_data_by_id_22(bytes.fromhex(parameters['sec_oc_did']))
+    for _ in range(int((len(did_response.raw[6:]))/2)):
 
         # Read did response for all SecOC protected signal
         for signal_name, sig_data in parameters['signals'].items():
             logging.info("Verifying failure count limit bit status of %s by reading the did 'D0CC'",
                           signal_name)
 
-            for _ in range(sig_data[int('failure_count_byte', 16)]):
+            for _ in range(int(sig_data['failure_count_byte'], 16)):
                 # Send faulty data of SecOC protected signal to ECU
                 dut.uds.generic_ecu_call(bytes.fromhex(sig_data['data']))
 
