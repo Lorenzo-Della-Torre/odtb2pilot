@@ -179,6 +179,9 @@ class SupportService27:
         """
             Support function: request seed for calculating security access pin
         """
+        #set default response value
+        response = 'ffffff'
+
         def __evaluate_response(sa_keys):
             # SA_GEN1:
             if sa_keys["SecAcc_Gen"] == 'Gen1':
