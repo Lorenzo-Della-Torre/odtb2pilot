@@ -93,7 +93,7 @@ def verify_dtc_status(dut: Dut, parameters):
                       signal_name)
 
         result = False
-        for _ in range(sig_data[int('failure_count_byte', 16)]):
+        for _ in range(int(sig_data['failure_count_byte'], 16)):
             # Send faulty data of SecOC protected signal to ECU
             dut.uds.generic_ecu_call(bytes.fromhex(sig_data['data']))
 
@@ -125,6 +125,8 @@ def verify_dtc_status(dut: Dut, parameters):
                                                 bytes.fromhex(parameters['mask']))
             dtc_response = dut.uds.generic_ecu_call(dtc_snapshot)
             result_dict[signal_name] = dtc_response.raw
+
+        logging.error("SecOC failure count limit is not exceeded for %s", signal_name)
 
     if len(result_dict) != 0:
         return result_dict
