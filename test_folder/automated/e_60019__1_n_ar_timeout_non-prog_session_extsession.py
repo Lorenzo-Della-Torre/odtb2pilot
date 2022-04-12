@@ -147,7 +147,7 @@ def step_3(can_p):
     can_mf: CanMFParam = {
         "block_size": 0,
         "separation_time": 0,
-        "frame_control_delay": 1050,
+        "frame_control_delay": 1100,
         "frame_control_flag": 48,
         "frame_control_auto": True
         }
@@ -159,6 +159,7 @@ def step_3(can_p):
         logging.info("Timeout due to FC delay: ")
         logging.info("number of frames received as expected: %s",\
                      len(SC.can_frames[can_p["receive"]]))
+        logging.info(SC.can_frames[can_p["receive"]])
     else:
         logging.info("FAIL: Wrong number of frames received. Expeced %s Received: %s",\
                      n_frame, len(SC.can_frames[can_p["receive"]]))
