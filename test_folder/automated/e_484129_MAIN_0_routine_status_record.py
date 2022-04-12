@@ -66,7 +66,7 @@ def get_vbf_header(dut:Dut):
     """
     Extract vbf headers from VBF file
     Args:
-        dut (class obj): dut instance
+        dut (Dut): dut instance
     Returns:
         vbf headers (dict): vbf_header
     """
@@ -84,14 +84,14 @@ def get_vbf_header(dut:Dut):
 
 
 def check_memory_session_routine_type_status(dut:Dut, vbf_header, parameters,
-                                             rid_index):
+                                             rid):
     """
     To get Routine type and Routine status from Routine Control check memory routine
     Args:
         dut (class object): dut instance
         vbf_header (dict) : vbf_header
-        rid_index (list): rid_programming/rid_extended from yml file for specific session
-        parameters (list): yml parameters
+        rid (str): programming or extended rid
+        parameters (dict): subfunctions, status_type.
     Returns:
         bool: True on routine control successful
     """
@@ -100,12 +100,12 @@ def check_memory_session_routine_type_status(dut:Dut, vbf_header, parameters,
     for sub_function in parameters['subfunctions']:
         if sub_function == '03':
             cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("RoutineControlRequestSID",
-                                bytes.fromhex(rid_index), bytes.fromhex(sub_function)),
+                                bytes.fromhex(rid), bytes.fromhex(sub_function)),
                                 "extra" : ''
                                 }
         else:
             cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("RoutineControlRequestSID",
-                                bytes.fromhex(rid_index) + sw_signature_dev,
+                                bytes.fromhex(rid) + sw_signature_dev,
                                 bytes.fromhex(sub_function)), "extra" : ''
                                 }
 
@@ -118,13 +118,13 @@ def check_memory_session_routine_type_status(dut:Dut, vbf_header, parameters,
         SE31.routinecontrol_request_sid(dut, cpay, etp)
         # check Rid and status type bytes
         can_msg_check = SC.can_messages[dut["receive"]][0][2]
-        if can_msg_check[6:10] == rid_index and \
+        if can_msg_check[6:10] == rid and \
             can_msg_check[10:16] == parameters['status_type']:
-            logging.info("Rid and Routine type and Status found")
+            logging.info("Rid, Routine type and Status found %s", can_msg_check[6:16])
             results.append(True)
         else:
-            logging.error("Rid and Routine type and Status Not found NRC:%s"\
-                            ,can_msg_check[6:16])
+            logging.error("Routine control Status type not as expected, received NRC:%s",
+                            can_msg_check)
             results.append(False)
 
     if len(results) != 0 and all(results):
@@ -146,9 +146,9 @@ def step_1(dut: Dut):
     result = SE27.activate_security_access_fixedkey(dut, sa_keys=dut.conf.default_rig_config,
                                                     step_no=272, purpose="SecurityAccess")
     if result:
-        logging.info("Security access Successful")
+        logging.info("Security access Successful in programming session")
         return True
-    logging.error("Test Failed: Security access denied")
+    logging.error("Test Failed: Security access denied in programming session")
     return False
 
 
@@ -156,7 +156,7 @@ def step_2(dut: Dut):
     """
     action: Verify check memory with routine control 0x31 service
             to get the Routine type and Routine status
-    expected_result: Positive response on routine control request
+    expected_result: True when routine control request verified successfully
 
     """
     # Define did from yml file
@@ -174,7 +174,7 @@ def step_2(dut: Dut):
 
 
     if len(result) != 0 and all(result):
-        logging.info("routine control request successful in programming session")
+        logging.info("Routine control request successful in programming session")
         return True
 
     logging.error('Test Failed: routine control request not successful in programming session')
@@ -187,7 +187,7 @@ def step_3(dut: Dut):
     expected_result: True on successful security access in extended session
 
     """
-    # Setting Extended session
+    # Set ECU to Extended session
     dut.uds.set_mode(1)
     dut.uds.set_mode(3)
 
@@ -195,10 +195,10 @@ def step_3(dut: Dut):
                                                     step_no=272, purpose="SecurityAccess")
 
     if result:
-        logging.info("Security access Successful")
+        logging.info("Security access Successful in extended session")
         return True
 
-    logging.error("Test Failed: Security access denied")
+    logging.error("Test Failed: Security access denied in extended session")
     return False
 
 
@@ -206,8 +206,7 @@ def step_4(dut: Dut):
     """
     action: Verify check memory with routine control 0x31 service
             to get the Routine type and Routine status in Extended session
-    expected_result: Positive response on routine control request
-
+    expected_result: True when routine control request verified successfully
     """
     parameters_dict = {'extended':''}
     parameters = SIO.parameter_adopt_teststep(parameters_dict)
@@ -223,10 +222,10 @@ def step_4(dut: Dut):
             parameters['extended'], rid))
 
     if len(result) != 0 and all(result):
-        logging.info("routine control request successful for Extended session")
+        logging.info("Routine control request successful for Extended session")
         return True
 
-    logging.error('Test Failed: routine control request not successful for Extended session')
+    logging.error('Test Failed: Routine control request not successful for Extended session')
     return False
 
 
