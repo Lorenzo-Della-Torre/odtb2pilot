@@ -108,12 +108,13 @@ def step_1(dut: Dut):
 
                 if count_value < (failure_count_len-1):
                     if fail_count[bit_pos] == '0':
-                        logging.info("SecOC failure count limit bit is %s, and limit is not exceeded",
-                                    fail_count[bit_pos])
+                        logging.info("SecOC failure count limit bit is %s, and limit is not"
+                                     " exceeded", fail_count[bit_pos])
                         results.append(True)
                     else:
-                        logging.error("Test Failed: SecOC failure count limit is exceeded for %s and the "
-                                    "bit value is %s", signal_name, fail_count[bit_pos])
+                        logging.error("Test Failed: SecOC failure count limit is exceeded"
+                                      " for %s and the bit value is %s", signal_name,
+                                      fail_count[bit_pos])
                         results.append(False)
 
                 else:
@@ -122,8 +123,9 @@ def step_1(dut: Dut):
                                     fail_count[bit_pos])
                         results.append(True)
                     else:
-                        logging.error("Test Failed: SecOC failure count limit is not exceeded for %s and the "
-                                    "bit value is %s", signal_name, fail_count[bit_pos])
+                        logging.error("Test Failed: SecOC failure count limit is not exceeded "
+                                      " for %s and the bit value is %s", signal_name,
+                                      fail_count[bit_pos])
                         results.append(False)
 
             # Increase bit_pos value by 1 to select next signal
