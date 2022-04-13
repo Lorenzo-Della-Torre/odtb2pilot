@@ -81,7 +81,7 @@ def step_1(dut: Dut):
         logging.error("Test Failed: yml parameter not found")
         return False
 
-    result = []
+    results = []
     bit_pos = 0
     byte_pos = 0
 
@@ -93,7 +93,8 @@ def step_1(dut: Dut):
             logging.info("Verifying failure count limit bit status of %s by reading the did 'D0CC'",
                           signal_name)
 
-            for _ in range(int(sig_data['failure_count_byte'], 16)):
+            failure_count_len = int(sig_data['failure_count_byte'], 16)
+            for count_value in range(failure_count_len):
                 # Send faulty data of SecOC protected signal to ECU
                 dut.uds.generic_ecu_call(bytes.fromhex(sig_data['data']))
 
@@ -105,28 +106,32 @@ def step_1(dut: Dut):
                 # Reverse bit string
                 fail_count = failure_count_limit_status[2:][::-1]
 
-                if fail_count[0+bit_pos:1+bit_pos] == '0':
-                    logging.info("SecOC failure count limit bit is %s, and limit is not exceeded",
-                                  fail_count[0+bit_pos:1+bit_pos])
-                    result.append(True)
-                logging.error("Test Failed: SecOC failure count limit is exceeded for %s and the "
-                              "bit value is %s", signal_name, fail_count[0+bit_pos:1+bit_pos])
-                result.append(False)
+                if count_value < (failure_count_len-1):
+                    if fail_count[bit_pos] == '0':
+                        logging.info("SecOC failure count limit bit is %s, and limit is not exceeded",
+                                    fail_count[bit_pos])
+                        results.append(True)
+                    else:
+                        logging.error("Test Failed: SecOC failure count limit is exceeded for %s and the "
+                                    "bit value is %s", signal_name, fail_count[bit_pos])
+                        results.append(False)
 
-            if fail_count[0+bit_pos:1+bit_pos] == '1':
-                logging.info("SecOC failure count limit bit is %s, and limit is exceeded",
-                              fail_count[0+bit_pos:1+bit_pos])
-                result.append(True)
-            logging.error("Test Failed: SecOC failure count limit is not exceeded for %s and the "
-                          "bit value is %s", signal_name, fail_count[0+bit_pos:1+bit_pos])
-            result.append(False)
+                else:
+                    if fail_count[bit_pos] == '1':
+                        logging.info("SecOC failure count limit bit is %s, and limit is exceeded",
+                                    fail_count[bit_pos])
+                        results.append(True)
+                    else:
+                        logging.error("Test Failed: SecOC failure count limit is not exceeded for %s and the "
+                                    "bit value is %s", signal_name, fail_count[bit_pos])
+                        results.append(False)
 
             # Increase bit_pos value by 1 to select next signal
             bit_pos = bit_pos + 1
 
         byte_pos = byte_pos + 2
 
-    if all(result) and len(result) != 0:
+    if all(results) and len(results) != 0:
         logging.info("Successfully verified the status of DID for all signals")
         return True
 
