@@ -83,10 +83,36 @@ def get_vbf_header(dut:Dut):
     return None
 
 
-def check_memory_session_routine_type_status(dut:Dut, vbf_header, parameters,
+def prepare_cpay_etp(dut, rid, sub_function):
+
+    """
+    To prepare capy and etp for routine control requests
+    Args:
+        dut (class object): dut instance
+        rid (str): programming or extended rid
+        sub_function (str): subfunctions[01, 03]
+    Returns:
+        response : ECU response
+    """
+     # check Rid and status type bytes
+    cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("RoutineControlRequestSID",\
+                        bytes.fromhex(rid), bytes.fromhex(sub_function)),\
+                        "extra" : ''
+                    }
+
+    etp: CanTestExtra = {"step_no": 111,
+                            "purpose" : "SE31 Routine Control Request",
+                            "timeout" : 2,
+                            "min_no_messages" : -1,
+                            "max_no_messages" : -1
+                        }
+    SE31.routinecontrol_request_sid(dut, cpay, etp)
+
+
+def routine_type_status(dut:Dut, vbf_header, parameters,
                                              rid):
     """
-    To get Routine type and Routine status from Routine Control check memory routine
+    To get Routine type and Routine status from Routine Control request
     Args:
         dut (class object): dut instance
         vbf_header (dict) : vbf_header
@@ -95,32 +121,17 @@ def check_memory_session_routine_type_status(dut:Dut, vbf_header, parameters,
     Returns:
         bool: True on routine control successful
     """
-    sw_signature_dev = vbf_header['sw_signature_dev'].to_bytes(256, 'big')
     results = []
     for sub_function in parameters['subfunctions']:
-        if sub_function == '03':
-            cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("RoutineControlRequestSID",
-                                bytes.fromhex(rid), bytes.fromhex(sub_function)),
-                                "extra" : ''
-                                }
-        else:
-            cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("RoutineControlRequestSID",
-                                bytes.fromhex(rid) + sw_signature_dev,
-                                bytes.fromhex(sub_function)), "extra" : ''
-                                }
 
-        etp: CanTestExtra = {"step_no": 111,
-                                "purpose" : "SE31 CheckMemory",
-                                "timeout" : 2,
-                                "min_no_messages" : -1,
-                                "max_no_messages" : -1
-                            }
-        SE31.routinecontrol_request_sid(dut, cpay, etp)
-        # check Rid and status type bytes
+        if rid == 'FF00':
+            SE31.routinecontrol_requestsid_flash_erase(dut, vbf_header, stepno=111)# check
+        else:
+            prepare_cpay_etp(dut, rid, sub_function)
         can_msg_check = SC.can_messages[dut["receive"]][0][2]
-        if can_msg_check[6:10] == rid and \
-            can_msg_check[10:16] == parameters['status_type']:
-            logging.info("Rid, Routine type and Status found %s", can_msg_check[6:16])
+
+        if can_msg_check[6:10] == rid:
+            logging.info("Rid, Routine type and Status found %s", can_msg_check[6:10])
             results.append(True)
         else:
             logging.error("Routine control Status type not as expected, received NRC:%s",
@@ -140,7 +151,7 @@ def step_1(dut: Dut):
     action: Set programming session & security access to ECU
     expected_result: True on successful security access in programming session
     """
-    # Setting Programming session
+    # Set ECU to Programming session
     dut.uds.set_mode(2)
 
     result = SE27.activate_security_access_fixedkey(dut, sa_keys=dut.conf.default_rig_config,
@@ -165,15 +176,14 @@ def step_2(dut: Dut):
     if not all(list(parameters.values())):
         logging.error("Test Failed: yml parameter not found")
         return False
-    result = []
+    results = []
     vbf_header = get_vbf_header(dut)
 
     for rid in parameters['programming']['rid']:
-        result.append(check_memory_session_routine_type_status(dut, vbf_header,
-            parameters['programming'], rid))
+        results.append(routine_type_status(dut, vbf_header,parameters['programming'], rid))
 
 
-    if len(result) != 0 and all(result):
+    if len(results) != 0 and all(results):
         logging.info("Routine control request successful in programming session")
         return True
 
@@ -214,14 +224,13 @@ def step_4(dut: Dut):
         logging.error("Test Failed: yml parameter not found")
         return False, None
 
-    result = []
+    results = []
     vbf_header = get_vbf_header(dut)
 
     for rid in parameters["extended"]['rid']:
-        result.append(check_memory_session_routine_type_status(dut, vbf_header,
-            parameters['extended'], rid))
+        results.append(routine_type_status(dut, vbf_header, parameters['extended'], rid))
 
-    if len(result) != 0 and all(result):
+    if len(results) != 0 and all(results):
         logging.info("Routine control request successful for Extended session")
         return True
 
