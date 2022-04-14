@@ -1,15 +1,16 @@
 hvbm_p519:
     step_2:
         programming:
-            rid: ['0205', 'FF00']
-            status_type: '100600'
+            rid_status_type:
+                '0205': '100000'
+                'FF00': '100000'
             subfunctions:
             - "01"
             - "03"
     step_4:
         extended:
-            rid: ['0206']
-            status_type: '100600'
+            rid_status_type:
+                '0206': '100600'
             subfunctions:
             - "01"
             - "03"

@@ -110,7 +110,7 @@ def prepare_cpay_etp(dut, rid, sub_function):
 
 
 def routine_type_status(dut:Dut, vbf_header, parameters,
-                                             rid):
+                                             rid, status):
     """
     To get Routine type and Routine status from Routine Control request
     Args:
@@ -123,14 +123,14 @@ def routine_type_status(dut:Dut, vbf_header, parameters,
     """
     results = []
     for sub_function in parameters['subfunctions']:
-
+        # comparining FF00 to used support function
         if rid == 'FF00':
             SE31.routinecontrol_requestsid_flash_erase(dut, vbf_header, stepno=111)# check
         else:
             prepare_cpay_etp(dut, rid, sub_function)
         can_msg_check = SC.can_messages[dut["receive"]][0][2]
 
-        if can_msg_check[6:10] == rid:
+        if can_msg_check[6:10] == rid and can_msg_check[10:16] == status:
             logging.info("Rid, Routine type and Status found %s", can_msg_check[6:10])
             results.append(True)
         else:
@@ -179,9 +179,9 @@ def step_2(dut: Dut):
     results = []
     vbf_header = get_vbf_header(dut)
 
-    for rid in parameters['programming']['rid']:
-        results.append(routine_type_status(dut, vbf_header,parameters['programming'], rid))
-
+    for rid,status in parameters['programming']['rid_status_type'].items():
+        results.append(routine_type_status(dut, vbf_header, parameters['programming'],
+                                           rid, status))
 
     if len(results) != 0 and all(results):
         logging.info("Routine control request successful in programming session")
@@ -227,8 +227,8 @@ def step_4(dut: Dut):
     results = []
     vbf_header = get_vbf_header(dut)
 
-    for rid in parameters["extended"]['rid']:
-        results.append(routine_type_status(dut, vbf_header, parameters['extended'], rid))
+    for rid,status in parameters['extended']['rid_status_type'].items():
+        results.append(routine_type_status(dut, vbf_header, parameters['extended'], rid, status))
 
     if len(results) != 0 and all(results):
         logging.info("Routine control request successful for Extended session")
