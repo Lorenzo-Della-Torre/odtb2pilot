@@ -27,6 +27,7 @@ hvbm_p519:
     --Manual--:
         e_60107__2 : n_cs_performance_requirement_in_programming_session |
         e_396513_MAIN_0 : concurrency_of_functional_and_physical_messages_all_sessions | Timing must be tested with a tool that can trigger to send based on other CAN frames.
+        e_53863__2 : sample_mode | Single sample mode is the preferred operating mode at 500 kbit/s.
 
     --dSpace--:
 
