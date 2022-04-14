@@ -90,7 +90,7 @@ def step_2(dut: Dut):
         logging.error("Test failed: yml parameter not found")
         return False
 
-    time.sleep(parameters['wakeup_time'])
+    time.sleep((parameters['wakeup_time'])/1000)
 
     response = dut.uds.read_data_by_id_22(bytes.fromhex(parameters['app_sw_did']))
 
@@ -99,7 +99,7 @@ def step_2(dut: Dut):
         return True
 
     logging.error("Test failed: Expected positive response '62', received NRC %s",
-                    response.raw)
+                   response.raw)
     return False
 
 
