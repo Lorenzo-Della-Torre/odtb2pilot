@@ -190,7 +190,8 @@ def run():
         # result: ECU sends positive reply
         logging.info("Step 8: DL entire software")
         result = result and SE11.ecu_hardreset(can_p, stepno=8)
-        result = result and SSBL.sbl_activation(can_p, stepno=8, purpose="DL and activate SBL")
+        result = result and SSBL.sbl_activation(can_p, CONF.default_rig_config,\
+                                             stepno=8, purpose="DL and activate SBL")
         time.sleep(1)
         result = result and SSBL.sw_part_download(can_p, SSBL.get_ess_filename(),
                                                   stepno=8,
