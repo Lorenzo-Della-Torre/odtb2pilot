@@ -88,7 +88,7 @@ def request_read_data_by_identifier(dut: Dut, parameters):
 
 def step_1(dut: Dut):
     """
-    action: Verify security access in Extended session
+    action: Security access to ECU in extended session
     expected_result: Security access successful and ECU is in extended session
     """
     # Change to extended session
@@ -104,11 +104,10 @@ def step_1(dut: Dut):
     return False
 
 
-def step_2(dut: Dut, parameters):
+def step_2(dut: Dut):
     """
     action: Verify SecOC failure count value within the range '00' to 'FF'
     expected_result: True when SecOC failure count value is within the range '00' to 'FF'
-                     for all signals
     """
     parameters_dict = {'sec_oc_did': '',
                        'position': 0}
@@ -124,37 +123,36 @@ def step_2(dut: Dut, parameters):
     did_response, sig_count = request_read_data_by_identifier(dut, parameters)
 
     # Verify failure count value for each signal from signal-1 to Signal-n
-    for signal_index in range(1, sig_count+1):
+    for index in range(sig_count):
         # Conversion of hexadecimal data into integer
         signal = int(did_response[parameters['position']+sig_pos:parameters['position']+sig_pos+2],
                      16)
         # Verifying signal is within range '00' to 'FF'
         if signal >= 0:
             if signal <= 255:
-                logging.info("SecOC failure count value %s is within the range '00' to 'FF' for "
-                            "Signal-%s", hex(signal).upper()[2:], signal_index)
+                logging.info("SecOC failure count %s is within the range '00' to 'FF' for "
+                             "Signal-%s", hex(signal).upper()[2:], index)
                 results.append(True)
         else:
-            logging.error("SecOC failure count value %s is not in the range '00' to 'FF' "
-                          "for Signal-%s", hex(signal).upper()[2:], signal_index)
+            logging.error("SecOC failure count %s is not within the range '00' to 'FF' "
+                          "for Signal-%s", hex(signal).upper()[2:], index)
             results.append(False)
 
         sig_pos = sig_pos + 2
 
     if all(results) and len(results) != 0:
-        logging.info("Successfully verified that the SecOC failure count value is within the range"
-                     " '00' to 'FF' for all signals")
+        logging.info("Successfully verified that the SecOC failure count is within the range"
+                     " '00' to 'FF'")
         return True, parameters
 
-    logging.error("Test Failed: Failed to verify the SecOC failure count value within the range "
-                  "'00' to 'FF' for some signals")
+    logging.error("Test Failed: SecOC failure count is not within the range '00' to 'FF'")
     return False, None
 
 
 def step_3(dut: Dut, parameters):
     """
-    action: Verify SecOC failure count value for all signals after ecu reset
-    expected_result: True when SecOC failure count value set to '0x00' for all signals
+    action: Verify SecOC failure count for all signals after ecu reset
+    expected_result: True when SecOC failure count set to '0x00'
     """
     # ECU reset
     dut.uds.ecu_reset_1101()
@@ -164,65 +162,60 @@ def step_3(dut: Dut, parameters):
 
     did_response, sig_count = request_read_data_by_identifier(dut, parameters)
 
-    for signal_index in range(1, sig_count+1):
+    for index in range(sig_count):
         # Conversion of hexadecimal data into integer
         signal = int(did_response[parameters['position']+sig_pos:parameters['position']+sig_pos+2],
                      16)
         if signal == 0:
-            logging.info("SecOC failure count value of Signal-%s is %s, and it is reset to '00'"
-                         ,signal_index, hex(signal).upper()[2:])
+            logging.info("SecOC failure count of Signal-%s is %s as expected", index,
+                          hex(signal).upper()[2:])
             results.append(True)
         else:
-            logging.error("SecOC failure count value of Signal-%s is %s, and it is not reset to "
-                          "'00'", signal_index, hex(signal).upper()[2:])
+            logging.error("SecOC failure count of Signal-%s is %s, and it is not reset to '00'",
+                          index, hex(signal).upper()[2:])
             results.append(False)
 
         sig_pos = sig_pos + 2
 
     if all(results) and len(results) != 0:
-        logging.info("Successfully verified the SecOC failure count value after ecu reset for "
-                     "all signals")
+        logging.info("Successfully verified the SecOC failure count after ecu reset")
         return True
 
-    logging.error("Test Failed: Failed to verify the SecOC failure count value after ecu reset "
-                  "for some signals")
+    logging.error("Test Failed: SecOC failure count after ecu reset is not reset to '00'")
     return False
 
 
 def step_4(dut: Dut, parameters):
     """
-    action: Verify failure count value does not overflow after reaching maximum value '0xFF'
+    action: Verify SecOC failure count does not overflow after reaching maximum value '0xFF'
     expected_result: True when received failure count value in the range '00' to 'FF'
-                     for all signals
     """
     results = []
     sig_pos = 0
 
     did_response, sig_count = request_read_data_by_identifier(dut, parameters)
 
-    for signal_index in range(1, sig_count+1):
+    for index in range(sig_count):
         # Conversion of hexadecimal data into integer
         signal = int(did_response[parameters['position']+sig_pos:parameters['position']+sig_pos+2],
                      16)
         # Verifying signal is within range '00' to 'FF'
         if signal <= 255:
-            logging.info("SecOC failure count value %s is within the limit '00' to 'FF' for "
-                         "Signal-%s", hex(signal).upper()[2:], signal_index)
+            logging.info("SecOC failure count %s is within the limit '00' to 'FF' for Signal-%s",
+                         hex(signal).upper()[2:], index)
             results.append(True)
         else:
-            logging.error("SecOC failure count value %s exceeds maximum limit'0xFF' for Signal-%s",
-                          hex(signal).upper()[2:], signal_index)
+            logging.error("SecOC failure count %s exceeds maximum limit '0xFF' for Signal-%s",
+                          hex(signal).upper()[2:], index)
             results.append(False)
 
             sig_pos = sig_pos + 2
 
     if all(results) and len(results) != 0:
-        logging.info("Successfully verified the SecOC failure count value does not overflow "
-                     "for all signals")
+        logging.info("Successfully verified the SecOC failure count does not overflow")
         return True
 
-    logging.error("Test Failed: SecOC failure count value exceeds maximum limit '0xFF' for some"
-                  " signals")
+    logging.error("Test Failed: SecOC failure count value exceeds maximum limit '0xFF'")
     return False
 
 
@@ -237,16 +230,16 @@ def run():
     try:
         dut.precondition(timeout=60)
 
-        result_step = dut.step(step_1, purpose="Verify security Access in Extended session")
+        result_step = dut.step(step_1, purpose="Security access to ECU in extended session")
 
         if result_step:
             result_step, parameters = dut.step(step_2, purpose= "Verify SecOC failure count "
-                                               "value within the range '00' to 'FF'")
+                                               "within the range '00' to 'FF'")
         if result_step:
             result_step = dut.step(step_3, parameters, purpose= "Verify SecOC failure count "
-                                   "value for all signals after ecu reset")
+                                   "for all signals after ecu reset")
         if result_step:
-            result_step = dut.step(step_4, parameters, purpose= "Verify failure count value "
+            result_step = dut.step(step_4, parameters, purpose= "Verify SecOC failure count "
                                    "does not overflow after reaching maximum value '0xFF'")
         result = result_step
 
