@@ -75,7 +75,7 @@ SIO = SupportFileIO()
 SC_CARCOM = SupportCARCOM()
 
 
-def verify_dtc_status(dut: Dut, parameters):
+def verify_dtc_status(dut: Dut, parameters, byte_pos):
     """
     Verify ecu response of did 'D0CC' and read dtc snapshot for each SecOC protected signal
     Args:
@@ -100,8 +100,8 @@ def verify_dtc_status(dut: Dut, parameters):
             # Read did 'D0CC' to get the failure count limit status
             did_response = dut.uds.read_data_by_id_22(bytes.fromhex(parameters['sec_oc_did']))
 
-            # Byte#4 of did 'D0CC' gives failure count limit status
-            failure_count_limit_status = bin(int(did_response.raw[6:8], 16))
+            # Byte-4 to Byte-n  of did 'D0CC' gives failure count limit status
+            failure_count_limit_status = bin(int(did_response.raw[byte_pos:byte_pos+2], 16))
             # Reverse bit string
             fail_count = failure_count_limit_status[2:][::-1]
 
@@ -153,10 +153,12 @@ def step_1(dut: Dut):
         return False
 
     did_response = dut.uds.read_data_by_id_22(bytes.fromhex(parameters['sec_oc_did']))
-    result = []
+    results = []
+    byte_pos = 6
 
     for _ in range(int((len(did_response.raw[6:]))/2)):
-        response_dict = verify_dtc_status(dut, parameters)
+        response_dict = verify_dtc_status(dut, parameters, byte_pos)
+        byte_pos = byte_pos + 2
 
         for signal_name, dtc_response in response_dict.items():
             if dtc_response[4:6] != '59':
@@ -166,14 +168,14 @@ def step_1(dut: Dut):
             pos = dtc_response.find(parameters['dtc_did'])
             if dtc_response[pos:pos+2] == parameters['dtc_did']:
                 logging.info("DTC has triggered for %s as expected, response received %s",
-                            signal_name, dtc_response[pos:pos+2])
-                result.append(True)
+                             signal_name, dtc_response[pos:pos+2])
+                results.append(True)
 
             logging.error("Test Failed: Expected DTC to be triggered for %s, response received %s",
-                        signal_name, dtc_response[pos:pos+2])
-            result.append(False)
+                          signal_name, dtc_response[pos:pos+2])
+            results.append(False)
 
-    if all(result) and len(result) != 0:
+    if all(results) and len(results) != 0:
         logging.info("Successfully verified the status of DTC for all signals")
         return True
 
