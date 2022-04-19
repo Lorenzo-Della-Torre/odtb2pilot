@@ -53,9 +53,11 @@ def step_1(dut: Dut):
     action: Verify ECU is in Default session after reset
     expected_result: True when ECU is in Default session
     """
+    # Set ECU to Extended session
+    dut.uds.set_mode(3)
     # ECU hard reset
     ecu_response = dut.uds.ecu_reset_1101()
-    # Wait 1 second for ECU to wakeup
+    # Wait 1 second
     time.sleep(1)
 
     if ecu_response.raw[2:4] == '51':

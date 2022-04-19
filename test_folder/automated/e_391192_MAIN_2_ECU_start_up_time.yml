@@ -1,4 +1,4 @@
 hvbm_p519:
     step_2:
-        wakeup_time: 2500
+        wakeup_time: 2000
         app_sw_did : 'D046'
