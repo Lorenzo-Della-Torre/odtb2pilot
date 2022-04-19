@@ -71,15 +71,15 @@ SC_CARCOM = SupportCARCOM()
 SIO = SupportFileIO()
 
 
-def cluster_key_identifiers(dut, did, cluster_id):
+def request_cluster_key_identifiers(dut, did, cluster_id):
     """
-    cluster_key_identifier request to ECU with 0x31
+    Routine Control Request SID(x31) to ECU
     Args:
         dut (Dut): dut instance
         did (str): Data identifier
         cluster_id (str): cluster key identifier
     Returns:
-        response (str): ECU response code
+        response (str): raw response of ECU
     """
 
     payload = SC_CARCOM.can_m_send("RoutineControlRequestSID", b'\x01'
@@ -90,23 +90,26 @@ def cluster_key_identifiers(dut, did, cluster_id):
     return response.raw
 
 
-def verify_responses(response, cluster_id):
+def verify_response(response, cluster_id):
     """
-    verify the response for service )x31 and SecOC Cluster Key Identifier
+    verify the response for service 0x31 and SecOC Cluster Key Identifier
     Args:
-        response (str): response
+        response (str): ECU response
         cluster_id (str): cluster key identifier
     Returns:
-        response (str): True on Valid SecOC Cluster Key Identifier found
+        (bool): True when Valid SecOC Cluster Key Identifier received
     """
+    # Extract and compare positive response 71
     if response[0:2] == '71':
         logging.info("Received positive response %s for RoutineControlRequestSID", response[0:2])
 
+        # Extract and compare Cluster Key Identifiers
         if response[10:14] == cluster_id:
-            logging.info("Valid SecOC Cluster Key Identifier %s found as expected",response[10:14])
+            logging.info("Valid SecOC Cluster Key Identifier %s received as expected",
+                          response[10:14])
             return True
-        logging.error("Test failed: Expected SecOC Cluster Key Identifier %s, recieved "
-                      "%s", cluster_id, response[10:14])
+        logging.error("Test failed: Expected SecOC Cluster Key Identifier %s, received %s",
+                       cluster_id, response[10:14])
         return False
 
     logging.error("Test failed: Expected response 71, received %s ", response)
@@ -118,7 +121,7 @@ def step_1(dut:Dut):
     action: Initiate Security access in Extended session
     expected_result: Security access successful in Extended session
     """
-    # Define did from yml file
+    # Read yml parameters
     parameters_dict = { 'define_did': '',
                         'cluster_key_identifier':''}
 
@@ -128,7 +131,7 @@ def step_1(dut:Dut):
         logging.error("Test Failed: yml parameter not found")
         return False, None
 
-    #ECU in Extended Session
+    # Set ECU to Extended Session
     dut.uds.set_mode(1)
     dut.uds.set_mode(3)
     result = SE27.activate_security_access_fixedkey(dut, dut.conf.default_rig_config,
@@ -144,13 +147,13 @@ def step_1(dut:Dut):
 def step_2(dut:Dut, parameters):
     """
     action: Verify SecOC Cluster Key Identifiers(0001, 0002, 0003)
-    expected_result: True on Positive Response and correct cluster key identifier
+    expected_result: True on Successfully verified all of the SecOC cluster key identifiers
     """
 
     results = []
     for cluster_id in parameters['cluster_key_identifier']:
-        response = cluster_key_identifiers(dut, parameters['define_did'],cluster_id)
-        results.append(verify_responses(response, cluster_id))
+        response = request_cluster_key_identifiers(dut, parameters['define_did'], cluster_id)
+        results.append(verify_response(response, cluster_id))
 
     if len(results) != 0 and all(results):
         return True
@@ -160,7 +163,7 @@ def step_2(dut:Dut, parameters):
 
 def run():
     """
-    Verify and differentiate key for each SecOC cluster participating in Secure
+    Verify and differentiate SecOC key for each SecOC cluster participating in Secure
     On-Board communication
     """
     dut = Dut()
@@ -171,11 +174,11 @@ def run():
     try:
         dut.precondition(timeout=60)
 
-        result_step, parameters = dut.step(step_1, purpose="Initiate security Access in Extended"
-                                          " session diagnostic session")
+        result_step, parameters = dut.step(step_1, purpose="Initiate security access in extended"
+                                                            " diagnostic session")
 
         if result_step:
-            result_step = dut.step(step_2, parameters, purpose=" Verify SecOC Cluster Key"
+            result_step = dut.step(step_2, parameters, purpose="Verify SecOC Cluster Key"
                                                             " Identifiers(0001, 0002, 0003)")
 
         result = result_step
