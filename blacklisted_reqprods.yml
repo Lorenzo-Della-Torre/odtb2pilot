@@ -53,6 +53,7 @@ hvbm_p519:
 
     --SecOC--:
         e_487904_MAIN_1 : sec_oc_detection_of_non_programmed_production_keys | SecOC not implemented yet
+        e_488983_MAIN_0 : sec_oc_did_for_sec_oc_verification_failure_counters | SecOC not implemented yet
 
 ihfa_v436:
     --NA--:
