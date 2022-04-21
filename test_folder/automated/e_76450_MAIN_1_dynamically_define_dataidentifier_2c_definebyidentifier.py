@@ -36,12 +36,10 @@ details: >
 import logging
 from hilding.dut import Dut
 from hilding.dut import DutTestError
-from hilding.conf import Conf
 from supportfunctions.support_carcom import SupportCARCOM
 from supportfunctions.support_service27 import SupportService27
 from supportfunctions.support_file_io import SupportFileIO
 
-CNF = Conf()
 SC_CARCOM = SupportCARCOM()
 SE27 = SupportService27()
 SIO = SupportFileIO
@@ -59,8 +57,9 @@ def compare_positive_response(response, parameters, session):
     """
     result = False
     if response[2:4] == '6C' and response[4:8] == parameters['define_did']:
-        logging.info("Received positve response for dynamicallyDefineDataIdentifier(0x2C) response "
-                    "%s, received %s in %s session", parameters['define_did'], response, session)
+        logging.info("Received positive response for dynamicallyDefineDataIdentifier(0x2C)  "
+                    "response %s, received %s in %s session", parameters['define_did'], response,
+                     session)
         result = True
 
     else:
@@ -91,7 +90,7 @@ def compare_negative_response(response, session, nrc_code):
     else:
         logging.error("Test Failed: Expected NRC %s for request"
                       " dynamicallyDefineDataIdentifier(0x2C)-defineByIdentifier(01, 81) in"
-                      " %s session, received %s",nrc_code, response, session)
+                      " %s session, received %s",nrc_code, session, response)
         result = False
 
     return result
@@ -117,24 +116,12 @@ def request_dynamically_define_data_identifier(dut, parameters):
     return response.raw
 
 
-def step_1(dut: Dut):
+def step_1(dut: Dut, parameters):
     """
     action: Verify dynamicallyDefineDataIdentifier(0x2C)-defineByIdentifier(01, 81) request in
             default session
     expected_result: ECU should send positive response
     """
-    # Define did from yml file
-    parameters_dict = { 'define_did': '',
-                        'source_data_identifier':'',
-                        'position_in_source_data_record':'',
-                        'memory_size':''
-                    }
-    parameters = SIO.parameter_adopt_teststep(parameters_dict)
-
-    if not all(list(parameters.values())):
-        logging.error("Test Failed: yml parameter not found")
-        return False, None
-
     # Initiate DynamicallyDefineDataIdentifier
     response = request_dynamically_define_data_identifier(dut, parameters)
     result = compare_positive_response(response, parameters, 'default')
@@ -174,7 +161,7 @@ def step_3(dut: Dut, parameters):
                                                         , nrc_code='33')
 
     # Security access to ECU
-    security_access = SE27.activate_security_access_fixedkey(dut, CNF.default_rig_config,
+    security_access = SE27.activate_security_access_fixedkey(dut, sa_keys=dut.conf.default_rig_config,
                                                             step_no=272, purpose="SecurityAccess")
     if not security_access:
         logging.error("Test Failed: security access denied in extended session")
@@ -197,7 +184,18 @@ def run():
     start_time = dut.start()
     result = False
     result_step = False
+    parameters_dict = { 'define_did': '',
+                        'source_data_identifier':'',
+                        'position_in_source_data_record':'',
+                        'memory_size':''
+                    }
+
     try:
+        parameters = SIO.parameter_adopt_teststep(parameters_dict)
+
+        if not all(list(parameters.values())):
+            raise DutTestError("yml parameters not found")
+
         dut.precondition(timeout=60)
 
         result_step, parameters = dut.step(step_1, purpose='Verify dynamicallyDefineDataIdentifier'
