@@ -104,19 +104,11 @@ def step_1(dut: Dut):
     return False
 
 
-def step_2(dut: Dut):
+def step_2(dut: Dut, parameters):
     """
     action: Verify SecOC failure count value within the range '00' to 'FF'
     expected_result: True when SecOC failure count value is within the range '00' to 'FF'
     """
-    parameters_dict = {'sec_oc_did': '',
-                       'position': 0}
-    parameters = SIO.parameter_adopt_teststep(parameters_dict)
-
-    if not all(list(parameters.values())):
-        logging.error("Test Failed: yml parameter not found")
-        return False, None
-
     results = []
     sig_pos = 0
 
@@ -143,10 +135,10 @@ def step_2(dut: Dut):
     if all(results) and len(results) != 0:
         logging.info("Successfully verified that the SecOC failure count is within the range"
                      " '00' to 'FF'")
-        return True, parameters
+        return True
 
     logging.error("Test Failed: SecOC failure count is not within the range '00' to 'FF'")
-    return False, None
+    return False
 
 
 def step_3(dut: Dut, parameters):
@@ -227,14 +219,21 @@ def run():
     start_time = dut.start()
     result = False
     result_step = False
+    parameters_dict = {'sec_oc_did': '',
+                       'position': 0}
+
     try:
         dut.precondition(timeout=60)
+        parameters = SIO.parameter_adopt_teststep(parameters_dict)
+
+        if not all(list(parameters.values())):
+            raise DutTestError("yml parameter not found")
 
         result_step = dut.step(step_1, purpose="Security access to ECU in extended session")
 
         if result_step:
-            result_step, parameters = dut.step(step_2, purpose= "Verify SecOC failure count "
-                                               "within the range '00' to 'FF'")
+            result_step = dut.step(step_2, parameters, purpose= "Verify SecOC failure count "
+                                    "within the range '00' to 'FF'")
         if result_step:
             result_step = dut.step(step_3, parameters, purpose= "Verify SecOC failure count "
                                    "for all signals after ecu reset")
