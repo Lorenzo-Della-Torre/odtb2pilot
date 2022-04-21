@@ -73,7 +73,7 @@ class SupportService27:
 
 
     @staticmethod
-    def security_access_request_seed(can_p: CanParam, sa_keys, stepno=270,\
+    def security_access_request_seed(can_p: CanParam, sa_keys, stepno=270,# pylint: disable=too-many-branches
                                      purpose="SecurityAccessRequestSeed"):
         """
             Support function: request seed for calculating security access pin
@@ -179,6 +179,9 @@ class SupportService27:
         """
             Support function: request seed for calculating security access pin
         """
+        #set default response value
+        response = 'ffffff'
+
         def __evaluate_response(sa_keys):
             # SA_GEN1:
             if sa_keys["SecAcc_Gen"] == 'Gen1':

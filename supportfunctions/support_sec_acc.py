@@ -55,18 +55,7 @@ import ctypes
 from typing import Dict
 
 import logging
-### import git used if wanting to get path to repo via gitpython
-#import git
 
-#load the shared object file for SecAccess Gen2
-#lib = ctypes.CDLL('/home/pi/Repos/odtb2pilot/sec_access_gen2_dll/linux/armv7l/libsa_client_lib.so')
-#didn't find out how to use shared object under windows environment yet.
-#lib = ctypes.CDLL('../../security_access/build/sa2-lib/lib/libsa_client_lib.dll.a')
-#lib = ctypes.CDLL('../../security_access/build/sa2-lib/cygsa_client_lib.dll')
-#lib = ctypes.CDLL('C:\\security_access\\build\\sa2-lib\\cygsa_client_lib.dll', winmode=0)
-#lib = ctypes.CDLL('C:\\security_access\\build\\sa2-lib\\cygsa_client_lib.dll',
-#                  handle=None, use_errno=False, use_last_error=False, winmode=1)
-#lib = ctypes.CDLL('../../security_access/build/sa2-lib/cygsa_client_lib.dll')
 #SecAccess Gen2 default parameters:
 class SaGen2Param(Dict): # pylint: disable=too-few-public-methods,inherit-non-class
     """
@@ -220,14 +209,8 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
             else:
                 logging.info("Right library version for SA Gen2 not found: %s", sys.platform)
         elif sys.platform == 'win32':
-            #self.lib = ctypes.CDLL(odtb_repo_param +
-            #                       '/sec_access_gen2_dll/windows/cygsa_client_lib.dll')
-            self.lib = ctypes.WinDLL(odtb_repo_param +# pylint: disable=unexpected-keyword-arg
-                                     '/sec_access_gen2_dll/windows/cygsa_client_lib.dll',
-                                     handle=None,
-                                     use_errno=False,
-                                     use_last_error=False,
-                                     winmode=1)
+            self.lib = ctypes.CDLL(odtb_repo_param +
+                                   '/sec_access_gen2_dll/windows/x64/sa_client_lib.dll')
         else:
             raise Exception("Unknown operation system. Don't know which SAGen2 lib to load.")
 

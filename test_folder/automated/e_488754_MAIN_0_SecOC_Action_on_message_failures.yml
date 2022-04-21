@@ -1,0 +1,10 @@
+hvbm_p519:
+    step_1:
+        signals:
+            signal1:
+                data: '0000000000000000'
+                action: 'take no action'
+            signal2: '1111111111111111'
+            signal3: '2222222222222222'
+            signal4: '3333333333333333'
+            signal5: '4444444444444444'
