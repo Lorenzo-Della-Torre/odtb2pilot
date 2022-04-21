@@ -161,7 +161,7 @@ def step_3(dut: Dut, parameters):
                                                         , nrc_code='33')
 
     # Security access to ECU
-    security_access = SE27.activate_security_access_fixedkey(dut, sa_keys=dut.conf.default_rig_config,
+    security_access = SE27.activate_security_access_fixedkey(dut, dut.conf.default_rig_config,
                                                             step_no=272, purpose="SecurityAccess")
     if not security_access:
         logging.error("Test Failed: security access denied in extended session")
