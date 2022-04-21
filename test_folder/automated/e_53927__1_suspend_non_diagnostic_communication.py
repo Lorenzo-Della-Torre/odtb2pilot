@@ -63,6 +63,7 @@ from supportfunctions.support_precondition import SupportPrecondition
 from supportfunctions.support_postcondition import SupportPostcondition
 from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_service10 import SupportService10
+from hilding.conf import Conf
 
 SIO = SupportFileIO
 SC = SupportCAN()
@@ -73,6 +74,7 @@ PREC = SupportPrecondition()
 POST = SupportPostcondition()
 SE10 = SupportService10()
 SE22 = SupportService22()
+conf = Conf()
 
 WAITING_TIME = 2 #seconds
 MAX_DIFF = 20 #max difference allowed for number of frame non-diagnostic received
@@ -210,7 +212,7 @@ def run():
         # step2:
         # action: DL and activate SBL
         # result: ECU sends positive reply
-        result = result and SSBL.sbl_activation(can_p, stepno=2,
+        result = result and SSBL.sbl_activation(can_p, conf.default_rig_config ,stepno=2,
                                                 purpose="DL and activate SBL")
         time.sleep(1)
 

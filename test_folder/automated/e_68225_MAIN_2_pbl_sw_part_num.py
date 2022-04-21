@@ -81,6 +81,7 @@ from supportfunctions.support_postcondition import SupportPostcondition
 from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_service10 import SupportService10
 from supportfunctions.support_SBL import SupportSBL
+from supportfunctions.support_sec_acc import SecAccessParam
 
 SSBL = SupportSBL()
 SIO = SupportFileIO
@@ -192,6 +193,15 @@ def run():
         "namespace" : SC.nspace_lookup("Front1CANCfg0")
     }
     SIO.parameter_adopt_teststep(can_p)
+
+    #Init parameter for SecAccess Gen1/Gen2
+    sa_keys: SecAccessParam = {
+        "SecAcc_Gen": 'Gen1',
+        "fixed_key": 'FFFFFFFFFF',
+        "auth_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF',
+        "proof_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
+    }
+    SIO.parameter_adopt_teststep(sa_keys)
 
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()

@@ -61,7 +61,6 @@ from supportfunctions.support_test_odtb2 import SupportTestODTB2
 from supportfunctions.support_carcom import SupportCARCOM
 from supportfunctions.support_file_io import SupportFileIO
 from supportfunctions.support_SBL import SupportSBL
-from supportfunctions.support_sec_acc import SupportSecurityAccess
 
 from supportfunctions.support_precondition import SupportPrecondition
 from supportfunctions.support_postcondition import SupportPostcondition
@@ -71,12 +70,13 @@ from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_service31 import SupportService31
 from supportfunctions.support_service34 import SupportService34
 
+from hilding.dut import Dut
+
 SIO = SupportFileIO
 SC = SupportCAN()
 S_CARCOM = SupportCARCOM()
 SUTE = SupportTestODTB2()
 SSBL = SupportSBL()
-SSA = SupportSecurityAccess()
 
 PREC = SupportPrecondition()
 POST = SupportPostcondition()
@@ -86,24 +86,15 @@ SE22 = SupportService22()
 SE31 = SupportService31()
 SE34 = SupportService34()
 
-def step_1(can_p: CanParam):
+def step_1(can_p: CanParam, sa_keys):
     """
     Teststep 1: Activate SBL
     """
     stepno = 1
     purpose = "Download and Activation of SBL"
-    fixed_key = '0102030405'
-    new_fixed_key = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'fixed_key')
-    # don't set empty value if no replacement was found:
-    if new_fixed_key != '':
-        assert isinstance(new_fixed_key, str)
-        fixed_key = new_fixed_key
-    else:
-        logging.info("Step%s: new_fixed_key is empty. Leave old value.", stepno)
-    logging.info("Step%s: fixed_key after YML: %s", stepno, fixed_key)
 
     result = SSBL.sbl_activation(can_p,
-                                 fixed_key,
+                                 sa_keys,
                                  stepno, purpose)
     return result
 
@@ -237,6 +228,7 @@ def run():
     """
     Run - Call other functions from here
     """
+    dut = Dut()
     logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
     # where to connect to signal_broker
@@ -256,6 +248,15 @@ def run():
     # read VBF param when testscript is s started, if empty take default param
     SSBL.get_vbf_files()
     timeout = 2000
+
+    platform=dut.conf.rigs[dut.conf.default_rig]['platform']
+    sa_keys = {
+        "SecAcc_Gen" : dut.conf.platforms[platform]['SecAcc_Gen'],
+        "fixed_key": dut.conf.platforms[platform]["fixed_key"],
+        "auth_key": dut.conf.platforms[platform]["auth_key"],
+        "proof_key": dut.conf.platforms[platform]["proof_key"]
+    }
+
     result = PREC.precondition(can_p, timeout)
 
     if result:
@@ -265,7 +266,7 @@ def run():
         # step 1:
         # action: DL and activate SBL
         # result: ECU sends positive reply
-        result = result and step_1(can_p)
+        result = result and step_1(can_p, sa_keys)
 
         # step 2:
         # action: download ESS Software Part

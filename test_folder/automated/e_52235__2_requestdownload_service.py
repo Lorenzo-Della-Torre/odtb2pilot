@@ -72,6 +72,7 @@ from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_service27 import SupportService27
 from supportfunctions.support_service31 import SupportService31
 from supportfunctions.support_service34 import SupportService34
+from hilding.conf import Conf
 
 SIO = SupportFileIO
 SC = SupportCAN()
@@ -80,6 +81,7 @@ SUTE = SupportTestODTB2()
 SSBL = SupportSBL()
 SSA = SupportSecurityAccess()
 SGPIO = SupportRpiGpio()
+CNF = Conf()
 
 PREC = SupportPrecondition()
 POST = SupportPostcondition()
@@ -168,7 +170,7 @@ def run():
         # step 3:
         # action: Security Access Request SID
         # result: ECU sends positive reply
-        result = result and SE27.activate_security_access(can_p, 3)
+        result = result and SE27.activate_security_access_fixedkey(can_p,CNF.default_rig_config)
 
         # step 4:
         # action: Read VBF files for SBL

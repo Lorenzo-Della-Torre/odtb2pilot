@@ -66,6 +66,7 @@ from supportfunctions.support_service31 import SupportService31
 from supportfunctions.support_service34 import SupportService34
 from supportfunctions.support_sec_acc import SupportSecurityAccess
 from supportfunctions.support_SBL import SupportSBL
+from hilding.conf import Conf
 
 
 SSA = SupportSecurityAccess()
@@ -81,6 +82,7 @@ SE11 = SupportService11()
 SE22 = SupportService22()
 SE31 = SupportService31()
 SE34 = SupportService34()
+conf = Conf()
 
 def step_2():
     """
@@ -172,7 +174,8 @@ def run():
         # step1:
         # action: Download and activate SBL
         # result: True, if all went fine
-        result = result and SSBL.sbl_dl_activation(can_p, 1, "DL and activate SBL")
+        result = result and SSBL.sbl_dl_activation(can_p, conf.default_rig_config, 1,\
+                                                                "DL and activate SBL")
         time.sleep(1)
 
         # step2:
