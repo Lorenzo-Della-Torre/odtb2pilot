@@ -63,17 +63,17 @@ details:
     Implicitly tested by:
         REQPROD 53854 Support of erase and write data to non-volatile memory.
 """
-import logging
 import sys
+import logging
 
-def run():
-    """
-    Run - Call other functions from here.
-    """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+logging.basicConfig(format=' %(message)s',
+                    stream=sys.stdout, level=logging.INFO)
 
-    logging.info("Testcase result: Implicitly tested by "\
-    "REQPROD 53854 (Support of erase and write data to non-volatile memory.)")
+try:
+    from e_53854__1_erase_and_write_data_with_sbl import run
+except ModuleNotFoundError as err:
+    logging.error(
+        "The test that is used to test this requirement can't be found: %s found", err)
 
 if __name__ == '__main__':
     run()

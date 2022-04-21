@@ -71,6 +71,7 @@ from supportfunctions.support_service10 import SupportService10
 from supportfunctions.support_service11 import SupportService11
 from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_service31 import SupportService31
+from hilding.conf import get_conf
 
 
 SIO = SupportFileIO
@@ -87,6 +88,7 @@ SE10 = SupportService10()
 SE11 = SupportService11()
 SE22 = SupportService22()
 SE31 = SupportService31()
+Config = get_conf()
 
 
 def step_1(can_p: CanParam):
@@ -95,19 +97,10 @@ def step_1(can_p: CanParam):
     """
     stepno = 1
     purpose = "Download and Activation of SBL"
-    fixed_key = '0102030405'
-    new_fixed_key = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'fixed_key')
-    # don't set empty value if no replacement was found:
-    if new_fixed_key != '':
-        assert isinstance(new_fixed_key, str)
-        fixed_key = new_fixed_key
-    else:
-        logging.info("Step%s: new_fixed_key is empty. Leave old value.", stepno)
-    logging.info("Step%s: fixed_key after YML: %s", stepno, fixed_key)
 
     result = SSBL.sbl_activation(can_p,
-                                 fixed_key,
-                                 stepno, purpose)
+                                 sa_keys=Config.default_rig_config,
+                                 stepno=stepno, purpose=purpose)
     return result
 
 def step_3(can_p):
@@ -168,7 +161,7 @@ def run():
     ############################################
     # read VBF param when testscript is s started, if empty take default param
     SSBL.get_vbf_files()
-    timeout = 2000
+    timeout = 600
     result = PREC.precondition(can_p, timeout)
 
     if result:
