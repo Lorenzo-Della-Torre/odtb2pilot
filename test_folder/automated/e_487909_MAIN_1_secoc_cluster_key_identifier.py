@@ -100,16 +100,16 @@ def verify_response(response, cluster_id):
         (bool): True when Valid SecOC Cluster Key Identifier received
     """
     # Extract and compare positive response 71
-    if response[0:2] == '71':
-        logging.info("Received positive response %s for RoutineControlRequestSID", response[0:2])
+    if response[2:4] == '71':
+        logging.info("Received positive response %s for RoutineControlRequestSID", response[2:4])
 
         # Extract and compare Cluster Key Identifiers
-        if response[10:14] == cluster_id:
+        if response[12:15] == cluster_id:
             logging.info("Valid SecOC Cluster Key Identifier %s received as expected",
-                          response[10:14])
+                          response[12:15])
             return True
         logging.error("Test failed: Expected SecOC Cluster Key Identifier %s, received %s",
-                       cluster_id, response[10:14])
+                       cluster_id, response[12:15])
         return False
 
     logging.error("Test failed: Expected response 71, received %s ", response)
