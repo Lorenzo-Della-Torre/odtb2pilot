@@ -61,8 +61,8 @@ description: >
     Signal 2 SecOC failure count limit exceeded         1               "Yes" - 0b1
 
 details: >
-    Verify the status of DTC 0xD0C568 when the failure count limit is exceeded for all the SecOC
-    protected signals.
+    Verify the status of DTC 0xD0C568 when the failure count limit is exceeded for all of the
+    SecOC protected signals.
 """
 
 import logging
@@ -77,10 +77,12 @@ SC_CARCOM = SupportCARCOM()
 
 def verify_dtc_status(dut: Dut, parameters, byte_pos):
     """
-    Verify ecu response of did 'D0CC' and read dtc snapshot for each SecOC protected signal
+    Verify ECU response of did 'D0CC' and read dtc snapshot for each SecOC protected signal
     Args:
         dut (Dut): An instance of Dut
-        parameters (dict): sec_oc_did, dtc_did, failure_type_byte, mask, signals
+        parameters (dict): secoc_verification_failure_did, dtc_did,
+                           failure_type_byte, mask, signals
+        byte_pos(int): byte position of failure count limit status
     Returns:
         result_dict (dict): signal, dtc_response.raw
     """
@@ -98,20 +100,21 @@ def verify_dtc_status(dut: Dut, parameters, byte_pos):
             dut.uds.generic_ecu_call(bytes.fromhex(sig_data['data']))
 
             # Read did 'D0CC' to get the failure count limit status
-            did_response = dut.uds.read_data_by_id_22(bytes.fromhex(parameters['sec_oc_did']))
+            did_response = dut.uds.read_data_by_id_22(bytes.fromhex(
+                           parameters['secoc_verification_failure_did']))
 
             # Byte-4 to Byte-n  of did 'D0CC' gives failure count limit status
             failure_count_limit_status = bin(int(did_response.raw[byte_pos:byte_pos+2], 16))
             # Reverse bit string
-            fail_count = failure_count_limit_status[2:][::-1]
+            failure_count = failure_count_limit_status[2:][::-1]
 
-            if fail_count[0+bit_pos:1+bit_pos] == '0':
+            if failure_count[bit_pos] == '0':
                 logging.info("SecOC failure count limit bit is %s, and limit is not exceeded",
-                             fail_count[0+bit_pos:1+bit_pos])
+                             failure_count[bit_pos])
 
-            if fail_count[0+bit_pos:1+bit_pos] == '1':
+            if failure_count[bit_pos] == '1':
                 logging.info("SecOC failure count limit bit is %s, and limit is exceeded",
-                             fail_count[0+bit_pos:1+bit_pos])
+                             failure_count[bit_pos])
                 result = True
 
         # Increase bit_pos value by 1 to select next signal
@@ -125,23 +128,23 @@ def verify_dtc_status(dut: Dut, parameters, byte_pos):
                                                 bytes.fromhex(parameters['mask']))
             dtc_response = dut.uds.generic_ecu_call(dtc_snapshot)
             result_dict[signal_name] = dtc_response.raw
+        else:
+            logging.error("SecOC failure count limit is not exceeded for %s", signal_name)
 
-        logging.error("SecOC failure count limit is not exceeded for %s", signal_name)
-
-    if len(result_dict) != 0:
+    if len(result_dict) == len(parameters['signals']):
         return result_dict
 
-    logging.error("Dictionary of DTC snapshot responses for SecOC signals is empty")
+    logging.error("Did received DTC snapshot response for one or all of the SecOC signals")
     return None
 
 
 def step_1(dut: Dut):
     """
-    action: Verify the status of DTC 0xD0C568 for all the SecOC protected signals
-    expected_result: True when successfully verified the status of DTC for all signals
+    action: Verify the status of DTC 0xD0C568 for all of the SecOC protected signals
+    expected_result: True when successfully verified the status of DTC for all SecOC signals
     """
     # Read yml parameters
-    parameters_dict = {'sec_oc_did': '',
+    parameters_dict = {'secoc_verification_failure_did': '',
                        'dtc_did': '',
                        'failure_type_byte': '',
                        'mask': '',
@@ -152,11 +155,14 @@ def step_1(dut: Dut):
         logging.error("Test Failed: yml parameter not found")
         return False
 
-    did_response = dut.uds.read_data_by_id_22(bytes.fromhex(parameters['sec_oc_did']))
+    did_response = dut.uds.read_data_by_id_22(bytes.fromhex(
+                    parameters['secoc_verification_failure_did']))
     results = []
     byte_pos = 6
+    # Extract message and calculate byte length
+    message_length = int((len(did_response.raw[byte_pos:]))/2)
 
-    for _ in range(int((len(did_response.raw[6:]))/2)):
+    for _ in range(message_length):
         response_dict = verify_dtc_status(dut, parameters, byte_pos)
         byte_pos = byte_pos + 2
 
@@ -185,8 +191,8 @@ def step_1(dut: Dut):
 
 def run():
     """
-    Verify the status of DTC 0xD0C568 when the failure count limit is exceeded for all the SecOC
-    protected signals.
+    Verify the status of DTC 0xD0C568 when the failure count limit is exceeded for all of the
+    SecOC protected signals.
     """
     dut = Dut()
 
@@ -195,7 +201,7 @@ def run():
     try:
         dut.precondition(timeout=120)
 
-        result= dut.step(step_1, purpose="Verify the status of DTC 0xD0C568 for all the "
+        result= dut.step(step_1, purpose="Verify the status of DTC 0xD0C568 for all of the "
                          "SecOC protected signals")
 
     except DutTestError as error:
