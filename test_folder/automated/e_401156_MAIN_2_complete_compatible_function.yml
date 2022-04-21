@@ -1,0 +1,6 @@
+hvbm_p519:
+    step_1:
+        start_address: '0x80093800'
+        length: '0x0000002C'
+    step_2:
+        old_rel_vbf_folder: 'vbf_old'

@@ -57,10 +57,11 @@ from hilding.dut import Dut
 from hilding.dut import DutTestError
 from hilding.uds import IoVmsDid
 from hilding.uds import EicDid
+from supportfunctions.support_file_io import SupportFileIO
 from supportfunctions.support_SBL import SupportSBL
-###SecAccessParam only available after SecAccGen2 merge
-#from supportfunctions.support_sec_acc import SecAccessParam
+from supportfunctions.support_sec_acc import SecAccessParam
 
+SIO = SupportFileIO
 
 def step_1(dut):
     """
@@ -173,20 +174,19 @@ def run():
     logging.basicConfig(
         format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
-    dut = Dut()
-    start_time = dut.start()
-    result = False
 
-    #Init parameter for SecAccess Gen1 / Gen2 (current default: Gen1)
-    #sa_keys: SecAccessParam = {
-    sa_keys = {
+    #Init parameter for SecAccess Gen1/Gen2
+    sa_keys: SecAccessParam = {
         "SecAcc_Gen": 'Gen1',
-        "fixed_key": '0102030405',
+        "fixed_key": 'FFFFFFFFFF',
         "auth_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF',
         "proof_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
     }
+    SIO.parameter_adopt_teststep(sa_keys)
 
-    #SIO.extract_parameter_yml(str(inspect.stack()[0][3]), sa_keys)
+    dut = Dut()
+    start_time = dut.start()
+    result = False
 
     try:
         dut.precondition(timeout=200)

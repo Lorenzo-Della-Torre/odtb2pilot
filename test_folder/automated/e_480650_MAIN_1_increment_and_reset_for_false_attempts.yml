@@ -1,0 +1,10 @@
+hvbm_p519:
+    step_1:
+        sa_level_programming:
+            - '01'
+            - '19'
+        sa_level_extended:
+            - '05'
+            - '19'
+            - '23'
+            - '27'

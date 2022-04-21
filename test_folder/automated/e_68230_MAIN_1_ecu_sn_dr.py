@@ -182,7 +182,7 @@ def __call_f18c(dut: Dut):
     if len(item) != 8:
         raise DutTestError("ECU has incorrect length")
 
-    size = res.details["size"]
+    size = int(res.details["size"])
     if size != 4:
         raise DutTestError(f"SDDB contains wrong ECU serial number "
                            f"length definition: {size}")
@@ -202,7 +202,7 @@ def run():
 
     result = False
     try:
-        dut.precondition()
+        dut.precondition(timeout = 80)
         step_1(dut)
         step_2(dut)
         step_3(dut)

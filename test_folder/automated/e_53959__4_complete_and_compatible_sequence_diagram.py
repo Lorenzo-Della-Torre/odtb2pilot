@@ -68,7 +68,7 @@ from supportfunctions.support_test_odtb2 import SupportTestODTB2
 from supportfunctions.support_carcom import SupportCARCOM
 from supportfunctions.support_file_io import SupportFileIO
 from supportfunctions.support_SBL import SupportSBL
-from supportfunctions.support_sec_acc import SupportSecurityAccess
+from supportfunctions.support_sec_acc import SupportSecurityAccess, SecAccessParam
 from supportfunctions.support_precondition import SupportPrecondition
 from supportfunctions.support_postcondition import SupportPostcondition
 from supportfunctions.support_service10 import SupportService10
@@ -90,24 +90,15 @@ SE11 = SupportService11()
 SE22 = SupportService22()
 SE31 = SupportService31()
 
-def step_1(can_p: CanParam):
+def step_1(can_p: CanParam, sa_keys):
     """
     Teststep 1: Activate SBL
     """
     stepno = 1
     purpose = "Download and Activation of SBL"
-    fixed_key = '0102030405'
-    new_fixed_key = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'fixed_key')
-    # don't set empty value if no replacement was found:
-    if new_fixed_key != '':
-        assert isinstance(new_fixed_key, str)
-        fixed_key = new_fixed_key
-    else:
-        logging.info("Step%s: new_fixed_key is empty. Leave old value.", stepno)
-    logging.info("Step%s: fixed_key after YML: %s", stepno, fixed_key)
 
     result = SSBL.sbl_activation(can_p,
-                                 fixed_key,
+                                 sa_keys,
                                  stepno, purpose)
     return result
 
@@ -307,6 +298,15 @@ def run():
     timeout = 2000
     result = PREC.precondition(can_p, timeout)
 
+    #Init parameter for SecAccess Gen1 / Gen2 (current default: Gen1)
+    sa_keys: SecAccessParam = {
+        "SecAcc_Gen": 'Gen1',
+        "fixed_key": '0102030405',
+        "auth_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF',
+        "proof_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
+    }
+    SIO.parameter_adopt_teststep(sa_keys)
+
     if result:
     ############################################
     # teststeps
@@ -315,7 +315,7 @@ def run():
         # step1:
         # action: DL and activate SBL
         # result: ECU sends positive reply
-        result = result and step_1(can_p)
+        result = result and step_1(can_p,sa_keys)
 
         # step2:
         # action: download ESS Software Part
