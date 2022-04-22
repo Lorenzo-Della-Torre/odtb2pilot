@@ -148,7 +148,7 @@ def step_1(dut: Dut):
                        'dtc_did': '',
                        'failure_type_byte': '',
                        'mask': '',
-                       'signals':''}
+                       'signals':{}}
     parameters = SIO.parameter_adopt_teststep(parameters_dict)
 
     if not all(list(parameters.values())):
