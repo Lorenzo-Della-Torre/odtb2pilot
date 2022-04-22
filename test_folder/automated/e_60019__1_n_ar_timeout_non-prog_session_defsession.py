@@ -148,7 +148,7 @@ def step_2(can_p):
     can_mf: CanMFParam = {
         "block_size": 0,
         "separation_time": 0,
-        "frame_control_delay": 1050,
+        "frame_control_delay": 1100,
         "frame_control_flag": 48,
         "frame_control_auto": True
         }
