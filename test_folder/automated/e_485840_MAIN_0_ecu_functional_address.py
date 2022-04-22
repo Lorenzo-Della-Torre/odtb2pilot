@@ -44,19 +44,10 @@ description:
 
 details:
     Implicitly tested by:
-        REQPROD 60112 (Supporting functional requsts)
+        REQPROD 60112 (Supporting functional requests)
 """
 
-import logging
-import sys
-
-def run():
-    """
-    Run - Call other functions from here.
-    """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
-
-    logging.info("Testcase result: Implicitly tested by REQPROD 60112")
+from e_60112__1_functional_requests import run
 
 if __name__ == '__main__':
     run()

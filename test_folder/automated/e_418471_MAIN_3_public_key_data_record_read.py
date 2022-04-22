@@ -58,6 +58,7 @@ from supportfunctions.support_precondition import SupportPrecondition
 from supportfunctions.support_postcondition import SupportPostcondition
 from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_service10 import SupportService10
+from supportfunctions.support_sec_acc import SecAccessParam
 
 SIO = SupportFileIO
 SC = SupportCAN()
@@ -135,6 +136,17 @@ def run():
         "namespace" : SC.nspace_lookup("Front1CANCfg0")
     }
     SIO.parameter_adopt_teststep(can_p)
+
+    #Init parameter for SecAccess Gen1/Gen2
+    # sa_keys from projects_default should be taken instead
+    sa_keys: SecAccessParam = {
+        "SecAcc_Gen": 'Gen1',
+        "fixed_key": 'FFFFFFFFFF',
+        "auth_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF',
+        "proof_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
+    }
+    SIO.parameter_adopt_teststep(sa_keys)
+
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
     logging.info("Time: %s \n", time.time())
@@ -176,7 +188,7 @@ def run():
         # action: Active DL and SBL
         # result: ECU reply positively
         result = result and SSBL.sbl_activation(can_p,
-         fixed_key='FFFFFFFFFF', stepno='5', purpose="DL and activate SBL")
+         sa_keys, stepno='5', purpose="DL and activate SBL")
         time.sleep(2)
 
         # step 6:

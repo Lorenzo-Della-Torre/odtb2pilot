@@ -62,6 +62,7 @@ from supportfunctions.support_service10 import SupportService10
 from supportfunctions.support_service11 import SupportService11
 from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_service3e import SupportService3e
+from hilding.conf import get_conf
 
 SIO = SupportFileIO
 SC = SupportCAN()
@@ -69,6 +70,7 @@ S_CARCOM = SupportCARCOM()
 SUTE = SupportTestODTB2()
 SSBL = SupportSBL()
 SSA = SupportSecurityAccess()
+CONF = get_conf()
 
 PREC = SupportPrecondition()
 POST = SupportPostcondition()
@@ -83,19 +85,10 @@ def step_1(can_p: CanParam):
     """
     stepno = 1
     purpose = "Download and Activation of SBL"
-    fixed_key = '0102030405'
-    new_fixed_key = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'fixed_key')
-    # don't set empty value if no replacement was found:
-    if new_fixed_key != '':
-        assert isinstance(new_fixed_key, str)
-        fixed_key = new_fixed_key
-    else:
-        logging.info("Step%s: new_fixed_key is empty. Leave old value.", stepno)
-    logging.info("Step%s: fixed_key after YML: %s", stepno, fixed_key)
 
     result = SSBL.sbl_activation(can_p,
-                                 fixed_key,
-                                 stepno, purpose)
+                                 sa_keys=CONF.default_rig_config,
+                                 stepno=stepno, purpose=purpose)
     return result
 
 def step_3(can_p):
@@ -197,7 +190,8 @@ def run():
         # result: ECU sends positive reply
         logging.info("Step 8: DL entire software")
         result = result and SE11.ecu_hardreset(can_p, stepno=8)
-        result = result and SSBL.sbl_activation(can_p, stepno=8, purpose="DL and activate SBL")
+        result = result and SSBL.sbl_activation(can_p, CONF.default_rig_config,\
+                                             stepno=8, purpose="DL and activate SBL")
         time.sleep(1)
         result = result and SSBL.sw_part_download(can_p, SSBL.get_ess_filename(),
                                                   stepno=8,

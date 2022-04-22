@@ -202,7 +202,7 @@ def run():
         }
     SIO.parameter_adopt_teststep(can_p)
 
-    logging.info("Testcase start: %s", datetime.now())
+    logging.debug("Testcase start: %s", datetime.now())
     starttime = time.time()
     logging.info("Time: %s \n", time.time())
     ############################################
