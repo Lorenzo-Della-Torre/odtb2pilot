@@ -45,25 +45,25 @@ SC_CARCOM = SupportCARCOM()
 SIO = SupportFileIO()
 
 
-def compare_positive_response(response, parameters, session):
+def compare_positive_response(response, periodic_did, session):
     """
     Compare ReadDataByPeriodicIdentifier(0x2A) positive response
     Args:
         response (str): ECU response code
-        parameters (dict): Periodic did
+        periodic_did (str): Periodic did
         session (str): diagnostic session
     Returns:
-        (bool): True on Success
+        (bool): True on Successfully verified positive response
     """
     result = False
-    if response[2:6] == parameters['periodic_did']:
+    if response[2:6] == periodic_did:
         logging.info("Received %s for request "
                      "ReadDataByPeriodicIdentifier(0x2A) in %s session as expected",
-                     parameters['periodic_did'], session)
+                     periodic_did, session)
         result = True
     else:
         logging.error("Test Failed: Expected positive response %s, received %s in %s session",
-                      parameters['periodic_did'], response, session)
+                      periodic_did, response, session)
         result = False
 
     return result
@@ -76,10 +76,10 @@ def compare_negative_response(response, session):
         response (str): ECU response code
         session (str): diagnostic session
     Returns:
-        (bool): True on Success
+        (bool): True on Successfully verified negative response
     """
     result = False
-    if response[2:4] == '7F' and response[6:8] == '11':
+    if response[2:4] == '7F' and response[6:8] == '7F':
         logging.info("Received NRC %s for request ReadDataByPeriodicIdentifier(0x2A)"
                      " as expected in %s session", response, session)
         result = True
@@ -97,7 +97,7 @@ def request_read_data_periodic_identifier(dut: Dut, periodic_did):
     Request ReadDataByPeriodicIdentifier(0x2A) with the data parameter transmissionMode set to
     stop and get the ECU response
     Args:
-        dut(class object): Dut instance
+        dut(Dut): Dut instance
         periodic_did(str): Periodic identifier did
     Returns: ECU response of ReadDataByPeriodicIdentifier request
     """
@@ -109,7 +109,7 @@ def request_read_data_periodic_identifier(dut: Dut, periodic_did):
     return response.raw
 
 
-def step_1(dut: Dut):
+def step_1(dut: Dut, periodic_did):
     """
     action: Set to extended mode and verify ReadDataByPeriodicIdentifier(0x2A) response
             with transmission mode parameter set to stop.
@@ -118,19 +118,13 @@ def step_1(dut: Dut):
     """
 
     dut.uds.set_mode(3)
-    # Read periodic did from yml file
-    parameters_dict = {'periodic_did': ''}
-    parameters = SIO.parameter_adopt_teststep(parameters_dict)
-    if not all(list(parameters.values())):
-        logging.error("Test Failed: yml parameter not found")
-        return False, None
 
     # Initiate ReadDataByPeriodicIdentifier
-    response = request_read_data_periodic_identifier(dut, parameters['periodic_did'])
+    response = request_read_data_periodic_identifier(dut, periodic_did)
 
-    result = compare_positive_response(response, parameters, 'extended')
+    result = compare_positive_response(response, periodic_did, 'extended')
 
-    return result, parameters
+    return result
 
 
 def step_2(dut: Dut, periodic_did):
@@ -175,9 +169,16 @@ def run():
     start_time = dut.start()
     result = False
     result_step = False
+    parameters_dict = {'periodic_did': ''}
+
     try:
         dut.precondition(timeout=60)
-        result_step, parameters = dut.step(step_1, purpose='Verify '
+        # Read periodic did from yml file
+        parameters = SIO.parameter_adopt_teststep(parameters_dict)
+        if not all(list(parameters.values())):
+            raise DutTestError("yml parameter not found")
+
+        result_step = dut.step(step_1, parameters['periodic_did'], purpose='Verify '
                                            'ReadDataByPeriodicIdentifier(0x2A) response '
                                            'in extended session with the transmissionMode'
                                            'parameter set to stop')
