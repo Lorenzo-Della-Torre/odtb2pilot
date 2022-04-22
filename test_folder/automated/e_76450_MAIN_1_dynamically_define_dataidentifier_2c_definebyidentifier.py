@@ -140,7 +140,7 @@ def step_2(dut: Dut, parameters):
 
     # Initiate DynamicallyDefineDataIdentifier
     response = request_dynamically_define_data_identifier(dut, parameters)
-    result = compare_negative_response(response, session="programming", nrc_code='11')
+    result = compare_negative_response(response, session="programming", nrc_code='7F')
 
     return result
 
@@ -191,12 +191,11 @@ def run():
                     }
 
     try:
+        dut.precondition(timeout=60)
         parameters = SIO.parameter_adopt_teststep(parameters_dict)
 
         if not all(list(parameters.values())):
             raise DutTestError("yml parameters not found")
-
-        dut.precondition(timeout=60)
 
         result_step, parameters = dut.step(step_1, purpose='Verify dynamicallyDefineDataIdentifier'
                                   '(0x2C)-defineByIdentifier(01, 81) response in default session')
