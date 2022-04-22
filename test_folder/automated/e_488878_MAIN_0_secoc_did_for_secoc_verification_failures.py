@@ -74,7 +74,7 @@ def step_1(dut: Dut):
     """
     # Read yml parameters
     parameters_dict = {'sec_oc_did': '',
-                       'signals':''}
+                       'signals':{}}
     parameters = SIO.parameter_adopt_teststep(parameters_dict)
 
     if not all(list(parameters.values())):
@@ -143,19 +143,17 @@ def step_1(dut: Dut):
 
 def run():
     """
-    Read did 'DOCC' and verify the failure count limit bit status for each SecOC protected signal
+    Read did 'D0CC' and verify the failure count limit bit status for each SecOC protected signal
     """
     dut = Dut()
 
     start_time = dut.start()
     result = False
-    result_step = False
     try:
         dut.precondition(timeout=60)
 
-        result_step = dut.step(step_1, purpose="Verify the status of 'D0CC' for failure "
+        result = dut.step(step_1, purpose="Verify the status of 'D0CC' for failure "
                                "count limit")
-        result = result_step
     except DutTestError as error:
         logging.error("Test failed: %s", error)
     finally:
