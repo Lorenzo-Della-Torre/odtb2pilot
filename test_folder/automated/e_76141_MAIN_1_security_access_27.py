@@ -96,7 +96,7 @@ import sys
 import logging
 import odtb_conf
 
-from supportfunctions.support_sec_acc import SupportSecurityAccess
+from supportfunctions.support_sec_acc import SupportSecurityAccess, SecAccessParam
 from supportfunctions.support_SBL import SupportSBL
 from supportfunctions.support_can import SupportCAN, CanParam, CanTestExtra, CanPayload
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
@@ -163,7 +163,7 @@ def security_access_def_session(can_p, step_no):
 
     return result
 
-def security_access_prg_session(can_p, step_no):
+def security_access_prg_session(can_p, sa_keys, step_no):
     """
     Request seed and Send key in programming session,
     expect positive response for values
@@ -205,7 +205,7 @@ def security_access_prg_session(can_p, step_no):
 
     # Modify received seed with the security access algorithm.
     modified_seed = SSA.set_security_access_pins(request_seed,
-                                                 fixed_key='FFFFFFFFFF')
+                                                 sa_keys)
 
     # Security access service with send key 0x02
     service_call = bytearray(b'\x27\x02')
@@ -538,6 +538,15 @@ def run():
     timeout = 200
     result = PREC.precondition(can_p, timeout)
 
+    #Init parameter for SecAccess Gen1 / Gen2 (current default: Gen1)
+    sa_keys: SecAccessParam = {
+        "SecAcc_Gen": 'Gen1',
+        "fixed_key": '0102030405',
+        "auth_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF',
+        "proof_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
+    }
+    SIO.parameter_adopt_teststep(sa_keys)
+
     if result:
         ############################################
         # teststeps
@@ -595,13 +604,13 @@ def run():
         #         (Primary bootloader) and verify response time.
         # Result: Positive reply from becm_p319
         result = result and \
-            security_access_prg_session(can_p, 9)
+            security_access_prg_session(can_p, sa_keys, 9)
 
         # Step 10:
         # Action: Active secondary bootloader
         # Result: Positive reply from becm_p319
         result = result and SSBL.sbl_activation(
-            can_p, fixed_key='FFFFFFFFFF', stepno='11', purpose='Activate secondary bootloader')
+            can_p, sa_keys, stepno='11', purpose='Activate secondary bootloader')
 
     ############################################
     # postCondition

@@ -33,218 +33,209 @@ details: >
 """
 
 import logging
-from glob import glob
+import time
+from os import listdir
 from hilding.dut import Dut
 from hilding.dut import DutTestError
-from hilding.conf import Conf
-from supportfunctions.support_can import SupportCAN
 from supportfunctions.support_SBL import SupportSBL
-from supportfunctions.support_service27 import SupportService27
-from supportfunctions.support_service31 import SupportService31
-from supportfunctions.support_service34 import SupportService34
-from supportfunctions.support_service36 import SupportService36
-from supportfunctions.support_service37 import SupportService37
+from supportfunctions.support_sec_acc import SecAccessParam
+from supportfunctions.support_service3e import SupportService3e
 
-
-CNF = Conf()
-SC = SupportCAN()
 SSBL = SupportSBL()
-SE27 = SupportService27()
-SE31 = SupportService31()
-SE34 = SupportService34()
-SE36 = SupportService36()
-SE37 = SupportService37()
+SS3E = SupportService3e()
 
 
-def read_vbf(dut, vbf_type):
-    """
-    Read vbf file and extract vbf header, vbf block and vbf block data
+def load_vbf_files(dut):
+    """Loads the rig specific VBF files found in rigs/<default-rig-name>/VBFs
+
     Args:
-        dut (class obj): dut instance
-        vbf_type (str): SBL/ESS/DATA/EXE
+        dut (Dut): An instance of Dut
+
     Returns:
-        vbf_header (dict): vbf header dictionary
-        vbf_blocks_details (dict): VBF Block details (vbf_block, vbf_block_data)
+        boolean: True if vbfs were loaded successfully, otherwise False
     """
-    rig_vbf_path = dut.conf.rig.vbf_path
-    vbf_file_paths = glob(str(rig_vbf_path) + "/*.vbf")
+    logging.info("~~~~~~~~ Loading VBFs started ~~~~~~~~")
+    vbfs = listdir(dut.conf.rig.vbf_path)
 
-    if len(vbf_file_paths) > 0:
-        for vbf_file_path in vbf_file_paths:
-            _, vbf_header, vbf_data, vbf_offset = SSBL.read_vbf_file(vbf_file_path)
-            vbf_header = dict(vbf_header)
+    paths_to_vbfs = [str(dut.conf.rig.vbf_path) + "/" + x for x in vbfs]
 
-            if vbf_header['sw_part_type'] == vbf_type:
-                SSBL.vbf_header_convert(vbf_header)
-                vbf_blocks_details = extract_vbf_blocks(vbf_data, vbf_offset)
-                logging.info("Number of VBF blocks extracted from the %s VBF file: %s",
-                                vbf_type, len(vbf_blocks_details))
-                return True, vbf_header, vbf_blocks_details
-
-    logging.error("No %s VBF found in %s", vbf_type, rig_vbf_path)
-    return False, None, None
-
-
-def extract_vbf_blocks(vbf_data, vbf_offset):
-    """
-    Extract all the Verification Block File(VBF) blocks & block data
-    Args:
-        vbf_data (str): Complete vbf data
-        vbf_offset (int): vbf offset
-    Returns:
-        vbf_block_details (list): VBF Block details (vbf_block, vbf_block_data)
-    """
-    vbf_blocks_details = []
-    # Extract first VBF block
-    vbf_offset, vbf_block, vbf_block_data = SSBL.block_data_extract(vbf_data, vbf_offset)
-    vbf_blocks_details.append({'vbf_block': vbf_block, 'vbf_block_data': vbf_block_data})
-
-    while vbf_block['StartAddress'] != 0:
-        vbf_offset, vbf_block, vbf_block_data = SSBL.block_data_extract(vbf_data, vbf_offset)
-        # Break if no more blocks found
-        if vbf_block['StartAddress'] != 0:
-            vbf_blocks_details.append({'vbf_block': vbf_block, 'vbf_block_data': vbf_block_data})
-
-    return vbf_blocks_details
-
-
-def transfer_data(dut, vbf_header, vbf_block, vbf_block_data):
-    """
-    Initiate Software Download(SWDL) for a particular VBF block
-    Args:
-        dut (class object): Dut instance
-        vbf_header (dict): VBF file header
-        vbf_block (dict): dictionary containing StartAddress, Length & Checksum
-        vbf_block_data (str): VBF block data byte string
-    Returns:
-        bool: True when software download is successful
-    """
-    result, nbl = SE34.request_block_download(dut, vbf_header, vbf_block)
-    if not result:
-        logging.error("Test failed: RequestDownload(0x34) request failed")
+    if not paths_to_vbfs:
+        logging.error("VBFs not found, expected in %s ... aborting", dut.conf.rig.vbf_path)
         return False
 
-    result = SE36.flash_blocks(dut, vbf_block_data, vbf_block, nbl)
-    if not result:
-        logging.error("Test failed: TransferData(0x36) request failed")
+    result = SSBL.read_vbf_param(paths_to_vbfs)
+
+    return result
+
+
+def activate_sbl(dut):
+    """Downloads and activates SBL on the ECU using supportfunction from support_SBL
+
+    Args:
+        dut (Dut): An instance of Dut
+
+    Returns:
+        boolean: Result from support_SBL.sbl_activation.
+        Should be True if sbl is activated successfully,
+        otherwise False
+    """
+    logging.info("~~~~~~~~ Activate SBL started ~~~~~~~~")
+
+    # Setting up keys
+    sa_keys: SecAccessParam = dut.conf.default_rig_config
+
+    # Activate SBL
+    result = SSBL.sbl_activation(dut, sa_keys)
+
+    return result
+
+
+def download_ess(dut):
+    """
+    Download the ESS file to the ECU
+
+    Args:
+        dut (Dut): An instance of Dut
+
+    Returns:
+        boolean: True if download software part was successful, otherwise False
+    """
+
+    if SSBL.get_ess_filename():
+        logging.info("~~~~~~~~ Download ESS started ~~~~~~~~")
+
+        purpose = "Download ESS"
+        result = SSBL.sw_part_download(dut, SSBL.get_ess_filename(),
+                                       purpose=purpose)
+
+    else:
+        result = True
+        logging.info("ESS file not needed for this project, skipping...")
+
+    return result
+
+
+def download_application_and_data(dut):
+    """Download the application to the ECU
+
+    Args:
+        dut (Dut): An instance of Dut
+
+    Returns:
+        boolean: True of download was successful, otherwise False
+    """
+
+    logging.info("~~~~~~~~ Download application and data started ~~~~~~~~")
+    result = True
+    purpose = "Download application and data"
+    for vbf_file in SSBL.get_df_filenames():
+        result = result and SSBL.sw_part_download(dut, vbf_file, purpose=purpose)
+
+    return result
+
+
+def check_complete_and_compatible(dut):
+    """Run complete and compatible routine
+
+    Args:
+        dut (Dut): Instance of Dut
+
+    Returns:
+        boolean: Result of complete and compatible
+    """
+    logging.info("~~~~~~~~ Check Complete And Compatible started ~~~~~~~~")
+
+    return SSBL.check_complete_compatible_routine(dut, stepno=1)
+
+
+def software_download(dut):
+    """The function that handles all the sub-steps when performing software download.
+    This function will keep track of the progress and give error indications if a step fails
+
+    Args:
+        dut (Dut): An instance of Dut
+
+    Returns:
+        boolean: Result of software download
+    """
+
+    # Load vbfs
+    vbf_result = load_vbf_files(dut)
+
+    logging.info("~~~~~~ Step 1/5 of software download (loading vbfs) done."
+    " Result: %s", vbf_result)
+
+    if vbf_result is False:
+        logging.error("Aborting software download due to problems when loading VBFs")
         return False
 
-    result = SE37.transfer_data_exit(dut)
-    if not result:
-        logging.error("Test failed: TransferExit(0x37) request failed")
+    # Activate sbl
+    sbl_result = activate_sbl(dut)
+
+    logging.info("Step 2/5 of software download (downloading and activating sbl) done."
+    " Result: %s", sbl_result)
+
+    if sbl_result is False:
+        logging.error("Aborting software download due to problems when activating SBL")
         return False
 
-    return True
+    # Download ess (if needed)
+    ess_result = download_ess(dut)
 
+    logging.info("Step 3/5 of software download (downloading ess) done. \
+     Result: %s", ess_result)
 
-def block_wise_software_download(dut, vbf_header, vbf_blocks_details):
-    """
-    Blockwise software download(SWDL)
-    Args:
-        dut (class object): Dut instance
-        vbf_header (dict): VBF file header
-        vbf_blocks_details (list): VBF Block details (vbf_block, vbf_block_data)
-    Returns:
-        (bool): True on successful blockwise software download
-    """
-    # Software Download(SWDL) on all blocks of respective VBF file
-    results = []
-    for counter, block_details in enumerate(vbf_blocks_details):
-        logging.info("Initiating SWDL for Block %s of %s VBF", counter, vbf_header['sw_part_type'])
-        result = transfer_data(dut, vbf_header, block_details["vbf_block"],
-                                block_details["vbf_block_data"])
-        results.append(result)
-        if not result:
-            logging.error("Block %s failed", counter)
-            break
+    if ess_result is False:
+        logging.error("Aborting software download due to problems when downloading ESS")
+        return False
 
-    if len(results) != 0 and all(results):
-        logging.info("Software download completed for %s VBF", vbf_header['sw_part_type'])
-        return True
+    # Download application and data
+    app_result = download_application_and_data(dut)
 
-    logging.error("Software Download failed for %s VBF file", vbf_header['sw_part_type'])
-    return False
+    logging.info("Step 4/5 of software download (downloading application and data) done."
+    " Result: %s", app_result)
 
+    if app_result is False:
+        logging.error("Aborting software download due to problems when downloading application")
+        return False
 
-def software_download(dut: Dut, stepno):
-    """
-    Software download(SWDL) for all VBF file types
-    Args:
-        dut (class object): Dut instance
-        stepno (int): step number
-    Returns:
-        (bool): True on successful software download
-    """
-    results = []
-    vbf_type_list = ['SBL','ESS', 'DATA', 'EXE']
-    for vbf_type in vbf_type_list:
-        result, vbf_header, vbf_blocks_details = read_vbf(dut, vbf_type)
-        if not result:
-            logging.error("Test Failed: Unable to extract parameters of %s VBF", vbf_type)
-            return False
+    # Check Complete And Compatible
+    check_result = check_complete_and_compatible(dut)
 
-        if vbf_type != vbf_type_list[0]:
-            result_flash_erase = SSBL.flash_erase(dut, vbf_header, stepno)
-            if not result_flash_erase:
-                logging.error("Test Failed: Unable to complete Flash Erase")
-                return False
+    logging.info("Step 5/5 of software download (Check Complete And Compatible) done."
+    " Result: %s", check_result)
 
-        result = block_wise_software_download(dut, vbf_header, vbf_blocks_details)
-        if result:
-            results.append(True)
-        else:
-            logging.error("Software download failed for %s VBF file", vbf_type)
-            return False
+    if check_result is False:
+        logging.error("Aborting software download due to problems when checking C & C")
+        return False
 
-        SE31.check_memory(dut, vbf_header, stepno)
-        if vbf_type == vbf_type_list[0]:
-            SSBL.activate_sbl(dut, vbf_header, stepno)
+    # Check that the ECU ends up in mode 1 (default session)
+    SS3E.stop_periodic_tp_zero_suppress_prmib()
+    time.sleep(10)
+    uds_response = dut.uds.active_diag_session_f186()
+    mode = uds_response.data['details'].get('mode')
+    correct_mode = True
+    if mode != 1:
+        logging.error("Software download complete "
+        "but ECU did not end up in mode 1 (default session), current mode is: %s", mode)
+        correct_mode = False
 
-    if len(results) == len(vbf_type_list) and all(results):
-        logging.info("Software download completed")
-        return True
-
-    return True
+    return correct_mode
 
 
 def step_1(dut: Dut):
     """
-    action: Set to Programming Session and security access to ECU.
+    action: Software Download
 
-    expected_result: ECU is in programming session and Security access granted
+    expected_result: True on successful download
     """
-    dut.uds.set_mode(2)
-    result = SE27.activate_security_access_fixedkey(dut, sa_keys=CNF.default_rig_config,
-                                                    step_no=272, purpose="SecurityAccess")
+    result = software_download(dut)
+
     if result:
-        logging.info("Security access granted")
-        return True
-    logging.error("Test Failed: Security access denied")
-    return False
-
-
-def step_2(dut: Dut):
-    """
-    action: Download Software for all VBF files and verify the downloaded
-            software is complete and compatible
-
-    expected_result: True when downloaded software is Complete&Compatible
-    """
-    result = software_download(dut, stepno=2)
-    if not result:
-        logging.error("Test Failed: Software download failed")
-        return False
-
-    response = SSBL.check_complete_compatible_routine(dut, stepno=2)
-    complete_compatible_list = response.split(",")
-
-    if complete_compatible_list[0] == 'Complete' and \
-        complete_compatible_list[1].strip() == 'Compatible':
-        logging.info("Received %s as expected after software download", response)
+        logging.info("Software download successful")
         return True
 
-    logging.error("Test Failed: Complete & Compatible check failed, expected Complete"
-                    "& Compatible, received %s", response)
+    logging.error("Test Failed: Software download failed")
     return False
 
 
@@ -255,17 +246,11 @@ def run():
     dut = Dut()
     start_time = dut.start()
     result = False
-    result_step = False
 
     try:
-        dut.precondition(timeout=400)
-        result_step = dut.step(step_1, purpose='Security access to ECU')
-
-        if result_step:
-            result_step = dut.step(step_2, purpose='Verify current Downloaded '
-                                   'Software is Complete & Compatible')
-
-        result = result_step
+        dut.precondition(timeout=800)
+        result = dut.step(step_1, purpose='Verify current Software is Downloaded'
+                                            ' and signed separately.')
 
     except DutTestError as error:
         logging.error("Test failed: %s", error)

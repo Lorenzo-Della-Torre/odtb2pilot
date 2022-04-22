@@ -64,10 +64,11 @@ SUPPORT_TEST = SupportTestODTB2()
 
 RE_DATE_START = re.compile(r'\s*Testcase\s+start:\s+(?P<date>\d+-\d+-\d+)\s+(?P<time>\d+:\d+:\d+)')
 RE_RESULT = re.compile(r'.*(?P<result>FAILED|PASSED|MANUAL|To be inspected|tested implicitly|\
-                       Tested implicitly|Not applicable).*')
+                       Tested implicitly|Not applicable|Modified VBF needed|\
+                       Tested in dSpace HIL|SecOC not implemented|Implicitly tested).*')
 RE_FOLDER_TIME = re.compile(r'.*Testrun_(?P<date>\d+_\d+)')
 RE_REQPROD_ID = re.compile(r'\s*e_(?P<reqprod>\d+)_', flags=re.IGNORECASE)
-# case insensetive
+# case insensitive
 
 # When calculating per cent, how many decimals do we want
 AMOUNT_OF_DECIMALS = 1
@@ -82,6 +83,9 @@ FAILED_STATUS = 'FAILED'
 MISSING_STATUS = 'MISSING'
 UNKNOWN_STATUS = 'UNKNOWN'
 MANUAL_STATUS = 'MANUAL'
+VBF_MOD_STATUS = 'VBF_MOD'
+SECOC_STATUS = 'SECOC'
+DSPACE_STATUS = 'DSPACE'
 
 # Use the keys when regex-matching in log-files
 MATCH_DICT = {'Not applicable': NA_STATUS,
@@ -89,10 +93,14 @@ MATCH_DICT = {'Not applicable': NA_STATUS,
               'To be inspected': INSPECTION_STATUS,
               'tested implicitly': IMPLICIT_STATUS,
               'Tested implicitly': IMPLICIT_STATUS,
+              'Implicitly tested': IMPLICIT_STATUS,
               'PASSED': PASSED_STATUS,
               'FAILED': FAILED_STATUS,
               'MISSING': MISSING_STATUS,
               'MANUAL': MANUAL_STATUS,
+              'Modified VBF needed': VBF_MOD_STATUS,
+              'Tested in dSpace HIL': DSPACE_STATUS,
+              'SecOC not implemented': SECOC_STATUS,
               'UNKNOWN': UNKNOWN_STATUS}
 
 # Which color to use for the status
@@ -104,9 +112,11 @@ MATCH_DICT = {'Not applicable': NA_STATUS,
 # Light lime greenish gray: #d9d9d6
 # Light blue: #94c4f7
 # Sunshine: #f6eb61
+# light orange: ffcc99
 COLOR_DICT = {PASSED_STATUS:'#d8ed96', FAILED_STATUS:'#ff585d', NA_STATUS:'#f6eb61',
               MISSING_STATUS:'WHITE', NO_RES_STATUS:'#d9d9d6', INSPECTION_STATUS:'Wheat',
-              IMPLICIT_STATUS:'#b9d3dc', UNKNOWN_STATUS:'BurlyWood', MANUAL_STATUS:'#fbd7c9'}
+              IMPLICIT_STATUS:'#b9d3dc', UNKNOWN_STATUS:'BurlyWood', VBF_MOD_STATUS:'#ffcc99',
+              DSPACE_STATUS:"#9FE2BF", MANUAL_STATUS:'#fbd7c9', SECOC_STATUS:'#fbd7c9'}
 
 DESC_DICT = {PASSED_STATUS:'Passed',
              FAILED_STATUS:'Failed',
@@ -116,6 +126,9 @@ DESC_DICT = {PASSED_STATUS:'Passed',
              INSPECTION_STATUS:'Test by inspection',
              IMPLICIT_STATUS:'Implicitly tested by another testscript',
              MANUAL_STATUS:'Manual test needed. Example: Using debugger',
+             DSPACE_STATUS:'Tested on dSpace',
+             SECOC_STATUS:'SecOC not implemented',
+             VBF_MOD_STATUS:'Modified VBFs needed. Or another testapproach',
              UNKNOWN_STATUS: 'Unknown error or status'}
 
 BROKEN_URL_COLOR = 'BlanchedAlmond'

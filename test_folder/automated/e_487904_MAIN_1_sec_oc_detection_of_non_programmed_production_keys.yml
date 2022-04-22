@@ -1,0 +1,6 @@
+hvbm_p519:
+    step_1:
+        did : 'D0CB'
+        supported_sec_oc_key_id : 'FFFF'
+        secoc_status_pos: 12
+        secoc_key_id_pos: 8

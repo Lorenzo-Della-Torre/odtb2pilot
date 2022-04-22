@@ -62,7 +62,6 @@ from supportfunctions.support_test_odtb2 import SupportTestODTB2
 from supportfunctions.support_carcom import SupportCARCOM
 from supportfunctions.support_file_io import SupportFileIO
 from supportfunctions.support_SBL import SupportSBL
-from supportfunctions.support_sec_acc import SupportSecurityAccess
 from supportfunctions.support_rpi_gpio import SupportRpiGpio
 
 from supportfunctions.support_precondition import SupportPrecondition
@@ -73,13 +72,14 @@ from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_service27 import SupportService27
 from supportfunctions.support_service31 import SupportService31
 
+from hilding.dut import Dut
+
 
 SIO = SupportFileIO
 SC = SupportCAN()
 S_CARCOM = SupportCARCOM()
 SUTE = SupportTestODTB2()
 SSBL = SupportSBL()
-SSA = SupportSecurityAccess()
 SGPIO = SupportRpiGpio()
 
 PREC = SupportPrecondition()
@@ -186,6 +186,7 @@ def run():
     """
     Run - Call other functions from here
     """
+    dut = Dut()
     logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
     # where to connect to signal_broker
@@ -207,6 +208,15 @@ def run():
     timeout = 500
     result = PREC.precondition(can_p, timeout)
 
+    platform=dut.conf.rigs[dut.conf.default_rig]['platform']
+    sa_keys = {
+        "SecAcc_Gen" : dut.conf.platforms[platform]['SecAcc_Gen'],
+        "fixed_key": dut.conf.platforms[platform]["fixed_key"],
+        "auth_key": dut.conf.platforms[platform]["auth_key"],
+        "proof_key": dut.conf.platforms[platform]["proof_key"]
+    }
+
+
     if result:
     ############################################
     # teststeps
@@ -226,7 +236,7 @@ def run():
         # step 3:
         # action: Security Access Request SID
         # result: ECU sends positive reply
-        result = result and SE27.activate_security_access(can_p, 3)
+        result = result and SE27.activate_security_access_fixedkey(can_p, sa_keys, 3)
 
         # step 4:
         # action: Flash Erase in PBL reply with Aborted

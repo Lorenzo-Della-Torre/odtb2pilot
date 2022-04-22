@@ -59,6 +59,7 @@ from supportfunctions.support_postcondition import SupportPostcondition
 from supportfunctions.support_SBL import SupportSBL
 from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_service10 import SupportService10
+from supportfunctions.support_sec_acc import SecAccessParam
 
 SIO = SupportFileIO
 SC = SupportCAN()
@@ -165,6 +166,15 @@ def run():
     }
     SIO.parameter_adopt_teststep(can_p)
 
+    #Init parameter for SecAccess Gen1/Gen2
+    sa_keys: SecAccessParam = {
+        "SecAcc_Gen": 'Gen1',
+        "fixed_key": 'FFFFFFFFFF',
+        "auth_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF',
+        "proof_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
+    }
+    SIO.parameter_adopt_teststep(sa_keys)
+
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
     logging.info("Time: %s \n", time.time())
@@ -204,7 +214,7 @@ def run():
     # action: DL and activate SBL
     # result: ECU reports mode
         result = result and SSBL.sbl_activation(can_p,
-         fixed_key='FFFFFFFFFF', stepno='4', purpose="DL and activate SBL")
+         sa_keys, stepno='4', purpose="DL and activate SBL")
         time.sleep(1)
 
     # step 5:
