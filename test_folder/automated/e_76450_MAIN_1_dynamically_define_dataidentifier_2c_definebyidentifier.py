@@ -90,7 +90,7 @@ def compare_negative_response(response, session, nrc_code):
     else:
         logging.error("Test Failed: Expected NRC %s for request"
                       " dynamicallyDefineDataIdentifier(0x2C)-defineByIdentifier(01, 81) in"
-                      " %s session, received %s",nrc_code, session, response)
+                      " %s session, received %s", nrc_code, session, response)
         result = False
 
     return result
@@ -197,7 +197,7 @@ def run():
         if not all(list(parameters.values())):
             raise DutTestError("yml parameters not found")
 
-        result_step, parameters = dut.step(step_1, purpose='Verify dynamicallyDefineDataIdentifier'
+        result_step = dut.step(step_1, parameters, purpose='Verify dynamicallyDefineDataIdentifier'
                                   '(0x2C)-defineByIdentifier(01, 81) response in default session')
 
         if result_step:
