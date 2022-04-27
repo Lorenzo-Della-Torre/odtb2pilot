@@ -83,10 +83,10 @@ def get_vbf_header(dut:Dut):
     return None
 
 
-def prepare_cpay_etp(dut, rid, sub_function):
+def routine_control_request(dut, rid, sub_function):
 
     """
-    To prepare capy and etp for routine control requests
+    request routine control
     Args:
         dut (class object): dut instance
         rid (str): programming or extended rid
@@ -123,14 +123,13 @@ def routine_type_status(dut:Dut, vbf_header, parameters,
     """
     results = []
     for sub_function in parameters['subfunctions']:
-        # comparining FF00 to used support function
         if rid == 'FF00':
             SE31.routinecontrol_requestsid_flash_erase(dut, vbf_header, stepno=111)# check
         else:
-            prepare_cpay_etp(dut, rid, sub_function)
+            routine_control_request(dut, rid, sub_function)
         can_msg_check = SC.can_messages[dut["receive"]][0][2]
 
-        if can_msg_check[6:10] == rid and can_msg_check[10:16] == status:
+        if can_msg_check[8:12] == rid and can_msg_check[12:18] == status:
             logging.info("Rid, Routine type and Status found %s", can_msg_check[6:10])
             results.append(True)
         else:
