@@ -97,7 +97,7 @@ def compare_negative_response(response, session, nrc_code):
     return result
 
 
-def request_dynamically_define_data_identifier(dut, parameters):
+def dynamically_define_data_identifier(dut, parameters):
     """
     Initiate dynamicallyDefineDataIdentifier(0x2C)-defineByIdentifier(01, 81) request
     Args:
@@ -117,28 +117,28 @@ def request_dynamically_define_data_identifier(dut, parameters):
     return response.raw
 
 
-def step_1(dut: Dut):
+def step_1(dut: Dut, parameters):
     """
     action: Verify dynamicallyDefineDataIdentifier(0x2C)-defineByIdentifier(01, 81) request in
             default session
     expected_result: ECU should send positive response
     """
-    # Define did from yml file
-    parameters_dict = { 'define_did': '',
-                        'source_data_identifier':'',
-                        'position_in_source_data_record':'',
-                        'memory_size':''
-                    }
-    parameters = SIO.parameter_adopt_teststep(parameters_dict)
-
-    if not all(list(parameters.values())):
-        logging.error("Test Failed: yml parameter not found")
-        return False, None
 
     # Initiate DynamicallyDefineDataIdentifier
-    response = request_dynamically_define_data_identifier(dut, parameters)
+    response = dynamically_define_data_identifier(dut, parameters)
     result = compare_positive_response(response, parameters, 'default')
-    return result, parameters
+    if not result:
+        return False
+
+    define_did = parameters['define_did']
+    # Verify response of dynamically defined did
+    response = dut.uds.read_data_by_id_22(bytes.fromhex(define_did))
+    if response.raw[2:4] == '62':
+        logging.info("Received positive response for dynamically define did %s", define_did)
+        return True
+
+    logging.error("Test failed: Unable to get response of dynamically define did %s", define_did)
+    return False
 
 
 def step_2(dut: Dut, parameters):
@@ -152,7 +152,7 @@ def step_2(dut: Dut, parameters):
     dut.uds.set_mode(2)
 
     # Initiate DynamicallyDefineDataIdentifier
-    response = request_dynamically_define_data_identifier(dut, parameters)
+    response = dynamically_define_data_identifier(dut, parameters)
     result = compare_negative_response(response, session="programming", nrc_code='11')
 
     return result
@@ -169,9 +169,12 @@ def step_3(dut: Dut, parameters):
     dut.uds.set_mode(3)
 
     # initiate DynamicallyDefineDataIdentifier without security access
-    response = request_dynamically_define_data_identifier(dut, parameters)
+    response = dynamically_define_data_identifier(dut, parameters)
     result_without_security = compare_negative_response(response, session="extended"
                                                         , nrc_code='33')
+
+    if not result_without_security:
+        return False
 
     # Security access to ECU
     security_access = SE27.activate_security_access_fixedkey(dut, CNF.default_rig_config,
@@ -181,10 +184,21 @@ def step_3(dut: Dut, parameters):
         return False
 
     # Initiate DynamicallyDefineDataIdentifier with security access
-    response = request_dynamically_define_data_identifier(dut, parameters)
+    response = dynamically_define_data_identifier(dut, parameters)
     result_with_security = compare_positive_response(response, parameters, 'extended')
 
-    return result_without_security and result_with_security
+    if not result_with_security:
+        return False
+
+    define_did = parameters['define_did']
+    # Verify response of dynamically defined did
+    response = dut.uds.read_data_by_id_22(define_did)
+    if response.raw[2:4] == '62':
+        logging.info("Received positive response for dynamically define did %s", define_did)
+        return True
+
+    logging.error("Test failed: Unable to get response of dynamically define did %s", define_did)
+    return False
 
 
 def run():
@@ -197,10 +211,22 @@ def run():
     start_time = dut.start()
     result = False
     result_step = False
+
+    parameters_dict = { 'define_did': '',
+                    'source_data_identifier':'',
+                    'position_in_source_data_record':'',
+                    'memory_size':''}
     try:
+
+        # Read parameters from yml file
+        parameters = SIO.parameter_adopt_teststep(parameters_dict)
+
+        if not all(list(parameters.values())):
+            raise DutTestError("yml parameters not found")
+
         dut.precondition(timeout=60)
 
-        result_step, parameters = dut.step(step_1, purpose='Verify dynamicallyDefineDataIdentifier'
+        result_step = dut.step(step_1, parameters, purpose='Verify dynamicallyDefineDataIdentifier'
                                   '(0x2C)-defineByIdentifier(01, 81) response in default session')
 
         if result_step:
