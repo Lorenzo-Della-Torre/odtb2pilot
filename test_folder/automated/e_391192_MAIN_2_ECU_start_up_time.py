@@ -44,8 +44,10 @@ import time
 from hilding.dut import Dut
 from hilding.dut import DutTestError
 from supportfunctions.support_file_io import SupportFileIO
+from supportfunctions.support_service22 import SupportService22
 
 SIO = SupportFileIO()
+SE22 = SupportService22()
 
 
 def step_1(dut: Dut):
@@ -61,14 +63,13 @@ def step_1(dut: Dut):
     time.sleep(1)
 
     if ecu_response.raw[2:4] == '51':
-        response = dut.uds.active_diag_session_f186()
-
-        if response.details["mode"] == '1':
-            logging.info("Received default mode %s as expected", response.details["mode"])
+        ecu_mode = SE22.get_ecu_mode(dut)
+        if ecu_mode == 'DEF':
+            logging.info("Received default mode %s as expected", ecu_mode)
             return True
 
         logging.error("Test failed: Expected default mode (1), received %s",
-                       response.details["mode"])
+                       ecu_mode)
         return False
 
     logging.error("Test failed: ECU reset not successful expected '51', received NRC %s",
