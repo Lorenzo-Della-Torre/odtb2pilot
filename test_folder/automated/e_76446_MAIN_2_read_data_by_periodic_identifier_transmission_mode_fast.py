@@ -32,7 +32,7 @@ description: >
 
 details: >
     1. Checking response for ReadDataByPeriodicIdentifier(0x2A) in extendedDiagnosticSession with
-    response code 0x6A and it should not support defaultSession and programmingSession.
+    response code 0x6A
     2. Verify transmissionMode fast parameter 0x03 in ReadDataByPeriodicIdentifier(0x2A) service.
 """
 
@@ -54,39 +54,16 @@ def compare_positive_response(response, periodic_did, session):
         periodic_did (str): periodic did
         session (str): diagnostic session
     Returns:
-        (bool): True on Successfully verified positive response
+        (bool): True on successfully verified positive response
     """
     result = False
-    if response[2:6] == periodic_did:
+    if response[4:6] == periodic_did[:2]:
         logging.info("Received %s for request ReadDataByPeriodicIdentifier(0x2A) in %s session"
-                     " as expected", periodic_did, session)
+                     " as expected", periodic_did[:2], session)
         result = True
     else:
         logging.error("Test Failed: Expected positive response %s, received %s in %s session",
-                      periodic_did, response, session)
-        result = False
-
-    return result
-
-
-def compare_negative_response(response, session):
-    """
-    Compare ReadDataByPeriodicIdentifier(0x2A) negative response
-    Args:
-        response (str): ECU response code
-        session (str): diagnostic session
-    Returns:
-        (bool): True on Successfully verified negative response
-    """
-    result = False
-    if response[2:4] == '7F' and response[6:8] == '7F':
-        logging.info("Received NRC %s for request ReadDataByPeriodicIdentifier(0x2A)"
-                     " as expected in %s session", response, session)
-        result = True
-    else:
-        logging.error("Test Failed: Expected negative response for"
-                      " ReadDataByPeriodicIdentifier(0x2A) request, received %s in %s session",
-                      response, session)
+                      periodic_did[0:2], response, session)
         result = False
 
     return result
@@ -99,7 +76,8 @@ def request_read_data_periodic_identifier(dut: Dut, periodic_did):
     Args:
         dut(Dut): Dut instance
         periodic_did(str): Periodic identifier did
-    Returns: ECU response of ReadDataByPeriodicIdentifier request
+    Returns:
+        response.raw (str): ECU response of ReadDataByPeriodicIdentifier request
     """
     # Request periodic did with transmissionMode fast parameter 0x03
     payload = SC_CARCOM.can_m_send("ReadDataByPeriodicIdentifier", b'\x03' +
@@ -109,63 +87,49 @@ def request_read_data_periodic_identifier(dut: Dut, periodic_did):
     return response.raw
 
 
-def step_1(dut: Dut, periodic_did):
+def step_1(dut: Dut, parameters):
     """
     action: Set to extended mode and verify ReadDataByPeriodicIdentifier(0x2A) response
             with transmissionMode fast parameter 0x03
-    expected_result: ECU should send positive response
+    expected_result: ECU should send positive response 0x6A within fast rate(25ms)
     """
     dut.uds.set_mode(3)
 
     # Initiate ReadDataByPeriodicIdentifier
-    response = request_read_data_periodic_identifier(dut, periodic_did)
+    response = request_read_data_periodic_identifier(dut, parameters['periodic_did'])
+    response_time = dut.uds.milliseconds_since_request()
 
-    result = compare_positive_response(response, periodic_did, 'extended')
+    # Check positive response 0x6A
+    result = compare_positive_response(response, parameters['periodic_did'], 'extended')
+    if not result:
+        return False
 
-    return result
+    # Check response is within 25ms
+    if response_time >= parameters['fast_rate']:
+        logging.error("Test Failed: Response time is not less than fast rate %s ",
+                      parameters['fast_rate'])
+        return False
 
+    logging.info("Response time is less than fast rate %s as expected",
+                 parameters['fast_rate'])
 
-def step_2(dut: Dut, periodic_did):
-    """
-    action: Set to default session and verify ReadDataByPeriodicIdentifier(0x2A) negative response
-            with transmission mode fast parameter 0x03
-    expected_result: ECU should not support ReadDataByPeriodicIdentifier(0x2A) in default session
-    """
-    dut.uds.set_mode(1)
-    # Initiate ReadDataByPeriodicIdentifier
-    response = request_read_data_periodic_identifier(dut, periodic_did)
-
-    result = compare_negative_response(response, session='default')
-
-    return result
-
-
-def step_3(dut: Dut, periodic_did):
-    """
-    action: Set to programming session and verify ReadDataByPeriodicIdentifier(0x2A) negative
-            response with transmissionMode fast parameter 0x03
-    expected_result: ECU should not support ReadDataByPeriodicIdentifier(0x2A) in
-                     programming session
-    """
-    dut.uds.set_mode(2)
-    # Initiate ReadDataByPeriodicIdentifier
-    response = request_read_data_periodic_identifier(dut, periodic_did)
-
-    result = compare_negative_response(response, session='programming')
-
-    return result
+    # Send a request to stop reading periodic identifiers
+    dut.uds.generic_ecu_call(SC_CARCOM.can_m_send("ReadDataByPeriodicIdentifier", b'\x04' +
+                             bytes.fromhex(parameters['periodic_did']), b''))
+    return True
 
 
 def run():
     """
     Verify transmissionMode fast parameter 0x03 in ReadDataByPeriodicIdentifier(0x2A) service
+    and response time is within 25ms
     """
     dut = Dut()
 
     start_time = dut.start()
     result = False
-    result_step = False
-    parameters_dict = {'periodic_did': ''}
+    parameters_dict = {'periodic_did': '',
+                       'fast_rate': 0}
 
     try:
         dut.precondition(timeout=60)
@@ -174,19 +138,9 @@ def run():
         if not all(list(parameters.values())):
             raise DutTestError("yml parameter not found")
 
-        result_step = dut.step(step_1, parameters['periodic_did'], purpose='Verify '
-                                                  'ReadDataByPeriodicIdentifier(0x2A) response '
-                                                  'with transmissionMode fast in extended session')
-        if result_step:
-            result_step = dut.step(step_2, parameters['periodic_did'], purpose='verify '
-                                   'ReadDataByPeriodicIdentifier(0x2A) negative response '
-                                   'with transmissionMode fast in default session')
-        if result_step:
-            result_step = dut.step(step_3, parameters['periodic_did'], purpose='verify '
-                                   'ReadDataByPeriodicIdentifier(0x2A) negative response '
-                                   'with transmissionMode fast in programming session')
-
-        result = result_step
+        result = dut.step(step_1, parameters, purpose='Verify '
+                                              'ReadDataByPeriodicIdentifier(0x2A) response '
+                                              'with transmissionMode fast in extended session')
     except DutTestError as error:
         logging.error("Test failed: %s", error)
     finally:
