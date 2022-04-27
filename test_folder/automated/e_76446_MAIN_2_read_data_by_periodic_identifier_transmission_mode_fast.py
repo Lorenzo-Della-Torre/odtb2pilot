@@ -63,7 +63,7 @@ def compare_positive_response(response, periodic_did, session):
         result = True
     else:
         logging.error("Test Failed: Expected positive response %s, received %s in %s session",
-                      periodic_did[0:2], response, session)
+                      periodic_did[:2], response, session)
         result = False
 
     return result
@@ -106,7 +106,7 @@ def step_1(dut: Dut, parameters):
 
     # Check response is within 25ms
     if response_time >= parameters['fast_rate']:
-        logging.error("Test Failed: Response time is not less than fast rate %s ",
+        logging.error("Test Failed: Response time is not less than fast rate %sms",
                       parameters['fast_rate'])
         return False
 
