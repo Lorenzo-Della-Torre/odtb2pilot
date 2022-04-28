@@ -31,6 +31,7 @@ from iterfzf import iterfzf
 
 from hilding import analytics
 from hilding.reset_ecu import reset_and_flash_ecu
+from hilding.uds import UdsEmptyResponse
 
 from autotest.blacklisted_tests_handler import add_to_result, create_logs, get_dictionary_from_yml
 
@@ -119,6 +120,8 @@ def run_test(test_file_py):
         spec.loader.exec_module(module)
         if 'run' in dir(module):
             module.run()
+    except UdsEmptyResponse:
+        log.error("Aborting the test.........")
     except Exception as e: # pylint: disable=broad-except
         log.critical("Testcase failed:\n%s", e)
         verdict = "errored"
@@ -151,6 +154,10 @@ def run_test_and_parse_log_to_result(test_file_py, result_file):
                     verdict = "failed"
                 elif hilding_verdict.startswith(("Not applicable",
                                                  "To be inspected",
+                                                 "Tested in dSpace HIL",
+                                                 "Modified VBF needed",
+                                                 "SecOC not implemented",
+                                                 "MANUAL",
                                                  "Tested implicitly")):
                     verdict = "unknown"
                 else:
@@ -309,6 +316,6 @@ def nightly(args):
     create_logs(blacklisted_reqprods, test_res_dir)
 
     run_tests_and_save_results(
-        test_files, test_res_dir, args.use_db, args.use_mq, reset_between=True)
+        test_files, test_res_dir, args.use_db, args.use_mq, reset_between=False)
 
     add_testsuite_endtime(result_file)

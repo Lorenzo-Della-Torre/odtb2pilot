@@ -1,0 +1,4 @@
+hvbm_p519:
+        step_5:
+                id: HvbmdpToAllUdsDiagRequestFrame
+                send: HvbmdpToHvbmUdsDiagRequestFrame

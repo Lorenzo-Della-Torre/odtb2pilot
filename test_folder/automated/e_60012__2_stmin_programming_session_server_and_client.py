@@ -65,6 +65,7 @@ from supportfunctions.support_service27 import SupportService27
 from supportfunctions.support_service34 import SupportService34
 from supportfunctions.support_sec_acc import SupportSecurityAccess
 from supportfunctions.support_SBL import SupportSBL
+from hilding.conf import Conf
 
 
 SSA = SupportSecurityAccess()
@@ -80,6 +81,7 @@ SE11 = SupportService11()
 SE22 = SupportService22()
 SE27 = SupportService27()
 SE34 = SupportService34()
+conf = Conf()
 
 def step_3():
     """
@@ -195,7 +197,7 @@ def run():
         # action: Request Security Access to be able to unlock the server(s)
         #         and run the primary bootloader.
         # result: Positive reply from support function if Security Access to server is activated.
-        result = result and SE27.activate_security_access(can_p, 2)
+        result = result and SE27.activate_security_access_fixedkey(can_p, conf.default_rig_config)
 
         # step3:
         # action: read SBL

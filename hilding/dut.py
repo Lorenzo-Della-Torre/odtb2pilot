@@ -45,10 +45,7 @@ from protogenerated.common_pb2 import NameSpace
 from protogenerated.system_api_pb2_grpc import SystemServiceStub
 from protogenerated.network_api_pb2_grpc import NetworkServiceStub
 
-from supportfunctions.support_can import SupportCAN
-from supportfunctions.support_can import CanParam
-from supportfunctions.support_can import PerParam
-from supportfunctions.support_can import CanMFParam
+from supportfunctions.support_can import SupportCAN, CanParam, PerParam, CanMFParam
 from supportfunctions.support_service3e import SupportService3e
 from hilding.uds import Uds
 from hilding.uds import EicDid

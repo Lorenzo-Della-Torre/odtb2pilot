@@ -65,6 +65,7 @@ from supportfunctions.support_precondition import SupportPrecondition
 from supportfunctions.support_postcondition import SupportPostcondition
 from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_service10 import SupportService10
+from hilding.conf import Conf
 
 SIO = SupportFileIO
 SC = SupportCAN()
@@ -75,6 +76,7 @@ PREC = SupportPrecondition()
 POST = SupportPostcondition()
 SE10 = SupportService10()
 SE22 = SupportService22()
+conf = Conf()
 
 def step_2(can_p):
     """
@@ -221,7 +223,8 @@ def run():
     # step1:
         # action: DL and activate SBL
         # result:
-        result = result and SSBL.sbl_dl_activation(can_p, 1, "DL and activate SBL")
+        result = result and SSBL.sbl_dl_activation(can_p, conf.default_rig_config, 1,\
+                                                                    "DL and activate SBL")
 
     # step2:
     # action: send request with FC_delay < timeout

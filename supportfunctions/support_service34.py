@@ -77,11 +77,10 @@ class SupportService34: # pylint: disable=too-few-public-methods
 
         addr_b = vbf_block['StartAddress'].to_bytes(4, 'big')
         len_b = vbf_block['Length'].to_bytes(4, 'big')
-        logging.info("340: Req block DL to ECU:")
-        logging.info("340: Adress: %s", addr_b.hex())
-        logging.info("340: length: %s", len_b.hex())
-        logging.info("340: data_format_identifier {0:02X}".format\
-                        (vbf_header["data_format_identifier"]))
+        logging.info(" ")
+        logging.info("------Request block Download to ECU------")
+        logging.info("340: Address: %s, length: %s", addr_b.hex(), len_b.hex())
+
         cpay: CanPayload = {"payload" : b'\x34' +\
                                         vbf_header["data_format_identifier"].to_bytes(1, 'big') +\
                                         b'\x44'+\
@@ -95,10 +94,10 @@ class SupportService34: # pylint: disable=too-few-public-methods
                              "min_no_messages" : -1,
                              "max_no_messages" : -1
                             }
-        logging.info("340: payload %s", cpay['payload'].hex())
+        logging.info("340: payload : %s", cpay['payload'].hex())
         result = SUTE.teststep(can_p, cpay, etp)
         logging.debug("340: result request: %s", result)
-        logging.debug("340: received frames: %s", SC.can_frames[can_p["receive"]])
+        logging.info("340: received frames: %s", SC.can_frames[can_p["receive"]][0][2])
         result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], '74')
         nbl = SUTE.pp_string_to_bytes(SC.can_frames[can_p["receive"]][0][2][6:10], 4)
         nbl = int.from_bytes(nbl, 'big')
