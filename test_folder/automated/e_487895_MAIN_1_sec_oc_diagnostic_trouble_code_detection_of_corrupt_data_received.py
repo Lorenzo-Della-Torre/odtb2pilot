@@ -161,7 +161,8 @@ def step_1(dut: Dut):
     byte_pos = 6
     # Extract message and calculate byte length
     message_length = int((len(did_response.raw[byte_pos:]))/2)
-
+    # Iterate up to message length to verify failure count bit for set of SecOC signals
+    # i.e. #n byte represents m bit signals, where n is message_length and m is 8 bit
     for _ in range(message_length):
         response_dict = verify_dtc_status(dut, parameters, byte_pos)
         byte_pos = byte_pos + 2
