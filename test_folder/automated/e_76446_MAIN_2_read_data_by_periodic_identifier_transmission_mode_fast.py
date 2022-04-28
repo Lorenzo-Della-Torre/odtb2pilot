@@ -57,13 +57,13 @@ def compare_positive_response(response, periodic_did, session):
         (bool): True on successfully verified positive response
     """
     result = False
-    if response[4:6] == periodic_did[:2]:
+    if response[4:6] == periodic_did:
         logging.info("Received %s for request ReadDataByPeriodicIdentifier(0x2A) in %s session"
-                     " as expected", periodic_did[:2], session)
+                     " as expected", periodic_did, session)
         result = True
     else:
         logging.error("Test Failed: Expected positive response %s, received %s in %s session",
-                      periodic_did[:2], response, session)
+                      periodic_did, response, session)
         result = False
 
     return result
