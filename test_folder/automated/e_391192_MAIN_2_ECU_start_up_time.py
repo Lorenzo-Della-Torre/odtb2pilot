@@ -34,9 +34,7 @@ description: >
     2.	An ECU hard reset is triggered.
 
 details: >
-    Verify CAN frame response for the following scenerios-
-        1. Verify ECU is in Default session after reset
-        2. Verify positive response after ECU wakeup (2500ms)
+    Verify ECU completes its hard reset within 2500 ms and is in default session
 """
 
 import logging
@@ -59,10 +57,10 @@ def step_1(dut: Dut):
     dut.uds.set_mode(3)
     # ECU hard reset
     ecu_response = dut.uds.ecu_reset_1101()
-    # Wait 1 second
-    time.sleep(1)
 
     if ecu_response.raw[2:4] == '51':
+        # Wait 1 second
+        time.sleep(1)
         ecu_mode = SE22.get_ecu_mode(dut)
         if ecu_mode == 'DEF':
             logging.info("Received default mode %s as expected", ecu_mode)
@@ -72,61 +70,24 @@ def step_1(dut: Dut):
                        ecu_mode)
         return False
 
-    logging.error("Test failed: ECU reset not successful expected '51', received NRC %s",
+    logging.error("Test failed: ECU reset not successful expected '51', received %s",
                    ecu_response.raw)
-    return False
-
-
-def step_2(dut: Dut):
-    """
-    action: Verify positive response after ECU wakeup (2500ms)
-    expected_result: True when successfully verified positive response after ECU wakeup (2500ms)
-    """
-    # pylint: disable=unused-argument
-
-    # Read yml parameters
-    parameters_dict = {'wakeup_time': 0,
-                       'app_sw_did': ''}
-    parameters = SIO.parameter_adopt_teststep(parameters_dict)
-
-    if not all(list(parameters.values())):
-        logging.error("Test failed: yml parameter not found")
-        return False
-
-    time.sleep((parameters['wakeup_time'])/1000)
-
-    response = dut.uds.read_data_by_id_22(bytes.fromhex(parameters['app_sw_did']))
-
-    if response.raw[4:6] == '62':
-        logging.info("Received positive response %s as expected",response.raw[4:6])
-        return True
-
-    logging.error("Test failed: Expected positive response '62', received NRC %s",
-                   response.raw)
     return False
 
 
 def run():
     """
-    Verify CAN frame response for the following scenerios-
-        1. Verify ECU is in Default session after reset
-        2. Verify positive response after ECU wakeup (2500ms)
+    Verify ECU completes its hard reset within 2500 ms and is in default session
     """
     dut = Dut()
 
     start_time = dut.start()
     result = False
-    result_step = False
     try:
         dut.precondition(timeout=30)
 
-        result_step = dut.step(step_1, purpose="Verify ECU is in Default session after reset")
+        result = dut.step(step_1, purpose="Verify ECU is in Default session after reset")
 
-        if result_step:
-            result_step = dut.step(step_2, purpose="Verify positive response after ECU "
-                                   "wakeup (2500ms)")
-
-        result = result_step
     except DutTestError as error:
         logging.error("Test failed: %s", error)
     finally:
