@@ -45,24 +45,23 @@ SC_CARCOM = SupportCARCOM()
 SIO = SupportFileIO()
 
 
-def compare_positive_response(response, periodic_did, session):
+def compare_positive_response(response, periodic_did):
     """
     Compare ReadDataByPeriodicIdentifier(0x2A) positive response
     Args:
         response (str): ECU response code
         periodic_did (str): Periodic did
-        session (str): diagnostic session
     Returns:
         (bool): True on Successfully verified positive response
     """
     result = False
-    if response[4:6] == periodic_did[:2]:
-        logging.info("Received %s for request ReadDataByPeriodicIdentifier(0x2A) in %s session"
-                     " as expected", periodic_did[:2], session)
+    if response[2:4] == '6A':
+        logging.info("Received %s for request ReadDataByPeriodicIdentifier(0x2A) in extended "
+                     "session as expected", response[2:4])
         result = True
     else:
-        logging.error("Test Failed: Expected positive response %s, received %s in %s session",
-                       periodic_did[:2], response, session)
+        logging.error("Test Failed: Expected positive response %s, received %s in extended "
+                      "session", periodic_did, response)
         result = False
 
     return result
@@ -98,7 +97,7 @@ def step_1(dut: Dut, periodic_did):
     # Initiate ReadDataByPeriodicIdentifier
     response = request_read_data_periodic_identifier(dut, periodic_did)
 
-    result = compare_positive_response(response, periodic_did, 'extended')
+    result = compare_positive_response(response, periodic_did)
 
     return result
 
