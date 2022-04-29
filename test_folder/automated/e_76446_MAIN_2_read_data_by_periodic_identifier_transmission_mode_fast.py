@@ -60,7 +60,7 @@ def verify_positive_response(dut, parameters, periodic_dids):
         (bool): True on successfully verified positive response
     """
     results = []
-    # Initial waiting time 25ms + interval positive response
+    # Initial waiting time 25ms
     time.sleep(parameters['initial_response_time']/1000)
     dpos = 0
     for _ in range(int(len(periodic_dids)/2)):
