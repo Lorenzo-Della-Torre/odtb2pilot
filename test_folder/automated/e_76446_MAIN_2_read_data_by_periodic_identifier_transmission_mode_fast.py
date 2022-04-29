@@ -31,9 +31,8 @@ description: >
     as possible" i.e. must not be fixed, it may change over time (e.g. be CPU load dependent).
 
 details: >
-    1. Checking response for ReadDataByPeriodicIdentifier(0x2A) in extendedDiagnosticSession with
-    response code 0x6A
-    2. Verify transmissionMode fast rate (0x03) in ReadDataByPeriodicIdentifier(0x2A) service.
+    Verify ECU response for ReadDataByPeriodicIdentifier(0x2A) service in
+    extendedDiagnosticSession with response code 0x6A with transmission mode fast rate (0x03)
 """
 
 import logging
@@ -49,13 +48,12 @@ SIO = SupportFileIO()
 SC = SupportCAN()
 
 
-def verify_positive_response(dut, parameters, periodic_dids):
+def verify_positive_response(dut, parameters):
     """
     Verify ReadDataByPeriodicIdentifier(0x2A) positive response 0x6A
     Args:
         dut(Dut): Dut instance
-        parameters (dict): initial_response_time, fast_rate_max_time
-        periodic_dids (str): periodic did
+        parameters (dict): periodic_dids, initial_response_time, fast_rate_max_time
     Returns:
         (bool): True on successfully verified positive response
     """
@@ -63,20 +61,20 @@ def verify_positive_response(dut, parameters, periodic_dids):
     # Initial waiting time 25ms
     time.sleep(parameters['initial_response_time']/1000)
     dpos = 0
-    for _ in range(int(len(periodic_dids)/2)):
+    for _ in range(int(len(parameters['periodic_dids'])/2)):
         response = SC.can_messages[dut["receive"]][0][2]
-        if response[4:6] == periodic_dids[dpos:dpos+2]:
+        if response[4:6] == parameters['periodic_dids'][dpos:dpos+2]:
             logging.info("Positive response %s received as expected",
-                         periodic_dids[dpos:dpos+2])
+                         parameters['periodic_dids'][dpos:dpos+2])
             results.append(True)
         else:
             logging.error("Response received %s, expected %s", response[4:6],
-                          periodic_dids[dpos:dpos+2])
+                          parameters['periodic_dids'][dpos:dpos+2])
             results.append(False)
         dpos = dpos+2
         time.sleep(parameters['fast_rate_max_time']/1000)
 
-    if all(results) and len(results) == int(len(periodic_dids)/2):
+    if all(results) and len(results) == int(len(parameters['periodic_dids'])/2):
         logging.info("Received positive response for periodic DIDs in extended session"
                      " as expected")
         return True
@@ -103,14 +101,14 @@ def step_1(dut: Dut, parameters):
     """
     action: Set to extended mode and verify ReadDataByPeriodicIdentifier(0x2A) response
             with transmissionMode fast rate 0x03
-    expected_result: ECU should send positive response 0x6A within fast rate(25ms)
+    expected_result: ECU should send positive response 0x6A
     """
     dut.uds.set_mode(3)
 
     # Initiate ReadDataByPeriodicIdentifier
     request_read_data_periodic_identifier(dut, parameters['periodic_dids'])
 
-    result = verify_positive_response(dut, parameters, parameters['periodic_dids'])
+    result = verify_positive_response(dut, parameters)
 
     # Stop dynamically defined periodic DID
     payload = SC_CARCOM.can_m_send("ReadDataByPeriodicIdentifier", b'\x04'
@@ -127,8 +125,8 @@ def step_1(dut: Dut, parameters):
 
 def run():
     """
-    Verify ReadDataByPeriodicIdentifier(0x2A) response with transmissionMode fast rate 0x03 and
-    time interval 25ms
+    Verify ECU response of ReadDataByPeriodicIdentifier(0x2A) service with transmission mode
+    set to fast(0x03)
     """
     dut = Dut()
 
