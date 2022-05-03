@@ -34,7 +34,7 @@ description: >
     2.	An ECU hard reset is triggered.
 
 details: >
-    Verify ECU completes its hard reset within 2500 ms and is in default session
+    Verify ECU is alive again within less than max-time(2500 ms) by requesting current ECU-mode
 """
 
 import logging
@@ -50,8 +50,8 @@ SE22 = SupportService22()
 
 def step_1(dut: Dut):
     """
-    action: Verify ECU is in Default session after reset
-    expected_result: True when ECU is in Default session
+    action: Request ECU reset
+    expected_result: ECU restart done after 1 second
     """
     # Set ECU to Extended session
     dut.uds.set_mode(3)
@@ -61,23 +61,25 @@ def step_1(dut: Dut):
     if ecu_response.raw[2:4] == '51':
         # Wait 1 second
         time.sleep(1)
+        # Get current ECU mode
         ecu_mode = SE22.get_ecu_mode(dut)
         if ecu_mode == 'DEF':
+            logging.info("ECU restarted after 1 second")
             logging.info("Received default mode %s as expected", ecu_mode)
             return True
 
-        logging.error("Test failed: Expected default mode (1), received %s",
-                       ecu_mode)
+        logging.error("ECU not restarted after 1 second")
+        logging.error("Test failed: Expected default mode, received %s", ecu_mode)
         return False
 
-    logging.error("Test failed: ECU reset not successful expected '51', received %s",
+    logging.error("Test failed: ECU reset not successful, expected '51', received %s",
                    ecu_response.raw)
     return False
 
 
 def run():
     """
-    Verify ECU completes its hard reset within 2500 ms and is in default session
+    Verify ECU is alive again within less than max-time(2500 ms) by requesting current ECU-mode
     """
     dut = Dut()
 
@@ -86,7 +88,8 @@ def run():
     try:
         dut.precondition(timeout=30)
 
-        result = dut.step(step_1, purpose="Verify ECU is in Default session after reset")
+        result = dut.step(step_1, purpose="Verify ECU is alive again within less than 2500 ms"
+                          " by requesting current ECU-mode")
 
     except DutTestError as error:
         logging.error("Test failed: %s", error)
