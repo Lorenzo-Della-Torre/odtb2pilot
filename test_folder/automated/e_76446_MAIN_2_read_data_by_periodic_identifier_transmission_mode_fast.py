@@ -48,6 +48,34 @@ SIO = SupportFileIO()
 SC = SupportCAN()
 
 
+def get_response(dut, parameters, dpos):
+    """
+    Get response within defined time period for fast rate(25ms) and verify
+    ReadDataByPeriodicIdentifier(0x2A) positive response
+    Args:
+        dut (Dut): An instance of Dut
+        parameters (dict): periodic_dids, initial_response_time, fast_rate_max_time
+        dpos (int): position of did
+    Returns:
+        (bool): True on successfully verified positive response
+    """
+    start_time = time.time()
+    while True:
+        response = SC.can_messages[dut["receive"]][0][2]
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+        if elapsed_time <= parameters['fast_rate_max_time']/1000:
+            continue
+
+        if response[4:6] == parameters['periodic_dids'][dpos:dpos+2]:
+            logging.info("Positive response %s received as expected",
+                        parameters['periodic_dids'][dpos:dpos+2])
+            return True
+        logging.error("Response received %s, expected %s", response[4:6],
+                    parameters['periodic_dids'][dpos:dpos+2])
+        return False
+
+
 def verify_positive_response(dut, parameters):
     """
     Verify ReadDataByPeriodicIdentifier(0x2A) positive response 0x6A
@@ -58,21 +86,13 @@ def verify_positive_response(dut, parameters):
         (bool): True on successfully verified positive response
     """
     results = []
-    # Initial waiting time 25ms
-    time.sleep(parameters['initial_response_time']/1000)
+
+    # Initial waiting time 24ms
+    time.sleep((parameters['initial_respone_time']-1)/1000)
     dpos = 0
     for _ in range(int(len(parameters['periodic_dids'])/2)):
-        response = SC.can_messages[dut["receive"]][0][2]
-        if response[4:6] == parameters['periodic_dids'][dpos:dpos+2]:
-            logging.info("Positive response %s received as expected",
-                         parameters['periodic_dids'][dpos:dpos+2])
-            results.append(True)
-        else:
-            logging.error("Response received %s, expected %s", response[4:6],
-                          parameters['periodic_dids'][dpos:dpos+2])
-            results.append(False)
+        results.append(get_response(dut, parameters, dpos))
         dpos = dpos+2
-        time.sleep(parameters['fast_rate_max_time']/1000)
 
     if all(results) and len(results) == int(len(parameters['periodic_dids'])/2):
         logging.info("Received positive response for periodic DIDs in extended session"
