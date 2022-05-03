@@ -240,7 +240,7 @@ def step_1(dut: Dut):
 
 def run():
     """
-    Verify Software Download(SWDL) with Manipulated format identifier present in Verification
+    Verify Software Download(SWDL) with manipulated format identifier present in Verification
     Block Table of ESS VBF fails.
     """
     dut = Dut()
