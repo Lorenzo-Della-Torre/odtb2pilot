@@ -50,7 +50,7 @@ hvbm_p519:
         e_405051_MAIN_1 : complete_compatible_function_error_handling | Need to modify VBFs to test the Compatible part
         e_401156_MAIN_2 : complete_compatible_function | Need to modify VBFs to test the Compatible part
         e_52282__2: complete_and_compatible_function | Need to modify VBFs to test Not Compatible part
-        e_404696_MAIN_3 : verification_block_table_format_identifier_definition |  Need to modify VBFs to test Format of the Verification Block Table
+        e_404696_MAIN_3 : verification_block_table_format_identifier_definition |  Need to modify VBFs to test format of the Verification Block Table
 
     --SecOC--:
         e_487904_MAIN_1 : sec_oc_detection_of_non_programmed_production_keys | SecOC not implemented yet
