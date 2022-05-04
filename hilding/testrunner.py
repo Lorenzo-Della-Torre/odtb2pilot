@@ -180,11 +180,7 @@ def run_reset_between():
     try:
         reset_and_flash_ecu()
     except Exception as e: # pylint: disable=broad-except
-        logging.critical(
-            "Set ecu to default failed:\n%s", e)
-        sys.exit("If we can't reset the ecu, we can't reply on the "
-                 "test being correct. Exiting...")
-
+        logging.critical("Run reset between scripts failed. Reason : \n%s", e)
 
 def add_testsuite_endtime(result_file):
     """ at the end of the Results.txt file we add the end time"""
@@ -316,6 +312,6 @@ def nightly(args):
     create_logs(blacklisted_reqprods, test_res_dir)
 
     run_tests_and_save_results(
-        test_files, test_res_dir, args.use_db, args.use_mq, reset_between=False)
+        test_files, test_res_dir, args.use_db, args.use_mq, reset_between=True)
 
     add_testsuite_endtime(result_file)

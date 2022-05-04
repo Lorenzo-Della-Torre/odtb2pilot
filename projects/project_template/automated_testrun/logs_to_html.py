@@ -35,12 +35,12 @@ import argparse
 import logging
 import sys
 from sys import path
-import os
-from os.path import dirname as dir # pylint: disable=redefined-builtin
 import subprocess
 import socket
-from os import listdir # pylint: disable=ungrouped-imports
-from os.path import isfile, join, isdir # pylint: disable=ungrouped-imports
+import os
+from os import listdir
+from os.path import isfile, join, isdir, getctime
+from os.path import dirname as dir # pylint: disable=redefined-builtin
 from datetime import datetime
 import re
 import collections
@@ -179,6 +179,10 @@ def get_file_names_and_results(folder_path):
              if (isfile(join(folder_path, file_name))
                  and file_name.endswith(LOG_FILE_EXT)
                  and not file_name.endswith('progress.log'))]
+
+    # Sorting the log file list based on the creation time of them
+    # by fetching the creation time using the absolute path of each file.
+    files.sort(key=lambda file: getctime(join(folder_path, file)))
 
     for file in files:
         file_path = os.path.join(folder_path, file)
@@ -361,19 +365,21 @@ def generate_html(folderinfo_result_tuple_list, outfile, verif_d,  # pylint: dis
     dvm_url_service_level = 'https://c1.confluence.cm.volvocars.biz/display/BSD/VCC+-+UDS+services'
 
     res_counter_list = list()
-    key_set = set()
+    key_list = list()
 
-    # Creating set with only "keys", using a set to not get duplicates.
+    # Creating list with only "keys", using an if condition to not get duplicates.
     # The testscript names are the keys
     for testres_tuple in folderinfo_result_tuple_list:
         # The second argument in tuple is the result dict
         # And the result dict is the key and the result of the test (FAILED/PASSED/NA)
         result_dict = testres_tuple[TESTRES_DICT_IDX]
         for key in result_dict:
-            key_set.add(key)
+            if key not in key_list:
+                key_list.append(key)
 
-    # Sorting the keys
-    sorted_key_list = sorted(key_set)
+    # Sorting the keys based on alphabetical order is removed
+    # Now sorted based on recently created
+    sorted_key_list = key_list
     amount_of_testruns = str(len(folderinfo_result_tuple_list))
 
     req_set = set()
