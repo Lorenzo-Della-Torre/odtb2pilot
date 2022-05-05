@@ -33,9 +33,9 @@ description: >
 
 details:
     Verify the ECU shall be in default session after reset
-    
-Import script - Inherited from older version of requirement
-"""
+
+    Import script - Inherited from older version of requirement
+    """
 
 from e_76132_MAIN_1_diagnosticsessioncontrol_defaultsession import run
 
