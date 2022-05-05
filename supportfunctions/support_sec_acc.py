@@ -443,3 +443,58 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         logging.debug("r_0: %s", r_0)
         logging.debug("Sec_acc_pins: {0:06x}".format(int(r_0, 2)))
         return bytes.fromhex("{0:06x}".format(int(r_0, 2)))
+
+
+    @classmethod
+    def sa_keys_distort(cls, sa_keys):
+        """
+        added for Gen1/Gen2
+        takes fixed_key, proof_key, auth_key in sa_keys
+        and distorts them by modifying the first byte
+
+        parameter:
+        sa_keys     containing fixed_key (Gen1), proof+auth_key (Gen2)
+        return:
+        sa_keys (distorted)
+        """
+
+        sa_keys_invalid: SecAccessParam = {
+            "SecAcc_Gen": sa_keys['SecAcc_Gen'],
+            "fixed_key": sa_keys['fixed_key'],
+            "auth_key": sa_keys['auth_key'],
+            "proof_key": sa_keys['proof_key']
+        }
+
+        logging.debug("sa_keys before change %s", sa_keys_invalid)
+        distort_key = bytes.fromhex(sa_keys['fixed_key'])
+        distort_key = ((distort_key[0]+1) % 0xff).to_bytes(1, 'big') + distort_key[1::]
+        sa_keys_invalid['fixed_key'] = distort_key.hex().upper()
+
+        distort_key = bytes.fromhex(sa_keys['auth_key'])
+        distort_key = ((distort_key[0]+1) % 0xff).to_bytes(1, 'big') + distort_key[1::]
+        sa_keys_invalid['auth_key'] = distort_key.hex().upper()
+
+        distort_key = bytes.fromhex(sa_keys['proof_key'])
+        distort_key = ((distort_key[0]+1) % 0xff).to_bytes(1, 'big') + distort_key[1::]
+        sa_keys_invalid['proof_key'] = distort_key.hex().upper()
+        logging.debug("sa_keys after change %s", sa_keys_invalid)
+        return sa_keys_invalid
+
+    @classmethod
+    def sa_key_calculated_distort(cls, sa_key):
+        """
+        added for Gen1/Gen2
+        takes sa_key
+        and distorts it by modifying the last byte
+
+        Last byte distort was chosen as SSA module contains even command
+        in the first bytes
+
+        parameter:
+        sa_key  containing key to send to get secure_access
+
+        return:
+        sa_key (distorted)
+        """
+        sa_modified = sa_key[:-1] + ((sa_key[-1]+1) % 0xff).to_bytes(1, 'big')
+        return sa_modified
