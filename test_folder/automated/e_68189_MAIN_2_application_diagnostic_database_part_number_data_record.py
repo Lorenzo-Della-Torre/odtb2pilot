@@ -1,10 +1,9 @@
 """
-
 /*********************************************************************************/
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,119 +17,104 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-# Testscript Hilding MEPII
-# project:  BECM basetech MEPII
-# author:   J-ASSAR1 (Joel Assarsson)
-# date:     2020-10-20
-# version:  1.0
-# reqprod:  68189
-#
-# inspired by https://grpc.io/docs/tutorials/basic/python.html
-#
-# Copyright 2015 gRPC authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+reqprod: 68189
+version: 2
+title: Application Diagnostic Database Part Number data record
+purpose: >
+    To enable readout of a database key for the diagnostic database used by the ECU application SW.
 
-The Python implementation of the gRPC route guide client.
+description: >
+    A data record with identifier as specified in the table below shall be implemented exactly as
+    defined in Carcom - Global Master Reference Database.
+
+    Description	                                    Identifier
+    ----------------------------------------------------------
+    Application Diagnostic Database Part Number	    F120
+    ----------------------------------------------------------
+
+    •	It shall be possible to read the data record by using the diagnostic service specified in
+        Ref[LC : Volvo Car Corporation - UDS Services - Service 0x22 (ReadDataByIdentifier) Reqs].
+
+    The identifier shall be implemented in the following sessions:
+        •	Default session
+        •	Extended Session
+
+details: >
+    Verify ECU response of DID 'F120'(Application Diagnostic Database Part Number) by
+    ReadDataByIdentifier(0x22) service in default and extended diagnostic session.
 """
 
-import time
-import inspect
-
-from datetime               import datetime
-import sys
 import logging
-
-import odtb_conf
-from supportfunctions.support_can            import SupportCAN, CanParam, CanTestExtra, CanPayload
-from supportfunctions.support_test_odtb2     import SupportTestODTB2
-from supportfunctions.support_carcom         import SupportCARCOM
-from supportfunctions.support_file_io        import SupportFileIO
-from supportfunctions.support_precondition   import SupportPrecondition
-from supportfunctions.support_postcondition  import SupportPostcondition
-
-SIO         = SupportFileIO
-SC          = SupportCAN()
-SUTE        = SupportTestODTB2()
-SC_CARCOM   = SupportCARCOM()
-PREC        = SupportPrecondition()
-POST        = SupportPostcondition()
+from hilding.dut import Dut
+from hilding.dut import DutTestError
 
 
-def step_1(can_p):
+def step_1(dut: Dut):
     """
-    Step 1: Send ReadDataByIdentifier(0xF120) and verify that ECU replies with correct DID.
+    action: Send ReadDataByIdentifier(0xF120) in default diagnostic session and verify that
+            ECU replies with correct DID
+    expected_result: ECU should send positive response '62'
     """
-    etp: CanTestExtra = {
-        "step_no": 1,
-        "purpose" : "ReadDataByIdentifier(0xF120) and verify answer",
-        "timeout" : 1,
-        "min_no_messages" : -1,
-        "max_no_messages" : -1
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
-    cpay: CanPayload = {
-        "payload": SC_CARCOM.can_m_send("ReadDataByIdentifier",
-                                        b'\xF1\x20',
-                                        b''),
-        "extra": ''
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    response = dut.uds.read_data_by_id_22(bytes.fromhex('F120'))
 
-    result = SUTE.teststep(can_p, cpay, etp)
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='F120')
-    logging.info("ReadDataByIdentifier(0xF120): %s", SC.can_messages[can_p["receive"]][0][2])
-    return result
+    if response.raw[4:6] == '62':
+        logging.info("Successfully read DID 'F120' in default diagnostic session with positive "
+                     "response %s", response.raw[4:6])
+        return True
+
+    logging.error("Test Failed: Expected positive response 62 for DID 'F120' in default "
+                  "diagnostic session , received %s", response.raw)
+    return False
+
+
+def step_2(dut: Dut):
+    """
+    action: Send ReadDataByIdentifier(0xF120) in extended diagnostic session and verify that
+            ECU replies with correct DID
+    expected_result: ECU should send positive response '62'
+    """
+    # Set to extended session
+    dut.uds.set_mode(3)
+
+    response = dut.uds.read_data_by_id_22(bytes.fromhex('F120'))
+
+    if response.raw[4:6] == '62':
+        logging.info("Successfully read DID 'F120' in extended diagnostic session with positive "
+                     "response %s", response.raw[4:6])
+        return True
+
+    logging.error("Test Failed: Expected positive response 62 for DID 'F120' in extended "
+                  "diagnostic session , received %s", response.raw)
+    return False
 
 
 def run():
     """
-    Run - Call other functions from here
+    Verify ECU response of DID 'F120'(Application Diagnostic Database Part Number) by
+    ReadDataByIdentifier(0x22) service in default and extended diagnostic session.
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+    dut = Dut()
 
-    # where to connect to signal_broker
-    can_p: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        "send" : "Vcu1ToBecmFront1DiagReqFrame",
-        "receive" : "BecmToVcu1Front1DiagResFrame",
-        "namespace" : SC.nspace_lookup("Front1CANCfg0")
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
+    start_time = dut.start()
+    result = False
+    result_step = False
 
-    logging.info("Testcase start: %s", datetime.now())
-    starttime = time.time()
-    logging.info("Time: %s \n", time.time())
+    try:
+        dut.precondition(timeout=30)
 
-    ############################################
-    # precondition
-    ############################################
-    timeout = 40
-    result = PREC.precondition(can_p, timeout)
+        result_step = dut.step(step_1, purpose="Send ReadDataByIdentifier(0xF120) in default "
+                                       "diagnostic session and verify that ECU replies with "
+                                       "correct DID")
+        if result_step:
+            result_step = dut.step(step_2, purpose="Send ReadDataByIdentifier(0xF120) in extended"
+                                           " diagnostic session and verify that ECU replies with"
+                                           " correct DID")
+        result = result_step
+    except DutTestError as error:
+        logging.error("Test failed: %s", error)
+    finally:
+        dut.postcondition(start_time, result)
 
-    if result:
-        ############################################
-        # teststeps
-        ############################################
-        # step 1:
-        # action: Send ReadDataByIdentifier(0xF120)
-        # result: ECU send requested DIDs
-        result = result and step_1(can_p)
-
-    ############################################
-    # postCondition
-    ############################################
-    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()
