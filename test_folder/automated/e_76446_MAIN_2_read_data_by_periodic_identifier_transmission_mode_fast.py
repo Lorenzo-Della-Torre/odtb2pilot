@@ -48,32 +48,50 @@ SIO = SupportFileIO()
 SC = SupportCAN()
 
 
-def get_response(dut, parameters, dpos):
+def get_response(dut, parameters):
     """
     Get response within defined time period for fast rate(25ms) and verify
     ReadDataByPeriodicIdentifier(0x2A) positive response
     Args:
         dut (Dut): An instance of Dut
-        parameters (dict): periodic_dids, initial_response_time, fast_rate_max_time
-        dpos (int): position of did
+        parameters (dict): periodic_did, fast_rate_max_time
     Returns:
         (bool): True on successfully verified positive response
     """
-    start_time = time.time()
-    while True:
-        response = SC.can_messages[dut["receive"]][0][2]
-        end_time = time.time()
-        elapsed_time = end_time - start_time
-        if elapsed_time <= parameters['fast_rate_max_time']/1000:
-            continue
 
-        if response[4:6] == parameters['periodic_dids'][dpos:dpos+2]:
-            logging.info("Positive response %s received as expected",
-                        parameters['periodic_dids'][dpos:dpos+2])
-            return True
-        logging.error("Response received %s, expected %s", response[4:6],
-                    parameters['periodic_dids'][dpos:dpos+2])
-        return False
+    start_time = SC.can_messages[dut["receive"]][0][0]
+    result = False
+    while True:
+        # Wait for 10ms
+        time.sleep(10/1000)
+        response = SC.can_messages[dut["receive"]][0][2]
+        receive_time = SC.can_messages[dut["receive"]][0][0]
+        elapsed_time = receive_time - start_time
+        if response[2:4] == parameters['periodic_did']:
+            result = True
+            break
+        if elapsed_time * 1000 >= parameters['fast_rate_max_time']*2:
+            result = False
+            logging.error("Periodic message not received")
+            break
+    # Calculate tolerance (10%)
+    tolerance = int((10/parameters['fast_rate_max_time'])*100)
+    # Convert elapsed_time to millisecond
+    elapsed_time = int(elapsed_time*1000)
+    fast_threshold_time_min = parameters['fast_rate_max_time'] - tolerance
+    fast_threshold_time_max = parameters['fast_rate_max_time'] + tolerance
+
+    fast_threshold_time_min_result = elapsed_time >= fast_threshold_time_min
+    fast_threshold_time_max_result = elapsed_time <= fast_threshold_time_max
+    # Compare response time
+    if result and fast_threshold_time_min_result and fast_threshold_time_max_result:
+        logging.info("Positive response %s received as expected within %s and %s time",
+                     response[4:6], fast_threshold_time_min, fast_threshold_time_max)
+        return True
+
+    logging.error("Response received %s, expected %s within %s and %s", response[4:6],
+                  parameters['periodic_did'], fast_threshold_time_min, fast_threshold_time_max)
+    return False
 
 
 def verify_positive_response(dut, parameters):
@@ -81,40 +99,34 @@ def verify_positive_response(dut, parameters):
     Verify ReadDataByPeriodicIdentifier(0x2A) positive response 0x6A
     Args:
         dut(Dut): Dut instance
-        parameters (dict): periodic_dids, initial_response_time, fast_rate_max_time
+        parameters (dict): periodic_did, fast_rate_max_time
     Returns:
         (bool): True on successfully verified positive response
     """
-    results = []
+    result = get_response(dut, parameters)
 
-    # Initial waiting time 24ms
-    time.sleep((parameters['initial_respone_time']-1)/1000)
-    dpos = 0
-    for _ in range(int(len(parameters['periodic_dids'])/2)):
-        results.append(get_response(dut, parameters, dpos))
-        dpos = dpos+2
-
-    if all(results) and len(results) == int(len(parameters['periodic_dids'])/2):
-        logging.info("Received positive response for periodic DIDs in extended session"
+    if result:
+        logging.info("Received positive response for periodic DID in extended session"
                      " as expected")
         return True
 
-    logging.error("Unable to receive positive response for periodic DIDs in extended session")
+    logging.error("Expected positive response for periodic DID in extended session,"
+                  " received unexpected response")
     return False
 
-
-def request_read_data_periodic_identifier(dut: Dut, periodic_dids):
+def request_read_data_periodic_identifier(dut: Dut, periodic_did):
     """
     Request ReadDataByPeriodicIdentifier(0x2A) with transmission mode fast rate 0x03 and
     get the ECU response
     Args:
         dut(Dut): Dut instance
-        periodic_dids(str): Periodic identifier dids
+        periodic_did(str): Periodic identifier did
     """
     # Request periodic did with transmissionMode fast rate
     payload = SC_CARCOM.can_m_send("ReadDataByPeriodicIdentifier", b'\x03' +
-                                    bytes.fromhex(periodic_dids), b'')
-    dut.uds.generic_ecu_call(payload)
+                                    bytes.fromhex(periodic_did), b'')
+    response = dut.uds.generic_ecu_call(payload)
+    return response.raw
 
 
 def step_1(dut: Dut, parameters):
@@ -126,13 +138,18 @@ def step_1(dut: Dut, parameters):
     dut.uds.set_mode(3)
 
     # Initiate ReadDataByPeriodicIdentifier
-    request_read_data_periodic_identifier(dut, parameters['periodic_dids'])
+    response = request_read_data_periodic_identifier(dut, parameters['periodic_did'])
+    if response[2:4] != '6A':
+        logging.error("Test Failed: Initial response verification failed")
+        return False
 
+    logging.info("-----Initial response verified successfully-----")
+    # Start verifying periodic response
     result = verify_positive_response(dut, parameters)
 
     # Stop dynamically defined periodic DID
     payload = SC_CARCOM.can_m_send("ReadDataByPeriodicIdentifier", b'\x04'
-                                   + bytes.fromhex(parameters['periodic_dids']), b'')
+                                   + bytes.fromhex(parameters['periodic_did']), b'')
     dut.uds.generic_ecu_call(payload)
 
     if result:
@@ -152,8 +169,7 @@ def run():
 
     start_time = dut.start()
     result = False
-    parameters_dict = {'periodic_dids': '',
-                       'initial_response_time': 0,
+    parameters_dict = {'periodic_did': '',
                        'fast_rate_max_time': 0}
 
     try:

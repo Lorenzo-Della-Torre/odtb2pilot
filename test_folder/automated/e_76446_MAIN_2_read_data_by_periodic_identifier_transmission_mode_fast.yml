@@ -1,5 +1,4 @@
 hvbm_p519:
     run:
-        periodic_dids: '2425'
-        initial_response_time: 25
+        periodic_did: '24'
         fast_rate_max_time: 25
