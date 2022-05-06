@@ -1,0 +1,4 @@
+hvbm_p519:
+    step_1:
+        periodic_did: '24'
+        slow_rate_max_time: 600
