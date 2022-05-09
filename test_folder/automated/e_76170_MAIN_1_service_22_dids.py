@@ -1,10 +1,9 @@
 """
-
 /*********************************************************************************/
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,260 +17,218 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-Testscript Hilding MEPII
-project:  BECM basetech MEPII
-author:   hweiler (Hans-Klaus Weiler)
-date:     2019-05-09
-version:  1.0
-reqprod:  76170
 
-author:   HWEILER (Hans-Klaus Weiler)
-date:     2020-08-13
-version:  1.1
-changes:  update for YML support
+reqprod: 76170
+version: 1
+title: : ReadDataByIdentifier (22) - dataIdentifier(-s)
 
-author:   DHJELM (Daniel Hjelm)
-date:     2020-11-23
-version:  2
-
-title:
-
-    ReadDataByIdentifier (22) - dataIdentifier(-s) ; 2
-
-purpose:
-
+purpose: >
     It shall be possible to read data from all ECUs
 
-description:
+description: >
+    The ECU shall support the service readDataByIdentifer with the data parameter
+    dataIdentifier(-s). The ECU shall implement the service accordingly:
 
-    The ECU shall support the service readDataByIdentifer with the data
-    parameter dataIdentifier(-s). The ECU shall implement the service
-    accordingly:
-
-    ### Supported sessions:
-
+    Supported sessions:
     The ECU shall support Service readDataByIdentifer in:
+    •	defaultSession
+    •	extendedDiagnosticSession
+    •	programmingSession, both primary and secondary bootloader
 
-    - defaultSession
-    - extendedDiagnosticSession
-    - programmingSession, both primary and secondary bootloader
-
-    ### Response time:
-
-    Maximum response time for the service readDataByIdentifier (0x22) is 200
-    ms.
-
+    Response time:
+    Maximum response time for the service readDataByIdentifier (0x22) is 200 ms.
     Effect on the ECU normal operation:
+    The service readDataByIdentifier (0x22) shall not affect the ECUs ability to
+    execute non-diagnostic tasks.
 
-    The service readDataByIdentifier (0x22) shall not affect the ECU’s ability
-    to execute non-diagnostic tasks.
+    Entry conditions:
+    The ECU shall not implement entry conditions for service readDataByIdentifier (0x22).
 
-    ### Entry conditions:
+    Security access:
+    The ECU are allowed to protect the service ReadDataByIdentifier (0x22), read by other
+    than system supplier specific dataIdentifiers, by using the service securityAccess (0x27)
+    only if approved by Volvo Car Corporation.
 
-    The ECU shall not implement entry conditions for service
-    readDataByIdentifier (0x22).
-
-    ### Security access:
-
-    The ECU are allowed to protect the service ReadDataByIdentifier (0x22),
-    read by other than system supplier specific dataIdentifiers, by using the
-    service securityAccess (0x27) only if approved by Volvo Car Corporation.
-
-details:
-
-    This test verifies defaultSession mode.
-
+details: >
+    Verify service 22(ReadDataByIdentifier) in all supported diagnostic session
+    •	defaultSession
+    •	extendedDiagnosticSession
+    •	programmingSession
 """
 
-import time
-from datetime import datetime
-import sys
+
 import logging
-
-import odtb_conf
-from supportfunctions.support_can import SupportCAN, CanMFParam, CanParam, CanTestExtra, CanPayload
-from supportfunctions.support_test_odtb2 import SupportTestODTB2
-from supportfunctions.support_carcom import SupportCARCOM
+from hilding.dut import Dut
+from hilding.dut import DutTestError
+from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_file_io import SupportFileIO
-from supportfunctions.support_precondition import SupportPrecondition
-from supportfunctions.support_postcondition import SupportPostcondition
 
+SE22 = SupportService22()
 SIO = SupportFileIO
-SC = SupportCAN()
-SUTE = SupportTestODTB2()
-SC_CARCOM = SupportCARCOM()
-PREC = SupportPrecondition()
-POST = SupportPostcondition()
 
 
-def step_1(can_p: CanParam): # pylint: disable=too-many-locals
+def read_data_id_with_2dids(dut:Dut, did_to_read):
     """
-    Teststep 1: send 1 requests - requires SF to send, MF for reply
+    Verify the read_data_id service 22 with two DIDs
+    Args:
+        dut (Dut): An instance of Dut
+        did_to_read(str): yml parameters(did_ext_def, did_prog, two_dids_ext_def, two_dids_prog)
+    Returns:
+        (bool): True when ECU postive response
     """
+    response = dut.uds.read_data_by_id_22(bytes.fromhex(did_to_read))
+    if response.raw[4:6] == '62' and response.raw[6:10] == did_to_read[0:4] and\
+        response.raw[24:28] == did_to_read[4:8]:
+        logging.info("Received positive response %s and %s for request ReadDataByIdentifier ",
+                    response.raw[6:10],response.raw[24:28])
+        return True
 
-    # Parameters for the teststep
-    cpay: CanPayload = {
-        "payload": SC_CARCOM.can_m_send("ReadDataByIdentifier", b'\xF1\x20', b''),
-        "extra": ''
-        }
-    SIO.parameter_adopt_teststep(cpay)
-    etp: CanTestExtra = {
-        "step_no" : 1,
-        "purpose" : "Send 1 request - requires SF to send",
-        "timeout" : 2,
-        "min_no_messages" : -1,
-        "max_no_messages" : -1
-        }
-    SIO.parameter_adopt_teststep(etp)
+    logging.error("Test Failed:Expected Positive response, but recieved %s",response)
+    return False
 
-    # Parameters for FrameControl FC
-    can_mf_param: CanMFParam = {
-        'block_size' : 0,
-        'separation_time' : 0,
-        'frame_control_delay' : 0, #no wait
-        'frame_control_flag' : 48, #continue send
-        'frame_control_auto' : False
-        }
-    SC.change_mf_fc(can_p["send"], can_mf_param)
-    result = SUTE.teststep(can_p, cpay, etp)
+
+def read_data_id(dut:Dut, did_to_read):
+    """
+    Verify the read_data_id service 22
+    Args:
+        dut (Dut): An instance of Dut
+        did_to_read(str): yml parameters(did_ext_def, did_prog, two_dids_ext_def, two_dids_prog)
+    Returns:
+        (bool): True when ECU postive response
+    """
+    response = dut.uds.read_data_by_id_22(bytes.fromhex(did_to_read))
+
+    if response.raw[4:6] == '62' and response.raw[6:10] == did_to_read:
+        logging.info("Received positive response %s for request ReadDataByIdentifier ",
+                    response.raw[6:10])
+        return True
+    logging.error("Test Failed:Expected Positive response, but recieved %s",response)
+    return False
+
+
+def step_1(dut: Dut, parameters):
+    """
+    action: Verify service 22 with DID 'F120' in Default session
+    expected_result: True on positive response
+    """
+    result = read_data_id(dut, parameters['did_ext_def'])
     return result
 
 
-def step_2(can_p):
+def step_2(dut: Dut, parameters):
     """
-    Teststep 2: test if DIDs are included in reply
+    action: Verify service 22 with DID 'F120F12A' in Default session.
+    expected_result: True on positive response
     """
-    stepno = 2
-    purpose = "test if requested DID are included in reply"
+    result = read_data_id_with_2dids(dut,parameters['two_dids_ext_def'])
+    return result
 
-    SUTE.print_test_purpose(stepno, purpose)
+def step_3(dut: Dut, parameters):
+    """
+    action: Verify service 22 with DID 'F120' in Extended session
+    expected_result: True on positive response
+    """
+    # Set ECU to Extended session
+    dut.uds.set_mode(3)
 
-    time.sleep(1)
-    SC.clear_all_can_messages()
-    logging.debug("All can messages cleared")
-    SC.update_can_messages(can_p)
-    logging.debug("All can messages updated")
-    logging.debug("Step2: messages received %s", len(SC.can_messages[can_p["receive"]]))
-    logging.debug("Step2: messages: %s\n", SC.can_messages[can_p["receive"]])
-    logging.debug("Step2: frames received %s", len(SC.can_frames[can_p["receive"]]))
-    logging.debug("Step2: frames: %s\n", SC.can_frames[can_p["receive"]])
-    logging.info("Test if string contains all IDs expected:")
-    result = SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='F120')
+    result = read_data_id(dut, parameters['did_ext_def'])
     return result
 
 
-def step_3(can_p: CanParam): # pylint: disable=too-many-locals
+def step_4(dut: Dut, parameters):
     """
-    Teststep 3: Send several requests at one time - requires SF to send, MF for reply
+    action: Verify service 22 with DID 'F120F12A' in Extended session
+    expected_result: True on positive response
     """
-    # Parameters for the teststep
-    cpay: CanPayload = {
-        "payload": SC_CARCOM.can_m_send("ReadDataByIdentifier", b'\xF1\x20\xF1\x2A', b''),
-        "extra": ''
-        }
-    SIO.parameter_adopt_teststep(cpay)
-    etp: CanTestExtra = {
-        "step_no": 3,
-        "purpose": "Send several requests at one time - requires SF to send",
-        "timeout": 2,
-        "min_no_messages": -1,
-        "max_no_messages": -1
-        }
-    SIO.parameter_adopt_teststep(etp)
+    result = read_data_id_with_2dids(dut, parameters['two_dids_ext_def'])
 
-    # Parameters for FrameControl FC
-    can_mf_param: CanMFParam = {
-        "block_size": 0,
-        "separation_time": 0,
-        "frame_control_delay": 0, #no wait
-        "frame_control_flag": 48, #continue send
-        "frame_control_auto": False
-        }
-    SC.change_mf_fc(can_p["send"], can_mf_param)
-    result = SUTE.teststep(can_p, cpay, etp)
+    if result :
+        result = SE22.read_did_f186(dut, dsession=b'\x03')
+        if result:
+            # Set ECU to Default session
+            dut.uds.set_mode(1)
+            return True
+    return False
+
+
+def step_5(dut: Dut, parameters):
+    """
+    action: Verify service 22 with DID 'F121' in programming session
+    expected_result: True on positive response
+    """
+    # Set ECU to Programming session
+    dut.uds.set_mode(2)
+
+    result = read_data_id(dut, parameters['did_prog'])
     return result
 
-def step_4(can_p):
+
+def step_6(dut: Dut, parameters):
     """
-    Teststep 4:  test if DIDs are included in reply
+    action: Verify service 22 with DID 'F121F12A' in programming session
+    expected_result: True on Negative response and ECU is in programming session
     """
-    step_no = 4
-    purpose = "test if all requested DIDs are included in reply"
 
-    SUTE.print_test_purpose(step_no, purpose)
+    response = dut.uds.read_data_by_id_22(bytes.fromhex(parameters['two_dids_prog']))
 
-    time.sleep(1)
-    SC.clear_all_can_messages()
-    logging.debug("all can messages cleared")
-    SC.update_can_messages(can_p)
-    logging.debug("all can messages updated")
-    logging.debug("Step%s: messages received %s", step_no, len(SC.can_messages[can_p["receive"]]))
-    logging.debug("Step%s: messages: %s\n", step_no, SC.can_messages[can_p["receive"]])
-    logging.debug("Step%s: frames received %s", step_no, len(SC.can_frames[can_p["receive"]]))
-    logging.debug("Step%s: frames: %s\n", step_no, SC.can_frames[can_p["receive"]])
-    logging.info("Test if string contains all IDs expected:")
+    if response.raw[2:4] == '7F':
+        logging.info("Received Negative response %s for request ReadDataByIdentifier and NRC %s ",
+                    response.raw, response.data['nrc'])
+        result = SE22.read_did_f186(dut, dsession=b'\x02')
+        if result:
+            # Set ECU to Default session
+            dut.uds.set_mode(1)
+            return True
 
-    result = SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='F120')
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]],
-                                          teststring='F12A')
-    return result
+    logging.error("Test Failed: Expected Negative response, but recieved %s",response)
+    return False
+
 
 def run():
     """
-    Run - Call other functions from here
+    Verify service 22 supported in default session, extended session
+    and programming session
     """
+    dut = Dut()
+    start_time = dut.start()
+    result = False
+    result_step = False
 
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+    parameters_dict = {'did_ext_def':'',
+                       'did_prog':'',
+                       'two_dids_ext_def':'',
+                       'two_dids_prog':''}
 
-    # where to connect to signal_broker
-    can_p: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        "send" : "Vcu1ToBecmFront1DiagReqFrame",
-        "receive" : "BecmToVcu1Front1DiagResFrame",
-        "namespace" : SC.nspace_lookup("Front1CANCfg0")
-    }
-    SIO.parameter_adopt_teststep(can_p)
+    try:
+        dut.precondition(timeout=60)
+        parameters = SIO.parameter_adopt_teststep(parameters_dict)
 
-    logging.info("Testcase start: %s", datetime.now())
-    starttime = time.time()
-    logging.info("Time: %s \n", time.time())
+        if not all(list(parameters.values())):
+            raise DutTestError("yml parameters not found")
 
-    ############################################
-    # precondition
-    ############################################
-    timeout = 40
-    result = PREC.precondition(can_p, timeout)
+        result_step = dut.step(step_1, parameters, purpose="Verify service 22 with DID 'F120'"
+                                                           " in Default session")
+        if result_step:
+            result_step = dut.step(step_2, parameters, purpose="Verify service 22 with DIDs "
+                                                               "'F120F12A' in Default session")
+        if result_step:
+            result_step = dut.step(step_3, parameters, purpose="Verify service 22 with DID "
+                                                            "'F120' in Extended session")
+        if result_step:
+            result_step = dut.step(step_4, parameters, purpose="Verify service 22 with DIDs "
+                                                               "'F120F12A' in Extended session")
+        if result_step:
+            result_step = dut.step(step_5, parameters, purpose="Verify service 22 with DID "
+                                                            "'F121' in programming session")
+        if result_step:
+            result_step = dut.step(step_6, parameters, purpose="Verify service 22 with DIDs "
+                                                              "'F121F12A' in programming session")
+        result = result_step
+    except DutTestError as error:
+        logging.error("Test failed: %s", error)
+    finally:
+        dut.postcondition(start_time, result)
 
-    if result:
-    ############################################
-    # teststeps
-    ############################################
-
-    # step1:
-    # action: send 1 request - requires SF to send, MF for reply
-    # result: BECM reports default session
-        result = result and step_1(can_p)
-
-    # step 2: check if DID is included in reply
-    # action: check if expected DID are contained in reply
-    # result: true if all contained, false if not
-        result = result and step_2(can_p)
-
-    # step3:
-    # action: send several requests at one time - requires SF to send, MF for reply
-    # result: BECM reports default session
-        result = result and step_3(can_p)
-
-    # step 4: check if DIDs are included in reply including those from combined DID
-    # action: check if expected DID are contained in reply
-    # result: true if all contained, false if not
-        result = result and step_4(can_p)
-
-    ############################################
-    # postCondition
-    ############################################
-
-    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()
