@@ -206,7 +206,7 @@ def run():
             raise DutTestError("yml parameter not found")
 
         result = dut.step(step_1, parameters, purpose='Verify ReadDataByPeriodicIdentifier(0x2A)'
-                          'response in extended session with the transmissionMode set to stop')
+                          'response in extended session with the transmissionMode stop')
 
     except DutTestError as error:
         logging.error("Test failed: %s", error)

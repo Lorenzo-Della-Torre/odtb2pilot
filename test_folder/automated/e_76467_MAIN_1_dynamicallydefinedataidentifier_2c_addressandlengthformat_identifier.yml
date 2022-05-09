@@ -1,0 +1,8 @@
+hvbm_p519:
+    run:
+        define_did: 'F224'
+        memory_address: '01A0'
+        memory_size: '0A23'
+        address_and_length_format_identifiers:
+        - '14'
+        - '24'
