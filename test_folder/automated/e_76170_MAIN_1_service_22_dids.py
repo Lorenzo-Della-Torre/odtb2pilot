@@ -69,7 +69,7 @@ SIO = SupportFileIO
 
 def read_data_id_with_two_dids(dut:Dut, did_to_read):
     """
-    Verify the read_data_id service 22 with two DIDs
+    Verify the ReadDataByIdentifier service 22 with two DIDs
     Args:
         dut (Dut): An instance of Dut
         did_to_read(str): DIDs for respective session (two_dids_ext_def, two_dids_prog)
@@ -89,7 +89,7 @@ def read_data_id_with_two_dids(dut:Dut, did_to_read):
 
 def read_data_id(dut:Dut, did_to_read):
     """
-    Verify the read_data_id service 22
+    Verify the ReadDataByIdentifier service 22 with respective DID
     Args:
         dut (Dut): An instance of Dut
         did_to_read(str): DID for respective session (did_ext_def, did_prog)
@@ -102,7 +102,7 @@ def read_data_id(dut:Dut, did_to_read):
         logging.info("Received positive response %s for request ReadDataByIdentifier ",
                     response.raw[6:10])
         return True
-    logging.error("Test Failed:Expected Positive response, but received %s",response)
+    logging.error("Test Failed: Expected positive response, but received %s",response)
     return False
 
 
@@ -131,9 +131,10 @@ def step_2(dut: Dut, two_dids_ext_def):
     logging.info("ECU successfully read DID %s in default session", two_dids_ext_def)
     return True
 
+
 def step_3(dut: Dut, did_ext_def):
     """
-    action: Verify service 22 with DID 'F120' in Extended session
+    action: Verify service 22 with DID 'F120' in extended session
     expected_result: True on positive response
     """
     # Set ECU to Extended session
@@ -149,7 +150,7 @@ def step_3(dut: Dut, did_ext_def):
 
 def step_4(dut: Dut, two_dids_ext_def):
     """
-    action: Verify service 22 with DID 'F120F12A' in Extended session
+    action: Verify service 22 with DID 'F120F12A' in extended session
     expected_result: True on positive response
     """
     result = read_data_id_with_two_dids(dut, two_dids_ext_def)
@@ -188,13 +189,13 @@ def step_5(dut: Dut, did_prog):
 def step_6(dut: Dut, two_dids_prog):
     """
     action: Verify service 22 with DID 'F121F12A' in programming session
-    expected_result: True on Negative response and ECU is in programming session
+    expected_result: True on negative response and ECU is in programming session
     """
 
     response = dut.uds.read_data_by_id_22(bytes.fromhex(two_dids_prog))
 
     if response.raw[2:4] == '7F':
-        logging.info("Received Negative response %s for request ReadDataByIdentifier and NRC %s ",
+        logging.info("Received negative response %s for request ReadDataByIdentifier and NRC %s ",
                     response.raw, response.data['nrc'])
         result = SE22.read_did_f186(dut, dsession=b'\x02')
         if result:
@@ -203,13 +204,14 @@ def step_6(dut: Dut, two_dids_prog):
             dut.uds.set_mode(1)
             return True
 
-    logging.error("Test Failed: Expected Negative response, but received %s",response)
+    logging.error("Test Failed: Expected negative response, but received %s",response)
     return False
 
 
 def run():
     """
-    Verify service 22 supported in default session, extended session and programming session
+    Verify service 22 (ReadDataByIdentifier) is supported in default session, extended session
+    and programming session
     """
     dut = Dut()
     start_time = dut.start()
