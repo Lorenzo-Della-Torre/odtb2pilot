@@ -56,7 +56,7 @@ SIO = SupportFileIO()
 SSA = SupportSecurityAccess()
 
 
-def security_access_request_seed(dut: Dut):
+def security_access_request_seed(dut: Dut, sa_level):
     """
     Security Access request seed
     Args:
@@ -65,7 +65,7 @@ def security_access_request_seed(dut: Dut):
     """
     sa_keys = dut.conf.default_rig_config
     SSA.set_keys(sa_keys)
-    SSA.set_level_key(1)
+    SSA.set_level_key(int(sa_level, 16))
     client_req_seed = SSA.prepare_client_request_seed()
     response = dut.uds.generic_ecu_call(client_req_seed)
     # Server response seed
@@ -158,7 +158,7 @@ def verify_sa_delay_timer_not_expired(dut: Dut, sa_level):
     Returns: True when security access delay timer is not expired
     """
     # Request seed to verify delay timer is not expired
-    response = security_access_request_seed(dut)
+    response = security_access_request_seed(dut, sa_level)
     if response is None:
         logging.error("Test Failed: Empty response")
         return False, None
@@ -278,7 +278,7 @@ def run():
     result = False
     result_step = False
     try:
-        dut.precondition(timeout=90)
+        dut.precondition(timeout=200)
         result_step, parameters = dut.step(step_1, purpose="Verify security access delay timer "
                                            "in programming session")
         if result_step:
