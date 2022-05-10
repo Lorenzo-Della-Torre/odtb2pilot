@@ -34,7 +34,6 @@ details:
 import logging
 from hilding.dut import Dut
 from hilding.dut import DutTestError
-from hilding import get_conf
 from supportfunctions.support_file_io import SupportFileIO
 from supportfunctions.support_service10 import SupportService10
 from supportfunctions.support_service22 import SupportService22
@@ -50,7 +49,7 @@ def step_1(dut: Dut):
     expected_result: True on receiving positive response
     """
     # Set to programming session
-    SE10.diagnostic_session_control_mode2(dut)  
+    SE10.diagnostic_session_control_mode2(dut)
     # Read active diagnostic session
     active_session = SE22.read_did_f186(dut, b'\x02')
     if not active_session:
@@ -72,15 +71,14 @@ def step_2(dut: Dut):
     """
     sddb_did_list_programming = []
 
-    conf = get_conf()
     sddb_file = dut.conf.rig.sddb_dids
 
     if sddb_file is None:
         logging.error('Test Failed: sddb file is empty')
         return False, None
-   
+
     sddb_did_list_programming = list(sddb_file['pbl_did_dict'].keys())
-   
+
     if len(sddb_did_list_programming) == 0:
         logging.error('Test Failed: PBL DIDs list not received')
         return False, None
@@ -99,7 +97,7 @@ def step_3(dut: Dut, sddb_did_list_programming):
         response = dut.uds.read_data_by_id_22(bytes.fromhex(did))
 
         # Checking 62 in response
-        if response.raw[2:4] != '62':           
+        if response.raw[2:4] != '62':
             logging.error("Expected positive response 62, received %s", response.raw[2:4])
             return False
 
@@ -111,7 +109,7 @@ def step_3(dut: Dut, sddb_did_list_programming):
         logging.error("Expected positive response 62, received %s, for DID %s",
                        response.raw[2:4], response.raw[pos:pos+2])
         results.append(False)
-            
+
     if len(results) != 0 and all(results):
         return True
 
@@ -138,7 +136,7 @@ def step_4(dut: Dut):
 
 def run():
     """
-    Reading DIDs form sddb file in programming session and validate response with 
+    Reading DIDs form sddb file in programming session and validate response with
     service 0x22
     """
     dut = Dut()
@@ -168,5 +166,3 @@ def run():
 
 if __name__ == '__main__':
     run()
-
-    
