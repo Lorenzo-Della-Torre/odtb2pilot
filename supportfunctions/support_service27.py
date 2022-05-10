@@ -73,7 +73,7 @@ class SupportService27:
 
 
     @staticmethod
-    def security_access_request_seed(can_p: CanParam, sa_keys, stepno=270,# pylint: disable=too-many-branches
+    def security_access_request_seed(can_p: CanParam, sa_keys, stepno=270,
                                      purpose="SecurityAccessRequestSeed"):
         """
             Support function: request seed for calculating security access pin
