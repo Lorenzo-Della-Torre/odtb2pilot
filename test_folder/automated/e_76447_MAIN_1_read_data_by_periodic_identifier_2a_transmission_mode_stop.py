@@ -33,7 +33,8 @@ details: >
     Verify ECU stop sending periodic response with readDataByPeriodicIdentifier(2A) service
     1. Start readDataByPeriodicIdentifier(2A) with transmissionMode fast
     2. Verify whether ECU started sending periodic response
-    3. Send transmission mode stop request and verify ECU stop sending periodic response
+    3. Send transmission mode stop request
+    4. Verify ECU stop sending periodic response
 """
 
 import logging
@@ -49,62 +50,37 @@ SIO = SupportFileIO()
 SC = SupportCAN()
 
 
-def get_response(dut, parameters):
+def get_response(dut, periodic_did):
     """
-    Get response within defined time period for fast rate(25ms) and verify
-    ReadDataByPeriodicIdentifier(0x2A) positive response
+    Get response of periodic did and verify with ReadDataByPeriodicIdentifier(0x2A)
+    positive response
     Args:
         dut (Dut): An instance of Dut
-        parameters (dict): periodic_did, fast_rate_max_time
+        periodic_did (str): periodic did
     Returns:
         (bool): True on successfully verified positive response
     """
-
-    start_time = SC.can_messages[dut["receive"]][0][0]
-    result = False
     while True:
         # Wait for 10ms
         time.sleep(10/1000)
         response = SC.can_messages[dut["receive"]][0][2]
-        receive_time = SC.can_messages[dut["receive"]][0][0]
-        elapsed_time = receive_time - start_time
-        if response[2:4] == parameters['periodic_did']:
-            result = True
-            break
-        if elapsed_time * 1000 >= parameters['fast_rate_max_time']*2:
-            result = False
-            logging.error("Periodic message not received")
-            break
-    # Calculate tolerance (10%)
-    tolerance = int((10/parameters['fast_rate_max_time'])*100)
-    # Convert elapsed_time to millisecond
-    elapsed_time = int(elapsed_time*1000)
-    fast_threshold_time_min = parameters['fast_rate_max_time'] - tolerance
-    fast_threshold_time_max = parameters['fast_rate_max_time'] + tolerance
-
-    fast_threshold_time_min_result = elapsed_time >= fast_threshold_time_min
-    fast_threshold_time_max_result = elapsed_time <= fast_threshold_time_max
-    # Compare response time
-    if result and fast_threshold_time_min_result and fast_threshold_time_max_result:
-        logging.info("Positive response %s received as expected within %s and %s time",
-                     response[4:6], fast_threshold_time_min, fast_threshold_time_max)
-        return True
-
-    logging.error("Response received %s, expected %s within %s and %s", response[4:6],
-                  parameters['periodic_did'], fast_threshold_time_min, fast_threshold_time_max)
-    return False
+        if response[2:4] == periodic_did:
+            logging.info("Periodic message %s received with type 2 structure as expected", response)
+            return True
+        logging.error("Response received %s doesn't comply with Type 2", response)
+        return False
 
 
-def verify_periodic_response(dut, parameters):
+def verify_periodic_response(dut, periodic_did):
     """
     Verify ReadDataByPeriodicIdentifier(0x2A) positive response 0x6A
     Args:
         dut(Dut): Dut instance
-        parameters (dict): periodic_did, fast_rate_max_time
+        periodic_did (str): periodic did
     Returns:
         (bool): True on successfully verified positive response
     """
-    result = get_response(dut, parameters)
+    result = get_response(dut, periodic_did)
 
     if result:
         logging.info("Received positive response for periodic DID in extended session"
@@ -156,7 +132,7 @@ def request_read_data_periodic_identifier(dut: Dut, periodic_did, transmission_m
     return response.raw
 
 
-def step_1(dut: Dut, parameters):
+def step_1(dut: Dut, periodic_did):
     """
     action: Set to extended session and verify ReadDataByPeriodicIdentifier(0x2A)
             is stop sending response.
@@ -167,24 +143,33 @@ def step_1(dut: Dut, parameters):
     dut.uds.set_mode(3)
 
     # Initiate ReadDataByPeriodicIdentifier
-    response = request_read_data_periodic_identifier(dut, parameters['periodic_did'],
-                                                     transmission_mode='03')
+    response = request_read_data_periodic_identifier(dut, periodic_did, transmission_mode='03')
     # Verify initial period response for transmission mode fast
-    result = verify_initial_response(response, parameters['periodic_did'])
+    result = verify_initial_response(response, periodic_did)
     # Start verifying periodic response
-    periodic_result = result and verify_periodic_response(dut, parameters)
+    periodic_result = result and verify_periodic_response(dut, periodic_did)
     time.sleep(5)
 
     if periodic_result:
         logging.error("Test Failed: ReadDataByPeriodicIdentifier(2A) service not started")
         return False
-    # Send a request to stop periodic response
-    response = request_read_data_periodic_identifier(dut, parameters['periodic_did'],
-                                                    transmission_mode='04')
-    # Verify initial period response for transmission mode stop
-    result = verify_initial_response(response, parameters['periodic_did'])
 
-    return result
+    # Send a request to stop periodic response
+    response = request_read_data_periodic_identifier(dut, periodic_did, transmission_mode='04')
+    # Verify initial period response for transmission mode stop
+    result = verify_initial_response(response, periodic_did)
+    if not result:
+        return False
+
+    # Verify periodic response from ECU is actually stopped
+    result = get_response(dut, periodic_did)
+    if result:
+        logging.error("Expected periodic response to be stopped but received positive response"
+                     " for periodic DID %s in extended session")
+        return False
+
+    logging.info("Periodic response from the ECU for periodic did %s is stopped", periodic_did)
+    return True
 
 
 def run():
@@ -195,8 +180,7 @@ def run():
 
     start_time = dut.start()
     result = False
-    parameters_dict = {'periodic_did': '',
-                       'fast_rate_max_time': ''}
+    parameters_dict = {'periodic_did': ''}
 
     try:
         dut.precondition(timeout=60)
@@ -205,8 +189,9 @@ def run():
         if not all(list(parameters.values())):
             raise DutTestError("yml parameter not found")
 
-        result = dut.step(step_1, parameters, purpose='Verify ReadDataByPeriodicIdentifier(0x2A)'
-                          'response in extended session with the transmissionMode stop')
+        result = dut.step(step_1, parameters['periodic_did'], purpose='Verify '
+                          'ReadDataByPeriodicIdentifier(0x2A) response in extended session with'
+                          ' the transmissionMode stop')
 
     except DutTestError as error:
         logging.error("Test failed: %s", error)

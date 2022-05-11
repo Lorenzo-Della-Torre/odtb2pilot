@@ -1,4 +1,3 @@
 hvbm_p519:
     run:
         periodic_did: '24'
-        fast_rate_max_time: 25
