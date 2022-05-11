@@ -69,46 +69,63 @@ def step_2(dut: Dut):
     action: Read Sddb file & get list of PBL DIDs
     expected_result: List of PBL DIDs
     """
-    sddb_did_list_programming = []
-
     sddb_file = dut.conf.rig.sddb_dids
 
     if sddb_file is None:
         logging.error('Test Failed: sddb file is empty')
         return False, None
 
-    sddb_did_list_programming = list(sddb_file['pbl_did_dict'].keys())
-
-    if len(sddb_did_list_programming) == 0:
-        logging.error('Test Failed: PBL DIDs list not received')
-        return False, None
-    logging.info("PBL DIDs list received")
-    return True, sddb_did_list_programming
+    return True, sddb_file['pbl_did_dict']
 
 
-def step_3(dut: Dut, sddb_did_list_programming):
+def step_3(dut, pbl_did_dict):
     """
     action: Read all DIDs in programming session and compare with response 0x62
     expected_result: Positive response when every DID's response is 0x62.
     """
-    results = []
+    pass_or_fail_counter_dict = {"Passed": 0, "Failed": 0, "conditionsNotCorrect (22)": 0,
+                                 "requestOutOfRange (31)": 0}
+    result_list = list()
+    did_counter = 0
 
-    for did in sddb_did_list_programming:
-        response = dut.uds.read_data_by_id_22(bytes.fromhex(did))
+    for did_id, did_info in pbl_did_dict.items():
+        did_counter += 1
 
-        # Checking 62 in response
-        if response.raw[2:4] != '62':
-            logging.error("Expected positive response 62, received %s", response.raw[2:4])
-            return False
+        # Using Service 22 to request a particular DID, returning the result in a dictionary
+        did_dict_from_service_22 = SE22.get_did_info(dut, did_id, timeout=2)
 
-        pos = response.raw.find('did')
-        if response.raw[pos:pos+2] == 'did':
-            logging.info("Received positive response 62 for DID %s ", response.raw[pos:pos+2])
-            results.append(True)
+        # Copy info to the did_info dictionary from the did_dict
+        did_info = SE22.adding_info(did_dict_from_service_22, did_info)
 
-        logging.error("Expected positive response 62, received %s, for DID %s",
-                       response.raw[2:4], response.raw[pos:pos+2])
-        results.append(False)
+        # Summarizing the result
+        info_entry, pass_or_fail_counter_dict = SE22.summarize_result(
+            did_info, pass_or_fail_counter_dict, did_id)
+
+        # Add the results
+        result_list.append(info_entry)
+
+        # If any of the tests failed. Quit immediately unless debugging.
+        if not(info_entry.c_did and info_entry.c_sid and info_entry.c_size):
+            logging.info('----------------------')
+            logging.info('Testing DID %s failed.', info_entry.did)
+            logging.info('----------------------')
+            logging.info('DID correct: %s', info_entry.c_did)
+            logging.info('SID correct: %s', info_entry.c_sid)
+            logging.info('Size correct: %s', info_entry.c_size)
+            logging.info('Error message: %s', info_entry.err_msg)
+            logging.info('---------------------------------------')
+
+    results=[]
+    stepresult = False
+
+    for result in result_list:
+        if stepresult == result.c_did and result.c_sid and result.c_size \
+                                and not result.err_msg :
+            logging.info('DID: %s, c_did: %s, c_sid: %s, c_size: %s, err_msg: %s',
+                        result.did, result.c_did, result.c_sid, result.c_size,
+                        result.err_msg)
+
+            results.append(stepresult)
 
     if len(results) != 0 and all(results):
         return True
@@ -134,6 +151,7 @@ def step_4(dut: Dut):
     logging.info("ECU is in default session")
     return True
 
+
 def run():
     """
     Reading DIDs form sddb file in programming session and validate response with
@@ -147,13 +165,13 @@ def run():
         dut.precondition(timeout=60)
 
         result_step = dut.step(step_1, purpose="Verify ECU is in programming session "
-                                                "and EDA0 received as expected")
+                                               "and EDA0 received as expected")
         if result_step:
-            result_step, sddb_did_list_programming = dut.step(step_2, purpose="Reading DIDs from "
-                                         "sddb file in programming session and making list of it")
+            result_step, pbl_did_dict = dut.step(step_2, purpose="Reading DIDs from sddb "
+                                                        "file in programming session")
         if result_step:
-            result_step = dut.step(step_3, sddb_did_list_programming, purpose="Reading DIDs in "
-                                  "programming session and compare response with service 0x22")
+            result_step = dut.step(step_3, pbl_did_dict, purpose="Reading DIDs in programming "
+                                           "session and compare response with service 0x22")
         if result_step:
             result_step = dut.step(step_4, purpose="Verify ECU is in default session")
 
