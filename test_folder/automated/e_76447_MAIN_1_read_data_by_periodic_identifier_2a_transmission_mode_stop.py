@@ -60,6 +60,7 @@ def get_response(dut, periodic_did):
     Returns:
         (bool): True on successfully verified positive response
     """
+    start_time = time.time()
     while True:
         # Wait for 10ms
         time.sleep(10/1000)
@@ -67,8 +68,9 @@ def get_response(dut, periodic_did):
         if response[2:4] == periodic_did:
             logging.info("Periodic message %s received with type 2 structure as expected", response)
             return True
-        logging.error("Response received %s doesn't comply with Type 2", response)
-        return False
+        elif time.time() - start_time > 5:
+            logging.error("Unable to receive periodic message with 5 seconds")
+            return False
 
 
 def verify_periodic_response(dut, periodic_did):
