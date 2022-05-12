@@ -59,12 +59,14 @@ from supportfunctions.support_precondition import SupportPrecondition
 from supportfunctions.support_postcondition import SupportPostcondition
 from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_service10 import SupportService10
+from hilding.conf import Conf
 
 SIO = SupportFileIO
 SC = SupportCAN()
 S_CARCOM = SupportCARCOM()
 SUTE = SupportTestODTB2()
 SSBL = SupportSBL()
+conf = Conf()
 
 PREC = SupportPrecondition()
 POST = SupportPostcondition()
@@ -169,7 +171,8 @@ def run():
         # step 5:
         # action: Active DL and SBL
         # result: BECM reply positively
-        result = result and SSBL.sbl_dl_activation(can_p, 5, "DL and activate SBL")
+        result = result and SSBL.sbl_dl_activation(can_p, conf.default_rig_config,\
+                                                        5, "DL and activate SBL")
 
         # step 6:
         # action: Verify SBL session
