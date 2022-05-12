@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,191 +18,189 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-# Testscript Hilding MEPII
-# project:  BECM basetech MEPII
-# author:   J-ASSAR1 (Joel Assarsson)
-# date:     2020-10-22
-# version:  2.1
-# reqprod:  53841
+reqprod: 53841
+version: 1
+title: Primary bootloader diagnostic services
+purpose: >
+    To define the diagnostic services supported in the primary bootloader.
+description: >
+    The PBL shall support the diagnostic services required in the programmingSession which are
+    specified in [VCC - UDS Services].
 
-#inspired by https://grpc.io/docs/tutorials/basic/python.html
-
-# Copyright 2015 gRPC authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-The Python implementation of the gRPC route guide client.
+details:
+    Verify PBL DIDs using readdatabyidentifier(0x22)
 """
 
-import time
-from datetime import datetime
-import sys
 import logging
-import inspect
 
-import odtb_conf
-
-from build.did import pbl_did_dict
-from supportfunctions.support_can import SupportCAN, CanParam
-from supportfunctions.support_test_odtb2 import SupportTestODTB2
-from supportfunctions.support_carcom import SupportCARCOM
+from hilding.dut import Dut
+from hilding.dut import DutTestError
 from supportfunctions.support_file_io import SupportFileIO
 from supportfunctions.support_service10 import SupportService10
 from supportfunctions.support_service22 import SupportService22
-from supportfunctions.support_precondition import SupportPrecondition
-from supportfunctions.support_postcondition import SupportPostcondition
 
 SIO = SupportFileIO
-SC = SupportCAN()
-SUTE = SupportTestODTB2()
-SC_CARCOM = SupportCARCOM()
-PREC = SupportPrecondition()
-POST = SupportPostcondition()
-SE10 = SupportService10()
 SE22 = SupportService22()
-
-# For each each DID, wait this time for the response. If you wait to short time you might not get
-# the full message (payload). The unit is seconds. 2s should cover even the biggest payloads.
-RESPONSE_TIMEOUT = 2
-
-# Test this amount of DIDs. Example: If equal to 10, the program will only test the first 10 DIDs.
-# This is to speed up during testing.
-# 500 should cover all DIDs
-MAX_NO_OF_DIDS = 500
-
-# Reserve this time for the full script (seconds)
-SCRIPT_TIMEOUT = MAX_NO_OF_DIDS * RESPONSE_TIMEOUT + 15
+SE10 = SupportService10()
 
 
-def step_3(can_p):
-    '''
-    Test service #22:
-    Verify diagnostic service complies to SDDB
-    Request all PBL DIDs in SDDB for ECU
-    '''
-    stepno = 3
+def verify_did_response(did_response_list):
+    """
+    Verify response for all DIDs
+    Args:
+        did_response_list (list): list of DID responses
+    Returns:
+        (bool): True when ECU positive response
+    """
+    results=[]
+
+    for result in did_response_list:
+        if result.err_msg:
+            logging.error('Received error for DID %s: %s', result.did, result.err_msg)
+
+        did_result = result.c_did and result.c_sid and result.c_size and not result.err_msg
+        results.append(did_result)
+
+    if len(results) != 0 and all(results):
+        return True
+
+    logging.error("Test Failed: Received unexpected response from the ECU for some DID requests "
+                  "in Programming Session")
+    return False
+
+
+def print_logs_for_failed_did(info_entry):
+    """
+    Print logs for failed DIDs
+    Args:
+        info_entry (dut): An instance of Infoentry
+    Returns: (None)
+    """
+    logging.info('----------------------')
+    logging.info('Testing DID %s failed.', info_entry.did)
+    logging.info('----------------------')
+    logging.info('DID correct: %s', info_entry.c_did)
+    logging.info('SID correct: %s', info_entry.c_sid)
+    logging.info('Size correct: %s', info_entry.c_size)
+    logging.info('Error message: %s', info_entry.err_msg)
+    logging.info('---------------------------------------')
+
+
+def step_1(dut: Dut):
+    """
+    action: Verify ECU is in programming session
+    expected_result: True on receiving positive response
+    """
+    # Set to programming session
+    dut.uds.set_mode(2)
+
+	# Read active diagnostic session
+    active_session = SE22.read_did_f186(dut, b'\x02')
+    if not active_session:
+        logging.error("ECU not in programming session")
+        return False
+
+    result = SE22.read_did_eda0(dut)
+    if result:
+        logging.info("ECU responds with DID EDA0")
+        return True
+    logging.error("Test Failed: ECU Unable to respond with DID EDA0")
+    return False
+
+
+def step_2(dut: Dut):
+    """
+    action: Read sddb file & get list of PBL DIDs
+    expected_result: PBL DIDs extracted from sddb files
+    """
+    sddb_file = dut.conf.rig.sddb_dids
+
+    if 'pbl_did_dict' in sddb_file.keys():
+        return True, sddb_file['pbl_did_dict']
+
+    logging.error('Test Failed: Unable to extract pbl dids from sddb file')
+    return False, None
+
+
+def step_3(dut, pbl_did_dict):
+    """
+    action: Read all DIDs in programming session and compare with response 0x62
+    expected_result: Positive response when every DID's response is 0x62.
+    """
     pass_or_fail_counter_dict = {"Passed": 0, "Failed": 0, "conditionsNotCorrect (22)": 0,
                                  "requestOutOfRange (31)": 0}
-    result_list = list()
-    did_counter = 0
-    stepresult = len(pbl_did_dict) > 0
-    logging.info("Step %s: DID:s in dictionary: %s", stepno, len(pbl_did_dict))
+    did_response_list = list()
 
     for did_id, did_info in pbl_did_dict.items():
-        did_counter += 1
-        if did_counter > MAX_NO_OF_DIDS:
-            logging.info("MAX_NO_OF_DIDS reached: %s", MAX_NO_OF_DIDS)
-            break
-        logging.debug('DID counter: %s', str(did_counter))
-
 
         # Using Service 22 to request a particular DID, returning the result in a dictionary
-        did_dict_from_service_22 = SE22.get_did_info(can_p, did_id, RESPONSE_TIMEOUT)
-        logging.debug("did_dict_from_service_22: %s", did_dict_from_service_22)
+        did_dict_from_service_22 = SE22.get_did_info(dut, did_id, timeout=2)
 
         # Copy info to the did_info dictionary from the did_dict
         did_info = SE22.adding_info(did_dict_from_service_22, did_info)
-        logging.debug("did_info: %s", did_info)
-
         # Summarizing the result
         info_entry, pass_or_fail_counter_dict = SE22.summarize_result(
             did_info, pass_or_fail_counter_dict, did_id)
+        if not(info_entry.c_did and info_entry.c_sid and info_entry.c_size):
+            print_logs_for_failed_did(info_entry)
+
 
         # Add the results
-        result_list.append(info_entry)
+        did_response_list.append(info_entry)
 
-        # If any of the tests failed. Quit immediately unless debugging.
-        if not(info_entry.c_did and info_entry.c_sid and info_entry.c_size):
-            logging.info('----------------------')
-            logging.info('Testing DID %s failed.', info_entry.did)
-            logging.info('----------------------')
-            logging.info('DID correct: %s', info_entry.c_did)
-            logging.info('SID correct: %s', info_entry.c_sid)
-            logging.info('Size correct: %s', info_entry.c_size)
-            logging.info('Error message: %s', info_entry.err_msg)
-            logging.info('---------------------------------------')
-            if not logging.getLogger("master").isEnabledFor(logging.DEBUG):
-                return False
+    result = verify_did_response(did_response_list)
+    if not result:
+        return False
+    return True
 
-    logging.debug("Step %s: DID:s checked: %s", stepno, did_counter)
-    for result in result_list:
-        logging.debug('DID: %s, c_did: %s, c_sid: %s, c_size: %s, err_msg: %s',
-                      result.did, result.c_did, result.c_sid, result.c_size,
-                      result.err_msg)
-        stepresult = stepresult and result.c_did and result.c_sid and result.c_size \
-                                and not result.err_msg
 
-    logging.info("Step %s: Result teststep: %s\n", stepno, stepresult)
-    return stepresult
+def step_4(dut: Dut):
+    """
+    action: Verify ECU is in default session
+    expected_result: True on receiving positive response
+    """
+    # Set to default session
+    dut.uds.set_mode(1)
+
+    # Verify active diagnostic session is default
+    active_session = SE22.read_did_f186(dut, b'\x01')
+    if not active_session:
+        logging.error("ECU not in default session")
+        return False
+
+    logging.info("ECU is in default session")
+    return True
 
 
 def run():
     """
-    Run - Call other functions from here
+    Reading DIDs form sddb file in programming session and validate response with
+    service 0x22
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+    dut = Dut()
+    start_time = dut.start()
+    result = False
+    result_step = False
+    try:
+        dut.precondition(timeout=60)
 
-    # Where to connect to signal_broker
-    # Should get the values from an yml-file instead
-    can_p: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        "send" : "Vcu1ToBecmFront1DiagReqFrame",
-        "receive" : "BecmToVcu1Front1DiagResFrame",
-        "namespace" : SC.nspace_lookup("Front1CANCfg0")
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
+        result_step = dut.step(step_1, purpose="Verify ECU is in programming session "
+                                               "and EDA0 received as expected")
+        if result_step:
+            result_step, pbl_did_dict = dut.step(step_2, purpose="Reading DIDs from sddb "
+                                                        "file in programming session")
+        if result_step:
+            result_step = dut.step(step_3, pbl_did_dict, purpose="Reading DIDs in programming "
+                                           "session and compare response with service 0x22")
+        if result_step:
+            result_step = dut.step(step_4, purpose="Verify ECU is in default session")
 
-    logging.info("Testcase start: %s", datetime.now())
-    starttime = time.time()
-    logging.info("Time: %s \n", time.time())
+        result = result_step
+    except DutTestError as error:
+        logging.error("Test failed: %s", error)
+    finally:
+        dut.postcondition(start_time, result)
 
-    ############################################
-    # precondition
-    ############################################
-    result = PREC.precondition(can_p, SCRIPT_TIMEOUT)
-
-    #result = result and len(pbl_did_dict) > 0
-    logging.info("Result: %s", result)
-    if result:
-
-        ############################################
-        # teststeps
-        ############################################
-        # step 1:
-        # action: Change to programming session (02) - enter PBL
-        # result: ECU reports session
-        result = result and SE10.diagnostic_session_control_mode2(can_p, stepno=1)
-
-        # step 2:
-        # action: Request DID EDA0
-        # result: ECU responds with DID EDA0
-        result = result and SE22.read_did_eda0(can_p, stepno=2)
-
-        # step 3:
-        # action: Request all DID:s in dictionary (or until limit is reached)
-        # result: ECU responds with DID:s
-        result = result and step_3(can_p)
-
-        # step 4:
-        # action: Change to default session
-        # result: ECU reports session
-        result = result and SE10.diagnostic_session_control_mode1(can_p, stepno=4)
-        time.sleep(1)
-
-    ############################################
-    # postCondition
-    ############################################
-    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()
