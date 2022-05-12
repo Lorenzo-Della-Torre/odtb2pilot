@@ -118,10 +118,10 @@ def activate_sa_delay_timer(dut, sa_level):
     response = security_access(dut, sa_level, invalid_key_flag=True)
     if response is not None:
         # Extract server response and compare with 7F and requestOutOfRange(31)
-        if response[2:4] == '7F' and response[6:8] == '31':
+        if response[2:4] == '7F' and response[6:8] == '35':
             result.append(True)
         else:
-            logging.error("Invalid response received %s, expected NRC 31", response)
+            logging.error("Invalid response received %s, expected NRC 35", response)
             result.append(False)
     else:
         logging.error("Test Failed: Invalid or empty response of security access")
