@@ -78,17 +78,25 @@ class SupportService27:
         """
             Support function: request seed for calculating security access pin
         """
-        def __prepare_request_pbl(sa_keys):
+        def __prepare_request(sa_keys, ecu_mode):
             #SA_GEN1:
             if sa_keys["SecAcc_Gen"] == 'Gen1':
-                payload = S_CARCOM.can_m_send("SecurityAccessRequestSeed", b'', b'')
+                if ecu_mode == "EXT":
+                    payload = S_CARCOM.can_m_send("SecurityAccessRequestSeed_mode1_3", b'', b'')
+                else:
+                    payload = S_CARCOM.can_m_send("SecurityAccessRequestSeed", b'', b'')
+
                 cpay: CanPayload =\
                         {"payload" : payload,\
                         "extra" : ''
                         }
             #SA_GEN2:
             elif sa_keys["SecAcc_Gen"] == 'Gen2':
-                SSA.set_level_key(1)
+
+                if ecu_mode == "PBL":
+                    SSA.set_level_key(1)
+                elif ecu_mode == "EXT":
+                    SSA.set_level_key(5)
 
                 try:
                     payload = SSA.prepare_client_request_seed()
@@ -137,17 +145,10 @@ class SupportService27:
 
         logging.info("SecAcc req seed: Current ECU Session : %s",ecu_mode)
 
-        if ecu_mode in ('DEF', 'EXT'):
-            cpay: CanPayload =\
-              {"payload" : S_CARCOM.can_m_send("SecurityAccessRequestSeed_mode1_3", b'', b''),\
-               "extra" : ''
-              }
-        elif ecu_mode == 'PBL':
-
-            cpay = __prepare_request_pbl(sa_keys)
+        if ecu_mode in ('DEF', 'EXT', 'PBL'):
+            cpay = __prepare_request(sa_keys, ecu_mode)
             if bool(cpay) is False:
                 return False, ""
-
         elif ecu_mode == 'SBL':
             logging.info("SS27 sec_acc_req_seed: SBL already activated")
         else:
@@ -155,7 +156,7 @@ class SupportService27:
             ### remove when EDA0 implemented in MEP2
             # use ecu_mode == 'PBL' as default while EDA0 not implemented in MEP2 SA_GEN2
             #SA_GEN2:
-            cpay = __prepare_request_pbl(sa_keys)
+            cpay = __prepare_request(sa_keys, "PBL")
             if bool(cpay) is False:
                 return False, ""
             ### remove when EDA0 implemented in MEP2
@@ -206,11 +207,16 @@ class SupportService27:
         #Security Access Send Key
 
         if ecu_mode in ('DEF', 'EXT'):
-            cpay: CanPayload =\
-              {"payload" : S_CARCOM.can_m_send("SecurityAccessSendKey_mode1_3",\
-                    payload_value, b''),\
-               "extra" : ''
-              }
+            if sa_keys["SecAcc_Gen"] == 'Gen1':
+                cpay: CanPayload =\
+                {"payload" : S_CARCOM.can_m_send("SecurityAccessSendKey_mode1_3",\
+                    payload_value, b''),}
+
+            elif sa_keys["SecAcc_Gen"] == 'Gen2':
+                cpay: CanPayload =\
+                {"payload" : payload_value,
+                "extra" : ''
+                }
         elif ecu_mode == 'PBL':
             if sa_keys["SecAcc_Gen"] == 'Gen1':
             #SA_GEN1:
