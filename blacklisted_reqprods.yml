@@ -18,7 +18,7 @@ hvbm_p519:
         e_441876_MAIN_1 : software_authentication_security_classes | EOL testing. We will use the second security class. All security classes are NA for us.
         e_435017_MAIN_0 : production_key_programming | Encryption and decryption will be on raw data and not on compressed data. Tool verification?
         e_76515_MAIN_3 : ReadDTCInformation (19) - reportDTCWithPermanentStatus (15) | <If ECU doesn't become emission related>
-        e_488703_MAIN_0 : SecOC configuration - SecOCClusterKeyID | NA Because we only have one cluster and one key.
+        e_488703_MAIN_0 : secoc_configuration_secoc_clusterkeyID | NA Because we only have one cluster and one key.
         e_76515_MAIN_3 : read_dtc_information_19_report_dtc_with_permanent_status_15 | If ECU doesn't become emission related
 
     --Inspection--:
