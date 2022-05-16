@@ -1,6 +1,6 @@
 hvbm_p519:
     step_1:
-        sec_oc_did: 'D0CC'
+        secoc_verification_failure_did: 'D0CC'
         dtc_did: 'D0C5'
         failure_type_byte: '68'
         mask: 'FF'

@@ -58,6 +58,7 @@ hvbm_p519:
     --SecOC--:
         e_487904_MAIN_1 : sec_oc_detection_of_non_programmed_production_keys | SecOC not implemented yet
         e_487909_MAIN_1 : sec_oc_cluster_key_identifier | SecOC not implemented yet
+        e_487895_MAIN_1 : sec_oc_diagnostic_trouble_code_detection_of_corrupt_data_received | SecOC not implemented yet
 
 ihfa_v436:
     --NA--:
