@@ -59,17 +59,17 @@ def __call_did(dut: Dut, did: str, did_size):
     logging.info("ECUs response for %s : %s",did, res)
 
     try:
-        if res.empty() or not res.data["did"] == str:
-            logging.error("The response from the ECU is empty")
+        if res.empty() or not res.data["did"] == did:
+            logging.error("The response from the ECU is empty or the did response doesnt match")
             return False
     except KeyError:
         logging.error("The response from the ECU does not contain the DID id (%s)",did)
         return False
 
     try:
-        if res.data["size"] != did_size:
+        if res.data["details"]["size"] != did_size:
             logging.error("The response has the wrong size, %s insted of %s",
-            res.data["size"],
+            res.data["details"]["size"],
             did_size)
             return False
         logging.info("DID %s has the correct size", did)

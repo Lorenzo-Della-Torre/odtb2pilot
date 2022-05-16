@@ -51,22 +51,22 @@ details: >
 """
 
 import logging
-import inspect
 import time
 from hilding.dut import Dut
 from hilding.dut import DutTestError
+from supportfunctions.support_service10 import SupportService10
 from supportfunctions.support_service27 import SupportService27
 from supportfunctions.support_file_io import SupportFileIO
 from supportfunctions.support_can import SupportCAN
-from supportfunctions.support_sec_acc import SecAccessParam
-import supportfunctions.support_service27 as SP27
+from supportfunctions.support_sec_acc import SupportSecurityAccess
 
 SC = SupportCAN()
+SE10 = SupportService10()
 SE27 = SupportService27()
 SIO = SupportFileIO()
+SSA = SupportSecurityAccess()
 
-
-def security_access_negative_response(dut: Dut):
+def security_access_negative_response(dut: Dut, sa_keys):
     """
     Security access to ECU and corrupt the payload
     Args:
@@ -74,52 +74,56 @@ def security_access_negative_response(dut: Dut):
     Returns:
         Response(str): Can response
     """
-    sa_keys: SecAccessParam = {
-        "SecAcc_Gen": 'Gen2',
-        "fixed_key": '0102030405',
-        "auth_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF',
-        "proof_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), sa_keys)
-    SP27.SSA.set_keys(sa_keys)
 
-    result, response = SE27.security_access_request_seed(dut, sa_keys)
-    SP27.SSA.process_server_response_seed(
-        bytearray.fromhex(response))
-    payload = SP27.SSA.prepare_client_send_key()
-    payload[4] = 0xFF
-    payload[5] = 0xFF
-    result, response = SE27.security_access_send_key(
-        dut, sa_keys, payload)
-    result = SP27.SSA.process_server_response_key(
-        bytearray.fromhex(response))
+    result, sa_calculated = SE27.activate_security_access_seed_and_calc(dut,
+                                                                        sa_keys)
+
+    #modify key to send to get negative reply
+    pl_modified = SSA.sa_key_calculated_distort(sa_calculated)
+    #pl_modified = sa_calculated
+
+    result = result and\
+             SE27.activate_security_access_send_calculated(dut,
+                                                           sa_keys,
+                                                           pl_modified)
+
     if not result:
         # Server response
         return SC.can_messages['HvbmToHvbmdpUdsDiagResponseFrame'][0][2]
     return None
 
 
-def get_rejected_events_and_code(response):
+def get_saps_events_and_code(response):
     """
     Read and store total successful events and rejected events code in dictionary
     Args:
         response(dict): DID response
     Returns:
-        rejected_events_and_code(dict): total rejected events and code
+        get_saps_events_and_code(dict): total rejected events and code
     """
-    rejected_events_and_code = {'total_rejected_events': '',
-                                'latest_rejected_event_code': ''}
+    sa_events_and_code = {'total_successful_events': '',
+                          'latest_successful_event_code': '',
+                          'total_rejected_events': '',
+                          'latest_rejected_event_code': ''}
     for response_item in response.data['details']['response_items']:
-        if response_item['name'] == "Total number of rejected events":
-            rejected_events_and_code['total_rejected_events'] = int(
+        if response_item['name'] == "Total number of successful events":
+            sa_events_and_code['total_successful_events'] = int(
                 response_item['sub_payload'], 16)
-        if response_item['name'] == "Latest rejected event - Event Code":
-            rejected_events_and_code['latest_rejected_event_code'] = \
+        if response_item['name'] == "Total number of rejected events":
+            sa_events_and_code['total_rejected_events'] = int(
+                response_item['sub_payload'], 16)
+
+        if response_item['name'] == "Latest successful event - Event Code":
+            sa_events_and_code['latest_successful_event_code'] = \
                 response_item['sub_payload']
-        if rejected_events_and_code['total_rejected_events'] != '' and \
-                rejected_events_and_code['latest_rejected_event_code'] != '':
+        if response_item['name'] == "Latest rejected event - Event Code":
+            sa_events_and_code['latest_rejected_event_code'] = \
+                response_item['sub_payload']
+
+        if sa_events_and_code['total_rejected_events'] != '' and \
+                sa_events_and_code['latest_rejected_event_code'] != '':
             break
-    return rejected_events_and_code
+    return sa_events_and_code
 
 
 def step_1(dut: Dut):
@@ -129,29 +133,92 @@ def step_1(dut: Dut):
     """
     response = dut.uds.read_data_by_id_22(b'\xd0\x46')
     # NRC 31 requestOutOfRange
+    logging.info("Step1, response.raw %s ", response.raw)
+    logging.info("Step1, response.raw [6:8] %s ", response.raw[6:8])
+    logging.info("Step1, type response.raw  %s ", type(response.raw))
+    # response.raw is of type str.
+    # we get a positive reply (no NRC) on HVBM
+    # if testing on ecu where D046 is not implemented you might get
+    # '31' : 'requestOutOfRange'
     if response.raw[6:8] != '31':
-        rejected_events_and_code = get_rejected_events_and_code(response)
-        return True, rejected_events_and_code
+        events_and_code = get_saps_events_and_code(response)
+        return True, events_and_code, response
     logging.error("Test Failed: NRC 31 requestOutOfRange received")
-    return False, None
+    return False, None, response
 
 
-def step_2(dut: Dut):
+def step_2(dut: Dut, sa_keys):
+    """
+    action: Security Access to ECU with valid key
+    expected_result: positive response - SA granted
+    """
+    result = SE10.diagnostic_session_control_mode2(dut, stepno=2)
+    logging.info("Step_2: Requesting SA with valid key.")
+
+    result2, sa_calculated = SE27.activate_security_access_seed_and_calc(dut,
+                                                                         sa_keys)
+    result = result and result2 and\
+             SE27.activate_security_access_send_calculated(dut,
+                                                           sa_keys,
+                                                           sa_calculated)
+    return result
+
+
+def step_3(dut: Dut,
+           events_and_code,
+           response1):
+    """
+    action:
+    Set to default session.
+    Read Security log event DID D046.
+    Get latest Total number of rejected events
+    Check the rejected event counter is increased by 2
+    expected_result: Total number of Rejected events is incremented
+                     Latest rejected event code is '02'
+    """
+    result = SE10.diagnostic_session_control_mode1(dut, stepno=3)
+    time.sleep(2)
+
+    response = dut.uds.read_data_by_id_22(b'\xd0\x46')
+    if response.raw[6:8] == '31':
+        return False, response
+    events_and_code1 = get_saps_events_and_code(response)
+
+    logging.info("Events and codes: %s", )
+    logging.info("before SA attempt    %s", response1.raw)
+    logging.info("after valid attempt  %s", response.raw)
+
+    if not (events_and_code1['total_successful_events'] == \
+            events_and_code['total_successful_events'] + 1 \
+            and events_and_code1['latest_successful_event_code'] == '80'):
+        logging.error(
+            "Test Failed: Rejected event count is not increased Or the event code is wrong")
+        return False, response
+    return result, response
+
+def step_4(dut: Dut, sa_keys):
     """
     action: Security Access to ECU with invalid key
     expected_result: Negative response to send key with NRC 36
     """
-    dut.uds.set_mode(2)
+    result = SE10.diagnostic_session_control_mode2(dut, stepno=4)
     for _ in range(2):
-        response = security_access_negative_response(dut)
+        logging.info("Step_4: Requesting SA with distorted key.")
+        response = security_access_negative_response(dut, sa_keys)
         if response is None:
+            result = False
             logging.error("Test Failed: Empty response")
         elif response[2:4] == '7F' and response[6:8] == '36':
-            return True
-    return False
+            logging.info("Correct reply to distorted key.")
+        time.sleep(6) #have to wait at least 5sec before next seed request
+    logging.info("Step_4 result %s", result)
+    return result
 
 
-def step_3(dut: Dut, rejected_events_and_code):
+def step_5(dut: Dut,
+           events_and_code,
+           response1,
+           response2):
     """
     action:
     Set to default session.
@@ -164,13 +231,31 @@ def step_3(dut: Dut, rejected_events_and_code):
     dut.uds.set_mode()
     time.sleep(2)
     response = dut.uds.read_data_by_id_22(b'\xd0\x46')
-    rejected_events_and_code_latest = get_rejected_events_and_code(response)
-    if rejected_events_and_code_latest['total_rejected_events'] == \
-        rejected_events_and_code['total_rejected_events'] + 2 \
-            and rejected_events_and_code['latest_rejected_event_code'] == '02':
+    logging.info("Step5, response to d046 request: %s", response)
+    events_and_code_latest = get_saps_events_and_code(response)
+    logging.info("Step_5, events_and_code latest %s", events_and_code_latest)
+    logging.info("First info attempts before attempts")
+    logging.info("Events and codes: %s", events_and_code)
+
+    logging.info("Latestt info after 2 rejected events")
+    logging.info("Events and codes: %s", )
+    logging.info("All responses to 22 D046: ")
+    logging.info("before SA attempt    %s", response1.raw)
+    logging.info("after valid attempt  %s", response2.raw)
+    logging.info("after 2 invalid ones %s", response.raw)
+
+    if events_and_code_latest['total_rejected_events'] == \
+        events_and_code['total_rejected_events'] + 2 \
+            and events_and_code_latest['latest_rejected_event_code'] == '02':
         return True
     logging.error(
         "Test Failed: Rejected event count is not increased Or the event code is wrong")
+    logging.error("Test failed. Rejected events before: %s",
+                  events_and_code['total_rejected_events'])
+    logging.error("Test failed. Rejected events now   : %s",
+                  events_and_code_latest['total_rejected_events'])
+    logging.error("Test failed. Latest rejected event code (expect: '02'): %s",
+                  events_and_code_latest['latest_rejected_event_code'])
     return False
 
 
@@ -179,16 +264,45 @@ def run():
     dut = Dut()
     start_time = dut.start()
     result = False
+
+    platform=dut.conf.rigs[dut.conf.default_rig]['platform']
+    sa_keys = {
+        "SecAcc_Gen" : dut.conf.platforms[platform]['SecAcc_Gen'],
+        "fixed_key": dut.conf.platforms[platform]["fixed_key"],
+        "auth_key": dut.conf.platforms[platform]["auth_key"],
+        "proof_key": dut.conf.platforms[platform]["proof_key"]
+    }
+
     try:
-        dut.precondition()
-        result, rejected_events_and_code = dut.step(
-            step_1, purpose='Read Security log event DID D046')
+        dut.precondition(timeout=120)
+
+        #Read our DID D046 before doing SA request
+        result, events_and_code, response1 = dut.step(
+            step_1, purpose ='Read Security log event DID D046')
+
+        #make a successful attempt to get SA access
+        result = result and dut.step(step_2,
+                                     sa_keys,
+                                     purpose='Read Sec log event DID D046 with sucessful attempt')
+
+        #check if reply to D046 reflects successful atempt
+        if result:
+            result, response2 = dut.step(
+                step_3,
+                events_and_code,
+                response1,
+                purpose='Read Security log event DID D046')
+        logging.info("After step3. result %s", result)
+
         if result:
             result = dut.step(
-                step_2, purpose='Triggering Event Code 0x02')
+                step_4, sa_keys, purpose='Triggering Event Code 0x02')
         if result:
-            result = dut.step(step_3, rejected_events_and_code,
-                                     purpose='Read Security log event DID D046 with event code 02')
+            result = dut.step(step_5,
+                              events_and_code,
+                              response1,
+                              response2,
+                              purpose='Read Security log event DID D046 with event code 02')
 
     except DutTestError as error:
         logging.error("Test failed: %s", error)

@@ -35,7 +35,7 @@ log = logging.getLogger('reset_ecu')
 def reset_ecu_mode(dut: Dut):
     """ reset ecu mode """
     res = dut.uds.active_diag_session_f186()
-    log.info(res)
+    log.debug(res)
 
     if not 'mode' in res.details:
         raise DutTestError("Active diagnostics session (F186) request failed")
@@ -68,6 +68,7 @@ def reset_ecu_mode(dut: Dut):
         dut.uds.read_data_by_id_22(EicDid.complete_ecu_part_number_eda0)
     time.sleep(1)
     if mode != 1:
+        logging.info("The ECU is still in %s . Trying Hard Reset...", modes[mode])
         dut.uds.ecu_reset_1101(delay=5)
         dut.uds.set_mode(1)
         res = dut.uds.active_diag_session_f186()
@@ -75,6 +76,7 @@ def reset_ecu_mode(dut: Dut):
             raise UdsError("Failure occurred when getting mode via f186")
         mode = res.details["mode"]
     if mode != 1:
+        logging.info("The ECU is still in %s . Trying to flash ECU...", modes[mode])
         software_download(dut)
         dut.uds.ecu_reset_1101(delay=5)
         dut.uds.set_mode(1)
@@ -83,6 +85,7 @@ def reset_ecu_mode(dut: Dut):
             raise UdsError("Failure occurred when getting mode via f186")
         mode = res.details["mode"]
     if mode != 1:
+        logging.info("The ECU is still in %s . Aborting the test...", modes[mode])
         raise DutTestError("Could not reset the ECU to mode/session 1")
 
 def reset_and_flash_ecu():
@@ -93,6 +96,7 @@ def reset_and_flash_ecu():
     try:
         dut.precondition(timeout=600)
         dut.step(reset_ecu_mode)
+        time.sleep(2)
         result = True
     except: # pylint: disable=bare-except
         error = traceback.format_exc()

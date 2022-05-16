@@ -1,0 +1,3 @@
+hvbm_p519:
+    run:
+        diag_read_out_dids: ['EDC0', 'EDC1']
