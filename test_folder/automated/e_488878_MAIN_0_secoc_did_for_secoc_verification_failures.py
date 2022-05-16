@@ -55,7 +55,7 @@ description: >
                                                                  0b1 - Yes
 
 details: >
-    Read did 'DOCC' and verify the failure count limit bit status for each SecOC protected signal.
+    Read did 'D0CC' and verify the failure count limit bit status for each SecOC protected signal.
 """
 
 import logging
@@ -73,7 +73,7 @@ def step_1(dut: Dut):
                      all SecOC protected signal
     """
     # Read yml parameters
-    parameters_dict = {'sec_oc_did': '',
+    parameters_dict = {'sec_oc_verification_failure_did': '',
                        'signals':{}}
     parameters = SIO.parameter_adopt_teststep(parameters_dict)
 
@@ -83,11 +83,17 @@ def step_1(dut: Dut):
 
     results = []
     bit_pos = 0
-    byte_pos = 0
+    byte_pos = 6
 
-    did_response = dut.uds.read_data_by_id_22(bytes.fromhex(parameters['sec_oc_did']))
-    for _ in range(int((len(did_response.raw[6:]))/2)):
+    did_response = dut.uds.read_data_by_id_22(bytes.fromhex \
+                   (parameters['sec_oc_verification_failure_did']))
 
+    # Extract message and calculate byte length
+    message_length = int((len(did_response.raw[byte_pos:]))/2)
+
+    # Iterate up to message length to verify failure count bit for set of SecOC signals
+    # i.e. #n byte represents m bit signals, where n is message_length and m is 8 bit
+    for _ in range(message_length):
         # Read did response for all SecOC protected signal
         for signal_name, sig_data in parameters['signals'].items():
             logging.info("Verifying failure count limit bit status of %s by reading the did 'D0CC'",
@@ -99,38 +105,39 @@ def step_1(dut: Dut):
                 dut.uds.generic_ecu_call(bytes.fromhex(sig_data['data']))
 
                 # Read did 'D0CC' to get the failure count limit status
-                did_response = dut.uds.read_data_by_id_22(bytes.fromhex(parameters['sec_oc_did']))
+                did_response = dut.uds.read_data_by_id_22(bytes.fromhex \
+                               (parameters['sec_oc_verification_failure_did']))
 
-                # Byte#4 of did 'D0CC' gives failure count limit status
-                failure_count_limit_status = bin(int(did_response.raw[6+byte_pos:8+byte_pos], 16))
+                # Byte-4 to Byte-n  of did 'D0CC' gives failure count limit status
+                failure_count_limit_status = bin(int(did_response.raw[byte_pos:byte_pos+2], 16))
                 # Reverse bit string
                 fail_count = failure_count_limit_status[2:][::-1]
 
                 if count_value < (failure_count_len-1):
-                    if fail_count[bit_pos] == '0':
+                    if fail_count[bit_pos:bit_pos+1] == '0':
                         logging.info("SecOC failure count limit bit is %s, and limit is not"
-                                     " exceeded", fail_count[bit_pos])
+                                     " exceeded", fail_count[bit_pos:bit_pos+1])
                         results.append(True)
                     else:
                         logging.error("Test Failed: SecOC failure count limit is exceeded"
                                       " for %s and the bit value is %s", signal_name,
-                                      fail_count[bit_pos])
+                                      fail_count[bit_pos:bit_pos+1])
                         results.append(False)
-
                 else:
-                    if fail_count[bit_pos] == '1':
+                    if fail_count[bit_pos:bit_pos+1] == '1':
                         logging.info("SecOC failure count limit bit is %s, and limit is exceeded",
-                                    fail_count[bit_pos])
+                                    fail_count[bit_pos:bit_pos+1])
                         results.append(True)
                     else:
                         logging.error("Test Failed: SecOC failure count limit is not exceeded "
                                       " for %s and the bit value is %s", signal_name,
-                                      fail_count[bit_pos])
+                                      fail_count[bit_pos:bit_pos+1])
                         results.append(False)
 
             # Increase bit_pos value by 1 to select next signal
             bit_pos = bit_pos + 1
 
+        # Increase byte_pos value by 2 to select next byte
         byte_pos = byte_pos + 2
 
     if all(results) and len(results) != 0:
@@ -152,8 +159,8 @@ def run():
     try:
         dut.precondition(timeout=60)
 
-        result = dut.step(step_1, purpose="Verify the status of 'D0CC' for failure "
-                               "count limit")
+        result = dut.step(step_1, purpose="Verify the status of 'D0CC' for failure count "
+                                          " limit")
     except DutTestError as error:
         logging.error("Test failed: %s", error)
     finally:

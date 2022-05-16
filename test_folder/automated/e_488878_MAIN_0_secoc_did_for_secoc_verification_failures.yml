@@ -1,28 +1,28 @@
 hvbm_p519:
     step_1:
-        sec_oc_did: 'D0CC'
+        sec_oc_verification_failure_did: 'D0CC'
         signals:
           signal_1:
-            failure_count_byte: '05'
+            failure_count: 5
             data: '0000000000000000'
           signal_2:
-            failure_count_byte: '06'
+            failure_count: 6
             data: '1111111111111111'
           signal_3:
-            failure_count_byte: '07'
+            failure_count: 7
             data: '2222222222222222'
           signal_4:
-            failure_count_byte: '08'
+            failure_count: 8
             data: '1111111111111111'
           signal_5:
-            failure_count_byte: '09'
+            failure_count: 9
             data: '2222222222222222'
           signal_6:
-            failure_count_byte: '08'
+            failure_count: 8
             data: '0000000000000000'
           signal_7:
-            failure_count_byte: '07'
+            failure_count: 7
             data: '3333333333333333'
           signal_8:
-            failure_count_byte: '06'
+            failure_count: 6
             data: '4444444444444444'
