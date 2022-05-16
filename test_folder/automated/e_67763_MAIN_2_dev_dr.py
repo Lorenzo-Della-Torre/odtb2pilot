@@ -53,9 +53,6 @@ import logging
 import inspect
 import odtb_conf
 
-from build.did import app_did_dict
-from build.did import app_diag_part_num
-
 from supportfunctions.support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
 from supportfunctions.support_carcom import SupportCARCOM
@@ -64,6 +61,7 @@ from supportfunctions.support_service10 import SupportService10
 from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_precondition import SupportPrecondition
 from supportfunctions.support_postcondition import SupportPostcondition
+from hilding.conf import Conf
 
 SIO = SupportFileIO
 SC = SupportCAN()
@@ -73,6 +71,10 @@ PREC = SupportPrecondition()
 POST = SupportPostcondition()
 SE10 = SupportService10()
 SE22 = SupportService22()
+conf = Conf()
+
+app_did_dict = conf.rig.sddb_dids["app_did_dict"]
+app_diag_part_num = conf.rig.sddb_dids["app_diag_part_num"]
 
 # For each each DID, wait this time for the response. If you wait to short time you might not get
 # the full message (payload). The unit is seconds. 2s should cover even the biggest payloads.
@@ -110,7 +112,7 @@ def step_2(can_p):
     result = SUTE.teststep(can_p, cpay, etp)
     part_number = SUTE.pp_partnumber(SC.can_messages[can_p["receive"]][0][2][10:])
     part_number = part_number.replace(" ", "_")
-    logging.info("Step 4: %s", part_number)
+    logging.info("Step 2: %s", part_number)
     return result, part_number
 
 

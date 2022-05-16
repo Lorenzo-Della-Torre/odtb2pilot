@@ -116,17 +116,17 @@ def compare_negative_response(response, session, nrc_code):
     result = False
     if response[2:4] == '7F' and response[6:8] == nrc_code:
         logging.info("Received NRC %s for request dynamicallyDefineDataIdentifier(0x2C) in %s"
-                        " session as expected", response, session)
+                        " session as expected", response[6:8], session)
         result = True
     else:
         logging.error("Test failed: Expected NRC %s for request"
                         " dynamicallyDefineDataIdentifier(0x2C) in %s session, received %s",
-                        nrc_code, response, session)
+                        nrc_code, session, response)
         result = False
     return result
 
 
-def request_dynamically_define_data_identifier(dut, parameters):
+def dynamically_define_data_identifier(dut, parameters):
     """
     Initiate dynamicallyDefineDataIdentifier(0x2C) request
     Args:
@@ -152,11 +152,22 @@ def step_1(dut: Dut, parameters):
     expected_result: ECU should send positive response within 200ms
     """
     # Initiate DynamicallyDefineDataIdentifier
-    response = request_dynamically_define_data_identifier(dut, parameters)
+    response = dynamically_define_data_identifier(dut, parameters)
     time_elapsed = dut.uds.milliseconds_since_request()
-    result = compare_positive_response(response, time_elapsed, parameters, 'default')
 
-    return result
+    result = compare_positive_response(response, time_elapsed, parameters, 'default')
+    if not result:
+        return False
+
+    define_did = parameters['define_did']
+    # Verify response of dynamically defined did
+    response = dut.uds.read_data_by_id_22(bytes.fromhex(define_did))
+    if response.raw[2:4] == '62':
+        logging.info("Received positive response for dynamically define did %s", define_did)
+        return True
+
+    logging.error("Test failed: Unable to get response of dynamically define did %s", define_did)
+    return False
 
 
 def step_2(dut: Dut, parameters):
@@ -170,7 +181,7 @@ def step_2(dut: Dut, parameters):
     dut.uds.set_mode(2)
 
     # Initiate DynamicallyDefineDataIdentifier
-    response = request_dynamically_define_data_identifier(dut, parameters)
+    response = dynamically_define_data_identifier(dut, parameters)
     result = compare_negative_response(response, session="programming", nrc_code='11')
 
     return result
@@ -187,8 +198,11 @@ def step_3(dut: Dut, parameters):
     dut.uds.set_mode(3)
 
     # Initiate DynamicallyDefineDataIdentifier without security access
-    response = request_dynamically_define_data_identifier(dut, parameters)
-    result_without_security = compare_negative_response(response, session="extended", nrc_code='33')
+    response = dynamically_define_data_identifier(dut, parameters)
+    result_without_security = compare_negative_response(response, session="extended",
+                                                        nrc_code='33')
+    if not result_without_security:
+        return False
 
     # Security access to ECU
     security_access = SE27.activate_security_access_fixedkey(dut, dut.conf.default_rig_config,
@@ -198,11 +212,22 @@ def step_3(dut: Dut, parameters):
         return False
 
     # Initiate DynamicallyDefineDataIdentifier with security access
-    response = request_dynamically_define_data_identifier(dut, parameters)
+    response = dynamically_define_data_identifier(dut, parameters)
     time_elapsed = dut.uds.milliseconds_since_request()
-    result_with_security = compare_positive_response(response, time_elapsed, parameters, 'extended')
+    result_with_security = compare_positive_response(response, time_elapsed, parameters,
+                                                     'extended')
+    if not result_with_security:
+        return False
 
-    return result_without_security and result_with_security
+    define_did = parameters['define_did']
+    # Verify response of dynamically defined did
+    response = dut.uds.read_data_by_id_22(define_did)
+    if response.raw[2:4] == '62':
+        logging.info("Received positive response for dynamically define did %s", define_did)
+        return True
+
+    logging.error("Test failed: Unable to get response of dynamically define did %s", define_did)
+    return False
 
 
 def run():
