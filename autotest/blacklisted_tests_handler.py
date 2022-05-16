@@ -19,6 +19,9 @@ conf = Conf()
 IMPLICIT = 'Implicit'
 INSPECTION = 'Inspection'
 NA = 'NA'
+VBF_MOD = 'vbf_modification'
+DSPACE = 'dSpace'
+SECOC = 'SecOC'
 
 def __split_and_remove_spaces(input_string, delimiter="|"):
     """Splits input string using delimiter. Then removes spaces from first entry in returned tuple
@@ -63,13 +66,21 @@ def create_logs(reqprod_dict, directory):
             test_name = __split_and_remove_spaces(name_and_info)[0]
             info = __split_and_remove_spaces(name_and_info)[1]
             reqprod = __split_and_remove_spaces(reqprod)[0]
-            with open(os.path.join(directory,f"e_{reqprod}_{test_name}.log"), 'w') as log_file:
+            with open(os.path.join(directory,f"{reqprod}_{test_name}.log"), 'w') as log_file:
                 if category == "--NA--":
-                    log_file.write("Testcase result: Not applicable")
+                    log_file.write(f"Testcase result: Not applicable. Info:{info}")
                 if category == "--Inspection--":
-                    log_file.write("Testcase result: To be inspected")
-                else:
-                    log_file.write(f"Testcase result: {category}. Info: {info}")
+                    log_file.write(f"Testcase result: To be inspected. Info:{info}")
+                if category == "--dSpace--":
+                    log_file.write(f"Testcase result: Tested in dSpace HIL. Info:{info}")
+                if category == "--vbf_modification--":
+                    log_file.write(f"Testcase result: Modified VBF needed. Info:{info}")
+                if category == "--Manual--":
+                    log_file.write(f"Testcase result: MANUAL. Info:{info}")
+                if category == "--SecOC--":
+                    log_file.write(f"Testcase result: SecOC not implemented. Info:{info}")
+                #else:
+                #    log_file.write(f"Testcase result: {category}. Info: {info}")
 
 def get_dictionary_from_yml(yml_file_dir=""):
     """Extract a dictionary from the yaml file containing black listed requirements.
@@ -88,9 +99,7 @@ def get_dictionary_from_yml(yml_file_dir=""):
     else:
         yml_file = open(parentdir + "/blacklisted_reqprods.yml", 'r')
     blacklisted_reqs = yaml.safe_load(yml_file)
-
     relevant_blacklisted_reqs = blacklisted_reqs[conf.default_platform]
-
     return relevant_blacklisted_reqs
 
 def match_swrs_with_yml(swrs):
@@ -115,9 +124,13 @@ def match_swrs_with_yml(swrs):
         if yml_reqprods is not None:
             matching_reqprods_from_yml[category] = {}
             for reqprod_id, reqprod_data in swrs.items():
-                comparison_variable = f"e_{reqprod_id}_{reqprod_data['Variant']}_{reqprod_data['Revision']}"
+                variant = reqprod_data['Variant']
+                # We don't use '-' in the blacklist or in scriptnames. replacing with empty.
+                if variant == '-':
+                    variant = ''
+                comparison_variable = f"e_{reqprod_id}_{variant}_{reqprod_data['Revision']}"
                 if comparison_variable in yml_reqprods:
-                    matching_reqprods_from_yml[category][reqprod_id] = yml_reqprods[comparison_variable]
+                    matching_reqprods_from_yml[category][comparison_variable] = yml_reqprods[comparison_variable]
                     del modified_swrs[reqprod_id]
 
     return matching_reqprods_from_yml, modified_swrs
@@ -139,22 +152,32 @@ def _print_tests(tests_dict):
                 tests_dict[IMPLICIT].get(implicit_test))
 
     if tests_dict.get(INSPECTION):
-        for implicit_test in tests_dict.get(INSPECTION):
+        for _ in tests_dict.get(INSPECTION):
             logging.info("Testcase result: To be inspected")
 
     if tests_dict.get(NA):
-        for implicit_test in tests_dict.get(NA):
+        for _ in tests_dict.get(NA):
             logging.info("Testcase result: Not applicable")
+
+    if tests_dict.get(VBF_MOD):
+        for _ in tests_dict.get(VBF_MOD):
+            logging.info("Testcase result: Modified VBF needed")
+
+    if tests_dict.get(DSPACE):
+        for _ in tests_dict.get(DSPACE):
+            logging.info("Testcase result: Tested in dSpace HIL")
+
+    if tests_dict.get(SECOC):
+        for _ in tests_dict.get(SECOC):
+            logging.info("Testcase result: SecOC not implemented")
 
 def main():
     """Used to test and run functionality found in this file
     """
 
     tests = get_dictionary_from_yml()
-
     _print_tests(tests)
 
 
 if __name__ == "__main__":
-
     main()

@@ -55,18 +55,7 @@ import ctypes
 from typing import Dict
 
 import logging
-### import git used if wanting to get path to repo via gitpython
-#import git
 
-#load the shared object file for SecAccess Gen2
-#lib = ctypes.CDLL('/home/pi/Repos/odtb2pilot/sec_access_gen2_dll/linux/armv7l/libsa_client_lib.so')
-#didn't find out how to use shared object under windows environment yet.
-#lib = ctypes.CDLL('../../security_access/build/sa2-lib/lib/libsa_client_lib.dll.a')
-#lib = ctypes.CDLL('../../security_access/build/sa2-lib/cygsa_client_lib.dll')
-#lib = ctypes.CDLL('C:\\security_access\\build\\sa2-lib\\cygsa_client_lib.dll', winmode=0)
-#lib = ctypes.CDLL('C:\\security_access\\build\\sa2-lib\\cygsa_client_lib.dll',
-#                  handle=None, use_errno=False, use_last_error=False, winmode=1)
-#lib = ctypes.CDLL('../../security_access/build/sa2-lib/cygsa_client_lib.dll')
 #SecAccess Gen2 default parameters:
 class SaGen2Param(Dict): # pylint: disable=too-few-public-methods,inherit-non-class
     """
@@ -220,14 +209,8 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
             else:
                 logging.info("Right library version for SA Gen2 not found: %s", sys.platform)
         elif sys.platform == 'win32':
-            #self.lib = ctypes.CDLL(odtb_repo_param +
-            #                       '/sec_access_gen2_dll/windows/cygsa_client_lib.dll')
-            self.lib = ctypes.WinDLL(odtb_repo_param +# pylint: disable=unexpected-keyword-arg
-                                     '/sec_access_gen2_dll/windows/cygsa_client_lib.dll',
-                                     handle=None,
-                                     use_errno=False,
-                                     use_last_error=False,
-                                     winmode=1)
+            self.lib = ctypes.CDLL(odtb_repo_param +
+                                   '/sec_access_gen2_dll/windows/x64/sa_client_lib.dll')
         else:
             raise Exception("Unknown operation system. Don't know which SAGen2 lib to load.")
 
@@ -460,3 +443,58 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         logging.debug("r_0: %s", r_0)
         logging.debug("Sec_acc_pins: {0:06x}".format(int(r_0, 2)))
         return bytes.fromhex("{0:06x}".format(int(r_0, 2)))
+
+
+    @classmethod
+    def sa_keys_distort(cls, sa_keys):
+        """
+        added for Gen1/Gen2
+        takes fixed_key, proof_key, auth_key in sa_keys
+        and distorts them by modifying the first byte
+
+        parameter:
+        sa_keys     containing fixed_key (Gen1), proof+auth_key (Gen2)
+        return:
+        sa_keys (distorted)
+        """
+
+        sa_keys_invalid: SecAccessParam = {
+            "SecAcc_Gen": sa_keys['SecAcc_Gen'],
+            "fixed_key": sa_keys['fixed_key'],
+            "auth_key": sa_keys['auth_key'],
+            "proof_key": sa_keys['proof_key']
+        }
+
+        logging.debug("sa_keys before change %s", sa_keys_invalid)
+        distort_key = bytes.fromhex(sa_keys['fixed_key'])
+        distort_key = ((distort_key[0]+1) % 0xff).to_bytes(1, 'big') + distort_key[1::]
+        sa_keys_invalid['fixed_key'] = distort_key.hex().upper()
+
+        distort_key = bytes.fromhex(sa_keys['auth_key'])
+        distort_key = ((distort_key[0]+1) % 0xff).to_bytes(1, 'big') + distort_key[1::]
+        sa_keys_invalid['auth_key'] = distort_key.hex().upper()
+
+        distort_key = bytes.fromhex(sa_keys['proof_key'])
+        distort_key = ((distort_key[0]+1) % 0xff).to_bytes(1, 'big') + distort_key[1::]
+        sa_keys_invalid['proof_key'] = distort_key.hex().upper()
+        logging.debug("sa_keys after change %s", sa_keys_invalid)
+        return sa_keys_invalid
+
+    @classmethod
+    def sa_key_calculated_distort(cls, sa_key):
+        """
+        added for Gen1/Gen2
+        takes sa_key
+        and distorts it by modifying the last byte
+
+        Last byte distort was chosen as SSA module contains even command
+        in the first bytes
+
+        parameter:
+        sa_key  containing key to send to get secure_access
+
+        return:
+        sa_key (distorted)
+        """
+        sa_modified = sa_key[:-1] + ((sa_key[-1]+1) % 0xff).to_bytes(1, 'big')
+        return sa_modified
