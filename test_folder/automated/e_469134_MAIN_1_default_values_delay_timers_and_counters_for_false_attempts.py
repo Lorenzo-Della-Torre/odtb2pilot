@@ -62,7 +62,8 @@ description: >
 
 details: >
     Verify the delay timer is activated after two false security access attempts and also verify
-    delay timer is activated at every start (boot) i.e- ECU reset or power on.
+    delay timer is activated at every start (boot) i.e- ECU reset or power on. for all supported
+    security access levels.
     Steps-
     - Two consecutive false security access attempts and activate delay timer
     - Verify delay timer is activated after false security access attempts
@@ -74,7 +75,6 @@ details: >
 
 import logging
 import time
-from hilding.conf import Conf
 from hilding.dut import Dut
 from hilding.dut import DutTestError
 from supportfunctions.support_sec_acc import SupportSecurityAccess
@@ -82,20 +82,20 @@ from supportfunctions.support_file_io import SupportFileIO
 
 SIO = SupportFileIO()
 SSA = SupportSecurityAccess()
-CNF = Conf()
 
 
-def security_access_invalid_key(dut: Dut):
+def security_access_invalid_key(dut: Dut, sa_level):
     """
     Security access to ECU with invalid key (corrupt the payload) for negative response
     Args:
         dut(class object): Dut instance
+        sa_level (str): security access level
     Returns:
         Response(str): Can response
     """
-    sa_keys = CNF.default_rig_config
+    sa_keys = dut.conf.default_rig_config
     SSA.set_keys(sa_keys)
-    SSA.set_level_key(1)
+    SSA.set_level_key(int(sa_level,16))
     client_req_seed = SSA.prepare_client_request_seed()
     response = dut.uds.generic_ecu_call(client_req_seed)
 
@@ -115,203 +115,286 @@ def security_access_invalid_key(dut: Dut):
     return response.raw
 
 
-def security_access_request_seed(dut: Dut):
+def security_access_request_seed(dut: Dut, sa_level):
     """
     Security Access request seed
     Args:
-        dut (class object): Dut instance
+        dut (Dut): Dut instance
+        sa_level (str): security access level
     Returns: Seed response
     """
-    sa_keys = CNF.default_rig_config
+    sa_keys = dut.conf.default_rig_config
     SSA.set_keys(sa_keys)
-    SSA.set_level_key(1)
+    SSA.set_level_key(int(sa_level,16))
     client_req_seed = SSA.prepare_client_request_seed()
     response = dut.uds.generic_ecu_call(client_req_seed)
     # Server response seed
     return response.raw
 
 
-def step_1(dut: Dut):
+def activate_sa_delay_timer(dut, sa_level, session):
     """
-    action: Set ECU to programming session and activate delay timer after two consecutive
-            false security access attempts.
-    expected_result: Negative response requestOutOfRange(31) and exceedNumberOfAttempt(36)
+    Activate Security access delay timer with invalid key
+    Args:
+        dut (Dut): Dut instance
+        sa_level (str): security access level
+        session (int): diagnostic session
+    Returns:
+        (bool): True
     """
-    dut.uds.set_mode(2)
-    delay_timer_start = 0.0
-    result = []
-    response = security_access_invalid_key(dut)
-    if response is not None:
-        # Extract server response and compare with requestOutOfRange(31)
-        if response[6:8] == '31':
-            result.append(True)
-        else:
-            logging.error("Invalid response received %s, expected 31", response[6:8])
-            result.append(False)
-    else:
-        logging.error("Test Failed: Empty response of security access")
-        return False, None
-
-    response = security_access_invalid_key(dut)
-    if response is not None:
-        # Extract server response and compare with exceedNumberOfAttempt(36)
-        if response[6:8] == '36':
-            result.append(True)
-            delay_timer_start = time.time()
-        else:
-            logging.error("Invalid response received %s, expected 36", response[6:8])
-            result.append(False)
-    else:
-        logging.error("Test Failed: Empty response of security access")
-        return False, None
-
-    if len(result) != 0 and all(result):
-        return True, delay_timer_start
-
-    logging.error("Test Failed: Delay timer is not activated")
-    return False, None
-
-
-def step_2(dut: Dut, delay_timer_start):
-    """
-    action: Verify security access delay timer is activated with clientRequestSeed response
-    expected_result: Negative response requiredTimeDelayNotExpired(37)
-    """
-    # Read yml parameters
-    parameters_dict = {'security_access_delay': '',
-                       'ecu_reset_delay': ''}
-    parameters = SIO.parameter_adopt_teststep(parameters_dict)
-    if not all(list(parameters.values())):
-        logging.error("Test Failed: yml parameter not found")
-        return False, None
-
-    delay_timer_end = time.time()
-    elapsed_time = delay_timer_end - delay_timer_start
-
-    if elapsed_time <= parameters['security_access_delay']:
-        response = security_access_request_seed(dut)
-        if response is None:
-            logging.error("Test Failed: Empty response")
-            return False, None
-        # Extract server response and compare with requiredTimeDelayNotExpired(37)
-        if response[6:8] == '37':
-            return True, parameters
-
-        logging.error("Test Failed: Invalid response received %s, expected 37", response[6:8])
-        return False, None
-
-    logging.error("Test Failed: Security access delay timer %s is greater than elapsed time %s",
-                  parameters['security_access_delay'], elapsed_time)
-    return False, None
-
-
-def step_3(dut: Dut, delay_timer_start, parameters):
-    """
-    action: Verify security access delay timer is expired with clientRequestSeed response
-    expected_result: Positive response(67)
-    """
-    # Reset security access delay timer
-    delay_timer_end = time.time()
-    delay_timer_elapsed = delay_timer_end - delay_timer_start
-    if delay_timer_elapsed <= parameters['security_access_delay']:
-        time.sleep(parameters['security_access_delay'] + 0.1 - delay_timer_elapsed)
-
-    response = security_access_request_seed(dut)
-    if response is None:
-        logging.error("Test Failed: Empty response")
+    response = security_access_invalid_key(dut, sa_level)
+    # Extract server response and compare with invalidKey(35)
+    if response[2:4] != '7F' or response[6:8] != '35':
+        logging.error("Test failed: Expected 35, received %s for SA level %s in session %s",
+                      response, sa_level, session)
         return False
+
+    response = security_access_invalid_key(dut, sa_level)
+    # Extract server response and compare with exceedNumberOfAttempt(36)
+    if response[2:4] != '7F' or response[6:8] != '36':
+        logging.error("Test failed: Expected 36, received %s for SA level %s in session %s",
+                      response, sa_level, session)
+        return False
+
+    logging.info("Received %s for SA level %s in session %s as expected", response[6:8],
+                 sa_level, session)
+    return True
+
+
+def verify_sa_delay_timer_activated(dut, sa_level, security_access_delay, session):
+    """
+    Verify Security access delay timer is activated
+    Args:
+        dut (Dut): Dut instance
+        sa_level (str): security access level
+        security_access_delay (int): security access time delay
+        session (int): diagnostic session
+    Returns:
+        (bool): True
+    """
+    # wait for 8 seconds after 2 false security access attempts
+    time.sleep(security_access_delay - 2)
+    response = security_access_request_seed(dut, sa_level)
+
+    # Extract server response and compare with requiredTimeDelayNotExpired(37)
+    if response[2:4] != '7F' or response[6:8] != '37':
+        logging.error("Test failed: Expected 37, received %s for SA level %s in session %s",
+                      response, sa_level, session)
+        return False
+
+    time.sleep(4)
+    logging.info("Received %s for SA level %s in session %s as expected", response[6:8],
+                 sa_level, session)
+    return True
+
+
+def verify_delay_timer_after_reset(dut, session, sa_level, ecu_reset_delay):
+    """
+    ECU reset and verify delay timer is activated
+    Args:
+        dut (Dut): Dut instance
+        session (int): diagnostic session
+        sa_level (str): security access level
+        ecu_reset_delay (int): ECU reset delay
+    Returns:
+        (bool): True
+    """
+    dut.uds.ecu_reset_1101()
+    dut.uds.set_mode(session)
+    # wait for 4 seconds after ECU reset
+    time.sleep(ecu_reset_delay - 1)
+    response = security_access_request_seed(dut, sa_level)
+    # Extract server response and compare with requiredTimeDelayNotExpired (37)
+    if response[2:4] != '7F' or response[6:8] != '37':
+        logging.error("Test failed: Expected 37, received %s for SA level %s in session %s",
+                      response, sa_level, session)
+        return False
+
+    time.sleep(2)
+
+    logging.info("Received %s for SA level %s in session %s as expected", response[6:8],
+                 sa_level, session)
+    return True
+
+
+def verify_delay_timer_expired(dut, sa_level, session):
+    """
+    Verify delay timer is expired
+    Args:
+        dut (Dut): Dut instance
+        sa_level(str): security access level
+        session (int): diagnostic session
+    Returns:
+        (bool): True
+    """
+    response = security_access_request_seed(dut, sa_level)
     # Extract server response and compare with positive response (67)
-    if response[4:6] == '67':
+    if response[4:6] != '67':
+        logging.error("Test failed: Expected 67, received %s for SA level %s in session %s",
+                      response, sa_level, session)
+        return False
+    logging.info("Received %s for SA level %s in session %s as expected", response[4:6],
+                 sa_level, session)
+    return True
+
+
+def step_1(dut: Dut, parameters):
+    """
+    action: Verify security access delay timer is activated in programming session
+            and expired after after delay for supported security levels
+    expected_result: True on successfully verified security access delay timer.
+    """
+    results = []
+    for sa_level in parameters['sa_level_programming']:
+
+        result_sa_delay_timer = activate_sa_delay_timer(dut, sa_level, session=2)
+
+        result_activated = result_sa_delay_timer and \
+            verify_sa_delay_timer_activated(dut, sa_level, parameters['security_access_delay'],
+                                            session=2)
+
+        result_expired = result_activated and verify_delay_timer_expired(dut, sa_level, session=2)
+
+        results.append(result_expired)
+        time.sleep(parameters['security_access_level_check_delay'])
+
+    if all(results) and len(results) == len(parameters['sa_level_programming']):
+        logging.info("Successfully verified delay timer for all SA levels in programming session")
         return True
-    logging.error("Test Failed: Security Access response received %s, expected 67", response[4:6])
+
+    logging.error("Test failed: Security access delay timer verification failed for some "
+                    "or all SA levels")
+    return False
+
+
+def step_2(dut: Dut, parameters):
+    """
+    action: Verify ECU reset delay timer is activated in programming session
+            and expired after delay for supported security levels
+    expected_result: True on successfully verified ECU reset delay timer.
+    """
+    results = []
+    for sa_level in parameters['sa_level_programming']:
+
+        result_sa_delay_timer = verify_delay_timer_after_reset(dut, session=2, sa_level=sa_level,
+                                                    ecu_reset_delay=parameters['ecu_reset_delay'])
+
+        result_expired = result_sa_delay_timer and verify_delay_timer_expired(dut, sa_level,
+                                                                                session=2)
+
+        results.append(result_expired)
+        time.sleep(parameters['security_access_level_check_delay'])
+
+    if all(results) and len(results) == len(parameters['sa_level_programming']):
+        logging.info("Successfully verified delay timer for all SA levels in programming"
+                    " session")
+        return True
+
+    logging.error("Test failed: Security access delay timer verification failed for some"
+                    " or all SA levels")
+    return False
+
+
+def step_3(dut: Dut, parameters):
+    """
+    action: Verify security access delay timer is activated in extended session
+            and expired after delay for supported security levels
+    expected_result: True on successfully verified security access delay timer.
+    """
+    dut.uds.set_mode(1)
+    dut.uds.set_mode(3)
+
+    results = []
+    for sa_level in parameters['sa_level_extended']:
+
+        result_sa_delay_timer = activate_sa_delay_timer(dut, sa_level, session=3)
+
+        result_activated = result_sa_delay_timer and \
+            verify_sa_delay_timer_activated(dut, sa_level, parameters['security_access_delay'],
+                                            session=3)
+
+        result_expired = result_activated and verify_delay_timer_expired(dut, sa_level, session=3)
+
+        results.append(result_expired)
+        time.sleep(parameters['security_access_level_check_delay'])
+
+    if all(results) and len(results) == len(parameters['sa_level_extended']):
+        logging.info("Successfully verified delay timer for all SA levels in extended session")
+        return True
+
+    logging.error("Test failed: Security access delay timer verification failed for some or"
+                  " all SA levels")
     return False
 
 
 def step_4(dut: Dut, parameters):
     """
-    action: Set ECU to programming session and verify delay timer is activated
-            or not after ECU reset
-    expected_result: Negative response requiredTimeDelayNotExpired(37)
+    action: Verify ECU reset delay timer is activated in extended session and expired after delay
+            for supported security levels
+    expected_result: True on successfully verified ECU reset delay timer.
     """
-    delay_timer_start = time.time()
-    dut.uds.generic_ecu_call(bytes.fromhex('1101'))
-    dut.uds.generic_ecu_call(bytes.fromhex('1002'))
-    delay_timer_end = time.time()
-    elapsed_time = delay_timer_end - delay_timer_start
+    results = []
+    for sa_level in parameters['sa_level_extended']:
 
-    delay_timer_start = time.time()
-    if elapsed_time <= parameters['ecu_reset_delay']:
-        response = security_access_request_seed(dut)
-        if response is None:
-            logging.error("Test Failed: Empty response")
-            return False, None
-        # Extract server response and compare with requiredTimeDelayNotExpired (37)
-        if response[6:8] == '37':
-            return True, delay_timer_start
+        result_sa_delay_timer = verify_delay_timer_after_reset(dut, session=3, sa_level=sa_level,
+                                                    ecu_reset_delay=parameters['ecu_reset_delay'])
 
-        logging.error("Test Failed: Invalid response received %s, expected 37", response[6:8])
-        return False, None
+        result_expired = result_sa_delay_timer and verify_delay_timer_expired(dut, sa_level,
+                                                                              session=3)
 
-    logging.error("Test Failed: ECU delay timer %s is less than elapsed time %s",
-                  parameters['ecu_reset_delay'], elapsed_time)
-    return False, None
+        results.append(result_expired)
+        time.sleep(parameters['security_access_level_check_delay'])
 
-
-def step_5(dut: Dut, delay_timer_start, parameters):
-    """
-    action: Verify ECU start delay timer is expired with clientRequestSeed response
-    expected_result: Positive response (67)
-    """
-    dut.uds.set_mode(2)
-    # Reset security access delay timer
-    delay_timer_end = time.time()
-    delay_timer_elapsed = delay_timer_end - delay_timer_start
-
-    if delay_timer_elapsed <= parameters['ecu_reset_delay']:
-        time.sleep(parameters['ecu_reset_delay'] + 0.1 - delay_timer_elapsed)
-
-    if delay_timer_elapsed > parameters['ecu_reset_delay'] + 1:
-        logging.error("Test Failed: Too much time %s seconds has passed after the delay timer "
-                      "was activated, therefore it is not possible to validate at which time "
-                      "actually delay expired", delay_timer_elapsed)
-        return False
-
-    response = security_access_request_seed(dut)
-    if response is None:
-        logging.error("Test Failed: Empty response")
-        return False
-    # Extract server response and compare with positive response(67)
-    if response[4:6] == '67':
+    if all(results) and len(results) == len(parameters['sa_level_extended']):
+        logging.info("Successfully verified delay timer for all security access levels "
+                     "in extended session")
         return True
 
-    logging.error("Test Failed: Security Access response received %s, expected 67", response[4:6])
+    logging.error("Test failed: Security access delay timer verification failed for some or"
+                  " all security access levels")
     return False
 
 
 def run():
     """
     Verify false attempt security access delay timer and ECU reset delay timer is activated or not
+    for both programming and extended session for all supported security levels.
     """
     dut = Dut()
     start_time = dut.start()
     result = False
     result_step = False
+    # Read yml parameters
+    parameters_dict = {'security_access_delay': 0,
+                        'ecu_reset_delay': 0,
+                       'security_access_level_check_delay': 0,
+                       'sa_level_programming': [],
+                       'sa_level_extended': []
+                       }
     try:
-        dut.precondition(timeout=60)
-        result_step, delay_timer_start = dut.step(step_1, purpose="Activate false attempts "
-                                                  "Security Access delay timer")
+        dut.precondition(timeout=300)
+        parameters = SIO.parameter_adopt_teststep(parameters_dict)
+        if not all(list(parameters.values())):
+            raise DutTestError("yml parameter not found")
+
+        result_step = dut.step(step_1, parameters, purpose="Verify security access delay timer is"
+                                " activated in programming session and expired after delay for"
+                                " supported security levels")
+
         if result_step:
-            result_step, parameters = dut.step(step_2, delay_timer_start, purpose="Verify "
-                                               "security access delay timer is activated")
+            result_step = dut.step(step_2, parameters, purpose="Verify ECU reset delay timer is"
+                                    " activated in programming session and expired after delay"
+                                    " for supported security levels")
+
         if result_step:
-            result_step = dut.step(step_3, delay_timer_start, parameters,
-                                   purpose="Verify security access delay timer is expired")
+            result_step = dut.step(step_3, parameters, purpose="Verify security access delay timer"
+                                    " is activated in extended session and expired after delay for"
+                                    " supported security levels")
+
         if result_step:
-            result_step, delay_timer_start = dut.step(step_4, parameters, purpose="Verify "
-                                                      "ECU reset delay timer is activated")
-        if result_step:
-            result_step = dut.step(step_5, delay_timer_start, parameters, purpose="Verify "
-                                   "startup delay timer is expired")
+            result_step = dut.step(step_4, parameters, purpose="Verify ECU reset delay timer is"
+                                    " activated in extended session and expired after delay for"
+                                    " supported security levels")
 
         result = result_step
     except DutTestError as error:
