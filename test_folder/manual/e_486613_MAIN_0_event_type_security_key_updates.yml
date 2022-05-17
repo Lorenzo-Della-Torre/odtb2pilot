@@ -1,0 +1,5 @@
+hvbm_p519:
+    run:
+        security_key_update_did: 'F10A'
+        security_log_authentication_key_data_record: '0F0E0D0C0B0A09080706050403020100'
+        security_key_read_did: 'D0C1'
