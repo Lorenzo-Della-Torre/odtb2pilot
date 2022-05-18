@@ -162,7 +162,7 @@ def step_6(can_p, sa_keys, seed):
     SIO.parameter_adopt_teststep(cpay)
 
     logging.info("Step %s: test service 2702 with SA already activated", etp["step_no"])
-    logging.info("Step %s: expecting negative reply", , etp["step_no"])
+    logging.info("Step %s: expecting negative reply", etp["step_no"])
     result = SUTE.teststep(can_p, cpay, etp)
     result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], '7F2724')
     time.sleep(1)
