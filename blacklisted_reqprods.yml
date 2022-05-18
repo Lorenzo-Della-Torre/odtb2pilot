@@ -36,6 +36,7 @@ hvbm_p519:
         e_161873_MAIN_2 : car_mode_data_record | <Reason>
         e_60111__1 : can_frame_identifier_length | Look in CanIf and CAN configuration to validate that all outgoing frames is set to classic can with 11 bit addressing.
         e_489057_MAIN_0 : flashable_pbl_bootloader_sw_part_type | Inspect that the vbf sw_part_type is SWBP or SWBT.
+        e_397293_MAIN_1 : number_of_logical_blocks | Inspect that the actual number of logical blocks is statically configured in the bootloader, at least one logical block.
         e_404184_MAIN_2 : verification_block_table_on_unprocessed_data | Inspect that S19 files of SWP1, SWLM and ESS are subjected to SREC script to pad their data before constructing their VBF files.
 
     --Manual--:
