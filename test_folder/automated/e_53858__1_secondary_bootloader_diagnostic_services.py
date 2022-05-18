@@ -136,6 +136,7 @@ def step_5(can_p, sa_keys):
     result, seed = SE27.pbl_security_access_request_seed(can_p, stepno=5,
                                                          purpose="Security Access Request SID")
     #verify SID = 000000
+    logging.info("Step5, SA request seed returned %s", seed)
     result = result and seed == '000000'
 
     return result, seed
@@ -160,6 +161,8 @@ def step_6(can_p, sa_keys, seed):
                        }
     SIO.parameter_adopt_teststep(cpay)
 
+    logging.info("Step %s: test service 2702 with SA already activated", etp["step_no"])
+    logging.info("Step %s: expecting negative reply", , etp["step_no"])
     result = SUTE.teststep(can_p, cpay, etp)
     result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], '7F2724')
     time.sleep(1)
