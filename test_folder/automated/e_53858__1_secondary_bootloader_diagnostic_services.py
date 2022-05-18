@@ -92,17 +92,6 @@ SE27 = SupportService27()
 SE31 = SupportService31()
 SE3E = SupportService3e()
 
-def step_1(can_p: CanParam, sa_keys):
-    """
-    Teststep 1: Activate SBL
-    """
-    stepno = 1
-    purpose = "Download and Activation of SBL"
-
-    result = SSBL.sbl_activation(can_p,
-                                 sa_keys,
-                                 stepno, purpose)
-    return result
 
 def step_4(can_p):
     """
@@ -129,17 +118,6 @@ def step_4(can_p):
     time.sleep(1)
     return result
 
-def step_5(can_p, sa_keys):
-    """
-    Teststep 5: Security Access Request SID
-    """
-    result, seed = SE27.pbl_security_access_request_seed(can_p, stepno=5,
-                                                         purpose="Security Access Request SID")
-    #verify SID = 000000
-    logging.info("Step5, SA request seed returned %s", seed)
-    result = result and seed == '000000'
-
-    return result, seed
 
 def step_6(can_p, sa_keys, seed):
     """
@@ -164,7 +142,8 @@ def step_6(can_p, sa_keys, seed):
     logging.info("Step %s: test service 2702 with SA already activated", etp["step_no"])
     logging.info("Step %s: expecting negative reply", etp["step_no"])
     result = SUTE.teststep(can_p, cpay, etp)
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], '7F2724')
+    #result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], '7F2724')
+    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], '7F27')
     time.sleep(1)
     return result
 
