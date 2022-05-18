@@ -241,6 +241,8 @@ def run():
         result_step5, seed = SE27.security_access_request_seed(can_p, sa_keys,\
                                   stepno=5,\
                                   purpose="Security Access Request SID")
+        logging.info("Step5, seed returned %s", seed)
+        logging.info("Step5, result_step5  %s", result_step5)
         result = result and result_step5
 
         # step 6:
