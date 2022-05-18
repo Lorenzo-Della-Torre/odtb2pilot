@@ -93,7 +93,7 @@ class SupportService27:
             #SA_GEN2:
             elif sa_keys["SecAcc_Gen"] == 'Gen2':
 
-                if ecu_mode == "PBL" or ecu_mode == "SBL":
+                if ecu_mode in ('PBL', 'SBL'):
                     SSA.set_level_key(1)
                 elif ecu_mode == "EXT":
                     SSA.set_level_key(5)
