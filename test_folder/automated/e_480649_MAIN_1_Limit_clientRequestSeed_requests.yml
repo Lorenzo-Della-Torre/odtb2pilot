@@ -1,0 +1,4 @@
+hvbm_p519:
+    step_1:
+        sa_response_time: 5
+        time_range: 2

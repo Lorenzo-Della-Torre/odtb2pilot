@@ -1,4 +1,4 @@
-ihfa:
+ihfa_v436:
         precondition_burst:
                 frame: b'\x1A\x40\xFF\xFF\xFF\xFF\xFF\xFF'
                 id: IhfadpNmCanFrame
@@ -6,17 +6,17 @@ ihfa:
                 tp_name: IHFAdpToallUdsDiagRequestFrame
         step_1:
                 fixed_key: FFFFFFFFFF
-hlcm:
+hlcm_p519:
         precondition_burst:
                 frame: b'\x3F\x40\xFF\xFF\xFF\xFF\xFF\xFF'
                 id: HlcmdpToallUdsDiagRequestFrame
                 tp_name: HlcmdpToallUdsDiagRequestFrame
         step_1:
                 fixed_key: '0102030405'
-becm:
+becm_p319:
         precondition_burst:
                 frame2: b'\x1A\x40\xFF\xFF\xFF\xFF\xFF\xFF'
-hvbm:
+hvbm_p519_sa1:
         precondition_burst:
                 frame: b'\x1A\x40\xFF\xFF\xFF\xFF\xFF\xFF'
                 id: HvbmdpNmFrame
@@ -27,7 +27,7 @@ hvbm:
                 auth_key: FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
                 fixed_key: FFFFFFFFFF
                 proof_key: FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
-hvbm_sa2:
+hvbm_p519:
         precondition_burst:
                 frame: b'\x1A\x40\xFF\xFF\xFF\xFF\xFF\xFF'
                 id: HvbmdpNmFrame

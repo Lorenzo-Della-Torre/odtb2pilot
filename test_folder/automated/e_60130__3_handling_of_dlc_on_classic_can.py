@@ -74,13 +74,13 @@ def step_2(dut):
     """
 
     platform = dut.conf.rig.platform
-    if platform == "becm":
+    if platform == "becm_p319":
         dut.reconfigure_broker(
             "BO_ 1845 Vcu1ToBecmFront1DiagReqFrame: 8 VCU1",
             "BO_ 1845 Vcu1ToBecmFront1DiagReqFrame: 7 VCU1",
             can0_dbc_file='SPA3010_ConfigurationsSPA3_Front1CANCfg_180615_Prototype.dbc'
         )
-    elif platform == "hvbm":
+    elif platform == "hvbm_p519_sa1":
         dut.reconfigure_broker(
             "BO_ 1875 HvbmdpToHvbmUdsDiagRequestFrame : 8 HVBMdp",
             "BO_ 1875 HvbmdpToHvbmUdsDiagRequestFrame : 7 HVBMdp",

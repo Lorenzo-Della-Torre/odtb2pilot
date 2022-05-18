@@ -55,18 +55,7 @@ import ctypes
 from typing import Dict
 
 import logging
-### import git used if wanting to get path to repo via gitpython
-#import git
 
-#load the shared object file for SecAccess Gen2
-#lib = ctypes.CDLL('/home/pi/Repos/odtb2pilot/sec_access_gen2_dll/linux/armv7l/libsa_client_lib.so')
-#didn't find out how to use shared object under windows environment yet.
-#lib = ctypes.CDLL('../../security_access/build/sa2-lib/lib/libsa_client_lib.dll.a')
-#lib = ctypes.CDLL('../../security_access/build/sa2-lib/cygsa_client_lib.dll')
-#lib = ctypes.CDLL('C:\\security_access\\build\\sa2-lib\\cygsa_client_lib.dll', winmode=0)
-#lib = ctypes.CDLL('C:\\security_access\\build\\sa2-lib\\cygsa_client_lib.dll',
-#                  handle=None, use_errno=False, use_last_error=False, winmode=1)
-#lib = ctypes.CDLL('../../security_access/build/sa2-lib/cygsa_client_lib.dll')
 #SecAccess Gen2 default parameters:
 class SaGen2Param(Dict): # pylint: disable=too-few-public-methods,inherit-non-class
     """
@@ -220,14 +209,8 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
             else:
                 logging.info("Right library version for SA Gen2 not found: %s", sys.platform)
         elif sys.platform == 'win32':
-            #self.lib = ctypes.CDLL(odtb_repo_param +
-            #                       '/sec_access_gen2_dll/windows/cygsa_client_lib.dll')
-            self.lib = ctypes.WinDLL(odtb_repo_param +# pylint: disable=unexpected-keyword-arg
-                                     '/sec_access_gen2_dll/windows/cygsa_client_lib.dll',
-                                     handle=None,
-                                     use_errno=False,
-                                     use_last_error=False,
-                                     winmode=1)
+            self.lib = ctypes.CDLL(odtb_repo_param +
+                                   '/sec_access_gen2_dll/windows/x64/sa_client_lib.dll')
         else:
             raise Exception("Unknown operation system. Don't know which SAGen2 lib to load.")
 
@@ -266,9 +249,9 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         self.g_external_auth_enc_key = (ctypes.c_uint8 * SaGen2Param.KEY_SIZE)(*b_auth_key)
         self.g_external_proof_key = (ctypes.c_uint8 * SaGen2Param.KEY_SIZE)(*b_proof_key)
 
-        logging.info("SSA set_keys. Init of auth/proof key")
-        logging.info("SSA set_keys, auth_key init: %s", self.g_external_auth_enc_key)
-        logging.info("SSA set_keys, proof_key init: %s", self.g_external_proof_key)
+        logging.debug("SSA set_keys. Initializing auth/proof key")
+        logging.debug("SSA set_keys, auth_key init: %s", self.g_external_auth_enc_key)
+        logging.debug("SSA set_keys, proof_key init: %s", self.g_external_proof_key)
 
     def set_level_key(self, level):
         """
@@ -287,11 +270,20 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         """
         added for Gen2 from VCC SA-Gen2 library
         Request SecAccess seed using VCC SecAccess Gen2 library"""
-        ret = self.lib.sacl_prepare_client_request_seed(ctypes.byref(self.session_buffer),
-                                                        ctypes.byref(self.send_buffer))
-        if ret != SaGen2Param.SA_RET_SUCCESS:
-            raise Exception("Failed to prepare client_request_seed.")
-        return bytearray(self.send_buffer)[0:SaGen2Param.SA_CLIENT_REQUEST_SEED_BUFFER_SIZE]
+        try:
+            ret = self.lib.sacl_prepare_client_request_seed(ctypes.byref(self.session_buffer),
+                                                            ctypes.byref(self.send_buffer))
+            if ret != SaGen2Param.SA_RET_SUCCESS:
+                raise Exception("Failed to prepare client_request_seed.")
+            return bytearray(self.send_buffer)[0:SaGen2Param.SA_CLIENT_REQUEST_SEED_BUFFER_SIZE]
+
+        except OSError as err:
+            logging.error("An error occurred when preparing seed, most likely since the script "
+                "was executed on a windows machine."
+                " Please note that windows in not yet supported for Security Access generation 2."
+                " \n %s", err)
+
+            raise err
 
     def process_server_response_seed(self, data) -> bool:
         """
@@ -302,9 +294,11 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         logging.debug("SSA response seed, length expected %s",
                        SaGen2Param.SA_CLIENT_PROCESS_SERVER_RESPONSE_SEED_BUFFER_SIZE)
         if len(data) != SaGen2Param.SA_CLIENT_PROCESS_SERVER_RESPONSE_SEED_BUFFER_SIZE:
-            raise Exception("server_response_seed( is not of length "\
-                            +f"{SaGen2Param.SA_CLIENT_PROCESS_SERVER_RESPONSE_SEED_BUFFER_SIZE}!"\
-                            +"(len(data))")
+            logging.error("server_response_seed should be length %s but is %s",
+                SaGen2Param.SA_CLIENT_PROCESS_SERVER_RESPONSE_SEED_BUFFER_SIZE,
+                len(data))
+
+            return -1
 
         len_diff = SaGen2Param.NET_BUFFER_SIZE - len(data)
         data += b'\0' * len_diff
@@ -325,13 +319,22 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         Send calculated SA key if no error occured in calculation
         """
         # Prepare client_send_key.
-        ret = self.lib.sacl_prepare_client_send_key(ctypes.byref(self.session_buffer),
+        try:
+            ret = self.lib.sacl_prepare_client_send_key(ctypes.byref(self.session_buffer),
                                                     ctypes.byref(self.send_buffer))
-        if ret == SaGen2Param.SA_RET_SUCCESS:
-            logging.info("SSA prep client_send_key: success")
-        else:
-            raise Exception("Failed, client send key.")
-        return bytearray(self.send_buffer)[0:SaGen2Param.SA_CLIENT_PREPARE_SEND_KEY_BUFFER_SIZE]
+            if ret == SaGen2Param.SA_RET_SUCCESS:
+                logging.info("SSA prep client_send_key: success")
+            else:
+                raise Exception("Failed, client send key.")
+            return bytearray(self.send_buffer)[0:SaGen2Param.SA_CLIENT_PREPARE_SEND_KEY_BUFFER_SIZE]
+
+        except OSError as err:
+            logging.error("An error occurred when preparing key, most likely since the script "
+                "was executed on a windows machine."
+                " Please note that windows in not yet supported for Security Access generation 2."
+                " \n %s", err)
+
+            raise err
 
     def process_server_response_key(self, data) -> bool:
         """
@@ -339,9 +342,11 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         Check if SA-key was accepted
         """
         if len(data) != SaGen2Param.SA_CLIENT_PROCSS_SERVER_RESPONSE_KEY_BUFFER_SIZE:
-            raise Exception("server_response_key is not of length "\
-                            +f"{SaGen2Param.SA_CLIENT_PROCSS_SERVER_RESPONSE_KEY_BUFFER_SIZE}!"\
-                            +"(len(data))")
+            logging.error("server_response_seed should be length %s but is %s",
+                SaGen2Param.SA_CLIENT_PROCSS_SERVER_RESPONSE_KEY_BUFFER_SIZE,
+                len(data))
+
+            return -1
 
         len_diff = SaGen2Param.NET_BUFFER_SIZE - len(data)
         data += b'\0' * len_diff
@@ -350,11 +355,11 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         ret = self.lib.sacl_process_server_response_key(ctypes.byref(self.session_buffer),
                                                         ctypes.byref(buffer))
         if ret == SaGen2Param.SA_RET_SUCCESS:
-            logging.info("SSA server_response_key: success")
+            logging.debug("SSA Process server_response_key: success")
         else:
-            logging.info("SSA server_response_key failed: %s", ret)
+            logging.debug("SSA Process server_response_key failed: %s", ret)
             #raise Exception("Failed, server response key.")
-        logging.info("SSA force server_response_key to true")
+        logging.debug("SSA force server_response_key to true")
         ret = SaGen2Param.SA_RET_SUCCESS
 
         return ret
@@ -438,3 +443,58 @@ class SupportSecurityAccess:# pylint: disable=too-few-public-methods
         logging.debug("r_0: %s", r_0)
         logging.debug("Sec_acc_pins: {0:06x}".format(int(r_0, 2)))
         return bytes.fromhex("{0:06x}".format(int(r_0, 2)))
+
+
+    @classmethod
+    def sa_keys_distort(cls, sa_keys):
+        """
+        added for Gen1/Gen2
+        takes fixed_key, proof_key, auth_key in sa_keys
+        and distorts them by modifying the first byte
+
+        parameter:
+        sa_keys     containing fixed_key (Gen1), proof+auth_key (Gen2)
+        return:
+        sa_keys (distorted)
+        """
+
+        sa_keys_invalid: SecAccessParam = {
+            "SecAcc_Gen": sa_keys['SecAcc_Gen'],
+            "fixed_key": sa_keys['fixed_key'],
+            "auth_key": sa_keys['auth_key'],
+            "proof_key": sa_keys['proof_key']
+        }
+
+        logging.debug("sa_keys before change %s", sa_keys_invalid)
+        distort_key = bytes.fromhex(sa_keys['fixed_key'])
+        distort_key = ((distort_key[0]+1) % 0xff).to_bytes(1, 'big') + distort_key[1::]
+        sa_keys_invalid['fixed_key'] = distort_key.hex().upper()
+
+        distort_key = bytes.fromhex(sa_keys['auth_key'])
+        distort_key = ((distort_key[0]+1) % 0xff).to_bytes(1, 'big') + distort_key[1::]
+        sa_keys_invalid['auth_key'] = distort_key.hex().upper()
+
+        distort_key = bytes.fromhex(sa_keys['proof_key'])
+        distort_key = ((distort_key[0]+1) % 0xff).to_bytes(1, 'big') + distort_key[1::]
+        sa_keys_invalid['proof_key'] = distort_key.hex().upper()
+        logging.debug("sa_keys after change %s", sa_keys_invalid)
+        return sa_keys_invalid
+
+    @classmethod
+    def sa_key_calculated_distort(cls, sa_key):
+        """
+        added for Gen1/Gen2
+        takes sa_key
+        and distorts it by modifying the last byte
+
+        Last byte distort was chosen as SSA module contains even command
+        in the first bytes
+
+        parameter:
+        sa_key  containing key to send to get secure_access
+
+        return:
+        sa_key (distorted)
+        """
+        sa_modified = sa_key[:-1] + ((sa_key[-1]+1) % 0xff).to_bytes(1, 'big')
+        return sa_modified

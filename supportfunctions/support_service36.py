@@ -68,10 +68,10 @@ class SupportService36: # pylint: disable=too-few-public-methods
         Support function for Transfer Data
         """
         pad = 0
-
+        logging.info("------Start Downloading blocks------")
         for i in range(int(vbf_block['Length']/(nbl-2))+1):
 
-            logging.info("360 Flash blocks: Block %s of %s",
+            logging.info("360: Flash blocks: Block %s of %s",
                          1+i, 1+int(vbf_block['Length']/(nbl-2)))
             pad = (nbl-2)*i
             i += 1

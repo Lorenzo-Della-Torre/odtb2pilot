@@ -8,14 +8,14 @@ Only lower case letters are allowed. For rigs that are used for a specific
 project, use the following naming scheme:
 
 ```
-<project-name>-<ecu-type>-pi<number>
+<ecu-name>-<vehicle-project>-pi<number>
 ```
 
 Example project rig host names:
- - p519-hvbm-pi1
- - p319-becm-pi1
- - p519-hlcm-pi1
- - p519-ed-ihfa-pi1
+ - hvbm_p519_sa1-pi1
+ - becm_p319-pi1
+ - hlcm_p519-pi1
+ - ihfa_v436-pi1
 
 For rigs that are used by a specific ART:
 
@@ -92,7 +92,7 @@ configure conf_local.yml...
 rigs:
     p6ci:
         hostname: bsw-pi6.dhcp.nordic.volvocars.net
-        platform: becm
+        platform: becm_p319
         user: ci
         analytics:
             project: V331

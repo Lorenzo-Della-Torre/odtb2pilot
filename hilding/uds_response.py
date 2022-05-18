@@ -465,8 +465,8 @@ class UdsResponse:
 
                     if compare_result:
                         item = {}
-                        item['name'] = resp_item['name']
-                        item['scaled_value'] = resp_item['unit']
+                        item['name'] = resp_item.get('name', '')
+                        item['scaled_value'] = resp_item.get('unit', '')
                         response_items.append(item)
 
                         compare_variables['previous_resp_item_value'] = True

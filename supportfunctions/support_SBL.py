@@ -65,7 +65,6 @@ The Python implementation of the gRPC route guide client.
 
 import time
 import logging
-import os
 import sys
 import glob
 from typing import Dict
@@ -84,6 +83,7 @@ from supportfunctions.support_service31 import SupportService31
 from supportfunctions.support_service34 import SupportService34
 from supportfunctions.support_service36 import SupportService36
 from supportfunctions.support_service37 import SupportService37
+from hilding.conf import get_conf
 
 SIO = SupportFileIO
 SC = SupportCAN()
@@ -99,6 +99,7 @@ SE31 = SupportService31()
 SE34 = SupportService34()
 SE36 = SupportService36()
 SE37 = SupportService37()
+CONF = get_conf()
 
 
 class VbfHeader(Dict): # pylint: disable=inherit-non-class
@@ -177,7 +178,7 @@ class SupportSBL:
         # Some ECU like HLCM don't include ESS vbf
         # if so, state that in project or testscript parameters (yml file)
         ess_needed = True
-        new_ess_needed = SIO.parameter_adopt_teststep('ess_needed')
+        new_ess_needed = SIO.extract_parameter_yml("*", 'ess_needed')
         if new_ess_needed != '':
             assert isinstance(new_ess_needed, bool)
             ess_needed = new_ess_needed
@@ -188,19 +189,20 @@ class SupportSBL:
         if (len(self._sbl) == 0) or\
             (ess_needed and (len(self._ess) == 0)) or (len(self._df) == 0):
             logging.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-            logging.info("!!!!! VBF files not as expected / incomplete! !!!!!")
+            logging.info("!!!!!!       Some VBF files are missing      !!!!!!")
             logging.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-            logging.info("len SBL: %s", len(self._sbl))
-            logging.info("len ESS: %s", len(self._ess))
-            logging.info("len DF: %s", len(self._df))
+            logging.debug("len SBL: %s", len(self._sbl))
+            logging.debug("len ESS: %s", len(self._ess))
+            logging.debug("len DF: %s", len(self._df))
 
-        logging.info("SBL:  %s", self._sbl)
-        logging.info("ESS: %s", self._ess)
-        logging.info("DF: %s", self._df)
+        logging.info("SBL: %s", (self._sbl if(self._sbl) else 'Missing'))
+        logging.info("ESS: %s", (self._ess if(self._ess) else 'Missing'))
+        logging.info("Data Files: %s", (self._df if(self._df) else 'Missing'))
+
         if (len(self._sbl) == 0) or\
             (ess_needed and (len(self._ess) == 0)) or (len(self._df) == 0):
             logging.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-            logging.info("!!!!! VBF files not as expected / incomplete! !!!!!")
+            logging.info("!!!!!!       Some VBF files are missing      !!!!!!")
             logging.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             result = False
         return result
@@ -236,7 +238,7 @@ class SupportSBL:
         f_df = []
         for f_name in f_names:
             if not f_name.find('.vbf') == -1:
-                logging.debug("Filename to DL:  %s", f_name)
+                logging.debug("VBF File to Download:  %s", f_name)
 
                 vbf_version, vbf_header, _, _ = self.read_vbf_file(f_name)
                 self.vbf_header_convert(vbf_header)
@@ -261,10 +263,7 @@ class SupportSBL:
         sets filenames found in dict vbf_header
         This can be used if you want to avoid the sys.argv part
         """
-        odtb_proj_param = os.environ.get('ODTBPROJPARAM')
-        if odtb_proj_param is None:
-            odtb_proj_param = '.'
-        f_names = glob.glob(odtb_proj_param + "/VBF/*.vbf")
+        f_names = glob.glob(str(CONF.rig.vbf_path) + "/*.vbf")
         result = self.read_vbf_param(f_names)
         return result
 
@@ -417,8 +416,8 @@ class SupportSBL:
                 assert isinstance(new_decompress_block, bool)
                 decompress_block = new_decompress_block
             else:
-                logging.info("Support_SBL: new_decompress_block is empty. Leave True.")
-            logging.info("Support_SBL: decompress_block after YML: %s", decompress_block)
+                logging.debug("Support_SBL: new_decompress_block is empty. Leave True.")
+            logging.debug("Support_SBL: decompress_block after YML: %s", decompress_block)
 
             #decompress data["b_data"] if needed
             logging.debug("vbf_header:  %s", vbf_header)
@@ -463,6 +462,7 @@ class SupportSBL:
                     logging.info("DL block request - vbf_header: %s", vbf_header)
                 #Transfer data exit with service 0x37
                 result = result and SE37.transfer_data_exit(can_p)
+                logging.info(" ")
                 if not result:
                     logging.info("Support SBL, SE37, transfer_data_exit failed")
                     logging.info("DL block request - vbf_header: %s", vbf_header)
@@ -484,10 +484,9 @@ class SupportSBL:
         SBL Download
         """
         # Read vbf file for SBL download
-        vbf_version, vbf_header, vbf_data, vbf_offset = self.read_vbf_file(file_n)
+        _, vbf_header, vbf_data, vbf_offset = self.read_vbf_file(file_n)
         #convert vbf header so values can be used directly
         self.vbf_header_convert(vbf_header)
-        logging.info("VBF version: %s", vbf_version)
 
         testresult = self.transfer_data_block(can_p, vbf_header, vbf_data, vbf_offset)
         return testresult, vbf_header
@@ -502,7 +501,7 @@ class SupportSBL:
         vbf_version, vbf_header, vbf_data, vbf_offset = self.read_vbf_file(file_n)
         #convert vbf header so values can be used directly
         self.vbf_header_convert(vbf_header)
-        logging.info("VBF version: %s", vbf_version)
+        logging.debug("sbl_download: VBF version: %s", vbf_version)
 
         testresult = self.transfer_data_block(can_p, vbf_header, vbf_data, vbf_offset)
         #Check memory
@@ -516,7 +515,7 @@ class SupportSBL:
         Software Download
         Support Function for flashing SW Parts
         """
-        logging.info("sw_part_download: %s", purpose)
+        logging.debug("sw_part_download: %s", purpose)
         logging.info("sw_part_download filename: %s", file_n)
         result, vbf_header = self.sw_part_download_no_check(can_p, file_n, stepno)
 
@@ -535,11 +534,11 @@ class SupportSBL:
         #data = dict()
 
         # Read vbf file for SBL download
-        logging.info("sw_part_download_no_check filename: %s", file_n)
+        logging.debug("sw_part_download_no_check: filename: %s", file_n)
         vbf_version, vbf_header, vbf_data, vbf_offset = self.read_vbf_file(file_n)
         #convert vbf header so values can be used directly
         self.vbf_header_convert(vbf_header)
-        logging.info("VBF version: %s", vbf_version)
+        logging.debug("sw_part_download_no_check: VBF version: %s", vbf_version)
 
         # Erase Memory
         result = self.flash_erase(can_p, vbf_header, stepno)
@@ -559,15 +558,7 @@ class SupportSBL:
                    SA Gen2: auth_key, proof_key
         """
 
-        # verify RoutineControlRequest is sent for Type 1
-        result = SE31.routinecontrol_requestsid_prog_precond(can_p, stepno)
-
-        #result = SE22.read_did_appl_dppn(can_p)
-        result = SE22.read_did_pbl_pn(can_p)
         # Change to Programming session
-        # done two times: first request doesn't give reply
-        # second one gives reply with timings, but not in all versions (issue on BECM?)
-        result = SE10.diagnostic_session_control_mode2(can_p)
         result = SE10.diagnostic_session_control_mode2(can_p)
 
         # Verify Session changed
@@ -596,8 +587,9 @@ class SupportSBL:
                                                                        stepno, purpose)
 
             # SBL Download
-            tresult, vbf_sbl_header = self.sbl_download(can_p, self._sbl, stepno)
-            result = result and tresult
+            if result:
+                tresult, vbf_sbl_header = self.sbl_download(can_p, self._sbl, stepno)
+                result = result and tresult
 
             # Activate SBL
             result = result and self.activate_sbl(can_p, vbf_sbl_header, stepno)
@@ -616,8 +608,9 @@ class SupportSBL:
                                                                        stepno, purpose)
 
             # SBL Download
-            tresult, vbf_sbl_header = self.sbl_download(can_p, self._sbl, stepno)
-            result = result and tresult
+            if result:
+                tresult, vbf_sbl_header = self.sbl_download(can_p, self._sbl, stepno)
+                result = result and tresult
 
             # Activate SBL
             result = result and self.activate_sbl(can_p, vbf_sbl_header, stepno)
@@ -863,7 +856,7 @@ class SupportSBL:
         """
         Read and decode vbf files for Software Parts
         """
-        logging.debug("File to read: %s", f_path_name)
+        logging.debug("VBF File to read: %s", f_path_name)
         # read to EOF:
         data = SUTE.read_f(f_path_name)
         vers_pos = data.find(b'vbf_version')
@@ -875,7 +868,7 @@ class SupportSBL:
         semi_pos = data.find(b';')
         if not semi_pos == -1:
             semi_pos += 1
-        logging.debug("to filter: %s", data[vers_pos:semi_pos])
+        logging.debug("VBF version to filter: %s", data[vers_pos:semi_pos])
 
         # remove CM in string to parse
         # if no semicolon contained take semicolon in file
@@ -940,7 +933,7 @@ class SupportSBL:
         Support function for Routine Flash Erase
         """
         result = SE31.routinecontrol_requestsid_flash_erase(can_p, vbf_header, stepno)
-        logging.info("SSBL: flash_erase requestsid, result: %s", result)
+        logging.debug("SSBL: flash_erase requestsid, result: %s", result)
         logging.info("SSBL: flash_erase EraseMemory, result: %s", result)
         return result
 
@@ -1006,11 +999,11 @@ class SupportSBL:
                              "max_no_messages" : -1
                             }
         testresult = SUTE.teststep(can_p, cpay, etp)
-        logging.info("support_SBL, activate_sbl: RC ReqSID 0301 %s sent", call)
-        logging.info("support_SBL, activate_sbl: Decode RC response")
-        logging.info("support_SBL, activate_sbl: received frames %s",\
+        logging.debug("support_SBL, activate_sbl: RC ReqSID 0301 %s sent", call)
+        logging.debug("support_SBL, activate_sbl: Decode RC response")
+        logging.debug("support_SBL, activate_sbl: received frames %s",\
                      SC.can_frames[can_p["receive"]])
-        logging.info("support_SBL, activate_sbl: received messages %s",\
+        logging.debug("support_SBL, activate_sbl: received messages %s",\
                      SC.can_messages[can_p["receive"]])
         testresult = testresult and (
             SUTE.pp_decode_routine_control_response(SC.can_messages[can_p["receive"]][0][2],

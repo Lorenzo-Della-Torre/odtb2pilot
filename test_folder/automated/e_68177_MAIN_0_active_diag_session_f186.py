@@ -73,6 +73,7 @@ from supportfunctions.support_postcondition import SupportPostcondition
 from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_service10 import SupportService10
 from supportfunctions.support_SBL import SupportSBL
+from supportfunctions.support_sec_acc import SecAccessParam
 
 SSBL = SupportSBL()
 SIO = SupportFileIO
@@ -187,6 +188,15 @@ def run():
     timeout = 200
     result = PREC.precondition(can_p, timeout)
 
+    #Init parameter for SecAccess Gen1/Gen2
+    sa_keys: SecAccessParam = {
+        "SecAcc_Gen": 'Gen1',
+        "fixed_key": 'FFFFFFFFFF',
+        "auth_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF',
+        "proof_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
+    }
+    SIO.parameter_adopt_teststep(sa_keys)
+
     if result:
         ############################################
         # teststeps
@@ -228,7 +238,7 @@ def run():
         # Action: Activate secondary bootloader.
         # Result: ECU responds with a positive message.
         result = result and SSBL.sbl_activation(
-            can_p, fixed_key='FFFFFFFFFF', stepno='7', purpose="Activate Secondary bootloader")
+            can_p, sa_keys, stepno='7', purpose="Activate Secondary bootloader")
 
         # Step 8:
         # Action: Read active diagnostic session in secondary bootloader.

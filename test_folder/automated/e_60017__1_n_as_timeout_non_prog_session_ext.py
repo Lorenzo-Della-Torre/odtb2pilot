@@ -105,7 +105,7 @@ def step_3(can_p):
     """
     result = True
     cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("ReadDataByIdentifier",
-                                                         b'\xDD\x02\xDD\x0A\xDD\x0C\xF1\x86', b''),
+                                                         b'\xDD\x02\xDD\x0A\xDD\x06\xF1\x86', b''),
                         "extra" : ''
                        }
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
@@ -130,9 +130,9 @@ def step_3(can_p):
     result = result and 'DD0A' in SC.can_messages[can_p["receive"]][0][2]
     if not result:
         logging.info("Result after test DD0A: %s", result)
-    result = result and 'DD0C' in SC.can_messages[can_p["receive"]][0][2]
+    result = result and 'DD06' in SC.can_messages[can_p["receive"]][0][2]
     if not result:
-        logging.info("Result after test DD0C: %s", result)
+        logging.info("Result after test DD06: %s", result)
     result = result and 'F186' in SC.can_messages[can_p["receive"]][0][2]
     if not result:
         logging.info("Result after test F186: %s", result)

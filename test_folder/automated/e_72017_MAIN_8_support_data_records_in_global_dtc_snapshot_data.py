@@ -20,13 +20,13 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 reqprod: 72017
 
-title:
+title:>
     Supported data records in global DTC snapshot data ; 10
 
-purpose:
+purpose:>
     To define the criteria for sampling of snapshot data record 20
 
-definition:
+definition:>
     For all DTCs stored and supported by the ECU, global DTC snapshot data
     records shall include the following data, as defined in Carcom - Global
     Master Reference Database (GMRDB).
@@ -38,7 +38,7 @@ definition:
     0xDD06 – Vehicle Speed
     0xDD0A – Usage Mode
 
-details:
+details:>
     Note: 1) That the above requirement is for SPA2. For SPA1 we will use the
     following list of DIDs to check against as it is corresponding to an
     earlier version of this requirement.
@@ -57,116 +57,71 @@ details:
 
 """
 
-
-import os
-import time
-from datetime import datetime
 import sys
 import logging
-import inspect
-import odtb_conf
 
-from supportfunctions.support_can import SupportCAN, CanParam,CanPayload, CanTestExtra
-from supportfunctions.support_test_odtb2 import SupportTestODTB2
-from supportfunctions.support_carcom import SupportCARCOM
+from hilding.dut import Dut
+from hilding.dut import DutTestError
 from supportfunctions.support_file_io import SupportFileIO
-from supportfunctions.support_SBL import SupportSBL
-from supportfunctions.support_precondition import SupportPrecondition
-from supportfunctions.support_postcondition import SupportPostcondition
-from supportfunctions.support_service22 import SupportService22
-from supportfunctions.support_service10 import SupportService10
 
 SIO = SupportFileIO
-SC = SupportCAN()
-S_CARCOM = SupportCARCOM()
-SUTE = SupportTestODTB2()
-SSBL = SupportSBL()
 
-PREC = SupportPrecondition()
-POST = SupportPostcondition()
-SE22 = SupportService22()
-SE10 = SupportService10()
-
-
-def step_1(can_p):
+def step_1(dut : Dut):
     '''
     Verify global DTC snapshot data records contains all data.
     '''
-    cpay: CanPayload = {
-        "payload": S_CARCOM.can_m_send("ReadDTCInfoSnapshotRecordByDTCNumber",\
-                                            b'\x0B\x4A\x00', b"\xFF"),
-        "extra": b'',
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
-    etp: CanTestExtra = {
-        "step_no": 1,
-        "purpose": "Verify global snapshot data ",
-        "timeout": 1,
-        "min_no_messages": -1,
-        "max_no_messages": -1,
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
-    result = SUTE.teststep(can_p,cpay, etp)
-    message = SC.can_messages[can_p['receive']][0][2]
-    logging.info("Global DTC Snapshot data: %s", message)
 
-    did_check = True
-    platform = os.environ.get("ODTBPROJ")
-    if platform == "MEP2_SPA1":
-        snapshot_dids = ['DD00', 'DD01', 'DD02', 'DD0A']
-    elif platform == "MEP2_SPA2":
-        snapshot_dids = ['DD00', 'DD01', 'DD02', 'DD05', 'DD06', 'DD0A']
+    result = True
+    dtc = ""
+
+    yml_dids = {"list_dids" : []}
+    yml_dids = SIO.parameter_adopt_teststep(yml_dids)
+
+    response = dut.uds.dtc_snapshot_ids_1903()
+
+    if response.data["snapshot_ids"]:
+        dtc = response.data["snapshot_ids"][0][1]
     else:
-        raise EnvironmentError("ODTBPROJ is not set")
+        result = False
+        logging.error("No DTCs in the ECU to test snapshot data")
 
-    for did in snapshot_dids:
-        if not did in message:
-            logging.error("The following DID is not in the reply: %s", did)
-            did_check = False
+    if result:
+        logging.info("First DTC in the list is %s ", dtc)
+        message = dut.uds.dtc_snapshot_1904(bytes.fromhex(dtc))
+        logging.info("Global DTC snapshot data response : %s", message.raw)
 
-    return result and did_check
+        #Verify data available for all the Ids
+        for did in yml_dids["list_dids"]:
+            if not did in message.raw:
+                logging.error("The ID %s is not in the reply", did)
+                result = False
+            else:
+                logging.info("The ID %s is available in the reply", did)
+
+    return result
 
 
 def run():
     """
-    Run - Call other functions from here
+    Run - Verify Global snapshot data
     """
     logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
-    # where to connect to signal_broker
-    can_p: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        "send" : "Vcu1ToBecmFront1DiagReqFrame",
-        "receive" : "BecmToVcu1Front1DiagResFrame",
-        "namespace" : SC.nspace_lookup("Front1CANCfg0")
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
+    dut = Dut()
+    start_time = dut.start()
+    result = False
 
-    logging.info("Testcase start: %s", datetime.now())
-    starttime = time.time()
-    logging.info("Time: %s \n", time.time())
+    try:
+        # Communication with ECU lasts 60 seconds.
+        dut.precondition(timeout=60)
 
-    ############################################
-    # precondition
-    ############################################
-    SSBL.get_vbf_files()
-    timeout = 60
-    result = PREC.precondition(can_p, timeout)
+        # Verify the DID values in DTC snapshot
+        result = dut.step(step_1, purpose="Verify that the ECU sends DTC snapshot values")
 
-    if result:
-        ############################################
-        # teststeps
-        ############################################
-
-        # step 1:
-        # action: Verify global snapshot data contains expected DID's
-        # result: Check if expected DiD's are contained in reply
-        result = result and step_1(can_p)
-
-   ############################################
-    # postCondition
-    ############################################
-    POST.postcondition(can_p, starttime, result)
+    except DutTestError as error:
+        logging.error("Test failed: %s", error)
+    finally:
+        dut.postcondition(start_time, result)
 
 if __name__ == '__main__':
     run()

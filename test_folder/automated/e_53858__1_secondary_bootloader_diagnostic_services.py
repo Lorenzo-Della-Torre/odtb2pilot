@@ -127,7 +127,7 @@ def step_4(can_p):
     time.sleep(1)
     return result
 
-def step_5(can_p):
+def step_5(can_p, sa_keys):
     """
     Teststep 5: Security Access Request SID
     """
@@ -192,14 +192,14 @@ def run():
     timeout = 100
     result = PREC.precondition(can_p, timeout)
 
-    #Init parameter for SecAccess Gen1 / Gen2 (current default: Gen1)
-    sa_keys: SecAccessParam = {
-        "SecAcc_Gen": 'Gen1',
-        "fixed_key": '0102030405',
-        "auth_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF',
-        "proof_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
+    #Init parameter for SecAccess Gen1 / Gen2
+    platform=dut.conf.rigs[dut.conf.default_rig]['platform']
+    sa_keys = {
+        "SecAcc_Gen" : dut.conf.platforms[platform]['SecAcc_Gen'],
+        "fixed_key": dut.conf.platforms[platform]["fixed_key"],
+        "auth_key": dut.conf.platforms[platform]["auth_key"],
+        "proof_key": dut.conf.platforms[platform]["proof_key"]
     }
-    SIO.parameter_adopt_teststep(sa_keys)
 
     if result:
     ############################################
@@ -209,8 +209,11 @@ def run():
         # step1:
         # action: DL and activate SBL
         # result: ECU sends positive reply
-        result = result and step_1(can_p, sa_keys)
-
+        #result = result and step_1(can_p, sa_keys)
+        result = SSBL.sbl_activation(can_p,
+                                     sa_keys,
+                                     stepno=1,
+                                     purpose = "Download and Activation of SBL")
         # step 2:
         # action: Test presence of tester preset Zero Sub Function
         # result: BECM sends positive reply

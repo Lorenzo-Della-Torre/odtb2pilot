@@ -1,4 +1,4 @@
-hvbm:
+hvbm_p519_sa1:
         step_2:
                 payload: b'\x31\x01\xDC\x09'
                 payload_reply: 057101DC0932
@@ -7,7 +7,7 @@ hvbm:
                 payload: b'\x31\x02\xDC\x09'
                 payload_reply: 057102DC0930
                 routine_response: Type3,Completed
-hvbm_sa2:
+hvbm_p519:
         step_2:
                 payload: b'\x31\x01\xDC\x09'
                 payload_reply: 057101DC0932
