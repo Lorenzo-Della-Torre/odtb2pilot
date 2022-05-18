@@ -72,6 +72,8 @@ from supportfunctions.support_service31 import SupportService31
 from supportfunctions.support_service3e import SupportService3e
 from supportfunctions.support_service27 import SupportService27
 
+from hilding.dut import Dut
+
 
 SIO = SupportFileIO
 SC = SupportCAN()
@@ -168,6 +170,7 @@ def run():
     """
     Run - Call other functions from here
     """
+    dut = Dut()
     logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
     # start logging
