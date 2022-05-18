@@ -60,7 +60,7 @@ from supportfunctions.support_test_odtb2 import SupportTestODTB2
 from supportfunctions.support_carcom import SupportCARCOM
 from supportfunctions.support_file_io import SupportFileIO
 from supportfunctions.support_SBL import SupportSBL
-from supportfunctions.support_sec_acc import SupportSecurityAccess, SecAccessParam
+from supportfunctions.support_sec_acc import SupportSecurityAccess
 from supportfunctions.support_rpi_gpio import SupportRpiGpio
 
 from supportfunctions.support_precondition import SupportPrecondition
