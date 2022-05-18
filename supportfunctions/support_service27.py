@@ -73,30 +73,22 @@ class SupportService27:
 
 
     @staticmethod
-    def security_access_request_seed(can_p: CanParam, sa_keys, stepno=270,
+    def security_access_request_seed(can_p: CanParam, sa_keys, stepno=270,# pylint: disable=too-many-branches
                                      purpose="SecurityAccessRequestSeed"):
         """
             Support function: request seed for calculating security access pin
         """
-        def __prepare_request(sa_keys, ecu_mode):
+        def __prepare_request_mode2(sa_keys):
             #SA_GEN1:
             if sa_keys["SecAcc_Gen"] == 'Gen1':
-                if ecu_mode == "EXT":
-                    payload = S_CARCOM.can_m_send("SecurityAccessRequestSeed_mode1_3", b'', b'')
-                else:
-                    payload = S_CARCOM.can_m_send("SecurityAccessRequestSeed", b'', b'')
-
+                payload = S_CARCOM.can_m_send("SecurityAccessRequestSeed", b'', b'')
                 cpay: CanPayload =\
                         {"payload" : payload,\
                         "extra" : ''
                         }
             #SA_GEN2:
             elif sa_keys["SecAcc_Gen"] == 'Gen2':
-
-                if ecu_mode == "PBL":
-                    SSA.set_level_key(1)
-                elif ecu_mode == "EXT":
-                    SSA.set_level_key(5)
+                SSA.set_level_key(1)
 
                 try:
                     payload = SSA.prepare_client_request_seed()
@@ -145,18 +137,31 @@ class SupportService27:
 
         logging.info("SecAcc req seed: Current ECU Session : %s",ecu_mode)
 
-        if ecu_mode in ('DEF', 'EXT', 'PBL'):
-            cpay = __prepare_request(sa_keys, ecu_mode)
+        # have to distinguish mode2 from DEF, EXT
+        # in DEF, EXT service 2705 has to be used instead of service 2701 in mode2
+        if ecu_mode in ('DEF', 'EXT'):
+            cpay: CanPayload =\
+              {"payload" : S_CARCOM.can_m_send("SecurityAccessRequestSeed_mode1_3", b'', b''),\
+               "extra" : ''
+              }
+        elif ecu_mode == 'PBL':
+
+            cpay = __prepare_request_mode2(sa_keys)
             if bool(cpay) is False:
                 return False, ""
+
         elif ecu_mode == 'SBL':
             logging.info("SS27 sec_acc_req_seed: SBL already activated")
+
+            cpay = __prepare_request_mode2(sa_keys)
+            if bool(cpay) is False:
+                return False, ""
         else:
             logging.debug("SS27 sec_acc_req_seed: ECU current session Unknown")
             ### remove when EDA0 implemented in MEP2
             # use ecu_mode == 'PBL' as default while EDA0 not implemented in MEP2 SA_GEN2
             #SA_GEN2:
-            cpay = __prepare_request(sa_keys, "PBL")
+            cpay = __prepare_request_mode2(sa_keys)
             if bool(cpay) is False:
                 return False, ""
             ### remove when EDA0 implemented in MEP2
@@ -207,16 +212,11 @@ class SupportService27:
         #Security Access Send Key
 
         if ecu_mode in ('DEF', 'EXT'):
-            if sa_keys["SecAcc_Gen"] == 'Gen1':
-                cpay: CanPayload =\
-                {"payload" : S_CARCOM.can_m_send("SecurityAccessSendKey_mode1_3",\
-                    payload_value, b''),}
-
-            elif sa_keys["SecAcc_Gen"] == 'Gen2':
-                cpay: CanPayload =\
-                {"payload" : payload_value,
-                "extra" : ''
-                }
+            cpay: CanPayload =\
+              {"payload" : S_CARCOM.can_m_send("SecurityAccessSendKey_mode1_3",\
+                    payload_value, b''),\
+               "extra" : ''
+              }
         elif ecu_mode == 'PBL':
             if sa_keys["SecAcc_Gen"] == 'Gen1':
             #SA_GEN1:
