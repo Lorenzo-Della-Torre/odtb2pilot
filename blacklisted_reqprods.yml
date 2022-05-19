@@ -19,7 +19,6 @@ hvbm_p519:
         e_435017_MAIN_0 : production_key_programming | Encryption and decryption will be on raw data and not on compressed data. Tool verification?
         e_76515_MAIN_3 : ReadDTCInformation (19) - reportDTCWithPermanentStatus (15) | <If ECU doesn't become emission related>
         e_488703_MAIN_0 : secoc_configuration_secoc_clusterkeyID | NA Because we only have one cluster and one key.
-        e_76515_MAIN_3 : read_dtc_information_19_report_dtc_with_permanent_status_15 | If ECU doesn't become emission related
 
     --Inspection--:
         e_481878_MAIN_0 : interface_to_tee_cryptographic_operations | ETAS provides API. Inspect that we have received those files
