@@ -1,4 +1,4 @@
 hvbm_p519:
     run:
         max_response_time: 200
-        periodic_did: 'F224'
+        periodic_did: '24'
