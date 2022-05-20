@@ -43,6 +43,7 @@ details: >
 import logging
 from hilding.dut import Dut
 from hilding.dut import DutTestError
+from supportfunctions.support_can import SupportCAN
 from supportfunctions.support_SBL import SupportSBL
 from supportfunctions.support_sec_acc import SupportSecurityAccess
 from supportfunctions.support_service11 import SupportService11
@@ -50,8 +51,8 @@ from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_service27 import SupportService27
 from supportfunctions.support_service31 import SupportService31
 from supportfunctions.support_service34 import SupportService34
-from supportfunctions.support_sec_acc import SecAccessParam
 
+SC = SupportCAN()
 SE11 = SupportService11()
 SE22 = SupportService22()
 SE27 = SupportService27()
@@ -70,8 +71,6 @@ def sbl_download_activation(dut, stepno):
     Returns:
         (bool): True on successful SBL download and activation
     """
-    SSBL.get_vbf_files()
-
     # SBL download
     result, vbf_sbl_header = SSBL.sbl_download(dut, SSBL.get_sbl_filename(), stepno)
     if not result:
@@ -116,7 +115,7 @@ def step_1(dut: Dut):
 
     # SBL download
     SSBL.get_vbf_files()
-    result, _ = SSBL.sbl_download(dut, SSBL.get_sbl_filename(), stepno='1')
+    result = SSBL.sbl_download(dut, SSBL.get_sbl_filename(), stepno=1)[0]
     if result:
         logging.info("Successfully downloaded SBL")
         return True
@@ -139,15 +138,17 @@ def step_2(dut: Dut):
     _, vbf_header, data, data_start = SSBL.read_vbf_file(SSBL.get_sbl_filename())
 
     # Extract data for the 1st data block from SBL
-    _, block_by, _ = SSBL.block_data_extract(data, data_start)
+    block_by = SSBL.block_data_extract(data, data_start)[1]
 
     # Verify request download the 1st data block (SBL) is rejected
     SSBL.vbf_header_convert(vbf_header)
-    result, _ = SE34.request_block_download(dut, vbf_header, block_by, stepno=340)
+    result = SE34.request_block_download(dut, vbf_header, block_by, stepno=340)[0]
+    response = SC.can_messages[dut["receive"]][0][2]
     if result:
+        logging.error("Expected NRC-31(requestOutOfRange), received %s", response)
         return False
 
-    logging.info("Received NRC-31(requestOutOfRange) as expected")
+    logging.info("Received NRC-%s(requestOutOfRange) as expected", response[6:8])
     return True
 
 
@@ -157,28 +158,26 @@ def step_3(dut: Dut):
     expected_result: True when ECU is in default session
     """
     # ECU hard reset
-    ecu_response = SE11.ecu_hardreset_5sec_delay(dut, stepno=2)
+    ecu_response = SE11.ecu_hardreset_5sec_delay(dut, stepno=3)
     if not ecu_response:
         return False
 
-    # Setting up keys
-    sa_keys: SecAccessParam = dut.conf.default_rig_config
     # Activate SBL
-    result = SSBL.sbl_activation(dut, sa_keys, stepno=11, purpose="Activate SBL")
+    result = SSBL.sbl_activation(dut, dut.conf.default_rig_config)
     if not result:
         logging.error("Test Failed: SBL activation failed")
         return False
 
     # ECU hard reset
     ecu_response = dut.uds.ecu_reset_1101()
-    if not ecu_response.raw[2:4] == '51':
+    if ecu_response.raw[2:4] != '51':
         logging.error("ECU reset not successful, expected '51', received %s", ecu_response.raw)
         return False
 
     # Verify ECU in default session
     result = SE22.read_did_f186(dut, b'\x01')
     if result:
-        logging.error("ECU is in default session")
+        logging.info("ECU is in default session")
         return True
 
     logging.error("Test Failed: ECU not in default session")
