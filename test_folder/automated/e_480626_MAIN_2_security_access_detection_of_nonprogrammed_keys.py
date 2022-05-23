@@ -93,6 +93,7 @@ def verify_levels(response, supported_keys):
     """
     true_counter = 0
     return_verify = False
+
     try:
         if response['sid'] == "62" and response['did'] == "D09B":
             payload = response['details']['item']
@@ -123,8 +124,13 @@ def step_1(dut: Dut):
 
     expected_result: Positive response
     """
-    # Since default session doesn't support any keys
-    supported_keys = {}
+    supported_keys = {
+        '01': "Programming Session",
+        '05': "Extended session",
+        '19': "Security Log",
+        '23': "Secure Debug",
+        '27': "Secure On-board Communication"
+    }
     dut.uds.set_mode(1)
     response = dut.uds.read_data_by_id_22(bytes.fromhex('D09B'))
     if response.raw[6:8] == '31':
@@ -187,11 +193,10 @@ def run():
         result = dut.step(step_1, purpose="0xD09B in Default Session")
 
         # Send ReadDataByIdentifier(0xD09B) in Extended session
-        result = dut.step(step_2, purpose="0xD09B in Extended Session")
+        result = result and dut.step(step_2, purpose="0xD09B in Extended Session")
 
         # Send ReadDataByIdentifier(0xD09B) in Programming session
-        result = dut.step(
-            step_3, purpose="0xD09B in Programming Session")
+        result = result and dut.step(step_3, purpose="0xD09B in Programming Session")
 
     except DutTestError as error:
         logging.error("Test failed: %s", error)
