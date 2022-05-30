@@ -59,11 +59,30 @@ details: >
 """
 
 import logging
+import odtb_conf
 from hilding.dut import Dut
 from hilding.dut import DutTestError
 from supportfunctions.support_file_io import SupportFileIO
+from supportfunctions.support_can import SupportCAN, CanParam
 
 SIO = SupportFileIO()
+SC = SupportCAN()
+
+
+def subscribe_to_signal():
+    """
+    Request subscribe to signal
+    """
+    can_p_ex: CanParam = {
+    "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
+    "send" : "ECMFront1Fr02",
+    "receive" : "BECMFront1Fr02",
+    "namespace" : SC.nspace_lookup("Front1CANCfg0")
+    }
+    SIO.parameter_adopt_teststep(can_p_ex)
+
+    # Subscribe to signal
+    SC.subscribe_signal(can_p_ex, 15)
 
 
 def step_1(dut: Dut):
@@ -99,6 +118,9 @@ def step_1(dut: Dut):
             logging.info("Verifying failure count limit bit status of %s by reading the did 'D0CC'",
                           signal_name)
 
+            # Subscribe to signal
+            subscribe_to_signal()
+
             failure_count_len = int(sig_data['failure_count_byte'], 16)
             for count_value in range(failure_count_len):
                 # Send faulty data of SecOC protected signal to ECU
@@ -133,6 +155,9 @@ def step_1(dut: Dut):
                                       " for %s and the bit value is %s", signal_name,
                                       fail_count[bit_pos:bit_pos+1])
                         results.append(False)
+
+            # Unsubscribe to signal
+            SC.unsubscribe_signal(signal_name)
 
             # Increase bit_pos value by 1 to select next signal
             bit_pos = bit_pos + 1
