@@ -52,7 +52,6 @@ details: >
 import logging
 from hilding.dut import Dut
 from hilding.dut import DutTestError
-from hilding import get_conf
 
 
 def step_1(dut: Dut):
@@ -80,7 +79,7 @@ def step_2(dut: Dut):
             DID 'F121' & from sddb file
     expected_result: True when both primary bootloader diagnostic database part numbers are equal
     """
-    # Read DID 'F121' (Primary Bootloader Diagnostic Database Part Number)
+    # Read DID 'F121'(Primary Bootloader Diagnostic Database Part Number)
     response = dut.uds.read_data_by_id_22(bytes.fromhex('F121'))
 
     if response.raw[4:6] == '62':
@@ -88,13 +87,12 @@ def step_2(dut: Dut):
         pbl_part_number = response.data['details']['F121_valid']
 
         # Extract DB Part Number for PBL
-        conf = get_conf()
-        sddb_file = conf.rig.sddb_dids
-        if sddb_file is None:
-            logging.error('Test Failed: sddb_file is empty')
+        sddb_file = dut.conf.rig.sddb_dids
+        if 'pbl_diag_part_num' not in sddb_file.keys():
+            logging.error('Test Failed: unable to find pbl_diag_part_num in sddb file')
             return False
 
-        pbl_diag_part_num =  sddb_file['pbl_diag_part_num']
+        pbl_diag_part_num = sddb_file['pbl_diag_part_num']
 
         # Compare primary bootloader diagnostic database part numbers from data base and PBL
         pbl_part_number = pbl_part_number.replace(" ", "_")
