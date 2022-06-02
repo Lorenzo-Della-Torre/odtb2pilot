@@ -19,7 +19,7 @@ Any unauthorized copying or distribution of content from this file is prohibited
 /*********************************************************************************/
 
 reqprod: 67761
-version: 3
+version: 2
 title: Vehicle manufacturer specific data records defined in GMRDB
 purpose: >
     Volvo car corporation defines mandatory data records in GMRDB
@@ -65,17 +65,17 @@ def read_did_f120(dut, app_diag_part_num):
         dut(Dut): Dut instance
         app_diag_part_num(str): Application Diagnostic Database Part Number
     Returns:
-        (bool): True on successfully verified response with value in sddb
+        (bool): True on successfully verified response with value present in sddb
     """
     dut.uds.read_data_by_id_22(bytes.fromhex('F120'))
 
     part_number = SUTE.pp_partnumber(SC.can_messages[dut["receive"]][0][2][10:])
     part_number = part_number.replace(" ", "_")
     if part_number == app_diag_part_num :
-        logging.info("successfully verified response with value in sddb")
+        logging.info("successfully verified response with value present in sddb")
         return True
 
-    logging.error("Test Failed: Unable to verify response with value in sddb")
+    logging.error("Test Failed: Response with value in sddb")
     return False
 
 
@@ -89,8 +89,10 @@ def prepare_lookup_dids(parameter):
     """
 
     did_list = []
+    # Get the length of did_list_range
+    no_of_range = len(parameter['did_list_range'])
 
-    no_of_range=len(parameter['did_list_range'])
+    # Prepare list of DIDs present in all specified ranges
     for i in range(no_of_range):
         start_did = int(parameter['did_list_range'][i][0], 16)
         end_did = int(parameter['did_list_range'][i][1], 16)
@@ -102,10 +104,10 @@ def prepare_lookup_dids(parameter):
 
 def filter_dids(lookup_did_list, app_did_dict):
     """
-    Filtered DIDs in the lookup_did_list which are present in sddb
+    Filter DIDs from the given range which are present in the application DIDs from sddb
     Args:
         lookup_did_list(list): Lookup DIDs list within the range
-        app_did_dict(dict): Dict of DIDs
+        app_did_dict(dict): application DIDs from sddb
     Returns:
         filtered_dids_list(list): List of filtered DIDs
     """
@@ -171,8 +173,8 @@ def verify_diagnostic_service(dut, app_did_dict, parameter):
     Returns:
         (bool): True when ECU gives expected response for all DIDs
     """
-    max_no_of_dids = parameter['max_no_of_dids']
-    response_timeout = parameter['response_timeout']
+    max_no_of_dids = int(parameter['max_no_of_dids'])
+    response_timeout = int(parameter['response_timeout'])
     pass_or_fail_counter_dict = {"Passed": 0, "Failed": 0, "conditionsNotCorrect (22)": 0,
                                  "requestOutOfRange (31)": 0}
     did_response_list = list()
@@ -199,6 +201,7 @@ def verify_diagnostic_service(dut, app_did_dict, parameter):
 
             # Copy info to the did_info dictionary from the did_dict
             did_info = SE22.adding_info(did_dict_from_service_22, did_info)
+
             # Summarizing the result
             info_entry, pass_or_fail_counter_dict = SE22.summarize_result(
                 did_info, pass_or_fail_counter_dict, did_id)
@@ -258,6 +261,7 @@ def step_3(dut, app_diag_part_num, app_did_dict, parameters):
     dut.uds.set_mode(3)
 
     result = read_did_f120(dut, app_diag_part_num)
+
     if result:
         result = verify_diagnostic_service(dut, app_did_dict, parameters)
 
@@ -275,28 +279,29 @@ def run():
     result = False
     result_step = False
 
-    parameters_dict = {'parameters_dict': ''}
+    parameters_dict = {'did_list_range' : [],
+                       'response_timeout' : '',
+                       'max_no_of_dids' : ''}
+
     try:
         parameters = SIO.parameter_adopt_teststep(parameters_dict)
 
         if not all(list(parameters.values())):
             raise DutTestError("yml parameters not found")
 
-        script_timeout = parameters['parameters_dict']['script_timeout']
-
-        dut.precondition(timeout = script_timeout)
+        dut.precondition(timeout = 1200)
 
         result_step, app_did_dict, app_diag_part_num = dut.step(step_1, purpose="Read sddb file "
                                                                 "and get dict of DIDs present "
                                                                 "in app_did_dict")
         if result_step:
-            result_step = dut.step(step_2, app_diag_part_num, app_did_dict,
-                                   parameters['parameters_dict'], purpose= "Verify all DIDs in "
-                                   "app_did_dict within given range in default session")
+            result_step = dut.step(step_2, app_diag_part_num, app_did_dict, parameters, purpose=
+                                   "Verify all DIDs in app_did_dict within given range in default "
+                                   "session")
         if result_step:
-            result_step = dut.step(step_3, app_diag_part_num, app_did_dict,
-                                   parameters['timeout_dict'], purpose= "Verify all DIDs in "
-                                   "app_did_dict within given range in extended session")
+            result_step = dut.step(step_3, app_diag_part_num, app_did_dict, parameters, purpose=
+                                   "Verify all DIDs in app_did_dict within given range in extended"
+                                   " session")
         result = result_step
     except DutTestError as error:
         logging.error("Test failed: %s", error)
