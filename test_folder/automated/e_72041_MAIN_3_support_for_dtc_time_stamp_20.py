@@ -19,7 +19,7 @@ Any unauthorized copying or distribution of content from this file is prohibited
 /*********************************************************************************/
 
 reqprod: 72041
-version: 5
+version: 3
 title: Support for DTC time stamp #20
 purpose: >
     To provide enhanced information about the occurrence of a fault, that may be useful in the
