@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,174 +18,154 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-# Testscript Hilding MEPII
-# project:  BECM basetech MEPII
-# author:   J-ASSAR1 (Joel Assarsson)
-# date:     2020-10-30
-# version:  1.0
-# reqprod:  67864
-#
-# inspired by https://grpc.io/docs/tutorials/basic/python.html
-#
-# Copyright 2015 gRPC authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+reqprod: 67864
+version: 2
+title: Identification Options-System Supplier Specific data records
+purpose: >
+    System supplier specific data records are not supported by Volvo Car Corporation tools and must
+    be defined in a separate identifier range.
 
-The Python implementation of the gRPC route guide client.
+description: >
+    If Identification Options data records, that are not for used by Volvo Car Corporation, are
+    defined by the system supplier, these data records shall have data identifiers in the range as
+    specified in the table below:
+
+    Description	                             Identifier range
+    Development specific data records	     F1F0 - F1FF
+
+    •	It may be possible to read the data record by using the diagnostic service specified
+        Ref[LC : Volvo Car Corporation - UDS Services -Service 0x22 (ReadDataByIdentifier) Reqs]
+
+details:
+    Reading DIDs form sddb file within specified range 0xF1F0 - 0xF1FF and validate response
+    with service ReadDataByIdentifier(0x22)
 """
 
-import time
-import inspect
-
-from datetime               import datetime
-import sys
 import logging
+from hilding.dut import DutTestError
+from hilding.dut import Dut
+from supportfunctions.support_file_io import SupportFileIO
 
-import odtb_conf
-from build.did                              import app_did_dict
-from supportfunctions.support_can           import SupportCAN, CanParam, CanTestExtra, CanPayload
-from supportfunctions.support_test_odtb2    import SupportTestODTB2
-from supportfunctions.support_carcom        import SupportCARCOM
-from supportfunctions.support_file_io       import SupportFileIO
-from supportfunctions.support_precondition  import SupportPrecondition
-from supportfunctions.support_postcondition import SupportPostcondition
-from supportfunctions.support_service22     import SupportService22
-
-SIO         = SupportFileIO
-SC          = SupportCAN()
-SUTE        = SupportTestODTB2()
-SC_CARCOM   = SupportCARCOM()
-PREC        = SupportPrecondition()
-POST        = SupportPostcondition()
-SE22        = SupportService22()
+SIO = SupportFileIO()
 
 
-def test_did(can_p, stepno, did_byte, did_hex):
-    '''
-    Checks a single DID with ReadDataByIdentifier and returns true if it's available.
-    '''
-    cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("ReadDataByIdentifier",
-                                                        did_byte, b''),
-                        "extra" : ''
-                    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
-    etp: CanTestExtra = {"step_no": stepno,
-                        "purpose" : "Test DID: %s" % did_hex.upper(),
-                        "timeout" : 1,
-                        "min_no_messages" : -1,
-                        "max_no_messages" : -1
-                        }
+def filter_dids(lookup_did_list, app_did_dict):
+    """
+    Filter 0xF1F0 to 0xF1FF from application DIDs in sddb
+    Args:
+        lookup_did_list(list) : lookup DIDs list within the range F1F0-F1FF
+        app_did_dict(dict): Dict of DIDs
+    Returns:
+        (list): Filtered DIDs list
+    """
+    filtered_dids_list = []
+    # Getting DIDs according to the required range
+    for did in lookup_did_list:
+        if did in app_did_dict.keys():
+            filtered_dids_list.append(did)
 
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    return filtered_dids_list
 
-    result = SUTE.teststep(can_p, cpay, etp)
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]],
-                                            teststring=did_hex.upper())
-    logging.info("ReadDataByIdentifier(%s): %s", did_hex.upper(),
-                                                SC.can_messages[can_p["receive"]][0][2])
-    return result
 
-def step_1():
-    '''
-    Compare the range 0xF1F0-0xF1FF to the SDDB and return a list of available DID:s in the range.
-    '''
-    did_int=0x22F1F0
-    didarray = []
+def step_1(dut: Dut):
+    """
+    action: Read sddb file and get the application DIDs dictionary
+    expected_result: List of application DIDs
+    """
+    sddb_file = dut.conf.rig.sddb_dids
+    if 'app_did_dict' in sddb_file.keys():
+        logging.info("Successfully extracted dictionary of application DIDs")
 
-    for _ in range(16):
-        did_hex = hex(did_int)[2:].upper()
+        return True, sddb_file['app_did_dict']
 
-        if did_hex in app_did_dict:
-            didarray.append([did_int-0x220000, did_hex[2:]])
+    logging.error("Test Failed: Unable to extract dictionary of application DIDs")
+    return False, None
 
-        did_int = did_int + 1
 
-    return didarray
+def step_2(dut: Dut, app_did_dict, parameters):
+    """
+    action: Filter 0xF1F0 to 0xF1FF from application DIDs dictionary
+    expected_result: List of DIDs between range 0xF1F0-0xF1FF
+    """
+    # pylint: disable=unused-argument
 
-def step_2(can_p, didarray):
-    '''
-    Verify that all DID:s defined by step_1 are available and readable by service 22.
-    '''
-    resultarray = []
+    lookup_did_list =[]
+    # Preparing lookup DIDs list with range F1F0-F1FF
+    for did in range(int(parameters['start_did_f1f0'], 16), int(parameters['end_did_f1ff'], 16)):
+        lookup_did_list.append(hex(did)[2:].upper())
 
-    counter = 0
-    for did in didarray:
-        did_int=did[0]
-        did_hex=did[1]
-        did_byte = did_int.to_bytes(length=2, byteorder='big', signed=False)
+    # Filter application DIDs within range F1F0-F1FF
+    filtered_dids_list = filter_dids(lookup_did_list, app_did_dict)
 
-        result = test_did(can_p, stepno=counter+100, did_byte=did_byte, did_hex=did_hex)
-        resultarray.append([did_hex.upper(), result])
-        counter = counter + 1
+    if len(filtered_dids_list) != 0:
+        return True, filtered_dids_list
+    logging.error("Test Failed: No DIDs available in the sddb file between range %s-%s",
+                   parameters['start_did_f1f0'], parameters['end_did_f1ff'])
+    return False, None
 
-    return resultarray
+
+def step_3(dut: Dut, filtered_dids_list):
+    """
+    action: Read all DIDs between range F1F0-F1FF and verify response is 0x62 using service
+            ReadDataByIdentifier(0x22)
+    expected_result: Positive response when every DID's response is 0x62
+    """
+    result = []
+    dut.uds.set_mode(1)
+
+    for did in filtered_dids_list:
+        response = dut.uds.read_data_by_id_22(bytes.fromhex(did))
+        # Checking 62 and respective did in response
+        if response.raw[4:6] == '62'and response.raw[6:10] == did:
+            logging.info("Received positive response %s for DID %s", response.raw, did)
+            result.append(True)
+        else:
+            logging.error("Test Failed: Expected positive response 62, received %s for %s DID",
+                          response.raw, did)
+            result.append(False)
+    if len(result) != 0 and all(result):
+        logging.info("Received expected positive response for all DID requests")
+        return True
+
+    logging.error("Test Failed: Received Unexpected response from the ECU for some DID requests")
+    return False
 
 
 def run():
     """
-    Run - Call other functions from here
+    Reading DIDs from sddb file within specified range 0xF1F0 - 0xF1FF
+    and verify positive response for service ReadDataByIdentifier(0x22)
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+    dut = Dut()
+    start_time = dut.start()
+    result = False
+    result_step = False
 
-    # where to connect to signal_broker
-    can_p: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        "send" : "Vcu1ToBecmFront1DiagReqFrame",
-        "receive" : "BecmToVcu1Front1DiagResFrame",
-        "namespace" : SC.nspace_lookup("Front1CANCfg0")
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
+    parameters_dict = {'start_did_f1f0':'',
+                       'end_did_f1ff':''}
+    try:
+        dut.precondition(timeout=60)
 
-    logging.info("Testcase start: %s", datetime.now())
-    starttime = time.time()
-    logging.info("Time: %s \n", time.time())
+        parameters = SIO.parameter_adopt_teststep(parameters_dict)
 
-    ############################################
-    # precondition
-    ############################################
-    timeout = 40
-    result = PREC.precondition(can_p, timeout)
+        if not all(list(parameters.values())):
+            raise DutTestError("yml parameters not found")
 
-    if result:
-        ############################################
-        # teststeps
-        ############################################
-        # step 1:
-        # action:   Compare the range 0xF1F0-0xF1FF to the SDDB.
-        # result:   Returns a list of available DID:s in the range.
-        didarray = step_1()
+        result_step, app_did_dict= dut.step(step_1, purpose= "Read application DIDs from sddb")
 
-        # step 2:
-        # action:   Verify available DID:s in the range 0xF1F0-0xF1FF.
-        # result:   ECU sends a valid response for all DID:s in dictionary.
-        resultarray = step_2(can_p, didarray)
+        if result_step:
+            result_step, filtered_dids_list = dut.step(step_2, app_did_dict, parameters,
+                                                       purpose="Filter DIDs for range F1F0-F1FF")
+        if result_step:
+            result_step = dut.step(step_3, filtered_dids_list, purpose="Verify response of DIDs "
+                                   "for range F1F0-F1FF with service ReadDataByIdentifier(0x22)")
 
-        # step 3:
-        # action:   Summarize results
-        # result:   Pass if non-zero length and all tested DID:s returned True.
-        if len(resultarray) > 0:
-            logging.info('[DID:  , Result:]')
-            for didresult in resultarray:
-                logging.info("%s", didresult)
-                result = result and didresult[1]
-        else:
-            result = False
-            logging.info("Test failed. No valid DID:s in SDDB.")
+        result = result_step
+    except DutTestError as error:
+        logging.error("Test failed: %s", error)
+    finally:
+        dut.postcondition(start_time, result)
 
-    ############################################
-    # postCondition
-    ############################################
-    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()
