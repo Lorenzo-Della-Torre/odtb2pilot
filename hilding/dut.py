@@ -129,7 +129,8 @@ class Dut:
         if key == "receive":
             return self.conf.rig.signal_receive
         if key == "namespace":
-            return self.namespace
+            return NameSpace(name=self.conf.rig.namespace)
+            #return self.namespace
         if key == 'protocol':
             return self.protocol
         if key == 'framelength_max':
