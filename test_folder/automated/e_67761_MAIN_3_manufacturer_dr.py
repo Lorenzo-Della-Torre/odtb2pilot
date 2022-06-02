@@ -19,7 +19,7 @@ Any unauthorized copying or distribution of content from this file is prohibited
 /*********************************************************************************/
 
 reqprod: 67761
-version: 2
+version: 3
 title: Vehicle manufacturer specific data records defined in GMRDB
 purpose: >
     Volvo car corporation defines mandatory data records in GMRDB
