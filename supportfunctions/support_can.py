@@ -557,7 +557,8 @@ class SupportCAN:
         """
         source = common_pb2.ClientId(id="app_identifier")
 
-        signal = common_pb2.SignalId(name=signal_name, namespace=self.nspace_lookup(namespace))
+        signal = common_pb2.SignalId(name=signal_name,
+                                     namespace=cls.nspace_lookup(namespace))
         signal_with_payload = network_api_pb2.Signal(id=signal)
         signal_with_payload.integer = payload_value
         publisher_info = network_api_pb2.PublisherConfig(clientId=source,\
@@ -711,7 +712,8 @@ class SupportCAN:
         send_FF_CAN
         """
         source = common_pb2.ClientId(id="app_identifier")
-        signal = common_pb2.SignalId(name=can_p["send"], namespace=self.nspace_lookup(can_p["namespace"]))
+        signal = common_pb2.SignalId(name=can_p["send"],
+                                     namespace=self.nspace_lookup(can_p["namespace"]))
         signal_with_payload = network_api_pb2.Signal(id=signal)
         signal_with_payload.raw = self.can_mf_send[can_p["send"]][1][0]
 
