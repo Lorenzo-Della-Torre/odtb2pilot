@@ -207,7 +207,6 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
 
         # message to send
         self.__send(can_p, etp, cpay)
-
         logging.debug("Teststep: CAN frames: %s", SC.can_frames)
         # currently we don't build messages for frames sent
         #logging.info("Teststep: CAN messages send: %s", SC.can_messages[can_p["send"]])

@@ -91,13 +91,13 @@ class SupportPostcondition: # pylint: disable=too-few-public-methods
 
         #There is an issue in unsubscribe_signals() that generates a lot of errors in the log.
         #In order to not confuse users this was simply removed from the log by disabling the logger
-        logger = logging.getLogger()
-        logger.disabled = True
+        #logger = logging.getLogger()
+        #logger.disabled = True
 
         # deregister signals
         SC.unsubscribe_signals()
 
-        logger.disabled = False
+        #logger.disabled = False
 
         # if threads should remain: try to stop them
         SC.thread_stop()

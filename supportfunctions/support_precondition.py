@@ -77,7 +77,7 @@ class SupportPrecondition:
 
         logging.info(
             "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Precondition started~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-
+        print("Precondition, current can_p: ", can_p)
         #Temporary fix - add missing parameters in can_p
         for key in CanParam():
             if not key in can_p:
@@ -88,13 +88,14 @@ class SupportPrecondition:
             "name" : "Heartbeat",
             "send" : True,
             "id" : "BecmFront1NMFr",
-            "nspace" : can_p["namespace"].name,
+            "nspace" : can_p["namespace"],
             "frame" : b'\x1A\x40\xC3\xFF\x01\x00\x00\x00',
             "intervall" : 0.4
             }
         #Read current function name from stack:
         SIO.extract_parameter_yml(str(inspect.stack()[0][3]), hb_param)
         logging.debug("hb_param %s", hb_param)
+        print("precondition, hb_param: ", hb_param)
 
         # start heartbeat, repeat every x second
         SC.start_heartbeat(can_p["netstub"], hb_param)
@@ -150,6 +151,9 @@ class SupportPrecondition:
         result = SE22.read_did_pbl_pn(can_p) and result
         logging.info("Precondition testok: %s\n", result)
 
+        result = SE22.read_did_pbl_pn(can_p) and result
+        logging.info("Precondition testok: %s\n", result)
+
         return result
 
     @staticmethod
@@ -197,7 +201,7 @@ class SupportPrecondition:
             "name" : "Heartbeat",
             "send" : True,
             "id" : "MvcmFront1NMFr",
-            "nspace" : can_p["namespace"].name,
+            "nspace" : can_p["namespace"],
             "frame" : b'\x1A\x40\xC3\xFF\x01\x00\x00\x00',
             "intervall" : 0.4
             }
