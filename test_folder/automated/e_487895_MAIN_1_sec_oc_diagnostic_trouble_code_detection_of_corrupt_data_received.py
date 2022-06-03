@@ -1,4 +1,5 @@
 """
+
 /*********************************************************************************/
 
 
@@ -93,15 +94,19 @@ def verify_dtc_status(dut: Dut, parameters, byte_pos):
     for signal_name, sig_data in parameters['signals'].items():
         logging.info("Verifying failure count limit bit status of %s by reading the did 'D0CC'",
                       signal_name)
-
         result = False
-        for _ in range(int(sig_data['failure_count_byte'], 16)):
+        for failure_count_index in range(int(sig_data['failure_count_byte'], 16)):
             # Send faulty data of SecOC protected signal to ECU
             dut.uds.generic_ecu_call(bytes.fromhex(sig_data['data']))
 
             # Read did 'D0CC' to get the failure count limit status
             did_response = dut.uds.read_data_by_id_22(bytes.fromhex(
                            parameters['secoc_verification_failure_did']))
+
+            if did_response.raw[2:4] == '7F':
+                logging.error("Received negative response for %s(%s)", signal_name,
+                              failure_count_index)
+                continue
 
             # Byte-4 to Byte-n  of did 'D0CC' gives failure count limit status
             failure_count_limit_status = bin(int(did_response.raw[byte_pos:byte_pos+2], 16))
@@ -134,7 +139,7 @@ def verify_dtc_status(dut: Dut, parameters, byte_pos):
     if len(result_dict) == len(parameters['signals']):
         return result_dict
 
-    logging.error("Did received DTC snapshot response for one or all of the SecOC signals")
+    logging.error("Did not received DTC snapshot response for one or all of the SecOC signals")
     return None
 
 
@@ -166,6 +171,11 @@ def step_1(dut: Dut):
     for _ in range(message_length):
         response_dict = verify_dtc_status(dut, parameters, byte_pos)
         byte_pos = byte_pos + 2
+        if response_dict is None:
+            logging.error("Did not received DTC snapshot response for one or all of the "
+                          "SecOC signals")
+            results.append(False)
+            continue
 
         for signal_name, dtc_response in response_dict.items():
             if dtc_response[4:6] != '59':
@@ -200,10 +210,10 @@ def run():
     start_time = dut.start()
     result = False
     try:
-        dut.precondition(timeout=120)
+        dut.precondition(timeout=900)
 
         result= dut.step(step_1, purpose="Verify the status of DTC 0xD0C568 for all of the "
-                         "SecOC protected signals")
+                                         "SecOC protected signals")
 
     except DutTestError as error:
         logging.error("Test failed: %s", error)
