@@ -71,11 +71,12 @@ def read_did_f120(dut, app_diag_part_num):
 
     part_number = SUTE.pp_partnumber(SC.can_messages[dut["receive"]][0][2][10:])
     part_number = part_number.replace(" ", "_")
-    if part_number == app_diag_part_num :
-        logging.info("successfully verified response with value present in sddb")
+    # Compare application diagnostic database part numbers from sddb and did response
+    if part_number == app_diag_part_num:
+        logging.info("Application diagnostic database part numbers are equal")
         return True
 
-    logging.error("Test Failed: Response with value in sddb")
+    logging.error("Test Failed: Application diagnostic database part numbers are not equal")
     return False
 
 
@@ -143,7 +144,7 @@ def verify_did_response(did_response_list):
         logging.info("ECU gives expected response for all DIDs")
         return True
 
-    logging.error("Test Failed: Received unexpected response from the ECU for some DID requests")
+    logging.error("Test Failed: Received unexpected response from ECU for some DIDs")
     return False
 
 
@@ -293,7 +294,8 @@ def run():
 
         result_step, app_did_dict, app_diag_part_num = dut.step(step_1, purpose="Read sddb file "
                                                                 "and get dict of DIDs present "
-                                                                "in app_did_dict")
+                                                                "in app_did_dict and "
+                                                                "app_diag_part_num")
         if result_step:
             result_step = dut.step(step_2, app_diag_part_num, app_did_dict, parameters, purpose=
                                    "Verify all DIDs in app_did_dict within given range in default "
