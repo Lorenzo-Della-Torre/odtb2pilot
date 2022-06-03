@@ -19,7 +19,7 @@ Any unauthorized copying or distribution of content from this file is prohibited
 /*********************************************************************************/
 
 reqprod: 72041
-version: 5
+version: 3
 title: Support for DTC time stamp #20
 purpose: >
     To provide enhanced information about the occurrence of a fault, that may be useful in the
@@ -35,9 +35,9 @@ description: >
 
 details: >
     Verify DTC snapshot has a time record 'DD00'
-    steps:
-    1. Get time data from DTC snapshot
-    2. Retrieve a timestamp from the response
+    Steps:
+        1. Get time data from DTC snapshot
+        2. Retrieve a timestamp from the response
 """
 
 import logging
@@ -62,9 +62,7 @@ def step_1(dut: Dut):
     if response.raw[2:4] != '59':
         logging.error("Test Failed: Expected positive response 59 for DTC, received %s",
                        response.raw)
-        return False
-
-    result = False
+        return False, None
 
     # Get global snapshot from DTC snapshot
     filtered_global_snapshot=[]
@@ -74,48 +72,50 @@ def step_1(dut: Dut):
 
     if len(filtered_global_snapshot) == 0:
         logging.error("Test Failed: No global snapshot DID found in the DTC snapshot")
-        return False
+        return False, None
 
     # Get did 'DD00' from global snapshot in DTC snapshot
     for snapshot in filtered_global_snapshot:
         if 'DD00' in snapshot['did_ref'].values():
             logging.info("Time record found in the DTC snapshot")
-            result = True
-            return result
+            return True, response
 
-    if not result:
-        logging.error("Test Failed: No time record found in the DTC snapshot")
-        return False
-
-    return True
+    logging.error("Test Failed: No time record found in the DTC snapshot")
+    return False, None
 
 
-def step_2(dut: Dut):
+def step_2(dut: Dut, dtc_response):
     """
     action: Retrieve a timestamp from the response
-    expected_result: True when retrieve a timestamp from the response
+    expected_result: True when retrieved timestamp is greater than or equal
+                     to unconfirmed dtc limit
     """
     response = dut.uds.read_data_by_id_22(global_timestamp_dd00)
 
-    if not response:
+    if response.raw[2:4] == '7F':
         logging.error("No global_timestamp data received")
         return False
 
-    # response.raw[8:16] represents time_stamp
-    if response.raw[8:16] == "00000000":
-        logging.info("Received time stamp as expected %s", response.raw[8:16])
+    global_real_time = (int(response.raw[8:16], 16))*100
+    unconfirmed_dtc_limit = int(dtc_response.data['details']['unconfirmed_dtc_limit'])
+
+    # Comparing global real time with unconfirmed dtc limit
+    if global_real_time >= unconfirmed_dtc_limit:
+        logging.info("Received time stamp %s, which is greater than %s, as expected",
+                      global_real_time, unconfirmed_dtc_limit)
         return True
 
-    logging.error("Test Failed: Expected '00000000' time stamp, received %s", response.raw)
+    logging.error("Test Failed: Expected %s time stamp, received %s", unconfirmed_dtc_limit,
+                   global_real_time)
     return False
 
 
 def run():
     """
     Verify DTC snapshot has a time record 'DD00'
-    steps:
-    1. Get time data from DTC snapshot
-    2. Retrieve a timestamp from the response
+    Steps:
+        1. Get time data from DTC snapshot
+        2. Retrieve a timestamp from the response
     """
     dut = Dut()
 
@@ -126,10 +126,11 @@ def run():
     try:
         dut.precondition(timeout=30)
 
-        result_step = dut.step(step_1, purpose="Get time data from DTC snapshot")
+        result_step, dtc_response = dut.step(step_1, purpose="Get time data from DTC snapshot")
 
         if result_step:
-            result_step = dut.step(step_2, purpose="Retrieve a timestamp from the response")
+            result_step = dut.step(step_2, dtc_response, purpose="Retrieve a timestamp from"
+                                                                 " the response")
 
         result = result_step
 
