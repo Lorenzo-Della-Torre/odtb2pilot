@@ -26,10 +26,9 @@ class SecOCmsgVerification: # pylint: disable=too-few-public-methods
     """
 
     @staticmethod
-    #support function to take no action
     def failed_message_take_no_action(signal):
         """
-        Take no Action function to be implemented
+        Support function to take no action, function to be implemented
         """
         #Logic to be implemented in future
         # Take no Action
@@ -38,7 +37,6 @@ class SecOCmsgVerification: # pylint: disable=too-few-public-methods
         return response
 
     @staticmethod
-    #support function to take response message
     def get_secoc_message(signal):
         """
         Return SecOC message
