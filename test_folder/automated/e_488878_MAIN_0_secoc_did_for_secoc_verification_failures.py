@@ -69,14 +69,14 @@ SIO = SupportFileIO()
 SC = SupportCAN()
 
 
-def subscribe_to_signal():
+def subscribe_to_signal(parameters):
     """
     Request subscribe to signal
     """
     can_p_ex: CanParam = {
     "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-    "send" : "ECMFront1Fr02",
-    "receive" : "BECMFront1Fr02",
+    "send" : parameters['send'],
+    "receive" : parameters['receive'],
     "namespace" : SC.nspace_lookup("Front1CANCfg0")
     }
     SIO.parameter_adopt_teststep(can_p_ex)
@@ -93,6 +93,8 @@ def step_1(dut: Dut):
     """
     # Read yml parameters
     parameters_dict = {'sec_oc_verification_failure_did': '',
+                       'send': '',
+                       'receive': '',
                        'signals':{}}
     parameters = SIO.parameter_adopt_teststep(parameters_dict)
 
@@ -119,7 +121,7 @@ def step_1(dut: Dut):
                           signal_name)
 
             # Subscribe to signal
-            subscribe_to_signal()
+            subscribe_to_signal(parameters)
 
             failure_count_len = int(sig_data['failure_count_byte'], 16)
             for count_value in range(failure_count_len):

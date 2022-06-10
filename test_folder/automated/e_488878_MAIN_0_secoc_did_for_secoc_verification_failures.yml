@@ -1,6 +1,8 @@
 hvbm_p519:
     step_1:
         sec_oc_verification_failure_did: 'D0CC'
+        send : 'ECMFront1Fr02',
+        receive : 'BECMFront1Fr02',
         signals:
           signal_1:
             failure_count: 5
