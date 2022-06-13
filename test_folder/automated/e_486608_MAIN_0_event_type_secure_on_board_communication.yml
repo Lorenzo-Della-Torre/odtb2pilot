@@ -1,0 +1,5 @@
+hvbm_p519:
+    run:
+        sec_oc_did: 'D0CA'
+        sec_oc_key: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
+        sec_oc_event_read_did: 'D0BC'

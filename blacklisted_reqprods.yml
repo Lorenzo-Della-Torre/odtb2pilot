@@ -64,6 +64,7 @@ hvbm_p519:
         e_487909_MAIN_1 : sec_oc_cluster_key_identifier | SecOC not implemented yet
         e_487907_MAIN_1 : secoc_key_sync_test_diagnostics | SecOC not implemented yet
         e_488878_MAIN_0 : sec_oc_did_for_sec_oc_verification_failures | SecOC not implemented yet
+        e_486608_MAIN_0 : event_type_secure_on_board_communication | SecOC not implemented yet
 
 ihfa_v436:
     --NA--:
