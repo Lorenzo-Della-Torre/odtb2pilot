@@ -59,10 +59,8 @@ details: >
 
 import logging
 import time
-import inspect
 from supportfunctions.support_service27 import SupportService27
 from supportfunctions.support_file_io import SupportFileIO
-from supportfunctions.support_sec_acc import SecAccessParam
 from hilding.dut import Dut
 from hilding.dut import DutTestError
 import supportfunctions.support_service27 as SP27
@@ -136,16 +134,9 @@ def step_3(dut: Dut):
     action: Security Access to ECU
     expected_result: Positive response
     """
-    sa_keys: SecAccessParam = {
-        "SecAcc_Gen": 'Gen2',
-        "fixed_key": '0102030405',
-        "auth_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF',
-        "proof_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), sa_keys)
 
     result = SE27.activate_security_access_fixedkey(dut,
-                                                    sa_keys, step_no=3,
+                                                    dut.conf.default_rig_config, step_no=3,
                                                     purpose="Security Access"
                                                     )
     return result
@@ -190,13 +181,8 @@ def step_6(dut: Dut):
     action: Security Access to ECU for rejected event
     expected_result: Negative response
     """
-    sa_keys: SecAccessParam = {
-        "SecAcc_Gen": 'Gen2',
-        "fixed_key": '0102030405',
-        "auth_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF',
-        "proof_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), sa_keys)
+    sa_keys = dut.conf.default_rig_config
+
     SP27.SSA.set_keys(sa_keys)
     result, response = SE27.security_access_request_seed(dut, sa_keys)
     SP27.SSA.process_server_response_seed(
@@ -205,10 +191,11 @@ def step_6(dut: Dut):
     payload[4] = 0xFF
     payload[5] = 0xFF
     result, response = SE27.security_access_send_key(dut, sa_keys, payload)
-    result = SP27.SSA.process_server_response_key(
-        bytearray.fromhex(response))
+    result = (SP27.SSA.process_server_response_key(bytearray.fromhex(response)) == 0)
     if result:
         return False
+
+    logging.info("Received Negative response for a wrong key as expected")
     return True
 
 

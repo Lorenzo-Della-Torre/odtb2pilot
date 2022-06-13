@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,203 +18,155 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-# Testscript Hilding MEPII
-# project:  BECM basetech MEPII
-# author:   hweiler (Hans-Klaus Weiler)
-# date:     2020-08-11
-# version:  1.1
-# reqprod:  60010
+reqprod: 60010
+version: 0
+title: : Separation time (STmin) non-programming session server side
+purpose: >
+    Define STmin for non-programming session server side. For more information see
+    section Separation (STmin) parameter definition.
 
-# inspired by https://grpc.io/docs/tutorials/basic/python.html
+description: >
+    Separation time (STmin) for server side when in non-programming session shall be maximum
+    15ms.
 
-# Copyright 2015 gRPC authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-The Python implementation of the gRPC route guide client.
+details: >
+    Verify separation time (STmin) for server side in default and extended diagnostic session
+    are maximum 15ms
 """
 
-import time
-from datetime import datetime
 import logging
-import sys
-import inspect
-
-import odtb_conf
-from supportfunctions.support_can import SupportCAN, CanParam, CanTestExtra, CanPayload
-from supportfunctions.support_carcom import SupportCARCOM
-from supportfunctions.support_test_odtb2 import SupportTestODTB2
-from supportfunctions.support_file_io import SupportFileIO
-from supportfunctions.support_precondition import SupportPrecondition
-from supportfunctions.support_postcondition import SupportPostcondition
-from supportfunctions.support_service10 import SupportService10
+from hilding.dut import Dut
+from hilding.dut import DutTestError
 from supportfunctions.support_service22 import SupportService22
+from supportfunctions.support_file_io import SupportFileIO
+from supportfunctions.support_can import SupportCAN
+from supportfunctions.support_carcom import SupportCARCOM
 
-SIO = SupportFileIO
-SC = SupportCAN()
-SUTE = SupportTestODTB2()
-SC_CARCOM = SupportCARCOM()
-PREC = SupportPrecondition()
-POST = SupportPostcondition()
-SE10 = SupportService10()
 SE22 = SupportService22()
+SC = SupportCAN()
+SIO = SupportFileIO()
+SC_CARCOM = SupportCARCOM()
 
 
-def step_2(can_p):
+def request_read_data_id(dut:Dut, multiframe_did):
     """
-    Teststep 2: send request with MF to send
+    Verify the ReadDataByIdentifier service 22 with respective DID
+    Args:
+        dut (Dut): An instance of Dut
+        multiframe_did (str): Multiframe DID
+    Returns:
+        (bool): True when received positive response
     """
-    cpay: CanPayload = {
-        "payload": SC_CARCOM.can_m_send("ReadDataByIdentifier",\
-                                        b'\xDD\x02\xDD\x0A\xDD\x0C\x49\x47',\
-                                        b''),
-        "extra": ''
-        }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    response = dut.uds.read_data_by_id_22(bytes.fromhex(multiframe_did))
 
-    etp: CanTestExtra = {
-        "step_no" : 2,
-        "purpose" : "send several requests at one time - requires MF in request",
-        "timeout" : 1,
-        "min_no_messages" : -1,
-        "max_no_messages" : -1
-        }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    if response.raw[4:6] == '62':
+        logging.info("Received positive response 62 for request ReadDataByIdentifier")
+        return True
 
-    result = SUTE.teststep(can_p, cpay, etp)
+    logging.error("Test Failed: Expected positive response, received %s", response)
+    return False
 
-# verify FC parameters from BECM for block_size
-    logging.info("FC parameters used:")
-    logging.info("Step%s: frames received %s", etp["step_no"], len(SC.can_frames[can_p["receive"]]))
-    logging.info("Step%s: frames: %s\n", etp["step_no"], SC.can_frames[can_p["receive"]])
-    logging.info("len FC %s", len(SC.can_cf_received[can_p["receive"]]))
-    logging.info("FC: %s", SC.can_cf_received[can_p["receive"]])
-    logging.info("Verify if FC is as required. "\
-                 "Continue to send (0x30): 0x%s separation_time: 0x%s",\
-                 int(SC.can_cf_received[can_p["receive"]][0][2][0:2], 16).to_bytes(1, 'big').hex(),\
-                 int(SC.can_cf_received[can_p["receive"]][0][2][4:6], 16).to_bytes(1, 'big').hex())
-    logging.info("Verify separation_time less then 15ms: 15 > %s: %s",\
-                 int((SC.can_cf_received[can_p["receive"]][0][2][4:6]), 16),\
-                 int((SC.can_cf_received[can_p["receive"]][0][2][4:6]), 16) < 15)
-    result = result and (int((SC.can_cf_received[can_p["receive"]][0][2][4:6]), 16) < 15)
-    #print ("FC: ", Support_CAN.can_cf_received)
-    #result = result andS UTE.test_message(SC.can_cf_received[can_p["receive"]],\
-    #                                      teststring='30000A0000000000')
-    logging.info("Step %s teststatus: %s\n", etp["step_no"], result)
-    return result
 
-def step_5(can_p):
+def step_1(dut: Dut):
     """
-    Teststep 5: send request requiring MF to send
+    action: Send multiframe and verify server reply with CTS with correct separation time
+            in default session
+    expected_result: True on positive response
     """
-    cpay: CanPayload = {
-        "payload": SC_CARCOM.can_m_send("ReadDataByIdentifier",\
-                                        b'\xDD\x02\xDD\x0A\xDD\x0C\x49\x47',\
-                                        b''),
-        "extra": ''
-        }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    response = SE22.read_did_f186(dut, dsession=b'\x01')
 
-    etp: CanTestExtra = {
-        "step_no" : 5,
-        "purpose" : "send several requests at one time - requires MF in request",
-        "timeout" : 1,
-        "min_no_messages" : -1,
-        "max_no_messages" : -1
-        }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    if not response:
+        logging.error("ECU is not in default session")
+        return False
 
-    result = SUTE.teststep(can_p, cpay, etp)
-    # verify FC parameters from BECM for block_size
-    logging.info("FC parameters used:")
-    logging.info("Step%s: frames received %s", etp["step_no"], len(SC.can_frames[can_p["receive"]]))
-    logging.info("Step%s: frames: %s\n", etp["step_no"], SC.can_frames[can_p["receive"]])
-    logging.info("len FC %s", len(SC.can_cf_received[can_p["receive"]]))
-    logging.info("FC: %s", SC.can_cf_received[can_p["receive"]])
-    logging.info("Verify if FC is as required. "\
-                 "Continue to send (0x30): 0x%s separation_time: 0x%s",\
-                 int(SC.can_cf_received[can_p["receive"]][0][2][0:2], 16).to_bytes(1, 'big').hex(),\
-                 int(SC.can_cf_received[can_p["receive"]][0][2][4:6], 16).to_bytes(1, 'big').hex())
-    logging.info("Verify separation_time less then 15ms: 15 > %s: %s",\
-                 int((SC.can_cf_received[can_p["receive"]][0][2][4:6]), 16),\
-                 int((SC.can_cf_received[can_p["receive"]][0][2][4:6]), 16) < 15)
-    result = result and (int((SC.can_cf_received[can_p["receive"]][0][2][4:6]), 16) < 15)
-    logging.info("Step %s teststatus: %s\n", etp["step_no"], result)
-    return result
+    did_response = request_read_data_id(dut, 'DD02DD0ADD0C4947')
+    if not did_response:
+        logging.error("Test Failed: ECU unable to read DID DD02DD0ADD0C4947 in default session")
+        return False
+
+    logging.info("Control Frame from Server: %s", SC.can_cf_received[dut["receive"]][0][2])
+    logging.info("Separation time is [ms]: %d",
+                 int(SC.can_cf_received[dut["receive"]][0][2][4:6], 16))
+
+    # Test if ST is less than 15 ms: get ST from saved Control Frame
+    if int(SC.can_cf_received[dut["receive"]][0][2][4:6], 16) < 15:
+        result_default = SE22.read_did_f186(dut, dsession=b'\x01')
+        if not result_default:
+            logging.error("ECU is not in default session")
+            return False
+        logging.info("Separation time is less than 15 ms as expected")
+        return True
+
+    logging.error("Test Failed: Separation time is bigger than 15 ms")
+    return False
+
+
+def step_2(dut: Dut):
+    """
+    action: Send multiframe and verify server reply with CTS with correct separation time
+            in extended session
+    expected_result: True on positive response
+    """
+    # Set to extended session
+    dut.uds.set_mode(3)
+
+    response = SE22.read_did_f186(dut, dsession=b'\x03')
+    if not response:
+        logging.error("ECU is not in extended session")
+        return False
+
+    did_response = request_read_data_id(dut, 'DD02DD0ADD0C4947')
+    if not did_response:
+        logging.error("Test Failed: ECU unable to read DID DD02DD0ADD0C4947 in extended session")
+        return False
+
+    logging.info("Control Frame from Server: %s", SC.can_cf_received[dut["receive"]][0][2])
+    logging.info("Separation time is [ms]: %d",
+                 int(SC.can_cf_received[dut["receive"]][0][2][4:6], 16))
+
+    # Test if ST is less than 15 ms: get ST from saved Control Frame
+    if int(SC.can_cf_received[dut["receive"]][0][2][4:6], 16) < 15:
+        result_ext = SE22.read_did_f186(dut, dsession=b'\x03')
+        if not result_ext:
+            logging.error("ECU is not in Extended session")
+            return False
+
+        logging.info("Separation time is less than 15 ms as expected")
+        # set to default session
+        dut.uds.set_mode(1)
+        return True
+
+    logging.info("Test Failed: Separation time is bigger than 15 ms")
+    return False
 
 
 def run():
     """
-    Run - Call other functions from here
+    Verify separation time (STmin) for server side in default and extended diagnostic session
+    is maximum 15ms
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
-    logging.info("Testcase start: %s", datetime.now())
-    starttime = time.time()
-    logging.info("Time: %s \n", time.time())
-    # where to connect to signal_broker
-    can_p: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        "send" : "Vcu1ToBecmFront1DiagReqFrame",
-        "receive" : "BecmToVcu1Front1DiagResFrame",
-        "namespace" : SC.nspace_lookup("Front1CANCfg0")
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
+    dut = Dut()
+    start_time = dut.start()
+    result = False
+    result_step = False
 
-    ############################################
-    # precondition
-    ############################################
-    timeout = 60   #seconds
-    result = PREC.precondition(can_p, timeout)
+    try:
+        dut.precondition(timeout=60)
 
-    if result:
-    ############################################
-    # teststeps
-    ############################################
-    # step 1:
-    # action: verify current session
-    # result: default session reported
-        result = result and SE22.read_did_f186(can_p, dsession=b'\x01', stepno=1)
+        result_step = dut.step(step_1, purpose="Send multiframe and verify server reply with CTS "
+                                               "with correct separation time in default session")
 
-    # step2:
-    # action: send MF request
-    # result: FC frame received with separation_time timing in required range
-        result = result and step_2(can_p)
+        if result_step:
+            result_step = dut.step(step_2, purpose="Send multiframe and verify server reply with "
+                                                   "CTS with correct separation time in extended"
+                                                   " session")
 
-    # action: verify current session
-    # result: extended session reported
-        result = result and SE22.read_did_f186(can_p, dsession=b'\x01', stepno=3)
+        result = result_step
+    except DutTestError as error:
+        logging.error("Test failed: %s", error)
+    finally:
+        dut.postcondition(start_time, result)
 
-    # action: request extended session
-    # result: change to extended session reported
-        result = SE10.diagnostic_session_control_mode3(can_p, stepno=4)
-
-    # action: send MF request
-    # result: FC frame received with separation_time timing in required range
-        result = result and step_5(can_p)
-
-    # action: verify current session
-    # result: extended session reported
-        result = result and SE22.read_did_f186(can_p, dsession=b'\x03', stepno=6)
-
-    # action: request default session
-    # result: change to default session reported
-        result = SE10.diagnostic_session_control_mode1(can_p, stepno=7)
-
-    ############################################
-    # postCondition
-    ############################################
-
-    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()

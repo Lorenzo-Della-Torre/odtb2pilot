@@ -73,22 +73,30 @@ class SupportService27:
 
 
     @staticmethod
-    def security_access_request_seed(can_p: CanParam, sa_keys, stepno=270,# pylint: disable=too-many-branches
+    def security_access_request_seed(can_p: CanParam, sa_keys, stepno=270,
                                      purpose="SecurityAccessRequestSeed"):
         """
             Support function: request seed for calculating security access pin
         """
-        def __prepare_request_PBL(sa_keys):
+        def __prepare_request(sa_keys, ecu_mode):
             #SA_GEN1:
             if sa_keys["SecAcc_Gen"] == 'Gen1':
-                payload = S_CARCOM.can_m_send("SecurityAccessRequestSeed", b'', b'')
+                if ecu_mode == "EXT":
+                    payload = S_CARCOM.can_m_send("SecurityAccessRequestSeed_mode1_3", b'', b'')
+                else:
+                    payload = S_CARCOM.can_m_send("SecurityAccessRequestSeed", b'', b'')
+
                 cpay: CanPayload =\
                         {"payload" : payload,\
                         "extra" : ''
                         }
             #SA_GEN2:
             elif sa_keys["SecAcc_Gen"] == 'Gen2':
-                SSA.set_level_key(1)
+
+                if ecu_mode == "PBL":
+                    SSA.set_level_key(1)
+                elif ecu_mode == "EXT":
+                    SSA.set_level_key(5)
 
                 try:
                     payload = SSA.prepare_client_request_seed()
@@ -104,7 +112,8 @@ class SupportService27:
                 logging.info("SS27, security_access_request_seed, sa_keys: %s", sa_keys)
                 raise Exception("Failed:  SecurityAccess parameters not set.")
 
-            logging.info("Seed requested from ECU using the following message: %s",payload)
+            logging.info("Seed requested from ECU using the following message (hex): %s",
+                         payload.hex())
             return cpay
 
         def __evaluate_response(sa_keys):
@@ -136,17 +145,10 @@ class SupportService27:
 
         logging.info("SecAcc req seed: Current ECU Session : %s",ecu_mode)
 
-        if ecu_mode in ('DEF', 'EXT'):
-            cpay: CanPayload =\
-              {"payload" : S_CARCOM.can_m_send("SecurityAccessRequestSeed_mode1_3", b'', b''),\
-               "extra" : ''
-              }
-        elif ecu_mode == 'PBL':
-
-            cpay = __prepare_request_PBL(sa_keys)
+        if ecu_mode in ('DEF', 'EXT', 'PBL'):
+            cpay = __prepare_request(sa_keys, ecu_mode)
             if bool(cpay) is False:
                 return False, ""
-
         elif ecu_mode == 'SBL':
             logging.info("SS27 sec_acc_req_seed: SBL already activated")
         else:
@@ -154,7 +156,7 @@ class SupportService27:
             ### remove when EDA0 implemented in MEP2
             # use ecu_mode == 'PBL' as default while EDA0 not implemented in MEP2 SA_GEN2
             #SA_GEN2:
-            cpay = __prepare_request_PBL(sa_keys)
+            cpay = __prepare_request(sa_keys, "PBL")
             if bool(cpay) is False:
                 return False, ""
             ### remove when EDA0 implemented in MEP2
@@ -179,6 +181,9 @@ class SupportService27:
         """
             Support function: request seed for calculating security access pin
         """
+        #set default response value
+        response = 'ffffff'
+
         def __evaluate_response(sa_keys):
             # SA_GEN1:
             if sa_keys["SecAcc_Gen"] == 'Gen1':
@@ -202,11 +207,16 @@ class SupportService27:
         #Security Access Send Key
 
         if ecu_mode in ('DEF', 'EXT'):
-            cpay: CanPayload =\
-              {"payload" : S_CARCOM.can_m_send("SecurityAccessSendKey_mode1_3",\
-                    payload_value, b''),\
-               "extra" : ''
-              }
+            if sa_keys["SecAcc_Gen"] == 'Gen1':
+                cpay: CanPayload =\
+                {"payload" : S_CARCOM.can_m_send("SecurityAccessSendKey_mode1_3",\
+                    payload_value, b''),}
+
+            elif sa_keys["SecAcc_Gen"] == 'Gen2':
+                cpay: CanPayload =\
+                {"payload" : payload_value,
+                "extra" : ''
+                }
         elif ecu_mode == 'PBL':
             if sa_keys["SecAcc_Gen"] == 'Gen1':
             #SA_GEN1:
@@ -252,8 +262,11 @@ class SupportService27:
         return result, response
 
 
-    def activate_security_access_fixedkey(self, can_p: CanParam, sa_keys, step_no=272,\
-                                            purpose="SecurityAccess"):
+    def activate_security_access_seed_and_calc(self,
+                                               can_p: CanParam,
+                                               sa_keys,
+                                               step_no=272,
+                                               purpose="SecurityAccess"):
         """
         Support function to activate the Security Access
         SA_GEN1:
@@ -268,10 +281,9 @@ class SupportService27:
             #solve task for SecAccess Gen1 using reply to seed and fixed_key
             sa_key_calculated = SSA.set_security_access_pins(seed, sa_keys)
 
-            #Security Access Send Key
-            result = result and self.security_access_send_key(can_p, sa_keys, sa_key_calculated,
-                                                              step_no, purpose)[0]
-
+            ##Security Access Send Key
+            #result = result and self.security_access_send_key(can_p, sa_keys, sa_key_calculated,
+            #                                                  step_no, purpose)[0]
         #SA_GEN2:
         elif sa_keys["SecAcc_Gen"] == 'Gen2':
             # Set keys in SSA
@@ -284,7 +296,7 @@ class SupportService27:
 
             if not result:
                 logging.error("Security access request seed failed.")
-                return False
+                return False, ''
 
             logging.debug("SA_Gen2: request seed result: %s", result)
             logging.info("SA_Gen2: request seed response: %s", response)
@@ -295,24 +307,59 @@ class SupportService27:
                 logging.info("SA_Gen2: Process Server Response Seed Successful")
             else:
                 logging.info("SA_Gen2: success = %s (not ok)", success)
-                return False
+                return False, ''
 
-            payload = SSA.prepare_client_send_key()
-            logging.debug("SA_Gen2: activate SBL: prepareclient sendkey: %s", payload)
-            logging.info("SA_Gen2: activate SBL: prepareclient sendkey (hex): %s", payload.hex())
+            sa_key_calculated = SSA.prepare_client_send_key()
+            logging.debug("SA_Gen2: activate SBL: prepareclient sendkey: %s",
+                          sa_key_calculated)
+            logging.info("SA_Gen2: activate SBL: prepareclient sendkey (hex): %s",
+                         sa_key_calculated.hex())
             logging.debug("SA_Gen2: activate SBL: status before send %s", result)
             logging.info("SA_Gen2: activate SBL: Sending Security access key...")
+        else:
+            logging.info("SA Gen not set.")
+            logging.info("SS27, security_access_send_key, sa_keys: %s", sa_keys)
+            raise Exception("Failed:  SecurityAccess parameters not set.")
+        return result, sa_key_calculated
 
+
+    def activate_security_access_send_calculated(self,# pylint: disable=too-many-arguments
+                                                 can_p: CanParam,
+                                                 sa_keys,
+                                                 sa_keys_calculated,
+                                                 step_no=272,\
+                                                 purpose="SecurityAccess"):
+        """
+        Support function to activate the Security Access
+        SA_GEN1:
+        sa_keys: dict with fixed_key set
+        SA_GEN2:
+        sa_keys: dict with auth_key, proof_key set
+        """
+        #SA_GEN1:
+        result = True
+        logging.info("Activate_SA_fixedkey_p2 start")
+        logging.info("Sa_keys used %s", sa_keys)
+        if sa_keys["SecAcc_Gen"] == 'Gen1':
             #Security Access Send Key
-            result2, response = self.security_access_send_key(can_p,
-                                                              sa_keys,
-                                                              payload, step_no, purpose)
-            if not result2:
+            result = self.security_access_send_key(can_p, sa_keys, sa_keys_calculated,
+                                                   step_no, purpose)[0]
+            #return result
+
+        #SA_GEN2:
+        elif sa_keys["SecAcc_Gen"] == 'Gen2':
+            #Security Access Send Key
+            result, response = self.security_access_send_key(can_p,
+                                                             sa_keys,
+                                                             sa_keys_calculated,
+                                                             step_no, purpose)
+            if not result:
                 logging.error("Security access send key failed.")
                 return False
 
-            result = result and result2
-            logging.debug("SA_Gen2: activate SBL: status after send %s", result2)
+            logging.info("SA_Gen2: activate SBL: status after send %s", result)
+            logging.info("SA_Gen2 send key response %s", response)
+            logging.debug("SA_Gen2: activate SBL: status after send %s", result)
             logging.debug("SA_Gen2 send key response %s", response)
             success = SSA.process_server_response_key(bytearray.fromhex(response))
 
@@ -325,4 +372,26 @@ class SupportService27:
             logging.info("SA Gen not set.")
             logging.info("SS27, security_access_send_key, sa_keys: %s", sa_keys)
             raise Exception("Failed:  SecurityAccess parameters not set.")
+        return result
+
+
+    def activate_security_access_fixedkey(self, can_p: CanParam, sa_keys, step_no=272,\
+                                            purpose="SecurityAccess"):
+        """
+        Support function to activate the Security Access
+        SA_GEN1:
+        sa_keys: dict with fixed_key set
+        SA_GEN2:
+        sa_keys: dict with auth_key, proof_key set
+        """
+        result, sa_calculated = self.activate_security_access_seed_and_calc(can_p,
+                                                                            sa_keys,
+                                                                            step_no,
+                                                                            purpose)
+        result = result and\
+                 self.activate_security_access_send_calculated(can_p,
+                                                               sa_keys,
+                                                               sa_calculated,
+                                                               step_no,
+                                                               purpose)
         return result

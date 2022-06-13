@@ -58,9 +58,6 @@ import argparse
 
 import odtb_conf
 
-from build.did import pbl_did_dict
-from build.did import pbl_diag_part_num
-
 from supportfunctions.support_can import SupportCAN, CanParam, CanTestExtra, CanPayload
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
 from supportfunctions.support_carcom import SupportCARCOM
@@ -77,6 +74,7 @@ from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_service27 import SupportService27
 from supportfunctions.support_service31 import SupportService31
 
+from hilding.conf import Conf
 
 # For each each DID, wait this time for the response. If you wait to short time you might not get
 # the full message (payload). The unit is seconds. 2s should cover even the biggest payloads.
@@ -105,6 +103,11 @@ SE11 = SupportService11()
 SE22 = SupportService22()
 SE27 = SupportService27()
 SE31 = SupportService31()
+
+conf = Conf()
+
+pbl_did_dict = conf.rig.sddb_dids['pbl_did_dict']
+pbl_diag_part_num = conf.rig.sddb_dids['pbl_diag_part_num']
 
 def parse_some_args():
     """Get the command line input, using the defined flags."""
@@ -278,7 +281,7 @@ def run():
     ############################################
     # read VBF param when testscript is s started, if empty take default param
     SSBL.get_vbf_files()
-    timeout = 500
+    timeout = 100
     result = PREC.precondition(can_p, timeout)
 
     if result:
@@ -302,7 +305,7 @@ def run():
         # step 3:
         # action: Security Access Request SID
         # result: ECU sends positive reply
-        result = result and SE27.activate_security_access(can_p, 3)
+        result = result and SE27.activate_security_access_fixedkey(can_p,conf.default_rig_config)
 
         # step 4:
         # action: Extract SWP Number for PBL

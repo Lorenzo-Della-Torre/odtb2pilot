@@ -46,7 +46,6 @@ import time
 from datetime import datetime
 import sys
 import logging
-import inspect
 
 import odtb_conf
 
@@ -75,6 +74,9 @@ SE22 = SupportService22()
 def step_2(can_p):
     """
     Teststep 2: request EDA0 - with FC delay < timeout 1000 ms
+
+    frame_control_delay chosen: 900ms,
+    results in real 950 due to delay in test environment
     """
     cpay: CanPayload = {
         "payload": SC_CARCOM.can_m_send("ReadDataByIdentifier",\
@@ -82,7 +84,7 @@ def step_2(can_p):
                                         b''),
         "extra": ''
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    SIO.parameter_adopt_teststep(cpay)
     etp: CanTestExtra = {
         "step_no" : 2,
         "purpose" : "request EDA0 - with FC delay < timeout 1000 ms",
@@ -90,13 +92,13 @@ def step_2(can_p):
         "min_no_messages" : -1,
         "max_no_messages" : -1
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    SIO.parameter_adopt_teststep(etp)
 
     #change Control Frame parameters
     can_mf: CanMFParam = {
         "block_size": 0,
         "separation_time": 0,
-        "frame_control_delay": 950,
+        "frame_control_delay": 900,
         "frame_control_flag": 48,
         "frame_control_auto": True
         }
@@ -126,7 +128,7 @@ def step_3(can_p):
                                         b''),
         "extra": ''
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    SIO.parameter_adopt_teststep(cpay)
 
     etp: CanTestExtra = {
         "step_no" : 3,
@@ -135,7 +137,7 @@ def step_3(can_p):
         "min_no_messages" : -1,
         "max_no_messages" : -1
         }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    SIO.parameter_adopt_teststep(etp)
     #change Control Frame parameters
     can_mf: CanMFParam = {
         "block_size": 0,
@@ -190,7 +192,7 @@ def run():
         "receive" : "BecmToVcu1Front1DiagResFrame",
         "namespace" : SC.nspace_lookup("Front1CANCfg0")
     }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
+    SIO.parameter_adopt_teststep(can_p)
 
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
