@@ -62,6 +62,7 @@ hvbm_p519:
         e_469403_MAIN_1 : sec_oc_default_development_key | SecOC not implemented yet
         e_488712_MAIN_0 : sec_oc_key_update_handling_in_ecu | SecOC not implemented yet
         e_487909_MAIN_1 : sec_oc_cluster_key_identifier | SecOC not implemented yet
+        e_488878_MAIN_0 : sec_oc_did_for_sec_oc_verification_failures | SecOC not implemented yet
 
 ihfa_v436:
     --NA--:
