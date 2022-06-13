@@ -65,6 +65,10 @@ def step_1(dut: Dut):
     results = []
     for signal, message in parameters['signals'].items():
         response = SECOC_KEY_VERIFY.get_secoc_message(signal)
+        if response == '':
+            logging.error("Received empty response for signal- %s", signal)
+            results.append(False)
+            continue
 
         secoc_initial_key = bytes.fromhex(parameters['secoc_initial_key'])
 
@@ -72,7 +76,7 @@ def step_1(dut: Dut):
         nonce = cipher.nonce
         # Decryption using response
         cipher = AES.new(secoc_initial_key, AES.MODE_CTR, nonce = nonce)
-        decrypted_data_record = cipher.decrypt(response)
+        decrypted_data_record = cipher.decrypt(bytes.fromhex(response))
 
         logging.info("DECRYPTED DATA RECORD %s",  decrypted_data_record.decode('ascii'))
 
