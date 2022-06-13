@@ -59,6 +59,7 @@ hvbm_p519:
 
     --SecOC--:
         e_487904_MAIN_1 : sec_oc_detection_of_non_programmed_production_keys | SecOC not implemented yet
+        e_469403_MAIN_1 : sec_oc_default_development_key | SecOC not implemented yet
         e_488712_MAIN_0 : sec_oc_key_update_handling_in_ecu | SecOC not implemented yet
         e_487909_MAIN_1 : sec_oc_cluster_key_identifier | SecOC not implemented yet
 
