@@ -178,6 +178,8 @@ def step_1(dut: Dut):
 def run():
     """
     Read did 'D0CC' and verify the failure count limit bit status for each SecOC protected signal
+    
+    ** This script might need major changes as there is less info while writing the script**
     """
     dut = Dut()
 
