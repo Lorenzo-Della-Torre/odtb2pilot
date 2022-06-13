@@ -78,11 +78,10 @@ def step_1(dut: Dut):
 
         # Compare decrypted response with message
         if decrypted_data_record == message:
-            logging.info("Initial key %s is present for %s signal", decrypted_data_record, signal)
+            logging.info("Decrypted data received is as expected for %s signal", signal)
             results.append(True)
         else:
-            logging.error("Test Failed: Expected initial key, received %s for %s signal ",
-                        decrypted_data_record, signal)
+            logging.error("Test Failed: Received incorrect decrypted data for %s signal ", signal)
             results.append(False)
 
     if len(results) != 0 and all(results):
