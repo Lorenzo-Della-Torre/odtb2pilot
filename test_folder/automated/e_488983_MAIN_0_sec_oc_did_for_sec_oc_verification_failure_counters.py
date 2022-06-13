@@ -1,4 +1,5 @@
 """
+
 /*********************************************************************************/
 
 
@@ -113,6 +114,8 @@ def step_2(dut: Dut, parameters):
     sig_pos = 0
 
     did_response, sig_count = request_read_data_by_identifier(dut, parameters)
+    if sig_count is None:
+        return False
 
     # Verify failure count value for each signal from signal-1 to Signal-n
     for index in range(sig_count):
@@ -153,6 +156,8 @@ def step_3(dut: Dut, parameters):
     sig_pos = 0
 
     did_response, sig_count = request_read_data_by_identifier(dut, parameters)
+    if sig_count is None:
+        return False
 
     for index in range(sig_count):
         # Conversion of hexadecimal data into integer
@@ -186,6 +191,8 @@ def step_4(dut: Dut, parameters):
     sig_pos = 0
 
     did_response, sig_count = request_read_data_by_identifier(dut, parameters)
+    if sig_count is None:
+        return False
 
     for index in range(sig_count):
         # Conversion of hexadecimal data into integer
@@ -216,12 +223,13 @@ def run():
     Verify status of failure count value for all SecOC signals, on ECU reset and failure overflow
     """
     dut = Dut()
+
     start_time = dut.start()
     result = False
     result_step = False
+
     parameters_dict = {'sec_oc_did': '',
                        'position': 0}
-
     try:
         dut.precondition(timeout=60)
         parameters = SIO.parameter_adopt_teststep(parameters_dict)
@@ -232,16 +240,16 @@ def run():
         result_step = dut.step(step_1, purpose="Security access to ECU in extended session")
 
         if result_step:
-            result_step = dut.step(step_2, parameters, purpose= "Verify SecOC failure count "
-                                    "within the range '00' to 'FF'")
+            result_step = dut.step(step_2, parameters, purpose= "Verify SecOC failure count within"
+                                                                " the range '00' to 'FF'")
         if result_step:
-            result_step = dut.step(step_3, parameters, purpose= "Verify SecOC failure count "
-                                   "for all signals after ecu reset")
+            result_step = dut.step(step_3, parameters, purpose= "Verify SecOC failure count for"
+                                                                " all signals after ecu reset")
         if result_step:
-            result_step = dut.step(step_4, parameters, purpose= "Verify SecOC failure count "
-                                   "does not overflow after reaching maximum value '0xFF'")
+            result_step = dut.step(step_4, parameters, purpose= "Verify SecOC failure count does"
+                                                                " not overflow after reaching"
+                                                                " maximum value '0xFF'")
         result = result_step
-
     except DutTestError as error:
         logging.error("Test failed: %s", error)
     finally:
