@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,7 +18,23 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-Import script - Inherited from older version of requirement
+
+reqprod: 76134
+version: 2
+title: : DiagnosticSessionControl (10) extendedDiagnosticSession (03, 83)
+
+purpose: >
+    ExtendedDiagnosticSession shall be supported since not all services used by the service tools
+    can be performed from defaultSession.
+
+description: >
+    The ECU shall support the service diagnosticSessionControl - extendedSession in:
+    •	defaultSession
+    •	extendedDiagnosticSession
+    The ECU may support diagnosticSessionControl - extendedSession in programmingSession.
+
+
+    Import script - Inherited from older version of requirement
 """
 
 from e_76134_MAIN_0_diagnosticsessioncontrol_extendedsession import run

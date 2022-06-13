@@ -17,7 +17,8 @@ hvbm_p519:
         e_469413_MAIN_1 : nomadic_device_application_restricted_platform access | Our ECU is not capable of connecting to a nomadic device (iDevices, Android, Windows Mobile, etc.) 
         e_441876_MAIN_1 : software_authentication_security_classes | EOL testing. We will use the second security class. All security classes are NA for us.
         e_435017_MAIN_0 : production_key_programming | Encryption and decryption will be on raw data and not on compressed data. Tool verification?
-        e_76515_MAIN_3 : read_dtc_information_19_report_dtc_with_permanent_status_15 | If ECU doesn't become emission related
+        e_76515_MAIN_3 : read_dtc_information_19_report_dtc_with_permanent_status_15 | If ECU doesn't become emission related.
+        e_488703_MAIN_0 : secoc_configuration_secoc_clusterkeyID | NA Because we only have one cluster and one key.
 
     --Inspection--:
         e_481878_MAIN_0 : interface_to_tee_cryptographic_operations | ETAS provides API. Inspect that we have received those files
@@ -58,8 +59,13 @@ hvbm_p519:
 
     --SecOC--:
         e_487904_MAIN_1 : sec_oc_detection_of_non_programmed_production_keys | SecOC not implemented yet
+        e_488983_MAIN_0 : sec_oc_did_for_sec_oc_verification_failure_counters | SecOC not implemented yet
+        e_469403_MAIN_1 : sec_oc_default_development_key | SecOC not implemented yet
+        e_488712_MAIN_0 : sec_oc_key_update_handling_in_ecu | SecOC not implemented yet
         e_487909_MAIN_1 : sec_oc_cluster_key_identifier | SecOC not implemented yet
         e_487905_MAIN_1 : sec_oc_distribution_of_the_sec_oc_keys_to_ecu_suppliers | SecOC not implemented yet
+        e_487907_MAIN_1 : secoc_key_sync_test_diagnostics | SecOC not implemented yet
+        e_488878_MAIN_0 : sec_oc_did_for_sec_oc_verification_failures | SecOC not implemented yet
 
 ihfa_v436:
     --NA--:
