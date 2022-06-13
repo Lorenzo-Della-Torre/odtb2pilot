@@ -1,0 +1,9 @@
+hvbm_p519:
+    run:
+        composite_did_eda0: ['F121', 'F125', 'F12A', 'F12B', 'F18C']
+        prog_dids: ['F121', 'F12A']
+        non_prog_dids: ['F120', 'F12A']
+        def_ext_composite_did_eda0: ['F120', 'F12E', 'F12A', 'F12B', 'F18C']
+        max_dids_with_less_bytes_in_return: ['DD02', 'DD02', 'DD02', 'DD0A', 'DD0A', 'DD0A', '4947', '4947', '4802', '4802']
+        max_dids_with_most_bytes_in_return: ['EDA0', 'F126', 'F12E', 'DA80', 'F18C', 'F18C', 'DD00', 'DD00', 'DD01', 'DD01']
+        exceeded_max_dids: ['491A', 'DD02', 'DD0A', 'DD0C', '4947', '4950', 'DAD0', 'DAD1', '4802', '4803', '4945']
