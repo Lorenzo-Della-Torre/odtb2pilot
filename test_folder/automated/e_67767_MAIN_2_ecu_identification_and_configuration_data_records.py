@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,216 +18,212 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-# Testscript Hilding MEPII
-# project:  BECM basetech MEPII
-# author:   J-ASSAR1 (Joel Assarsson)
-# date:     2020-10-30
-# version:  1.0
-# reqprod:  67767
-#
-# inspired by https://grpc.io/docs/tutorials/basic/python.html
-#
-# Copyright 2015 gRPC authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+reqprod: 67767
+version: 2
+title: ECU identification and configuration data records
+purpose: >
+    Volvo car corporation defines mandatory data records in GMRDB
 
-The Python implementation of the gRPC route guide client.
+description: >
+    ECU identification and configuration data records with data identifiers in the range as
+    specified in the table below shall be implemented exactly as they are defined in
+    carcom - global master reference database
+    --------------------------------------------------------------
+    Manufacturer	                Identifier range
+    --------------------------------------------------------------
+    Volvo Car Corporation	        EDA0 - EDFF
+    Geely	                        ED20 - ED7F
+    --------------------------------------------------------------
+
+details: >
+    Compare the range 0xEDA0-0xEDFF and 0xED20-0xED7F with the SDDB and verify all DIDs are
+    readable or not by ReadDataByIdentifier(0x22).
+
+    EDC1 is not part of scope, it is for the application teams to test
 """
 
 import time
-import inspect
-
-from datetime               import datetime
-import sys
 import logging
+from hilding.dut import Dut
+from hilding.dut import DutTestError
+from supportfunctions.support_file_io import SupportFileIO
+from supportfunctions.support_test_odtb2 import SupportTestODTB2
+from supportfunctions.support_can import SupportCAN, CanTestExtra, CanPayload
+from supportfunctions.support_carcom  import SupportCARCOM
 
-import odtb_conf
-from build.did                              import app_did_dict
-from supportfunctions.support_can           import SupportCAN, CanParam, CanTestExtra, CanPayload
-from supportfunctions.support_test_odtb2    import SupportTestODTB2
-from supportfunctions.support_carcom        import SupportCARCOM
-from supportfunctions.support_file_io       import SupportFileIO
-from supportfunctions.support_precondition  import SupportPrecondition
-from supportfunctions.support_postcondition import SupportPostcondition
-from supportfunctions.support_service22     import SupportService22
-
-SIO         = SupportFileIO
-SC          = SupportCAN()
-SUTE        = SupportTestODTB2()
-SC_CARCOM   = SupportCARCOM()
-PREC        = SupportPrecondition()
-POST        = SupportPostcondition()
-SE22        = SupportService22()
+SIO = SupportFileIO()
+SUTE = SupportTestODTB2()
+SC = SupportCAN()
+SC_CARCOM = SupportCARCOM()
 
 
-def test_did(can_p, stepno, did_byte, did_hex):
-    '''
-    Checks a single DID with ReadDataByIdentifier and return True if it's available.
-    '''
-    cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("ReadDataByIdentifier",
-                                                        did_byte, b''),
+def req_read_data_by_id(dut: Dut, did_hex):
+    """
+    Request ReadDataByIdentifier(0x22) and get the ECU response
+    Args:
+        dut(Dut): An instance of Dut
+        did_hex(str): DID to read
+    Returns:
+        (bool): True on successfully verified positive response
+    """
+    # dut.uds.read_data_by_id_22() has timeout of 1 sec but for DID 'EDC0' timeout should be
+    # greater than 1 sec (because of its size), hence below apporoach is used.
+    # Size of DID 'EDC0' : 1816 bytes
+
+    payload = SC_CARCOM.can_m_send("ReadDataByIdentifier", bytes.fromhex(did_hex), b'')
+
+    cpay: CanPayload = {"payload" : payload,
                         "extra" : ''
-                    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
-    etp: CanTestExtra = {"step_no": stepno,
+                        }
+    etp: CanTestExtra = {"step_no": 200,
                         "purpose" : "Test DID: %s" % did_hex.upper(),
                         "timeout" : 2,
                         "min_no_messages" : -1,
                         "max_no_messages" : -1
                         }
 
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    SUTE.teststep(dut, cpay, etp)
+    response = SC.can_messages[dut["receive"]][0][2]
 
-    result = SUTE.teststep(can_p, cpay, etp)
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]],
-                                            teststring=did_hex.upper())
-    logging.info("ReadDataByIdentifier(%s): %s", did_hex.upper(),
-                                                SC.can_messages[can_p["receive"]][0][2])
-    return result
+    if response[4:6]=='62' and response[6:10] == did_hex:
+        logging.info("DID %s is readable", did_hex)
+        return True
 
-def step_1():
-    '''
-    Compare the range 0xEDA0-0xEDFF to the SDDB and return a list of available DID:s in the range.
-    '''
-    did_int=0x22EDA0
-    didarray = []
-    for _ in range(96):
-        did_hex = hex(did_int)[2:].upper()
+    logging.error("Test Failed: Unable to read DID %s", did_hex)
+    return False
 
-        if did_hex in app_did_dict:
-            didarray.append([did_int-0x220000, did_hex[2:]])
 
-        did_int = did_int + 1
+def prepare_lookup_dids(parameters):
+    """
+    Prepare list of all DIDs within the specified ranges
+    Args:
+        parameters(list): did_list_range
+    Returns:
+        did_list(list): List of all DIDs within the given range
+    """
+    did_list = []
 
-    return didarray
+    # Get the length of did_list_range
+    no_of_range = len(parameters['did_list_range'])
 
-def step_2(can_p, didarray):
-    '''
-    Verify that all DID:s defined by step_1 are available and readable by service 22.
-    '''
-    resultarray = []
-    counter = 0
-    for did in didarray:
-        did_int=did[0]
-        did_hex=did[1]
-        did_byte = did_int.to_bytes(length=2, byteorder='big', signed=False)
+    # Prepare list of DIDs present in all specified ranges
+    for i in range(no_of_range):
+        start_did = int(parameters['did_list_range'][i][0], 16)
+        end_did = int(parameters['did_list_range'][i][1], 16)
 
-        result = test_did(can_p, stepno=counter+200, did_byte=did_byte, did_hex=did_hex)
-        resultarray.append([did_hex.upper(), result])
-        counter = counter + 1
+        for did in range(start_did, end_did+1):
+            # Excluded DID 'EDC1'
+            if hex(did)[2:].upper() != 'EDC1':
+                did_list.append(hex(did)[2:].upper())
 
-    return resultarray
+    return did_list
 
-def step_3():
-    '''
-    Compare the range 0xED20-0xED7F to the SDDB and return a list of available DID:s in the range.
-    '''
-    did_int=0x22ED20
-    didarray = []
-    for _ in range(96):
-        did_hex = hex(did_int)[2:].upper()
 
-        if did_hex in app_did_dict:
-            didarray.append([did_int-0x220000, did_hex[2:]])
+def filter_dids(lookup_did_list, app_did_dict):
+    """
+    Filtere DIDs of specified ranges from sddb DIDs list
+    Args:
+        lookup_did_list(list): Lookup DIDs list within the range
+        app_did_dict(dict): Dict of DIDs
+    Returns:
+        filtered_dids_list(list): List of filtered DIDs
+    """
+    filtered_dids_list = []
 
-        did_int = did_int + 1
+    for did in lookup_did_list:
+        if did in app_did_dict:
+            filtered_dids_list.append(did)
+    if len(filtered_dids_list) == 0:
+        logging.error("No valid DIDs found in sddb DIDs list")
+    return filtered_dids_list
 
-    return didarray
 
-def step_4(can_p, didarray):
-    '''
-    Verify that all DID:s defined by step_3 are available and readable by service 22.
-    '''
-    resultarray = []
-    counter = 0
-    for did in didarray:
-        did_int=did[0]
-        did_hex=did[1]
-        did_byte = did_int.to_bytes(length=2, byteorder='big', signed=False)
+def result_of_read_did(dut, filtered_dids_list):
+    """
+    Get result of readable DIDs in a given range
+    Args:
+        dut(Dut): An instance of Dut
+        filtered_dids_list(list): List of DIDs
+    Returns:
+        result_list(list): List of results
+    """
+    result_list = []
 
-        result = test_did(can_p, stepno=counter+200, did_byte=did_byte, did_hex=did_hex)
-        resultarray.append([did_hex.upper(), result])
-        counter = counter + 1
+    for did in filtered_dids_list:
+        result = req_read_data_by_id(dut, did)
+        result_list.append(result)
+        time.sleep(1)
 
-    return resultarray
+    return result_list
+
+
+def step_1(dut: Dut):
+    """
+    action: Read sddb file and get dict of DIDs present in app_did_dict
+    expected_result: True when successfully extracted app_did_dict from sddb file
+    """
+    sddb_file = dut.conf.rig.sddb_dids
+
+    if 'app_did_dict' in sddb_file.keys():
+        logging.info("Successfully extracted dict of DIDs present in app_did_dict")
+        return True, sddb_file['app_did_dict']
+
+    logging.error("Test Failed: Unable to extract dict of DIDs present in app_did_dict")
+    return False, None
+
+
+def step_2(dut, app_did_dict, parameters):
+    """
+    action: Read and verify DIDs present in app_did_dict with ReadDataByIdentifier(0x22)
+    expected_result: True when successfully read all the DIDs in the specified ranges
+    """
+    lookup_did_list = prepare_lookup_dids(parameters)
+
+    filtered_did_list = filter_dids(lookup_did_list, app_did_dict)
+
+    result_list = result_of_read_did(dut, filtered_did_list)
+
+    if len(result_list) > 0 and all(result_list):
+        logging.info("Successfully read all the DIDs in the specified ranges")
+        return True
+
+    logging.info("Test Failed: Unable to read all DIDs in the specified ranges")
+    return False
 
 
 def run():
     """
-    Run - Call other functions from here
+    Compare the range 0xEDA0-0xEDFF and 0xED20-0xED7F with the SDDB and verify all DIDs are
+    readable or not by ReadDataByIdentifier(0x22)
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+    dut = Dut()
 
-    # where to connect to signal_broker
-    can_p: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        "send" : "Vcu1ToBecmFront1DiagReqFrame",
-        "receive" : "BecmToVcu1Front1DiagResFrame",
-        "namespace" : SC.nspace_lookup("Front1CANCfg0")
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
+    start_time = dut.start()
+    result = False
+    result_step = False
 
-    logging.info("Testcase start: %s", datetime.now())
-    starttime = time.time()
-    logging.info("Time: %s \n", time.time())
+    parameters_dict = {'did_list_range' : []}
 
-    ############################################
-    # precondition
-    ############################################
-    timeout = 300
-    result = PREC.precondition(can_p, timeout)
+    try:
+        dut.precondition(timeout=30)
 
-    if result:
-        ############################################
-        # teststeps
-        ############################################
-        # step 1:
-        # action:   Compare the range 0xEDA0-0xEDFF to the SDDB.
-        # result:   Returns a list of available DID:s in the range.
-        didarray_step1 = step_1()
+        parameters = SIO.parameter_adopt_teststep(parameters_dict)
 
-        # step 2:
-        # action:   Verify available DID:s in the range 0xEDA0-0xEDFF.
-        # result:   ECU sends a valid response for all DID:s in dictionary.
-        resultarray_step2 = step_2(can_p, didarray_step1)
+        if not all(list(parameters.values())):
+            raise DutTestError("yml parameters not found")
 
-        # step 3:
-        # action:   Compare the range 0xED20-0xED7F to the SDDB.
-        # result:   Returns a list of available DID:s in the range.
-        didarray_step3 = step_3()
+        result_step, app_did_dict = dut.step(step_1, purpose="Read sddb file and get dict of "
+                                                             "DIDs present in app_did_dict")
+        if result_step:
+            result_step = dut.step(step_2, app_did_dict, parameters, purpose= "Read and verify "
+                                   "filtered DIDs list with ReadDataByIdentifier(0x22)")
+            result = result_step
+    except DutTestError as error:
+        logging.error("Test failed: %s", error)
 
-        # step 4:
-        # action:   Verify available DID:s in the range 0xED20-0xED7F.
-        # result:   ECU sends a valid response for all DID:s in dictionary.
-        resultarray_step4 = step_4(can_p, didarray_step3)
+    finally:
+        dut.postcondition(start_time, result)
 
-        # step 5:
-        # action:   Summarize results
-        # result:   Pass if non-zero length and all tested cases return True.
-        resultarray = resultarray_step2 + resultarray_step4
-        if len(resultarray) > 0:
-            logging.info('[DID:  , Result:]')
-            for didresult in resultarray:
-                logging.info("%s", didresult)
-                result = result and didresult[1]
-        else:
-            result = False
-            logging.info("Test failed. No valid DID:s in SDDB.")
-
-    ############################################
-    # postCondition
-    ############################################
-    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()
