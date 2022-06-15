@@ -30,7 +30,7 @@ description: >
 
     Description	                         Identifier
     -------------------------------------------------
-    Check Complete & Compatible	         0206
+    Check Complete & Compatible	         0205
     -------------------------------------------------
 
     •	It shall be possible to execute the control routine with service as specified in
