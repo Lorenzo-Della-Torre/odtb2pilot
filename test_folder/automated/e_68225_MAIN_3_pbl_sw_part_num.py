@@ -44,7 +44,7 @@ description: >
     •	Programming session (which includes both primary and secondary bootloader)
 
 details: >
-    Import script - Inherited from older version of requirement 
+    Import script - Inherited from older version of requirement
 """
 
 from e_68225_MAIN_2_pbl_sw_part_num import run
