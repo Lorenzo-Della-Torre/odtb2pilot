@@ -18,7 +18,7 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-reqprod: 389118
+reqprod: 380118
 version: 0
 title: : Separation time between single frames - programming session
 purpose: >
