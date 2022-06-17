@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,78 +18,55 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-# Testscript Hilding MEPII
-# project:  BECM basetech MEPII
-# author:   LDELLATO (Lorenzo Della Torre)
-# date:     2020-08-26
-# version:  1.0
-# reqprod:  380118
+reqprod: 389118
+version: 0
+title: : Separation time between single frames - programming session
+purpose: >
+    To ensure no messages are lost and good timing performance.
 
-#inspired by https://grpc.io/docs/tutorials/basic/python.html
+description: >
+    In programming session the ECU shall handle receiving single frames (SF N_PDU) with
+    as short time apart as the CAN protocol allows. This applies both when the single frames
+    are from the same sender and from different senders.
+    Note: the shortest separation time of CAN frames is the minimum Interframe Space.
 
-# Copyright 2015 gRPC authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-The Python implementation of the gRPC route guide client.
+details:
+    Verify two single frame can be sent with zero short time in programming session
 """
 
 import time
-from datetime import datetime
-import sys
 import logging
-
-import odtb_conf
-from supportfunctions.support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
-from supportfunctions.support_test_odtb2 import SupportTestODTB2
-from supportfunctions.support_carcom import SupportCARCOM
+from hilding.dut import Dut
+from hilding.dut import DutTestError
+from supportfunctions.support_can import SupportCAN, CanPayload, CanTestExtra
 from supportfunctions.support_file_io import SupportFileIO
-from supportfunctions.support_service10 import SupportService10
 from supportfunctions.support_service22 import SupportService22
 
-from supportfunctions.support_precondition import SupportPrecondition
-from supportfunctions.support_postcondition import SupportPostcondition
-
-SIO = SupportFileIO
 SC = SupportCAN()
-SUTE = SupportTestODTB2()
-SC_CARCOM = SupportCARCOM()
-SE10 = SupportService10()
+SIO = SupportFileIO()
 SE22 = SupportService22()
-PREC = SupportPrecondition()
-POST = SupportPostcondition()
 
-def step_2(can_p):
+
+def two_single_frame_sent_with_zero_st(dut):
     """
-    Teststep 2: verify that two single frame can be sent with ST = 0
+    Send two single frame with ST = 0
+    Args:
+        dut (Dut): An instance of Dut
+    Returns:
+        boolean: True when two single frame can be sent with ST = 0
     """
     result = True
 
-    cpay_1: CanPayload = {
-        "payload_1": b'\x03\x22\xF1\x8C\x00\x00\x00\x00',
-        "extra": ''
-        }
+    cpay_1: CanPayload = {"payload_1": b'\x03\x22\xF1\x8C\x00\x00\x00\x00',
+                          "extra": ''}
     SIO.parameter_adopt_teststep(cpay_1)
 
-    cpay_2: CanPayload = {
-        "payload_2": b'\x03\x22\xF1\x2B\x00\x00\x00\x00',
-        "extra": ''
-        }
+    cpay_2: CanPayload = {"payload_2": b'\x03\x22\xF1\x2B\x00\x00\x00\x00',
+                          "extra": ''}
     SIO.parameter_adopt_teststep(cpay_2)
 
     etp: CanTestExtra = {"step_no": 2,
-                         "purpose" : "verify that two single frame can be sent with ST = 0",
-                        }
+                         "purpose" : "verify that two single frame can be sent with ST = 0"}
 
     SIO.parameter_adopt_teststep(etp)
 
@@ -97,23 +74,24 @@ def step_2(can_p):
     SC.clear_all_can_frames()
 
     #send two SF request consecutively
-    SC.t_send_signal_hex(can_p["netstub"], can_p["send"], can_p["namespace"],
+    SC.t_send_signal_hex(dut["netstub"], dut["send"], dut["namespace"],
                          cpay_1["payload_1"])
-    SC.t_send_signal_hex(can_p["netstub"], can_p["send"], can_p["namespace"],
+    SC.t_send_signal_hex(dut["netstub"], dut["send"], dut["namespace"],
                          cpay_2["payload_2"])
 
     time.sleep(1)
-    SC.update_can_messages(can_p)
-    logging.info("Time first request sent: %s \n", SC.can_frames[can_p["send"]][0][0])
-    logging.info("Time second request sent: %s \n", SC.can_frames[can_p["send"]][1][0])
+    SC.update_can_messages(dut)
+    logging.info("Time first request sent: %s \n", SC.can_frames[dut["send"]][0][0])
+    logging.info("Time second request sent: %s \n", SC.can_frames[dut["send"]][1][0])
     logging.info("Time difference between two frame sent: %s \n",
-                 SC.can_frames[can_p["send"]][1][0] - SC.can_frames[can_p["send"]][0][0])
-    logging.info("frames received: %s \n", SC.can_frames[can_p["receive"]])
+                 SC.can_frames[dut["send"]][1][0] - SC.can_frames[dut["send"]][0][0])
+    logging.info("frames received: %s \n", SC.can_frames[dut["receive"]])
     #expected content reply and frame number to compare with from a default requests
     first_reply_cont = 'F18C'
-    frame_to_comp_first_rep = SC.can_frames[can_p["receive"]][0][2]
+    frame_to_comp_first_rep = SC.can_frames[dut["receive"]][0][2]
     second_reply_cont = 'F12B'
-    frame_to_comp_second_rep = SC.can_frames[can_p["receive"]][1][2]
+    frame_to_comp_second_rep = SC.can_frames[dut["receive"]][1][2]
+
     logging.info("Step%s: first_reply_cont before YML: %s", etp["step_no"], first_reply_cont)
     logging.info("Step%s: frame_to_comp_first_rep before YML: %s", etp["step_no"],
                  frame_to_comp_first_rep)
@@ -124,6 +102,7 @@ def step_2(can_p):
     # use YML to specifying the expected reply if a different request is sended
     first_reply_cont_new = SIO.parameter_adopt_teststep('first_reply_cont')
     frame_to_comp_first_rep_new = SIO.parameter_adopt_teststep('frame_to_comp_first_rep')
+
     second_reply_cont_new = SIO.parameter_adopt_teststep('second_reply_cont')
     frame_to_comp_second_rep_new = SIO.parameter_adopt_teststep('frame_to_comp_second_rep')
 
@@ -133,6 +112,7 @@ def step_2(can_p):
         frame_to_comp_first_rep = frame_to_comp_first_rep_new
     else:
         logging.info("Step%s first_reply_cont_new is empty. Discard.", etp["step_no"])
+
     logging.info("Step%s: first_reply_cont after YML: %s", etp["step_no"], first_reply_cont)
     logging.info("Step%s: frame_to_comp_first_rep after YML: %s", etp["step_no"],
                  frame_to_comp_first_rep)
@@ -143,6 +123,7 @@ def step_2(can_p):
         frame_to_comp_second_rep = frame_to_comp_second_rep_new
     else:
         logging.info("Step%s second_reply_cont_new is empty. Discard.", etp["step_no"])
+
     logging.info("Step%s: second_reply_cont after YML: %s", etp["step_no"], second_reply_cont)
     logging.info("Step%s: frame_to_comp_second_rep after YML: %s", etp["step_no"],
                  frame_to_comp_second_rep)
@@ -152,59 +133,46 @@ def step_2(can_p):
     logging.info("Step %s teststatus:%s \n", etp['step_no'], result)
     return result
 
+
+def step_1(dut: Dut):
+    """
+    action: Verify two single frame can be sent with zero short time in programming session
+    expected_result: True when two single frame can be sent with zero short time
+    """
+    # Set to programming session
+    dut.uds.set_mode(2)
+
+    result = two_single_frame_sent_with_zero_st(dut)
+    if not result:
+        return False
+
+    check_prog_session = SE22.read_did_f186(dut, dsession=b'\x02')
+    if not check_prog_session:
+        logging.error("ECU not in programming session")
+        return False
+
+    logging.info("ECU is in programming session")
+    return True
+
+
 def run():
     """
-    Run - Call other functions from here
+    Verify two single frame can be sent with zero short time
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+    dut = Dut()
+    start_time = dut.start()
+    result = False
+    try:
+        dut.precondition(timeout=60)
 
-    # start logging
-    # to be implemented
+        result = dut.step(step_1, purpose="Verify two single frame can be sent with"
+                                          " zero short time in programming session")
 
-    # where to connect to signal_broker
-    can_p: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        "send" : "Vcu1ToBecmFront1DiagReqFrame",
-        "receive" : "BecmToVcu1Front1DiagResFrame",
-        "namespace" : SC.nspace_lookup("Front1CANCfg0")
-    }
-    SIO.parameter_adopt_teststep(can_p)
+    except DutTestError as error:
+        logging.error("Test failed: %s", error)
+    finally:
+        dut.postcondition(start_time, result)
 
-    logging.info("Testcase start: %s", datetime.now())
-    starttime = time.time()
-    logging.info("Time: %s \n", time.time())
-
-    ############################################
-    # precondition
-    ############################################
-    timeout = 30
-    result = PREC.precondition(can_p, timeout)
-
-    if result:
-    ############################################
-    # teststeps
-    ############################################
-
-    # step1:
-    # action: # Change to programming session
-    # result: BECM reports mode
-        result = result and SE10.diagnostic_session_control_mode2(can_p, 1)
-
-    # step2:
-    # action: send two single frames requests consecutively
-    # result: BECM sends positive reply for both reqests
-        result = result and step_2(can_p)
-
-    # step3:
-    # action: verify current session
-    # result: BECM reports programming session
-        result = result and SE22.read_did_f186(can_p, dsession=b'\x02', stepno=3)
-
-    ############################################
-    # postCondition
-    ############################################
-
-    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()
