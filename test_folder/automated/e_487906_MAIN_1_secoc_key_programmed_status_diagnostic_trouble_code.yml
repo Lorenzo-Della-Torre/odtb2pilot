@@ -1,0 +1,5 @@
+hvbm_p519:
+    run:
+        sec_oc_did : 'D0CB'
+        dtc_service: 'D0C451'
+        mask: 'FF'
