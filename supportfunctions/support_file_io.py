@@ -163,6 +163,7 @@ def _find_value_in_testspecific_yml(caller, dictionary_to_modify, changed_keys):
         return False
 
     file_names_in_callstack = []
+    absolute_path = ""
     for level in inspect.stack():
         path_to_file = level[1]
         name_of_file = os.path.basename(path_to_file).split(".")[0]
