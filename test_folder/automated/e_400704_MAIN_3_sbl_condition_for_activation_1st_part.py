@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,180 +18,137 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-# Testscript Hilding MEPII
-# project:  BECM basetech MEPII
-# author:   LDELLATO (Lorenzo Della Torre)
-# date:     2020-04-21
-# version:  1.0
-# reqprod:  400704
+reqprod: 400704
+version: 3
+title: : Secondary Bootloader - Condition for activation
+purpose: >
+    The authenticity of the secondary bootloader must be verified. Otherwise, the
+    verification mechanism could be bypassed and arbitrary application could be started.
 
-# author:   LDELLATO (Lorenzo Della Torre)
-# date:     2020-08-28
-# version:  1.1
-# reqprod:  400704
+description: >
+    The primary bootloader must ensure that the authenticity verification of the secondary
+    bootloader is passed prior to it is activated. If the verification fails, the ECU shall
+    remain in the primary bootloader and the volatile memory buffer shall be cleared. The used
+    address parameter of the ActivateSBL routine control must be within the address range of the
+    validated block(s).
 
-#inspired by https://grpc.io/docs/tutorials/basic/python.html
-
-# Copyright 2015 gRPC authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-The Python implementation of the gRPC route guide client.
+details: >
+    Verify the authenticity of the secondary bootloader
 """
 
 import time
-from datetime import datetime
-import sys
 import logging
-import inspect
-
-import odtb_conf
-from supportfunctions.support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
-from supportfunctions.support_test_odtb2 import SupportTestODTB2
+from hilding.dut import Dut
+from hilding.dut import DutTestError
+from hilding.conf import Conf
 from supportfunctions.support_carcom import SupportCARCOM
-from supportfunctions.support_file_io import SupportFileIO
 from supportfunctions.support_SBL import SupportSBL
-from supportfunctions.support_sec_acc import SupportSecurityAccess
-
-from supportfunctions.support_precondition import SupportPrecondition
-from supportfunctions.support_postcondition import SupportPostcondition
-from supportfunctions.support_service10 import SupportService10
-from supportfunctions.support_service11 import SupportService11
 from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_service27 import SupportService27
 from supportfunctions.support_service31 import SupportService31
-from supportfunctions.support_service3e import SupportService3e
 
-SIO = SupportFileIO
-SC = SupportCAN()
-S_CARCOM = SupportCARCOM()
-SUTE = SupportTestODTB2()
+CNF = Conf()
 SSBL = SupportSBL()
-SSA = SupportSecurityAccess()
-
-PREC = SupportPrecondition()
-POST = SupportPostcondition()
-SE10 = SupportService10()
-SE11 = SupportService11()
+SC_CARCOM = SupportCARCOM()
 SE22 = SupportService22()
 SE27 = SupportService27()
 SE31 = SupportService31()
-SE3E = SupportService3e()
 
-def step_5(can_p, call):
+
+def routinecontrol_start_routine(dut, vbf_header):
     """
-    Teststep 5: Send RoutineControl Request SID startRoutine (01), Activate Secondary Boot-loader
+    Send RoutineControl request SID startRoutine (01), activate secondary boot-loader
+    Args:
+        dut (Dut): dut instance
+        vbf_header (dict): vbf header
+    Returns:
+        bool: True when Received NRC-31
     """
-    call = call.to_bytes((call.bit_length()+7) // 8, 'big')
-    cpay: CanPayload = {
-        "payload":S_CARCOM.can_m_send("RoutineControlRequestSID",
-                                      b'\x03\x01' + call, b'\x01'),
-        "extra":''
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    call = vbf_header['call'].to_bytes((vbf_header['call'].bit_length()+7) // 8, 'big')
+    payload = SC_CARCOM.can_m_send("RoutineControlRequestSID", b'\x03\x01' + call, b'')
+    response = dut.uds.generic_ecu_call(payload)
 
-    etp: CanTestExtra = {
-        "step_no" : 5,
-        "purpose" : "SBL activation with correct call",
-        "timeout" : 4,
-        "min_no_messages" : -1,
-        "max_no_messages" : -1
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
-    result = SUTE.teststep(can_p, cpay, etp)
+    if response.raw[2:8] == "7F3131":
+        logging.info("Received NRC-31(requestOfRange) as expected")
+        return True
+    logging.error("Test Failed: Expected NRC-31(requestOfRange) received, %s", response.raw)
+    return False
 
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='7F3131')
-    logging.info(SUTE.pp_decode_7f_response(SC.can_frames[can_p["receive"]][0][2]))
-    return result
+
+def step_1(dut: Dut):
+    """
+    action: Verify routine control start sent for check prog precondition
+    expected_result: True on preconditions to programming are fulfilled
+    """
+    SSBL.get_vbf_files()
+
+    result = SE31.routinecontrol_requestsid_prog_precond(dut, stepno=1)
+
+    if result:
+        logging.info("Preconditions to programming are fulfilled")
+        # Set programming Diagnostic Session
+        dut.uds.set_mode(2)
+        return True
+
+    logging.error("Test Failed: Routine control requestsid prog precond Unsuccessful")
+    return False
+
+
+def step_2(dut: Dut):
+    """
+    action: SBL activation with correct call
+    expected_result: True on successful SBL activation with correct call.
+    """
+    result = SE27.activate_security_access_fixedkey(dut, sa_keys=CNF.default_rig_config,
+                                                    step_no=272, purpose="SecurityAccess")
+    if not result:
+        logging.error("Test Failed: Security access denied")
+        return False
+
+    result, vbf_header = SSBL.sbl_download_no_check(dut, SSBL.get_sbl_filename())
+    if not result:
+        logging.error("Test Failed: sbl download no check failed")
+        return False
+
+    result = routinecontrol_start_routine(dut, vbf_header)
+    if not result:
+        logging.error("Test Failed: Routine control start routine Failed")
+        return False
+
+    # ECU reset
+    dut.uds.ecu_reset_1101()
+    time.sleep(5)
+    result = SE22.read_did_f186(dut, dsession=b'\x01')
+    if not result:
+        logging.error(" ECU not in default session")
+        return False
+
+    logging.info("ECU is in default session")
+    return True
+
 
 def run():
     """
-    Run - Call other functions from here
+    Verify the authenticity of the secondary bootloader
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+    dut = Dut()
+    start_time = dut.start()
+    result = False
+    result_step = False
+    try:
+        dut.precondition(timeout=120)
 
-    # start logging
-    # to be implemented
+        result_step = dut.step(step_1, purpose="Verify Routine Control start sent for Check"
+                                               " Prog Precondition")
+        if result_step:
+            result_step = dut.step(step_2, purpose='Verify SBL activation with correct call')
+        result = result_step
 
-    # where to connect to signal_broker
-    can_p: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        "send" : "Vcu1ToBecmFront1DiagReqFrame",
-        "receive" : "BecmToVcu1Front1DiagResFrame",
-        "namespace" : SC.nspace_lookup("Front1CANCfg0")
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
-    logging.info("Testcase start: %s", datetime.now())
-    starttime = time.time()
-    logging.info("Time: %s \n", time.time())
+    except DutTestError as error:
+        logging.error("Test failed: %s", error)
+    finally:
+        dut.postcondition(start_time, result)
 
-    ############################################
-    # precondition
-    ############################################
-    # read VBF param when testscript is s started, if empty take default param
-    SSBL.get_vbf_files()
-    time.sleep(4)
-    timeout = 200
-    result = PREC.precondition(can_p, timeout)
-    if result:
-
-    ############################################
-    # teststeps
-    ############################################
-        # step 1:
-        # action: Verify if preconditions to programming are fulfilled.
-        # result: ECU sends positive reply if successful.
-        result = result and SE31.routinecontrol_requestsid_prog_precond(can_p, 1)
-
-        # step2:
-        # action: Change to programming session (02) to be able to enter the PBL.
-        # result: ECU sends positive reply if successful.
-        result = result and SE10.diagnostic_session_control_mode2(can_p, 2)
-
-        # step 3:
-        # action: Request Security Access to be able to unlock the server(s)
-        #         and run the primary bootloader.
-        # result: Positive reply from support function if Security Access to server is activated.
-        result = result and SE27.activate_security_access(can_p, 3)
-
-        # step4:
-        # action: Flash the SBL without Check Memory (without verification).
-        # result: Positive reply from support function if DL of SBL ok.
-        result_dl, vbf_header = SSBL.sbl_download_no_check(can_p, SSBL.get_sbl_filename())
-        result = result and result_dl
-        time.sleep(1)
-
-        # step 5:
-        # action: Send RoutineControl Request SID startRoutine (01) Activate Secondary Boot-loader.
-        # result: ECU sends NRC reply after RoutineControl request is sent.
-        result = result and step_5(can_p, vbf_header['call'])
-
-        # step 6:
-        # action: Reset the ECU with positive response(01)
-        # result: ECU sends positive reply if successful.
-        result = result and SE11.ecu_hardreset(can_p, 6)
-        time.sleep(1)
-
-        # step 7:
-        # action: Verify ECU is in default session (01).
-        # result: ECU sends requested DID with current session.
-        result = result and SE22.read_did_f186(can_p, b'\x01', stepno=7)
-
-    ############################################
-    # postCondition
-    ############################################
-
-    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()
