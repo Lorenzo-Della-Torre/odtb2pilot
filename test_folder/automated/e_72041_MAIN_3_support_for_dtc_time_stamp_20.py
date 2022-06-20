@@ -62,7 +62,7 @@ def step_1(dut: Dut):
     if response.raw[2:4] != '59':
         logging.error("Test Failed: Expected positive response 59 for DTC, received %s",
                        response.raw)
-        return False, None
+        return False
 
     # Get global snapshot from DTC snapshot
     filtered_global_snapshot=[]
@@ -72,40 +72,37 @@ def step_1(dut: Dut):
 
     if len(filtered_global_snapshot) == 0:
         logging.error("Test Failed: No global snapshot DID found in the DTC snapshot")
-        return False, None
+        return False
 
     # Get did 'DD00' from global snapshot in DTC snapshot
     for snapshot in filtered_global_snapshot:
         if 'DD00' in snapshot['did_ref'].values():
             logging.info("Time record found in the DTC snapshot")
-            return True, response
+            return True
 
     logging.error("Test Failed: No time record found in the DTC snapshot")
-    return False, None
+    return False
 
 
-def step_2(dut: Dut, dtc_response):
+def step_2(dut: Dut):
     """
     action: Retrieve a timestamp from the response
-    expected_result: True when retrieved timestamp is greater than or equal
-                     to unconfirmed dtc limit
+    expected_result: True when retrieved timestamp is greater than 0
     """
     response = dut.uds.read_data_by_id_22(global_timestamp_dd00)
 
     if response.raw[2:4] == '7F':
-        logging.error("No global_timestamp data received")
+        logging.error("No global timestamp data received")
         return False
 
-    global_real_time = (int(response.raw[8:16], 16))*100
-    unconfirmed_dtc_limit = int(dtc_response.data['details']['unconfirmed_dtc_limit'])
+    global_real_time = int(response.raw[8:16], 16)
 
-    # Comparing global real time with unconfirmed dtc limit
-    if global_real_time >= unconfirmed_dtc_limit:
-        logging.info("Received time stamp %s, which is greater than %s, as expected",
-                      global_real_time, unconfirmed_dtc_limit)
+    if global_real_time >= 0:
+        logging.info("Received time stamp %s, which is greater than 0, as expected",
+                      global_real_time)
         return True
 
-    logging.error("Test Failed: Expected %s time stamp, received %s", unconfirmed_dtc_limit,
+    logging.error("Test Failed: Expected global time stamp to be greater than 0, received %s",
                    global_real_time)
     return False
 
@@ -126,11 +123,11 @@ def run():
     try:
         dut.precondition(timeout=30)
 
-        result_step, dtc_response = dut.step(step_1, purpose="Get time data from DTC snapshot")
+        result_step = dut.step(step_1, purpose="Get time data from DTC snapshot")
 
         if result_step:
-            result_step = dut.step(step_2, dtc_response, purpose="Retrieve a timestamp from"
-                                                                 " the response")
+            result_step = dut.step(step_2, purpose="Retrieve a timestamp from"
+                                                   " the response")
 
         result = result_step
 
