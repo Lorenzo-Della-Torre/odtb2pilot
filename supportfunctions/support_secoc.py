@@ -26,9 +26,10 @@ class SecOCmsgVerification: # pylint: disable=too-few-public-methods
     """
 
     @staticmethod
+    #support function to take no action
     def failed_message_take_no_action(signal):
         """
-        Support function to take no action, function to be implemented
+        Take no Action function to be implemented
         """
         #Logic to be implemented in future
         # Take no Action
@@ -37,12 +38,25 @@ class SecOCmsgVerification: # pylint: disable=too-few-public-methods
         return response
 
     @staticmethod
+    #support function to take response message
     def get_secoc_message(signal):
         """
         Return SecOC message
         Function to be implemented to get SecOC message
         """
-        logging.info("Need to implement support function to get SecOC message for signal %s"
-                     ,signal)
-        response = ''
-        return response
+        logging.info("Need to implement support function to get SecOC message for signal %s",
+        signal)
+        encrypted_data_record = signal
+        return encrypted_data_record
+
+    @staticmethod
+    #support function to take response message
+    def get_pdu(signal, bus_type):
+        """
+        Return SecOC message based on the bus type that can be ethernet, can fd or can
+        Function to be implemented to get SecOC message
+        """
+        logging.info("Need to implement support function to get SecOC message for signal %s and"
+        " bus type %s", signal, bus_type)
+        message = ''
+        return message
