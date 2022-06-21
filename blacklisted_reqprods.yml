@@ -68,6 +68,10 @@ hvbm_p519:
         e_488878_MAIN_0 : sec_oc_did_for_sec_oc_verification_failures | SecOC not implemented yet
         e_486608_MAIN_0 : event_type_secure_on_board_communication | SecOC not implemented yet
 
+    --Excluded--:
+        e_447591_MAIN_3 : tier1_file_deliveries | Deviaton needed as SWCE (postbuild) will not be delivered.
+        e_76513_MAIN_1 : component_selection_can_physical_interfaces | This is hw req, need to hand-over to BMS team. (LEAR HW can't fulfill this)
+
 ihfa_v436:
     --NA--:
 
