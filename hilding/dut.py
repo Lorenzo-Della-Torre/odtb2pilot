@@ -146,6 +146,20 @@ class Dut:
             Defaults to 30.
         """
 
+        iso_tp = SupportCAN()
+
+        #There is an issue in unsubscribe_signals() that generates a lot of errors in the log.
+        #In order to not confuse users this was simply removed from the log by disabling the logger
+        logger = logging.getLogger()
+        logger.disabled = True
+
+        # deregister signals
+        # Adding unsubscribe in precondition to remove all the unwanted subscriptions
+        # from the previous scripts if any.
+        iso_tp.unsubscribe_signals()
+
+        logger.disabled = False
+
         self.uds.step = 100
         # start heartbeat, repeat every 0.8 second
         heartbeat_param: PerParam = {
