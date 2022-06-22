@@ -1,0 +1,10 @@
+hvbm_p519:
+  run:
+    dev_key: '0F0E0D0C0B0A09080706050403020100'
+    # bus_type can be ETH, CAN FD or CAN
+    bus_type: 'ETH'
+    signals:
+      signal_1:
+        data: '0000000000000000'
+      signal_2:
+        data: '1111111111111111'
