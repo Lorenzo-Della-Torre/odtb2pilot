@@ -149,19 +149,19 @@ def step_5(dut: Dut):
     expected_result: True when ECU is in default session
     """
     # Complete and Compatible check
-    result = SSBL.check_complete_compatible_routine(dut, stepno=111)
+    result = SSBL.check_complete_compatible_routine(dut, stepno=105)
     if not result:
         return False
 
     logging.info("Downloaded software is complete and compatible")
 
     # ECU reset
-    result = SE11.ecu_hardreset_5sec_delay(dut, stepno=111)
+    result = SE11.ecu_hardreset_5sec_delay(dut, stepno=105)
     if not result:
         return False
 
     # Verify active diagnostic session
-    result = SE22.read_did_f186(dut, dsession=b'\x01', stepno=111)
+    result = SE22.read_did_f186(dut, dsession=b'\x01', stepno=105)
     if not result:
         logging.error("Test Failed: ECU is not in default session")
         return False
@@ -173,11 +173,6 @@ def step_5(dut: Dut):
 def run():
     """
     Verify restricted software download when invalid ESS stored
-    Steps:
-        1. Activate SBL
-        2. Read VBF files for ESS file (1st Logical Block) and send MF request erase
-        3. Download ESS, DATA & EXE VBF files
-        4. Check complete and compatibility
     """
     dut = Dut()
 
