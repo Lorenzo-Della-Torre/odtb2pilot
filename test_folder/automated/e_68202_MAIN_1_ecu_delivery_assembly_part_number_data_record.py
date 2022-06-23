@@ -19,7 +19,7 @@ Any unauthorized copying or distribution of content from this file is prohibited
 /*********************************************************************************/
 
 reqprod: 68202
-version: 1
+version: 2
 title: ECU Delivery Assembly Part Number data record
 purpose: >
     To enable readout of a part number that identifies the complete ECU at the point of delivery
@@ -46,6 +46,7 @@ details: >
         1. Verify ECU is in default session
         2. Verify response received in default, extended and programming session(pbl and sbl)
            is equal
+        3. Verify valid part number for did F12B
 """
 
 import logging
@@ -120,15 +121,15 @@ def step_1(dut: Dut):
 
 def step_2(dut: Dut):
     """
-    action: Verify if identifier is implemented in default, extended and programming
-            session(pbl and sbl)
+    action: Verify response received in default, extended and programming session(pbl and sbl)
+            is equal
     expected_result: True when response received in default, extended and programming
                      session(pbl and sbl) is equal
     """
     # Request F12B DID in one request and verify if DID is included in response
     result_non_prog_dids, default_f12b_result = send_request_f12b(dut, did_to_read='F12B')
     if not result_non_prog_dids:
-        return False
+        return False, None
 
     # Change to extended session
     dut.uds.set_mode(3)
@@ -136,7 +137,7 @@ def step_2(dut: Dut):
     # Request F12B DID in one request and verify if DID is included in response
     result_non_prog_dids, extended_f12b_result = send_request_f12b(dut, did_to_read='F12B')
     if not result_non_prog_dids:
-        return False
+        return False, None
 
     # Change to default session
     dut.uds.set_mode(1)
@@ -147,28 +148,22 @@ def step_2(dut: Dut):
     # Request F12B DID in one request and verify if DID is included in response
     result_non_prog_dids, pbl_f12b_result = send_request_f12b(dut, did_to_read='F12B')
     if not result_non_prog_dids:
-        return False
+        return False, None
 
     SSBL.get_vbf_files()
     # Activate SBL
-    result = SSBL.sbl_activation(dut, dut.conf.default_rig_config)
+    result = SSBL.sbl_activation(dut, sa_keys=dut.conf.default_rig_config)
     if not result:
         logging.error("Test Failed: SBL activation failed")
-        return False
+        return False, None
 
     # Request F12B DID in one request and verify if DID is included in response
     result_non_prog_dids, sbl_f12b_result = send_request_f12b(dut, did_to_read='F12B')
     if not result_non_prog_dids:
-        return False
+        return False, None
 
     # Change to default session
     dut.uds.set_mode(1)
-
-    # Validate the part number and format
-    pos = default_f12b_result.find('F12B')
-    valid_part_number = SUTE.validate_part_number_record(default_f12b_result[pos+4:pos+18])
-    ecu_delivery_assembly_pn = SUTE.pp_partnumber(default_f12b_result[pos+4:pos+18])
-    logging.info("Valid_f12b_num:%s", ecu_delivery_assembly_pn)
 
     # The response received in default, extended and programming session shall be equal
     result = (default_f12b_result == extended_f12b_result)
@@ -177,8 +172,27 @@ def step_2(dut: Dut):
     logging.info("Response of did F12B is equal in pbl and sbl session")
     result = result and (default_f12b_result == pbl_f12b_result)
     logging.info("Response of did F12B is equal in default and pbl session")
-    result = result and valid_part_number
-    return result
+    return result, default_f12b_result
+
+
+def step_3(dut: Dut, default_f12b_result):
+    """
+    action: Verify valid part number for did F12B
+    expected_result: True when response received valid part number for did F12B
+    """
+    # pylint: disable=unused-argument
+    # Validate the part number and format
+    pos = default_f12b_result.find('F12B')
+    valid_part_number = SUTE.validate_part_number_record(default_f12b_result[pos+4:pos+18])
+    ecu_delivery_assembly_pn = SUTE.pp_partnumber(default_f12b_result[pos+4:pos+18])
+    logging.info("Valid_f12b_num:%s", ecu_delivery_assembly_pn)
+
+    if not valid_part_number:
+        logging.error("Test Failed: Received invalid part number")
+        return False
+
+    logging.info("Received vaild part number as expected")
+    return True
 
 
 def run():
@@ -188,6 +202,7 @@ def run():
         1. Verify ECU is in default session
         2. Verify response received in default, extended and programming session(pbl and sbl)
            is equal
+        3. Verify valid part number for did F12B
     """
     dut = Dut()
     start_time = dut.start()
@@ -195,12 +210,16 @@ def run():
     result_step = False
 
     try:
-        dut.precondition(timeout=70)
+        dut.precondition(timeout=200)
 
-        result_step = dut.step(step_1, purpose="Verify ECU is in default session")
+        result_step = dut.step(step_1, purpose="Verify ECU is in default sesion")
         if result_step:
-            result_step = dut.step(step_2, purpose="Verify response received in default, extended"
-                                                   " and programming session(pbl and sbl) is equal")
+            result_step, default_f12b_result = dut.step(step_2, purpose="Verify response received"
+                                                        " in default, extended and programming"
+                                                        " session(pbl and sbl) is equal")
+        if result_step:
+            result_step = dut.step(step_3, default_f12b_result, purpose="Verify valid part number"
+                                                                        " for did F12B")
         result = result_step
     except DutTestError as error:
         logging.error("Test failed: %s", error)
