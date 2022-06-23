@@ -197,7 +197,8 @@ def run():
         # step 6:
         # action: DL and activate SBL
         # result: ECU sends positive reply
-        result = result and SSBL.sbl_activation(can_p, Config.default_rig_config, stepno=6, purpose="DL and activate SBL")
+        result = result and SSBL.sbl_activation(can_p, Config.default_rig_config,\
+                                            stepno=6, purpose="DL and activate SBL")
         time.sleep(1)
 
         # step 7:
