@@ -27,6 +27,7 @@ purpose: >
 description: >
     Data records with data identifiers in the ranges as specified in the table below and shall be
     implemented exactly as they are defined in Carcom - Global Master Reference Database.
+
     ----------------------------------------------------------------------
     Description	                                      Identifier range
     ----------------------------------------------------------------------
@@ -36,6 +37,7 @@ description: >
                                                         ED80 - ED9F
                                                         F010 - F0FF
     ----------------------------------------------------------------------
+
     It shall be possible to read the data record by using the diagnostic service specified in
     Ref[LC : Volvo Car Corporation - UDS Services -Service 0x22 (ReadDataByIdentifier) Reqs]
 
@@ -73,10 +75,12 @@ def read_did_f120(dut, app_diag_part_num):
     part_number = part_number.replace(" ", "_")
     # Compare application diagnostic database part numbers from sddb and did response
     if part_number == app_diag_part_num:
-        logging.info("Application diagnostic database part numbers are equal")
+        logging.info("Application diagnostic database part number from sddb '%s' and from ECU "
+                     "response '%s' are equal", app_diag_part_num, part_number)
         return True
 
-    logging.error("Test Failed: Application diagnostic database part numbers are not equal")
+    logging.error("Test Failed: Application diagnostic database part number from sddb '%s' and "
+                  "from ECU response '%s' are not equal", app_diag_part_num, part_number)
     return False
 
 
@@ -255,7 +259,7 @@ def step_2(dut, app_diag_part_num, app_did_dict, parameters):
 
 def step_3(dut, app_diag_part_num, app_did_dict, parameters):
     """
-    action: Verify all DIDs in app_did_dict within given range in default session
+    action: Verify all DIDs in app_did_dict within given range in extended session
     expected result: True when ECU gives expected response for all DIDs
     """
     # Set session in extended
@@ -290,7 +294,7 @@ def run():
         if not all(list(parameters.values())):
             raise DutTestError("yml parameters not found")
 
-        dut.precondition(timeout = 1200)
+        dut.precondition(timeout=1200)
 
         result_step, app_did_dict, app_diag_part_num = dut.step(step_1, purpose="Read sddb file "
                                                                 "and get dict of DIDs present "
