@@ -67,80 +67,109 @@ details: >
 """
 
 import logging
+import odtb_conf
 from hilding.dut import Dut
 from hilding.dut import DutTestError
 from supportfunctions.support_file_io import SupportFileIO
 from supportfunctions.support_carcom import SupportCARCOM
+from supportfunctions.support_can import SupportCAN, CanParam
 
 SIO = SupportFileIO()
 SC_CARCOM = SupportCARCOM()
+SC = SupportCAN()
 
 
-def verify_dtc_status(dut: Dut, parameters, byte_pos):
+def subscribe_to_signal(parameters):
     """
-    Verify ECU response of did 'D0CC' and read dtc snapshot for each SecOC protected signal
+    Request subscribe to signal
+    Args:
+        parameters (dict): send, receive
+    """
+    can_p_ex: CanParam = {
+    "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
+    "send" : parameters['send'],
+    "receive" : parameters['receive'],
+    "namespace" : SC.nspace_lookup("Front1CANCfg0")
+    }
+    SIO.parameter_adopt_teststep(can_p_ex)
+
+    # Subscribe to signal
+    SC.subscribe_signal(can_p_ex, 15)
+
+
+def request_read_dtc_snapshot(dut, parameters):
+    """
+    Request read DTC information snapshot
     Args:
         dut (Dut): An instance of Dut
-        parameters (dict): secoc_verification_failure_did, dtc_did,
-                           failure_type_byte, mask, signals
-        byte_pos(int): byte position of failure count limit status
+        parameters (dict): dtc_did, failure_type_byte, mask
     Returns:
-        result_dict (dict): signal, dtc_response.raw
+        dtc_response (dict): dtc_response
     """
-    result_dict = {}
-    bit_pos = 0
+    dtc_snapshot = SC_CARCOM.can_m_send("ReadDTCInfoSnapshotRecordByDTCNumber",
+                                        bytes.fromhex(parameters['dtc_did']+
+                                        parameters['failure_type_byte']),
+                                        bytes.fromhex(parameters['mask']))
+    dtc_response = dut.uds.generic_ecu_call(dtc_snapshot)
+    return dtc_response
 
+
+def verify_dtc_snapshot_data(dut, parameters, signal_name):
+    """
+    Verify DTC snapshot information data
+    Args:
+        dut (Dut): An instance of Dut
+        parameters (dict): dtc_did, failure_type_byte, mask
+        signal_name (str): SecOC signals
+    Returns:
+        (bool): True when DTC is triggered
+    """
+    dtc_response = request_read_dtc_snapshot(dut, parameters)
+
+    if dtc_response.raw[4:6] != '59':
+        logging.error("Test Failed: Expected positive response '59' for signal: %s, received %s",
+                      signal_name, dtc_response.raw)
+        return False
+
+    # Get data identifier record 'D0CC' from global snapshot in DTC snapshot
+    dtc_response_data = dtc_response.data['details']['snapshot_dids']
+    for snapshot_dids in dtc_response_data:
+        if snapshot_dids['name'] == 'Global Snapshot':
+            if 'D0CC' in dtc_response_data['did_ref'].values():
+                logging.info("DTC has triggered for signal: %s as expected", signal_name)
+                return True
+
+    logging.error("Test Failed: DTC has not triggered for signal: %s", signal_name)
+    return False
+
+
+def verify_sec_oc_signals(dut, parameters):
+    """
+    Verify dtc snapshot for each SecOC protected signal
+    Args:
+        dut (Dut): An instance of Dut
+        parameters (dict): dtc_did, failure_type_byte, mask, signals
+    Returns:
+        results (list): Results of SecOC signals
+    """
+    results= []
     # Read dtc snapshot for all SecOC protected signal
     for signal_name, sig_data in parameters['signals'].items():
-        logging.info("Verifying failure count limit bit status of %s by reading the did 'D0CC'",
-                      signal_name)
-        result = False
-        for failure_count_index in range(int(sig_data['failure_count_byte'], 16)):
+
+        # Subscribe to signal
+        subscribe_to_signal(parameters)
+
+        for _ in range(int(sig_data['failure_count_byte'], 16)):
             # Send faulty data of SecOC protected signal to ECU
             dut.uds.generic_ecu_call(bytes.fromhex(sig_data['data']))
 
-            # Read did 'D0CC' to get the failure count limit status
-            did_response = dut.uds.read_data_by_id_22(bytes.fromhex(
-                           parameters['secoc_verification_failure_did']))
+        result = verify_dtc_snapshot_data(dut, parameters, signal_name)
+        results.append(result)
 
-            if did_response.raw[2:4] == '7F':
-                logging.error("Received negative response for %s(%s)", signal_name,
-                              failure_count_index)
-                continue
+        # Unsubscribe to signal
+        SC.unsubscribe_signal(signal_name)
 
-            # Byte-4 to Byte-n  of did 'D0CC' gives failure count limit status
-            failure_count_limit_status = bin(int(did_response.raw[byte_pos:byte_pos+2], 16))
-            # Reverse bit string
-            failure_count = failure_count_limit_status[2:][::-1]
-
-            if failure_count[bit_pos] == '0':
-                logging.info("SecOC failure count limit bit is %s, and limit is not exceeded",
-                             failure_count[bit_pos])
-
-            if failure_count[bit_pos] == '1':
-                logging.info("SecOC failure count limit bit is %s, and limit is exceeded",
-                             failure_count[bit_pos])
-                result = True
-
-        # Increase bit_pos value by 1 to select next signal
-        bit_pos = bit_pos + 1
-
-        if result:
-            # Read DTC 0xD0C568 if failure count limit exceeds configurable limit
-            dtc_snapshot = SC_CARCOM.can_m_send("ReadDTCInfoSnapshotRecordByDTCNumber",
-                                                bytes.fromhex(parameters['dtc_did']+
-                                                parameters['failure_type_byte']),
-                                                bytes.fromhex(parameters['mask']))
-            dtc_response = dut.uds.generic_ecu_call(dtc_snapshot)
-            result_dict[signal_name] = dtc_response.raw
-        else:
-            logging.error("SecOC failure count limit is not exceeded for %s", signal_name)
-
-    if len(result_dict) == len(parameters['signals']):
-        return result_dict
-
-    logging.error("Did not received DTC snapshot response for one or all of the SecOC signals")
-    return None
+    return results
 
 
 def step_1(dut: Dut):
@@ -149,7 +178,8 @@ def step_1(dut: Dut):
     expected_result: True when successfully verified the status of DTC for all SecOC signals
     """
     # Read yml parameters
-    parameters_dict = {'secoc_verification_failure_did': '',
+    parameters_dict = {'send': '',
+                       'receive': '',
                        'dtc_did': '',
                        'failure_type_byte': '',
                        'mask': '',
@@ -160,37 +190,7 @@ def step_1(dut: Dut):
         logging.error("Test Failed: yml parameter not found")
         return False
 
-    did_response = dut.uds.read_data_by_id_22(bytes.fromhex(
-                    parameters['secoc_verification_failure_did']))
-    results = []
-    byte_pos = 6
-    # Extract message and calculate byte length
-    message_length = int((len(did_response.raw[byte_pos:]))/2)
-    # Iterate up to message length to verify failure count bit for set of SecOC signals
-    # i.e. #n byte represents m bit signals, where n is message_length and m is 8 bit
-    for _ in range(message_length):
-        response_dict = verify_dtc_status(dut, parameters, byte_pos)
-        byte_pos = byte_pos + 2
-        if response_dict is None:
-            logging.error("Did not received DTC snapshot response for one or all of the "
-                          "SecOC signals")
-            results.append(False)
-            continue
-
-        for signal_name, dtc_response in response_dict.items():
-            if dtc_response[4:6] != '59':
-                logging.error("Test Failed: Invalid response or DTC snapshot not readable")
-                return False
-
-            pos = dtc_response.find(parameters['dtc_did'])
-            if dtc_response[pos:pos+2] == parameters['dtc_did']:
-                logging.info("DTC has triggered for %s as expected, response received %s",
-                             signal_name, dtc_response[pos:pos+2])
-                results.append(True)
-
-            logging.error("Test Failed: Expected DTC to be triggered for %s, response received %s",
-                          signal_name, dtc_response[pos:pos+2])
-            results.append(False)
+    results = verify_sec_oc_signals(dut, parameters)
 
     if all(results) and len(results) != 0:
         logging.info("Successfully verified the status of DTC for all signals")
@@ -214,7 +214,6 @@ def run():
 
         result= dut.step(step_1, purpose="Verify the status of DTC 0xD0C568 for all of the "
                                          "SecOC protected signals")
-
     except DutTestError as error:
         logging.error("Test failed: %s", error)
     finally:

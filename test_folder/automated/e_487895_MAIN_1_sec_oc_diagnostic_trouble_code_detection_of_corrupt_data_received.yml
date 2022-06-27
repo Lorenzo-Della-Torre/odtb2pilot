@@ -1,6 +1,7 @@
 hvbm_p519:
     step_1:
-        secoc_verification_failure_did: 'D0CC'
+        send : 'ECMFront1Fr02'
+        receive : 'BECMFront1Fr02'
         dtc_did: 'D0C5'
         failure_type_byte: '68'
         mask: 'FF'
