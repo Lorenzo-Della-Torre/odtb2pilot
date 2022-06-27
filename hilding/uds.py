@@ -120,13 +120,11 @@ class Uds:
             elif SC.can_cf_received[self.dut["receive"]] and "3200" not in\
                                                     SC.can_cf_received[self.dut["receive"]][0][2]:
                 log.error("Data or Abort flow control expected from the ECU, But not received")
-                raise UdsEmptyResponse
 
             else:
                 log.error(\
                     "No data received from the ECU. Please check that the ECU is up and running")
-                raise UdsEmptyResponse
-
+            raise UdsEmptyResponse
         return UdsResponse(response[0][2], incoming_mode=self.mode)
 
     def ecu_reset_1101(self, delay=1):
