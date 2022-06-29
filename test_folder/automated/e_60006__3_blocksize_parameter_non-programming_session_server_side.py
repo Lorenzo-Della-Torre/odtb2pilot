@@ -18,289 +18,325 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-reqprod:  60006
-version:  3
-title:    BlockSize parameter non-programming session server side
+reqprod: 60006
+version: 3
+title: BlockSize parameter non-programming session server side
 purpose: >
-    Define BlockSize for non-programming session server side.
-    For more information see section BlockSize (BS) parameter definition
+    Define BlockSize for non-programming session server side. For more information see section
+    BlockSize (BS) parameter definition
 
 description: >
-    In non-programming session the receiver must respond with a
-    BS value that does not generate more than one FlowControl (FC) N_PDU
-    (including the first FC N_PDU) per 300 bytes of data for a complete transaction.
-
+    In non-programming session the receiver must respond with a BS value that does not generate
+    more than one FlowControl (FC) N_PDU (including the first FC N_PDU) per 300 bytes of data for
+    a complete transaction.
 
 details: >
-    Verify the response from ECU by sending UDS request with different
-    message sizes such as 13bytes, 300 bytes and 301 bytes.
-    Verify that the flow control is sent from the ECU as required.
+    Verify that the FlowControl (FC) is sent as required by sending UDS request with 13 bytes,
+    300 bytes and 1026 bytes.
 """
 
-import sys
 import logging
-import inspect
-
 from hilding.dut import Dut
 from hilding.dut import DutTestError
-
+from hilding.uds import UdsEmptyResponse
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
-from supportfunctions.support_can import SupportCAN, CanTestExtra, CanPayload
+from supportfunctions.support_can import SupportCAN
 from supportfunctions.support_carcom import SupportCARCOM
 from supportfunctions.support_file_io import SupportFileIO
 
-SC = SupportCAN()
 SUTE = SupportTestODTB2()
+SC = SupportCAN()
 SC_CARCOM = SupportCARCOM()
 SIO = SupportFileIO()
 
+
+def prepare_payload(dids_to_read, pl_max_length):
+    """
+    Create a payload with multiple DIDs to send to the ECU
+    Args:
+        dids_to_read (list): DIDs
+        pl_max_length (int): Payload maximum length
+    Returns:
+        payload (bytes): Payload
+    """
+    if isinstance(dids_to_read, list):
+        payload = ''.join(dids_to_read)
+    else:
+        payload = dids_to_read
+
+    # Padding the payload with 0x00 till the size becomes pl_max_length
+    payload = bytes.fromhex(payload)
+    while len(payload) < pl_max_length:
+        payload = payload + bytes.fromhex('00')
+
+    return payload
+
+
+def calculate_did_count(did_list, response):
+    """
+    Verify DIDs are present in ECU response
+    Args:
+        did_list (list): DIDs
+        response (str): ECU response
+    Returns:
+        (bool): True when all DIDs are present
+    """
+    results = []
+    for did in did_list:
+        did_count = response.count(did)
+        if did_count != 0:
+            results.append(True)
+        else:
+            logging.error("%s DID not found in ECU response", did)
+            results.append(False)
+
+    if all(results) and len(results) != 0:
+        logging.info("Successfully verified that all the DIDs are present in ECU response")
+        return True
+
+    logging.error("Test Failed: Some DIDs are not present in ECU response")
+    return False
+
+
+def request_read_data_by_id(dut, dids_to_read, pl_max_length):
+    """
+    Verify ReadDataByIdentifier service 22 with multiple DIDs for positive response
+    Args:
+        dut (Dut): An instance of Dut
+        dids_to_read (list): DIDs
+        pl_max_length (int): Payload maximum length
+    Returns:
+        (bool): True on successfully verified positive response
+    """
+    payload = prepare_payload(dids_to_read, pl_max_length)
+    response = dut.uds.read_data_by_id_22(payload)
+    if response.raw[4:6] == '62':
+        # Check if expected DIDs are present in reply
+        result = calculate_did_count(dids_to_read, response.raw)
+        if not result:
+            return False
+
+        logging.info("Received positive response %s for request ReadDataByIdentifier",
+                      response.raw[4:6])
+        return True
+
+    logging.error("Test Failed: Expected positive response, received %s", response.raw)
+    return False
+
+
+def request_read_data_by_id_for_neg_resp(dut, dids_to_read, pl_max_length):
+    """
+    Verify ReadDataByIdentifier service 22 with multiple DIDs for negative response
+    Args:
+        dut (Dut): An instance of Dut
+        dids_to_read (list): DIDs
+        pl_max_length (int): Payload maximum length
+    Returns:
+        (bool): True on successfully verified negative response
+    """
+    payload = prepare_payload(dids_to_read, pl_max_length)
+
+    response = dut.uds.read_data_by_id_22(payload)
+    if response.raw[2:4] == '7F' and response.raw[6:8] == '13':
+        logging.info("Received NRC %s for request ReadDataByIdentifier as expected",
+                      response.raw[6:8])
+        return True
+
+    logging.error("Test Failed: Expected NRC '13', received %s", response.raw)
+    return False
+
+
+def send_multiframe_cts(dut):
+    """
+    Send a request with MultiFrame for FC.CTS state
+    Args:
+        dut (class obj): Dut instance
+    Return:
+        response (bool): Positive response on receiving FlowControl(FC) frame
+    """
+    # Verify FC parameters
+    logging.info("Received FC Frame: %s", SC.can_cf_received[dut["receive"]])
+
+    fc_code = '3000' + dut.conf.default_rig_config["FC_Separation_time"]
+    logging.info("CAN MultiFrame: %s", SC.can_frames[dut["receive"]])
+
+    if SUTE.test_message(SC.can_cf_received[dut["receive"]], teststring=fc_code):
+        return True
+
+    logging.error("Test Failed: ECU did not send FlowControl(FC) frame")
+    return False
+
+
+def send_multiframe_ovflw(dut, dids_to_read, pl_max_length):
+    """
+    Send a request with payload of size 1025 bytes for FC.OVFLW
+    Args:
+        dut (class obj): Dut instance
+        dids_to_read (list): DIDs
+        pl_max_length (int): Payload maximum length
+    Return:
+        response (bool): Positive response on receiving FlowControl(FC) frame
+    """
+    if isinstance(dids_to_read, list):
+        payload = ''.join(dids_to_read)
+    else:
+        payload = dids_to_read
+
+    # Create a payload with size greater than 1024 bytes to send to ECU, padding the payload with
+    # '00' till the size becomes 1025 bytes
+    payload = SC_CARCOM.can_m_send("ReadDataByIdentifier", bytes.fromhex(payload), b'')
+    while len(payload) < pl_max_length:
+        payload = payload + bytes.fromhex('00')
+
+    try:
+        dut.uds.generic_ecu_call(payload)
+    except UdsEmptyResponse:
+        pass
+
+    # Verify FC parameters
+    logging.info("Received FC Frame: %s", SC.can_cf_received[dut["receive"]])
+    logging.info("Received CAN message: %s", SC.can_messages[dut["receive"]])
+    logging.info("CAN MultiFrame: %s", SC.can_frames[dut["receive"]])
+
+    fc_code_ovflw = '3200' + dut.conf.default_rig_config["FC_Separation_time"]
+
+    if SUTE.test_message(SC.can_cf_received[dut["receive"]], teststring=fc_code_ovflw):
+        return True
+
+    logging.error("Test Failed: ECU did not send 3200 FC.OVFLW message")
+    return False
+
+
 def step_1(dut: Dut):
     """
-    action:
-        Verify that the ECU is in Default Session
-        using DID 0xF186
-
-    expected_result:
-        The ECU is in Default session.
+    action: Verify that the ECU is in default session
+    expected_result: True when ECU is in default session
     """
-    res = dut.uds.active_diag_session_f186()
-    logging.debug(res)
-    if res.data['details']['mode'] != 1:
-        raise DutTestError(
-            f"ECU is not in Default Session:\n{res}")
+    result = dut.uds.active_diag_session_f186()
+    if result.data['details']['mode'] != 1:
+        logging.error("ECU is not in default session")
+        return False
 
-def step_2(dut: Dut):
+    logging.info("ECU is in default session as expected")
+    return True
+
+
+def step_2(dut: Dut, parameters):
     """
-    action:
-        send a request with MultiFrame and test if
-        DIDs are included in the reply from the ECU.
-
-    expected_result:
-        Message is received by the ECU and Framecontrol(FC) is sent back.
-        All the DIDs in the request should be included in the reply.
+    action: action: Verify frame control message for a multiframe request
+    expected_result: True when all the DIDs in the request are included in the reply and
+                     frame control(FC) is sent back
     """
+    # Request multiple DIDs in one request and verify if DIDs are included in response
+    result_non_prog_dids = request_read_data_by_id(dut, parameters['non_prog_dids'],
+                                                   pl_max_length=0)
+    if not result_non_prog_dids:
+        return False
 
-    #Create a payload with multiple DIDs to send to te ECU.
-    payload = b'\xDD\x02\xDD\x0A\xDD\x0B\x49\x47'
-    test_string = '3000'
+    # Verify FC parameters
+    verify_fc_parameters = send_multiframe_cts(dut)
+    if not verify_fc_parameters:
+        return False
 
-    res = dut.uds.read_data_by_id_22(payload)
-    logging.debug(res)
+    return True
 
-    # verify FC parameters from ECU for block_size
-    logging.debug("FC parameters used:")
-    logging.debug("FC frame count: %s", len(SC.can_cf_received[dut["receive"]]))
-    logging.info("FC Frame: %s", SC.can_cf_received[dut["receive"]])
 
-    test_string = test_string + dut.conf.platforms[\
-                dut.conf.rig.platform]['FC_Separation_time']
-
-    if not SUTE.test_message(SC.can_cf_received[dut["receive"]], teststring=test_string):
-        raise DutTestError("ECU did not sent Flow Control(FC) Frame\n")
-
-    logging.debug("Number of Messages received: %s",len(SC.can_messages[dut["receive"]]))
-    logging.info("Messages: %s",SC.can_messages[dut["receive"]])
-    logging.debug("Number of frames received: %s", len(SC.can_frames[dut["receive"]]))
-    logging.info("Frames: %s", SC.can_frames[dut["receive"]])
-    logging.info("Test if message string contains all DIDs expected\n")
-
-    if not ('4947' in res.raw and 'DD0A' in res.raw and'DD0B' in res.raw and'DD02' in res.raw):
-        raise DutTestError(
-            f"Proper response not received from ECU, one or more DIDs\
-                not present in the response from the ECU\n{res.raw}")
-
-def step_3(dut: Dut):
+def step_3(dut: Dut, parameters):
     """
-    action:
-        Build a longer message (payload 13 bytes), send it
-        and test id DIDs are included in the reply.
-
-
-    expected_result:
-        Message is received by the ECU and Framecontrol(FC) message is sent back.
-        All the DIDs in the request should be included in the reply.
+    action: Verify frame control message for a multiframe request with payload size 13 bytes
+    expected_result: True when all the DIDs in the request are included in the reply and
+                     frame control(FC) is sent back
     """
+    # Request multiple DIDs in one request and verify if DIDs are included in response
+    result_non_prog_dids = request_read_data_by_id(dut, parameters['non_prog_dids'],
+                                                   pl_max_length=parameters['pl_size_12'])
+    if not result_non_prog_dids:
+        return False
 
-    #Create a payload with multiple DIDs to send to te ECU.
-    payload = b'\xDD\x02\xDD\x0A\xDD\x0B\x49\x47'
-    pl_max_length = 12
-    test_string = '3000'
+    # Verify FC parameters
+    verify_fc_parameters = send_multiframe_cts(dut)
+    if not verify_fc_parameters:
+        return False
 
-    #Padding the payload with 0x00 till the size becomes pl_max_length
-    while len(payload) < pl_max_length:
-        payload = payload + b'\x00'
+    return True
 
-    res = dut.uds.read_data_by_id_22(payload)
-    logging.debug(res)
 
-    # verify FC parameters from ECU for block_size
-    logging.debug("FC parameters used:")
-    logging.debug("FC frame count: %s", len(SC.can_cf_received[dut["receive"]]))
-    logging.info("FC Frame: %s", SC.can_cf_received[dut["receive"]])
-
-    test_string = test_string + dut.conf.platforms[\
-                dut.conf.rig.platform]['FC_Separation_time']
-
-    if not SUTE.test_message(SC.can_cf_received[dut["receive"]], teststring=test_string):
-        raise DutTestError("ECU did not sent Flow Control(FC) Frame\n")
-
-    logging.debug("Number of messages received: %s",len(SC.can_messages[dut["receive"]]))
-    logging.info("Messages: %s",SC.can_messages[dut["receive"]])
-    logging.debug("Number of frames received: %s", len(SC.can_frames[dut["receive"]]))
-    logging.info("Frames: %s", SC.can_frames[dut["receive"]])
-    logging.info("Test if message string contains all DIDs expected\n")
-
-    if not ('4947' in res.raw and 'DD0A' in res.raw and'DD0B' in res.raw and'DD02' in res.raw):
-        raise DutTestError(
-            f"Proper response not received from ECU for 13 bytes payload, one or more DIDs\
-                 not present in the response from the ECU \n{res.raw}")
-
-def step_4(dut: Dut):
+def step_4(dut: Dut, parameters):
     """
-    action:
-        Build a longer message (payload 300 bytes), send it
-        and test id DIDs are included in the reply.
-
-
-    expected_result:
-        Message is received by the ECU and Framecontrol(FC) message is sent back.
-        NRC is sent by the ECU as a response,
+    action: Verify frame control message for a multiframe request with payload size 300 bytes
+    expected_result: True when ECU gives NRC-13 and frame control(FC) is sent back
     """
+    # Request multiple DIDs in one request and verify if DIDs are included in response
+    result_non_prog_dids = request_read_data_by_id_for_neg_resp(dut, parameters['non_prog_dids'],
+                                                         pl_max_length=parameters['pl_size_300'])
+    if not result_non_prog_dids:
+        return False
 
-    #Create a payload with multiple DIDs to send to te ECU.
-    payload = b'\xDD\x02\xDD\x0A\xDD\x0B\x49\x47'
-    pl_max_length = 299
-    test_string = '3000'
+    # Verify FC parameters
+    verify_fc_parameters = send_multiframe_cts(dut)
+    if not verify_fc_parameters:
+        return False
 
-    #Padding the payload with 0x00 till the size becomes pl_max_length
-    while len(payload) < pl_max_length:
-        payload = payload + b'\x00'
+    return True
 
-    res = dut.uds.read_data_by_id_22(payload)
-    logging.debug(res)
 
-    # verify FC parameters from ECU for block_size
-    logging.debug("FC parameters used:")
-    logging.debug("FC frame count: %s", len(SC.can_cf_received[dut["receive"]]))
-    logging.info("FC Frame: %s", SC.can_cf_received[dut["receive"]])
-
-    test_string = test_string + dut.conf.platforms[\
-                dut.conf.rig.platform]['FC_Separation_time']
-
-    if not SUTE.test_message(SC.can_cf_received[dut["receive"]], teststring=test_string):
-        raise DutTestError("ECU did not sent Flow Control(FC) Frame\n")
-
-    logging.debug("Number of messages received: %s",len(SC.can_messages[dut["receive"]]))
-    logging.info("Messages: %s",SC.can_messages[dut["receive"]])
-    logging.debug("Number of frames received: %s", len(SC.can_frames[dut["receive"]]))
-    logging.info("Frames: %s", SC.can_frames[dut["receive"]])
-    logging.info("Test if string contains all DIDs expected\n")
-
-    # Expecting a NRC13-incorrectMessageLengthOrInvalidFormat
-    # or NRC31-requestOutOfRange from ECU in this case of 22 Service. This means that we
-    # get a response either from ECU and not a FC frame as 22 service responds with an NRC
-    # when a long message is sent.
-    if not ('7F2213' in res.raw or '7F2231' in res.raw ):
-        raise DutTestError(
-            f"Expected NRC not received from ECU for ReadDID with 300 bytes payload\n{res.raw}")
-
-def step_5(dut: Dut):
+def step_5(dut: Dut, parameters):
     """
-    action:
-        Build an even longer message (payload 301 bytes), send it
-        and test if there is any reply from ECU.
-
-
-    expected_result:
-        First Message is received by the ECU and Framecontrol message(FC code 32) is sent back.
-        The rest of the Message is aborted.
+    action: Verify frame control message for a multiframe request with payload size 1026 bytes
+    expected_result: True when frame control message(FC code 32) is sent back
     """
+    result_non_prog_dids = send_multiframe_ovflw(dut, parameters['non_prog_dids'],
+                                                 pl_max_length=parameters['pl_size_1025'])
+    if not result_non_prog_dids:
+        return False
 
-    cpay: CanPayload = {
-        "payload": SC_CARCOM.can_m_send("ReadDataByIdentifier",
-                                        b'\xDD\x02\xDD\x0B\xDD\x0C\x49\x47',
-                                        b''),
-        "extra": ''
-        }
-    # Parameters for the teststep
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    return True
 
-    etp: CanTestExtra = {
-        "step_no" : 8,
-        "purpose" : "send several requests at one time - requires MultiFrame to send",
-        "timeout" : 1,
-        "min_no_messages" : -1,
-        "max_no_messages" : -1
-        }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
-
-    pl_max_length = 300
-    test_string = '3200'
-
-    #Padding the payload with 0x00 till the size becomes pl_max_length
-    while len(cpay["payload"]) < pl_max_length:
-        cpay["payload"] = cpay["payload"] + b'\x00'
-
-    logging.info("Send message with 301 bytes payload")
-    logging.info("Message: %s", cpay["payload"])
-
-    if not SUTE.teststep(dut, cpay, etp):
-        raise DutTestError("No response from ECU\n")
-
-    # verify FC parameters from ECU for block_size
-    logging.debug("FC parameters used:")
-    logging.debug("FC frame count: %s", len(SC.can_cf_received[dut["receive"]]))
-    logging.info("FC Frame: %s", SC.can_cf_received[dut["receive"]])
-
-    logging.debug("Number of messages received: %s",len(SC.can_messages[dut["receive"]]))
-    logging.info("Messages: %s",SC.can_messages[dut["receive"]])
-    logging.debug("Number of frames received: %s", len(SC.can_frames[dut["receive"]]))
-    logging.info("Frames: %s", SC.can_frames[dut["receive"]])
-    logging.info("Test if FC message 32000A is received from ECU\n")
-
-    test_string = test_string + dut.conf.platforms[\
-                dut.conf.rig.platform]['FC_Separation_time']
-
-    if not SUTE.test_message(SC.can_frames[dut["receive"]], teststring=test_string):
-        raise DutTestError(
-            "ECU did not send 32000A FC message when the payload exceeds the block size\n")
 
 def run():
     """
-    Verify the response from ECU by sending UDS request for different
-    message sizes such as 12bytes, 298 bytes and 300 bytes.
-    Verify that the flow control is sent as required
+    Verify that the FlowControl (FC) is sent as required by sending UDS request with 13 bytes,
+    300 bytes and 1026 bytes.
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
-
     dut = Dut()
+
     start_time = dut.start()
     result = False
+    result_step = False
 
+    parameters_dict = {'non_prog_dids':'',
+                       'pl_size_12': 0,
+                       'pl_size_300': 0,
+                       'pl_size_1025': 0,}
     try:
-        # Communication with ECU lasts 30 seconds.
-        dut.precondition(timeout=60)
+        dut.precondition(timeout=70)
+        parameters = SIO.parameter_adopt_teststep(parameters_dict)
 
-        # Verify default session
-        dut.step(step_1, purpose="Verify that the ECU is in Default Session")
+        if not all(list(parameters.values())):
+            raise DutTestError("yml parameters not found")
 
-        # Send a request with MultiFrame
-        dut.step(step_2, purpose="Send a request with MultiFrame")
-
-        # Build longer message (payload 13 bytes) and send it.
-        dut.step(step_3, purpose="Build longer message (payload 13 bytes) and send it")
-
-        # Build longer message (payload 300 bytes) and send it.
-        dut.step(step_4, purpose="Build longer message (payload 300 bytes) and send it")
-
-        # Build even longer message (payload 301 bytes) and send it.
-        dut.step(step_5, purpose="Build even longer message (payload 301 bytes) and send it")
-
-        result = True
+        result_step = dut.step(step_1, purpose='Verify that the ECU is in Default Session')
+        if result_step:
+            result_step = dut.step(step_2, parameters, purpose='Verify frame control message for a'
+                                                               ' multiframe request')
+        if result_step:
+            result_step = dut.step(step_3, parameters, purpose='Verify frame control message for a'
+                                                               ' multiframe request with payload'
+                                                               ' size 13 bytes')
+        if result_step:
+            result_step = dut.step(step_4, parameters, purpose='Verify frame control message for a'
+                                                               ' multiframe request with payload'
+                                                               ' size 300 bytes')
+        if result_step:
+            result_step = dut.step(step_5, parameters, purpose='Verify frame control message for a'
+                                                               ' multiframe request with payload'
+                                                               ' size 1026 bytes')
+        result = result_step
     except DutTestError as error:
         logging.error("Test failed: %s", error)
     finally:
         dut.postcondition(start_time, result)
+
 
 if __name__ == '__main__':
     run()
