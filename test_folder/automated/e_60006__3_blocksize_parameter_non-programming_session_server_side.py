@@ -92,7 +92,7 @@ def find_did(did_list, response):
         logging.info("Successfully verified that all the DIDs are present in ECU response")
         return True
 
-    logging.error("Some DIDs are not present in ECU response")
+    logging.error("Test Failed: Some DIDs are not present in ECU response")
     return False
 
 
@@ -117,14 +117,14 @@ def read_did_and_verify(dut, dids_to_read, payload_length, response_flag=False):
             if not result:
                 return False
 
-            logging.info("Received positive response %s for request ReadDataByIdentifier as expected",
-                            response.raw[4:6])
+            logging.info("Received positive response %s for request ReadDataByIdentifier as"
+                         " expected", response.raw[4:6])
             return True
 
         logging.error("Test Failed: Expected positive response, received %s", response.raw)
         return False
 
-    elif response.raw[2:4] == '7F' and response.raw[6:8] == '13':
+    if response.raw[2:4] == '7F' and response.raw[6:8] == '13':
         logging.info("Received NRC %s for request ReadDataByIdentifier as expected",
                       response.raw[6:8])
         return True
@@ -182,7 +182,7 @@ def verify_flowcontrol_message(dut, parameters, payload_length, response_flag):
     """
     # Request multiple DIDs in one request and verify if DIDs are included in response
     result_non_prog_dids = read_did_and_verify(dut, parameters['non_prog_dids'],
-                           payload_length, response_flag)
+                                               payload_length, response_flag)
     if not result_non_prog_dids:
         return False
 
@@ -205,26 +205,30 @@ def verify_flowcontrol_response(dut, parameters):
     Return:
         response (bool): True when FlowControl(FC) response verified
     """
-    result_positive_response = verify_flowcontrol_message(dut, parameters, payload_length=0, response_flag=True)
+    result_positive_response = verify_flowcontrol_message(dut, parameters, payload_length=0,
+                                                          response_flag=True)
     if not result_positive_response:
         logging.error("Test Failed: Some or all the DIDs in the request are not included in the"
                       " reply and frame control(FC) is not received")
         return False
 
-    result_positive_response = result_positive_response and verify_flowcontrol_message(dut, parameters,
-             payload_length=parameters['pl_size_positive_response'], response_flag=True)
+    result_positive_response = result_positive_response and verify_flowcontrol_message(dut,
+                               parameters, payload_length=parameters['pl_size_positive_response'],
+                               response_flag=True)
     if not result_positive_response:
         logging.error("Test Failed: Some or all the DIDs in the request are not included in the"
                       " reply and frame control(FC) is not received")
         return False
 
-    result_negative_response = result_positive_response and verify_flowcontrol_message(dut, parameters,
-             payload_length=parameters['pl_size_negative_response'], response_flag=False)
+    result_negative_response = result_positive_response and verify_flowcontrol_message(dut,
+                               parameters, payload_length=parameters['pl_size_negative_response'],
+                               response_flag=False)
     if not result_negative_response:
         logging.error("Test Failed: Expected NRC-13 and frame control(FC) is not received")
         return False
 
-    result_non_prog_dids = result_negative_response and verify_fc_overflow(dut, parameters['non_prog_dids'],
+    result_non_prog_dids = result_negative_response and verify_fc_overflow(dut,
+                           parameters['non_prog_dids'],
                            payload_length=parameters['pl_size_overflow'])
     if not result_non_prog_dids:
         return False
@@ -236,11 +240,13 @@ def step_1(dut: Dut, parameters):
     """
     action: Verify FlowControl(FC) in default session with payload 12 bytes, 300 bytes and 1025
             bytes
-    expected_result: True when FlowControl(FC) response is successfully verified in default session
+    expected_result: True when FlowControl(FC) response is successfully verified in default
+                     session
     """
     result = verify_flowcontrol_response(dut, parameters)
     if not result:
-        logging.error("Test Failed: FlowControl(FC) response is not received as expected in default session")
+        logging.error("Test Failed: FlowControl(FC) response is not received as expected in"
+                      " default session")
         return False
     return True
 
@@ -264,11 +270,13 @@ def step_3(dut: Dut, parameters):
     """
     action: Verify FlowControl(FC) in extended session with payload 12 bytes, 300 bytes and 1025
             bytes
-    expected_result: True when FlowControl(FC) response is successfully verified in extended session
+    expected_result: True when FlowControl(FC) response is successfully verified in extended
+                     session
     """
     result = verify_flowcontrol_response(dut, parameters)
     if not result:
-        logging.error("Test Failed:FlowControl(FC) response is not received as expected in extended session")
+        logging.error("Test Failed:FlowControl(FC) response is not received as expected in"
+                      " extended session")
         return False
     return True
 

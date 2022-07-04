@@ -1,6 +1,6 @@
 hvbm_p519:
     run:
         non_prog_dids: ['DD02', 'DD0A', '4802', '4947']
-        pl_size_for_positive_response : 12
-        pl_size_for_negative_response : 300
-        pl_size_for_overflow : 1025
+        pl_size_positive_response : 12
+        pl_size_negative_response : 300
+        pl_size_overflow : 1025
