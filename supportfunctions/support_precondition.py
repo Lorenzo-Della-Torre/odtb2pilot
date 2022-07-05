@@ -163,9 +163,6 @@ class SupportPrecondition:
         result = SE22.read_did_pbl_pn(can_p) and result
         logging.info("Precondition testok: %s\n", result)
 
-        result = SE22.read_did_pbl_pn(can_p) and result
-        logging.info("Precondition testok: %s\n", result)
-
         return result
 
     @staticmethod
