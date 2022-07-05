@@ -279,7 +279,6 @@ class SupportCAN:
                 subscribe_object = can_p["netstub"].SubscribeToSignals(sub_info)
             else:
                 subscribe_object = can_p["netstub"].SubscribeToSignals(sub_info, timeout)
-            logging.info("newSubscribe to signal %s", can_p["receive"])
             logging.debug("Subscribe to signal %s", can_p["receive"])
             self.can_subscribes[can_p["receive"]] =\
                 [subscribe_object, fc_param["block_size"], fc_param["separation_time"],\
