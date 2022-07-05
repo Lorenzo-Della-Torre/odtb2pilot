@@ -107,7 +107,7 @@ class SupportPrecondition:
         #Read current function name from stack:
         SIO.extract_parameter_yml(str(inspect.stack()[0][3]), hb_param)
         logging.debug("hb_param %s", hb_param)
-        
+
         # start heartbeat, repeat every x second
         SC.start_heartbeat(can_p["netstub"], hb_param)
 
