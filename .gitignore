@@ -10,3 +10,5 @@ conf_local.yml
 did_dict.py
 .DS_Store
 rigs/*
+projects/MEP2_SPA2/build/*
+dids_from_sddb_checker/output/testrun_data.py

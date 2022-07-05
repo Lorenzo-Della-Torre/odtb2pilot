@@ -16,23 +16,27 @@ else
     echo ODTBPROJ: $ODTBPROJ
     echo ODTBPROJPARAM: $ODTBPROJPARAM
     echo PYTHONPATH: $PYTHONPATH
-
+    
     cd $TESTREPO
-    git pull
-    cd ~/testrun
 
-    # Execute test scripts
+    echo "------------- Git pull ------------"
+    git pull
+
+    echo "------------- Install packages ------------"
+    pip3 install -r requirements.txt
+
+    cd ~/testrun
     $TESTREPO/projects/project_template/automated_testrun/auto_testscript_swrs_rev_5_analytics.sh
 
-    # Generate did report
-    $TESTREPO/manage.py did_report
+    echo "----------- Generate did report ---------"
+    python3 $TESTREPO/manage.py did_report
 
-    # Generate test stats plot graph
+    echo "----------- Generate test stats plot graph ---------"
     $TESTREPO/projects/project_template/automated_testrun/generate_plot_graph.sh
 
-    # Generate log report
+    echo "----------- Generate log report ---------"
     $TESTREPO/projects/project_template/automated_testrun/generate_log_report.sh
-
+    
     echo
     echo "All scripts executed. All html reports generated"
 fi
