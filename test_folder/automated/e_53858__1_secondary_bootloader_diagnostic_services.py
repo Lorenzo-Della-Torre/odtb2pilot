@@ -60,7 +60,7 @@ from supportfunctions.support_test_odtb2 import SupportTestODTB2
 from supportfunctions.support_carcom import SupportCARCOM
 from supportfunctions.support_file_io import SupportFileIO
 from supportfunctions.support_SBL import SupportSBL
-from supportfunctions.support_sec_acc import SupportSecurityAccess, SecAccessParam
+from supportfunctions.support_sec_acc import SupportSecurityAccess
 from supportfunctions.support_rpi_gpio import SupportRpiGpio
 
 from supportfunctions.support_precondition import SupportPrecondition
@@ -71,6 +71,8 @@ from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_service31 import SupportService31
 from supportfunctions.support_service3e import SupportService3e
 from supportfunctions.support_service27 import SupportService27
+
+from hilding.dut import Dut
 
 
 SIO = SupportFileIO
@@ -102,13 +104,11 @@ def step_4(can_p):
                          "min_no_messages" : -1,
                          "max_no_messages" : -1
                         }
-
     SIO.parameter_adopt_teststep(etp)
 
     cpay: CanPayload = {"payload" : b'\x2E\xF1\x86\x02',
                         "extra" : ''
                        }
-
     SIO.parameter_adopt_teststep(cpay)
 
     result = SUTE.teststep(can_p, cpay, etp)
@@ -118,18 +118,8 @@ def step_4(can_p):
     time.sleep(1)
     return result
 
-def step_5(can_p, sa_keys):
-    """
-    Teststep 5: Security Access Request SID
-    """
-    result, seed = SE27.security_access_request_seed(can_p, sa_keys, stepno=5,
-                                                     purpose="Security Access Request SID")
-    #verify SID = 000000
-    result = result and seed == '000000'
 
-    return result, seed
-
-def step_6(can_p, seed, sa_keys):
+def step_6(can_p, sa_keys, seed):
     """
     Testresult 6: Verify Security Access Send Key reply NRC
     """
@@ -139,7 +129,6 @@ def step_6(can_p, seed, sa_keys):
                          "min_no_messages" : -1,
                          "max_no_messages" : -1
                         }
-
     SIO.parameter_adopt_teststep(etp)
 
     r_0 = SSA.set_security_access_pins(seed, sa_keys)
@@ -148,11 +137,13 @@ def step_6(can_p, seed, sa_keys):
                                                         r_0, b''),
                         "extra" : ''
                        }
-
     SIO.parameter_adopt_teststep(cpay)
 
+    logging.info("Step %s: test service 2702 with SA already activated", etp["step_no"])
+    logging.info("Step %s: expecting negative reply", etp["step_no"])
     result = SUTE.teststep(can_p, cpay, etp)
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], '7F2724')
+    #result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], '7F2724')
+    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], '7F27')
     time.sleep(1)
     return result
 
@@ -161,6 +152,7 @@ def run():
     """
     Run - Call other functions from here
     """
+    dut = Dut()
     logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
     # start logging
@@ -174,16 +166,6 @@ def run():
         "namespace" : SC.nspace_lookup("Front1CANCfg0")
     }
     SIO.parameter_adopt_teststep(can_p)
-
-    #Init parameter for SecAccess Gen1/Gen2
-    sa_keys: SecAccessParam = {
-        "SecAcc_Gen": 'Gen1',
-        "fixed_key": 'FFFFFFFFFF',
-        "auth_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF',
-        "proof_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
-    }
-    SIO.parameter_adopt_teststep(sa_keys)
-
     logging.info("Testcase start: %s", datetime.now())
     starttime = time.time()
     logging.info("Time: %s \n", time.time())
@@ -195,6 +177,15 @@ def run():
     timeout = 100
     result = PREC.precondition(can_p, timeout)
 
+    #Init parameter for SecAccess Gen1 / Gen2
+    platform=dut.conf.rigs[dut.conf.default_rig]['platform']
+    sa_keys = {
+        "SecAcc_Gen" : dut.conf.platforms[platform]['SecAcc_Gen'],
+        "fixed_key": dut.conf.platforms[platform]["fixed_key"],
+        "auth_key": dut.conf.platforms[platform]["auth_key"],
+        "proof_key": dut.conf.platforms[platform]["proof_key"]
+    }
+
     if result:
     ############################################
     # teststeps
@@ -203,11 +194,11 @@ def run():
         # step1:
         # action: DL and activate SBL
         # result: ECU sends positive reply
+        #result = result and step_1(can_p, sa_keys)
         result = SSBL.sbl_activation(can_p,
                                      sa_keys,
                                      stepno=1,
                                      purpose = "Download and Activation of SBL")
-
         # step 2:
         # action: Test presence of tester preset Zero Sub Function
         # result: BECM sends positive reply
@@ -226,14 +217,17 @@ def run():
         # step 5:
         # action: verify Security Access Request SID = 000000
         # result: BECM sends positive reply
-        result_step5, seed = SE27.security_access_request_seed(can_p, sa_keys, stepno=5,\
+        result_step5, seed = SE27.security_access_request_seed(can_p, sa_keys,\
+                                  stepno=5,\
                                   purpose="Security Access Request SID")
+        logging.info("Step5, seed returned %s", seed)
+        logging.info("Step5, result_step5  %s", result_step5)
         result = result and result_step5
 
         # step 6:
         # action: Verify Security Access Send Key reply NRC
         # result: BECM reply NRC
-        result = result and step_6(can_p, seed, sa_keys)
+        result = result and step_6(can_p, sa_keys, seed)
 
         # step 7:
         # action: test presence of Diagnostic Session Control ECU Programming Session

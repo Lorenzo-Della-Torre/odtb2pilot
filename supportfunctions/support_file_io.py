@@ -168,7 +168,9 @@ def _find_value_in_testspecific_yml(caller, dictionary_to_modify, changed_keys):
         name_of_file = os.path.basename(path_to_file).split(".")[0]
         file_names_in_callstack.append(name_of_file)
 
-    path_to_test_specific_yml = _find_yml_file("test_folder", file_names_in_callstack)
+    #Find yml file with absolute folder path and the "test_folder" folder name.
+    path_to_test_specific_yml = _find_yml_file(os.path.dirname(os.path.abspath(path_to_file))+
+                                                        "/test_folder",file_names_in_callstack)
 
     if path_to_test_specific_yml:
 

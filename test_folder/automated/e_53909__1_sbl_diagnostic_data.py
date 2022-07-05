@@ -55,8 +55,6 @@ import argparse
 
 import odtb_conf
 
-from build.did import sbl_did_dict
-from build.did import sbl_diag_part_num
 from supportfunctions.support_can import SupportCAN, CanParam, CanTestExtra, CanPayload
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
 from supportfunctions.support_carcom import SupportCARCOM
@@ -72,6 +70,8 @@ from supportfunctions.support_service11 import SupportService11
 from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_service31 import SupportService31
 
+from hilding.conf import Conf
+
 SIO = SupportFileIO
 SC = SupportCAN()
 S_CARCOM = SupportCARCOM()
@@ -86,6 +86,10 @@ SE10 = SupportService10()
 SE11 = SupportService11()
 SE22 = SupportService22()
 SE31 = SupportService31()
+conf = Conf()
+
+sbl_did_dict = conf.rig.sddb_dids["sbl_did_dict"]
+sbl_diag_part_num = conf.rig.sddb_dids["sbl_diag_part_num"]
 
 # For each each DID, wait this time for the response. If you wait to short time you might not get
 # the full message (payload). The unit is seconds. 2s should cover even the biggest payloads.
@@ -270,7 +274,7 @@ def run():
     ############################################
     # read VBF param when testscript is s started, if empty take default param
     SSBL.get_vbf_files()
-    timeout = 100
+    timeout = 200
     result = PREC.precondition(can_p, timeout)
 
     if result:
@@ -280,7 +284,8 @@ def run():
         # step 1:
         # action: DL and activate SBL
         # result: ECU sends positive reply
-        result = result and SSBL.sbl_dl_activation(can_p, 1, "DL and activate SBL")
+        result = result and SSBL.sbl_dl_activation(can_p, conf.default_rig_config, 1,\
+                                                                    "DL and activate SBL")
 
         # step 2:
         # action: Extract SWP Number for SBL

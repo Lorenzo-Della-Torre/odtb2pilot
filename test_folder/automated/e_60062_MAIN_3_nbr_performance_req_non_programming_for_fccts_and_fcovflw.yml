@@ -1,0 +1,6 @@
+hvbm_p519:
+    run:
+        did: 'DD02DD0BDD0C4947'
+        payload_max_length_cts: 1020
+        payload_max_length_ovflw: 1025
+        time: 20

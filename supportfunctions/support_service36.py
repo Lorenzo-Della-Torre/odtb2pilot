@@ -69,7 +69,7 @@ class SupportService36: # pylint: disable=too-few-public-methods
         """
         pad = 0
         logging.info("------Start Downloading blocks------")
-        for i in range(int(vbf_block['Length']/(nbl-2))+1):
+        for i in range(int((vbf_block['Length']-1)/(nbl-2))+1):
 
             logging.info("360: Flash blocks: Block %s of %s",
                          1+i, 1+int(vbf_block['Length']/(nbl-2)))

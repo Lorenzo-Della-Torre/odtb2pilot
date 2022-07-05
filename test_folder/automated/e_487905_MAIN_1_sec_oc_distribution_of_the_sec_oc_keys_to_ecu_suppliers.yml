@@ -1,0 +1,11 @@
+hvbm_p519:
+    step_1:
+        secoc_initial_key: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
+        # Message and data need to change when SecOC service is implemented
+        signals:
+            signal_1:
+                data: '1111111111111111'
+                message: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
+            signal_2:
+                data: '2222222222222222'
+                message: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'

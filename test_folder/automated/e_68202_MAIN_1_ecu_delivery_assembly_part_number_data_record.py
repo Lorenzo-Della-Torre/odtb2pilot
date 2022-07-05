@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,260 +18,214 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-# Testscript Hilding MEPII
-# project:  BECM basetech MEPII
-# author:   J-ADSJO (Johan Adsjö)
-# date:     2020-10-21
-# version:  1.0
-# reqprod:  68202
+reqprod: 68202
+version: 2
+title: ECU Delivery Assembly Part Number data record
+purpose: >
+    To enable readout of a part number that identifies the complete ECU at the point of delivery
+    to the assembly plant.
 
-# inspired by https://grpc.io/docs/tutorials/basic/python.html
+description: >
+    A data record with identifier as specified in the table below shall be implemented exactly as
+    defined in Carcom - Global Master Reference Database.
 
-# Copyright 2015 gRPC authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+    Description                         	Identifier
+    ECU Delivery Assembly Part Number	    F12B
 
-The Python implementation of the gRPC route guide client.
+    •	It shall be possible to read the data record by using the diagnostic service specified in
+        Ref[LC : Volvo Car Corporation - UDS Services - Service 0x22 (ReadDataByIdentifier) Reqs].
+
+    The identifier shall be implemented in the following sessions:
+    •	Default session
+    •	Programming session (which includes both primary and secondary bootloader)
+    •	Extended session
+
+details: >
+    Verify if identifier is implemented in default, extended and programming session(pbl and sbl)
+    Steps:
+        1. Verify ECU is in default session
+        2. Verify response received in default, extended and programming session(pbl and sbl)
+           is equal
+        3. Verify valid part number for did F12B
 """
 
-import time
-from datetime import datetime
-import sys
 import logging
-import odtb_conf
-
-from supportfunctions.support_can import SupportCAN, CanParam, CanTestExtra, CanPayload
+from hilding.dut import Dut
+from hilding.dut import DutTestError
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
-from supportfunctions.support_carcom import SupportCARCOM
-from supportfunctions.support_file_io import SupportFileIO
-from supportfunctions.support_precondition import SupportPrecondition
-from supportfunctions.support_postcondition import SupportPostcondition
-from supportfunctions.support_SBL import SupportSBL
 from supportfunctions.support_service22 import SupportService22
-from supportfunctions.support_service10 import SupportService10
-from supportfunctions.support_sec_acc import SecAccessParam
+from supportfunctions.support_SBL import SupportSBL
 
-SIO = SupportFileIO
-SC = SupportCAN()
 SUTE = SupportTestODTB2()
-SC_CARCOM = SupportCARCOM()
-SSBL = SupportSBL()
-PREC = SupportPrecondition()
-POST = SupportPostcondition()
-SE10 = SupportService10()
 SE22 = SupportService22()
+SSBL = SupportSBL()
 
-def validate_and_get_pn_f12b(message):
-    '''
-    Validate and pretty print ECU Delivery Assembly Part Number
-    '''
-    pos = message.find('F12B')
-    valid = SUTE.validate_part_number_record(message[pos+4:pos+18])
-    ecu_delivery_assembly_pn = SUTE.pp_partnumber(message[pos+4:pos+18])
-    return valid, ecu_delivery_assembly_pn
 
-def send_request_f12b(can_p, step_no):
+def did_count_find(did_to_read, response):
     """
-    Send requests DID F12B
+    Verify DID is present in ECU response
+    Args:
+        did_to_read (str): DID F12B
+        response (str): ECU response
+    Returns:
+        (bool): True when F12B is present
     """
-    # Parameters for the teststep
-    cpay: CanPayload = {
-        "payload": SC_CARCOM.can_m_send("ReadDataByIdentifier",
-                                        b'\xF1\x2B',
-                                        b''),
-        "extra": ''
-        }
-    SIO.parameter_adopt_teststep(cpay)
-    etp: CanTestExtra = {
-        "step_no": step_no,
-        "purpose": "Request DID F12B",
-        "timeout": 1,
-        "min_no_messages": -1,
-        "max_no_messages": -1
-        }
-    SIO.parameter_adopt_teststep(etp)
+    did_count = response.count(did_to_read)
+    if did_count != 0:
+        logging.info("Successfully verified that F12B DID is present in ECU response")
+        return True
 
-    result = SUTE.teststep(can_p, cpay, etp)
-    time.sleep(1)
-
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='F12B')
-    logging.info(SC.can_messages[can_p["receive"]])
-
-    read_f12b_result = SC.can_messages[can_p["receive"]][0][2]
-    logging.info(read_f12b_result)
-
-    return result, read_f12b_result
+    logging.error("%s DID not found in ECU response", did_to_read)
+    return False
 
 
-def step_11(default_f12b_result, extended_f12b_result, pbl_f12b_result, sbl_f12b_result):
+def send_request_f12b(dut, did_to_read):
     """
-    Test step 11:
-      Validate and compare the ECU Delivery Assembly Part Numbers
+    Verify ReadDataByIdentifier service 22 with F12B DID
+    Args:
+        dut (Dut): dut instance
+        did_to_read (str): DID F12B
+    Returns:
+        (bool): True on successfully verified positive response
+        response (str): ECU response
     """
+    response = dut.uds.read_data_by_id_22(bytes.fromhex(did_to_read))
+    if response.raw[4:6] == '62':
+        # Check if F12B DID is contained in reply
+        result = did_count_find(did_to_read, response.raw)
+        if not result:
+            return False, None
 
-    step_no = 11
-    purpose = "Verify the F12B records received are equal in all modes"
-    SUTE.print_test_purpose(step_no, purpose)
+        logging.info("Received positive response %s for request ReadDataByIdentifier",
+                      response.raw[4:6])
+        return True, response.raw
 
-    # validate the part number and format
-    result_11, valid_f12b_num = validate_and_get_pn_f12b(default_f12b_result)
+    logging.error("Test Failed: Expected positive response, received %s", response)
+    return False, None
 
-    logging.info("\nvalid_f12b_num: %s", valid_f12b_num)
-    logging.info("default_f12b_result: %s", default_f12b_result)
-    logging.info("extended_f12b_result: %s", extended_f12b_result)
-    logging.info("pbl_f12b_result: %s", pbl_f12b_result)
-    logging.info("sbl_f12b_result: %s", sbl_f12b_result)
 
+def step_1(dut: Dut):
+    """
+    action: Verify active diagnostic session
+    expected_result: True when ECU is in default session
+    """
+    # Check default session
+    active_session = SE22.read_did_f186(dut, b'\x01')
+    if not active_session:
+        logging.error("Test Failed: ECU is not in default session")
+        return False
+
+    logging.info("ECU is in default session as expected")
+    return True
+
+
+def step_2(dut: Dut):
+    """
+    action: Verify response received in default, extended and programming session(pbl and sbl)
+            is equal
+    expected_result: True when response received in default, extended and programming
+                     session(pbl and sbl) is equal
+    """
+    # Request F12B DID in one request and verify if DID is included in response
+    result_non_prog_dids, default_f12b_result = send_request_f12b(dut, did_to_read='F12B')
+    if not result_non_prog_dids:
+        return False, None
+
+    # Change to extended session
+    dut.uds.set_mode(3)
+
+    # Request F12B DID in one request and verify if DID is included in response
+    result_non_prog_dids, extended_f12b_result = send_request_f12b(dut, did_to_read='F12B')
+    if not result_non_prog_dids:
+        return False, None
+
+    # Change to default session
+    dut.uds.set_mode(1)
+
+    # Change to programming session
+    dut.uds.set_mode(2)
+
+    # Request F12B DID in one request and verify if DID is included in response
+    result_non_prog_dids, pbl_f12b_result = send_request_f12b(dut, did_to_read='F12B')
+    if not result_non_prog_dids:
+        return False, None
+
+    SSBL.get_vbf_files()
+    # Activate SBL
+    result = SSBL.sbl_activation(dut, sa_keys=dut.conf.default_rig_config)
+    if not result:
+        logging.error("Test Failed: SBL activation failed")
+        return False, None
+
+    # Request F12B DID in one request and verify if DID is included in response
+    result_non_prog_dids, sbl_f12b_result = send_request_f12b(dut, did_to_read='F12B')
+    if not result_non_prog_dids:
+        return False, None
+
+    # Change to default session
+    dut.uds.set_mode(1)
+
+    # The response received in default, extended and programming session shall be equal
     result = (default_f12b_result == extended_f12b_result)
-    logging.info("\nTest_step_11 def==ext: %s\n", result)
+    logging.info("Response of did F12B is equal in default and extended session")
     result = result and (pbl_f12b_result == sbl_f12b_result)
-    logging.info("\nTest_step_11 pbl==sbl: %s\n", result)
+    logging.info("Response of did F12B is equal in pbl and sbl session")
     result = result and (default_f12b_result == pbl_f12b_result)
-    logging.info("\nTest_step_11 def==pbl: %s\n", result)
-    result = result and result_11
-    logging.info("\nTest_step_11 Def Valid: %s\n", result)
-    return result
+    logging.info("Response of did F12B is equal in default and pbl session")
+    return result, default_f12b_result
+
+
+def step_3(dut: Dut, default_f12b_result):
+    """
+    action: Verify valid part number for did F12B
+    expected_result: True when response received valid part number for did F12B
+    """
+    # pylint: disable=unused-argument
+    # Validate the part number and format
+    pos = default_f12b_result.find('F12B')
+    valid_part_number = SUTE.validate_part_number_record(default_f12b_result[pos+4:pos+18])
+    ecu_delivery_assembly_pn = SUTE.pp_partnumber(default_f12b_result[pos+4:pos+18])
+    logging.info("Valid_f12b_num:%s", ecu_delivery_assembly_pn)
+
+    if not valid_part_number:
+        logging.error("Test Failed: Received invalid part number")
+        return False
+
+    logging.info("Received vaild part number as expected")
+    return True
 
 
 def run():
     """
-    Run - Call other functions from here
+    Verify if identifier is implemented in default, extended and programming session(pbl and sbl)
+    Steps:
+        1. Verify ECU is in default session
+        2. Verify response received in default, extended and programming session(pbl and sbl)
+           is equal
+        3. Verify valid part number for did F12B
     """
+    dut = Dut()
+    start_time = dut.start()
+    result = False
+    result_step = False
 
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+    try:
+        dut.precondition(timeout=200)
 
-    # where to connect to signal_broker
-    can_p: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        "send" : "Vcu1ToBecmFront1DiagReqFrame",
-        "receive" : "BecmToVcu1Front1DiagResFrame",
-        "namespace" : SC.nspace_lookup("Front1CANCfg0")
-    }
-    SIO.parameter_adopt_teststep(can_p)
+        result_step = dut.step(step_1, purpose="Verify ECU is in default sesion")
+        if result_step:
+            result_step, default_f12b_result = dut.step(step_2, purpose="Verify response received"
+                                                        " in default, extended and programming"
+                                                        " session(pbl and sbl) is equal")
+        if result_step:
+            result_step = dut.step(step_3, default_f12b_result, purpose="Verify valid part number"
+                                                                        " for did F12B")
+        result = result_step
+    except DutTestError as error:
+        logging.error("Test failed: %s", error)
+    finally:
+        dut.postcondition(start_time, result)
 
-    logging.info("Testcase start: %s", datetime.now())
-    starttime = time.time()
-    logging.info("Time: %s \n", time.time())
-
-    ############################################
-    # precondition
-    ############################################
-    # read VBF param when testscript is s started, if empty take default param
-    SSBL.get_vbf_files()
-    timeout = 2000
-    result = PREC.precondition(can_p, timeout)
-
-    #Init parameter for SecAccess Gen1/Gen2
-    sa_keys: SecAccessParam = {
-        "SecAcc_Gen": 'Gen1',
-        "fixed_key": 'FFFFFFFFFF',
-        "auth_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF',
-        "proof_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
-    }
-    SIO.parameter_adopt_teststep(sa_keys)
-
-    if result:
-    ############################################
-    # teststeps
-    ############################################
-
-    # step 1:
-    # action: Check if Default session
-    # result: BECM reports modeS
-        #result = result and SE22.read_did_f186(can_p, b'\x01', stepno=1)
-        result = result and SE10.diagnostic_session_control_mode1(can_p, 1)
-        time.sleep(5)
-
-    # step 2:
-    # action: send requests DID F12B in Default Session
-    # result: Data record with Autosar BSW cluster version is returned
-        step_result, default_f12b_result = send_request_f12b(can_p, 2)
-        result = step_result and result
-        logging.info("\nTest_step_2 Result: %s\n", result)
-
-    # step 3:
-    # action: Change to Extended session
-    # result: BECM reports mode
-        result = result and SE10.diagnostic_session_control_mode3(can_p, 3)
-        time.sleep(2)
-        logging.info("\nTest_step_3 Result: %s\n", result)
-
-    # step 4:
-    # action: send requests DID F12B in Extended Session
-    # result: Data record with Autosar BSW cluster version is returned
-        step_result, extended_f12b_result = send_request_f12b(can_p, 4)
-        time.sleep(1)
-        result = step_result and result
-        logging.info("\nTest_step_4 Result: %s\n", result)
-
-    # step 5:
-    # action: Change to Default session
-    # result: BECM reports mode
-        result = result and SE10.diagnostic_session_control_mode1(can_p, 5)
-        time.sleep(5)
-        logging.info("\nTest_step_5 Result: %s\n", result)
-
-    # step 6:
-    # action: Change to Program session
-    # result: BECM reports mode
-        result = result and SE10.diagnostic_session_control_mode2(can_p, 6)
-        time.sleep(2)
-        logging.info("\nTest_step_6 Result: %s\n", result)
-
-    # step 7:
-    # action: send requests DID F12B in Program Session
-    # result: Data record with Autosar BSW cluster version is returned
-        step_result, pbl_f12b_result = send_request_f12b(can_p, 7)
-        time.sleep(1)
-        result = step_result and result
-        logging.info("\nTest_step_7 Result: %s\n", result)
-
-    # step 8:
-    # action: Download and Activate SBL
-    # result:
-        result = result and SSBL.sbl_activation(can_p,
-         sa_keys, stepno='8', purpose="DL and activate SBL")
-        time.sleep(3)
-        logging.info("\nTest_step_8 Result: %s\n", result)
-
-    # step 9:
-    # action: send requests DID F12B in Extended Session
-    # result: Data record with Autosar BSW cluster version is returned
-        step_result, sbl_f12b_result = send_request_f12b(can_p, 9)
-        time.sleep(1)
-        result = step_result and result
-        logging.info("\nTest_step_9 Result: %s\n", result)
-
-    # step 10:
-    # action: Change to Default session
-    # result: BECM reports mode
-        result = result and SE10.diagnostic_session_control_mode1(can_p, 10)
-        time.sleep(5)
-        logging.info("\nTest_step_10 Result: %s\n", result)
-
-    # step 11:
-    # action: Complete the testcase
-    # result: Merge the results from all steps
-    #         The record received in Default, Extended and Programming Session shall be equal
-        result = result and step_11(default_f12b_result, extended_f12b_result,
-                                    pbl_f12b_result, sbl_f12b_result)
-
-
-    ############################################
-    # postCondition
-    ############################################
-
-    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()

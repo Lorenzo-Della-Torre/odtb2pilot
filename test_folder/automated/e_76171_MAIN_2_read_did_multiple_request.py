@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,365 +18,366 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-# Testscript Hilding MEPII
-# project:  BECM basetech MEPII
-# author:   hweiler (Hans-Klaus Weiler)
-# date:     2019-05-09
-# version:  1.0
-# reqprod:  76171
+reqprod: 76171
+version: 2
+title: ReadDataByIdentifier (22) - multiple identifiers with one request
+purpose: >
+    The manufacturing and aftersales tool supports reading several DIDs simultaneously from one
+    ECU. Since the time for each request will be to long, the ECU shall be able to package
+    several data record in one response message
 
-# author:   HWEILER (Hans-Klaus Weiler)
-# date:     2020-08-13
-# version:  1.1
-# changes:  update for YML support
+description: >
+    The ECU shall support a minimum 10 dataIdentifiers, or as many dataIdentifiers as implemented,
+    in one single ReadDataByIdentifier request in default and extended diagnostic session.
+    The ECU is permitted to reject requests with multiple dataIdentifiers when the response is
+    larger than 61 bytes. In programmingSession only one dataIdentifier needs to be supported.
 
-# inspired by https://grpc.io/docs/tutorials/basic/python.html
-
-# Copyright 2015 gRPC authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-The Python implementation of the gRPC route guide client.
+details: >
+    Verify ECU supports minimum 10 data identifiers in default and extended session
+    and only one data identifier in programming session.
 """
 
-import time
-from datetime import datetime
-import sys
 import logging
-
-import odtb_conf
-
-from supportfunctions.support_can import SupportCAN, CanParam, CanTestExtra, CanPayload
-from supportfunctions.support_test_odtb2 import SupportTestODTB2
+from hilding.dut import Dut
+from hilding.dut import DutTestError
 from supportfunctions.support_carcom import SupportCARCOM
+from supportfunctions.support_test_odtb2 import SupportTestODTB2
+from supportfunctions.support_can import SupportCAN
+from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_file_io import SupportFileIO
-from supportfunctions.support_precondition import SupportPrecondition
-from supportfunctions.support_postcondition import SupportPostcondition
 
-SIO = SupportFileIO
-SC = SupportCAN()
-SUTE = SupportTestODTB2()
 SC_CARCOM = SupportCARCOM()
-PREC = SupportPrecondition()
-POST = SupportPostcondition()
+SUTE = SupportTestODTB2()
+SC = SupportCAN()
+SE22 = SupportService22()
+SIO = SupportFileIO()
 
 
-
-def step_1(can_p):
+def did_count_find(dids_to_read, response):
     """
-    Teststep 1: send several requests at one time - requires SF to send, MF for reply
+    Verify DIDs are present in ECU response
+    Args:
+        dids_to_read (list): DIDs
+        response (str): ECU response
+    Returns:
+        (bool): True when all DIDs are present
     """
-    # Parameters for the teststep
-    cpay: CanPayload = {
-        "payload": SC_CARCOM.can_m_send("ReadDataByIdentifier",
-                                        b'\xF1\x20\xF1\x2A',
-                                        b''),
-        "extra": ''
-        }
-    SIO.parameter_adopt_teststep(cpay)
-    etp: CanTestExtra = {
-        "step_no": 1,
-        "purpose": "send several requests at one time - requires SF to send",
-        "timeout": 1,
-        "min_no_messages": -1,
-        "max_no_messages": -1
-        }
-    SIO.parameter_adopt_teststep(etp)
+    results = []
+    for did in dids_to_read:
+        did_count = response.count(did)
+        if did_count != 0:
+            results.append(True)
+        else:
+            logging.error("%s DID not found in ECU response", did)
+            results.append(False)
 
-    result = SUTE.teststep(can_p, cpay, etp)
-    return result
+    if all(results) and len(results) != 0:
+        logging.info("Successfully verified that all the DIDs are present in ECU response")
+        return True
 
-def step_2(can_p):
+    logging.error("Test Failed: Some DIDs not present in ECU response")
+    return False
+
+
+def read_data_id_with_dids(dut:Dut, dids_to_read):
     """
-    Teststep 2: test if DIDs are included in reply
+    Verify ReadDataByIdentifier service 22 with multiple DIDs for positive response
+    Args:
+        dut (Dut): An instance of Dut
+        dids_to_read (list): DIDs
+    Returns:
+        (bool): True on successfully verified positive response
     """
-    step_no = 2
-    purpose = "test if all requested DIDs are included in reply"
+    if isinstance(dids_to_read, list):
+        payload = ''.join(dids_to_read)
+    else:
+        payload = dids_to_read
+    response = dut.uds.read_data_by_id_22(bytes.fromhex(payload))
+    if response.raw[4:6] == '62':
+        # Check if expected DID are contained in reply
+        result = did_count_find(dids_to_read, response.raw)
+        if not result:
+            return False
+        logging.info("Received positive response %s for request ReadDataByIdentifier",
+                      response.raw[4:6])
+        return True
 
-    SUTE.print_test_purpose(step_no, purpose)
-
-    time.sleep(1)
-    SC.clear_all_can_messages()
-    logging.debug("All can messages cleared")
-    SC.update_can_messages(can_p)
-    logging.debug("All can messages updated")
-
-    logging.debug("Step%s: messages received %s", step_no, len(SC.can_messages[can_p["receive"]]))
-    logging.debug("Step%s: messages: %s\n", step_no, SC.can_messages[can_p["receive"]])
-    logging.debug("Step%s: frames received %s", step_no, len(SC.can_frames[can_p["receive"]]))
-    logging.debug("Step%s: frames: %s\n", step_no, SC.can_frames[can_p["receive"]])
-    logging.info("Test if string contains all IDs expected:")
-
-    result = SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='F120')
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='F12A')
-    return result
+    logging.error("Test Failed: Expected positive response, received %s", response)
+    return False
 
 
-# teststep 4: request 10 DID in one request - those with shortest reply
-def step_3(can_p):
+def read_data_id_with_dids_negative_31(dut:Dut, dids_to_read):
     """
-    Teststep 3: request 10 DID in one request - those with shortest reply
+    Verify ReadDataByIdentifier service 22 with multiple DIDs for negative response
+    Args:
+        dut (Dut): An instance of Dut
+        dids_to_read (list): DIDs
+    Returns:
+        (bool): True on successfully verified negative response
     """
-    # Parameters for the teststep
-    cpay: CanPayload = {
-        "payload": SC_CARCOM.can_m_send("ReadDataByIdentifier",
-                                        b'\xDD\x02\xDD\x0A\xDD\x0C\x49\x47\x49\x50'\
-                                        b'\xDA\xD0\xDA\xD1\x48\x02\x48\x03\x49\x45',
-                                        b''),
-        "extra": ''
-        }
-    SIO.parameter_adopt_teststep(cpay)
-    etp: CanTestExtra = {
-        "step_no": 3,
-        "purpose": "request 10 DID in one request - those with shortest reply (MF send, MF reply)",
-        "timeout": 1,
-        "min_no_messages": -1,
-        "max_no_messages": -1
-        }
-    SIO.parameter_adopt_teststep(etp)
+    payload = ''.join(dids_to_read)
+    response = dut.uds.read_data_by_id_22(bytes.fromhex(payload))
+    if response.raw[2:4] == '7F' and response.raw[6:8] == '31' :
+        logging.info("Received NRC %s for request ReadDataByIdentifier as expected",
+                      response.raw[6:8])
+        return True
 
-    result = SUTE.teststep(can_p, cpay, etp)
-    return result
+    logging.error("Test Failed: Expected NRC '31', received %s", response.raw)
+    return False
 
 
-def step_4(can_p):
+def read_data_id_with_dids_negative_13(dut:Dut, dids_to_read):
     """
-    Teststep 4: test if DIDs are included in reply
+    Verify ReadDataByIdentifier service 22 with multiple DIDs for negative response
+    Args:
+        dut (Dut): An instance of Dut
+        dids_to_read (list): DIDs
+    Returns:
+        (bool): True on successfully verified negative response
     """
-    step_no = 4
-    purpose = "test if requested DID are included in reply"
+    payload = ''.join(dids_to_read)
+    response = dut.uds.read_data_by_id_22(bytes.fromhex(payload))
+    if response.raw[2:4] == '7F' and response.raw[6:8] == '13' :
+        logging.info("Received NRC %s for request ReadDataByIdentifier as expected",
+                      response.raw[6:8])
+        return True
 
-    SUTE.print_test_purpose(step_no, purpose)
-
-    time.sleep(1)
-    SC.clear_all_can_messages()
-    logging.debug("All can messages cleared")
-    SC.update_can_messages(can_p)
-    logging.debug("All can messages updated")
-    logging.debug("Step%s: messages received %s", step_no, len(SC.can_messages[can_p["receive"]]))
-    logging.debug("Step%s: messages: %s\n", step_no, SC.can_messages[can_p["receive"]])
-    logging.debug("Step%s: frames received %s", step_no, len(SC.can_frames[can_p["receive"]]))
-    logging.debug("Step%s: frames: %s\n", step_no, SC.can_frames[can_p["receive"]])
-    logging.info("Test if string contains all IDs expected:")
-
-    result = SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='DD02')
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='DD0A')
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='DD0C')
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='4947')
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='4950')
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='DAD0')
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='DAD1')
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='4802')
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='4803')
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='4945')
-    return result
+    logging.error("Test Failed: Expected NRC '13', received %s", response.raw)
+    return False
 
 
-def step_5(can_p):
+def read_data_id_with_composite_dids(dut:Dut, dids_to_read, composite_did):
     """
-    Teststep 5: request 11 DID at once
+    Verify ReadDataByIdentifier service 22 with multiple DIDs for positive response
+    Args:
+        dut (Dut): An instance of Dut
+        dids_to_read (list): DIDs
+        composite_did (list): Composite DIDs for respective DID
+    Returns:
+        (bool): True on successfully verified positive response
     """
-    # Parameters for the teststep
-    cpay: CanPayload = {
-        "payload": SC_CARCOM.can_m_send("ReadDataByIdentifier",
-                                        b'\x49\x1A\xDD\x02\xDD\x0A\xDD\x0C\x49\x47'\
-                                        b'\x49\x50\xDA\xD0\xDA\xD1\x48\x02\x48\x03\x49\x45',
-                                        b''),
-        "extra": ''
-        }
-    SIO.parameter_adopt_teststep(cpay)
-    etp: CanTestExtra = {
-        "step_no": 5,
-        "purpose": "send 11 requests at one time - fails in current version (max10)",
-        "timeout": 1,
-        "min_no_messages": -1,
-        "max_no_messages": -1
-        }
-    SIO.parameter_adopt_teststep(etp)
-    result = SUTE.teststep(can_p, cpay, etp)
-    return result
+    payload = ''.join(dids_to_read)
+    response = dut.uds.read_data_by_id_22(bytes.fromhex(payload))
+    if response.raw[4:6] == '62':
+        # Check if expected DID are contained in reply
+        result = did_count_find(composite_did, response.raw)
+        if not result:
+            return False
+        logging.info("Received positive response %s for request ReadDataByIdentifier",
+                      response.raw[4:6])
+        return True
+
+    logging.error("Test Failed: Expected positive response, received %s", response)
+    return False
 
 
-def step_6(can_p):
+def check_active_session(dut:Dut, mode, session):
     """
-    Teststep 6: test if error received
+    Verify active diagnostic session
+    Args:
+        dut (Dut): An instance of Dut
+        mode (bytes): Diagnostic session in bytes
+        session (str): Diagnostic session
+    Returns:
+        (bool): True on successfully verified active diagnostic session
     """
-    step_no = 6
-    purpose = "verify that error message received"
-
-    SUTE.print_test_purpose(step_no, purpose)
-
-    time.sleep(1)
-    SC.clear_all_can_messages()
-    logging.debug("all can messages cleared")
-    SC.update_can_messages(can_p)
-    logging.debug("all can messages updated")
-    logging.debug("Step%s: messages received %s", step_no, len(SC.can_messages[can_p["receive"]]))
-    logging.debug("Step%s: messages: %s\n", step_no, SC.can_messages[can_p["receive"]])
-    logging.debug("Step%s: frames received %s", step_no, len(SC.can_frames[can_p["receive"]]))
-    logging.debug("Step%s: frames: %s\n", step_no, SC.can_frames[can_p["receive"]])
-    logging.info("Test if string contains all IDs expected:")
-
-    result = SUTE.test_message(SC.can_messages[can_p["receive"]],
-                               teststring='037F223100000000')
-    logging.info("Step%s: %s", step_no,
-                 SUTE.pp_decode_7f_response(SC.can_frames[can_p["receive"]][0][2]))
-    logging.info("Step%s: teststatus:%s\n", step_no, result)
-    return result
+    # Read active diagnostic session
+    active_session = SE22.read_did_f186(dut, mode)
+    if not active_session:
+        logging.error("Test Failed: ECU is not in %s session", session)
+        return False
+    return True
 
 
-def step_7(can_p):
+def step_1(dut: Dut, parameters):
     """
-    Teststep 7: send 10 requests at one time - those with most bytes in return
+    action: Verify the ECU supports 10 dataIdentifiers as implemented,
+            in one single ReadDataByIdentifier request in default session.
+    expected_result: True when ECU supports 10 dataIdentifiers in default session.
     """
+    # Request 2 DIDs in one request and verify if DIDs are included in response
+    result_non_prog_dids = read_data_id_with_dids(dut, parameters['non_prog_dids'])
+    if not result_non_prog_dids:
+        return False
 
-    # Parameters for the teststep
-    cpay: CanPayload = {
-        "payload": SC_CARCOM.can_m_send("ReadDataByIdentifier",
-                                        b'\xED\xA0\xF1\x26\xF1\x2E\xDA\x80\xF1\x8C'\
-                                        b'\xDD\x00\xDD\x0B\xDD\x01\x49\x45\xDB\x72',
-                                        b''),
-        "extra": ''
-        }
-    SIO.parameter_adopt_teststep(cpay)
-    etp: CanTestExtra = {
-        "step_no": 7,
-        "purpose": "send 10 requests at one time - those with most bytes in return",
-        "timeout": 1,
-        "min_no_messages": -1,
-        "max_no_messages": -1
-        }
-    SIO.parameter_adopt_teststep(etp)
-    result = SUTE.teststep(can_p, cpay, etp)
-    return result
+    # Request 10 DIDs in one request - those with shortest response
+    result_max_dids_with_less_bytes_in_return = \
+    read_data_id_with_dids(dut, parameters['max_dids_with_less_bytes_in_return'])
+    if not result_max_dids_with_less_bytes_in_return:
+        return False
+
+    # Check default session
+    def_session_result = check_active_session(dut, b'\x01', session='default')
+    if not def_session_result:
+        return False
+
+    # Request 11 DIDs at once and check if error message received
+    result_exceeded_max_dids = \
+    read_data_id_with_dids_negative_13(dut, parameters['exceeded_max_dids'])
+    if not result_exceeded_max_dids:
+        return False
+
+    # Request 10 DIDs in one request - those with most bytes in response
+    result_max_dids_with_less_bytes_in_return = \
+    read_data_id_with_dids(dut, parameters['max_dids_with_most_bytes_in_return'])
+
+    # Verify if composite DIDs are included in response
+    result_composite_did = result_max_dids_with_less_bytes_in_return and\
+                           read_data_id_with_composite_dids(dut, 'EDA0',\
+                           parameters['def_ext_composite_did_eda0'])
+    if not result_composite_did:
+        return False
+
+    logging.info("ECU supports 10 dataIdentifiers as implemented, in one single"
+                 " ReadDataByIdentifier request in default session")
+    return True
 
 
-def step_8(can_p):
+def step_2(dut: Dut, parameters):
     """
-    Teststep 8: test if DIDs are included in reply including those from combined DID
+    action: Verify the ECU supports 10 dataIdentifiers as implemented,
+            in one single ReadDataByIdentifier request in extended session.
+    expected_result: True when ECU supports 10 dataIdentifiers in extended session.
     """
-    step_no = 8
-    purpose = "test if all requested DIDs are included in reply"
+    # Change to extended session
+    dut.uds.set_mode(3)
 
-    SUTE.print_test_purpose(step_no, purpose)
+    # Check extended session
+    ext_session_result = check_active_session(dut, b'\x03', session='extended')
 
-    time.sleep(1)
-    SC.clear_all_can_messages()
-    logging.debug("all can messages cleared")
-    SC.update_can_messages(can_p)
-    logging.debug("all can messages updated")
+    # Request 2 DIDs in one request and verify if DIDs are included in response
+    result_non_prog_dids = ext_session_result and \
+    read_data_id_with_dids(dut, parameters['non_prog_dids'])
+    if not result_non_prog_dids:
+        return False
 
-    logging.debug("Step%s: messages received %s", step_no, len(SC.can_messages[can_p["receive"]]))
-    logging.debug("Step%s: messages: %s\n", step_no, SC.can_messages[can_p["receive"]])
-    logging.debug("Step%s: frames received %s", step_no, len(SC.can_frames[can_p["receive"]]))
-    logging.debug("Step%s: frames: %s\n", step_no, SC.can_frames[can_p["receive"]])
-    logging.info("Test if string contains all IDs expected:")
+    # Request 10 DIDs in one request - those with shortest response
+    result_max_dids_with_less_bytes_in_return = \
+    read_data_id_with_dids(dut, parameters['max_dids_with_less_bytes_in_return'])
+    if not result_max_dids_with_less_bytes_in_return:
+        return False
 
-    result = SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='EDA0')
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='F120')
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='F12A')
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='F12B')
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='F12E')
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='F18C')
+    # Request 11 DIDs at once and check if error message received
+    result_exceeded_max_dids = \
+    read_data_id_with_dids_negative_13(dut, parameters['exceeded_max_dids'])
+    if not result_exceeded_max_dids:
+        return False
 
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='F126')
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='F12E')
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='DA80')
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='F18C')
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='DD00')
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='DD0B')
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='DD01')
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='4945')
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='DB72')
-    return result
+    # Request 10 DIDs in one request - those with most bytes in response
+    result_max_dids_with_most_bytes_in_return = \
+    read_data_id_with_dids(dut, parameters['max_dids_with_most_bytes_in_return'])
+
+    # Verify if composite DIDs are included in response
+    result_composite_did = result_max_dids_with_most_bytes_in_return and \
+                           read_data_id_with_composite_dids(dut, 'EDA0',\
+                           parameters['def_ext_composite_did_eda0'])
+    if not result_composite_did:
+        return False
+
+    # Check extended session
+    ext_session_result = check_active_session(dut, b'\x03', session='extended')
+    if not ext_session_result:
+        return False
+
+    logging.info("ECU supports 10 dataIdentifiers as implemented, in one single"
+                 " ReadDataByIdentifier request in extended session")
+    return True
+
+
+def step_3(dut: Dut, parameters):
+    """
+    action: Verify in programmingSession only one dataIdentifier is supported
+    expected_result: True when ECU rejects requests with multiple dataIdentifier
+    """
+    # Change to programming session
+    dut.uds.set_mode(2)
+
+    # Check programming session
+    prog_session_result = check_active_session(dut, b'\x02', session='programming')
+
+    # Send single request using did 'F121' and verify if DIDs are included in response
+    result_single_did = prog_session_result and\
+                        read_data_id_with_dids(dut, parameters['prog_dids'][0])
+    if not result_single_did:
+        return False
+
+    # Send single request using did 'F12A' and verify if DIDs are included in response
+    result_single_did_again = read_data_id_with_dids(dut, parameters['prog_dids'][1])
+    if not result_single_did_again:
+        return False
+
+    # Request 2 DIDs - 'F121' and 'F12A'
+    result_non_prog_dids = read_data_id_with_dids_negative_31(dut, parameters['prog_dids'])
+    if not result_non_prog_dids:
+        return False
+
+    # Send request containing composite DID and verify if DIDs are included in response
+    result_eda0_did = read_data_id_with_dids(dut, 'EDA0')
+
+    # Verify if composite DIDs are included in reply
+    result_composite_did = result_eda0_did and\
+                         read_data_id_with_composite_dids(dut, 'EDA0',\
+                         parameters['composite_did_eda0'])
+    if not result_composite_did:
+        return False
+
+    # Check programming session
+    prog_session_result = check_active_session(dut, b'\x02', session='programming')
+
+    # Change to default session
+    dut.uds.set_mode(1)
+
+    # Check default session
+    def_session_result = prog_session_result and\
+                         check_active_session(dut, b'\x01', session='default')
+    if not def_session_result:
+        return False
+
+    logging.info("Only one data identifier is supported in programming session")
+    return True
 
 
 def run():
     """
-    Run - Call other functions from here
+    Verify ECU supports minimum 10 data identifiers in default and extended session
+    and only one data identifier in programming session.
     """
+    dut = Dut()
+    start_time = dut.start()
+    result = False
+    result_step = False
 
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+    parameters_dict = {'composite_did_eda0': '',
+                       'def_ext_composite_did_eda0': '',
+                       'prog_dids': '',
+                       'non_prog_dids':'',
+                       'max_dids_with_less_bytes_in_return':'',
+                       'exceeded_max_dids':'',
+                       'max_dids_with_most_bytes_in_return':''}
 
-    # where to connect to signal_broker
-    can_p: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        "send" : "Vcu1ToBecmFront1DiagReqFrame",
-        "receive" : "BecmToVcu1Front1DiagResFrame",
-        "namespace" : SC.nspace_lookup("Front1CANCfg0")
-    }
-    SIO.parameter_adopt_teststep(can_p)
+    try:
+        dut.precondition(timeout=70)
+        parameters = SIO.parameter_adopt_teststep(parameters_dict)
 
-    logging.info("Testcase start: %s", datetime.now())
-    starttime = time.time()
-    logging.info("Time: %s \n", time.time())
+        if not all(list(parameters.values())):
+            raise DutTestError("yml parameters not found")
 
-    ############################################
-    # precondition
-    ############################################
-    timeout = 40
-    result = PREC.precondition(can_p, timeout)
+        result_step = dut.step(step_1, parameters, purpose="Verify the ECU supports 10"
+                               " dataIdentifiers as implemented, in one single"
+                               " ReadDataByIdentifier request in default session")
+        if result_step:
+            result_step = dut.step(step_2, parameters, purpose="Verify the ECU supports 10"
+                                   " dataIdentifiers as implemented, in one single"
+                                   " ReadDataByIdentifier request in extended session")
+        if result_step:
+            result_step = dut.step(step_3, parameters, purpose="Verify in programming session"
+                                   " only one dataIdentifier is supported")
+        result = result_step
+    except DutTestError as error:
+        logging.error("Test failed: %s", error)
+    finally:
+        dut.postcondition(start_time, result)
 
-    if result:
-    ############################################
-    # teststeps
-    ############################################
-
-    # step1:
-    # action: send several requests at one time - requires SF to send, MF for reply
-    # result: BECM reports programmin session
-        result = result and step_1(can_p)
-
-    # step 2: check if DIDs are included in reply including those from combined DID
-    # action: check if expected DID are contained in reply
-    # result: true if all contained, false if not
-        result = result and step_2(can_p)
-
-    # step3:
-    # action: check current session
-    # result: BECM reports default session
-        result = result and step_3(can_p)
-
-    # step 4: check if DIDs are included in reply including those from combined DID
-    # action: check if expected DID are contained in reply
-    # result: true if all contained, false if not
-        result = result and step_4(can_p)
-
-    # step5:
-    # action: send 11 requests at one time
-    # result:
-        result = result and step_5(can_p)
-
-    # step 6: check if error message received
-    # action: check if error message received
-    # result: true if error message contained, false if not
-        result = result and step_6(can_p)
-
-    # step7:
-    # action: send 10 requests at one time, containing combined DID
-    # result:
-        result = result and step_7(can_p)
-
-    # step 8: check if DIDs are included in reply including those from combined DID
-    # action: check if expected DID are contained in reply
-    # result: true if all contained, false if not
-        result = result and step_8(can_p)
-
-    ############################################
-    # postCondition
-    ############################################
-
-    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()

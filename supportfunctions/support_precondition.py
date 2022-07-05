@@ -77,7 +77,19 @@ class SupportPrecondition:
 
         logging.info(
             "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Precondition started~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-        print("Precondition, current can_p: ", can_p)
+
+        #There is an issue in unsubscribe_signals() that generates a lot of errors in the log.
+        #In order to not confuse users this was simply removed from the log by disabling the logger
+        logger = logging.getLogger()
+        logger.disabled = True
+
+        # deregister signals
+        # Adding unsubscribe in precondition to remove all the unwanted subscriptions
+        # from the previous scripts if any.
+        SC.unsubscribe_signals()
+
+        logger.disabled = False
+
         #Temporary fix - add missing parameters in can_p
         for key in CanParam():
             if not key in can_p:
