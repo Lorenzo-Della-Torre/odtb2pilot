@@ -150,5 +150,5 @@ rigs:
         user: pi #optional
         platform: hvbm_p519_sa1
         signal_broker_port: 50051 #optional
-        namespacce: Front1CANCfg0
+        namespace: Front1CANCfg0
 """
