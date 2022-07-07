@@ -158,6 +158,7 @@ def run_test_and_parse_log_to_result(test_file_py, result_file):
                                                  "Modified VBF needed",
                                                  "SecOC not implemented",
                                                  "MANUAL",
+                                                 "Excluded",
                                                  "Tested implicitly")):
                     verdict = "unknown"
                 else:
