@@ -356,10 +356,9 @@ def software_download(dut, wait_time, stepno):
 
 def step_1(dut: Dut):
     """
-    action: Verify P2Server timer is started for the queued request once the final response
-            of the previous request is transmitted in programming session
+    action: Verify empty response is received for request sent when request queue is full.
 
-    expected_result: True when P2Server timer is started
+    expected_result: True when request is ignored
     """
     dut.uds.set_mode(2)
     # Read yml parameters
@@ -375,9 +374,9 @@ def step_1(dut: Dut):
         logging.error("Test failed: Software Download failed")
         return False
 
-    # Check P2Server timer is started
-    p2_star_result = verify_ignored_request()
-    if p2_star_result:
+    # Verify request is ignored when queue is full
+    result = verify_ignored_request()
+    if result:
         return True
 
     return False
@@ -385,8 +384,7 @@ def step_1(dut: Dut):
 
 def run():
     """
-    Verify P2Server timer is started for the queued request once the final response of the
-    previous request is transmitted in programming session.
+    Verify empty response is received for request sent when request queue is full.
     """
     dut = Dut()
     start_time = dut.start()
@@ -394,7 +392,8 @@ def run():
     try:
         dut.precondition(timeout=900)
 
-        result = dut.step(step_1, purpose='Verify P2Server timer is started in programming mode')
+        result = dut.step(step_1, purpose='Verify empty response is received for request sent'
+                                            ' when request queue is full.')
 
     except DutTestError as error:
         logging.error("Test failed: %s", error)
