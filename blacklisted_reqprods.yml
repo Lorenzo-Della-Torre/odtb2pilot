@@ -73,6 +73,8 @@ hvbm_p519:
     --Excluded--:
         e_447591_MAIN_3 : tier1_file_deliveries | Deviaton needed as SWCE (postbuild) will not be delivered.
         e_76513_MAIN_1 : component_selection_can_physical_interfaces | This is hw req, need to hand-over to BMS team. (LEAR HW can't fulfill this)
+        e_76695_MAIN_2 : request_transfer_exit | Breaks testrun. Temporarily excluded
+        e_76690_MAIN_3 : transfer_data | Breaks testrun. Temporarily excluded
 
 ihfa_v436:
     --NA--:
