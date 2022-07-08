@@ -19,37 +19,37 @@ hvbm_p519:
         e_435017_MAIN_0 : production_key_programming | Encryption and decryption will be on raw data and not on compressed data. Tool verification?
         e_76515_MAIN_3 : read_dtc_information_19_report_dtc_with_permanent_status_15 | If ECU doesn't become emission related.
         e_488703_MAIN_0 : secoc_configuration_secoc_clusterkeyID | NA Because we only have one cluster and one key.
-		e_476807_MAIN_2 : disable_software_interfaces_for_non_specified_software_services | Need specific services to debug SW
-		e_473645_MAIN_0 : secure_boot_from_optional_media | Need to enable secure boot from optional boot media for secure boot actions and signature verifications.
-		e_442538_MAIN_1 : public_key_types | Requirement is not applicable for the ECU supplier but for off-board systems.
-		e_420232_MAIN_2 : software_authentication_test_and_development_key | Implicitly tested since it used
-		e_404594_MAIN_0 : sign_and_verify_unprocessed_data | Encryption and decryption will be on raw data and not on compressed data. Tool verification
-		e_428666_MAIN_4 : append_signature_to_software_part | Don't have production key. This is a tool verification requirement  to be tested by vcc tool department. 
-		e_457041_MAIN_0 : conditions_for_signing_a_file_in_production | Off-board system is for End Of Line use.
-		e_428664_MAIN_1 : signing_function_integrity_check | This is a tool verification requirement  to be tested by vcc tool department. 
-		e_70844_MAIN_1 : detection_of_suppler_specific_software_installed_in_ecu | DTC not implemented, to be implemented if the ECU is delivered to VCC 
-		e_70845_MAIN_1 : clearing_of_dtc_for_detection_of_suppler_software_installed_in_ecu | DTC not implemented, to be implemented if the ECU is delivered to VCC 
-		e_247653_MAIN_9 : independent_reconfiguration | Postbuild Concept is optional to implement
-		e_76526_MAIN_1 : lin_master | No LIN on the HVBM
-		e_481041_MAIN_0 : requestdownload_service_on_can_fd | CAN FD not implemented
-		e_487883_MAIN_0 : secoc_optimization_for_cpu_load | An OEM specific configuration shall be introduced to balance the CPU load to stay at a reasonable level for SecOC MAC calculation.
-		e_487882_MAIN_1 : secoc_optimization_for_latency. | An OEM specific configuration shall be introduced to reduce latency for SecOC MAC verification.
-		e_487963_MAIN_1 : secoc_optimization_to_minimize_attacks_within_rx_acceptance_window | An OEM specific configuration shall be introduced to minimize replay attacks within the the RX Acceptance Window.
-		e_488700_MAIN_0 : secoc_configuration_useauthdatafreshness | An OEM specific configuration shall be introduced  to use freshness info to minimize the replay attack window
-		e_488846_MAIN_0 : secoc_fvm_notation | Not testable
-		e_488674_MAIN_0 : secoc_fv_option_0_no_fv_used | This not an option since we use FV from timesync
-		e_488675_MAIN_0 : secoc_fv_option_1_full_fv_sent_in_pdu | We have only 64bit in CAN message
-		e_480627_MAIN_1 : distribution_of_the_security_access_keys_to_ecu_suppliers | Should set initial key to FF. If any other key needs to be configured it should be done at HW end of line
-		e_52687_-_2 : data_compression_method_1_parameters | Not in use any longer.
-		e_68182_MAIN_3 : security_constant_data_record | Security constant is not implemented
-		e_458730_MAIN_1 : set_dtc_prepassed_prefailed_routine | There is another way to test it
-		e_458755_MAIN_1 : start_new_operation_cycle_routine | There is another way to test it
-		e_458700_MAIN_3 : calibration_of_dtc_data_verification_dtc_U280000 | There is another way to test it
-		e_458806_MAIN_3 : calibration_of_dtc_data_verification_dtc_U280100 | There is another way to test it
-		e_72034_MAIN_6 : support_for_operation_cycle_counter_5_warm_up_cycles | Not obd2 node
-		e_68266_MAIN_1 : emissions_related_dtcs_defined_by_SAEJ2012 | Not obd2 node
-		e_68267_MAIN_2 : dtcs_defined_by_SAEJ2012 | Not obd2 node
-		e_181453_MAIN_1 : e2e_protection_wrapper | Not using wrapper and not implemented yet. We use 1A autosar standard and volvo wrapper, but don't know which one yet.
+        e_476807_MAIN_2 : disable_software_interfaces_for_non_specified_software_services | Need specific services to debug SW
+        e_473645_MAIN_0 : secure_boot_from_optional_media | Need to enable secure boot from optional boot media for secure boot actions and signature verifications.
+        e_442538_MAIN_1 : public_key_types | Requirement is not applicable for the ECU supplier but for off-board systems.
+        e_420232_MAIN_2 : software_authentication_test_and_development_key | Implicitly tested since it used
+        e_404594_MAIN_0 : sign_and_verify_unprocessed_data | Encryption and decryption will be on raw data and not on compressed data. Tool verification
+        e_428666_MAIN_4 : append_signature_to_software_part | Don't have production key. This is a tool verification requirement  to be tested by vcc tool department. 
+        e_457041_MAIN_0 : conditions_for_signing_a_file_in_production | Off-board system is for End Of Line use.
+        e_428664_MAIN_1 : signing_function_integrity_check | This is a tool verification requirement  to be tested by vcc tool department. 
+        e_70844_MAIN_1 : detection_of_suppler_specific_software_installed_in_ecu | DTC not implemented, to be implemented if the ECU is delivered to VCC 
+        e_70845_MAIN_1 : clearing_of_dtc_for_detection_of_suppler_software_installed_in_ecu | DTC not implemented, to be implemented if the ECU is delivered to VCC 
+        e_247653_MAIN_9 : independent_reconfiguration | Postbuild Concept is optional to implement
+        e_76526_MAIN_1 : lin_master | No LIN on the HVBM
+        e_481041_MAIN_0 : requestdownload_service_on_can_fd | CAN FD not implemented
+        e_487883_MAIN_0 : secoc_optimization_for_cpu_load | An OEM specific configuration shall be introduced to balance the CPU load to stay at a reasonable level for SecOC MAC calculation.
+        e_487882_MAIN_1 : secoc_optimization_for_latency. | An OEM specific configuration shall be introduced to reduce latency for SecOC MAC verification.
+        e_487963_MAIN_1 : secoc_optimization_to_minimize_attacks_within_rx_acceptance_window | An OEM specific configuration shall be introduced to minimize replay attacks within the the RX Acceptance Window.
+        e_488700_MAIN_0 : secoc_configuration_useauthdatafreshness | An OEM specific configuration shall be introduced  to use freshness info to minimize the replay attack window
+        e_488846_MAIN_0 : secoc_fvm_notation | Not testable
+        e_488674_MAIN_0 : secoc_fv_option_0_no_fv_used | This not an option since we use FV from timesync
+        e_488675_MAIN_0 : secoc_fv_option_1_full_fv_sent_in_pdu | We have only 64bit in CAN message
+        e_480627_MAIN_1 : distribution_of_the_security_access_keys_to_ecu_suppliers | Should set initial key to FF. If any other key needs to be configured it should be done at HW end of line
+        e_52687_-_2 : data_compression_method_1_parameters | Not in use any longer.
+        e_68182_MAIN_3 : security_constant_data_record | Security constant is not implemented
+        e_458730_MAIN_1 : set_dtc_prepassed_prefailed_routine | There is another way to test it
+        e_458755_MAIN_1 : start_new_operation_cycle_routine | There is another way to test it
+        e_458700_MAIN_3 : calibration_of_dtc_data_verification_dtc_U280000 | There is another way to test it
+        e_458806_MAIN_3 : calibration_of_dtc_data_verification_dtc_U280100 | There is another way to test it
+        e_72034_MAIN_6 : support_for_operation_cycle_counter_5_warm_up_cycles | Not obd2 node
+        e_68266_MAIN_1 : emissions_related_dtcs_defined_by_SAEJ2012 | Not obd2 node
+        e_68267_MAIN_2 : dtcs_defined_by_SAEJ2012 | Not obd2 node
+        e_181453_MAIN_1 : e2e_protection_wrapper | Not using wrapper and not implemented yet. We use 1A autosar standard and volvo wrapper, but don't know which one yet.
 
     --Inspection--:
         e_481878_MAIN_0 : interface_to_tee_cryptographic_operations | ETAS provides API. Inspect that we have received those files
