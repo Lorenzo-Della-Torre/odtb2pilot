@@ -115,7 +115,7 @@ def step_3(dut: Dut, event_auth_data):
     # Compare authentication data is generated per event type
     auth_result = latest_event_auth_data['auth_data'] != event_auth_data['auth_data']
 
-    # Verify total successful event is increased by 1 
+    # Verify total successful event is increased by 1
     event_result = latest_event_auth_data['successful_event'] == \
             event_auth_data['successful_event'] + 1
 
