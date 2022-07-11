@@ -40,7 +40,6 @@ import grpc
 import requests
 
 from protogenerated.common_pb2 import Empty
-from protogenerated.common_pb2 import NameSpace
 
 from protogenerated.system_api_pb2_grpc import SystemServiceStub
 from protogenerated.network_api_pb2_grpc import NetworkServiceStub
