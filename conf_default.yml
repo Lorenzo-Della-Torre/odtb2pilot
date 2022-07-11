@@ -75,7 +75,7 @@ platforms:
         fixed_key: FFFFFFFFFF
         auth_key: 38722e65542d756d5f6f30626c36654e
         proof_key: 2b7e151628aed2a6abf7158809cf4f3c
-        ess_needed: False
+        ess_needed: 'False'
     ihfa_p519:
         signal_send: IHFAdpToIHFAUdsDiagRequestFrame
         signal_receive: IHFAToIHFAdpUdsDiagResponseFrame
@@ -85,7 +85,7 @@ platforms:
         wakeup_frame: 1A40C3FF01000000
         protocol: canfd
         framelength_max: 64
-        padding: true
+        padding: 'True'
         SecAcc_Gen: Gen2
         fixed_key: FFFFFFFFFF
         auth_key: FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
@@ -97,7 +97,7 @@ platforms:
         namespace: Front1CANCfg0
         SecAcc_Gen: Gen1
         fixed_key: '0102030405'
-        ess_needed : False
+        ess_needed : 'False'
         max_7fxx78 : 12
     psmd_p519:
         signal_send: PsmddpToPsmdUdsDiagRequestFrame
@@ -108,7 +108,7 @@ platforms:
         wakeup_frame: 1A40C3FF01000000
         protocol: canfd
         framelength_max: 64
-        padding: true
+        padding: True
         SecAcc_Gen: Gen2
         fixed_key: FFFFFFFFFF
         auth_key: FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
