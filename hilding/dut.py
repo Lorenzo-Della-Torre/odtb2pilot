@@ -112,7 +112,7 @@ class Dut:
             f'{self.conf.rig.signal_broker_port}')
         self.network_stub = NetworkServiceStub(self.channel)
         self.system_stub = SystemServiceStub(self.channel)
-        self.namespace = NameSpace(name="Front1CANCfg0")
+        self.namespace = 'Front1CANCfg0'
         self.protocol = 'can'
         self.framelength_max = 8
         self.padding = True
@@ -166,7 +166,7 @@ class Dut:
             "name" : "Heartbeat",
             "send" : True,
             "id" : self.conf.rig.signal_periodic,
-            "nspace" : self.namespace.name,
+            "nspace" : self.namespace,
             "protocol" : "can",
             "framelength_max" : 8,
             "padding" : True,
