@@ -40,7 +40,6 @@ import grpc
 import requests
 
 from protogenerated.common_pb2 import Empty
-from protogenerated.common_pb2 import NameSpace
 
 from protogenerated.system_api_pb2_grpc import SystemServiceStub
 from protogenerated.network_api_pb2_grpc import NetworkServiceStub
@@ -112,7 +111,7 @@ class Dut:
             f'{self.conf.rig.signal_broker_port}')
         self.network_stub = NetworkServiceStub(self.channel)
         self.system_stub = SystemServiceStub(self.channel)
-        self.namespace = NameSpace(name="Front1CANCfg0")
+        self.namespace = 'Front1CANCfg0'
         self.protocol = 'can'
         self.framelength_max = 8
         self.padding = True
@@ -129,7 +128,7 @@ class Dut:
         if key == "receive":
             return self.conf.rig.signal_receive
         if key == "namespace":
-            return self.namespace
+            return self.conf.rig.namespace
         if key == 'protocol':
             return self.protocol
         if key == 'framelength_max':
@@ -166,7 +165,7 @@ class Dut:
             "name" : "Heartbeat",
             "send" : True,
             "id" : self.conf.rig.signal_periodic,
-            "nspace" : self.namespace.name,
+            "nspace" : self.namespace,
             "protocol" : "can",
             "framelength_max" : 8,
             "padding" : True,

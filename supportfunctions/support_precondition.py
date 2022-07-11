@@ -100,7 +100,7 @@ class SupportPrecondition:
             "name" : "Heartbeat",
             "send" : True,
             "id" : "BecmFront1NMFr",
-            "nspace" : can_p["namespace"].name,
+            "nspace" : can_p["namespace"],
             "frame" : b'\x1A\x40\xC3\xFF\x01\x00\x00\x00',
             "intervall" : 0.4
             }
@@ -209,7 +209,7 @@ class SupportPrecondition:
             "name" : "Heartbeat",
             "send" : True,
             "id" : "MvcmFront1NMFr",
-            "nspace" : can_p["namespace"].name,
+            "nspace" : can_p["namespace"],
             "frame" : b'\x1A\x40\xC3\xFF\x01\x00\x00\x00',
             "intervall" : 0.4
             }

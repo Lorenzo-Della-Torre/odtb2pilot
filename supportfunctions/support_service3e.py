@@ -122,7 +122,7 @@ class SupportService3e:
         per_param: PerParam = {"name" : "TesterPresent_periodic",
                                "send": True,
                                "id": can_id,
-                               "nspace": can_p["namespace"].name,
+                               "nspace": can_p["namespace"],
                                "frame": b'\x02\x3E\x80\x00\x00\x00\x00\x00',
                                "intervall": periodic
                                }
