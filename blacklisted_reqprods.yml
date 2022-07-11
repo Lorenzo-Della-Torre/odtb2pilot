@@ -92,6 +92,7 @@ hvbm_p519:
         e_488702_MAIN_0 : secoc_configuration_secocrxacceptancewindow | <reason>
         e_67741_MAIN_2 : compliance_to_iso_14229_1 | Mentor responsible for testing their implementation
         e_488673_MAIN_0 : secoc_fv_options | We need a decision which option to use.
+        e_469129_MAIN_2 : random_number_generation_security_access | Design/Review that we use the correct random number
 
     --Diag--:
         e_68012_MAIN_0 : support_for_external_output_signal_data_records_actual_output_signal | Diagnosis responsible need to evaluate
@@ -189,7 +190,8 @@ hvbm_p519:
         e_68084_MAIN_0 : individual_control_of_other_ecu_internal_signal_data_records_defined_by_the_implementer | Design requirement. Not testable
         e_469130_MAIN_2 : security_access_key_storage | Add to inspection page
         e_67945_MAIN_1 : specification_of_supported_services_for_each_data_record | Design requirement. Implicitly tested by several requirements.
-        e_481873_MAIN_0 : root_of_trust_key_provisioning | Not possible to read MAC or test this. Making this a DESIGN requirement.	
+        e_481873_MAIN_0 : root_of_trust_key_provisioning | Not possible to read MAC or test this. Making this a DESIGN requirement.
+        e_469129_MAIN_2 : random_number_generation_security_access | Design/Review that we use the correct random number
 
     --Deviation--:
         e_468872_MAIN_2 : secure_boot_process | This will bypass chain-of-trust in some occasions
@@ -200,9 +202,6 @@ hvbm_p519:
 
     --BMS--:
         e_76513_MAIN_1 : component_selection_can_physical_interfaces | This is hw req, need to hand-over to BMS team. (LEAR HW can't fulfill this)
-
-    --Design/Inspection--:
-        e_469129_MAIN_2 : random_number_generation_security_access | Design/Review that we use the correct random number
 
     --Manual--:
         e_60107__2 : n_cs_performance_requirement_in_programming_session | <Reason>
