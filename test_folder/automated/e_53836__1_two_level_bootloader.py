@@ -1,4 +1,5 @@
 """
+
 /*********************************************************************************/
 
 
@@ -36,13 +37,9 @@ details: >
 
 import logging
 import sys
+from e_400425_MAIN_2_programming_of_logical_blocks import run
 
 logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
-
-try:
-    from e_400425_MAIN_2_programming_of_logical_blocks.py import run
-except ModuleNotFoundError as err:
-    logging.error("The test that is used to test this requirement can't be found: %s found", err)
 
 if __name__ == '__main__':
     run()
