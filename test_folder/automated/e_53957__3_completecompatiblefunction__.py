@@ -34,7 +34,7 @@ description: >
     each other.
 
 details: >
-    Verify check complete & compatibility function
+    Check complete & compatibility function
 """
 
 import os
@@ -77,7 +77,7 @@ def step_1(dut: Dut):
 
 def step_2(dut: Dut):
     """
-    action: Download ESS software part and download the remnants software parts
+    action: Download ESS, DATA and EXE software parts
     expected_result: True on successful download
     """
     result = True
@@ -96,19 +96,21 @@ def step_2(dut: Dut):
 
 def step_3(dut: Dut):
     """
-    action: Check complete & compatibility and do ECU hardreset
+    action: Check complete & compatibility and perform ECU hardreset
     expected_result: True when ECU reset successfully
     """
     # Complete and compatible check
     result = SSBL.check_complete_compatible_routine(dut, stepno=105)
     if not result:
+        logging.error("Test Failed: Downloaded software is not complete and compatible")
         return False
 
     logging.info("Downloaded software is complete and compatible")
 
-    # ECU reset
-    result = SE11.ecu_hardreset(dut, stepno=105)
+    # ECU reset use 1101
+    result = dut.uds.ecu_reset_1101()
     if not result:
+        logging.error("Test Failed: ECU reset Failed")
         return False
 
     return True
@@ -116,12 +118,13 @@ def step_3(dut: Dut):
 
 def step_4(dut: Dut):
     """
-    action: Download and activation of SBL
+    action: Activate SBL
     expected_result: True on SBL activation
     """
     # Loads the rig specific VBF files
     vbf_result = swdl.load_vbf_files(dut)
     if not vbf_result:
+        logging.error("Test Failed: Unable to Load vbf files")
         return False
 
     # Download and activate SBL on the ECU
@@ -134,7 +137,7 @@ def step_4(dut: Dut):
     return True
 
 
-def step_5(dut: Dut):
+def step_5(dut: Dut, parameters):
     """
     action: Download different SW parts variant
     expected_result: True when download different SW parts variant complete
@@ -144,9 +147,11 @@ def step_5(dut: Dut):
     if odtb_proj_param is None:
         odtb_proj_param = '.'
 
+    modified_vbf_path = parameters['modified_vbf_path']
     # By default we get files from VBF_Reqprod directory
     # REQ_53957_32325411XC_SWP1variant.vbf
-    variant = odtb_proj_param + "/VBF_Reqprod/REQ_53957*.vbf"
+
+    variant = odtb_proj_param + modified_vbf_path
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), variant)
     if not glob.glob(variant):
         result = False
@@ -159,34 +164,38 @@ def step_5(dut: Dut):
 
 def step_6(dut: Dut):
     """
-    action: Check complete & compatibility and do ECU hardreset
+    action: Check complete & compatibility and perform ECU hardreset
     expected_result: True when ECU is in default session
     """
     # Complete and compatible check
     result = SSBL.check_complete_compatible_routine(dut, stepno=105)
     if not result:
+        logging.error("Test Failed: Downloaded software is not complete and compatible")
         return False
 
     logging.info("Downloaded software is complete and compatible")
 
     # ECU reset
-    result = SE11.ecu_hardreset(dut, stepno=105)
+    result = dut.uds.ecu_reset_1101()
     if not result:
+        logging.error("Test Failed: ECU reset Failed")
         return False
 
-    # Verify active diagnostic session
-    result = SE22.read_did_f186(dut, dsession=b'\x01', stepno=105)
-    if not result:
-        logging.error("Test Failed: ECU is not in default session")
-        return False
+    # Read active diagnostic session
+    active_session = dut.uds.active_diag_session_f186()
 
-    logging.info("ECU is in default session as expected")
-    return True
+    # confirming active session
+    if active_session.data["details"]["mode"] == 1:
+        logging.info("ECU is in Default session")
+        return True
+
+    logging.error("Test Failed: ECU Not in Default session")
+    return False
 
 
 def run():
     """
-    Verify Check complete & compatibility function
+    Check complete & compatibility function
     """
     dut = Dut()
 
@@ -194,23 +203,30 @@ def run():
     result = False
     result_step = False
 
+    parameters_dict = {'modified_vbf_path': ''}
+
     try:
-        dut.precondition(timeout=600)
+        dut.precondition(timeout=1000)
+
+        parameters = SIO.parameter_adopt_teststep(parameters_dict)
+
+        if not all(list(parameters.values())):
+            raise DutTestError("yml parameters not found")
 
         result_step = dut.step(step_1, purpose="Download and activation of SBL")
         if result_step:
-            result_step = dut.step(step_2, purpose="Download ESS software part and download the"
-                                                   " remnants software parts")
+            result_step = dut.step(step_2, purpose="Download ESS, DATA and EXE software parts")
         if result_step:
-            result_step = dut.step(step_3, purpose="Check complete & compatibility and do ECU"
+            result_step = dut.step(step_3, purpose="Check complete & compatibility and perform ECU"
                                                    " hardreset")
         if result_step:
-            result_step = dut.step(step_4, purpose="Download and activation of SBL")
+            result_step = dut.step(step_4, purpose="Activate SBL")
         if result_step:
-            result_step = dut.step(step_5, purpose="Download Different SW Parts variant")
+            result_step = dut.step(step_5, parameters, purpose="Download Different SW Parts"
+                                                               " variant")
         if result_step:
-            result_step = dut.step(step_6, purpose="Check complete & compatibility and do ECU"
-                                               " hardreset and verify ECU is in default session")
+            result_step = dut.step(step_6, purpose="Check complete & compatibility and perform"
+                                                   " ECU hardreset")
         result = result_step
     except DutTestError as error:
         logging.error("Test failed: %s", error)
