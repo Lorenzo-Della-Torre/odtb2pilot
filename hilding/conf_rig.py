@@ -112,6 +112,14 @@ class Rig:
         return self.conf.selected_rig_dict.get(
             "signal_tester_present", platform_signal_tester_present)
 
+    @property
+    def namespace(self):
+        """ conf platform signal tester present """
+        platform_data = self.conf.platforms.get(self.platform, {})
+        platform_namespace = platform_data.get("namespace")
+        return self.conf.selected_rig_dict.get(
+            "namespace", platform_namespace)
+
 
     @property
     def wakeup_frame(self):

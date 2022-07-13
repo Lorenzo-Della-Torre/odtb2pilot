@@ -64,7 +64,7 @@ SUPPORT_TEST = SupportTestODTB2()
 
 RE_DATE_START = re.compile(r'\s*Testcase\s+start:\s+(?P<date>\d+-\d+-\d+)\s+(?P<time>\d+:\d+:\d+)')
 RE_RESULT = re.compile(r'.*(?P<result>FAILED|PASSED|MANUAL|To be inspected|\
-    |tested implicitly|Tested implicitly|Not applicable|Modified VBF needed|\
+    |tested implicitly|Tested implicitly|Not applicable|Modified VBF needed|excluded|\
     |diagnostic|application|design|deviation|dSpace|SecOC not implemented|Implicitly tested).*')
 RE_FOLDER_TIME = re.compile(r'.*Testrun_(?P<date>\d+_\d+)')
 RE_REQPROD_ID = re.compile(r'\s*e_(?P<reqprod>\d+)_', flags=re.IGNORECASE)
@@ -90,6 +90,7 @@ DIAGNOSTIC_STATUS = 'DIAGNOSTIC'
 APPLICATION_STATUS = 'APPLICATION'
 DESIGN_STATUS = 'DESIGN'
 DEVIATION_STATUS = 'DEVIATION'
+EXCLUDED_STATUS = 'EXCLUDED'
 
 # Use the keys when regex-matching in log-files
 MATCH_DICT = {'Not applicable': NA_STATUS,
@@ -109,6 +110,7 @@ MATCH_DICT = {'Not applicable': NA_STATUS,
               'application': APPLICATION_STATUS,
               'design': DESIGN_STATUS,
               'deviation': DEVIATION_STATUS,
+              'excluded': EXCLUDED_STATUS,
               'UNKNOWN': UNKNOWN_STATUS}
 
 # Which color to use for the status
@@ -126,7 +128,7 @@ COLOR_DICT = {PASSED_STATUS:'#d8ed96', FAILED_STATUS:'#e04644', NA_STATUS:'#c3c3
               IMPLICIT_STATUS:'#b9d3dc', UNKNOWN_STATUS:'BurlyWood', VBF_MOD_STATUS:'#ffcc99',
               DIAGNOSTIC_STATUS: 'tan', APPLICATION_STATUS: '#b576ad', DESIGN_STATUS: '#cb7e94',
               DEVIATION_STATUS: '#a1cfdd',
-              DSPACE_STATUS:"#9FE2BF", MANUAL_STATUS:'#fbd7c9', SECOC_STATUS:'#fbd7c9'}
+              DSPACE_STATUS:"#9FE2BF", MANUAL_STATUS:'#fbd7c9', SECOC_STATUS:'#fbd7c9', EXCLUDED_STATUS:'BurlyWood'}
 
 DESC_DICT = {PASSED_STATUS:'Passed',
              FAILED_STATUS:'Failed',
@@ -143,6 +145,7 @@ DESC_DICT = {PASSED_STATUS:'Passed',
              APPLICATION_STATUS:'For the application teams',
              DESIGN_STATUS:'Design requirement',
              DEVIATION_STATUS:'Needs a deviation',
+             EXCLUDED_STATUS:'Temporarily excluded',
              UNKNOWN_STATUS: 'Unknown error or status'}
 
 BROKEN_URL_COLOR = 'BlanchedAlmond'

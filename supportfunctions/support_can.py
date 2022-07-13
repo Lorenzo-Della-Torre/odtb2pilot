@@ -253,7 +253,8 @@ class SupportCAN:
         Returns: none
         """
         source = common_pb2.ClientId(id="hilding_support_can")
-        signal = common_pb2.SignalId(name=can_p["receive"], namespace=can_p["namespace"])
+        signal = common_pb2.SignalId(name=can_p["receive"],
+                                     namespace=self.nspace_lookup(can_p["namespace"]))
         sub_info = network_api_pb2.SubscriberConfig(clientId=source,\
         signals=network_api_pb2.SignalIds(signalId=[signal]), onChange=False)
 
@@ -293,11 +294,9 @@ class SupportCAN:
                         self.can_subscribes[can_p["receive"]][4],\
                         self.can_subscribes[can_p["receive"]][1],\
                         self.can_subscribes[can_p["receive"]][2])
-                    #print("frame_control_responses ", self.can_subscribes[can_p["receive"]][5])
                     # increment FC responses sent
                     self.can_subscribes[can_p["receive"]][5] += 1
-                    #print("frame_control_responses ", self.can_subscribes[can_p["receive"]][5])
-                #there is a MF to send, and FC received for it:
+                 #there is a MF to send, and FC received for it:
                 if (det_mf == 3) and\
                    (can_p["send"] in self.can_mf_send and self.can_mf_send[can_p["send"]] == []):
                     logging.warning("No CF was expected for %s", can_p["send"])
@@ -336,9 +335,6 @@ class SupportCAN:
         unsubscribe_signals
         """
 
-        #print("Signals to unsubscribe")
-        #print("Number of signals subscribed ", len(self.can_subscribes))
-        #print("Can signals subscribed to: ", self.can_subscribes)
         for unsubsc in self.can_subscribes:
             self.unsubscribe_signal(unsubsc)
         time.sleep(5)
@@ -409,10 +405,9 @@ class SupportCAN:
         while self.can_periodic[per_name][0]:
             #print("Can_periodic ", self.can_periodic[per_name])
             try:
-                #print("Send periodic signal_name: ", self.can_periodic[per_name])
                 self.t_send_signal_hex(stub, self.can_periodic[per_name][1],\
-                    common_pb2.NameSpace(name=self.can_periodic[per_name][2]),\
-                                            self.can_periodic[per_name][3])
+                                       self.can_periodic[per_name][2],\
+                                       self.can_periodic[per_name][3])
                 time.sleep(self.can_periodic[per_name][4])
             except grpc._channel._Rendezvous as err: # pylint: disable=protected-access
                 logging.error("Exception: %s", err)
@@ -455,7 +450,8 @@ class SupportCAN:
         """
         logging.debug("SC.send_burst nspace: %s", burst_param["nspace"])
         for _ in range(quantity):
-            self.t_send_signal_hex(stub, burst_param["id"], burst_param["nspace"],
+            self.t_send_signal_hex(stub, burst_param["id"],
+                                   burst_param["nspace"],
                                    burst_param["frame"])
             time.sleep(burst_param["intervall"])
 
@@ -551,7 +547,8 @@ class SupportCAN:
         """
         source = common_pb2.ClientId(id="app_identifier")
 
-        signal = common_pb2.SignalId(name=signal_name, namespace=namespace)
+        signal = common_pb2.SignalId(name=signal_name,
+                                     namespace=cls.nspace_lookup(namespace))
         signal_with_payload = network_api_pb2.Signal(id=signal)
         signal_with_payload.integer = payload_value
         publisher_info = network_api_pb2.PublisherConfig(clientId=source,\
@@ -705,7 +702,8 @@ class SupportCAN:
         send_FF_CAN
         """
         source = common_pb2.ClientId(id="app_identifier")
-        signal = common_pb2.SignalId(name=can_p["send"], namespace=can_p["namespace"])
+        signal = common_pb2.SignalId(name=can_p["send"],
+                                     namespace=self.nspace_lookup(can_p["namespace"]))
         signal_with_payload = network_api_pb2.Signal(id=signal)
         signal_with_payload.raw = self.can_mf_send[can_p["send"]][1][0]
 
@@ -806,11 +804,9 @@ class SupportCAN:
             self.can_mf_send[can_p["send"]] = []
         #number of frames to send, array of frames to send
         self.can_mf_send[can_p["send"]] = [0, []]
-        #print("signals to send: ", self.can_mf_send)
-        #print("t_send signal_CAN_MF_hex")
-        #print("send CAN_MF payload ", payload_value)
         source = common_pb2.ClientId(id="app_identifier")
-        signal = common_pb2.SignalId(name=can_p["send"], namespace=can_p["namespace"])
+        signal = common_pb2.SignalId(name=can_p["send"],
+                                     namespace=self.nspace_lookup(can_p["namespace"]))
         signal_with_payload = network_api_pb2.Signal(id=signal)
 
         # ToDo: test if payload can be sent over CAN(payload less then 4096 bytes) # pylint: disable=fixme
@@ -833,9 +829,7 @@ class SupportCAN:
                 logging.debug("payload empty: nothing to send")
             # if single_frame:
             elif len(self.can_mf_send[can_p["send"]][1]) == 1:
-                #print("Send first frame SF: ", self.can_mf_send[signal_name][1][0])
                 signal_with_payload.raw = self.can_mf_send[can_p["send"]][1][0]
-                #print("source: ", source, " signal_with_PL: ",  signal_with_payload.raw)
                 publisher_info = network_api_pb2.PublisherConfig(clientId=source,\
                     signals=network_api_pb2.Signals(signal=[signal_with_payload]), frequency=0)
                 try:
@@ -849,7 +843,6 @@ class SupportCAN:
                     self.can_mf_send.pop(can_p["send"])
                 except KeyError:
                     logging.error("Key %s not found", can_p["send"])
-                #print("can_mf_send2 ", self.can_mf_send)
             # check if payload fits into block to send
             elif len(self.can_mf_send[can_p["send"]][1]) < 0x1000:
                 logging.debug("Send payload as MF")
@@ -876,9 +869,7 @@ class SupportCAN:
                 logging.debug("payload empty: nothing to send")
             # if single_frame:
             elif len(self.can_mf_send[can_p["send"]][1]) == 1:
-                #print("Send first frame SF: ", self.can_mf_send[signal_name][1][0])
                 signal_with_payload.raw = self.can_mf_send[can_p["send"]][1][0]
-                #print("source: ", source, " signal_with_PL: ",  signal_with_payload.raw)
                 publisher_info = network_api_pb2.PublisherConfig(clientId=source,\
                     signals=network_api_pb2.Signals(signal=[signal_with_payload]), frequency=0)
                 try:
@@ -887,12 +878,10 @@ class SupportCAN:
                     logging.error(err)
                 #remove payload after it's been sent
                 logging.debug("Remove payload after being sent")
-                #print("can_mf_send ", self.can_mf_send)
                 try:
                     self.can_mf_send.pop(can_p["send"])
                 except KeyError:
                     logging.error("Key %s not found", can_p["send"])
-                #print("can_mf_send2 ", self.can_mf_send)
             elif len(self.can_mf_send[can_p["send"]][1]) < 0x1000000000000000000000000:
                 logging.debug("Send payload as MF message")
                 # send payload as MF
@@ -920,7 +909,7 @@ class SupportCAN:
         Send CAN message (8 bytes load) with raw (hex) payload
         """
         source = common_pb2.ClientId(id="app_identifier")
-        signal = common_pb2.SignalId(name=signal_name, namespace=namespace)
+        signal = common_pb2.SignalId(name=signal_name, namespace=cls.nspace_lookup(namespace))
         signal_with_payload = network_api_pb2.Signal(id=signal)
         signal_with_payload.raw = payload_value
         publisher_info = network_api_pb2.PublisherConfig(clientId=source,\
@@ -940,7 +929,7 @@ class SupportCAN:
         """
         source = common_pb2.ClientId(id="app_identifier")
         signal = common_pb2.SignalId(name=can_p["send"],
-                                     namespace=can_p["namespace"])
+                                     namespace=self.nspace_lookup(can_p["namespace"]))
         signal_with_payload = network_api_pb2.Signal(id=signal)
 
         # continue sending as stated in FC frame
@@ -981,7 +970,7 @@ class SupportCAN:
         #print("t_send signal_raw")
 
         source = common_pb2.ClientId(id="app_identifier")
-        signal = common_pb2.SignalId(name=signal_name, namespace=namespace)
+        signal = common_pb2.SignalId(name=signal_name, namespace=self.nspace_lookup(namespace))
         signal_with_payload = network_api_pb2.Signal(id=signal)
 
         signal_with_payload.raw = self.fill_payload(self.add_pl_length(payload_value)\
@@ -1067,9 +1056,6 @@ class SupportCAN:
         temp_message = [] #empty list as default
 
         can_rec = can_p["receive"]
-        #logging.debug("records received %s", can_rec)
-        #logging.debug("number of frames %s", len(self.can_frames[can_rec]))
-        #logging.debug("frames received %s", self.can_frames[can_rec])
         if self.can_frames[can_rec]:
             for i in self.can_frames[can_rec]:
                 #logging.debug("Whole can_frame : %s", i)

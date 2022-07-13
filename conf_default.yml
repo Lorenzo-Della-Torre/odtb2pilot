@@ -1,20 +1,25 @@
 platforms:
     becm_p319:
-        signal_send: Vcu1ToBecmFront1DiagReqFrame
-        signal_receive: BecmToVcu1Front1DiagResFrame
-        signal_periodic: MvcmFront1NMFr
-        signal_tester_present: Vcu1ToAllFuncFront1DiagReqFrame
-        wakeup_frame: 1A40C3FF01000000
-        SecAcc_Gen: Gen1
-        fixed_key: FFFFFFFFFF
-        auth_key: FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
-        proof_key: FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+        signal_send: 'Vcu1ToBecmFront1DiagReqFrame'
+        signal_receive: 'BecmToVcu1Front1DiagResFrame'
+        signal_periodic: 'MvcmFront1NMFr'
+        signal_tester_present: 'Vcu1ToAllFuncFront1DiagReqFrame'
+        namespace: 'Front1CANCfg0'
+        wakeup_frame: '1A40C3FF01000000'
+        protocol: 'can'
+        framelength_max: 8
+        padding : 'True'
+        SecAcc_Gen: 'Gen1'
+        fixed_key: 'FFFFFFFFFF'
+        auth_key: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
+        proof_key: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
         FC_Separation_time : '0A'
     fioc_p519:
         signal_send: 'FiocdpToFiocFioc1canUdsDiagRequestFrame'
         signal_receive: 'FiocToFiocdpFioc1canUdsDiagResponseFrame'
         signal_periodic: 'FiocdpFioc1canNMFr'
         signal_tester_present: 'FiocdpToAllFioc1canUdsDiagRequestFrame'
+        namespace: 'Front1CANCfg0'
         send: 'FiocdpToFiocFioc1canUdsDiagRequestFrame'
         receive: 'FiocToFiocdpFioc1canUdsDiagResponseFrame'
         id: 'FiocdpFioc1canNMFr'
@@ -29,57 +34,82 @@ platforms:
         proof_key: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
         FC_Separation_time : '05'
     hvbm_p519_sa1:
-        signal_send: HvbmdpToHvbmUdsDiagRequestFrame
-        signal_receive: HvbmToHvbmdpUdsDiagResponseFrame
-        signal_periodic: HvbmdpNmFrame
-        signal_tester_present: HvbmdpToAllUdsDiagRequestFrame
-        wakeup_frame: 1A40C3FF01000000
-        SecAcc_Gen: Gen1
-        fixed_key: FFFFFFFFFF
-        auth_key: FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
-        proof_key: FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+        signal_send: 'HvbmdpToHvbmUdsDiagRequestFrame'
+        signal_receive: 'HvbmToHvbmdpUdsDiagResponseFrame'
+        signal_periodic: 'HvbmdpNmFrame'
+        signal_tester_present: 'HvbmdpToAllUdsDiagRequestFrame'
+        namespace: 'Front1CANCfg0'
+        wakeup_frame: '1A40C3FF01000000'
+        protocol: 'can'
+        framelength_max: 8
+        padding : 'True'
+        SecAcc_Gen: 'Gen1'
+        fixed_key: 'FFFFFFFFFF'
+        auth_key: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
+        proof_key: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
         FC_Separation_time : '05'
     hvbm_p519:
-        signal_send: HvbmdpToHvbmUdsDiagRequestFrame
-        signal_receive: HvbmToHvbmdpUdsDiagResponseFrame
-        signal_periodic: HvbmdpNmFrame
-        signal_tester_present: HvbmdpToAllUdsDiagRequestFrame
-        wakeup_frame: 1A40C3FF01000000
-        SecAcc_Gen: Gen2
+        signal_send: 'HvbmdpToHvbmUdsDiagRequestFrame'
+        signal_receive: 'HvbmToHvbmdpUdsDiagResponseFrame'
+        signal_periodic: 'HvbmdpNmFrame'
+        signal_tester_present: 'HvbmdpToAllUdsDiagRequestFrame'
+        namespace: 'Front1CANCfg0'
+        wakeup_frame: '1A40C3FF01000000'
+        protocol: 'can'
+        framelength_max: 8
+        padding : 'True'
+        SecAcc_Gen: 'Gen2'
         fixed_key: '0102030405'
-        auth_key: FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
-        proof_key: FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
-        security_log_auth_key: 000102030405060708090A0B0C0D0E0F
+        auth_key: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
+        proof_key: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
+        security_log_auth_key: '000102030405060708090A0B0C0D0E0F'
         FC_Separation_time : '05'
     ihfa_v436:
-        signal_send: IHFAdpToIHFAUdsDiagRequestFrame
-        signal_receive: IHFAToIHFAdpUdsDiagResponseFrame
-        signal_periodic: IHFAdpNmFrame
-        signal_tester_present: IHFAdpToallUdsDiagRequestFrame
-        wakeup_frame: 1A40C3FF01000000
-        SecAcc_Gen: Gen2
-        fixed_key: FFFFFFFFFF
-        auth_key: 38722e65542d756d5f6f30626c36654e
-        proof_key: 2b7e151628aed2a6abf7158809cf4f3c
-        ess_needed: False
+        signal_send: 'IHFAdpToIHFAUdsDiagRequestFrame'
+        signal_receive: 'IHFAToIHFAdpUdsDiagResponseFrame'
+        signal_periodic: 'IHFAdpNmFrame'
+        signal_tester_present: 'IHFAdpToallUdsDiagRequestFrame'
+        namespace: 'Front1CANCfg0'
+        wakeup_frame: '1A40C3FF01000000'
+        SecAcc_Gen: 'Gen2'
+        fixed_key: 'FFFFFFFFFF'
+        auth_key: '38722e65542d756d5f6f30626c36654e'
+        proof_key: '2b7e151628aed2a6abf7158809cf4f3c'
+        ess_needed: 'False'
+    ihfa_p519:
+        signal_send: 'IHFAdpToIHFAUdsDiagRequestFrame'
+        signal_receive: 'IHFAToIHFAdpUdsDiagResponseFrame'
+        signal_periodic: 'IHFAdpNmFrame'
+        signal_tester_present: 'IHFAdpToallUdsDiagRequestFrame'
+        namespace: 'Front1CANCfg0'
+        wakeup_frame: '1A40C3FF01000000'
+        protocol: 'canfd'
+        framelength_max: 64
+        padding: 'True'
+        SecAcc_Gen: 'Gen2'
+        fixed_key: 'FFFFFFFFFF'
+        auth_key: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
+        proof_key: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
     hlcm_p519:
-        signal_send: HlcmdpToHlcmUdsDiagRequestFrame
-        signal_receive: HlcmToHlcmdpUdsDiagResponseFrame
-        signal_tester_present: "HlcmdpToallUdsDiagRequestFrame"
-        SecAcc_Gen: Gen1
+        signal_send: 'HlcmdpToHlcmUdsDiagRequestFrame'
+        signal_receive: 'HlcmToHlcmdpUdsDiagResponseFrame'
+        signal_tester_present: 'HlcmdpToallUdsDiagRequestFrame'
+        namespace: 'Front1CANCfg0'
+        SecAcc_Gen: 'Gen1'
         fixed_key: '0102030405'
-        ess_needed : False
+        ess_needed : 'False'
         max_7fxx78 : 12
     psmd_p519:
-        signal_send: PsmddpToPsmdUdsDiagRequestFrame
-        signal_receive: PsmdToPsmddpUdsDiagResponseFrame
-        signal_periodic: PsmddpNmFrame
-        signal_tester_present: PsmddpToallUdsDiagRequestFrame
-        wakeup_frame: 1A40C3FF01000000
-        protocol: canfd
+        signal_send: 'PsmddpToPsmdUdsDiagRequestFrame'
+        signal_receive: 'PsmdToPsmddpUdsDiagResponseFrame'
+        signal_periodic: 'PsmddpNmFrame'
+        signal_tester_present: 'PsmddpToallUdsDiagRequestFrame'
+        namespace: 'Front1CANCfg0'
+        wakeup_frame: '1A40C3FF01000000'
+        protocol: 'canfd'
         framelength_max: 64
-        padding: true
-        SecAcc_Gen: Gen2
-        fixed_key: FFFFFFFFFF
-        auth_key: FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
-        proof_key: FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+        padding: 'True'
+        SecAcc_Gen: 'Gen2'
+        fixed_key: 'FFFFFFFFFF'
+        auth_key: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
+        proof_key: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'

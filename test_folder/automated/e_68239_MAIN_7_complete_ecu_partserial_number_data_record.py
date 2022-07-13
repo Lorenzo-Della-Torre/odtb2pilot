@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,122 +18,217 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-# Testscript Hilding MEPII
-# project: BECM basetech MEPII
-# author:  T-kumara (Tanuj Kumar Aluru)
-# date:    2020-10-26
-# version:  1.0
-# reqprod:  62839
+reqprod: 68239
+version: 7
+title: Complete ECU PartSerial Number data record
+purpose: >
+    To enable readout of the complete set of ECU Part/Serial numbers.
 
-#inspired by https://grpc.io/docs/tutorials/basic/python.html
+description: >
+    A data record (called "composite" data record) with identifier 0xEDA0 shall be implemented.
+    The data records shall contain several data items in an arbitrary order. Each data item shall
+    consist of a data identifier followed by the record data that is identified by the data
+    identifier. The "composite" data record with identifier 0xEDA0 shall contain the following
+    data items(the data items is depending of the currently active executing software):
 
-# Copyright 2015 gRPC authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+    Description	Identifier
+    ---------------------------------------------------------------------
+                                               Application   PBL	SBL
+    ---------------------------------------------------------------------
+    Diagnostic Database Part number    	            F120	F121    F122
+    ECU Core Assembly Part Number	                F12A	F12A	F12A
+    ECU Delivery Assembly Part Number	            F12B	F12B	F12B
+    ECU Serial Number	                            F18C	F18C	F18C
+    Software Part Number	                        F12E	F125	F124
+    Private ECU(s) or component(s) Serial Number	F13F	  -	      -
+    ----------------------------------------------------------------------
+    •   The data records shall be implemented exactly as defined in Carcom - Global Master
+        Reference Database.
+    •   It shall be possible to read the data record by using the diagnostic service specified in
+        Ref[LC : Volvo Car Corporation - UDS Services - Service 0x22 (ReadDataByIdentifier) Reqs].
 
-The Python implementation of the gRPC route guide client.
+    The identifier shall be implemented in the following sessions:
+    •    Default session
+    •    Programming session (which includes both primary and secondary bootloader)
+    •    Extended Session
+
+details: >
+    Validate Part/Serial number in default, extended and programming(PBL & SBL) session.
 """
 
-import time
-from datetime import datetime
-import sys
+
 import logging
-import inspect
-
-import odtb_conf
-
-from supportfunctions.support_can import SupportCAN, CanParam,CanPayload, CanTestExtra
-from supportfunctions.support_test_odtb2 import SupportTestODTB2
-from supportfunctions.support_carcom import SupportCARCOM
-from supportfunctions.support_file_io import SupportFileIO
+from hilding.dut import Dut
+from hilding.dut import DutTestError
 from supportfunctions.support_SBL import SupportSBL
-from supportfunctions.support_precondition import SupportPrecondition
-from supportfunctions.support_postcondition import SupportPostcondition
-from supportfunctions.support_service22 import SupportService22
-from supportfunctions.support_service10 import SupportService10
+from supportfunctions.support_test_odtb2 import SupportTestODTB2
+from supportfunctions.support_file_io import SupportFileIO
 
-SIO = SupportFileIO
-SC = SupportCAN()
-S_CARCOM = SupportCARCOM()
 SUTE = SupportTestODTB2()
 SSBL = SupportSBL()
+SIO = SupportFileIO
 
-PREC = SupportPrecondition()
-POST = SupportPostcondition()
-SE22 = SupportService22()
-SE10 = SupportService10()
 
-def step_1(can_p):
-    '''
-    Validate ECU Part/Serial Numbers
-    '''
-    cpay: CanPayload = {
-        "payload": S_CARCOM.can_m_send( "ReadDataByIdentifier", b'\xED\xA0', b""),
-        "extra": b'',
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
-    etp: CanTestExtra = {
-        "step_no": 1,
-        "purpose": "Validate ECU part/serial numbers ",
-        "timeout": 1,
-        "min_no_messages": -1,
-        "max_no_messages": -1,
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
-    result = SUTE.teststep(can_p,cpay, etp)
-    rec_message = SC.can_messages[can_p['receive']][0][2]
-    pn_sn = [['F120', 'PN'],['F12A', 'PN'],['F12B', 'PN'],['F18C', 'SN'],['F12E', 'PN']]
-    result = SUTE.validate_combined_did_eda0(rec_message,pn_sn)
-    return  result
+def validate_ecu_partserial_no(dut, pn_sn):
+    """
+    Request to validate ECU Part/Serial numbers
+    Args:
+        dut (Dut): Dut instance
+        pn_sn (List): Part/serial number
+    Return:
+        (bool): True on receiving valid ECU Part/Serial numbers
+    """
+    response = dut.uds.read_data_by_id_22(bytes.fromhex('EDA0'))
+    result = SUTE.validate_combined_did_eda0(response.raw, pn_sn)
+    return result
+
+
+def verify_active_session(dut, expected_session):
+    """
+    Verify active diagnostic session
+    Args:
+        dut (Dut): Dut instance
+        expected_session (int): Integer value of diagnostic session
+    Returns:
+        (bool): True on successfully verifying active diagnostic session
+    """
+    # Read active diagnostic session
+    active_session = dut.uds.active_diag_session_f186()
+    current_session = active_session.data["details"]["mode"]
+
+    # Verify active diagnostic session
+    if current_session == expected_session:
+        logging.info("ECU is in session %s as expected", current_session)
+        return True
+
+    logging.error("Test Failed: ECU is in %s session, expected to be in %s session",
+                   current_session, expected_session)
+    return False
+
+
+def step_1(dut:Dut, pn_sn_def_ext):
+    """
+    action: Validate ECU Part/Serial numbers in default session
+    expected result: True on receiving valid ECU Part/Serial numbers
+    """
+    result = validate_ecu_partserial_no(dut, pn_sn_def_ext)
+    if not result:
+        logging.error("Test Failed: Received invalid ECU Part/Serial numbers in default session")
+        return False
+
+    return True
+
+
+def step_2(dut:Dut, pn_sn_def_ext):
+    """
+    action: Verify ECU Part/Serial numbers in extended session
+    expected result: True on receiving valid ECU Part/Serial numbers
+    """
+    # Set to extended session
+    dut.uds.set_mode(3)
+
+    # Verify active diagnostic session
+    active_session = verify_active_session(dut, expected_session=3)
+    if not active_session:
+        return False
+
+    result = validate_ecu_partserial_no(dut, pn_sn_def_ext)
+    if not result:
+        logging.error("Test Failed: Received invalid ECU Part/Serial numbers in extended session")
+        return False
+
+    return True
+
+
+def step_3(dut: Dut, pn_sn_pbl):
+    """
+    action: Verify ECU Part/Serial numbers in PBL
+    expected result: True on receiving valid ECU Part/Serial numbers
+    """
+    # Set to programming session
+    dut.uds.set_mode(2)
+
+    # Verify active diagnostic session
+    active_session = verify_active_session(dut, expected_session=2)
+    if not active_session:
+        return False
+
+    result = validate_ecu_partserial_no(dut, pn_sn_pbl)
+    if not result:
+        logging.error("Test Failed: Received invalid ECU Part/Serial numbers in PBL")
+        return False
+
+    # Set ECU to default session
+    dut.uds.set_mode(1)
+
+    return True
+
+
+def step_4(dut: Dut, pn_sn_sbl):
+    """
+    action: Activate SBL and verify ECU Part/Serial numbers
+    expected_result: True on receiving valid ECU Part/Serial numbers
+    """
+    # Loads the rig specific VBF files
+    vbf_result = SSBL.get_vbf_files()
+    if not vbf_result:
+        logging.error("Aborting SBL activation due to problems when loading VBFs")
+        return False
+
+    # Download and activate SBL on the ECU
+    sbl_result = SSBL.sbl_activation(dut, sa_keys=dut.conf.default_rig_config)
+    if not sbl_result:
+        logging.error("Test Failed: SBL activation unsuccessful")
+        return False
+
+    result = validate_ecu_partserial_no(dut, pn_sn_sbl)
+    if not result:
+        logging.error("Test Failed: Received invalid ECU Part/Serial numbers in SBL")
+        return False
+
+    return True
+
 
 def run():
     """
-    Run - Call other functions from here
+    Validate Part/Serial numbers in default, extended and programming(PBL & SBL) session
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+    dut = Dut()
 
-    # where to connect to signal_broker
-    can_p: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        "send" : "Vcu1ToBecmFront1DiagReqFrame",
-        "receive" : "BecmToVcu1Front1DiagResFrame",
-        "namespace" : SC.nspace_lookup("Front1CANCfg0")
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
-    logging.info("Testcase start: %s", datetime.now())
-    starttime = time.time()
-    logging.info("Time: %s \n", time.time())
-    ############################################
-    # precondition
-    ############################################
-    # read VBF param when testscript is s started, if empty take default param
-    SSBL.get_vbf_files()
-    timeout = 60
-    result = PREC.precondition(can_p, timeout)
-    if result:
-    ############################################
-    # teststeps
-    ############################################
+    start_time = dut.start()
+    result = False
+    result_step = False
+    parameters_dict = {'pn_sn_def_ext': [],
+                       'pn_sn_pbl': [],
+                       'pn_sn_sbl': []}
 
-        # step 1:
-        # action: Validate ECU Part/Serial Numbers
-        # result: BECM reply positively
-        result = result and step_1(can_p)
+    try:
+        dut.precondition(timeout=100)
 
-    ############################################
-    # postCondition
-    ############################################
-    POST.postcondition(can_p, starttime, result)
+        parameters = SIO.parameter_adopt_teststep(parameters_dict)
+        if not all(list(parameters.values())):
+            raise DutTestError("yml parameters not found")
 
-if __name__ == "__main__":
+
+        result_step = dut.step(step_1, parameters['pn_sn_def_ext'], purpose= "Validate ECU "
+                              "Part/Serial numbers in default session")
+
+        if result_step:
+            result_step = dut.step(step_2, parameters['pn_sn_def_ext'], purpose= "Verify ECU "
+                                  "Part/Serial numbers in extended session")
+        if result_step:
+            result_step = dut.step(step_3, parameters['pn_sn_pbl'], purpose= "Verify ECU "
+                                  "Part/Serial numbers in PBL")
+        if result_step:
+            result_step = dut.step(step_4, parameters['pn_sn_sbl'] , purpose= "Activate SBL and "
+                                   "verify ECU Part/Serial numbers")
+
+        result = result_step
+    except DutTestError as error:
+        logging.error("Test failed: %s", error)
+    finally:
+        dut.postcondition(start_time, result)
+
+
+if __name__ == '__main__':
     run()

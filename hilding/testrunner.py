@@ -162,6 +162,7 @@ def run_test_and_parse_log_to_result(test_file_py, result_file):
                                                  "For application teams",
                                                  "This is a design requirement",
                                                  "This requirement needs a deviation",
+                                                 "Excluded",
                                                  "Tested implicitly")):
                     verdict = "unknown"
                 else:

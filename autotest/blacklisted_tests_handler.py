@@ -87,6 +87,8 @@ def create_logs(reqprod_dict, directory):
                     log_file.write(f"Testcase result: MANUAL. Info:{info}")
                 if category == "--SecOC--":
                     log_file.write(f"Testcase result: SecOC not implemented. Info:{info}")
+                if category == "--Excluded--":
+                    log_file.write(f"Testcase result: This script is temporarily excluded. Info:{info}")
                 #else:
                 #    log_file.write(f"Testcase result: {category}. Info: {info}")
 
