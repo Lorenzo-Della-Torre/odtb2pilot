@@ -24,9 +24,9 @@ hvbm_p519:
         e_442538_MAIN_1 : public_key_types | Requirement is not applicable for the ECU supplier but for off-board systems.
         e_420232_MAIN_2 : software_authentication_test_and_development_key | Implicitly tested since it used
         e_404594_MAIN_0 : sign_and_verify_unprocessed_data | Encryption and decryption will be on raw data and not on compressed data. Tool verification
-        e_428666_MAIN_4 : append_signature_to_software_part | Don't have production key. This is a tool verification requirement  to be tested by vcc tool department. 
+        e_428666_MAIN_4 : append_signature_to_software_part | Don't have production key. This is a tool verification requirement  to be tested by vcc tool department.
         e_457041_MAIN_0 : conditions_for_signing_a_file_in_production | Off-board system is for End Of Line use.
-        e_428664_MAIN_1 : signing_function_integrity_check | This is a tool verification requirement  to be tested by vcc tool department. 
+        e_428664_MAIN_1 : signing_function_integrity_check | This is a tool verification requirement  to be tested by vcc tool department.
         e_70844_MAIN_1 : detection_of_suppler_specific_software_installed_in_ecu | DTC not implemented, to be implemented if the ECU is delivered to VCC 
         e_70845_MAIN_1 : clearing_of_dtc_for_detection_of_suppler_software_installed_in_ecu | DTC not implemented, to be implemented if the ECU is delivered to VCC 
         e_247653_MAIN_9 : independent_reconfiguration | Postbuild Concept is optional to implement
@@ -50,6 +50,7 @@ hvbm_p519:
         e_68266_MAIN_1 : emissions_related_dtcs_defined_by_SAEJ2012 | Not obd2 node
         e_68267_MAIN_2 : dtcs_defined_by_SAEJ2012 | Not obd2 node
         e_181453_MAIN_1 : e2e_protection_wrapper | Not using wrapper and not implemented yet. We use 1A autosar standard and volvo wrapper, but don't know which one yet.
+        e_76513_MAIN_1 : component_selection_can_physical_interfaces | This is hw req, need to hand-over to BMS team. (LEAR HW can't fulfill this)
 
     --Inspection--:
         e_481878_MAIN_0 : interface_to_tee_cryptographic_operations | ETAS provides API. Inspect that we have received those files
@@ -72,7 +73,7 @@ hvbm_p519:
         e_404184_MAIN_2 : verification_block_table_on_unprocessed_data | Inspect that S19 files of SWP1, SWLM and ESS are subjected to SREC script to pad their data before constructing their VBF files.
         e_404595_MAIN_3 : signing_method_variability_control | This requirement is for Release team, who are responsible for setting the signing method for a vbf file.
         e_456934_MAIN_0 : software_settings_definition | This requirement is for Release team, who are responsible for setting the signing method for a vbf file.
-        e_458432_MAIN_0 : software_settings_file_valid_part_numbers | This requirement is for Release team, who are responsible for setting the signing method for a vbf file.		
+        e_458432_MAIN_0 : software_settings_file_valid_part_numbers | This requirement is for Release team, who are responsible for setting the signing method for a vbf file.
         e_74105_MAIN_2 : logical_address_range_for_periodic_response_messages | This can be tested on HILding but 2A not implemented yet.
         e_457070_MAIN_1 : l_pdus_to_be_configured_as_type_caniftxpdupnfilterpdu_can_ecu_with_pnc_support | NA, Any can message should wake the ECU up.
         e_469398_MAIN_2 : autosar_secoc_support | Analyse which AUTOSAR version to be used. At least 4.3.1.
@@ -105,7 +106,7 @@ hvbm_p519:
         e_68019_MAIN_0 : control_of_network_signal_data_records_periodic_signals_transmitted by_public_ecu | Diagnosis responsible need to evaluate
         e_68020_MAIN_0 : support_for_network_signal_data_records_signals_received_by_public_ecu | Diagnosis responsible need to evaluate
         e_68021_MAIN_0 : access_to_network_signal_data_records_signals_received_by_public_ecu | Diagnosis responsible need to evaluate
-        e_68022_MAIN_0 : reporting_received_network_signal_data_records_while_the_input_parameter_value_is_under_tester_control | Diagnosis responsib
+        e_68022_MAIN_0 : reporting_received_network_signal_data_records_while_the_input_parameter_value_is_under_tester_control | Diagnosis responsible need to evaluate
         e_68027_MAIN_0 : support_for_other_external_signal_data_records_defined_by_the_implementer | Diagnosis responsible need to evaluate
         e_68028_MAIN_0 : access_to_other_external_signal_data_records_defined_by_the_implementer | Diagnosis responsible need to evaluate
         e_68041_MAIN_0 : individual_control_of_other_external_signal_data_records_defined_by_the_implementer | Diagnosis responsible need to evaluate
@@ -181,8 +182,8 @@ hvbm_p519:
         e_77743_MAIN_2 : spare_capacity | Changed to application
         e_181434_MAIN_2 : e2e_data_type_size | Changed to application team (Mascot)
         e_181433_MAIN_1 : e2e_protection_mechanisms | Changed to application team (Mascot)
-        e_487899_MAIN_1 : sec_oc_customization_for_immediate_return_of_authentic_data | Changed to application	
-	
+        e_487899_MAIN_1 : sec_oc_customization_for_immediate_return_of_authentic_data | Changed to application
+
     --Design--:
         e_71837_MAIN_1 : data_records_not_included_in_local_snapshot_data | Design requirement. Can be checked by validation of snapshot information for each DTC in the SDDB. Should be tested so system design do follow this req. Does not need the ECU for the test.
         e_68082_MAIN_0 : support_for_other_internal_signal_data_records_defined_by_the_implementer | Design requirement. Not testable
@@ -200,9 +201,6 @@ hvbm_p519:
         e_468869_MAIN_1 : secure_boot_activation | This will bypass chain-of-trust in some occasions
         e_447591_MAIN_3 : tier1_file_deliveries | Deviation needed as SWCE (postbuild) will not be delivered
 
-    --BMS--:
-        e_76513_MAIN_1 : component_selection_can_physical_interfaces | This is hw req, need to hand-over to BMS team. (LEAR HW can't fulfill this)
-
     --Manual--:
         e_60107__2 : n_cs_performance_requirement_in_programming_session | <Reason>
         e_396513_MAIN_0 : concurrency_of_functional_and_physical_messages_all_sessions | Timing must be tested with a tool that can trigger to send based on other CAN frames.
@@ -215,7 +213,7 @@ hvbm_p519:
         e_72012_MAIN_6 : sampling_criteria_for_dtc_snapshot_record_number_0x20_single_sample | Security constant is not implemented
         e_72027_MAIN_2 : support_for_local_dtc_snapshot_data | Requirement to be tested for all DTCs which are not implemented.
         e_72067_MAIN_6 : support_for_dtc_status_indicator_30_ageddyc | <Reason>
-        e_72069_MAIN_4 : support_for_dtc_status_indicator_30_symptom_since_last_clear	| <Reason>
+        e_72069_MAIN_4 : support_for_dtc_status_indicator_30_symptom_since_last_clear | <Reason>
         e_72141_MAIN_4 : transfer_of_dtc_information_to_long_term_memory | DTC information shall be transferred from short- to long-term memory at least at the end of production line.
         e_441094_MAIN_3 : sampling_criteria_for_dtc_snapshot_record_number_0x21_single_sample | DTC not implemented yet.
         e_72036_MAIN_7 : fault_detection_counter_10_fdc10 | DTC not implemented yet.

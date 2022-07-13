@@ -63,9 +63,9 @@ eda0_dict = testrun_data.get("eda0_dict")
 SUPPORT_TEST = SupportTestODTB2()
 
 RE_DATE_START = re.compile(r'\s*Testcase\s+start:\s+(?P<date>\d+-\d+-\d+)\s+(?P<time>\d+:\d+:\d+)')
-RE_RESULT = re.compile(r'.*(?P<result>FAILED|PASSED|MANUAL|To be inspected|tested implicitly|\
-                       Tested implicitly|Not applicable|Modified VBF needed|\
-                       Tested in dSpace HIL|SecOC not implemented|Implicitly tested).*')
+RE_RESULT = re.compile(r'.*(?P<result>FAILED|PASSED|MANUAL|To be inspected|\
+    |tested implicitly|Tested implicitly|Not applicable|Modified VBF needed|\
+    |diagnostic|application|design|deviation|dSpace|SecOC not implemented|Implicitly tested).*')
 RE_FOLDER_TIME = re.compile(r'.*Testrun_(?P<date>\d+_\d+)')
 RE_REQPROD_ID = re.compile(r'\s*e_(?P<reqprod>\d+)_', flags=re.IGNORECASE)
 # case insensitive
@@ -86,6 +86,10 @@ MANUAL_STATUS = 'MANUAL'
 VBF_MOD_STATUS = 'VBF_MOD'
 SECOC_STATUS = 'SECOC'
 DSPACE_STATUS = 'DSPACE'
+DIAGNOSTIC_STATUS = 'DIAGNOSTIC'
+APPLICATION_STATUS = 'APPLICATION'
+DESIGN_STATUS = 'DESIGN'
+DEVIATION_STATUS = 'DEVIATION'
 
 # Use the keys when regex-matching in log-files
 MATCH_DICT = {'Not applicable': NA_STATUS,
@@ -99,8 +103,12 @@ MATCH_DICT = {'Not applicable': NA_STATUS,
               'MISSING': MISSING_STATUS,
               'MANUAL': MANUAL_STATUS,
               'Modified VBF needed': VBF_MOD_STATUS,
-              'Tested in dSpace HIL': DSPACE_STATUS,
+              'dSpace': DSPACE_STATUS,
               'SecOC not implemented': SECOC_STATUS,
+              'diagnostic': DIAGNOSTIC_STATUS,
+              'application': APPLICATION_STATUS,
+              'design': DESIGN_STATUS,
+              'deviation': DEVIATION_STATUS,
               'UNKNOWN': UNKNOWN_STATUS}
 
 # Which color to use for the status
@@ -113,9 +121,11 @@ MATCH_DICT = {'Not applicable': NA_STATUS,
 # Light blue: #94c4f7
 # Sunshine: #f6eb61
 # light orange: ffcc99
-COLOR_DICT = {PASSED_STATUS:'#d8ed96', FAILED_STATUS:'#ff585d', NA_STATUS:'#f6eb61',
+COLOR_DICT = {PASSED_STATUS:'#d8ed96', FAILED_STATUS:'#e04644', NA_STATUS:'#c3c3e5',
               MISSING_STATUS:'WHITE', NO_RES_STATUS:'#d9d9d6', INSPECTION_STATUS:'Wheat',
               IMPLICIT_STATUS:'#b9d3dc', UNKNOWN_STATUS:'BurlyWood', VBF_MOD_STATUS:'#ffcc99',
+              DIAGNOSTIC_STATUS: 'tan', APPLICATION_STATUS: '#b576ad', DESIGN_STATUS: '#cb7e94',
+              DEVIATION_STATUS: '#a1cfdd',
               DSPACE_STATUS:"#9FE2BF", MANUAL_STATUS:'#fbd7c9', SECOC_STATUS:'#fbd7c9'}
 
 DESC_DICT = {PASSED_STATUS:'Passed',
@@ -129,6 +139,10 @@ DESC_DICT = {PASSED_STATUS:'Passed',
              DSPACE_STATUS:'Tested on dSpace',
              SECOC_STATUS:'SecOC not implemented',
              VBF_MOD_STATUS:'Modified VBFs needed. Or another testapproach',
+             DIAGNOSTIC_STATUS:'For diagnostic responsible',
+             APPLICATION_STATUS:'For the application teams',
+             DESIGN_STATUS:'Design requirement',
+             DEVIATION_STATUS:'Needs a deviation',
              UNKNOWN_STATUS: 'Unknown error or status'}
 
 BROKEN_URL_COLOR = 'BlanchedAlmond'
