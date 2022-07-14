@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,7 +18,20 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-Import script - Inherited from older version of requirement
+reqprod: 74109
+version: 2
+title: Allowed diagnostic services
+purpose: >
+    Define which diagnostic services to allow. Ensures all suppliers uses the same diagnostic
+    services as well as preventing supplier from using not allowed diagnostic services.
+
+description: >
+    The ECU shall only support the diagnostic services specified in the requirement sections from
+    Volvo Car Corporation.
+
+details: >
+    Import script - Inherited from older version of requirement
+
 """
 
 from e_74109_MAIN_1_allowed_diag_services import run
