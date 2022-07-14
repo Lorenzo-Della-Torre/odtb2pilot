@@ -35,13 +35,10 @@ details: >
 
 import logging
 import sys
+from e_469461_MAIN_1_authentication_data_inputs import run
 
 logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
-try:
-    from e_469461_MAIN_1_authentication_data_inputs.py import run
-except ModuleNotFoundError as err:
-    logging.error("The test that is used to test this requirement can't be found: %s found", err)
 
 if __name__ == '__main__':
     run()
