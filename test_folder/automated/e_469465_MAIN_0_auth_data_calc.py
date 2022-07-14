@@ -35,7 +35,7 @@ details: >
 
 import logging
 import sys
-from e_469461_MAIN_1_authentication_data_inputs.py import run
+from e_469461_MAIN_1_authentication_data_inputs import run
 
 logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
