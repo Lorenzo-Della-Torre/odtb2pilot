@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,35 +18,28 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-    Testscript for an implicitly tested requirement (tested implicitly)
+reqprod: 53975
+version: 1
+title: Separate memory sectors
+purpose: >
+    To decrease the total programming time it shall be possible to replace only the specific data
+    file that shall be replaced and not being forced to replace all software(s) that already is
+    present in the ECU.
 
-    Testscript  Hilding MEPII
-    project     BECM basetech MEPII
-    author      LDELLATO (Lorenzo Della Torre)
-    date        2020-05-20
-    version     1.0
-    reqprod     53975
+description: >
+    Two or more data files shall not share a memory sector.
 
-    Inspired by https://grpc.io/docs/tutorials/basic/python.html
-    Copyright 2015 gRPC authors.
-
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
+details: >
+    Implicitly tested script
+    Tested implicitly by REQPROD 397292 because software part number is tested with software
+    download principle.
 """
 
 import logging
 import sys
+from e_397292_MAIN_2_software_parts_per_logical_block import run
 
-logging.basicConfig(format='%(asctime)s - %(message)s',
-                    stream=sys.stdout, level=logging.DEBUG)
+logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
-logging.info("Testcase result: Tested implicitly by REQ_400874 and REQ_397292")
+if __name__ == '__main__':
+    run()
