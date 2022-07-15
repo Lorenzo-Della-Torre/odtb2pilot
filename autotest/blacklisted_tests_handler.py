@@ -71,6 +71,14 @@ def create_logs(reqprod_dict, directory):
                     log_file.write(f"Testcase result: Not applicable. Info:{info}")
                 if category == "--Inspection--":
                     log_file.write(f"Testcase result: To be inspected. Info:{info}")
+                if category == "--Diag--":
+                    log_file.write(f"Testcase result: For diagnostic responsible. Info:{info}")
+                if category == "--App--":
+                    log_file.write(f"Testcase result: For application teams. Info:{info}")
+                if category == "--Design--":
+                    log_file.write(f"Testcase result: This is a design requirement. Info:{info}")
+                if category == "--Deviation--":
+                    log_file.write(f"Testcase result: This requirement needs a deviation. Info:{info}")
                 if category == "--dSpace--":
                     log_file.write(f"Testcase result: Tested in dSpace HIL. Info:{info}")
                 if category == "--vbf_modification--":
@@ -133,7 +141,8 @@ def match_swrs_with_yml(swrs):
                 comparison_variable = f"e_{reqprod_id}_{variant}_{reqprod_data['Revision']}"
                 if comparison_variable in yml_reqprods:
                     matching_reqprods_from_yml[category][comparison_variable] = yml_reqprods[comparison_variable]
-                    del modified_swrs[reqprod_id]
+                    if reqprod_id in modified_swrs:
+                        del modified_swrs[reqprod_id]
 
     return matching_reqprods_from_yml, modified_swrs
 

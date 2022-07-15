@@ -5,7 +5,7 @@ testrunner
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -158,6 +158,10 @@ def run_test_and_parse_log_to_result(test_file_py, result_file):
                                                  "Modified VBF needed",
                                                  "SecOC not implemented",
                                                  "MANUAL",
+                                                 "For diagnostic responsible",
+                                                 "For application teams",
+                                                 "This is a design requirement",
+                                                 "This requirement needs a deviation",
                                                  "Excluded",
                                                  "Tested implicitly")):
                     verdict = "unknown"
