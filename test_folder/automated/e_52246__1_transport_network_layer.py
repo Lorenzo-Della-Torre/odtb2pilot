@@ -64,8 +64,7 @@ def step_1(dut: Dut):
 
     # Security access to ECU
     security_access = SE27.activate_security_access_fixedkey(dut,
-                                                             sa_key=dut.conf.default_rig_config,
-                                                             step_no=272, purpose="SecurityAccess")
+                                                             sa_keys=dut.conf.default_rig_config)
     if not security_access:
         logging.error("Test Failed: security access denied in programming session")
         return False
