@@ -44,7 +44,7 @@ from Crypto.Cipher import AES
 from hilding.dut import Dut
 from hilding.dut import DutTestError
 from supportfunctions.support_file_io import SupportFileIO
-from supportfunctions.support_seco import SecOCmsgVerification
+from supportfunctions.support_secoc import SecOCmsgVerification
 
 SIO = SupportFileIO()
 SECOCVERIFY = SecOCmsgVerification()
