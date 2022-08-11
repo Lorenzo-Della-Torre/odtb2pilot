@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,193 +18,112 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-# Testscript Hilding MEPII
-# project:  BECM basetech MEPII
-# author:   LDELLATO (Lorenzo Della Torre)
-# date:     2020-01-14
-# version:  1.0
-# reqprod:  53838
+reqprod: 53838
+version: 1
+title: PBL can only write data to volatile memory
+purpose: >
+    Due to security and integrity purpose shall the PBL not be able to write or erase data in the
+    non-volatile memory.
 
-# author:   LDELLATO (Lorenzo Della Torre)
-# date:     2020-09-23
-# version:  1.1
-# reqprod:  53838
+description: >
+    The primary bootloader shall only be capable of writing data to the volatile memory. Erasure
+    or writing to non-volatile memory is not allowed.
 
-#inspired by https://grpc.io/docs/tutorials/basic/python.html
-
-# Copyright 2015 gRPC authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-The Python implementation of the gRPC route guide client.
+details: >
+    Verify request block download is rejected for ESS file in PBL.
 """
 
-import time
-from datetime import datetime
-import sys
 import logging
-import inspect
-
-import odtb_conf
-from supportfunctions.support_can import SupportCAN, CanParam
-from supportfunctions.support_test_odtb2 import SupportTestODTB2
-from supportfunctions.support_carcom import SupportCARCOM
-from supportfunctions.support_file_io import SupportFileIO
+from hilding.dut import Dut
+from hilding.dut import DutTestError
 from supportfunctions.support_SBL import SupportSBL
-from supportfunctions.support_sec_acc import SupportSecurityAccess
-
-from supportfunctions.support_precondition import SupportPrecondition
-from supportfunctions.support_postcondition import SupportPostcondition
-from supportfunctions.support_service10 import SupportService10
-from supportfunctions.support_service11 import SupportService11
-from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_service27 import SupportService27
-from supportfunctions.support_service31 import SupportService31
 from supportfunctions.support_service34 import SupportService34
-from hilding.conf import Conf
 
-SIO = SupportFileIO
-SC = SupportCAN()
-S_CARCOM = SupportCARCOM()
-SUTE = SupportTestODTB2()
 SSBL = SupportSBL()
-SSA = SupportSecurityAccess()
-
-PREC = SupportPrecondition()
-POST = SupportPostcondition()
-SE10 = SupportService10()
-SE11 = SupportService11()
-SE22 = SupportService22()
 SE27 = SupportService27()
-SE31 = SupportService31()
 SE34 = SupportService34()
 
-conf = Conf()
 
-def step_4():
+def step_1(dut):
     """
-    Teststep 4: Read VBF files for ESS file (1st Logical Block)
+    action: Security access in programming session
+    expected_result: True when security access successful
     """
-    stepno = 4
-    purpose = "1st files reading"
+    dut.uds.set_mode(2)
+    result = SE27.activate_security_access_fixedkey(dut, sa_keys=dut.conf.default_rig_config)
+    if result:
+        logging.info("Security access is successful")
+        return True
 
-    SUTE.print_test_purpose(stepno, purpose)
+    logging.error("Test Failed: Security access denied in PBL")
+    return False
+
+
+def step_2(dut):
+    """
+    action: Verify request block download(service 34) is rejected for ESS file
+    expected_result: True when request blok download rejected
+    """
+    # Extract vbf header and vbf block from ESS file
+    SSBL.get_vbf_files()
     _, vbf_header, data, data_start = SSBL.read_vbf_file(SSBL.get_ess_filename())
-    return vbf_header, data, data_start
-
-def step_5(data, data_start):
-    """
-    Teststep 5: Extract data for ESS
-    """
-    stepno = 5
-    purpose = "EXtract data for ESS"
-
-    SUTE.print_test_purpose(stepno, purpose)
-
-    _, block_by, _ = SSBL.block_data_extract(data, data_start)
-    return block_by
-
-def step_6(can_p, block_by,
-           vbf_header):
-    """
-    Teststep 6: Verify Request Download the 1st data block (ESS) rejected
-    """
-    stepno = 6
-    purpose = "Verify Request Download the 1st data block (ESS) rejected"
-
-    SUTE.print_test_purpose(stepno, purpose)
+    vbf_block = SSBL.block_data_extract(data, data_start)[1]
     SSBL.vbf_header_convert(vbf_header)
-    resultt, _ = SE34.request_block_download(can_p, vbf_header, block_by, stepno,
-                                             purpose)
-    result = not resultt
-    return result
+
+    # Request block download
+    result = SE34.request_block_download(dut, vbf_header, vbf_block)[0]
+    if not result:
+        logging.info("Request block download is failed as expected")
+        return True
+
+    logging.error("Test Failed: Request block download should be failed")
+    return False
+
+
+def step_3(dut):
+    """
+    action: ECU hard reset and verify active diagnostic session
+    expected_result: True when ECU is in default session
+    """
+    # ECU hard reset
+    dut.uds.ecu_reset_1101()
+
+    # Verify active diagnostic session
+    response = dut.uds.active_diag_session_f186()
+    if response.data["details"]["mode"] == 1:
+        logging.info("ECU is in default session as expected")
+        return True
+
+    logging.error("Test Failed: Expected ECU to be in default session, but it is in mode %s",
+                  response.data["details"]["mode"])
+    return False
+
 
 def run():
     """
-    Run - Call other functions from here
+    Verify request block download is rejected for ESS file in PBL.
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+    dut = Dut()
+    start_time = dut.start()
+    result = False
+    result_step = False
 
-    # where to connect to signal_broker
-    can_p: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        "send" : "Vcu1ToBecmFront1DiagReqFrame",
-        "receive" : "BecmToVcu1Front1DiagResFrame",
-        "namespace" : SC.nspace_lookup("Front1CANCfg0")
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
-    logging.info("Testcase start: %s", datetime.now())
-    starttime = time.time()
-    logging.info("Time: %s \n", time.time())
-    ############################################
-    # precondition
-    ############################################
-    # read VBF param when testscript is s started, if empty take default param
-    SSBL.get_vbf_files()
-    timeout = 200
-    result = PREC.precondition(can_p, timeout)
+    try:
+        dut.precondition(timeout=60)
+        result_step = dut.step(step_1, purpose="Security access in programming session")
+        if result_step:
+            result_step = dut.step(step_2, purpose="Verify request block download(service 34) is "
+                                                   "rejected for ESS file")
+        if result_step:
+            result_step = dut.step(step_3, purpose="Verify ECU is in default session")
+        result = result_step
 
-    if result:
-    ############################################
-    # teststeps
-    ############################################
-        # step 1:
-        # action: Verify programming preconditions
-        # result: ECU sends positive reply
-        result = result and SE31.routinecontrol_requestsid_prog_precond(can_p, stepno=1)
+    except DutTestError as error:
+        logging.error("Test failed: %s", error)
+    finally:
+        dut.postcondition(start_time, result)
 
-        # step 2:
-        # action: Change to programming session
-        # result: ECU sends positive reply
-        result = result and SE10.diagnostic_session_control_mode2(can_p, stepno=2)
-
-        # step 3:
-        # action: Security Access Request SID
-        # result: ECU sends positive reply
-        result = result and SE27.activate_security_access_fixedkey\
-                                        (can_p, conf.default_rig_config, step_no=3)
-
-        # step 4:
-        # action: Read VBF files for ESS file (1st Logical Block)
-        # result:
-        vbf_header, data, data_start = step_4()
-
-        # step 5:
-        # action: Extract data for ESS
-        # result:
-        block_by = step_5(data, data_start)
-
-        # step6:
-        # action: Verify Request Download the 1st data block (ESS) is rejected
-        # result: ECU sends positive reply
-        result = result and step_6(can_p, block_by, vbf_header)
-
-        # step 7:
-        # action: # ECU Reset
-        # result: ECU sends positive reply
-        result = result and SE11.ecu_hardreset(can_p, stepno=7)
-        time.sleep(1)
-
-        # step 8:
-        # action: verify ECU in default session
-        # result: ECU sends positive reply
-        result = result and SE10.diagnostic_session_control_mode1(can_p, stepno=8)
-
-    ############################################
-    # postCondition
-    ############################################
-
-    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()
