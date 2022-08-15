@@ -1,0 +1,40 @@
+hvbm_p519:
+    run:
+        sec_oc_invalid_time_window : 10.0
+        sec_oc_delay_timer : 5
+        sec_oc_verification_failure_did: 'D0CC'
+        send : 'ECMFront1Fr02'
+        receive : 'BECMFront1Fr02'
+        signals:
+          signal_1:
+            failure_count_byte: '05'
+            data: '0000000000000000'
+            expected_message_rate : '0.2'
+          signal_2:
+            failure_count_byte: '06'
+            data: '1111111111111111'
+            expected_message_rate : '0.1'
+          signal_3:
+            failure_count_byte: '07'
+            data: '2222222222222222'
+            expected_message_rate : '0.2'
+          signal_4:
+            failure_count_byte: '08'
+            data: '1111111111111111'
+            expected_message_rate : '0.3'
+          signal_5:
+            failure_count_byte: '09'
+            data: '2222222222222222'
+            expected_message_rate : '0.3'
+          signal_6:
+            failure_count_byte: '08'
+            data: '0000000000000000'
+            expected_message_rate : '0.1'
+          signal_7:
+            failure_count_byte: '07'
+            data: '3333333333333333'
+            expected_message_rate : '0.4'
+          signal_8:
+            failure_count_byte: '06'
+            data: '4444444444444444'
+            expected_message_rate : '0.2'
