@@ -61,6 +61,8 @@ from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_carcom import SupportCARCOM
 from supportfunctions.support_file_io import SupportFileIO
 
+from hilding.dut import Dut
+
 SIO = SupportFileIO
 SC = SupportCAN()
 SUTE = SupportTestODTB2()
@@ -209,13 +211,14 @@ def step_7(can_p: CanParam):
         result = False
     return result
 
-def step_8(can_p: CanParam):
+def step_8(can_p: CanParam, sa_keys):
     """
     Teststep 8: Activate SBL
     """
     step_no = 8
     purpose = "Download and Activation of SBL"
     result = SSBL.sbl_activation(can_p,\
+                                 sa_keys,
                                  step_no, purpose)
     return result
 
@@ -362,16 +365,24 @@ def run():
     Run - Call other functions from here
     """
 
+    dut = Dut()
     # start logging
     logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
     #logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.DEBUG)
 
     # where to connect to signal_broker
+    platform=dut.conf.rigs[dut.conf.default_rig]['platform']
     can_p: CanParam = {
         'netstub': SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        'send': "Vcu1ToBecmFront1DiagReqFrame",
-        'receive': "BecmToVcu1Front1DiagResFrame",
-        'namespace': SC.nspace_lookup("Front1CANCfg0")
+        'send': dut.conf.platforms[platform]['signal_send'],
+        'receive': dut.conf.platforms[platform]['signal_receive'],
+        'namespace': dut.conf.platforms[platform]['namespace'],
+        'signal_periodic': dut.conf.platforms[platform]['signal_periodic'],
+        'signal_tester_preset': dut.conf.platforms[platform]['signal_tester_present'],
+        'wakeup_frame': dut.conf.platforms[platform]['wakeup_frame'],
+        'protocol': dut.conf.platforms[platform]['protocol'],
+        'framelength_max': dut.conf.platforms[platform]['framelength_max'],
+        'padding': dut.conf.platforms[platform]['padding']
         }
     #Read YML parameter for current function (get it from stack)
     SIO.parameter_adopt_teststep(can_p)
@@ -388,6 +399,15 @@ def run():
     SSBL.get_vbf_files()
     timeout = 180
     result = PREC.precondition(can_p, timeout)
+
+    #Init parameter for SecAccess Gen1 / Gen2
+    platform=dut.conf.rigs[dut.conf.default_rig]['platform']
+    sa_keys = {
+        "SecAcc_Gen" : dut.conf.platforms[platform]['SecAcc_Gen'],
+        "fixed_key": dut.conf.platforms[platform]["fixed_key"],
+        "auth_key": dut.conf.platforms[platform]["auth_key"],
+        "proof_key": dut.conf.platforms[platform]["proof_key"]
+    }
 
     if result:
         ############################################
@@ -434,7 +454,7 @@ def run():
         # step 8:
         # action: activate SBL
         # result:
-        result = step_8(can_p) and result
+        result = step_8(can_p, sa_keys) and result
 
         # step 9:
         # action: request_did_eda0
