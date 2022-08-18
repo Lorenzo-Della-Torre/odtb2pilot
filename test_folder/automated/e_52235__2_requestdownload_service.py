@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,191 +18,125 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-# Testscript Hilding MEPII
-# project:  BECM basetech MEPII
-# author:   LDELLATO (Lorenzo Della Torre)
-# date:     2020-02-12
-# version:  1.0
-# reqprod:  52235
+reqprod: 52235
+version: 2
+title: RequestDownload Service on Classic CAN
+purpose: >
+    To define the size of transfer data blocks.
 
-# author:   LDELLATO (Lorenzo Della Torre)
-# date:     2020-09-25
-# version:  1.1
-# reqprod:  52235
+description: >
+    The maxNumberOfBlockLenght shall be dimensioned to be as big as possible.
+    The maxNumberOfBlockLenght on CAN Classic shall be between 2048 to 4095 bytes.
 
-#inspired by https://grpc.io/docs/tutorials/basic/python.html
-
-# Copyright 2015 gRPC authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-The Python implementation of the gRPC route guide client.
+details: >
+    Verify minimum maxNumberOfBlockLenght is between 2048 to 4095 bytes
 """
 
-import time
-from datetime import datetime
-import sys
 import logging
-import inspect
-
-import odtb_conf
-from supportfunctions.support_can import SupportCAN, CanParam
-from supportfunctions.support_test_odtb2 import SupportTestODTB2
-from supportfunctions.support_carcom import SupportCARCOM
-from supportfunctions.support_file_io import SupportFileIO
+from hilding.dut import Dut
+from hilding.dut import DutTestError
 from supportfunctions.support_SBL import SupportSBL
-from supportfunctions.support_sec_acc import SupportSecurityAccess
-from supportfunctions.support_rpi_gpio import SupportRpiGpio
-
-from supportfunctions.support_precondition import SupportPrecondition
-from supportfunctions.support_postcondition import SupportPostcondition
-from supportfunctions.support_service10 import SupportService10
-from supportfunctions.support_service11 import SupportService11
-from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_service27 import SupportService27
 from supportfunctions.support_service31 import SupportService31
 from supportfunctions.support_service34 import SupportService34
-from hilding.conf import Conf
 
-SIO = SupportFileIO
-SC = SupportCAN()
-S_CARCOM = SupportCARCOM()
-SUTE = SupportTestODTB2()
 SSBL = SupportSBL()
-SSA = SupportSecurityAccess()
-SGPIO = SupportRpiGpio()
-CNF = Conf()
-
-PREC = SupportPrecondition()
-POST = SupportPostcondition()
-SE10 = SupportService10()
-SE11 = SupportService11()
-SE22 = SupportService22()
 SE27 = SupportService27()
 SE31 = SupportService31()
 SE34 = SupportService34()
 
-def step_4():
-    """
-    Teststep 4: Read VBF files for SBL file (1st Logical Block)
-    """
-    stepno = 4
-    purpose = "SBL files reading"
 
-    SUTE.print_test_purpose(stepno, purpose)
+def step_1(dut: Dut):
+    """
+    action: Verify minimum maxNumberOfBlockLenght is between 2048 to 4095 bytes
+    expected_result: True when maxNumberOfBlockLenght is between 2048 to 4095 bytes
+    """
+    # Loads the rig specific VBF files
+    vbf_result = SSBL.get_vbf_files()
+    if not vbf_result:
+        logging.error("Test Failed: Unable to load VBF files")
+        return False
+
+    # Verify programming preconditions
+    routinecontrol_result = SE31.routinecontrol_requestsid_prog_precond(dut)
+    if not routinecontrol_result:
+        logging.error("Test Failed: Programming preconditions are not fulfilled")
+        return False
+
+    # Set to programming session
+    dut.uds.set_mode(2)
+
+    # Security access
+    sa_result = SE27.activate_security_access_fixedkey(dut, sa_keys=dut.conf.default_rig_config)
+    if not sa_result:
+        logging.error("Test Failed: Security access denied in programming session")
+        return False
+
+    # Read VBF files for SBL file (1st logical block)
     _, vbf_header, data, data_start = SSBL.read_vbf_file(SSBL.get_sbl_filename())
-    return vbf_header, data, data_start
 
-def step_5(data, data_start):
-    """
-    Teststep 5: Extract data for SBL
-    """
-    stepno = 5
-    purpose = "EXtract data for SBL"
+    # Extract data for the 1st data block from SBL
+    block_by = SSBL.block_data_extract(data, data_start)[1]
 
-    SUTE.print_test_purpose(stepno, purpose)
-
-    _, block_by, _ = SSBL.block_data_extract(data, data_start)
-    return block_by
-
-def step_6(can_p, block_by, vbf_header):
-    """
-    Teststep 6: get maxNumberOfBlockLenght from request download service
-    """
+    # Get maxNumberOfBlockLenght from request download service
     SSBL.vbf_header_convert(vbf_header)
-    _, nbl = SE34.request_block_download(can_p, vbf_header, block_by, stepno=6, purpose=\
-                                        "get maxNumberOfBlockLenght from request download service")
-    #verify min maxNumberOfBlockLenght is >2kB
-    result = nbl > 2000
-    return result
+    nbl = SE34.request_block_download(dut, vbf_header, block_by)[1]
+
+    # Verify min maxNumberOfBlockLenght is between 2048 to 4095 bytes
+    if 2048 < nbl < 4095:
+        logging.info("maxNumberOfBlockLenght is between 2048 to 4095 bytes as expected")
+        return True
+
+    logging.error("Test Failed: Expected maxNumberOfBlockLenght between 2048 to 4095 bytes,"
+                  " received %s", nbl)
+    return False
+
+
+def step_2(dut: Dut):
+    """
+    action: ECU hardreset
+    expected_result: True when ECU is in default session
+    """
+    # ECU reset
+    result = dut.uds.ecu_reset_1101()
+    if not result:
+        logging.error("Test Failed: ECU reset failed")
+        return False
+
+    # Verify active diagnostic session
+    active_session = dut.uds.active_diag_session_f186()
+    if active_session.data["details"]["mode"] == 1:
+        logging.info("ECU is in default session as expected")
+        return True
+
+    logging.error("Test Failed: ECU is not in default session")
+    return False
+
 
 def run():
     """
-    Run - Call other functions from here
+    Verify minimum maxNumberOfBlockLenght is between 2048 to 4095 bytes
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+    dut = Dut()
 
-    # where to connect to signal_broker
-    can_p: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        "send" : "Vcu1ToBecmFront1DiagReqFrame",
-        "receive" : "BecmToVcu1Front1DiagResFrame",
-        "namespace" : SC.nspace_lookup("Front1CANCfg0")
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
-    logging.info("Testcase start: %s", datetime.now())
-    starttime = time.time()
-    logging.info("Time: %s \n", time.time())
-    ############################################
-    # precondition
-    ############################################
-    # read VBF param when testscript is s started, if empty take default param
-    SSBL.get_vbf_files()
-    timeout = 60
-    result = PREC.precondition(can_p, timeout)
+    start_time = dut.start()
+    result = False
+    result_step = False
 
-    if result:
-    ############################################
-    # teststeps
-    ############################################
+    try:
+        dut.precondition(timeout=40)
 
-        # step 1:
-        # action: Verify programming preconditions
-        # result: ECU sends positive reply
-        result = result and SE31.routinecontrol_requestsid_prog_precond(can_p, stepno=1)
-        time.sleep(1)
+        result_step = dut.step(step_1, purpose='Verify minimum maxNumberOfBlockLenght is between'
+                                               ' 2048 to 4095 bytes')
+        if result_step:
+            result_step = dut.step(step_2, purpose='ECU hardreset')
+        result = result_step
 
-        # step 2:
-        # action: Change to programming session
-        # result: ECU sends positive reply
-        result = result and SE10.diagnostic_session_control_mode2(can_p, stepno=2)
+    except DutTestError as error:
+        logging.error("Test failed: %s", error)
+    finally:
+        dut.postcondition(start_time, result)
 
-        # step 3:
-        # action: Security Access Request SID
-        # result: ECU sends positive reply
-        result = result and SE27.activate_security_access_fixedkey(can_p,CNF.default_rig_config)
-
-        # step 4:
-        # action: Read VBF files for SBL
-        # result:
-        vbf_header, data, data_start = step_4()
-
-        # step 5:
-        # action: Extract data for the 1st data block from SBL
-        # result:
-        block_by = step_5(data, data_start)
-
-        # step 6:
-        # action: get maxNumberOfBlockLenght from request download service
-        # result: ECU sends positive reply
-        result = result and step_6(can_p, block_by, vbf_header)
-
-        # step 7:
-        # action: Hard Reset
-        # result: ECU sends positive reply
-        result = result and SE11.ecu_hardreset(can_p, stepno=7)
-        time.sleep(1)
-
-        # step 8:
-        # action: verify ECU in default session
-        # result: ECU sends positive reply
-        result = result and SE22.read_did_f186(can_p, b'\x01', stepno=8)
-
-    ############################################
-    # postCondition
-    ############################################
-
-    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()
