@@ -1,9 +1,10 @@
 """
+
 /*********************************************************************************/
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -54,192 +55,219 @@ details: >
     incrementing successful event 1.
     Send invalid security access key to get the rejected software update(events)
     and check the rejected event count is increased by 1 and software update is rejected.
-
 """
 
-import logging
 import time
-from supportfunctions.support_service27 import SupportService27
-from supportfunctions.support_file_io import SupportFileIO
+import logging
 from hilding.dut import Dut
 from hilding.dut import DutTestError
+from supportfunctions.support_sec_acc import SupportSecurityAccess
+from supportfunctions.support_service27 import SupportService27
 import supportfunctions.support_service27 as SP27
 
-SIO = SupportFileIO()
+SSA = SupportSecurityAccess()
 SE27 = SupportService27()
 
 
 def get_successful_rejected_events_and_codes(response):
     """
-    expected result: return dict of total successful, rejected events and codes
+    Extract event data from ECU response
+    Args:
+        response (dict): ECU response
+    Returns:
+        events_and_codes (dict): Total successful, rejected events and codes
     """
-    events_and_codes = {
-                        'total_successful_events': '',
+    events_and_codes = {'total_successful_events': '',
                         'latest_successful_event_code': '',
                         'total_rejected_events': '',
-                        'latest_rejected_event_code': ''
-                        }
-    for response_item in response.data['details']['response_items']:
-        if response_item['name'] == "Total number of successful events":
-            events_and_codes['total_successful_events'] = int(
-                response_item['sub_payload'], 16)
-        if response_item['name'] == "Latest successful event - Event Code":
-            events_and_codes['latest_successful_event_code'] = \
-                response_item['sub_payload']
-        if response_item['name'] == "Total number of rejected events":
-            events_and_codes['total_rejected_events'] = int(
-                response_item['sub_payload'], 16)
+                        'latest_rejected_event_code': ''}
+
+    response_items = response.data['details']['response_items']
+    events_and_codes['total_successful_events'] = int(response_items[0]['sub_payload'], 16)
+    events_and_codes['latest_successful_event_code'] = response_items[2]['sub_payload']
+    events_and_codes['total_rejected_events'] = int(response_items[1]['sub_payload'], 16)
+
+    for response_item in response_items:
         if response_item['name'] == "Latest rejected event - Event Code":
-            events_and_codes['latest_rejected_event_code'] = \
-                response_item['sub_payload']
-        if events_and_codes['total_successful_events'] != '' and \
-            events_and_codes['latest_successful_event_code'] != '' and \
-            events_and_codes['total_rejected_events'] != '' and \
-            events_and_codes['latest_rejected_event_code'] != '':
+            events_and_codes['latest_rejected_event_code'] = response_item['sub_payload']
             break
+
     return events_and_codes
+
+
+def security_access_with_invalid_key(dut):
+    """
+    Security access with invalid key
+    Args:
+        dut (Dut): An instance of Dut
+    Returns:
+        (bool): True when security access is not successful for invalid key
+    """
+    sa_keys=dut.conf.default_rig_config
+    result, payload = SE27.activate_security_access_seed_and_calc(dut, sa_keys)
+    if not result:
+        logging.error("Test Failed: Request seed unsuccessful")
+        return False
+
+    # Corrupt payload
+    payload[4] = 0xFF
+    payload[5] = 0xFF
+
+    result, response = SE27.security_access_send_key(dut, sa_keys, payload)
+
+    result = result and (SP27.SSA.process_server_response_key(bytearray.fromhex(response)) == 0)
+
+    if not result:
+        logging.info("Security access denied as expected")
+        return True
+
+    logging.error("Test Failed: Unexpected security access")
+    return False
 
 
 def step_1(dut: Dut):
     """
-    action: Read Security log event DID D046
-    expected_result: Positive response with the event data
-
-    total_events: return dictionary of successful and rejected event count
+    action: Read DID D046 and extract security log event data
+    expected_result: True when received positive response '62' with event data
     """
-    response = dut.uds.read_data_by_id_22(b'\xd0\x46')
-    # NRC 31 requestOutOfRange
-    if response.raw[6:8] != '31':
-        events_and_codes = \
-            get_successful_rejected_events_and_codes(response)
+    response = dut.uds.read_data_by_id_22(bytes.fromhex('D046'))
+
     if response.raw[4:6] == '62':
+        events_and_codes = get_successful_rejected_events_and_codes(response)
         return True, events_and_codes
+
+    logging.error("Test Failed: Expected positive response '62', received %s", response.raw)
     return False, None
 
 
 def step_2(dut: Dut):
     """
-    action: Set ECU to Programming Session
-    expected_result: Positive response
+    action: Set ECU to programming session and security access
+    expected_result: True when security access is successfully in programing session
     """
+    # Set ECU in programming session
     dut.uds.set_mode(2)
-    res = dut.uds.active_diag_session_f186()
-    if res.data['sid'] == '62' and res.data['details']['mode'] == 2:
-        return True
+
+    result = SE27.activate_security_access_fixedkey(dut, dut.conf.default_rig_config)
+    if not result:
+        logging.error("Test Failed: Unable to unlock ECU")
+
+    return result
+
+
+def step_3(dut: Dut, events_and_codes):
+    """
+    action: Read DID D046 in default session and verify event data for successful event
+    expected_result: True when total number of successful events is incremented by 1 and latest
+                     successful event code is '80'
+    """
+    # Set ECU in default session
+    dut.uds.set_mode(1)
+
+    response = dut.uds.read_data_by_id_22(bytes.fromhex('D046'))
+    latest_events_and_codes = get_successful_rejected_events_and_codes(response)
+
+    if events_and_codes['total_successful_events'] + 1 == \
+          latest_events_and_codes['total_successful_events'] :
+        latest_successful_event_code = latest_events_and_codes['latest_successful_event_code']
+        if latest_successful_event_code == '80':
+            logging.info("Successfully verified security log event data for successful event")
+            return True
+
+        logging.error("Test Failed: Successful event not increased or received unexpected event "
+                      "code '%s' instead of expected '80'", latest_successful_event_code)
     return False
 
 
-def step_3(dut: Dut):
+def step_4(dut: Dut):
     """
-    action: Security Access to ECU
-    expected_result: Positive response
+    action: Set ECU to programming session and security access to ECU for rejected event
+    expected_result: True when security access is not successful with invalid key
     """
-
-    result = SE27.activate_security_access_fixedkey(dut,
-                                                    dut.conf.default_rig_config, step_no=3,
-                                                    purpose="Security Access"
-                                                    )
-    return result
-
-
-def step_4(dut: Dut, events_and_codes):
-    """
-    action: Set ECU to Default session and
-            Read Security log event DID D046
-    expected_result: Total number of successful events is incremented by 1
-                     Latest successful event code is '80'
-    """
-    dut.uds.set_mode()
-    result = False
-    time.sleep(2)
-    response = dut.uds.read_data_by_id_22(b'\xd0\x46')
-    latest_events_and_codes = \
-        get_successful_rejected_events_and_codes(response)
-    if events_and_codes['total_successful_events'] + 1 == \
-        latest_events_and_codes['total_successful_events'] and \
-        latest_events_and_codes['latest_successful_event_code'] == '80':
-        result = True
-    else:
-        logging.error("Successful event not increased or unknown event code")
-        result = False
-    return result
-
-def step_5(dut: Dut):
-    """
-    action: Set ECU to Programming Session
-    expected_result: Positive response
-    """
+    # Set ECU in programming session
     dut.uds.set_mode(2)
-    res = dut.uds.active_diag_session_f186()
-    if res.data['sid'] == '62' and res.data['details']['mode'] == 2:
-        return True
+
+    return security_access_with_invalid_key(dut)
+
+
+def step_5(dut: Dut, events_and_codes):
+    """
+    action: Read DID D046 in default session and verify event data for rejected event
+    expected_result: True when total number of rejected events is incremented by 1 and latest
+                     rejected event code is '01'
+    """
+    # Set ECU in default session
+    dut.uds.set_mode(1)
+
+    response = dut.uds.read_data_by_id_22(bytes.fromhex('D046'))
+    latest_events_and_codes = get_successful_rejected_events_and_codes(response)
+
+    if events_and_codes['total_rejected_events'] + 1 == \
+        latest_events_and_codes['total_rejected_events'] :
+        latest_rejected_event_code = latest_events_and_codes['latest_rejected_event_code']
+        if latest_rejected_event_code == "01":
+            logging.info("Successfully verified security log event data for rejected event")
+            return True
+
+    logging.error("Test Failed: Rejected event not increased or received unexpected event code '%s'"
+                  "instead of expected '01'", latest_rejected_event_code)
     return False
 
 
 def step_6(dut: Dut):
     """
-    action: Security Access to ECU for rejected event
-    expected_result: Negative response
+    action: ECU reset and verify active diagnostic session
+    expected_result: True when ECU is in default session
     """
-    sa_keys = dut.conf.default_rig_config
+    # ECU reset
+    dut.uds.ecu_reset_1101()
 
-    SP27.SSA.set_keys(sa_keys)
-    result, response = SE27.security_access_request_seed(dut, sa_keys)
-    SP27.SSA.process_server_response_seed(
-        bytearray.fromhex(response))
-    payload = SP27.SSA.prepare_client_send_key()
-    payload[4] = 0xFF
-    payload[5] = 0xFF
-    result, response = SE27.security_access_send_key(dut, sa_keys, payload)
-    result = (SP27.SSA.process_server_response_key(bytearray.fromhex(response)) == 0)
-    if result:
-        return False
-
-    logging.info("Received Negative response for a wrong key as expected")
-    return True
-
-
-def step_7(dut: Dut, events_and_codes):
-    """
-    action: Set ECU to Default session and
-            Read Security log event DID D046
-    expected_result: Total number of Rejected events is incremented by 1
-                     Latest rejected event code is '01'
-    """
-    dut.uds.set_mode()
+    # Wait 2 seconds
     time.sleep(2)
-    result = False
-    response = dut.uds.read_data_by_id_22(b'\xd0\x46')
-    latest_events_and_codes = \
-        get_successful_rejected_events_and_codes(response)
-    if events_and_codes['total_rejected_events'] + 1 == \
-        latest_events_and_codes['total_rejected_events'] and \
-            latest_events_and_codes['latest_rejected_event_code'] == "01":
-        result = True
-    else:
-        logging.error("Rejected event not increased or unknown event code")
-        result = False
-    return result
+
+    # Verify active diagnostic session
+    response = dut.uds.active_diag_session_f186()
+    if response.data["details"]["mode"] == 1:
+        logging.info("ECU is in default session as expected")
+        return True
+
+    logging.error("Test Failed: Expected ECU to be in default session, received mode %s",
+                   response.data["details"]["mode"])
+    return False
 
 
 def run():
-    """ Supporting functional requests """
+    """
+    Read security log event DID D046 and verify event data from response for successful event and
+    rejected event.
+    """
     dut = Dut()
+
     start_time = dut.start()
     result = False
+    result_step = False
+
     try:
-        dut.precondition()
-        result, events_and_codes = dut.step(step_1, purpose='Read DID D046')
-        result = result and dut.step(step_2, purpose='ECU into programming session')
-        result = result and dut.step(step_3, purpose='Security Access')
-        result = result and dut.step(step_4, events_and_codes,
-                           purpose='ECU to Default session and Read and compare\
-                               total_succ_events and event code')
-        result = result and dut.step(step_5, purpose='ECU into programming session')
-        result = result and dut.step(step_6, purpose='Security Access with invalid key')
-        result = result and dut.step(step_7, events_and_codes,
-                           purpose='ECU to Default session and Read and compare\
-                               total_rej_events and event code')
+        dut.precondition(timeout=60)
+        result_step, events_and_codes = dut.step(step_1, purpose="Read DID D046 and extract event "
+                                                                 "data")
+        if result_step:
+            result_step = dut.step(step_2, purpose="Set ECU to programming session and security "
+                                                   "access")
+        if result_step:
+            result_step = dut.step(step_3, events_and_codes, purpose="Read DID D046 in default "
+                                          "session and verify event data for successful event")
+        if result_step:
+            result_step = dut.step(step_4, purpose = "Set ECU to programming session and security "
+                                                     "access with invalid key")
+        if result_step:
+            result_step = dut.step(step_5, events_and_codes, purpose="Read DID D046 in default "
+                                              "session and verify event data for rejected event")
+        if result_step:
+            result_step = dut.step(step_6, purpose="ECU reset and verify active diagnostic "
+                                                   "session")
+        result = result_step
+
     except DutTestError as error:
         logging.error("Test failed: %s", error)
     finally:
