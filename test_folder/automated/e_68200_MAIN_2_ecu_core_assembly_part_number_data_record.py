@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,119 +18,145 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-# Testscript Hilding MEPII
-# project:  BECM basetech MEPII
-# author:   J-ASSAR1 (Joel Assarsson)
-# date:     2020-10-21
-# version:  1.0
-# reqprod:  68200
-#
-# inspired by https://grpc.io/docs/tutorials/basic/python.html
-#
-# Copyright 2015 gRPC authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+reqprod: 68200
+version: 2
+title: ECU Core Assembly Part Number data record
+purpose: >
+    To enable readout of a part number that identifies the combination of the ECU hardware and any
+    non-replaceable software (bootloaders and other fixed software).
 
-The Python implementation of the gRPC route guide client.
+description: >
+    A data record with identifier as specified in the table below shall be implemented exactly as
+    defined in Carcom - Global Master Reference Database
+
+    Description	                                Identifier
+    ---------------------------------------------------------
+    ECU Core Assembly Part Number	            F12A
+    ---------------------------------------------------------
+
+    •	It shall be possible to read the data record by using the diagnostic service specified in
+        Ref[LC : Volvo Car Corporation - UDS Services - Service 0x22 (ReadDataByIdentifier) Reqs].
+
+    The identifier shall be implemented in the following sessions:
+        •   Default session
+        •   Programming session (which includes both primary and secondary bootloader)
+        •   Extended Session
+
+details: >
+    Verify ECU response of DID 'F12A'(ECU Core Assembly Part Number) by ReadDataByIdentifier(0x22)
+    service in default, programming and extended diagnostic session.
 """
 
-import time
-import inspect
-
-from datetime               import datetime
-import sys
 import logging
+from hilding.dut import Dut
+from hilding.dut import DutTestError
+from supportfunctions.support_service22 import SupportService22
 
-import odtb_conf
-from supportfunctions.support_can            import SupportCAN, CanParam, CanTestExtra, CanPayload
-from supportfunctions.support_test_odtb2     import SupportTestODTB2
-from supportfunctions.support_carcom         import SupportCARCOM
-from supportfunctions.support_file_io        import SupportFileIO
-from supportfunctions.support_precondition   import SupportPrecondition
-from supportfunctions.support_postcondition  import SupportPostcondition
-
-SIO         = SupportFileIO
-SC          = SupportCAN()
-SUTE        = SupportTestODTB2()
-SC_CARCOM   = SupportCARCOM()
-PREC        = SupportPrecondition()
-POST        = SupportPostcondition()
+SE22 = SupportService22()
 
 
-def step_1(can_p):
+def req_read_data_by_id(dut: Dut, session):
     """
-    Step 1: Send ReadDataByIdentifier(0xF12A) and verify that ECU replies.
+    Request ReadDataByIdentifier(0x22) and get the ECU response
+    Args:
+        dut(Dut): An instance of Dut
+        session(str): Diagnostic session
+    Returns:
+        (bool): True on successfully verified positive response
     """
-    etp: CanTestExtra = {
-        "step_no": 1,
-        "purpose" : "ReadDataByIdentifier(0xF12A) and verify that ECU replies",
-        "timeout" : 1,
-        "min_no_messages" : -1,
-        "max_no_messages" : -1
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
-    cpay: CanPayload = {
-        "payload": SC_CARCOM.can_m_send("ReadDataByIdentifier",
-                                        b'\xF1\x2A',
-                                        b''),
-        "extra": ''
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    response = dut.uds.read_data_by_id_22(bytes.fromhex('F12A'))
+    if response.raw[4:6] == '62' and response.raw[6:10] == 'F12A':
+        logging.info("Successfully read DID F12A in %s session with positive response %s",
+                      session, response.raw)
+        return True
 
-    result = SUTE.teststep(can_p, cpay, etp)
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='F12A')
-    logging.info("ReadDataByIdentifier(0xF12A): %s", SC.can_messages[can_p["receive"]][0][2])
-    return result
+    logging.error("Test Failed: Expected positive response 62 for DID F12A in %s session, "
+                  "received %s", session, response.raw)
+    return False
+
+
+def step_1(dut: Dut):
+    """
+    action: Send ReadDataByIdentifier in default diagnostic session and verify ECU
+            response of ReadDataByIdentifier request.
+    expected_result: True when received positive response '62'
+    """
+    return req_read_data_by_id(dut, session='default')
+
+
+def step_2(dut: Dut):
+    """
+    action: Send ReadDataByIdentifier in extended diagnostic session and verify ECU
+            response of ReadDataByIdentifier request.
+    expected_result: True when received positive response '62'
+    """
+    # Set to extended session
+    dut.uds.set_mode(3)
+
+    # Check active diagnostic session
+    active_session = SE22.read_did_f186(dut, b'\x03')
+    if active_session:
+        result = req_read_data_by_id(dut, session='extended')
+        if not result:
+            return False
+        return True
+
+    logging.error("Test Failed: ECU is not in extended session")
+    return False
+
+
+def step_3(dut: Dut):
+    """
+    action: Send ReadDataByIdentifier in programming session and verify ECU response of
+            ReadDataByIdentifier request.
+    expected_result: True when received positive response '62'
+    """
+    # Set to programming session
+    dut.uds.set_mode(2)
+
+    # Check active diagnostic session
+    active_session = SE22.read_did_f186(dut, b'\x02')
+    if active_session:
+        result = req_read_data_by_id(dut, session='programming')
+        if not result:
+            return False
+        return True
+
+    logging.error("Test Failed: ECU is not in programming session")
+    return False
 
 
 def run():
     """
-    Run - Call other functions from here
+    Verify ECU response of diagnostic read out DIDs by ReadDataByIdentifier(0x22) service in
+    default, programming, and extended diagnostic session.
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+    dut = Dut()
 
-    # where to connect to signal_broker
-    can_p: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        "send" : "Vcu1ToBecmFront1DiagReqFrame",
-        "receive" : "BecmToVcu1Front1DiagResFrame",
-        "namespace" : SC.nspace_lookup("Front1CANCfg0")
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
+    start_time = dut.start()
+    result = False
+    result_step = False
 
-    logging.info("Testcase start: %s", datetime.now())
-    starttime = time.time()
-    logging.info("Time: %s \n", time.time())
+    try:
+        dut.precondition(timeout=40)
 
-    ############################################
-    # precondition
-    ############################################
-    timeout = 40
-    result = PREC.precondition(can_p, timeout)
+        result_step = dut.step(step_1, purpose="Send ReadDataByIdentifier in default diagnostic"
+                                               " session and verify ECU response of"
+                                               " ReadDataByIdentifier request")
+        if result_step:
+            result_step = dut.step(step_2, purpose="Send ReadDataByIdentifier in extended"
+                                                   " diagnostic session and verify ECU response"
+                                                   " of ReadDataByIdentifier request")
+        if result_step:
+            result_step = dut.step(step_3, purpose="Send ReadDataByIdentifier in programming"
+                                                   " session and verify ECU response of"
+                                                   " ReadDataByIdentifier request")
+        result = result_step
+    except DutTestError as error:
+        logging.error("Test failed: %s", error)
+    finally:
+        dut.postcondition(start_time, result)
 
-    if result:
-        ############################################
-        # teststeps
-        ############################################
-        # step 1:
-        # action: Send ReadDataByIdentifier(0xF120)
-        # result: ECU send requested DIDs
-        result = result and step_1(can_p)
-
-    ############################################
-    # postCondition
-    ############################################
-    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()
