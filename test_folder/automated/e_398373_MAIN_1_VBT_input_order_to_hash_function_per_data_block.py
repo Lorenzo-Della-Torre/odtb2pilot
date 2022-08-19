@@ -1,4 +1,5 @@
 """
+
 /*********************************************************************************/
 
 
@@ -33,15 +34,15 @@ description: >
     The data to be hashed starts with the data at the start address.
 
 details: >
-    Extracting and calculating the Hash value for each block and comparing
-    it with calculated hash present in Verification block table data.
+    Extracting and calculating the hash value for each block and comparing
+    it with calculated hash present in verification block table data.
     Steps-
-        1. Read and extract all VBF data blocks and verification block
-           table(VBT) data from vbf file.
+        1. Read and extract all vbf data blocks and verification block
+           table(vbt) data from vbf file.
         2. Calculate vbf block hashes.
-        3. Filtering hashes from Verification Block Table data(VBT) data.
+        3. Filtering hashes from verification block table data(vbt) data.
         4. Compare calculated vbf block data hashes with extracted block hashes
-           from Verification Block Table(VBT) data.
+           from verification block table(vbt) data.
 """
 
 import logging
@@ -57,13 +58,13 @@ SSBL = SupportSBL()
 HASH_SIZE = 64
 HASH_INIT_POS = 8
 
+
 def extract_vbf_blocks(vbf_path):
     """
-    Reading vbf file and extracting all the data blocks
-    Storing all data blocks in a list
-    Preparing block_data_dict with VBT data, VBF block data list and filename
+    Reading vbf file and extracting all the data blocks, storing all data blocks in a list and
+    preparing block data dict with vbt data, vbf block data list and filename
     Args:
-        vbf_path (dict): VBF file path
+        vbf_path (dict): vbf file path
     Returns:
         block_data_dict (dict): dictionary of data blocks
     """
@@ -83,8 +84,8 @@ def extract_vbf_blocks(vbf_path):
             break
         data = LZMA.decode_barray(vbf_block_data).hex()
         block_data_dict["vbf_block_data_list"].append(data)
-    # Last block is Verification Block Table Data so removed it from vbf_block_data_list
-    # and assigned to vbt_data in block_data_dict dictionary
+    # Last block is verification block table data so removed it from vbf block data list
+    # and assigned to vbt data in block data dict dictionary
     block_data_dict["vbt_data"] = block_data_dict["vbf_block_data_list"].pop()
     block_data_dict["file_name"] = vbf_path.split('/')[-1]
     return block_data_dict
@@ -92,10 +93,9 @@ def extract_vbf_blocks(vbf_path):
 
 def calculate_vbf_data_hashes(vbf_block_data_list):
     """
-    Calculating hash of all the VBF block data and storing in
-    calculated_block_data_hash_list.
+    Calculating hash of all the vbf block data and storing in calculated block data hash list.
     Args:
-        vbf_block_data_list (list): list of VBF block data
+        vbf_block_data_list (list): list of vbf block data
 
     Returns:
         calculated_block_data_hash_list (list) : list of SHA-256 hash of respective block data
@@ -109,24 +109,24 @@ def calculate_vbf_data_hashes(vbf_block_data_list):
 
 def extract_vbt_hashes(vbt_data):
     """
-    Extracting calculated VBF data block hash from VBF Block Table
-    and storing in extracted_block_data_hash_list.
+    Extracting calculated vbf data block hash from vbf block table and storing in extracted
+    block data hash list.
     Args:
-        vbt_data (str): Verification block table data
+        vbt_data (str): verification block table data
 
     Returns:
         extracted_block_data_hash_list (list): list of SHA-256 hash extracted from
-            Verification block table data
+                                               verification block table data
     """
     index = 1
     byte_index = 8
     extracted_block_data_hash_list = []
     while byte_index < len(vbt_data):
         if index % 3 != 0:
-            # Ignore start-address and block-length from VBT Data
+            # Ignore start-address and block-length from vbt data
             byte_index += HASH_INIT_POS
         else:
-            # Extract and Append hash from VBT data
+            # Extract and Append hash from vbt data
             extracted_hash = vbt_data[byte_index:byte_index+HASH_SIZE]
             extracted_block_data_hash_list.append(extracted_hash.upper())
             byte_index += HASH_SIZE
@@ -136,19 +136,19 @@ def extract_vbt_hashes(vbt_data):
 
 def compare_hashes(extracted_block_data_hash_list, calculated_block_data_hash_list, file_name):
     """
-    Comparing extracted hash from Verification block table with calculated VBF data block hash
+    Comparing extracted hash from verification block table with calculated vbf data block hash
     Args:
         extracted_block_data_hash_list (list): list of extracted hashes
-            from Verification Block Table data
-        calculated_block_data_hash_list (list): list of hashes from respective VBF block data
-        file_name (str): VBF filename
+                                               from verification block table data
+        calculated_block_data_hash_list (list): list of hashes from respective vbf block data
+        file_name (str): vbf filename
     Returns:
-        bool: True
+        (bool): True all extracted block data and calculated block data hash matches each other
     """
 
     if len(extracted_block_data_hash_list) != len(calculated_block_data_hash_list):
-        logging.error("Test failed: Extracted hashes list length and calculated hashes"\
-                      " list length is not matched")
+        logging.error("Test failed: Extracted hashes list length and calculated hashes"
+                                    " list length is not matched")
         return False
 
     result = []
@@ -158,16 +158,14 @@ def compare_hashes(extracted_block_data_hash_list, calculated_block_data_hash_li
         if extracted_block_data == calculated_block_data:
             result.append(True)
         else:
-            msg = "Test failed: VBT hash '{}' and Block Data hash '{}'" \
-                " did not match in file {}".format(extracted_block_data,
-                                                    calculated_block_data, file_name)
-            logging.error(msg)
+            logging.error("Test failed: vbt hash '%s' and Block Data hash '%s' did not match in"
+                          " file %s", extracted_block_data, calculated_block_data, file_name)
             result.append(False)
 
     if len(result) != 0:
         return all(result)
-    logging.error(
-        "Test Failed: All extracted_block_data and calculated_block_data hash did not match.")
+    logging.error("Test Failed: All extracted block data and calculated block data hash"
+                                " did not match.")
     return False
 
 
@@ -175,8 +173,8 @@ def step_1(dut: Dut):
     """
     action: Extracting all data blocks and verification block table data from vbf file
 
-    expected_result: Positive Response with list of dictionaries containing verification
-                    block table data and list of vbf block data of all vbf files
+    expected_result: Positive response with list of dictionaries containing verification
+                     block table data and list of vbf block data of all vbf files
     """
     rig_vbf_path = dut.conf.rig.vbf_path
     vbf_paths = glob(str(rig_vbf_path) + "/*.vbf")
@@ -186,7 +184,7 @@ def step_1(dut: Dut):
         logging.error(msg)
         return False, None
 
-    # vbf_data_list will contain a list of dictionaries containing Verification Block Table data,
+    # vbf data list will contain a list of dictionaries containing verification block table data,
     # list of vbf data block and filename
     vbf_data_list = []
     for vbf_path in vbf_paths:
@@ -194,16 +192,16 @@ def step_1(dut: Dut):
 
     if len(vbf_data_list) != 0:
         return True, vbf_data_list
-    logging.error("Test failed: Unable to extract Block data")
+    logging.error("Test failed: Unable to extract block data")
     return False, None
 
 
 def step_2(dut: Dut, vbt_data_dict):
     """
-    action: Calculating vbf block hash and extracting hashes from Verification Block Table data
+    action: Calculating vbf block hash and extracting hashes from verification block table data
 
-    expected_result: Positive Response with list of dictionaries of calculated hashes
-                    from vbf block data and extracted from Verification Block Table data
+    expected_result: Positive response with list of dictionaries of calculated hashes
+                     from vbf block data and extracted from verification block table data
     """
     # pylint: disable=unused-argument
     vbf_hash_list = []
@@ -215,7 +213,7 @@ def step_2(dut: Dut, vbt_data_dict):
     for element in vbt_data_dict:
         vbf_hashes['vbt_data_hashes'] = extract_vbt_hashes(element['vbt_data'])
         vbf_hashes['vbf_block_hashes'] = calculate_vbf_data_hashes(
-            element['vbf_block_data_list'])
+                                         element['vbf_block_data_list'])
         vbf_hashes['file_name'] = element['file_name']
         vbf_hash_list.append(vbf_hashes.copy())
 
@@ -227,17 +225,17 @@ def step_2(dut: Dut, vbt_data_dict):
 
 def step_3(dut: Dut, vbf_hash_list):
     """
-    action: Comparing calculated vbf block data hash with
-        extracted block hash from Verification Block Table
+    action: Comparing calculated vbf block data hash with extracted block hash from verification
+            block table
 
-    expected_result: True
+    expected_result: True all elements present in vbf hash list
     """
     # pylint: disable=unused-argument
     result = []
 
     for element in vbf_hash_list:
-        result.append(compare_hashes(
-            element['vbt_data_hashes'], element['vbf_block_hashes'], element['file_name']))
+        result.append(compare_hashes(element['vbt_data_hashes'], element['vbf_block_hashes'],
+                                     element['file_name']))
 
     if len(result) != 0:
         return all(result)
@@ -247,10 +245,9 @@ def step_3(dut: Dut, vbf_hash_list):
 
 def run():
     """
-    Sanity check of all calculated data block hashes with all
-    extracted hashes from Verification Block Table.
+    Sanity check of all calculated data block hashes with all extracted hashes from verification
+    block table.
     """
-
     dut = Dut()
 
     start_time = dut.start()
@@ -260,18 +257,17 @@ def run():
 
         dut.precondition(timeout=60)
 
-        result_step, vbt_data_dict = dut.step(
-            step_1, purpose='Extracting all datablocks and VBT data from vbf file')
-
+        result_step, vbt_data_dict = dut.step(step_1, purpose="Extracting all data blocks and vbt"
+                                                              " data from vbf file")
         if result_step:
-            result_step, vbf_hash_list = dut.step(
-                step_2, vbt_data_dict, purpose='Calculating vbf block hash and'\
-                ' extracting hashes from VBT')
-
+            result_step, vbf_hash_list = dut.step(step_2, vbt_data_dict, purpose="Calculating vbf"
+                                                                                 " block hash and "
+                                                                                 "extracting "
+                                                                                 "hashes from vbt")
         if result_step:
-            result_step = dut.step(
-                step_3, vbf_hash_list, purpose='Comparing calculated vbf block hash with'\
-                ' extracted block hash from VBT')
+            result_step = dut.step(step_3, vbf_hash_list, purpose="Comparing calculated vbf block"
+                                                                  " hash with extracted block hash"
+                                                                  " from vbt")
 
         result = result_step
     except DutTestError as error:
