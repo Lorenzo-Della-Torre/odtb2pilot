@@ -101,31 +101,29 @@ details: >
 
 import logging
 import time
-from hilding.conf import Conf
 from hilding.dut import Dut
 from hilding.dut import DutTestError
 from supportfunctions.support_carcom import SupportCARCOM
 from supportfunctions.support_service27 import SupportService27
 from supportfunctions.support_file_io import SupportFileIO
 
-CNF = Conf()
 SE27 = SupportService27()
 S_CARCOM = SupportCARCOM()
 SIO = SupportFileIO()
 
 
-def routine_control_request(dut: Dut, sa_level, p2server_max):
+def routine_control_request(dut, sa_level, p2server_max):
     """
     Call routine control request and verify response time is less than p2server_max time frame
     Args:
-        dut (class obj): Dut instance
+        dut (Dut): An instance of Dut
         sa_level (int): security access level
         p2server_max (int): maximum allowed response time based on session
 
     Returns:
         auth_method (str) : last 4 bytes of the routine control request response
     """
-    # Preparing Routine control request payload 31010231 + (Security access level)
+    # Preparing routine control request payload 31010231 + (Security access level)
     byte_routine_request = b'\x01\x02\x31' + bytes.fromhex(sa_level)
     payload = S_CARCOM.can_m_send("RoutineControlRequestSID", byte_routine_request, b'')
 
@@ -137,66 +135,63 @@ def routine_control_request(dut: Dut, sa_level, p2server_max):
         # Extract last 2 bytes of response which is authentication method
         auth_method = response.raw[-4:]
         if time_elapsed >= p2server_max:
-            msg = "Time elapsed {}ms which is greater than p2Server_max {}ms for SA level {}"\
-                .format(time_elapsed, p2server_max, sa_level)
-            logging.error(msg)
+            logging.error("Time elapsed %sms which is greater than p2Server_max %sms for SA level"
+                          " %s", time_elapsed, p2server_max, sa_level)
             auth_method = ''
         else:
-            msg = "Elapsed time {}ms is less than p2Server_max {}ms for SA level {} as expected"\
-                    .format(time_elapsed, p2server_max, sa_level)
-            logging.info(msg)
+            logging.info("Elapsed time %sms is less than p2Server_max %sms for SA level %s as"
+                        " expected", time_elapsed, p2server_max, sa_level)
     else:
-        msg = "Response received {} for routine control request(SA level - {})"\
-                .format(response.data['nrc'], sa_level)
-        logging.error(msg)
+        logging.error("Response received %s for routine control request(SA level - %s)",
+                       response.data['nrc'], sa_level)
         auth_method = ''
 
     return auth_method
 
-def verify_sa_levels_and_p2_server_max(dut: Dut, sa_levels_and_auth_method, max_response_time):
+
+def verify_sa_levels_and_p2_server_max(dut, sa_levels_and_auth_method, max_response_time):
     """
     Verify security access levels and allowed authentication method is within max_response_time
     Args:
-        dut (class obj): Dut instance
+        dut (Dut): An instance of Dut
         sa_levels_and_auth_method (dict): dictionary containing security access levels
                     and allowed authentication method
         max_response_time (int): maximum response time for respective session
     Returns:
-        (bool): True
+        (bool): True correct authentication method received for SA level
     """
     results = []
     for sa_level, allowed_value in sa_levels_and_auth_method.items():
         routine_control_response = routine_control_request(dut, sa_level, max_response_time)
         if routine_control_response == allowed_value:
-            msg = "Received {} for SA level {} as expected".format(routine_control_response,
+            logging.info("Received %s for SA level %s as expected", routine_control_response,
                                                                     sa_level)
-            logging.info(msg)
             results.append(True)
         elif routine_control_response == '':
             # Invalid response or response time exceeded max_response_time returns
             # empty routine_control_response, handled in routine_control_request()
             results.append(False)
         else:
-            msg = "Invalid authentication method {} received for SA level {}, expected {}"\
-                    .format(routine_control_response, sa_level, allowed_value)
-            logging.error(msg)
+            logging.error("Invalid authentication method %s received for SA level %s, expected %s",
+                           routine_control_response, sa_level, allowed_value)
             results.append(False)
 
     if len(results) != 0 and all(results):
         return True
+
     return False
 
 
-def verify_sa_levels(dut: Dut, sa_levels_and_auth_method, session):
+def verify_sa_levels(dut, sa_levels_and_auth_method, session):
     """
     Verify routine control request
     Args:
-        dut (class obj): Dut instance
+        dut (Dut): An instance of Dut
         sa_levels_and_auth_method (dict): dictionary containing security access levels
                     and allowed authentication method
         session (str): programming or extended
     Returns:
-        (bool): True
+        (bool): True when received all SA level before security access
     """
     results = []
     for sa_level, allowed_value in sa_levels_and_auth_method.items():
@@ -211,27 +206,26 @@ def verify_sa_levels(dut: Dut, sa_levels_and_auth_method, session):
             # Extract last 2 bytes of response which is authentication method
             response_auth_method = response.raw[-4:]
             if response_auth_method == allowed_value:
-                msg = "Received {} for SA level {} before security access as expected."\
-                    .format(response_auth_method, sa_level)
-                logging.info(msg)
+                logging.info("Received %s for SA level %s before security access as expected ",
+                              response_auth_method, sa_level)
                 results.append(True)
             else:
-                msg = "Invalid authentication method {} received for SA level {}, expected {} "\
-                    "before security access".format(response_auth_method, sa_level, allowed_value)
-                logging.error(msg)
+                logging.error("Invalid authentication method %s received for SA level %s , "
+                              "expected %s before security access",response_auth_method,
+                               sa_level, allowed_value)
                 results.append(False)
         else:
-            msg = "Received NRC {} for SA level {} in {} session before security access."\
-                    .format(response.data['nrc'], sa_level, session)
-            logging.error(msg)
+            logging.error("Received NRC %s for SA level %s in %s session before security access.",
+                           response.data['nrc'], sa_level, session)
             results.append(False)
 
     if len(results) != 0 and all(results):
         return True
+
     return False
 
 
-def step_1(dut: Dut):
+def step_1(dut: Dut, yml_parameters):
     """
     action: Verify routine control request respond with authentication method i.e. '0001' or
             'FFFF' based on the security access level for programming session.
@@ -240,17 +234,6 @@ def step_1(dut: Dut):
             level for programming session.
     """
     dut.uds.set_mode(2)
-    # Extract yml parameters
-    parameters_dict = { 'programming_sa_levels_and_auth_method': '',
-                        'p2_server_max_programming': '',
-                        'extended_sa_levels_and_auth_method': '',
-                        'p2_server_max_extended': ''
-                       }
-    yml_parameters = SIO.parameter_adopt_teststep(parameters_dict)
-
-    if not all(list(yml_parameters.values())):
-        logging.error("Test failed: Unable to extract yml parameters")
-        return False, None
 
     programming_sa_levels = yml_parameters['programming_sa_levels_and_auth_method']
     p2_server_max = yml_parameters['p2_server_max_programming']
@@ -259,23 +242,23 @@ def step_1(dut: Dut):
     result_without_security_access = verify_sa_levels(dut, programming_sa_levels, 'programming')
 
     # Security access
-    sa_result = SE27.activate_security_access_fixedkey(dut, sa_keys=CNF.default_rig_config,
+    sa_result = SE27.activate_security_access_fixedkey(dut, dut.conf.default_rig_config,
                                                         step_no=272, purpose="SecurityAccess")
 
     if not sa_result:
         logging.error("Test failed: Security access denied for programming session")
-        return False, None
+        return False
 
     # Verify routine control request with security access
     result_with_security_access = verify_sa_levels_and_p2_server_max(dut, programming_sa_levels,
                                                                    p2_server_max)
 
     if result_with_security_access and result_without_security_access:
-        return True, yml_parameters
+        return True
 
-    logging.error("Test failed: Verification of supported security access levels and allowed"\
-        " authentication method failed for programming session")
-    return False, None
+    logging.error("Test Failed: Verification of supported security access levels and allowed"
+                                " authentication method failed for programming session")
+    return False
 
 
 def step_2(dut: Dut, yml_parameters):
@@ -284,7 +267,7 @@ def step_2(dut: Dut, yml_parameters):
             'FFFF' based on the security access level for extended session.
 
     expected_result: ECU should send supported authentication method for respective security access
-            level for extended session.
+                     level for extended session.
     """
 
     dut.uds.set_mode(1)
@@ -298,13 +281,12 @@ def step_2(dut: Dut, yml_parameters):
 
     # Security access
     time.sleep(10)
-    sa_result = SE27.activate_security_access_fixedkey(dut, sa_keys=CNF.default_rig_config,
+    sa_result = SE27.activate_security_access_fixedkey(dut, sa_keys=dut.CNF.default_rig_config,
                                                         step_no=272, purpose="SecurityAccess")
 
     if not sa_result:
         logging.error("Test failed: Security access denied for extended session")
         return False
-
 
     # Verify routine control request with security access of extended session
     result_with_security_access = verify_sa_levels_and_p2_server_max(dut, extended_sa_levels,
@@ -313,8 +295,8 @@ def step_2(dut: Dut, yml_parameters):
     if result_with_security_access and result_without_security_access:
         return True
 
-    logging.error("Test failed: Verification of supported security access levels and allowed"\
-        " authentication method failed for extended session")
+    logging.error("Test Failed: Verification of supported security access levels and allowed"
+                                " authentication method failed for extended session")
     return False
 
 
@@ -325,18 +307,30 @@ def run():
     i.e. '0001' or 'FFFF' based on the security access level for programming and extended session.
     """
     dut = Dut()
+
     start_time = dut.start()
     result = False
     result_step = False
+
+    parameters_dict = {'programming_sa_levels_and_auth_method' : '',
+                       'p2_server_max_programming' : '',
+                       'extended_sa_levels_and_auth_method' : '',
+                       'p2_server_max_extended' : ''}
     try:
         dut.precondition(timeout=60)
 
-        result_step, yml_parameters = dut.step(step_1, purpose="Routine Control Request"
-                                                " Verification in Programming Session")
+        parameters = SIO.parameter_adopt_teststep(parameters_dict)
+        if not all(list(parameters.values())):
+            raise DutTestError("yml parameters not found")
+
+        result_step = dut.step(step_1, parameters, purpose=" Verify routine control request"
+                              " respond with authentication method i.e. '0001' or 'FFFF' based"
+                              " on the security access level for programming session")
 
         if result_step:
-            result_step = dut.step(step_2, yml_parameters, purpose="Routine Control Request"
-                                                " Verification in Extended Session")
+            result_step = dut.step(step_2, parameters, purpose="Verify routine control request"
+                                   " with supported authentication method i.e. '0001' or 'FFFF' "
+                                   "based on the security access level for extended session")
 
         result = result_step
     except DutTestError as error:
