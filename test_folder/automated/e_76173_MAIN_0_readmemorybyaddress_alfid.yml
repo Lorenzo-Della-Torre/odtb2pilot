@@ -1,0 +1,6 @@
+hvbm_p519:
+    run:
+        alfid_14: '14'
+        alfid_24: '24'
+        message_14: '700000000A'
+        message_24: '70000000000A'
