@@ -94,6 +94,7 @@ hvbm_p519:
         e_67741_MAIN_2 : compliance_to_iso_14229_1 | Mentor responsible for testing their implementation
         e_488673_MAIN_0 : secoc_fv_options | We need a decision which option to use.
         e_469129_MAIN_2 : random_number_generation_security_access | Design/Review that we use the correct random number
+        e_469130_MAIN_2 : security_access_key_storage | <Reason>
 
     --Diag--:
         e_68012_MAIN_0 : support_for_external_output_signal_data_records_actual_output_signal | Diagnosis responsible need to evaluate
@@ -189,7 +190,6 @@ hvbm_p519:
         e_68082_MAIN_0 : support_for_other_internal_signal_data_records_defined_by_the_implementer | Design requirement. Not testable
         e_68083_MAIN_0 : access_to_other_internal_signal_data_records_defined_by_the_implementer | Design requirement. Not testable
         e_68084_MAIN_0 : individual_control_of_other_ecu_internal_signal_data_records_defined_by_the_implementer | Design requirement. Not testable
-        e_469130_MAIN_2 : security_access_key_storage | Add to inspection page
         e_67945_MAIN_1 : specification_of_supported_services_for_each_data_record | Design requirement. Implicitly tested by several requirements.
         e_481873_MAIN_0 : root_of_trust_key_provisioning | Not possible to read MAC or test this. Making this a DESIGN requirement.
         e_469129_MAIN_2 : random_number_generation_security_access | Design/Review that we use the correct random number
