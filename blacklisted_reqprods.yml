@@ -218,6 +218,7 @@ hvbm_p519:
         e_441094_MAIN_3 : sampling_criteria_for_dtc_snapshot_record_number_0x21_single_sample | DTC not implemented yet.
         e_72036_MAIN_7 : fault_detection_counter_10_fdc10 | DTC not implemented yet.
         e_76140_MAIN_1 : ecureset_11_hardReset | <Reason>
+        e_482735_MAIN_0 : storage_of_dtc_info | Easier to test on dSpace
 
     --vbf_modification--:
         e_53958__6 : complete_compatible_function_return_value | Need to modify VBFs to test the Compatible part
