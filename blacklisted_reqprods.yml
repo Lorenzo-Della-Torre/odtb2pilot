@@ -107,7 +107,7 @@ hvbm_p519:
         e_468870_MAIN_1 : secure_boot_initialization | <Reason>
         e_469024_MAIN_1 : secure_boot_design_validation | <Reason>
         e_52243__2 : supported_can_ids_2nd_part | <Reason>
-
+        e_469025_MAIN_1 : minimum_cryptographic_support | <Reason>
 
     --Diag--:
         e_68012_MAIN_0 : support_for_external_output_signal_data_records_actual_output_signal | Diagnosis responsible need to evaluate
@@ -271,6 +271,7 @@ hvbm_p519:
         e_404620_MAIN_1 : signing_method_sha256_rsa2048_public_key_algorithm | Implicitly tested when using SWDL
         e_404623_MAIN_0 : signing_method_sha256_rsa2048_key_size | Implicitly tested when using SWDL
         e_480624_MAIN_1 : security_access_key_usage | <Reason>
+        e_469025_MAIN_1 : minimum_cryptographic_support | <Reason>
 
 ihfa_v436:
     --NA--:
