@@ -95,6 +95,9 @@ hvbm_p519:
         e_488673_MAIN_0 : secoc_fv_options | We need a decision which option to use.
         e_469129_MAIN_2 : random_number_generation_security_access | Design/Review that we use the correct random number
         e_469130_MAIN_2 : security_access_key_storage | <Reason>
+        e_473644_MAIN_1 : secure_boot_key_protection | <Reason>
+        e_468870_MAIN_1 : secure_boot_initialization | <Reason>
+        e_469024_MAIN_1 : secure_boot_design_validation | <Reason>
 
     --Diag--:
         e_68012_MAIN_0 : support_for_external_output_signal_data_records_actual_output_signal | Diagnosis responsible need to evaluate
@@ -207,6 +210,9 @@ hvbm_p519:
         e_53863__2 : sample_mode | Single sample mode is the preferred operating mode at 500 kbit/s.
         e_481875_MAIN_0 : random_number_generator_validation | This can't be tested with standard SW. Need special tools.
         e_418471_MAIN_3 : public_key_data_record_write | This test needs to be manually tested.
+        e_480600_MAIN_2 : disable_hardware_debug_interfaces_to_hsm | This needs to be manually tested.
+        e_469023_MAIN_1 : action_on_failure | This test to be manually tested.
+        e_469233_MAIN_3 : protect_hardware_debug_interfaces | This test to be manually tested.
 
     --dSpace--:
         e_115621_MAIN_4 : support_for_dtc_status_indicator_30_warning_indicator_requested_since_last_clear | DTC not implemented yet.
@@ -247,6 +253,14 @@ hvbm_p519:
         e_76513_MAIN_1 : component_selection_can_physical_interfaces | This is hw req, need to hand-over to BMS team. (LEAR HW can't fulfill this)
         e_76695_MAIN_2 : request_transfer_exit | Breaks testrun. Temporarily excluded
         e_76690_MAIN_3 : transfer_data | Breaks testrun. Temporarily excluded
+        e_469411_MAIN_1 : system_hardening_follow_industry_accepted_processes | <Reason>
+
+    --Implicit--:
+        e_410732_MAIN_0 : default_signing_method | Implicitly tested when using SWDL
+        e_404598_MAIN_0 : signing_method_sha256_rsa2048_hash_function | Implicitly tested when using SWDL
+        e_404620_MAIN_1 : signing_method_sha256_rsa2048_public_key_algorithm | Implicitly tested when using SWDL
+        e_404623_MAIN_0 : signing_method_sha256_rsa2048_key_size | Implicitly tested when using SWDL
+        e_480624_MAIN_1 : security_access_key_usage | <Reason>
 
 ihfa_v436:
     --NA--:
