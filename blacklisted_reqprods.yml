@@ -189,7 +189,6 @@ hvbm_p519:
         e_484130_MAIN_0 : positive_response_on_start_routine | Push to application team
         e_72177_MAIN_1 : check_programming_pre_conditions_routine | Should be tested by application team
         e_391191_MAIN_1 : ecu_operation_cycle | Decided that it is for the application team Carcom.
-        e_481870_MAIN_0 : security_access_protected_services | Changed category to APP
         e_181435_MAIN_3 : e2e_crc_calculation | Changed to application team (Mascot)
         e_55619__1 : application_layer | APPL. Already tested in DVA.
         e_438801_MAIN_1 : remote_vehicle_data_collection_rvdc_data_record | For Application Team.
@@ -206,6 +205,7 @@ hvbm_p519:
         e_67945_MAIN_1 : specification_of_supported_services_for_each_data_record | Design requirement. Implicitly tested by several requirements.
         e_481873_MAIN_0 : root_of_trust_key_provisioning | Not possible to read MAC or test this. Making this a DESIGN requirement.
         e_469129_MAIN_2 : random_number_generation_security_access | Design/Review that we use the correct random number
+        e_481870_MAIN_0 : security_access_protected_services | This is a general design requirement that all teams has to be aware of but can not be tested.
 
     --Deviation--:
         e_468872_MAIN_2 : secure_boot_process | This will bypass chain-of-trust in some occasions
