@@ -59,6 +59,7 @@ hvbm_p519:
         e_76490_MAIN_0 : write_memory_by_address_alfid | Not applicable. This service is not used by Volvo Car Corporation.
         e_76489_MAIN_0 : write_memory_by_address_3d | Not applicable. This service is not used by Volvo Car Corporation.
         e_76683_MAIN_2 : requestupload | Not applicable because it is not requested by Mentor.
+        e_486601_MAIN_0 : event_type_debugger_authentication | Not applicable because disable the debugger port
 
     --Inspection--:
         e_481878_MAIN_0 : interface_to_tee_cryptographic_operations | ETAS provides API. Inspect that we have received those files
