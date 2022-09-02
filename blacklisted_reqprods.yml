@@ -40,7 +40,7 @@ hvbm_p519:
         e_488674_MAIN_0 : secoc_fv_option_0_no_fv_used | This not an option since we use FV from timesync
         e_488675_MAIN_0 : secoc_fv_option_1_full_fv_sent_in_pdu | We have only 64bit in CAN message
         e_480627_MAIN_1 : distribution_of_the_security_access_keys_to_ecu_suppliers | Should set initial key to FF. If any other key needs to be configured it should be done at HW end of line
-        e_52687_-_2 : data_compression_method_1_parameters | Not in use any longer.
+        e_52687____2 : data_compression_method_1_parameters | Not in use any longer.
         e_68182_MAIN_3 : security_constant_data_record | Security constant is not implemented
         e_458730_MAIN_1 : set_dtc_prepassed_prefailed_routine | There is another way to test it
         e_458755_MAIN_1 : start_new_operation_cycle_routine | There is another way to test it
@@ -92,7 +92,7 @@ hvbm_p519:
         e_488670_MAIN_0 : secoc_timestamp_format | Check that we follow the AUTOSAR StbM specification
         e_161873_MAIN_2 : car_mode_data_record | This can be tested on HILding but 2A not implemented yet.
         e_353876_MAIN_3 : autosar_version | Developer need deviation for version of AUTOSAR 
-        e_53855_-_1 : sbl_in_volatile_memory | Verify that SBL is stored in volatile memory.
+        e_53855____1 : sbl_in_volatile_memory | Verify that SBL is stored in volatile memory.
         e_487898_MAIN_1 : secoc_configurations_in_ecu_extract | Need to verify that use ECU extract from Volvo.
         e_487887_MAIN_1 : secoc_profile_configuration_crypto_algorithm | Inspect in configuration file or tool
         e_487877_MAIN_1 : secoc_fvm_solution | Need to be sure it is a new message. We will use use the timesync module. Will calculate the time between the sending and receiving.
@@ -259,6 +259,11 @@ hvbm_p519:
         e_488878_MAIN_0 : sec_oc_did_for_sec_oc_verification_failures | SecOC not implemented yet
         e_486608_MAIN_0 : event_type_secure_on_board_communication | SecOC not implemented yet
         e_487902_MAIN_1 : sec_oc_key_type_structure | SecOC not implemented yet
+        e_469414_MAIN_2 : secoc_message_verification_handling_of_too_many_invalid_attempts | SecOC not implemented yet
+        e_487972_MAIN_1 : secoc_cluster_key_identifier_storage | SecOC not implemented yet
+        e_487906_MAIN_1 : secoc_key_programmed_status_diagnostic_trouble_code | SecOC not implemented yet
+        e_469403_MAIN_2 : secoc_default_development_key | SecOC not implemented yet
+        e_487892_MAIN_1 : sec_oc_profile_configuration_mac_truncation | SecOC not implemented yet
 
     --Excluded--:
         e_76513_MAIN_1 : component_selection_can_physical_interfaces | This is hw req, need to hand-over to BMS team. (LEAR HW can't fulfill this)
