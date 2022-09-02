@@ -1,0 +1,4 @@
+hvbm_p519:
+  run:
+      did: 'EDA0'
+      number_of_frames: 1
