@@ -47,7 +47,6 @@ Any unauthorized copying or distribution of content from this file is prohibited
 """
 
 import logging
-import inspect
 import time
 
 from supportfunctions.support_can import SupportCAN, CanParam, PerParam, CanMFParam

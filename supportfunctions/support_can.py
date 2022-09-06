@@ -236,7 +236,7 @@ class SupportCAN:
         # Format signal to be better readable
         return ([my_signal.signal[0].timestamp/1000000,\
                  my_signal.signal[0].id.name,\
-                 my_signal.signal[0].raw.hex()])
+                 my_signal.signal[0].raw.hex().upper()])
 
     @classmethod
     def display_signals_available(cls, can_p: CanParam):
@@ -666,7 +666,7 @@ class SupportCAN:
             #check payloadlength first
             if (0x100000000000  + mess_length) > 0x1000ffffffff :
                 logging.error("Payload to big to fit in message: %s ", mess_length)
-            
+
             #check if mess_length would fit into a classic mess_length (<0xfff)
             #if so use that format
             if mess_length < 0x1000:
@@ -758,14 +758,14 @@ class SupportCAN:
         can_p["receive"] = can_p["receive"] = r_var
         """
         time_start = time.time()
-        last_frame = b'\x00'
+        last_frame = '00'
 
         # wait for FC frame to arrive (max 1 sec)
         # take last frame received
         if self.can_frames[can_p["receive"]]:
             last_frame = self.can_frames[can_p["receive"]][-1][2]
         logging.debug("Try to get FC frame")
-        while ((time.time() - time_start)*1000 < timeout_ms) and (last_frame[0]>>4 != 3):
+        while ((time.time() - time_start)*1000 < timeout_ms) and (int(last_frame[0:1]) != 3):
             if self.can_frames[can_p["receive"]] != []:
                 last_frame = self.can_frames[can_p["receive"]][-1][2]
         #ToDo: if FC timed out: delete message to send # pylint: disable=fixme
@@ -775,11 +775,11 @@ class SupportCAN:
             return "Error: FC timed out, message discarded"
 
         # continue as stated in FC
-        if last_frame[0]>>4 == 3:
+        if int(last_frame[0:1]) == 3:
             # fetch next CAN frames to send
-            frame_control_flag = last_frame[0] & 15 # take last nibble
-            block_size = last_frame[1]
-            separation_time = last_frame[2]
+            frame_control_flag = int(last_frame[1:2], 16)
+            block_size = int(last_frame[2:4], 16)
+            separation_time = int(last_frame[4:6], 16)
 
             # safe CF received for later analysis
             self.can_cf_received[can_p["receive"]].\
