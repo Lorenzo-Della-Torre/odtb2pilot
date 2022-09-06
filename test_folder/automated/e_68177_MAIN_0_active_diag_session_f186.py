@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,238 +18,196 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-testscript: Hilding MEPII
-project:   BECM basetech MEPII
-author:    GANDER10 (Gustav Andersson)
-date:      2020-12-23
-version:   1.0
-reqprod:   68177
-
-title:
-    Active Diagnostic Session Data Record ; 1
-
-purpose:
+reqprod: 68177
+version: 0
+title: : Active diagnostic session data record
+purpose: >
     To enable readout of the active diagnostic session.
 
-description:
-    A data record with identifier as specified in the
-    table below shall be implemented exactly
-    as defined in Carcom - Global Master Reference Database.
+description: >
+    A data record with identifier as specified in the table below shall be implemented exactly as
+    defined in Carcom - Global Master Reference Database.
+    • It shall be possible to read the data record by using the diagnostic service specified in
+      Ref[LC : Volvo Car Corporation - UDS Services - Service 0x22 (ReadDataByIdentifier) Reqs].
 
-    Description	Identifier
-    Active diagnostic session	F186
+      *************************************************
+        Description	                    Identifier
+      *************************************************
+        Active diagnostic session      	  F186
+      *************************************************
 
-    •	It shall be possible to read the data record by
-        using the diagnostic service specified in Ref
-        [LC : Volvo Car Corporation - UDS Services -
-        Service 0x22 (ReadDataByIdentifier) Reqs].
+    The identifier shall be implemented in the following sessions:
+    • Default session
+    • Programming session (which includes both primary and secondary bootloader)
+    • Extended Session
 
-    The identifier shall be implemented in the following
-    sessions:
-    •	Default session
-    •	Programming session
-            (which includes both primary and secondary bootloader)
-    •	Extended Session
-
-details:
-    Sends ReadDataByIdentifier(F186) in all sessions and
-    verifying a positive response and validates the data.
-    In programming session both PBL and SBL are tested.
+details: >
+    Verify positive response and validate the data in all sessions by reading DID 'F186' using
+    ReadDataByIdentifier(0x22) service
 """
 
-from datetime import datetime
-import sys
-import time
 import logging
-
-import odtb_conf
-
-from supportfunctions.support_can import SupportCAN, CanParam, CanTestExtra, CanPayload
-from supportfunctions.support_test_odtb2 import SupportTestODTB2
-from supportfunctions.support_carcom import SupportCARCOM
-from supportfunctions.support_file_io import SupportFileIO
-from supportfunctions.support_precondition import SupportPrecondition
-from supportfunctions.support_postcondition import SupportPostcondition
-from supportfunctions.support_service22 import SupportService22
-from supportfunctions.support_service10 import SupportService10
+from hilding.dut import Dut
+from hilding.dut import DutTestError
 from supportfunctions.support_SBL import SupportSBL
-from supportfunctions.support_sec_acc import SecAccessParam
+from supportfunctions.support_can import SupportCAN
+from supportfunctions.support_test_odtb2 import SupportTestODTB2
+from supportfunctions.support_service22 import SupportService22
 
 SSBL = SupportSBL()
-SIO = SupportFileIO
 SC = SupportCAN()
 SUTE = SupportTestODTB2()
-SC_CARCOM = SupportCARCOM()
-PREC = SupportPrecondition()
-POST = SupportPostcondition()
-SE10 = SupportService10()
 SE22 = SupportService22()
 
-def read_data_by_identifier(can_p, session, boot, step):
+
+def verify_active_diagnostic_session(dut, mode, session):
     """
-    Step read data by identifier (F186).
-    Read and verify response from the different sessions.
-    In programming both PBL and SBL.
+    Verify active diagnostic session
+    Args:
+        dut (Dut): An instance of Dut
+        mode (int): Diagnostic session mode
+        session (str): Diagnostic session
+    Returns:
+        (bool): True on successfully verifying active diagnostic session
     """
-    if session == 'Programming session':
-        purpose = f"ReadDataByIdentifier (F186) in {session} ({boot})."
+    # Read active diagnostic session
+    response = dut.uds.active_diag_session_f186()
+
+    # Verify active diagnostic session
+    valid_response = '0462F1860' + str(mode)
+
+    if response.raw[0:10] == valid_response:
+        logging.info("Received positive response %s for request ReadDataByIdentifier in %s session",
+                     response.raw[0:10], session)
+        return True
+
+    logging.error("Test Failed: Expected positive response %s for request ReadDataByIdentifier in"
+                  " %s session, received %s", valid_response, session, response.raw)
+    return False
+
+
+def verify_pbl_sbl_session(dut, mode_is_pbl=False):
+    """
+    Verify active programming session (PBL/SBL)
+    Args:
+        dut (Dut): An instance of Dut
+        mode_is_pbl (bool): True/False
+    Return:
+        result (bool): True when ECU is in expected session
+    """
+    eda0_result = SE22.read_did_eda0(dut)
+    logging.info("Complete part/serial received: %s", SC.can_messages[dut["receive"]])
+
+    # Check PBL/SBL session
+    if mode_is_pbl:
+        result = eda0_result and SUTE.test_message(SC.can_messages[dut["receive"]],
+                                                                  teststring='F121')
     else:
-        purpose = f"ReadDataByIdentifier (F186) in {session}"
-
-    etp: CanTestExtra = {
-        "step_no": step,
-        "purpose" : purpose,
-        "timeout" : 1,
-        "min_no_messages" : -1,
-        "max_no_messages" : -1
-    }
-    SIO.parameter_adopt_teststep(etp)
-
-    cpay: CanPayload = {
-        "payload": SC_CARCOM.can_m_send("ReadDataByIdentifier",
-                                        b'\xF1\x86',
-                                        b''),
-        "extra": ''
-    }
-    SIO.parameter_adopt_teststep(cpay)
-
-    result = SUTE.teststep(can_p, cpay, etp)
-
-    if session == 'Default session':
-        result = result and evaluate_response(can_p, '0462F18601')
-    elif session == 'Programming session':
-        result = result and evaluate_response(can_p, '0462F18602')
-    elif session == 'Extended session':
-        result = result and evaluate_response(can_p, '0462F18603')
-
+        result = eda0_result and SUTE.test_message(SC.can_messages[dut["receive"]],
+                                                                  teststring='F122')
     return result
 
-def print_nrc(can_p):
-    """
-    Get and log NRC (Negative return code).
-    """
-    logging.info("NRC: %s\n",
-                 SUTE.pp_can_nrc(
-                 SC.can_messages[can_p["receive"]][0][2][6:8]))
 
-def evaluate_response(can_p, valid_data):
+def download_and_activate_sbl(dut):
     """
-    Log result of data comparison (true/false)
-    If it was a NRC - pretty print number and corresponding string
-    If comparison is false and data does not contain a NRC log as unexpected.
-    Finally, return result.
+    Download and activation of SBL
+    Args:
+        dut (Dut): An instance of Dut
+    Returns:
+        (bool): True on SBL activation
     """
-    # Check if empty
-    if not can_p["receive"]:
-        logging.info("No data in can_p['receive']\n")
+    # Loads the rig specific VBF files
+    vbf_result = SSBL.get_vbf_files()
+    if not vbf_result:
+        logging.error("Test Failed: Unable to load VBF files")
         return False
 
-    nrc = SC.can_messages[can_p["receive"]][0][2][0:4] == '037F'
-    result = SUTE.test_message(SC.can_messages[can_p["receive"]],
-                               teststring=valid_data)
-    # Log result
-    logging.info("Result: %s\n", result)
+    # Download and activate SBL
+    sbl_result = SSBL.sbl_dl_activation(dut, sa_keys=dut.conf.default_rig_config)
+    if not sbl_result:
+        logging.error("Test Failed: SBL activation failed")
+        return False
 
-    # Check if it was a negative return code. If so, print.
-    if nrc:
-        print_nrc(can_p)
+    logging.info("SBL activation successful")
+    return True
 
-    # If its not result and not a NRC possible corrupt message.
-    if not result and not nrc:
-        logging.info("Unexpected data received: %s\n",
-                     SC.can_messages[can_p["receive"]][0][2])
-    return result
+
+def step_1(dut: Dut):
+    """
+    action: Read DID 'F186' and verify active diagnostic session is default
+    expected_result: True on successfully verifying active diagnostic session as default
+    """
+    return verify_active_diagnostic_session(dut, mode=1, session='default')
+
+
+def step_2(dut: Dut):
+    """
+    action: Read DID 'F186' and verify active diagnostic session is extended
+    expected_result: True on successfully verifying active diagnostic session as extended
+    """
+    # Set to extended session
+    dut.uds.set_mode(3)
+
+    return verify_active_diagnostic_session(dut, mode=3, session='extended')
+
+
+def step_3(dut: Dut):
+    """
+    action: Read DID 'F186' and verify active diagnostic session is programming
+    expected_result: True on successfully verifying active diagnostic session as programming in
+                     both PBL and SBL
+    """
+    # Set to programming session
+    dut.uds.set_mode(2)
+
+    result = verify_pbl_sbl_session(dut, mode_is_pbl=True)
+    if not result:
+        return False
+
+    result = verify_active_diagnostic_session(dut, mode=2, session='programming')
+    if not result:
+        return False
+
+    result = download_and_activate_sbl(dut)
+    if not result:
+        return False
+
+    result = verify_pbl_sbl_session(dut, mode_is_pbl=False)
+    if not result:
+        return False
+
+    return verify_active_diagnostic_session(dut, mode=2, session='programming')
+
 
 def run():
     """
-    Run - Call other functions from here
+    Verify positive response and validate the data in all sessions by reading DID 'F186' using
+    ReadDataByIdentifier(0x22) service
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+    dut = Dut()
 
-    # Where to connect to signal_broker
-    can_p: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(
-            odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        "send" : "Vcu1ToBecmFront1DiagReqFrame",
-        "receive" : "BecmToVcu1Front1DiagResFrame",
-        "namespace" : SC.nspace_lookup("Front1CANCfg0")
-    }
-    SIO.parameter_adopt_teststep(can_p)
+    start_time = dut.start()
+    result = False
+    result_step = False
 
-    logging.info("Testcase start: %s", datetime.now())
-    starttime = time.time()
-    logging.info("Time: %s \n", time.time())
+    try:
+        dut.precondition(timeout=100)
 
-    ############################################
-    # precondition
-    ############################################
-    SSBL.get_vbf_files()
+        result_step = dut.step(step_1, purpose="Read DID 'F186' and verify active diagnostic"
+                                               " session is default")
+        if result_step:
+            result_step = dut.step(step_2, purpose="Read DID 'F186' and verify active diagnostic"
+                                                   " session is extended")
+        if result_step:
+            result_step = dut.step(step_3, purpose="Read DID 'F186' and verify active diagnostic"
+                                                   " session is programming")
+        result = result_step
 
-    timeout = 200
-    result = PREC.precondition(can_p, timeout)
+    except DutTestError as error:
+        logging.error("Test failed: %s", error)
+    finally:
+        dut.postcondition(start_time, result)
 
-    #Init parameter for SecAccess Gen1/Gen2
-    sa_keys: SecAccessParam = {
-        "SecAcc_Gen": 'Gen1',
-        "fixed_key": 'FFFFFFFFFF',
-        "auth_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF',
-        "proof_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
-    }
-    SIO.parameter_adopt_teststep(sa_keys)
-
-    if result:
-        ############################################
-        # teststeps
-        ############################################
-        # Step 1:
-        # Action: Make sure default session is set.
-        # Result: ECU responds with positive message.
-        result = result and SE10.diagnostic_session_control_mode1(can_p, 1)
-
-        # Step 2:
-        # Action: Read active diagnostic session.
-        # Result: ECU responds with a positive message.
-        result = result and read_data_by_identifier(
-            can_p, 'Default session', None, 2)
-
-        # Step 3:
-        # Action: Change to extended session.
-        # Result: ECU responds with positive message.
-        result = result and SE10.diagnostic_session_control_mode3(can_p, 3)
-
-        # Step 4:
-        # Action: Read active diagnostic session.
-        # Result: ECU responds with a positive message.
-        result = result and read_data_by_identifier(
-            can_p, 'Extended session', None, 4)
-
-        # Step 5:
-        # Action: Change to programming session.
-        # Result: ECU responds with positive message.
-        result = result and SE10.diagnostic_session_control_mode2(can_p, 5)
-
-        # Step 6:
-        # Action: Read active diagnostic session in primary bootloader.
-        # Result: ECU responds with a positive message.
-        result = result and read_data_by_identifier(
-            can_p, 'Programming session', 'Primary bootloader', 6)
-
-        # Step 7:
-        # Action: Activate secondary bootloader.
-        # Result: ECU responds with a positive message.
-        result = result and SSBL.sbl_activation(
-            can_p, sa_keys, stepno='7', purpose="Activate Secondary bootloader")
-
-        # Step 8:
-        # Action: Read active diagnostic session in secondary bootloader.
-        # Result: ECU responds with a positive message.
-        result = result and read_data_by_identifier(
-            can_p, 'Programming session', 'Secondary bootloader', 8)
-
-    ############################################
-    # postCondition
-    ############################################
-    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()
