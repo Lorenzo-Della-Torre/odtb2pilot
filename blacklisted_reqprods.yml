@@ -102,7 +102,6 @@ hvbm_p519:
         e_488702_MAIN_0 : secoc_configuration_secocrxacceptancewindow | <reason>
         e_67741_MAIN_2 : compliance_to_iso_14229_1 | Mentor responsible for testing their implementation
         e_488673_MAIN_0 : secoc_fv_options | We need a decision which option to use.
-        e_469129_MAIN_2 : random_number_generation_security_access | Design/Review that we use the correct random number
         e_469130_MAIN_2 : security_access_key_storage | <Reason>
         e_473644_MAIN_1 : secure_boot_key_protection | <Reason>
         e_468870_MAIN_1 : secure_boot_initialization | <Reason>
@@ -205,7 +204,7 @@ hvbm_p519:
         e_68084_MAIN_0 : individual_control_of_other_ecu_internal_signal_data_records_defined_by_the_implementer | Design requirement. Not testable
         e_67945_MAIN_1 : specification_of_supported_services_for_each_data_record | Design requirement. Implicitly tested by several requirements.
         e_481873_MAIN_0 : root_of_trust_key_provisioning | Not possible to read MAC or test this. Making this a DESIGN requirement.
-        e_469129_MAIN_2 : random_number_generation_security_access | Design/Review that we use the correct random number
+        e_469129_MAIN_2 : random_number_generation_security_access | Design requirement
         e_481870_MAIN_0 : security_access_protected_services | This is a general design requirement that all teams has to be aware of but can not be tested.
 
     --Deviation--:
