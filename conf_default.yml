@@ -19,7 +19,7 @@ platforms:
         signal_receive: 'FiocToFiocdpFioc1canUdsDiagResponseFrame'
         signal_periodic: 'FiocdpFioc1canNMFr'
         signal_tester_present: 'FiocdpToAllFioc1canUdsDiagRequestFrame'
-        namespace: 'Front1CANCfg0'
+        namespace: 'FIOC1CAN'
         send: 'FiocdpToFiocFioc1canUdsDiagRequestFrame'
         receive: 'FiocToFiocdpFioc1canUdsDiagResponseFrame'
         id: 'FiocdpFioc1canNMFr'

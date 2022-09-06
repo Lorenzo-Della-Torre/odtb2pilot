@@ -98,14 +98,18 @@ class SupportPrecondition:
         # start heartbeat, repeat every 0.4 second
         hb_param: PerParam = {
             "name" : "Heartbeat",
-            "send" : True,
+            "send2" : True,
+            "protocol": 'can',
+            "framelength_max": 8,
+            "padding" : True,
             "id" : "BecmFront1NMFr",
             "nspace" : can_p["namespace"],
             "frame" : b'\x1A\x40\xC3\xFF\x01\x00\x00\x00',
             "intervall" : 0.4
             }
         #Read current function name from stack:
-        SIO.extract_parameter_yml(str(inspect.stack()[0][3]), hb_param)
+        SIO.parameter_adopt_teststep(hb_param)
+        hb_param["send"] = True
         logging.debug("hb_param %s", hb_param)
 
         # start heartbeat, repeat every x second
@@ -114,9 +118,7 @@ class SupportPrecondition:
         #Start testerpresent without reply
         tp_name = "Vcu1ToAllFuncFront1DiagReqFrame"
         #Read current function name from stack:
-        new_tp_name = SIO.extract_parameter_yml(
-            str(inspect.stack()[0][3]),
-            "tp_name")
+        new_tp_name = SIO.parameter_adopt_teststep("tp_name")
 
         if new_tp_name != '':
             tp_name = new_tp_name
@@ -182,17 +184,17 @@ class SupportPrecondition:
         logging.info("Precondition: Sending burst")
         id_burst = "Vcu1ToAllFuncFront1DiagReqFrame"
         #Read current function name from stack:
-        new_id_burst = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), "id_burst")
+        new_id_burst = SIO.parameter_adopt_teststep("id_burst")
         if new_id_burst != '':
             id_burst = new_id_burst
-        SIO.extract_parameter_yml(str(inspect.stack()[0][3]), id_burst)
+        SIO.parameter_adopt_teststep(id_burst)
 
         frame_burst = b'\x02\x10\x82\x00\x00\x00\x00\x00'
         #Read current function name from stack:
-        new_frame_burst = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), "frame_burst")
+        new_frame_burst = SIO.parameter_adopt_teststep("frame_burst")
         if new_frame_burst != '':
             frame_burst = new_frame_burst
-        SIO.extract_parameter_yml(str(inspect.stack()[0][3]), frame_burst)
+        SIO.parameter_adopt_teststep(frame_burst)
 
         burst_param: PerParam = {
             "name" : "Burst",
@@ -224,7 +226,7 @@ class SupportPrecondition:
         #Start testerpresent without reply
         tp_name = "Vcu1ToAllFuncFront1DiagReqFrame"
         #Read current function name from stack:
-        new_tp_name = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), "tp_name")
+        new_tp_name = SIO.parameter_adopt_teststep("tp_name")
         if new_tp_name != '':
             tp_name = new_tp_name
         logging.debug("New tp_name: %s", tp_name)
@@ -255,7 +257,7 @@ class SupportPrecondition:
         SC.change_mf_fc(can_p2["receive"], can_mf)
 
         pn_sn_list = []
-        SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'pn_sn_list')
+        SIO.parameter_adopt_teststep('pn_sn_list')
 
         result = SE22.read_did_eda0(can_p, pn_sn_list)
         logging.info("Precondition testok: %s\n", result)
