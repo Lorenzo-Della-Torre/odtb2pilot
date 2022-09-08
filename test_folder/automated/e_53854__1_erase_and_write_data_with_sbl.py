@@ -33,6 +33,7 @@ details: >
     Verify PBL fails to erase and write data to the non-volatile memory
 """
 
+import time
 import logging
 from hilding.dut import Dut
 from hilding.dut import DutTestError
@@ -107,6 +108,9 @@ def step_1(dut: Dut):
     if not result:
         logging.error("Test Failed: Routine control requestsid prog preconditions unsuccessful")
         return False
+
+    #Sleep time to avoid NRC37
+    time.sleep(5)
 
     # Set to programming session
     dut.uds.set_mode(2)

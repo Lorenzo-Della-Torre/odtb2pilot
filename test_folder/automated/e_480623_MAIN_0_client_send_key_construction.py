@@ -54,6 +54,7 @@ details: >
     3. Decrypt encrypted data using AES-CTR and verify client proof of ownership
 """
 
+import time
 import logging
 from Crypto.Util import Counter
 from Crypto.Hash import CMAC
@@ -231,6 +232,9 @@ def step_1(dut: Dut):
     action: Set to programming session, security access to ECU and get subfunctions response.
     expected_result: True with security access messages of all subfunctions when ECU unlocked
     """
+    #Sleep time to avoid NRC37
+    time.sleep(5)
+
     dut.uds.set_mode(2)
     sa_response_dict = security_access(dut)
     if sa_response_dict is None:

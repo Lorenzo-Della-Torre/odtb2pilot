@@ -110,6 +110,9 @@ def step_1(dut: Dut):
     """
 
     timer = False
+    #Sleep time to avoid NRC37
+    time.sleep(5)
+
     response_dict = security_access_method(dut, timer)
     if response_dict is not None:
         if response_dict['response_id'] == '67':
