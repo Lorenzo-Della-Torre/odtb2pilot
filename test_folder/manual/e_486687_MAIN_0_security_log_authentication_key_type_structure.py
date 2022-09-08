@@ -1,4 +1,5 @@
 """
+
 /*********************************************************************************/
 
 
@@ -45,12 +46,10 @@ description: >
     Failed to write key inside ECU, E,g, Failed to write key inside hardware security module
     (generalProgrammingFailure).
 
-
-
 details: >
-    Verify Security Log Authentication key type structure with WriteDataByIdentifier request
-    with Correct CRC to get conditions not correct or generalProgrammingFailure and incorrect
-    CRC(0xFFFF) to get request out of range.
+    Verify security log authentication key type structure with WriteDataByIdentifier request
+    with correct CRC to get NRC 22(conditionsNotCorrect) or NRC 72(generalProgrammingFailure) and
+    incorrect CRC(0xFFFF) to get NRC 31(requestOutOfRange).
 """
 
 import logging
@@ -63,105 +62,101 @@ from supportfunctions.support_test_odtb2 import SupportTestODTB2
 
 SC_CARCOM = SupportCARCOM()
 SE27 = SupportService27()
-SIO = SupportFileIO
+SIO = SupportFileIO()
 SUTE = SupportTestODTB2()
 
 
-def step_1(dut: Dut):
+def step_1(dut):
     """
-    action: Verify WriteDataByIdentifier request with correct CRC to get conditions not correct
-            or generalProgrammingFailure
-    expected_result: True on receiving conditions not correct or generalProgrammingFailure
+    action: Security access in programming session
+    expected_result: True when security access successful in programming session
     """
-    # Define did from yml file
-    parameters_dict = { 'did': '',
-                        'security_log_authentication_key_data_record':'',
-                        'security_log_authentication_key_checksum':''
-                    }
-    parameters = SIO.parameter_adopt_teststep(parameters_dict)
-
-    if not all(list(parameters.values())):
-        logging.error("Test Failed: yml parameter not found")
-        return False, None
-
     dut.uds.set_mode(2)
-    # Security access to ECU
-    security_access = SE27.activate_security_access_fixedkey(dut, dut.conf.default_rig_config,
-                                                            step_no=272, purpose="SecurityAccess")
-    if not security_access:
-        logging.error("Test Failed: security access denied in extended session")
-        return False, None
+    result = SE27.activate_security_access_fixedkey(dut, sa_keys=dut.conf.default_rig_config)
+    if not result:
+        logging.error("Test Failed: Security access denied in programming session")
+        return False
 
-    result = False
-    sa_key_32byte = parameters['security_log_authentication_key_data_record']
-    crc = SUTE.crc16(bytearray(sa_key_32byte.encode('utf-8')))
+    return True
+
+
+def step_2(dut, parameters):
+    """
+    action: Verify WriteDataByIdentifier request with correct CRC
+    expected_result: True when received 7F and NRC 22(conditionsNotCorrect) or 7F and NRC 72
+                     (generalProgrammingFailure)
+    """
+    sec_key = parameters['sec_key']
+    crc = SUTE.crc16(bytearray(sec_key.encode('utf-8')))
     crc_hex = hex(crc)
-    message = bytes.fromhex(parameters['did'] +
-              parameters['security_log_authentication_key_data_record'] + crc_hex[2:])
+    message = bytes.fromhex(parameters['did'] + sec_key + crc_hex[2:])
+    payload = SC_CARCOM.can_m_send("WriteDataByIdentifier", message, b'')
 
     # 1st Request WriteDataByIdentifier
-    response = dut.uds.generic_ecu_call(SC_CARCOM.can_m_send("WriteDataByIdentifier",
-                                                             message, b''))
-    if response[2:4] == '6E' and response[4:8] == parameters['did']:
-        logging.info("Received Positive Response %s for request WriteDataByIdentifier "
-                                                        , response[2:4])
-        # 2nd Request WriteDataByIdentifier
-        response = dut.uds.generic_ecu_call(SC_CARCOM.can_m_send("WriteDataByIdentifier",
-                                                             message, b''))
+    response = dut.uds.generic_ecu_call(payload)
+    if response.raw[2:4] != '6E' and response.raw[4:8] != parameters['did']:
+        logging.error("Test Failed: Expected positive response, but received %s", response.raw)
+        return False
 
-        if response[2:4] == '7F' :
-            if response[6:8] == '72' or response[6:8] == '22':
-                logging.info("Received NRC %s for request WriteDataByIdentifier as expected "
-                        "(General Programming Failure or Conditions Not Correct)", response[6:8])
-                result = True
+    # 2nd Request WriteDataByIdentifier
+    response = dut.uds.generic_ecu_call(payload)
+    if response.raw[2:4] != '7F':
+        if response.raw[6:8] != '72' or response.raw[6:8] != '22':
+            logging.error("Test Failed: Expected 7F and NRC 22(conditionsNotCorrect) or 7F and "
+                          "NRC 72 (generalProgrammingFailure), but received %s", response.raw)
+            return False
 
-    return result, parameters
+    logging.info("WriteDataByIdentifier request with correct CRC is successful")
+    return True
 
 
-def step_2(dut: Dut, parameters):
+def step_3(dut, parameters):
     """
-    action: Verify WriteDataByIdentifier request with incorrect CRC(0xFFFF) to get request
-            out of range.
-    expected_result: True on receiving request out of range
+    action: Verify WriteDataByIdentifier request with incorrect CRC(0xFFFF)
+    expected_result: True when received 7F and NRC 31(requestOutOfRange)
     """
-    result = False
-    crc = 'FFFF'
-    crc_hex = hex(crc)
-    message = bytes.fromhex(parameters['did'] +
-              parameters['security_log_authentication_key_data_record'] + crc_hex[2:])
+    crc = 'FFFF'.encode('utf-8')
+    crc_hex = crc.hex()
+    message = bytes.fromhex(parameters['did'] + parameters['sec_key'] + crc_hex[2:])
+    payload = SC_CARCOM.can_m_send("WriteDataByIdentifier", message, b'')
 
-    response = dut.uds.generic_ecu_call(SC_CARCOM.can_m_send("WriteDataByIdentifier",
-                                                             message, b''))
-
+    response = dut.uds.generic_ecu_call(payload)
     if response.raw[2:4] == '7F' and response.raw[6:8] == '31':
-        logging.info("Received NRC %s for request WriteDataByIdentifier as expected"
-                     "(Request out of Range)", response[6:8])
-        result = True
+        logging.info("Received 7F and NRC 31 for request WriteDataByIdentifier as expected")
+        return True
 
-    return result
+    logging.error("Test Failed: Expected 7F and NRC 31, but received %s", response.raw)
+    return False
 
 
 def run():
     """
-    Verify Security Log Authentication key type structure
+    Verify security log authentication key type structure
     """
     dut = Dut()
 
     start_time = dut.start()
     result = False
     result_step = False
+
+    parameters_dict = {'did': '',
+                       'sec_key': ''}
+
     try:
         dut.precondition(timeout=60)
 
-        result_step, parameters = dut.step(step_1, purpose=" Verify WriteDataByIdentifier with "
-                                                           "correct CRC to get conditions not "
-                                                           "correct or generalProgrammingFailure")
+        parameters = SIO.parameter_adopt_teststep(parameters_dict)
 
+        if not all(list(parameters.values())):
+            raise DutTestError("yml parameters not found")
+
+        result_step = dut.step(step_1, purpose="Security access in programming session")
         if result_step:
-            result_step = dut.step(step_2, parameters, purpose=" Verify WriteDataByIdentifier "
-                                                              "request with incorrect CRC(0xFFFF) "
-                                                              "to get request out of range ")
-
+            result_step = dut.step(step_2, parameters, purpose="Verify WriteDataByIdentifier "
+                                                               "request with correct CRC")
+        if result_step:
+            result_step = dut.step(step_3, parameters, purpose="Verify WriteDataByIdentifier "
+                                                               "request with incorrect CRC")
         result = result_step
 
     except DutTestError as error:
