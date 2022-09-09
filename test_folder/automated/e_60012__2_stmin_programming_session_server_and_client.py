@@ -197,6 +197,9 @@ def run():
         # action: Request Security Access to be able to unlock the server(s)
         #         and run the primary bootloader.
         # result: Positive reply from support function if Security Access to server is activated.
+
+        # Sleep time to avoid NRC37
+        time.sleep(5)
         result = result and SE27.activate_security_access_fixedkey(can_p, conf.default_rig_config)
 
         # step3:

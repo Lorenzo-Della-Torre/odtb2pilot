@@ -145,6 +145,8 @@ def step_2(dut: Dut):
     action: Set ECU to programming session and security access
     expected_result: True when security access is successfully in programing session
     """
+    # Sleep time to avoid NRC37
+    time.sleep(5)
     # Set ECU in programming session
     dut.uds.set_mode(2)
 

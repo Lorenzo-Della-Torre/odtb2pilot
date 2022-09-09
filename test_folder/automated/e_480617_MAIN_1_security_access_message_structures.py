@@ -85,6 +85,7 @@ details: >
     4. Validate serverResponseKey- validate length, sequence and message data
 """
 
+import time
 import copy
 import logging
 from hilding.dut import Dut
@@ -367,6 +368,8 @@ def step_1(dut: Dut):
         logging.error('Test failed: Invalid parameters retrieved from yml file')
         return False, None, None
 
+    # Sleep time to avoid NRC37
+    time.sleep(5)
     payload_dict = security_access_method(dut)
     if payload_dict is not None:
         logging.info("Test passed: valid security access response received for all sub-functions")

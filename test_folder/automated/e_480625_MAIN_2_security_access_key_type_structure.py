@@ -274,6 +274,8 @@ def step_1(dut: Dut):
         logging.error("Test Failed: yml parameters not found")
         return False
 
+    # Sleep time to avoid NRC37
+    time.sleep(5)
     dut.uds.set_mode(2)
 
     SSBL.get_vbf_files()
