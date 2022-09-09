@@ -184,6 +184,9 @@ def step_1(dut: Dut):
         logging.error("Test Failed: yml parameter not found")
         return False, None, None
 
+    # Sleep time to avoid NRC37
+    time.sleep(5)
+
     # Set to programming session
     dut.uds.set_mode(2)
 

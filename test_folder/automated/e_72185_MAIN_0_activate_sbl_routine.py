@@ -54,6 +54,7 @@ details: >
     Verify SBL activation using the routine identifier (0x0301) in programming session
 """
 
+import time
 import logging
 from hilding.dut import Dut
 from hilding.dut import DutTestError
@@ -73,6 +74,9 @@ def step_1(dut: Dut):
     action: Verify SBL activation using the routine identifier (0x0301) in programming session
     expected result: True on received 'Type1,Completed'
     """
+    # Sleep time to avoid NRC37
+    time.sleep(5)
+
     # Set to programming session
     dut.uds.set_mode(2)
 
