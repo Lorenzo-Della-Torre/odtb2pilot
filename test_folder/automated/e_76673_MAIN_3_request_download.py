@@ -50,6 +50,7 @@ details: >
     in default or extended session.
 """
 
+import time
 import logging
 from hilding.dut import Dut
 from hilding.dut import DutTestError
@@ -175,6 +176,9 @@ def step_2(dut: Dut, vbf_params):
     action: Verify response for RequestDownload (0x34) in programming mode with security access.
     expected_result: True if positive response received for service 34.
     """
+    #Sleep time to avoid NRC37
+    time.sleep(5)
+
     dut.uds.set_mode(2)
 
 	# RequestDownload without security access
