@@ -1,0 +1,4 @@
+hvbm_p519:
+    run:
+        resp_time_type1 : 5000
+        resp_time_type2_type3 : 200
