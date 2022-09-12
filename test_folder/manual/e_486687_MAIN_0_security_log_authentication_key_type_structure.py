@@ -52,6 +52,7 @@ details: >
     incorrect CRC(0xFFFF) to get NRC 31(requestOutOfRange).
 """
 
+import time
 import logging
 from hilding.dut import Dut
 from hilding.dut import DutTestError
@@ -71,6 +72,20 @@ def step_1(dut):
     action: Security access in programming session
     expected_result: True when security access successful in programming session
     """
+    # Define did from yml file
+    parameters_dict = { 'did': '',
+                        'security_log_authentication_key_data_record':'',
+                        'security_log_authentication_key_checksum':''
+                    }
+    parameters = SIO.parameter_adopt_teststep(parameters_dict)
+
+    if not all(list(parameters.values())):
+        logging.error("Test Failed: yml parameter not found")
+        return False, None
+
+    # Sleep time to avoid NRC37
+    time.sleep(5)
+
     dut.uds.set_mode(2)
     result = SE27.activate_security_access_fixedkey(dut, sa_keys=dut.conf.default_rig_config)
     if not result:

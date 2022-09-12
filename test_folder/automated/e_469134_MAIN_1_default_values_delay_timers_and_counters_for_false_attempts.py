@@ -245,6 +245,10 @@ def step_1(dut: Dut, parameters):
     expected_result: True on successfully verified security access delay timer.
     """
     results = []
+
+    # Sleep time to avoid NRC37
+    time.sleep(5)
+
     for sa_level in parameters['sa_level_programming']:
 
         result_sa_delay_timer = activate_sa_delay_timer(dut, sa_level, session=2)

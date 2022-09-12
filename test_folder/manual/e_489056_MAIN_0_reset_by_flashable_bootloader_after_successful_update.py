@@ -37,6 +37,7 @@ details: >
     3. Verify ECU is able to communicate with tester
 """
 
+import time
 import logging
 from hilding.dut import Dut
 from hilding.dut import DutTestError
@@ -61,7 +62,8 @@ def step_1(dut: Dut):
         logging.error("Test failed: Unable to load VBF files")
         return False
 
-
+    # Sleep time to avoid NRC37
+    time.sleep(5)
     # Flash PBL using software download.
     result = SSBL.sbl_activation(dut, sa_keys=dut.conf.default_rig_config)
 

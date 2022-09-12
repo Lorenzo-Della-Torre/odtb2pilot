@@ -410,6 +410,9 @@ def step_1(dut: Dut):
             0.3 * P2*Server_max(1500.0ms) in programming session.
     expected_result: NRC 78 response time is greater than 0.3 * P2*Server_max(1500.0ms)
     """
+    # Sleep time to avoid NRC37
+    time.sleep(5)
+
     dut.uds.set_mode(2)
     # Read yml parameters
     parameters_dict = {'p2_star_server_max': 0,
