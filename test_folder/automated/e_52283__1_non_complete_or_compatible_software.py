@@ -35,7 +35,7 @@ details: >
        Compatible with manipulated data block and confirm ECU is in “programmingSession”.
 """
 
-
+import time
 import logging
 from glob import glob
 from hilding.dut import Dut
@@ -220,6 +220,9 @@ def step_1(dut: Dut):
 
     expected_result: True on successful security access.
     """
+    # Sleep time to avoid NRC37
+    time.sleep(5)
+
     dut.uds.set_mode(2)
     result = SE27.activate_security_access_fixedkey(dut, sa_keys=CNF.default_rig_config,
                                                     step_no=272, purpose="SecurityAccess")

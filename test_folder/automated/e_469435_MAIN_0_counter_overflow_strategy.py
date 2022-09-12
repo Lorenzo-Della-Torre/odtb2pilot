@@ -144,6 +144,8 @@ def step_3(dut: Dut):
     action: Security access to ECU in programming session
     expected_result: True when security access successful in programming session
     """
+    # Sleep time to avoid NRC37
+    time.sleep(5)
     sa_result = SE27.activate_security_access_fixedkey(dut, sa_keys=dut.conf.default_rig_config,
                                                        step_no=272, purpose="SecurityAccess")
     if sa_result:
