@@ -99,6 +99,8 @@ def step_1(can_p: CanParam):
     stepno = 1
     purpose = "Download and Activation of SBL"
 
+    # Sleep time to avoid NRC37
+    time.sleep(5)
     result = SSBL.sbl_activation(can_p,
                                  conf.default_rig_config,
                                  stepno, purpose)

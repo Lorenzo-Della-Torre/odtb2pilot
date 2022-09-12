@@ -47,6 +47,7 @@ details: >
         3. Verify client proof of ownership
 """
 
+import time
 import logging
 from Crypto.Util import Counter
 from Crypto.Hash import CMAC
@@ -207,6 +208,9 @@ def step_1(dut: Dut):
     expected_result: True with security access messages of all subfunctions when ECU unlocked
     """
     dut.uds.set_mode(2)
+
+    # Sleep time to avoid NRC37
+    time.sleep(5)
     sa_response_dict = security_access(dut)
     if sa_response_dict is None:
         logging.error("Test Failed: Security access not successful")

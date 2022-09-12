@@ -38,6 +38,7 @@ details: >
     service/interface to alter the SecOC Cluster Key Identifiers.
 """
 
+import time
 import logging
 from hilding.dut import Dut
 from hilding.dut import DutTestError
@@ -131,6 +132,8 @@ def step_2(dut:Dut, parameters):
             services with security access in Programming session
     expected_result: True when NRC 7F for all of the SecOC cluster key identifiers
     """
+    # Sleep time to avoid NRC37
+    time.sleep(5)
     # Set ECU to Programming Session
     dut.uds.set_mode(2)
     result = SE27.activate_security_access_fixedkey(dut, dut.conf.default_rig_config,
