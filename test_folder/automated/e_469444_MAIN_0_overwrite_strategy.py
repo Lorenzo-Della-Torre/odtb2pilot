@@ -125,6 +125,8 @@ def step_2(dut: Dut):
     action: Security access with valid key for 15 times
     expected_result: True when security access is successful for all attempts
     """
+    # Sleep time to avoid NRC37
+    time.sleep(5)
     results = []
 
     # Set ECU in default session

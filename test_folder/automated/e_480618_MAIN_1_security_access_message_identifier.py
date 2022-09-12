@@ -44,6 +44,7 @@ details: >
 
 """
 
+import time
 import logging
 from hilding.conf import Conf
 from hilding.dut import DutTestError
@@ -94,6 +95,8 @@ def step_1(dut: Dut):
             message identifiers.
     expected_result: Positive response with valid message identifier.
     """
+    # Sleep time to avoid NRC37
+    time.sleep(5)
     parameters = SIO.extract_parameter_yml("*", "message_identifier")
     if parameters is not None:
         message_identifier = parameters

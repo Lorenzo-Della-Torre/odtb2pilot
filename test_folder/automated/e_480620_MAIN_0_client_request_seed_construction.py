@@ -29,6 +29,7 @@ details: >
         2. Calculate authentication data using AES-128-CMAC and verify
 """
 
+import time
 import logging
 from Crypto.Hash import CMAC
 from Crypto.Cipher import AES
@@ -90,6 +91,9 @@ def step_1(dut: Dut):
     action: Set to programming session, security access to ECU and get request seed message.
     expected_result: True with client request seed message
     """
+    # Sleep time to avoid NRC37
+    time.sleep(5)
+
     dut.uds.set_mode(2)
     request_seed_msg = security_access(dut)
     if request_seed_msg is None:

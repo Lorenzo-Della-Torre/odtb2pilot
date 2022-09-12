@@ -86,6 +86,9 @@ def step_1(can_p: CanParam):
     stepno = 1
     purpose = "Download and Activation of SBL"
 
+    # Sleep time to avoid NRC37
+    time.sleep(5)
+
     result = SSBL.sbl_activation(can_p,
                                  sa_keys=CONF.default_rig_config,
                                  stepno=stepno, purpose=purpose)
@@ -190,6 +193,10 @@ def run():
         # result: ECU sends positive reply
         logging.info("Step 8: DL entire software")
         result = result and SE11.ecu_hardreset(can_p, stepno=8)
+
+        # Sleep time to avoid NRC37
+        time.sleep(5)
+
         result = result and SSBL.sbl_activation(can_p, CONF.default_rig_config,\
                                              stepno=8, purpose="DL and activate SBL")
         time.sleep(1)

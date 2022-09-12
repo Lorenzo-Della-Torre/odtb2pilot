@@ -40,6 +40,7 @@ details: >
     3. Request ECU hard reset
 """
 
+import time
 import logging
 from hilding.dut import Dut
 from hilding.dut import DutTestError
@@ -106,6 +107,8 @@ def step_1(dut: Dut):
         logging.error("Test Failed: Expected ECU to be in programming session")
         return False
 
+    # Sleep time to avoid NRC37
+    time.sleep(5)
     # Security access to ECU
     result = SE27.activate_security_access_fixedkey(dut, sa_keys=dut.conf.default_rig_config,
                                                     step_no=272, purpose="SecurityAccess")
