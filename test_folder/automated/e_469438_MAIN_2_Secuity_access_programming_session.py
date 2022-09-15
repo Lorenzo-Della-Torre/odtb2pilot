@@ -152,6 +152,8 @@ def step_2(dut: Dut, sa_keys):
     action: Security Access to ECU with valid key
     expected_result: positive response - SA granted
     """
+    # Sleep time to avoid NRC37
+    time.sleep(5)
     result = SE10.diagnostic_session_control_mode2(dut, stepno=2)
     logging.info("Step_2: Requesting SA with valid key.")
 

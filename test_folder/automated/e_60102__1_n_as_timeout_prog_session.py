@@ -279,6 +279,9 @@ def run():
         # step2:
         # action: Security Access Request SID
         # result: ECU sends positive reply
+
+        # Sleep time to avoid NRC37
+        time.sleep(5)
         result = result and SE27.activate_security_access_fixedkey(can_p, conf.default_rig_config)
 
         # step3:

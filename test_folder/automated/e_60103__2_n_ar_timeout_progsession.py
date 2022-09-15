@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,226 +18,244 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-# Testscript Hilding MEPII
-# project:  BECM basetech MEPII
-# author:   LDELLATO (Lorenzo Della Torre)
-# date:     2020-06-05
-# version:  1.1
-# reqprod:  60103
+reqprod: 60103
+version: 2
+title: N_Ar timeout in programming session
+purpose: >
+    From a system perspective it is important that both sender and receiver side times out
+    roughly the same time. The timeout value shall be high enough to not be affected by
+    situations like occasional high busloads and low enough to get a user friendly system if for
+    example an ECU is not connected.
 
-# author:   HWEILER (Hans-Klaus Weiler)
-# date:     2020-08-05
-# version:  1.2
-# changes:  Update to fit YML. Tested with SPA BECM / MEP2 HVBM
+description: >
+    N_Ar timeout value shall be 1000ms in programming session.
 
-# #inspired by https://grpc.io/docs/tutorials/basic/python.html
-# Copyright 2015 gRPC authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-The Python implementation of the gRPC route guide client.
+details: >
+    Verify N_Ar timeout value is 1000ms
+    Steps:
+        1. Request EDA0 DID with FC delay greater than and less than 1000ms and verify response
+           in PBL session
+        2. Request EDA0 DID with FC delay greater than and less than 1000ms and verify response
+           in SBL session
 """
 
-import time
-from datetime import datetime
-import sys
 import logging
-import inspect
-
-import odtb_conf
-from supportfunctions.support_can import SupportCAN, CanParam, CanMFParam, CanPayload, CanTestExtra
-from supportfunctions.support_test_odtb2 import SupportTestODTB2
-from supportfunctions.support_carcom import SupportCARCOM
+from hilding.dut import Dut
+from hilding.dut import DutTestError
 from supportfunctions.support_file_io import SupportFileIO
+from supportfunctions.support_can import SupportCAN, CanTestExtra, CanPayload, CanMFParam
+from supportfunctions.support_carcom import SupportCARCOM
+from supportfunctions.support_test_odtb2 import SupportTestODTB2
+from supportfunctions.support_SBL import SupportSBL
 
-from supportfunctions.support_precondition import SupportPrecondition
-from supportfunctions.support_postcondition import SupportPostcondition
-from supportfunctions.support_service22 import SupportService22
-from supportfunctions.support_service10 import SupportService10
-
-SIO = SupportFileIO
+SIO = SupportFileIO()
 SC = SupportCAN()
-SUTE = SupportTestODTB2()
 SC_CARCOM = SupportCARCOM()
-PREC = SupportPrecondition()
-POST = SupportPostcondition()
-SE10 = SupportService10()
-SE22 = SupportService22()
+SUTE = SupportTestODTB2()
+SSBL = SupportSBL()
 
-def step_2(can_p):
+
+def change_control_frame_parameters(dut, frame_control_delay):
     """
-    Teststep 2: request EDA0 - with FC delay < timeout 1000 ms
+    Request change frame control delay
+    Args:
+        dut (Dut): An instance of Dut
+        frame_control_delay (int): Frame control delay
+    Returns: None
     """
-    can_mf: CanMFParam = {
-        "block_size": 0,
-        "separation_time": 0,
-        "frame_control_delay": 950,
-        "frame_control_flag": 48,
-        "frame_control_auto": True
-        }
+    can_mf: CanMFParam = {"block_size": 0,
+                          "separation_time": 0,
+                          "frame_control_delay": frame_control_delay,
+                          "frame_control_flag": 48,
+                          "frame_control_auto": True}
 
-    cpay: CanPayload = {
-        "payload": SC_CARCOM.can_m_send("ReadDataByIdentifier", b'\xED\xA0', b''),
-        "extra": ''
-        }
+    SC.change_mf_fc(dut["receive"], can_mf)
 
-    etp: CanTestExtra = {
-        "step_no": 2,
-        "purpose": "request EDA0 - with FC delay < timeout 1000 ms",
-        "timeout": 5,
-        "min_no_messages": -1,
-        "max_no_messages": -1
-        }
-    SC.change_mf_fc(can_p["receive"], can_mf)
-    result = SUTE.teststep(can_p, cpay, etp)
 
-    result = (len(SC.can_messages[can_p["receive"]]) == 1)
+def request_fc_delay(dut, parameters, frame_control_delay):
+    """
+    Request EDA0 DID with FC delay < 1000ms and FC delay > 1000ms
+    Args:
+        dut (Dut): An instance of Dut
+        parameters (dict): DID, number of frames
+        frame_control_delay (int): Frame control delay
+    Returns:
+        (bool): True when ECU supports DID EDA0 with FC delay < 1000ms or FC delay > 1000ms
+    """
+    change_control_frame_parameters(dut, frame_control_delay)
+
+    cpay: CanPayload = {"payload": SC_CARCOM.can_m_send("ReadDataByIdentifier",
+                                                        bytes.fromhex(parameters['did']),
+                                                        b""),
+                        "extra": b''}
+
+    etp: CanTestExtra = {"step_no": 102,
+                         "purpose": '',
+                         "timeout": 5,
+                         "min_no_messages": -1,
+                         "max_no_messages": -1}
+
+    teststep_result = SUTE.teststep(dut, cpay, etp)
+    if not teststep_result:
+        logging.error("Test Failed: Expected positive response for a request ReadDataByIdentifier "
+                      "to get MF reply but not received")
+        return False
+
+    # Verify whole message is received when frame control delay is less than 1000ms
+    if frame_control_delay <= 1000:
+        result = (len(SC.can_messages[dut["receive"]]) == 1)
+        if result:
+            logging.info("Whole message received as expected")
+            return True
+
+        logging.error("Test Failed: No request reply received. Received frames: %s",
+                       len(SC.can_frames[dut["receive"]]))
+        return False
+
+    # Verify only first frame is received when frame control delay is greater than 1000ms
+    result = (len(SC.can_frames[dut["receive"]]) == parameters['number_of_frames'])
     if result:
-        logging.info("FC delay < Timeout: ")
-        logging.info("Whole message received as expected: %s",
-                     len(SC.can_messages[can_p["receive"]]))
-    else:
-        logging.info("FAIL: No request reply received. Received frames: %s",
-                     len(SC.can_frames[can_p["receive"]]))
-    return result
+        logging.info("Only first frame received as expected. Received frames: %s",
+                      len(SC.can_frames[dut["receive"]]))
+        return True
 
-def step_3(can_p):
+    logging.error("Test Failed: Expected number of frames: %s, Received frames: %s",
+                   parameters['number_of_frames'], len(SC.can_frames[dut["receive"]]))
+    return False
+
+
+def verify_n_ar_timeout(dut, parameters):
     """
-    Teststep 3: request EDA0 - with FC delay > timeout 1000 ms
+    Verify N_Ar timeout value is 1000ms
+    Args:
+        dut (Dut): An instance of Dut
+        parameters (dict): DID, number of frames
+    Returns:
+        (bool): True when successfully verified N_Ar timeout value
     """
-    n_frame = 1
-    can_mf: CanMFParam = {
-        "block_size": 0,
-        "separation_time": 0,
-        "frame_control_delay": 1050,
-        "frame_control_flag": 48,
-        "frame_control_auto": True
-        }
+    # Request EDA0 DID with FC delay < 1000ms
+    result_fc_less_than_1000_ms = request_fc_delay(dut, parameters, frame_control_delay=950)
+    if not result_fc_less_than_1000_ms:
+        return False
 
-    cpay: CanPayload = {
-        "payload": SC_CARCOM.can_m_send("ReadDataByIdentifier", b'\xED\xA0', b''),
-        "extra": ''
-        }
+    # Request EDA0 DID with FC delay > 1000ms
+    result_fc_greater_than_1000_ms = request_fc_delay(dut, parameters, frame_control_delay=1050)
+    if not result_fc_greater_than_1000_ms:
+        return False
 
-    etp: CanTestExtra = {
-        "step_no": 3,
-        "purpose": "request EDA0 - with FC delay > timeout 1000 ms",
-        "timeout": 5,
-        "min_no_messages": -1,
-        "max_no_messages": -1
-        }
-    SC.change_mf_fc(can_p["receive"], can_mf)
-    result = SUTE.teststep(can_p, cpay, etp)
+    # Set back frame control delay to default
+    change_control_frame_parameters(dut, frame_control_delay=0)
 
-    result = (len(SC.can_frames[can_p["receive"]]) == n_frame)
-    if len(SC.can_frames[can_p["receive"]]) == n_frame:
-        logging.info("Timeout due to FC delay: ")
-        logging.info("Only first frame received as expected: %s",
-                     len(SC.can_frames[can_p["receive"]]))
-    else:
-        logging.info("FAIL: Wrong number of frames received. Received frames: %s",
-                     len(SC.can_frames[can_p["receive"]]))
-    return result
+    return True
 
-def step_4(can_p):
+
+def download_and_activate_sbl(dut):
     """
-    Teststep 4: set back frame_control_delay to default
+    Download and activation of SBL
+    Args:
+        dut (Dut): An instance of Dut
+    Returns:
+        (bool): True on SBL activation
     """
+    # Loads the rig specific VBF files
+    vbf_result = SSBL.get_vbf_files()
+    if not vbf_result:
+        logging.error("Test Failed: Unable to load VBF files")
+        return False
 
-    stepno = 4
-    purpose = "set back frame_control_delay to default"
+    # Download and activate SBL
+    sbl_result = SSBL.sbl_dl_activation(dut, sa_keys=dut.conf.default_rig_config)
+    if not sbl_result:
+        logging.error("Test Failed: SBL activation failed")
+        return False
 
-    can_mf: CanMFParam = {
-        "block_size": 0,
-        "separation_time": 0,
-        "frame_control_delay": 0,
-        "frame_control_flag": 48,
-        "frame_control_auto": True
-        }
+    logging.info("SBL activation successful")
+    return True
 
-    SUTE.print_test_purpose(stepno, purpose)
-    SC.change_mf_fc(can_p["receive"], can_mf)
+
+def step_1(dut: Dut, parameters):
+    """
+    action: Request EDA0 DID with FC delay < 1000ms and FC delay > 1000ms in PBL session
+    expected_result: All the frames related to the CAN reply from the ECU should be received for
+                     FC delay < 1000 and only the first frame be received for FC delay > 1000 in
+                     pbl
+    """
+    # Set to programming session
+    dut.uds.set_mode(2)
+
+    result = verify_n_ar_timeout(dut, parameters)
+    if not result:
+        return False
+
+    # Check active diagnostic session
+    response = dut.uds.active_diag_session_f186()
+    if response.data["details"]["mode"] != 2:
+        logging.error("Test Failed: ECU is not in programming session, received session %s",
+                       response.data["details"]["mode"])
+        return False
+
+    logging.info("ECU is in programming session as expected")
+    return True
+
+
+def step_2(dut: Dut, parameters):
+    """
+    action: Request EDA0 DID with FC delay < 1000ms and FC delay > 1000ms in SBL session
+    expected_result: All the frames related to the CAN reply from the ECU should be received for
+                     FC delay < 1000 and only the first frame be received for FC delay > 1000 in
+                     sbl
+    """
+    result_sbl = download_and_activate_sbl(dut)
+    if not result_sbl:
+        return False
+
+    result = verify_n_ar_timeout(dut, parameters)
+    if not result:
+        return False
+
+    # Verify positive response '62' and DID 'F122' is received in ECU response
+    response = dut.uds.read_data_by_id_22(bytes.fromhex('EDA0'))
+    pos = response.raw.find('F122')
+    if response.raw[4:6] != '62' and pos == '-1':
+        logging.error("Test Failed: Expected positive response '62' and DID 'F122' in response,"
+                      " received %s", response.raw)
+        return False
+
+    logging.info("ECU is in SBL session as expected")
+    return True
+
 
 def run():
     """
-    Run - Call other functions from here
+    Verify N_Ar timeout value is 1000ms
     """
-    #logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.DEBUG)
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+    dut = Dut()
 
-    # start logging
-    # to be implemented
+    start_time = dut.start()
+    result = False
+    result_step = False
 
-    # where to connect to signal_broker
-    can_p: CanParam = {
-        'netstub': SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        'send': "Vcu1ToBecmFront1DiagReqFrame",
-        'receive': "BecmToVcu1Front1DiagResFrame",
-        'namespace': SC.nspace_lookup("Front1CANCfg0")
-        }
-    #Read YML parameter for current function (get it from stack)
-    logging.debug("Read YML for %s", str(inspect.stack()[0][3]))
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
+    parameters_dict = {'did':'',
+                       'number_of_frames':0}
+    try:
+        dut.precondition(timeout=100)
 
-    logging.info("Testcase start: %s", datetime.now())
-    starttime = time.time()
-    logging.info("Time: %s \n", time.time())
+        parameters = SIO.parameter_adopt_teststep(parameters_dict)
+        if not all(list(parameters.values())):
+            raise DutTestError("yml parameters not found")
 
-    ############################################
-    # precondition
-    ############################################
-    timeout = 30
-    result = PREC.precondition(can_p, timeout)
+        result_step = dut.step(step_1, parameters, purpose="Request EDA0 DID with FC delay <"
+                               " 1000ms and FC delay > 1000ms in PBL session")
+        if result_step:
+            result_step = dut.step(step_2, parameters, purpose="Request EDA0 DID with FC delay <"
+                                   " 1000ms and FC delay > 1000ms in SBL session")
+        result = result_step
 
-    if result:
-    ############################################
-    # teststeps
-    ############################################
-    # step1:
-    # action: Change to programming session
-    # result: BECM reports mode
-        result = result and SE10.diagnostic_session_control_mode2(can_p, 1)
+    except DutTestError as error:
+        logging.error("Test failed: %s", error)
+    finally:
+        dut.postcondition(start_time, result)
 
-    # step2:
-    # action: send request with FC_delay < timeout
-    # result: whole message received
-        result = result and step_2(can_p)
-
-    # step3:
-    # action: send request with FC_delay > timeout
-    # result: only first frame received
-        result = result and step_3(can_p)
-
-    # step4:
-    # action: restore FC_delay again
-    # result:
-        step_4(can_p)
-
-    # step5:
-    # action: verify current session
-    # result: BECM reports programming session
-        result = result and SE22.read_did_f186(can_p, dsession=b'\x02')#, 5)
-
-    # step6:
-    # action: # Change to default session
-    # result: BECM reports mode
-        result = result and SE10.diagnostic_session_control_mode1(can_p, 6)
-        time.sleep(1)
-
-    ############################################
-    # postCondition
-    ############################################
-    result = POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()

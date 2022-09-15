@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,208 +18,165 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-# Testscript Hilding MEPII
-# project:  BECM basetech MEPII
-# author:   T-KUMARA (Tanuj Kumar Aluru)
-# date:     2020-10-29
-# version:  1.0
-# reqprod:  113861
-#
-# inspired by https://grpc.io/docs/tutorials/basic/python.html
-#
-# Copyright 2015 gRPC authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+reqprod: 113861
+version: 0
+title: Diagnostic Read out #1 to #4 data record
+purpose: >
+    To support quality tracking of the ECU.
 
-The Python implementation of the gRPC route guide client.
+description: >
+    A data record(s) with identifiers as specified in the table below may be implemented. The data
+    record(s) intended for quality tracking of the ECU is defined by the implementer. The data
+    record(s) shall only consist of other record data than the record data read by the generic
+    standard read out sequence.
+
+    Description	                                Identifier
+    ---------------------------------------------------------
+    Diagnostic Read out #1 to #4	            EDC0 - EDC3
+    ---------------------------------------------------------
+
+    •	It shall be possible to read the data record by using the diagnostic service specified in
+        Ref[LC : Volvo Car Corporation - UDS Services - Service 0x22 (ReadDataByIdentifier) Reqs].
+
+    The identifier shall be implemented in the following sessions:
+        •	Default session
+        •	Extended Session
+
+details: >
+    Verify ECU response of DID 'EDC0' by ReadDataByIdentifier(0x22) service in default
+    and extended diagnostic session.
+
+    EDC1 is for the application teams, it is enough to test EDC0
 """
 
-import time
-from datetime import datetime
-import sys
 import logging
-import inspect
-
-import odtb_conf
-
-from supportfunctions.support_can import SupportCAN, CanParam,CanPayload, CanTestExtra
-from supportfunctions.support_test_odtb2 import SupportTestODTB2
-from supportfunctions.support_carcom import SupportCARCOM
+from hilding.dut import Dut
+from hilding.dut import DutTestError
 from supportfunctions.support_file_io import SupportFileIO
-from supportfunctions.support_SBL import SupportSBL
-from supportfunctions.support_precondition import SupportPrecondition
-from supportfunctions.support_postcondition import SupportPostcondition
-from supportfunctions.support_service22 import SupportService22
-from supportfunctions.support_service10 import SupportService10
+from supportfunctions.support_can import SupportCAN, CanPayload, CanTestExtra
+from supportfunctions.support_carcom import SupportCARCOM
+from supportfunctions.support_test_odtb2 import SupportTestODTB2
 
-
-SIO = SupportFileIO
+SIO = SupportFileIO()
 SC = SupportCAN()
-S_CARCOM = SupportCARCOM()
+SC_CARCOM = SupportCARCOM()
 SUTE = SupportTestODTB2()
-SSBL = SupportSBL()
 
-PREC = SupportPrecondition()
-POST = SupportPostcondition()
-SE22 = SupportService22()
-SE10 = SupportService10()
 
-def step_1(can_p):
-    '''
-    Diagnostic Read Out Identifier (0xEDC0)
-    '''
-    cpay: CanPayload = {
-        "payload": S_CARCOM.can_m_send( "ReadDataByIdentifier", b'\xED\xC0', b""),
-        "extra": b'',
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
-    etp: CanTestExtra = {
-        "step_no": 1,
-        "purpose": "Diagnostic Read Out (0xEDC0),to support"\
-                    "quality tracking of ECU ",
-        "timeout": 1,
-        "min_no_messages": -1,
-        "max_no_messages": -1,
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
-    result = SUTE.teststep(can_p,cpay, etp)
-    logging.info("ReadDataByIdentifier (0xEDC0): %s",SC.can_messages[can_p['receive']][0][2])
-    result = result and SUTE.test_message(SC.can_messages[can_p['receive']], teststring='EDC0')
-    return result
+def req_read_data_by_id(dut: Dut, diag_read_out_did, session):
+    """
+    Request ReadDataByIdentifier(0x22) and get the ECU response
+    Args:
+        dut(Dut): Dut instance
+        diag_read_out_did(str): Diagnostic read out did
+        session(str): Diagnostic session
+    Returns:
+        (bool): True on successfully verified positive response
+    """
+    # dut.uds.read_data_by_id_22() has timeout of 1 sec but for DID 'EDC0' timeout should be
+    # greater than 1 sec (because of its size), hence below approach is used.
+    # Size of DID 'EDC0' : 1816 bytes
 
-def step_2(can_p):
-    '''
-    Diagnostic Read Out Identifier (0xEDC1)
-    '''
-    cpay: CanPayload = {
-        "payload": S_CARCOM.can_m_send( "ReadDataByIdentifier", b'\xED\xC1', b""),
-        "extra": b'',
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
-    etp: CanTestExtra = {
-        "step_no": 2,
-        "purpose": "Diagnostic Read Out (0xEDC1),to support"\
-                    "quality tracking of ECU ",
-        "timeout": 1,
-        "min_no_messages": -1,
-        "max_no_messages": -1,
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
-    result = SUTE.teststep(can_p,cpay, etp)
-    logging.info("ReadDataByIdentifier (0xEDC1): %s",SC.can_messages[can_p['receive']][0][2])
-    result = result and SUTE.test_message(SC.can_messages[can_p['receive']], teststring='EDC1')
-    return result
+    # Prepare a payload for ReadDataByIdentifier(0x22) request
+    payload = SC_CARCOM.can_m_send("ReadDataByIdentifier", bytes.fromhex(diag_read_out_did), b"")
 
-def step_3(can_p):
-    '''
-    Diagnostic Read Out Identifier (0xEDC2)
-    '''
-    cpay: CanPayload = {
-        "payload": S_CARCOM.can_m_send( "ReadDataByIdentifier", b'\xED\xC2', b""),
-        "extra": b'',
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
-    etp: CanTestExtra = {
-        "step_no": 3,
-        "purpose": "Diagnostic Read Out (0xEDC2),to support"\
-                    "quality tracking of ECU ",
-        "timeout": 1,
-        "min_no_messages": -1,
-        "max_no_messages": -1,
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
-    result = SUTE.teststep(can_p,cpay, etp)
-    logging.info("ReadDataByIdentifier (0xEDC2): %s",SC.can_messages[can_p['receive']][0][2])
-    result = result and SUTE.test_message(SC.can_messages[can_p['receive']], teststring='EDC2')
-    return result
+    cpay: CanPayload = {"payload": payload,
+                        "extra": ''}
 
-def step_4(can_p):
-    '''
-    Diagnostic Read Out Identifier (0xEDC3)
-    '''
-    cpay: CanPayload = {
-        "payload": S_CARCOM.can_m_send( "ReadDataByIdentifier", b'\xED\xC3', b""),
-        "extra": b'',
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
-    etp: CanTestExtra = {
-        "step_no": 4,
-        "purpose": "Diagnostic Read Out (0xEDC3),to support"\
-                    "quality tracking of ECU ",
-        "timeout": 1,
-        "min_no_messages": -1,
-        "max_no_messages": -1,
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
-    result = SUTE.teststep(can_p,cpay, etp)
-    logging.info("ReadDataByIdentifier (0xEDC3): %s",SC.can_messages[can_p['receive']][0][2])
-    result = result and SUTE.test_message(SC.can_messages[can_p['receive']], teststring='EDC3')
-    return result
+    etp: CanTestExtra = {"step_no": 111,
+                         "purpose": '',
+                         "timeout": 2,
+                         "min_no_messages": -1,
+                         "max_no_messages": -1}
+
+    SUTE.teststep(dut, cpay, etp)
+    response = SC.can_messages[dut['receive']][0][2]
+    if response[4:6] == '62' and response[6:10] == diag_read_out_did:
+        logging.info("Successfully read DID %s in %s diagnostic session with positive "
+                     "response %s", diag_read_out_did, session, response[4:6])
+        return True
+
+    logging.error("Test Failed: Expected positive response 62 for DID %s in %s diagnostic "
+                  "session, received %s", diag_read_out_did, session, response)
+    return False
+
+
+def step_1(dut: Dut, diag_read_out_dids):
+    """
+    action: Send ReadDataByIdentifier in default diagnostic session and verify ECU
+            response of ReadDataByIdentifier request.
+    expected_result: ECU should send positive response '62'
+    """
+    results = []
+
+    for diag_read_out_did in diag_read_out_dids:
+        results.append(req_read_data_by_id(dut, diag_read_out_did, session='default'))
+
+    if all(results) and len(results) != 0:
+        logging.info("Successfully read DID %s in default diagnostic session",
+                     " ,".join(diag_read_out_dids))
+        return True
+
+    logging.error("Test Failed: Failed to read some DIDs in default diagnostic session")
+    return False
+
+
+def step_2(dut: Dut, diag_read_out_dids):
+    """
+    action: Send ReadDataByIdentifier in extended diagnostic session and verify ECU
+            response of ReadDataByIdentifier request.
+    expected_result: ECU should send positive response '62'
+    """
+    results = []
+
+    # Set to extended session
+    dut.uds.set_mode(3)
+
+    for diag_read_out_did in diag_read_out_dids:
+        results.append(req_read_data_by_id(dut, diag_read_out_did, session='extended'))
+
+    if all(results) and len(results) != 0:
+        logging.info("Successfully read DID %s in extended diagnostic session",
+                     " ,".join(diag_read_out_dids))
+        return True
+
+    logging.error("Test Failed: Failed to read some DIDs in extended diagnostic session")
+    return False
+
 
 def run():
     """
-    Run - Call other functions from here
+    Verify ECU response of diagnostic read out DIDs by ReadDataByIdentifier(0x22) service in
+    default and extended diagnostic session.
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+    dut = Dut()
 
-    # where to connect to signal_broker
-    can_p: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        "send" : "Vcu1ToBecmFront1DiagReqFrame",
-        "receive" : "BecmToVcu1Front1DiagResFrame",
-        "namespace" : SC.nspace_lookup("Front1CANCfg0")
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
+    start_time = dut.start()
+    result = False
+    result_step = False
 
-    logging.info("Testcase start: %s", datetime.now())
-    starttime = time.time()
-    logging.info("Time: %s \n", time.time())
+    parameters_dict = {'diag_read_out_dids': []}
+    try:
+        dut.precondition(timeout=60)
+        # Read yml parameters
+        parameters = SIO.parameter_adopt_teststep(parameters_dict)
 
-    ############################################
-    # precondition
-    ############################################
-    SSBL.get_vbf_files()
-    timeout = 60
-    result = PREC.precondition(can_p, timeout)
+        if not all(list(parameters.values())):
+            raise DutTestError("yml parameters not found")
 
-    if result:
-        ############################################
-        # teststeps
-        ############################################
-        # step 1:
-        # action: Send ReadDataByIdentifier(0xEDC0)
-        # result: ECU send requested DIDs
-        result = result and step_1(can_p)
+        result_step = dut.step(step_1, parameters['diag_read_out_dids'], purpose="Send"
+                               " ReadDataByIdentifier in default diagnostic session and verify ECU"
+                               " response of ReadDataByIdentifier request")
+        if result_step:
+            result_step = dut.step(step_2, parameters['diag_read_out_dids'], purpose="Send"
+                                   " ReadDataByIdentifier in extended diagnostic session and verify"
+                                   " ECU response of ReadDataByIdentifier request")
+        result = result_step
+    except DutTestError as error:
+        logging.error("Test failed: %s", error)
+    finally:
+        dut.postcondition(start_time, result)
 
-        # step 2:
-        # action: Send ReadDataByIdentifier(0xEDC1)
-        # result: ECU send requested DIDs
-        result = result and step_2(can_p)
-
-        # step 3:
-        # action: Send ReadDataByIdentifier(0xEDC2)
-        # result: ECU send requested DIDs
-        result = result and step_3(can_p)
-
-        # step 4:
-        # action: Send ReadDataByIdentifier(0xEDC3)
-        # result: ECU send requested DIDs
-        result = result and step_4(can_p)
-
-    ############################################
-    # postCondition
-    ############################################
-    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()

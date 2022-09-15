@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,34 +18,40 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-# Testscript Hilding MEPII
-# project:  BECM basetech MEPII
-# author:   J-ADSJO
-# date:     2021-02-17
-# version:  1.0
-# reqprod:  418011
+reqprod: 418011
+version: 2
+title: Check Memory routine
+purpose: >
+    To initiate the authenticity verification of the downloaded data file at SWDL
 
-# #inspired by https://grpc.io/docs/tutorials/basic/python.html
-# Copyright 2015 gRPC authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+description: >
+    If the ECU supports software authentication concept as defined in Ref[LC : General Software
+    Authentication], the ECU shall implement the Check memory routine with routine identifier as
+    specified in the table below. The ECU shall implement the routine exactly as defined in
+    Carcom - Global Master Reference Database (GMRDB).
 
-The Python implementation of the gRPC route guide client.
+    Description	         Identifier
+    Check Memory routine	0212
+
+    It shall be possible to execute the control routine with service as specified in
+    Ref[LC : VCC - UDS Services - Service 0x31 RoutineControl Reqs].
+    The ECU shall implement the routine as a type 1 routine.
+    The response time P4server_max for the Check Memory routine shall be 2000 ms.
+
+    The ECU shall support the identifier in the following sessions
+    Programming session (which includes both primary and secondary bootloader)
+
+details: >
+    Implicitly tested script
+    Tested implicitly by REQPROD 405174
 """
 
 import logging
 import sys
+from e_405174_MAIN_2_checkm_verification_programmed_data import run
 
 logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
-logging.info("Testcase result: Tested implicitly by REQPROD 405174 (tested implicitly)")
+
+if __name__ == '__main__':
+    run()

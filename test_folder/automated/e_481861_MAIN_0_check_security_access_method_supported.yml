@@ -1,5 +1,5 @@
 hvbm_p519:
-    step_1:
+    run:
         programming_sa_levels_and_auth_method:
             '01' : "0001"
             '05' : "FFFF"

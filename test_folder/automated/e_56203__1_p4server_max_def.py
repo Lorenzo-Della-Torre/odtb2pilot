@@ -157,6 +157,17 @@ def __send(dut: Dut, service, payload, timeout):
 
     logging.debug("Time for response: %sms", elapsed_time)
 
+def change_mode(dut, mode):
+    """
+    To Change mode
+    """
+    dut.uds.set_mode(mode, False)
+
+def entersbl(dut):
+    """
+    To enter into secondary boot loader
+    """
+    dut.uds.enter_sbl()
 
 def run():
     """
@@ -181,14 +192,14 @@ def run():
 
         # Change to programming sessoin
         logging.info("Changing mode to mode 2 (primary bootloader)")
-        dut.step(dut.uds.set_mode, 2, False)
+        dut.step(change_mode, 2)
 
         # P4server_max in primary bootloader
         dut.step(p4_server_max_services, services["pbl"])
 
         # Activate secondary bootloader
         logging.info("Activating secondary bootloader.")
-        dut.step(dut.uds.enter_sbl)
+        dut.step(entersbl)
 
         # P4server_max in secondary bootloader
         dut.step(p4_server_max_services, services["sbl"])

@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,343 +18,307 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-# Testscript Hilding MEPII
-# project:  BECM basetech MEPII
-# author:   LDELLATO (Lorenzo Della Torre)
-# date:     2020-02-05
-# version:  1.0
-# reqprod:  405174
+reqprod: 405174
+version: 2
+title: Check Memory - verification of programmed data
+purpose: >
+    The CheckMemory is executed in the ECU via the routineIdentifier(Check Memory).
+    This will inform the ECU that a software part is downloaded and that the authenticity
+    verification of the stored data shall be started. For some scenarios, the software download
+    tools will require two attempts (e.g. for development and production units)
 
-# author:   LDELLATO (Lorenzo Della Torre)
-# date:     2020-09-21
-# version:  1.1
-# reqprod:  405174
+description: >
+    The ECU shall start the authenticity verification of programmed data when the routine
+    Identifier CheckMemory is received. It shall be possible to make two consecutive CheckMemory
+    attempts (i.e. one false attempt is possible). The verification result from the latest
+    CheckMemory attempt shall be applied in the ECU. If the CheckMemory verification has failed
+    and no more attempts are allowed, a new data transfer of the software part must be performed
+    in order to verify the software at a CheckMemory request again. If a third consecutive
+    CheckMemory request is sent, that request must be aborted.
 
-#inspired by https://grpc.io/docs/tutorials/basic/python.html
+    Table - CheckMemory requests shows when two CheckMemory attempts are possible, i.e. that no
+    other request is sent in between. To save time, the ECU shall at the second CheckMemory attempt
+    reuse the previously performed verifications, e.g. hash calculation.
 
-# Copyright 2015 gRPC authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-The Python implementation of the gRPC route guide client.
+details: >
+    Verifying check memory verification of programmed data
 """
 
-import time
-from datetime import datetime
-import sys
+import copy
 import logging
-import inspect
-
-import odtb_conf
-from supportfunctions.support_can import SupportCAN, CanParam, CanTestExtra, CanPayload
-from supportfunctions.support_test_odtb2 import SupportTestODTB2
+from os import listdir
+from hilding.dut import DutTestError
+from hilding.dut import Dut
+from supportfunctions.support_can import SupportCAN
 from supportfunctions.support_carcom import SupportCARCOM
-from supportfunctions.support_file_io import SupportFileIO
 from supportfunctions.support_SBL import SupportSBL
-from supportfunctions.support_sec_acc import SupportSecurityAccess
-
-from supportfunctions.support_precondition import SupportPrecondition
-from supportfunctions.support_postcondition import SupportPostcondition
-from supportfunctions.support_service10 import SupportService10
-from supportfunctions.support_service11 import SupportService11
+from supportfunctions.support_sec_acc import SecAccessParam
 from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_service31 import SupportService31
-from supportfunctions.support_service34 import SupportService34
 
-
-SIO = SupportFileIO
-SC = SupportCAN()
-S_CARCOM = SupportCARCOM()
-SUTE = SupportTestODTB2()
 SSBL = SupportSBL()
-SSA = SupportSecurityAccess()
-
-PREC = SupportPrecondition()
-POST = SupportPostcondition()
-SE10 = SupportService10()
-SE11 = SupportService11()
+SC = SupportCAN()
 SE22 = SupportService22()
 SE31 = SupportService31()
-SE34 = SupportService34()
+SC_CARCOM = SupportCARCOM()
 
-def step_1(can_p: CanParam):
-    """
-    Teststep 1: Activate SBL
-    """
-    stepno = 1
-    purpose = "Download and Activation of SBL"
-    fixed_key = '0102030405'
-    new_fixed_key = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), 'fixed_key')
-    # don't set empty value if no replacement was found:
-    if new_fixed_key != '':
-        assert isinstance(new_fixed_key, str)
-        fixed_key = new_fixed_key
-    else:
-        logging.info("Step%s: new_fixed_key is empty. Leave old value.", stepno)
-    logging.info("Step%s: fixed_key after YML: %s", stepno, fixed_key)
 
-    result = SSBL.sbl_activation(can_p,
-                                 fixed_key,
-                                 stepno, purpose)
+def load_vbf_files(dut):
+    """
+    Loads the rig specific VBF files found in rigs/<default-rig-name>/VBFs
+    Args:
+        dut (Dut): An instance of Dut
+    Returns:
+        boolean: True if vbfs were loaded successfully, otherwise False
+    """
+    logging.info("~~~~~~~~ Loading VBFs started ~~~~~~~~")
+    vbfs = listdir(dut.conf.rig.vbf_path)
+
+    paths_to_vbfs = [str(dut.conf.rig.vbf_path) + "/" + x for x in vbfs]
+
+    if not paths_to_vbfs:
+        logging.error("VBFs not found, expected in %s ... aborting", dut.conf.rig.vbf_path)
+        return False
+
+    result = SSBL.read_vbf_param(paths_to_vbfs)
     return result
 
-def step_3(can_p, vbf_header):
+
+def step_1(dut: Dut):
     """
-    Teststep 3: 1st Check memory with verification failed
+    action: Activation of SBL and verify ESS software part download no check
+    expected_result: True when SBL activation & ESS sw part download no check successful
     """
-    stepno = 3
-    purpose = "1st Check Memory with verification failed"
-    # modify the sw signature removing the last two number and replacing with 16 by default
-    # Python converted the sw signature to int
-    vbf_header["sw_signature_dev"] = int(str(vbf_header["sw_signature_dev"])[:-2]+ '16')
+    # Load vbfs
+    vbf_result = load_vbf_files(dut)
 
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), vbf_header["sw_signature_dev"])
+    if vbf_result is False:
+        logging.error("Aborting software download due to problems when loading VBFs")
+        return False, None
 
-    SUTE.print_test_purpose(stepno, purpose)
+    sa_keys: SecAccessParam = dut.conf.default_rig_config
+    # Activate SBL
+    sbl_result = SSBL.sbl_activation(dut, sa_keys)
 
-    result = SE31.check_memory(can_p, vbf_header, stepno)
+    if sbl_result is False:
+        logging.error("Aborting software download due to problems when activating SBL")
+        return False, None
 
-    result = result and (
-        SSBL.pp_decode_routine_check_memory(SC.can_messages[can_p["receive"]][0][2])
-        == 'The signed data could not be authenticated'
-    )
-    logging.info(SSBL.pp_decode_routine_check_memory(SC.can_messages[can_p["receive"]][0][2]))
+    result, vbf_header = SSBL.sw_part_download_no_check(dut, SSBL.get_ess_filename(),
+                                                                stepno=1)
+
+    if result :
+        logging.info("ESS software part download no check successful")
+        return True, vbf_header
+
+    logging.error("Test Failed: ESS software part download no check not successful")
+    return False, None
+
+
+def step_2(dut: Dut, vbf_header):
+    """
+    action: 1st check memory with verification failed
+    expected_result: True when the signed data could not be authenticated
+    """
+    vbf_header_manipulate = copy.deepcopy(vbf_header)
+    vbf_header_manipulate["sw_signature_dev"] = int(str(vbf_header_manipulate\
+                                                ["sw_signature_dev"])[:-2]+ '16')
+
+    result = SE31.check_memory(dut, vbf_header_manipulate, 2)
+
+    if result and SSBL.pp_decode_routine_check_memory(SC.can_messages[dut["receive"]][0][2])\
+                  == 'The signed data could not be authenticated':
+        logging.info(SSBL.pp_decode_routine_check_memory(SC.can_messages[dut["receive"]][0][2]))
+        return True
+
+    logging.error("Test Failed: check_memory failed and decode routine check memory %s ",
+                   SSBL.pp_decode_routine_check_memory(SC.can_messages[dut["receive"]][0][2]))
+    return False
+
+
+def step_3(dut: Dut, vbf_header):
+    """
+    action: 2nd check memory with verification failed
+    expected_result: True when the signed data could not be authenticated
+    """
+    vbf_header_manipulate = copy.deepcopy(vbf_header)
+    vbf_header_manipulate["sw_signature_dev"] = int(str(vbf_header_manipulate\
+                                                         ["sw_signature_dev"])[:-2]+ '14')
+    result = SE31.check_memory(dut, vbf_header_manipulate, 3)
+
+    if result and SSBL.pp_decode_routine_check_memory(SC.can_messages[dut["receive"]][0][2])\
+            == 'The signed data could not be authenticated':
+        logging.info(SSBL.pp_decode_routine_check_memory(SC.can_messages[dut["receive"]][0][2]))
+        return True
+
+    logging.error("Test Failed: check_memory failed and decode routine check memory %s ",
+                   SSBL.pp_decode_routine_check_memory(SC.can_messages[dut["receive"]][0][2]))
+    return False
+
+
+def step_4(dut: Dut, vbf_header):
+    """
+    action: Verify 3rd check memory with negative response
+    expected_result: True when negative response NRC 31 received
+    """
+    vbf_header_manipulate = copy.deepcopy(vbf_header)
+    sw_signature = vbf_header_manipulate['sw_signature_dev'].to_bytes(
+        (vbf_header_manipulate['sw_signature_dev'].bit_length()+7) // 8, 'big')
+
+    # Prepare payload
+    payload = SC_CARCOM.can_m_send("RoutineControlRequestSID", b'\x02\x12' + sw_signature, b'')
+    response = dut.uds.generic_ecu_call(payload)
+
+    if response.raw[2:8] == "7F3131":
+        logging.info("Received NRC-31(requestOfRange) as expected")
+        return True
+    logging.error("Test Failed: Expected NRC-31(requestOfRange) received, %s", response.raw)
+    return False
+
+
+def step_5(dut: Dut):
+    """
+    action: Download ESS software part no check
+    expected_result: True when positive response from ECU
+    """
+    logging.info("ESS Software part download no check")
+    result = SSBL.sw_part_download_no_check(dut, SSBL.get_ess_filename(), stepno=5)
+
+    if result :
+        logging.info("ESS software part download no check successful")
+        return True
+
+    logging.error("Test Failed: ESS software part download no check not successful")
+    return False
+
+
+def step_6(dut: Dut, vbf_header):
+    """
+    action: 1st Check memory with verification failed
+    expected_result: True when The signed data could not be authenticated
+    """
+    vbf_header_manipulate = copy.deepcopy(vbf_header)
+    vbf_header_manipulate["sw_signature_dev"] = int(str(vbf_header_manipulate\
+                                                            ["sw_signature_dev"])[:-2]+ '16')
+
+    result = SE31.check_memory(dut, vbf_header_manipulate, 6)
+    if result and SSBL.pp_decode_routine_check_memory(SC.can_messages[dut["receive"]][0][2])\
+                                    == 'The signed data could not be authenticated':
+        logging.info(SSBL.pp_decode_routine_check_memory(
+                         SC.can_messages[dut["receive"]][0][2]))
+        return True
+
+    logging.error("Test Failed: check_memory failed and decode routine check memory %s ",
+                   SSBL.pp_decode_routine_check_memory(SC.can_messages[dut["receive"]][0][2]))
+    return False
+
+
+def step_7(dut: Dut, vbf_header):
+    """
+    action: Verify response time P4server_max for the 2nd check memory routine is 2000 ms
+    expected_result: True when response time P4server_max for the positive check memory response
+                     is within 2000 ms
+    """
+    result = SE31.check_memory(dut, vbf_header, 7)
+
+    response_time = dut.uds.milliseconds_since_request()
+    # p4_server_max_time  is 2000ms
+    if response_time <= 2000:
+        logging.info("Response time %sms is less than or equal to 2000ms(p4_server_max_time) as"
+                     "expected", response_time)
+
+        if result and SSBL.pp_decode_routine_check_memory(SC.can_messages[dut["receive"]][0][2])\
+            == 'The verification is passed':
+
+            logging.info(SSBL.pp_decode_routine_check_memory\
+                        (SC.can_messages[dut["receive"]][0][2]))
+            return True
+
+        logging.error("Test Failed: check_memory failed and decode routine check memory %s ",
+                SSBL.pp_decode_routine_check_memory(SC.can_messages[dut["receive"]][0][2]))
+        return False
+
+    logging.error("Test Failed: Response time %s ms is greater than 2000ms",
+                   response_time)
+    return False
+
+
+def step_8(dut: Dut):
+    """
+    action: Verify sw part download and complete & compatible routine
+    expected_result: True when complete compatible routine and sw part download successful
+    """
+    for swp in SSBL.get_df_filenames():
+        result = SSBL.sw_part_download(dut, swp, stepno=8)
+
+    result = result and SSBL.check_complete_compatible_routine(dut, stepno=8)
+    result = result and (SSBL.pp_decode_routine_complete_compatible(
+                         SC.can_messages[dut["receive"]][0][2]) == 'Complete, Compatible')
     return result
 
-def step_4(can_p, vbf_header):
+
+def step_9(dut: Dut):
     """
-    Teststep 4: 2nd Check memory with verification failed
+    action: Reset ECU and verify ECU is in default session
+    expected_result: True when ECU  is in default session
     """
-    stepno = 4
-    purpose = "2nd Check Memory with verification failed"
+    # ECU hard reset
+    response = dut.uds.ecu_reset_1101()
+    if response.raw[2:4] == '51':
+        check_default = SE22.read_did_f186(dut, dsession=b'\x01')
+        if check_default:
+            logging.info("ECU is in default session as expected")
+            return True
 
-    # modify the sw signature removing the last two number and replacing with 14 by default
-    # Python converted the sw signature to int
-    vbf_header["sw_signature_dev"] = int(str(vbf_header["sw_signature_dev"])[:-2]+ '14')
+        logging.error("Test Failed: ECU is not in default session")
+        return False
 
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), vbf_header["sw_signature_dev"])
+    logging.error("Test Failed: ECU reset failed")
+    return False
 
-    SUTE.print_test_purpose(stepno, purpose)
-
-    result = SE31.check_memory(can_p, vbf_header, stepno)
-    result = result and (
-        SSBL.pp_decode_routine_check_memory(SC.can_messages[can_p["receive"]][0][2])
-        == 'The signed data could not be authenticated'
-    )
-    logging.info(SSBL.pp_decode_routine_check_memory(SC.can_messages[can_p["receive"]][0][2]))
-    return result
-
-def step_5(can_p, vbf_header_original):
-    """
-    Teststep 5: 3rd Check memory with Negative Response
-    """
-    # In VBF header sw_signature_dev was stored as hex, Python converts that into int.
-    # It has to be converted to bytes to be used as payload
-    sw_signature = vbf_header_original['sw_signature_dev'].to_bytes(
-        (vbf_header_original['sw_signature_dev'].bit_length()+7) // 8, 'big'
-    )
-
-    cpay: CanPayload = {
-        "payload": S_CARCOM.can_m_send(
-            "RoutineControlRequestSID", b'\x02\x12' + sw_signature, b'\x01'
-        ),
-        "extra": '',
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
-
-    etp: CanTestExtra = {
-        "step_no": 5,
-        "purpose": "3rd Check memory with Negative Response",
-        "timeout": 2,
-        "min_no_messages": -1,
-        "max_no_messages": -1,
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
-
-    result = SUTE.teststep(can_p, cpay, etp)
-
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='7F31')
-    logging.info(SUTE.pp_decode_7f_response(SC.can_frames[can_p["receive"]][0][2]))
-    return result
-
-def step_7(can_p, vbf_header):
-    """
-    Teststep 7: 1st Check memory with verification failed
-    """
-    stepno = 7
-
-    # modify the sw signature removing the last two number and replacing with 16 by default
-    # Python converted the sw signature to int
-    vbf_header["sw_signature_dev"] = int(str(vbf_header["sw_signature_dev"])[:-2]+ '16')
-
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), vbf_header["sw_signature_dev"])
-
-    purpose="1st Check Memory with verification failed"
-
-    SUTE.print_test_purpose(stepno, purpose)
-
-    result = SE31.check_memory(can_p, vbf_header, stepno)
-    result = result and (
-        SSBL.pp_decode_routine_check_memory(SC.can_messages[can_p["receive"]][0][2])
-        == 'The signed data could not be authenticated'
-    )
-    logging.info(SSBL.pp_decode_routine_check_memory(SC.can_messages[can_p["receive"]][0][2]))
-    return result
-
-def step_8(can_p, vbf_header_original):
-    """
-    Teststep 8: 2nd Check memory with verification positive
-    """
-    stepno = 8
-
-    purpose = "2nd Check memory with verification positive"
-    SUTE.print_test_purpose(stepno, purpose)
-
-    result = SE31.check_memory(can_p, vbf_header_original, stepno)
-
-    result = result and (
-        SSBL.pp_decode_routine_check_memory(SC.can_messages[can_p["receive"]][0][2])
-        == 'The verification is passed'
-    )
-    logging.info(SSBL.pp_decode_routine_check_memory(SC.can_messages[can_p["receive"]][0][2]))
-    return result
-
-def step_10(can_p):
-    """
-    Teststep 10: Check the Complete and compatible Routine return Complete Not Compatible
-    """
-    etp: CanTestExtra = {
-        "step_no": 10,
-        "purpose": "Check the Complete and compatible Routine return Complete not Compatible",
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
-
-    SUTE.print_test_purpose(etp["step_no"], etp["purpose"])
-    result = SSBL.check_complete_compatible_routine(can_p, etp["step_no"])
-    result = result and (
-        SSBL.pp_decode_routine_complete_compatible(SC.can_messages[can_p["receive"]][0][2])
-        == 'Complete, Compatible'
-    )
-
-    return result
 
 def run():
     """
-    Run - Call other functions from here
+    Verifying check memory - verification of programmed data
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+    dut = Dut()
+    start_time = dut.start()
+    result = False
+    result_step = False
+    try:
+        dut.precondition(timeout=700)
+        result_step , vbf_header = dut.step(step_1, purpose="Verify activation of SBL and ESS"
+                                                            " software part download no check")
+        if result_step:
+            result_step = dut.step(step_2, vbf_header, purpose="Verify 1st check memory with "
+                                                               "verification failed")
+        if result_step:
+            result_step = dut.step(step_3, vbf_header, purpose="Verify 2nd check memory with"
+                                                               " verification failed")
+        if result_step:
+            result_step = dut.step(step_4, vbf_header, purpose="Verify 3rd check memory with"
+                                                               " negative response")
+        if result_step:
+            result_step = dut.step(step_5, purpose="Verify download ESS software part no check")
 
-    # where to connect to signal_broker
-    can_p: CanParam = {
-        "netstub": SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        "send": "Vcu1ToBecmFront1DiagReqFrame",
-        "receive": "BecmToVcu1Front1DiagResFrame",
-        "namespace": SC.nspace_lookup("Front1CANCfg0")
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
+        if result_step:
+            result_step = dut.step(step_6, vbf_header, purpose="Verify 1st check memory with"
+                                                               " verification failed")
+        if result_step:
+            result_step = dut.step(step_7, vbf_header, purpose="Verify response time P4server_max"
+                                                   " for the 2nd check memory routine is 2000 ms")
+        if result_step:
+            result_step = dut.step(step_8, purpose="Verify sw part download, complete"
+                                                    " and compatible routine")
+        if result_step:
+            result_step = dut.step(step_9, purpose="Reset ECU and Verify ECU in default session")
 
-    logging.info("Testcase start: %s", datetime.now())
-    starttime = time.time()
-    logging.info("Time: %s \n", time.time())
-    ############################################
-    # precondition
-    ############################################
-    # read VBF param when testscript is s started, if empty take default param
-    SSBL.get_vbf_files()
-    result = PREC.precondition(can_p, timeout=1500)
+        result = result_step
+    except DutTestError as error:
+        logging.error("Test failed: %s", error)
+    finally:
+        dut.postcondition(start_time, result)
 
-    if result:
-    ############################################
-    # teststeps
-    ############################################
-
-        # step 1:
-        # action: DL and activate SBL
-        # result: ECU sends positive reply
-        result = result and step_1(can_p)
-
-        # step 2:
-        # action: download ESS Software Part no check
-        # result: ECU sends positive reply
-        logging.info("ESS Software Part Download no check")
-        result_step2, vbf_header = SSBL.sw_part_download_no_check(can_p, SSBL.get_ess_filename(),
-                                                                  stepno=2)
-        result = result and result_step2
-        time.sleep(1)
-        # save original sw signature for step 5 and step 8
-        original_sw_signature = vbf_header["sw_signature_dev"]
-
-        # step 3:
-        # action: 1st Check memory with verification failed
-        # result: BECM sends positive reply
-        result = result and step_3(can_p, vbf_header)
-
-        # step 4:
-        # action: 2nd Check Memory with verification failed
-        # result: BECM sends positive reply
-        result = result and step_4(can_p, vbf_header)
-
-        # step 5:
-        # action: 3rd Check memory with Negative Response
-        # result: BECM sends positive reply
-        vbf_header["sw_signature_dev"] = original_sw_signature
-        result = result and step_5(can_p, vbf_header)
-
-        # step 6:
-        # action: download ESS Software Part
-        # result: ECU sends positive reply
-        logging.info("Step_6: ESS Software Part Download no check")
-        result = result and SSBL.sw_part_download_no_check(can_p, SSBL.get_ess_filename(), stepno=6)
-        time.sleep(1)
-
-        # step 7:
-        # action: 1st Check memory with verification failed
-        # result: BECM sends positive reply
-        result = result and step_7(can_p, vbf_header)
-
-        # step 8:
-        # action: 2nd Check memory with verification positive
-        # result: BECM sends positive reply
-        vbf_header["sw_signature_dev"] = original_sw_signature
-        result = result and step_8(can_p, vbf_header)
-
-        # step 9:
-        # action: Download the remnants Software Parts
-        # result: ECU sends positive reply
-        # Download the remnants Software Parts
-        for swp in SSBL.get_df_filenames():
-            result = result and SSBL.sw_part_download(can_p, swp, stepno=9)
-
-        # step 10:
-        # action: Check Complete and Compatible
-        # result: ECU sends "Complete and Compatible" reply
-        result = result and step_10(can_p)
-
-        # step 11:
-        # action: Hard Reset
-        # result: ECU sends positive reply
-        result = result and SE11.ecu_hardreset(can_p, stepno=11)
-        time.sleep(1)
-
-        # step 12:
-        # action: verify ECU in default session
-        # result: ECU sends positive reply
-        result = result and SE10.diagnostic_session_control_mode1(can_p, stepno=12)
-
-    ############################################
-    # postCondition
-    ############################################
-    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()

@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,266 +18,234 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-# Testscript Hilding MEPII
-# project:  BECM basetech MEPII
-# author:   LDELLATO (Lorenzo Della Torre)
-# date:     2020-01-08
-# version:  1.1
-# reqprod:  53854
+reqprod: 53854
+version: 1
+title: Support of erase and write data to non-volatile memory
+purpose: >
+    Only the Secondary Bootloader (SBL) shall be able to erase and write data to the
+    non-volatile memory.
 
-# author:   LDELLATO (Lorenzo Della Torre)
-# date:     2020-09-23
-# version:  1.2
-# reqprod:  53854
+description: >
+    The Secondary Bootloader shall upon request erase and write data to the ECU non-volatile
+    memory, except for the non-volatile memory area containing the primary bootloader.
 
-#inspired by https://grpc.io/docs/tutorials/basic/python.html
-
-# Copyright 2015 gRPC authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-The Python implementation of the gRPC route guide client.
+details: >
+    Verify PBL fails to erase and write data to the non-volatile memory
 """
 
 import time
-from datetime import datetime
-import sys
 import logging
-import inspect
-
-import odtb_conf
-
-from supportfunctions.support_can import SupportCAN, CanParam, CanTestExtra, CanPayload, CanMFParam
-from supportfunctions.support_test_odtb2 import SupportTestODTB2
+from hilding.dut import Dut
+from hilding.dut import DutTestError
+from supportfunctions.support_can import SupportCAN, CanMFParam
 from supportfunctions.support_carcom import SupportCARCOM
 from supportfunctions.support_file_io import SupportFileIO
-from supportfunctions.support_SBL import SupportSBL
-from supportfunctions.support_rpi_gpio import SupportRpiGpio
-
-from supportfunctions.support_precondition import SupportPrecondition
-from supportfunctions.support_postcondition import SupportPostcondition
-from supportfunctions.support_service10 import SupportService10
 from supportfunctions.support_service11 import SupportService11
-from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_service27 import SupportService27
 from supportfunctions.support_service31 import SupportService31
+from supportfunctions.support_test_odtb2 import SupportTestODTB2
+from supportfunctions.support_SBL import SupportSBL
 
-from hilding.dut import Dut
-
-
-SIO = SupportFileIO
 SC = SupportCAN()
-S_CARCOM = SupportCARCOM()
-SUTE = SupportTestODTB2()
-SSBL = SupportSBL()
-SGPIO = SupportRpiGpio()
-
-PREC = SupportPrecondition()
-POST = SupportPostcondition()
-SE10 = SupportService10()
+SC_CARCOM = SupportCARCOM()
+SIO = SupportFileIO()
 SE11 = SupportService11()
-SE22 = SupportService22()
 SE27 = SupportService27()
 SE31 = SupportService31()
+SUTE = SupportTestODTB2()
+SSBL = SupportSBL()
 
-def step_4(can_p):
-    """
-    Teststep 4:Flash Erase in PBL reply with Aborted
-    """
-    #memory address of PBL: PBL start with the address 80000000 for all ECU
-    memory_add = SUTE.pp_string_to_bytes(str('80000000'), 4)
-    #memory size to erase
-    memory_size = SUTE.pp_string_to_bytes(str('0000C000'), 4)
 
+def change_control_frame_parameters(dut):
+    """
+    Request to change frame control delay
+    Args:
+        dut (Dut): An instance of Dut
+    Return: None
+    """
+    can_mf: CanMFParam = {"block_size": 0,
+                          "separation_time": 0,
+                          "frame_control_delay": 0,
+                          "frame_control_flag": 48,
+                          "frame_control_auto": True}
+
+    SC.change_mf_fc(dut["receive"], can_mf)
+
+
+def pbl_flash_erase(dut, memory_start, memory_length):
+    """
+    Flash erase in PBL memory address
+    Args:
+        dut (Dut): An instance of Dut
+        memory_start (str): Memory start address
+        memory_length (str): Memory length
+    Return:
+        response.raw (str): ECU response
+    """
+    # Memory address of PBL: PBL start with the address 80000000 for all ECU
+    memory_add = SUTE.pp_string_to_bytes(memory_start, 4)
+
+    # Memory size to erase
+    memory_size = SUTE.pp_string_to_bytes(memory_length, 4)
+
+    # Prepare payload
     erase = memory_add + memory_size
+    payload = SC_CARCOM.can_m_send("RoutineControlRequestSID", bytes.fromhex('FF00')+ erase,
+                                    bytes.fromhex('01'))
+    change_control_frame_parameters(dut)
 
-    cpay: CanPayload = {"payload" : S_CARCOM.can_m_send("RoutineControlRequestSID", b'\xFF\x00' +
-                                                        erase, b'\x01'),
-                        "extra" : ''
-                       }
-
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
-
-    etp: CanTestExtra = {"step_no" : 4,
-                         "purpose" : "Flash Erase Routine reply Aborted in PBL",
-                         "timeout" : 1,
-                         "min_no_messages" : -1,
-                         "max_no_messages" : -1
-                        }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
-
-    #change Control Frame parameters
-    can_mf: CanMFParam = {
-        "block_size": 0,
-        "separation_time": 0,
-        "frame_control_delay": 0, #no wait
-        "frame_control_flag": 48, #continue send
-        "frame_control_auto": False
-        }
-
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_mf)
-
-    SC.change_mf_fc(can_p["receive"], can_mf)
-    time.sleep(1)
-    result = SUTE.teststep(can_p, cpay, etp)
-    result = result and SUTE.pp_decode_routine_control_response(SC.can_frames
-                                                                [can_p["receive"]][0][2],
-                                                                'Type1,Aborted')
-
-    return result
+    response = dut.uds.generic_ecu_call(payload)
+    return response.raw
 
 
-def step_7(can_p):
+def step_1(dut: Dut):
     """
-    Teststep 7:Flash Erase of PBL memory address is not allowed
+    action: Verify programming preconditions and security access in programming session
+    expected_result: True when security access is successful in programming session
     """
+    # Verify programming preconditions
+    result = SE31.routinecontrol_requestsid_prog_precond(dut)
+    if not result:
+        logging.error("Test Failed: Routine control requestsid prog preconditions unsuccessful")
+        return False
 
-    #memory address of PBL: PBL start with the address 80000000 for all ECU
-    memory_add = SUTE.pp_string_to_bytes(str('80000000'), 4)
-    #memory size to erase
-    memory_size = SUTE.pp_string_to_bytes(str('0000C000'), 4)
+    #Sleep time to avoid NRC37
+    time.sleep(5)
 
-    erase = memory_add + memory_size
+    # Set to programming session
+    dut.uds.set_mode(2)
 
-    cpay: CanPayload = {"payload" : S_CARCOM.can_m_send("RoutineControlRequestSID", b'\xFF\x00' +
-                                                        erase, b'\x01'),
-                        "extra" : ''
-                       }
+    # Security access
+    sa_result = SE27.activate_security_access_fixedkey(dut, sa_keys=dut.conf.default_rig_config)
+    if not sa_result:
+        logging.error("Test Failed: Security access denied in programming session")
+        return False
 
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    logging.info("Security access successful in programming session")
+    return True
 
-    etp: CanTestExtra = {"step_no" : 7,
-                         "purpose" : "Flash Erase of PBL memory address is not allowed",
-                         "timeout" : 1,
-                         "min_no_messages" : -1,
-                         "max_no_messages" : -1
-                        }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
 
-    #change Control Frame parameters
-    can_mf: CanMFParam = {
-        "block_size": 0,
-        "separation_time": 0,
-        "frame_control_delay": 0, #no wait
-        "frame_control_flag": 48, #continue send
-        "frame_control_auto": False
-        }
+def step_2(dut: Dut, parameters):
+    """
+    action: Request flash erase in PBL
+    expected_result: True on receiving 'Type1,Aborted' response
+    """
+    # Request for flash erase in PBL
+    response = pbl_flash_erase(dut, memory_start=parameters['pbl_memory_start_address'],
+                               memory_length=parameters['pbl_memory_write_length'])
+    result  = SUTE.pp_decode_routine_control_response(response, 'Type1,Aborted')
+    if result:
+        logging.info("Received flash erase routine reply aborted in PBL as expected")
+        return True
 
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_mf)
+    logging.error("Test Failed: Received unexpected response %s", response)
+    return False
 
-    SC.change_mf_fc(can_p["receive"], can_mf)
-    time.sleep(1)
-    result = SUTE.teststep(can_p, cpay, etp)
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='7F3131')
-    print(SUTE.pp_decode_7f_response(SC.can_frames[can_p["receive"]][0][2]))
-    return result
+
+def step_3(dut: Dut):
+    """
+    action: Download and activate SBL
+    expected_result: True when successfully activated SBL
+    """
+    # Loads the rig specific VBF files
+    vbf_result = SSBL.get_vbf_files()
+    if not vbf_result:
+        logging.error("Test Failed: Aborting due to problems when loading VBFs")
+        return False
+
+    # Download SBL
+    result, vbf_sbl_header = SSBL.sbl_download(dut, SSBL.get_sbl_filename())
+    if not result:
+        logging.error("Test Failed: SBL download failed")
+        return False
+
+    # Activate SBL
+    sbl_result = SSBL.activate_sbl(dut, vbf_sbl_header, stepno=2)
+    if not sbl_result:
+        logging.error("Test Failed: SBL activation failed")
+        return False
+
+    logging.info("SBL activation successful")
+    return True
+
+
+def step_4(dut: Dut, parameters):
+    """
+    action: Verify flash erase of PBL memory address is not allowed
+    expected_result: True when received negative response '7F' and NRC-31(requestOutOfRange)
+    """
+    # Request for flash erase in PBL memory address
+    response = pbl_flash_erase(dut, memory_start=parameters['pbl_memory_start_address'],
+                               memory_length=parameters['pbl_memory_write_length'])
+    result = SUTE.test_message(SC.can_messages[dut["receive"]], teststring='7F3131')
+    if not result:
+        logging.error("Test Failed: Expected negative response '7F' and NRC-31(requestOutOfRange), "
+                      "received %s", response)
+        return False
+
+    logging.info("Received negative response %s and NRC-%s as expected", response[2:4],
+                  response[6:8])
+    return True
+
+
+def step_5(dut: Dut):
+    """
+    action: ECU hard reset
+    expected_result: True when ECU is in default session
+    """
+    # ECU hard reset
+    result = SE11.ecu_hardreset_5sec_delay(dut)
+    if not result:
+        logging.error("Test Failed: Unable to reset ECU")
+        return False
+
+    # Verify active diagnostic session
+    response = dut.uds.active_diag_session_f186()
+    if not response.data["details"]["mode"] == 1:
+        logging.error("Test Failed: ECU is not in default session")
+        return False
+
+    logging.info("ECU is in default session as expected")
+    return True
+
 
 def run():
     """
-    Run - Call other functions from here
+    Verify PBL fails to erase and write data to the non-volatile memory
     """
     dut = Dut()
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
-    # where to connect to signal_broker
-    can_p: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        "send" : "Vcu1ToBecmFront1DiagReqFrame",
-        "receive" : "BecmToVcu1Front1DiagResFrame",
-        "namespace" : SC.nspace_lookup("Front1CANCfg0")
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
-    logging.info("Testcase start: %s", datetime.now())
-    starttime = time.time()
-    logging.info("Time: %s \n", time.time())
-    ############################################
-    # precondition
-    ############################################
-    # read VBF param when testscript is s started, if empty take default param
-    SSBL.get_vbf_files()
-    timeout = 500
-    result = PREC.precondition(can_p, timeout)
+    start_time = dut.start()
+    result = False
+    result_step = False
 
-    platform=dut.conf.rigs[dut.conf.default_rig]['platform']
-    sa_keys = {
-        "SecAcc_Gen" : dut.conf.platforms[platform]['SecAcc_Gen'],
-        "fixed_key": dut.conf.platforms[platform]["fixed_key"],
-        "auth_key": dut.conf.platforms[platform]["auth_key"],
-        "proof_key": dut.conf.platforms[platform]["proof_key"]
-    }
+    parameters_dict = {'pbl_memory_start_address': '',
+                       'pbl_memory_write_length': ''}
+    try:
+        dut.precondition(timeout=90)
 
+        parameters = SIO.parameter_adopt_teststep(parameters_dict)
+        if not all(list(parameters.values())):
+            raise DutTestError("yml parameters not found")
 
-    if result:
-    ############################################
-    # teststeps
-    ############################################
+        result_step = dut.step(step_1, purpose='Verify programming preconditions and'
+                                               ' security access in programming session')
+        if result_step:
+            result_step = dut.step(step_2, parameters, purpose='Request flash erase in PBL')
+        if result_step:
+            result_step = dut.step(step_3, purpose='Download and activate SBL')
+        if result_step:
+            result_step = dut.step(step_4, parameters, purpose='Verify flash erase of PBL memory'
+                                                               ' address is not allowed')
+        if result_step:
+            result_step = dut.step(step_5, purpose='ECU hard reset')
+        result = result_step
 
-        # step 1:
-        # action: Verify programming preconditions
-        # result: ECU sends positive reply
-        result = result and SE31.routinecontrol_requestsid_prog_precond(can_p, stepno=1)
-        time.sleep(1)
+    except DutTestError as error:
+        logging.error("Test failed: %s", error)
+    finally:
+        dut.postcondition(start_time, result)
 
-        # step 2:
-        # action: Change to programming session
-        # result: ECU sends positive reply
-        result = result and SE10.diagnostic_session_control_mode2(can_p, stepno=2)
-
-        # step 3:
-        # action: Security Access Request SID
-        # result: ECU sends positive reply
-        result = result and SE27.activate_security_access_fixedkey(can_p, sa_keys, 3)
-
-        # step 4:
-        # action: Flash Erase in PBL reply with Aborted
-        # result: BECM sends positive reply
-        result = result and step_4(can_p)
-
-        # step 5:
-        # action: SBL Download
-        # result: BECM sends positive reply
-        logging.info("step_5: SBL Download")
-        result_step5, vbf_sbl_header = SSBL.sbl_download(can_p, SSBL.get_sbl_filename(),
-                                                         stepno=5)
-        result = result and result_step5
-        time.sleep(1)
-
-        # step 6:
-        # action: SBL Activation
-        # result: BECM sends positive reply
-        logging.info("step_6: SBL Activation")
-        result = result and SSBL.activate_sbl(can_p, vbf_sbl_header, stepno=6)
-
-        # step 7:
-        # action: Flash Erase of PBL memory address is not allowed
-        # result: BECM sends positive reply
-        result = result and step_7(can_p)
-
-        # step8:
-        # action: Hard Reset
-        # result: ECU sends positive reply
-        result = result and SE11.ecu_hardreset_5sec_delay(can_p, stepno=8)
-
-        # step9:
-        # action: verify ECU in default session
-        # result: ECU sends positive reply
-        result = result and SE22.read_did_f186(can_p, b'\x01', stepno=9)
-
-    ############################################
-    # postCondition
-    ############################################
-
-    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()

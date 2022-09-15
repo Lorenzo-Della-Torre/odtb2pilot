@@ -123,18 +123,16 @@ def step_3(can_p):
 
 def step_4(can_p):
     """
-    Teststep 4: Switch the ECU off and on
+    Teststep 4: ECU Reset
     """
     stepno = 4
-    purpose = "Switch the ECU off and on"
+    purpose = "ECU Reset"
     SUTE.print_test_purpose(stepno, purpose)
     time.sleep(1)
     result = True
-    print("Relais1 on")
-    SGPIO.t_send_gpio_signal_hex(can_p["netstub"], "Relais1", SC.nspace_lookup("RpiGPIO"), b'\x00')
-    time.sleep(3)
-    print("Relais1 off")
-    SGPIO.t_send_gpio_signal_hex(can_p["netstub"], "Relais1", SC.nspace_lookup("RpiGPIO"), b'\x01')
+
+    SE11.ecu_hardreset(can_p, stepno)
+
     time.sleep(2)
     return result
 
@@ -199,7 +197,8 @@ def run():
         # step 6:
         # action: DL and activate SBL
         # result: ECU sends positive reply
-        result = result and SSBL.sbl_activation(can_p, stepno=6, purpose="DL and activate SBL")
+        result = result and SSBL.sbl_activation(can_p, Config.default_rig_config,\
+                                            stepno=6, purpose="DL and activate SBL")
         time.sleep(1)
 
         # step 7:

@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -33,13 +33,12 @@ description:
     for which CRC16-CCITT checksum will be 0x3B37.
     Note.
     Development keys are by default generated in Global Master Reference Database and exported to
-    ECU supplier. The keys, initial keys, for ECUs intented for "production" shall be implemented at
+    ECU supplier. The keys, initial keys, for ECUs intended for "production" shall be implemented at
     latest prior to "vehicle prototype build" unless others are agreed for the project. This is the
     latest milestone to change initial keys.
 
 details:
-    Reading the status from (D0C7) as the checksum cannot be read.
-    Expect Positive response when the key programed status is 1.
+    Reading DID D0C7 for checking key programmed status as the checksum cannot be read.
 """
 
 import logging
@@ -49,24 +48,35 @@ from hilding.dut import DutTestError
 
 def step_1(dut: Dut):
     """
-    action: Send ECU to programming session and read DID D0C7
-    expected_result: Positive response with the key programed status is 1
+    action: Send ECU to programming session and read DID 'D0C7'
+    expected_result: True when the key programmed status is 1
     """
+    # Set to programming session
     dut.uds.set_mode(2)
-    res = dut.uds.read_data_by_id_22(b'\xd0\xc7')
-    return res.data["details"]["response_items"][0]['scaled_value'] == 1
+    response = dut.uds.read_data_by_id_22(bytes.fromhex('D0C7'))
+
+    key_programmed_status = response.data["details"]["response_items"][0]['scaled_value']
+    if key_programmed_status == 1:
+        logging.info("key programed status is %s as expected", key_programmed_status)
+        return True
+
+    logging.error("Test Failed: Expected key programed status is 1 but received %s",
+                  key_programmed_status)
+    return False
 
 
 def run():
-    """ Supporting functional requests """
+    """
+    Reading DID D0C7 for checking key programed status as the checksum cannot be read
+    """
     dut = Dut()
+
     start_time = dut.start()
     result = False
 
     try:
-        dut.precondition()
-        result = dut.step(
-            step_1, purpose='Reading DID D0C7 for checking key programed status')
+        dut.precondition(timeout=30)
+        result = dut.step(step_1, purpose='Send ECU to programming session and read DID D0C7')
     except DutTestError as error:
         logging.error("Test failed: %s", error)
 

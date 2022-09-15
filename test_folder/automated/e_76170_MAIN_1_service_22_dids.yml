@@ -1,0 +1,6 @@
+hvbm_p519:
+    run:
+        did_ext_def: 'F120'
+        did_prog: 'F121'
+        two_dids_ext_def: 'F120F12A'
+        two_dids_prog: 'F121F12A'

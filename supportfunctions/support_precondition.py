@@ -78,6 +78,18 @@ class SupportPrecondition:
         logging.info(
             "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Precondition started~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
+        #There is an issue in unsubscribe_signals() that generates a lot of errors in the log.
+        #In order to not confuse users this was simply removed from the log by disabling the logger
+        logger = logging.getLogger()
+        logger.disabled = True
+
+        # deregister signals
+        # Adding unsubscribe in precondition to remove all the unwanted subscriptions
+        # from the previous scripts if any.
+        SC.unsubscribe_signals()
+
+        logger.disabled = False
+
         #Temporary fix - add missing parameters in can_p
         for key in CanParam():
             if not key in can_p:
@@ -88,7 +100,7 @@ class SupportPrecondition:
             "name" : "Heartbeat",
             "send" : True,
             "id" : "BecmFront1NMFr",
-            "nspace" : can_p["namespace"].name,
+            "nspace" : can_p["namespace"],
             "frame" : b'\x1A\x40\xC3\xFF\x01\x00\x00\x00',
             "intervall" : 0.4
             }
@@ -197,7 +209,7 @@ class SupportPrecondition:
             "name" : "Heartbeat",
             "send" : True,
             "id" : "MvcmFront1NMFr",
-            "nspace" : can_p["namespace"].name,
+            "nspace" : can_p["namespace"],
             "frame" : b'\x1A\x40\xC3\xFF\x01\x00\x00\x00',
             "intervall" : 0.4
             }

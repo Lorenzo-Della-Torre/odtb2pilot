@@ -257,6 +257,9 @@ def activate_sbl(dut):
     """
     logging.info("~~~~~~~~ Activate SBL started ~~~~~~~~")
 
+    #Sleep time to avoid NRC37
+    time.sleep(5)
+
     # Setting up keys
     sa_keys: SecAccessParam = dut.conf.default_rig_config
 

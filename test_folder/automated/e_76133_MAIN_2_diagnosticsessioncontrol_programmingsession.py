@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,7 +18,20 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-Import script - Inherited from older version of requirement
+reqprod: 76133
+version: 2
+title: DiagnosticSessionControl(10) programmingSession (02, 82)
+purpose: >
+	It shall be possible to re-program any ECU on the public network.
+
+description: >
+	The ECU shall support the service diagnosticSessionControl - programmingSession in:
+    •	defaultSession
+    •	extendedDiagnosticSession
+    •	programmingSession, both primary and secondary bootloader.
+
+details: >
+    Import script - Inherited from older version of requirement
 """
 
 from e_76133_MAIN_1_diagnosticsessioncontrol_programmingsession import run

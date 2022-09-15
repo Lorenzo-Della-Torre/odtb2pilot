@@ -52,6 +52,7 @@ details: >
         2. Negative Response 31(requestOutOfRange) for invalid dataFormatIdentifier.
 """
 
+import time
 import logging
 
 from glob import glob
@@ -180,6 +181,8 @@ def step_2(dut: Dut, vbf_block):
     allowed_dfi = parameters["allowed_data_format_identifiers"]
 
     results = []
+    # Sleep time to avoid NRC37
+    time.sleep(5)
 
     for dfi in parameters["supported_data_format_identifiers"]:
         sa_result = security_access(dut)

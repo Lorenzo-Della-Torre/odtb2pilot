@@ -40,7 +40,6 @@ import grpc
 import requests
 
 from protogenerated.common_pb2 import Empty
-from protogenerated.common_pb2 import NameSpace
 
 from protogenerated.system_api_pb2_grpc import SystemServiceStub
 from protogenerated.network_api_pb2_grpc import NetworkServiceStub
@@ -112,7 +111,7 @@ class Dut:
             f'{self.conf.rig.signal_broker_port}')
         self.network_stub = NetworkServiceStub(self.channel)
         self.system_stub = SystemServiceStub(self.channel)
-        self.namespace = NameSpace(name="Front1CANCfg0")
+        self.namespace = 'Front1CANCfg0'
         self.protocol = 'can'
         self.framelength_max = 8
         self.padding = True
@@ -129,7 +128,7 @@ class Dut:
         if key == "receive":
             return self.conf.rig.signal_receive
         if key == "namespace":
-            return self.namespace
+            return self.conf.rig.namespace
         if key == 'protocol':
             return self.protocol
         if key == 'framelength_max':
@@ -146,13 +145,27 @@ class Dut:
             Defaults to 30.
         """
 
+        iso_tp = SupportCAN()
+
+        #There is an issue in unsubscribe_signals() that generates a lot of errors in the log.
+        #In order to not confuse users this was simply removed from the log by disabling the logger
+        logger = logging.getLogger()
+        logger.disabled = True
+
+        # deregister signals
+        # Adding unsubscribe in precondition to remove all the unwanted subscriptions
+        # from the previous scripts if any.
+        iso_tp.unsubscribe_signals()
+
+        logger.disabled = False
+
         self.uds.step = 100
         # start heartbeat, repeat every 0.8 second
         heartbeat_param: PerParam = {
             "name" : "Heartbeat",
             "send" : True,
             "id" : self.conf.rig.signal_periodic,
-            "nspace" : self.namespace.name,
+            "nspace" : self.namespace,
             "protocol" : "can",
             "framelength_max" : 8,
             "padding" : True,

@@ -111,15 +111,22 @@ details: >
 """
 
 import logging
+import time
 from hilding.dut import Dut
 from hilding.dut import DutTestError
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
 from supportfunctions.support_carcom import SupportCARCOM
 from supportfunctions.support_file_io import SupportFileIO
+from supportfunctions.support_SBL import SupportSBL
+from supportfunctions.support_service27 import SupportService27
+from supportfunctions.support_sec_acc import SupportSecurityAccess
 
 SUTE = SupportTestODTB2()
 SC_CARCOM = SupportCARCOM()
 SIO = SupportFileIO()
+SSBL = SupportSBL()
+SE27 = SupportService27()
+SSA = SupportSecurityAccess()
 
 
 def write_data_by_identifier_with_wrong_crc(dut: Dut, did):
@@ -220,6 +227,38 @@ def verify_wrong_crc_response(response, level, did):
     logging.error(msg)
     return False
 
+def security_access(dut: Dut, level):
+    """
+    security access to ECU for request seed
+    Args:
+        dut(class object): dut instance
+        level(str): Security access level
+    Returns: ECU response seed
+    """
+    # Set security access key and level
+    SSA.set_keys(dut.conf.default_rig_config)
+    SSA.set_level_key(int(level, 16))
+
+    # Prepare client request seed
+    client_req_seed = SSA.prepare_client_request_seed()
+    response = dut.uds.generic_ecu_call(client_req_seed)
+
+    # Truncate initial 2 bytes from response to process server response seed
+    server_res_seed = response.raw[4:]
+    result = SSA.process_server_response_seed(
+        bytearray.fromhex(server_res_seed))
+
+    # Prepare client request seed
+    client_resp_key = SSA.prepare_client_send_key()
+    response = dut.uds.generic_ecu_call(client_resp_key)
+
+    # Check serverResponseSeed is successful or not
+    if result == 0 and '67' in response.raw:
+        logging.info("Security unlock successful")
+        return True
+    logging.error("Security unlock failed")
+    return False
+
 
 def step_1(dut: Dut):
     """
@@ -235,7 +274,15 @@ def step_1(dut: Dut):
         logging.error("Test Failed: yml parameters not found")
         return False
 
+    # Sleep time to avoid NRC37
+    time.sleep(5)
     dut.uds.set_mode(2)
+
+    SSBL.get_vbf_files()
+
+    SSBL.sbl_activation(dut, dut.conf.default_rig_config, stepno=200,\
+                                            purpose="DL and activate SBL")
+
     for level, did in parameters['sa_levels_dids_programming'].items():
         response = write_data_by_identifier_with_wrong_structure(dut, did)
         result.append(verify_wrong_structure_response(response, level, did))
@@ -287,6 +334,12 @@ def step_3(dut: Dut):
         return False
 
     dut.uds.set_mode(2)
+
+    SSBL.get_vbf_files()
+
+    SSBL.sbl_activation(dut, dut.conf.default_rig_config, stepno=200,\
+                                            purpose="DL and activate SBL")
+
     for level, did in parameters['sa_levels_dids_programming'].items():
         response = write_data_by_identifier_with_wrong_crc(dut, did)
         result.append(verify_wrong_crc_response(response, level, did))
@@ -309,11 +362,15 @@ def step_4(dut: Dut):
     parameters = read_yml_parameters(dut)
     dut.uds.set_mode(1)
     dut.uds.set_mode(3)
+
+    time.sleep(5)
+
     if parameters is None:
         logging.error("Test Failed: yml parameters not found")
         return False
 
     for level, did in parameters['sa_levels_dids_extended'].items():
+        security_access(dut, level)
         response = write_data_by_identifier_with_wrong_crc(dut, did)
         result.append(verify_wrong_crc_response(response, level, did))
 
@@ -385,7 +442,7 @@ def run():
     result = False
     result_step = False
     try:
-        dut.precondition(timeout=150)
+        dut.precondition(timeout=200)
         result_step = dut.step(step_1,
                                purpose="Program security access invalid structure and valid"
                                "CRC in programming mode with supported security access levels")

@@ -1,0 +1,8 @@
+hvbm_p519:
+    run:
+        sa_key_update_did: 'F10A'
+        sa_key_read_did: 'D0C1'
+        initial_key: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
+        new_key: '0F0E0D0C0B0A09080706050403020100'
+        invalid_checksum: 'FF00'
+        max_time: 10

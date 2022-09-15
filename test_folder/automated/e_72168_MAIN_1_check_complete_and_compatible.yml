@@ -1,0 +1,3 @@
+hvbm_p519:
+    run:
+        p2_server_max : 25

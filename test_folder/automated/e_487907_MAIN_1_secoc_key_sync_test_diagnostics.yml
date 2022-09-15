@@ -1,0 +1,6 @@
+hvbm_p519:
+    run:
+        routine_id: '0234'
+        sec_oc_cluster_key_id: '0001'
+        pre_config_16_byte_value: 'FFFF5A5A5A5A5A5A5A5A5A5A5A5AFFFF'
+        invalid_sec_oc_cluster_key_id: '0002'

@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,220 +18,208 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-# Testscript Hilding MEPII
-# project:  BECM basetech MEPII
-# author:   LDELLATO (Lorenzo Della Torre)
-# date:     2020-07-03
-# version:  1.1
-# reqprod:  76134
 
-# #inspired by https://grpc.io/docs/tutorials/basic/python.html
-# Copyright 2015 gRPC authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+reqprod: 76134
+version: 1
+title: : DiagnosticSessionControl (10) extendedDiagnosticSession (03, 83)
 
-The Python implementation of the gRPC route guide client.
+purpose: >
+    ExtendedDiagnosticSession shall be supported since not all services used by the service tools
+    can be performed from defaultSession.
+
+description: >
+    The ECU shall support the service diagnosticSessionControl - extendedSession in:
+    •	defaultSession
+    •	extendedDiagnosticSession
+    The ECU may support diagnosticSessionControl - extendedSession in programmingSession.
+
+details: >
+    Verify the response of diagnosticSessionControl(10) - extended session(03, 83)
+    in default, programming and extended diagnostic session
 """
 
 import time
-from datetime import datetime
-import sys
 import logging
-import inspect
-
-import odtb_conf
-from supportfunctions.support_can import SupportCAN, CanParam, CanTestExtra
-from supportfunctions.support_test_odtb2 import SupportTestODTB2
+from hilding.dut import Dut
+from hilding.dut import DutTestError
+from hilding.uds import UdsEmptyResponse
+from supportfunctions.support_can import SupportCAN
 from supportfunctions.support_carcom import SupportCARCOM
-from supportfunctions.support_file_io import SupportFileIO
+from supportfunctions.support_test_odtb2 import SupportTestODTB2
 
-from supportfunctions.support_precondition import SupportPrecondition
-from supportfunctions.support_postcondition import SupportPostcondition
-from supportfunctions.support_service10 import SupportService10
-from supportfunctions.support_service22 import SupportService22
-
-SIO = SupportFileIO
 SC = SupportCAN()
-SUTE = SupportTestODTB2()
 SC_CARCOM = SupportCARCOM()
-PREC = SupportPrecondition()
-POST = SupportPostcondition()
-SE10 = SupportService10()
-SE22 = SupportService22()
+SUTE = SupportTestODTB2()
 
-def step_3(can_p):
-    """
-    Teststep 3: Request session change to Mode3 without reply
-    """
-    etp: CanTestExtra = {
-        "step_no": 3,
-        "purpose" : "Request session change to Mode3 without reply",
-        "timeout" : 1,
-        "min_no_messages" : -1,
-        "max_no_messages" : -1
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
-    result = SE10.diagnostic_session_control(can_p, etp, b'\x83')\
-         and not SC.can_messages[can_p["receive"]]
-    return result
 
-def step_6(can_p):
+def ext_session_without_reply(dut: Dut):
     """
-    Teststep 6: Request session change to Mode3 without reply
+    Send the payload with no reply in extended session
+    Args:
+        dut(Dut): Dut instance
+    Returns:
+        response (bool): True on receiving no response
     """
-    etp: CanTestExtra = {
-        "step_no": 6,
-        "purpose" : "Request session change to Mode3 without reply",
-        "timeout" : 1,
-        "min_no_messages" : -1,
-        "max_no_messages" : -1
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
-    result = SE10.diagnostic_session_control(can_p, etp, b'\x83')\
-         and not SC.can_messages[can_p["receive"]]
-    return result
+    payload = SC_CARCOM.can_m_send("DiagnosticSessionControl", b'\x83', b'')
+    try:
+        dut.uds.generic_ecu_call(payload)
+    except UdsEmptyResponse:
+        pass
 
-def step_9(can_p):
+    if not SC.can_messages[dut["receive"]]:
+        logging.info("Empty response received from ECU as expected")
+        return True
+
+    logging.error("Test Failed: Expected empty response, received %s",
+                  SC.can_messages[dut["receive"]])
+    return False
+
+
+def verify_active_session(dut, mode, session):
     """
-    Teststep 9: Request session change to Mode3 from Mode2
+    Verify active diagnostic session
+    Args:
+        dut(Dut): Dut instance
+        mode(int): Integer value of diagnostic session
+        session(str): Diagnostic session
+    Returns:
+        (bool): True on successfully verifying active diagnostic session
     """
-    etp: CanTestExtra = {
-        "step_no": 9,
-        "purpose" : "Request session change to Mode3 from Mode2",
-        "timeout" : 1,
-        "min_no_messages" : -1,
-        "max_no_messages" : -1
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
-    result = SE10.diagnostic_session_control(can_p, etp, b'\x03')
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='7F1012')
+    # Read active diagnostic session
+    active_session = dut.uds.active_diag_session_f186()
 
-    logging.info(SUTE.pp_decode_7f_response(SC.can_frames[can_p["receive"]][0][2]))
+    # Verify active diagnostic session
+    if active_session.data["details"]["mode"] == mode:
+        logging.info("ECU is in %s session as expected", session)
+        return True
 
-    return result
+    logging.error("Test Failed: ECU is not in %s session", session)
+    return False
 
-def step_11(can_p):
+
+def set_diagnostic_session(dut, mode):
     """
-    Teststep 11: Request session change to Mode3 without reply
+    Set active diagnostic session
+    Args:
+        dut(Dut): Dut instance
+        mode(bytes): Diagnostic session
+    Returns:
+        response.raw(str): ECU response
     """
-    etp: CanTestExtra = {
-        "step_no": 11,
-        "purpose" : "Request session change to Mode3 without reply",
-        "timeout" : 1,
-        "min_no_messages" : -1,
-        "max_no_messages" : -1
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
-    result = SE10.diagnostic_session_control(can_p, etp, b'\x83')
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='7F1012')
+    response = dut.uds.generic_ecu_call(SC_CARCOM.can_m_send("DiagnosticSessionControl",
+                                                              mode, b''))
+    return response.raw
 
-    logging.info(SUTE.pp_decode_7f_response(SC.can_frames[can_p["receive"]][0][2]))
 
-    return result
+def step_1(dut: Dut):
+    """
+    action: Set to extended session with(0x03) and without reply(0x83) from default session
+    expected_result: True when ECU is in extended session
+    """
+    # Set to extended session
+    set_diagnostic_session(dut, mode=b'\x03')
+
+    # Set to default session
+    set_diagnostic_session(dut, mode=b'\x01')
+    time.sleep(1)
+
+    # Set to extended session without reply
+    response = ext_session_without_reply(dut)
+    if not response:
+        return False
+
+    return verify_active_session(dut, mode=3, session='extended')
+
+
+def step_2(dut: Dut):
+    """
+    action: Set to extended session without reply(0x83) from extended session(0x03)
+    expected_result: True when ECU is in extended session
+    """
+    # Set to extended session
+    set_diagnostic_session(dut, mode=b'\x03')
+
+    # Set to extended session without reply
+    response = ext_session_without_reply(dut)
+    if not response:
+        return False
+
+    return verify_active_session(dut, mode=3, session='extended')
+
+
+def step_3(dut: Dut):
+    """
+    action: Set to extended session from programming session, verify NRC 12
+           (subFunctionNotSupported)
+    expected_result: True when NRC 12 received and ECU is in programming session
+    """
+    # Set to programming session
+    set_diagnostic_session(dut, mode=b'\x02')
+
+    # Set to programming session
+    set_diagnostic_session(dut, mode=b'\x02')
+
+    # Set to extended session
+    set_diagnostic_session(dut, mode=b'\x03')
+    result =  SUTE.test_message(SC.can_messages[dut["receive"]], teststring='7F1012')
+    if result:
+        logging.info("Received NRC %s for DiagnosticSessionControl request as expected",
+                      SUTE.pp_decode_7f_response(SC.can_frames[dut["receive"]][0][2]))
+        return True
+
+    return verify_active_session(dut, mode=2, session='programming')
+
+
+def step_4(dut: Dut):
+    """
+    action: Set ECU in extended session without reply(0x83) from programming and verify NRC 12
+            (subFunctionNotSupported)
+    expected_result: True when ECU sends NRC 12
+    """
+    # Change to extended session without reply
+    set_diagnostic_session(dut, mode=b'\x83')
+
+    result = SUTE.test_message(SC.can_messages[dut["receive"]], teststring='7F1012')
+    if result:
+        logging.info("Received NRC %s for DiagnosticSessionControl request as expected",
+                      SUTE.pp_decode_7f_response(SC.can_frames[dut["receive"]][0][2]))
+        return True
+
+    logging.error("Test Failed: Expected NRC 12 for DiagnosticSessionControl request,"
+                  "received %s", SUTE.pp_decode_7f_response(SC.can_frames[dut["receive"]][0][2]))
+    return False
+
 
 def run():
     """
-    Run - Call other functions from here
+    Verify response of diagnosticSessionControl(10) - extended session(03, 83)
+    in default, programming and extended diagnostic session
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+    dut = Dut()
 
-    # start logging
-    # to be implemented
+    start_time = dut.start()
+    result = False
+    result_step = False
+    try:
+        dut.precondition(timeout=60)
 
-    # where to connect to signal_broker
-    can_p: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        "send" : "Vcu1ToBecmFront1DiagReqFrame",
-        "receive" : "BecmToVcu1Front1DiagResFrame",
-        "namespace" : SC.nspace_lookup("Front1CANCfg0")
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
-    logging.info("Testcase start: %s", datetime.now())
-    starttime = time.time()
-    logging.info("Time: %s \n", time.time())
+        result_step = dut.step(step_1, purpose="Set to extended session with(0x03) and without "
+                                               "reply(0x83) from default session")
+        if result_step:
+            result_step = dut.step(step_2, purpose="Set to extended session without reply(0x83) "
+                                                   "from extended session(0x03")
+        if result_step:
+            result_step = dut.step(step_3, purpose="Set to extended session from programming "
+                                                   "session, verify NRC 12")
+        if result_step:
+            result_step = dut.step(step_4, purpose="Set ECU in extended session without reply "
+                                                   "(0x83) from programming and verify NRC 12")
+        result = result_step
+    except DutTestError as error:
+        logging.error("Test failed: %s", error)
+    finally:
+        dut.postcondition(start_time, result)
 
-    ############################################
-    # precondition
-    ############################################
-    timeout = 30
-    result = PREC.precondition(can_p, timeout)
-
-    if result:
-    ############################################
-    # teststeps
-    ############################################
-    # step1:
-    # action: # Change to extended session
-    # result: BECM reports mode
-        result = result and SE10.diagnostic_session_control_mode3(can_p, 1)
-
-    # step2:
-    # action: # Change to default session
-    # result: BECM reports mode
-        result = result and SE10.diagnostic_session_control_mode1(can_p, 2)
-        time.sleep(1)
-
-    # step3:
-    # action: # Change to extended session without reply
-    # result: BECM reports mode
-        result = result and step_3(can_p)
-
-    # step4:
-    # action: verify current session
-    # result: BECM reports extended session
-        result = result and SE22.read_did_f186(can_p, dsession=b'\x03')#, 4)
-
-    # step5:
-    # action: # Change to extended session from extended
-    # result: BECM reports mode
-        result = result and SE10.diagnostic_session_control_mode3(can_p, 5)
-
-    # step6:
-    # action: # Change to Extended session without reply
-    # result: BECM reports mode
-        result = result and step_6(can_p)
-
-    # step7:
-    # action: verify current session
-    # result: BECM reports extended session
-        result = result and SE22.read_did_f186(can_p, dsession=b'\x03', stepno=7)
-
-    # step8:
-    # action: # Change to Programming session from extended
-    # result: BECM reports mode
-        SE10.diagnostic_session_control_mode2(can_p, 8)
-        result = result and SE10.diagnostic_session_control_mode2(can_p, 8)
-
-    # step9:
-    # action: # Change to Extended session
-    # result: BECM reports NRC
-        result = result and step_9(can_p)
-
-    # step10:
-    # action: verify current session
-    # result: BECM reports programming session
-        result = result and SE22.read_did_f186(can_p, dsession=b'\x02', stepno=10)
-
-    # step11:
-    # action: # Change to Extended session without reply
-    # result: BECM reports NRC
-        result = result and step_11(can_p)
-
-    ############################################
-    # postCondition
-    ############################################
-
-    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()

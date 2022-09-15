@@ -47,7 +47,7 @@ def calculate_cmac(security_log):
         calculated_cmac(Str): Calculated authentication data
     """
     # Get 128 bits auth_key from config
-    key_128 = CNF.default_rig_config['auth_key'].encode()
+    key_128 = bytes.fromhex(CNF.default_rig_config['security_log_auth_key'])
     cipher_obj = CMAC.new(key_128, ciphermod=AES)
     cipher_obj.update(bytes.fromhex(security_log))
     # Extract most significant 4 bytes of authentication data form cipher_object
@@ -85,6 +85,7 @@ def step_2(dut: Dut, response):
     security_log = response.data['details']['item'][:-8]
     calculated_cmac = calculate_cmac(security_log)
     if received_cmac == calculated_cmac:
+        logging.info("MAC verification successful for the security log.")
         return True
     message = "Message authentication data is not identical, expected CMAC: {} " \
               "calculated CMAC: {}".format(received_cmac, calculated_cmac)

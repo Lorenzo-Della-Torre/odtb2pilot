@@ -17,7 +17,49 @@ hvbm_p519:
         e_469413_MAIN_1 : nomadic_device_application_restricted_platform access | Our ECU is not capable of connecting to a nomadic device (iDevices, Android, Windows Mobile, etc.) 
         e_441876_MAIN_1 : software_authentication_security_classes | EOL testing. We will use the second security class. All security classes are NA for us.
         e_435017_MAIN_0 : production_key_programming | Encryption and decryption will be on raw data and not on compressed data. Tool verification?
-        e_76515_MAIN_3 : read_dtc_information_19_report_dtc_with_permanent_status_15 | If ECU doesn't become emission related
+        e_76515_MAIN_3 : read_dtc_information_19_report_dtc_with_permanent_status_15 | If ECU doesn't become emission related.
+        e_488703_MAIN_0 : secoc_configuration_secoc_clusterkeyID | NA Because we only have one cluster and one key.
+        e_476807_MAIN_2 : disable_software_interfaces_for_non_specified_software_services | Need specific services to debug SW
+        e_473645_MAIN_0 : secure_boot_from_optional_media | Need to enable secure boot from optional boot media for secure boot actions and signature verifications.
+        e_442538_MAIN_1 : public_key_types | Requirement is not applicable for the ECU supplier but for off-board systems.
+        e_420232_MAIN_2 : software_authentication_test_and_development_key | Implicitly tested since it used
+        e_404594_MAIN_0 : sign_and_verify_unprocessed_data | Encryption and decryption will be on raw data and not on compressed data. Tool verification
+        e_428666_MAIN_4 : append_signature_to_software_part | Don't have production key. This is a tool verification requirement  to be tested by vcc tool department.
+        e_457041_MAIN_0 : conditions_for_signing_a_file_in_production | Off-board system is for End Of Line use.
+        e_428664_MAIN_1 : signing_function_integrity_check | This is a tool verification requirement  to be tested by vcc tool department.
+        e_70844_MAIN_1 : detection_of_suppler_specific_software_installed_in_ecu | DTC not implemented, to be implemented if the ECU is delivered to VCC 
+        e_70845_MAIN_1 : clearing_of_dtc_for_detection_of_suppler_software_installed_in_ecu | DTC not implemented, to be implemented if the ECU is delivered to VCC 
+        e_247653_MAIN_9 : independent_reconfiguration | Postbuild Concept is optional to implement
+        e_76526_MAIN_1 : lin_master | No LIN on the HVBM
+        e_481041_MAIN_0 : requestdownload_service_on_can_fd | CAN FD not implemented
+        e_487883_MAIN_0 : secoc_optimization_for_cpu_load | An OEM specific configuration shall be introduced to balance the CPU load to stay at a reasonable level for SecOC MAC calculation.
+        e_487882_MAIN_1 : secoc_optimization_for_latency. | An OEM specific configuration shall be introduced to reduce latency for SecOC MAC verification.
+        e_487963_MAIN_1 : secoc_optimization_to_minimize_attacks_within_rx_acceptance_window | An OEM specific configuration shall be introduced to minimize replay attacks within the the RX Acceptance Window.
+        e_488700_MAIN_0 : secoc_configuration_useauthdatafreshness | An OEM specific configuration shall be introduced  to use freshness info to minimize the replay attack window
+        e_488846_MAIN_0 : secoc_fvm_notation | Not testable
+        e_488674_MAIN_0 : secoc_fv_option_0_no_fv_used | This not an option since we use FV from timesync
+        e_488675_MAIN_0 : secoc_fv_option_1_full_fv_sent_in_pdu | We have only 64bit in CAN message
+        e_480627_MAIN_1 : distribution_of_the_security_access_keys_to_ecu_suppliers | Should set initial key to FF. If any other key needs to be configured it should be done at HW end of line
+        e_52687____2 : data_compression_method_1_parameters | Not in use any longer.
+        e_68182_MAIN_3 : security_constant_data_record | Security constant is not implemented
+        e_458730_MAIN_1 : set_dtc_prepassed_prefailed_routine | There is another way to test it
+        e_458755_MAIN_1 : start_new_operation_cycle_routine | There is another way to test it
+        e_458700_MAIN_3 : calibration_of_dtc_data_verification_dtc_U280000 | There is another way to test it
+        e_458806_MAIN_3 : calibration_of_dtc_data_verification_dtc_U280100 | There is another way to test it
+        e_72034_MAIN_6 : support_for_operation_cycle_counter_5_warm_up_cycles | Not obd2 node
+        e_68266_MAIN_1 : emissions_related_dtcs_defined_by_SAEJ2012 | Not obd2 node
+        e_68267_MAIN_2 : dtcs_defined_by_SAEJ2012 | Not obd2 node
+        e_181453_MAIN_1 : e2e_protection_wrapper | Not using wrapper and not implemented yet. We use 1A autosar standard and volvo wrapper, but don't know which one yet.
+        e_76513_MAIN_1 : component_selection_can_physical_interfaces | This is hw req, need to hand-over to BMS team. (LEAR HW can't fulfill this)
+        e_74110_MAIN_2 : safety_requirements | valid for application teams also. requirement for the Safety Team.
+        e_130582_MAIN_1 : trepr_supported_in_data_upload | ECU does not support SID 35 So it is NA.
+        e_76698_MAIN_6 : request_transfer_exit_37_non_volatile_memory | vbf 2.6 version supports check memory, so no CRC will be available in transferResponseParameterRecord. So CRC Calculation will not applicable.
+        e_76697_MAIN_5 : request_transfer_exit_37_algorithm | vbf 2.6 version supports check memory, so no CRC will be available in transferResponseParameterRecord. So CRC Calculation will not applicable.
+        e_128777_MAIN_1 : e_128777_MAIN_1_iso_specified_routines | No DIDs in the range. This is NA.
+        e_76490_MAIN_0 : write_memory_by_address_alfid | Not applicable. This service is not used by Volvo Car Corporation.
+        e_76489_MAIN_0 : write_memory_by_address_3d | Not applicable. This service is not used by Volvo Car Corporation.
+        e_76683_MAIN_2 : requestupload | Not applicable because it is not requested by Mentor.
+        e_486601_MAIN_0 : event_type_debugger_authentication | Not applicable because disable the debugger port
 
     --Inspection--:
         e_481878_MAIN_0 : interface_to_tee_cryptographic_operations | ETAS provides API. Inspect that we have received those files
@@ -36,27 +78,245 @@ hvbm_p519:
         e_161873_MAIN_2 : car_mode_data_record | <Reason>
         e_60111__1 : can_frame_identifier_length | Look in CanIf and CAN configuration to validate that all outgoing frames is set to classic can with 11 bit addressing.
         e_489057_MAIN_0 : flashable_pbl_bootloader_sw_part_type | Inspect that the vbf sw_part_type is SWBP or SWBT.
+        e_397293_MAIN_1 : number_of_logical_blocks | Inspect that the actual number of logical blocks is statically configured in the bootloader, at least one logical block.
+        e_404184_MAIN_2 : verification_block_table_on_unprocessed_data | Inspect that S19 files of SWP1, SWLM and ESS are subjected to SREC script to pad their data before constructing their VBF files.
+        e_404595_MAIN_3 : signing_method_variability_control | This requirement is for Release team, who are responsible for setting the signing method for a vbf file.
+        e_456934_MAIN_0 : software_settings_definition | This requirement is for Release team, who are responsible for setting the signing method for a vbf file.
+        e_458432_MAIN_0 : software_settings_file_valid_part_numbers | This requirement is for Release team, who are responsible for setting the signing method for a vbf file.
+        e_74105_MAIN_2 : logical_address_range_for_periodic_response_messages | This can be tested on HILding but 2A not implemented yet.
+        e_457070_MAIN_1 : l_pdus_to_be_configured_as_type_caniftxpdupnfilterpdu_can_ecu_with_pnc_support | NA, Any can message should wake the ECU up.
+        e_469398_MAIN_2 : autosar_secoc_support | Analyse which AUTOSAR version to be used. At least 4.3.1.
+        e_487908_MAIN_1 : supported_secoc_cluster_key_identifiers_in_a_ecu | Static Analysis
+        e_488877_MAIN_0 : identify_which_signals_to_be_protected_by_secoc | Identify which signals to be protected by SecOC
+        e_489080_MAIN_0 : secoc_default_configurations | Inspect values using CVI tool
+        e_488670_MAIN_0 : secoc_timestamp_format | Check that we follow the AUTOSAR StbM specification
+        e_161873_MAIN_2 : car_mode_data_record | This can be tested on HILding but 2A not implemented yet.
+        e_353876_MAIN_3 : autosar_version | Developer need deviation for version of AUTOSAR 
+        e_53855____1 : sbl_in_volatile_memory | Verify that SBL is stored in volatile memory.
+        e_487898_MAIN_1 : secoc_configurations_in_ecu_extract | Need to verify that use ECU extract from Volvo.
+        e_487887_MAIN_1 : secoc_profile_configuration_crypto_algorithm | Inspect in configuration file or tool
+        e_487877_MAIN_1 : secoc_fvm_solution | Need to be sure it is a new message. We will use use the timesync module. Will calculate the time between the sending and receiving.
+        e_487901_MAIN_0 : secoc_cluster | One cluster use the same key. We only have one cluster. We share with core ECU. Static analysis
+        e_489094_MAIN_0 : flashable_pbl_for_protected_boot_sector_update | Testable, developer can provide testing method information if needed.
+        e_488754_MAIN_0 : secoc_action_on_message_failures | Identify which SecOC signals to be use to verify action on message failures.
+        e_488702_MAIN_0 : secoc_configuration_secocrxacceptancewindow | <reason>
+        e_67741_MAIN_2 : compliance_to_iso_14229_1 | Mentor responsible for testing their implementation
+        e_488673_MAIN_0 : secoc_fv_options | We need a decision which option to use.
+        e_469130_MAIN_2 : security_access_key_storage | <Reason>
+        e_473644_MAIN_1 : secure_boot_key_protection | <Reason>
+        e_468870_MAIN_1 : secure_boot_initialization | <Reason>
+        e_469024_MAIN_1 : secure_boot_design_validation | <Reason>
+        e_52243__2 : supported_can_ids_2nd_part | <Reason>
+        e_469025_MAIN_1 : minimum_cryptographic_support | <Reason>
+
+    --Diag--:
+        e_68012_MAIN_0 : support_for_external_output_signal_data_records_actual_output_signal | Diagnosis responsible need to evaluate
+        e_68013_MAIN_0 : access_to_external_output_signal_data_records | Diagnosis responsible need to evaluate
+        e_68014_MAIN_0 : individual_control_of_external_output_signals_application_signal | Diagnosis responsible need to evaluate
+        e_68015_MAIN_0 : external_output_signals_update_time_actual_output_signal | Diagnosis responsible need to evaluate
+        e_68016_MAIN_0 : support_for_network_signal_data_records_signals_transmitted_by_public_ecu | Diagnosis responsible need to evaluate
+        e_68017_MAIN_0 : access_to_network_signal_data_records_signals_transmitted_by_public_ecu | Diagnosis responsible need to evaluate
+        e_68018_MAIN_0 : individual_control_of_network_signal_data_records_signals_transmitted_by_public_ecu | Diagnosis responsible need to evaluate
+        e_68019_MAIN_0 : control_of_network_signal_data_records_periodic_signals_transmitted by_public_ecu | Diagnosis responsible need to evaluate
+        e_68020_MAIN_0 : support_for_network_signal_data_records_signals_received_by_public_ecu | Diagnosis responsible need to evaluate
+        e_68021_MAIN_0 : access_to_network_signal_data_records_signals_received_by_public_ecu | Diagnosis responsible need to evaluate
+        e_68022_MAIN_0 : reporting_received_network_signal_data_records_while_the_input_parameter_value_is_under_tester_control | Diagnosis responsible need to evaluate
+        e_68027_MAIN_0 : support_for_other_external_signal_data_records_defined_by_the_implementer | Diagnosis responsible need to evaluate
+        e_68028_MAIN_0 : access_to_other_external_signal_data_records_defined_by_the_implementer | Diagnosis responsible need to evaluate
+        e_68041_MAIN_0 : individual_control_of_other_external_signal_data_records_defined_by_the_implementer | Diagnosis responsible need to evaluate
+        e_68042_MAIN_0 : reporting_other_external_signal_data_records_defined_by_the_implementer_while_the_input_parameter_value_is_under_tester_control | Diagnosis responsible need to evaluate
+
+    --App--:
+        e_68025_MAIN_0 : reporting_power_supply_input_signal_data_records_while_the_input_parameter_value_is_under_tester_control | <Reason>
+        e_68026_MAIN_0 : power_supply_input_signals_update_time | <Reason>
+        e_74479_MAIN_2 : exit_conditions_during_diagnostics_services | Valid for application team
+        e_472402_MAIN_1 : data_records_reserved_by_iso_14229_1 | Implicitly tested by did_checker. Application team to check if according to ISO.
+        e_486499_MAIN_0 : data_identifier_associated_with_fault_handling_actions | Requirement is for the application teams as they are responsible for the DID
+        e_67984_MAIN_0 : access_to_external_switch_input_signal_data_records | The data records for external signals is not supported in boot software
+        e_67985_MAIN_0 : reporting_external_switch_input_signal_data_records_while_the_input_parameter_value_is_under_tester_control | <Reason>
+        e_67986_MAIN_0 : external_switch_input_signals_update_time | <Reason>
+        e_68001_MAIN_1 : support_for_external_analog_input_signal_data_records_actual_input_signal | <Reason>
+        e_68002_MAIN_0 : for_external_analog_input_signal_data_records_application_signal | <Reason>
+        e_68003_MAIN_0 : access_to_external_analog_input_signal_data_records | <Reason>
+        e_68004_MAIN_1 : reporting_external_analog_input_signal_data_records_while_the_input_parameter_value_is_under_tester_control | <Reason>
+        e_68005_MAIN_0 : external_analog_input_signals_update_time | <Reason>
+        e_68023_MAIN_0 : support_for_power_supply_data_record | <Reason>
+        e_68024_MAIN_0 : access_to_power_supply_input_signal_data_records | <Reason>
+        e_67943_MAIN_2 : system_supplier_specific_data_records | Application team should inspect system supplier specific data identifiers
+        e_67983_MAIN_0 : support_for_external_switch_input_signal_data_records_application_signal | <Reason>
+        e_408292_MAIN_1 : calibration_of_dtc_test_sample_failed | The requirement must be tested on all DTCs
+        e_408293_MAIN_1 : calibration_of_dtc_test_sample_passed | The requirement must be tested on all DTCs
+        e_408296_MAIN_1 : calibration_of_dtc_test_failed_limit | The requirement must be tested on all DTCs
+        e_408299_MAIN_1 : calibration_of_dtc_test_passed_limit | The requirement must be tested on all DTCs
+        e_408294_MAIN_1 : calibration_of_unconfirmed_dtc_limit | The requirement must be tested on all DTCs
+        e_408300_MAIN_2 : calibration_of_confirmed_dtc_limit | The requirement must be tested on all DTCs
+        e_408301_MAIN_1 : calibration_of_aged_dtc_limit | The requirement must be tested on all DTCs
+        e_484161_MAIN_0 : monitor_robustness_against_false_fail_detection | Fluffy requirement. Must be broken down to each DTC.
+        e_68885_MAIN_3 : test_inhibition_stop_updating_the_dtc_fault_detection_counter_10 | Generic requirement, difficult to test. Test individual DTC groups
+        e_68886_MAIN_3 : generic_test_run_criteria_enable_criteria | Generic design requirement
+        e_68887_MAIN_4 : generic_test_run_criteria_low_power_inhibit_criteria | Not implemented yet in MEP2. Will be implemented for each DTC.
+        e_68888_MAIN_4 : generic_test_run_criteria_transition_inhibit_criteria | The requirement must be tested individually for each DTCs.
+        e_68891_MAIN_2 : generic_test_run_criteria_car_modes_inhibit_criteria | Don't know if car mode will be implemented. Car mode factory mode/crash mode/transport mode 
+        e_481766_MAIN_0 : detection_of_faults_in_external_circuits | There will be unique DTCs for each fault type to be implemented
+        e_479546_MAIN_0 : detection_of_internal_faults | Some of the DTCs will be implemented for detection of internal faults.
+        e_479550_MAIN_0 : detection_of_internal_fault_snapshot_data | Some of the DTCs will be implemented for detection of internal faults -snapshot data. Connected to 479546. 
+        e_69628_MAIN_1 : detection_of_failure_to_react_after_event | Design requirement. Should be decided on ART level
+        e_69647_MAIN_1 : comparison_of_system_behaviour_with_predictive_model | Design requirement. Should be decided on ART level
+        e_69658_MAIN_1 : detection_of_closed_loop_control_system_out_of_control | Design requirement. Should be decided on ART level
+        e_69663_MAIN_1 : detection_of_system_adaptation_out_of_range | Design requirement. Should be decided on ART level
+        e_69667_MAIN_1 : detection_of_other_faults_inferred_from_system_behaviour | Design requirement. Should be decided on ART level
+        e_69701_MAIN_1 : detection_of_invalid_local_configuration_data | Design requirement. Should be decided on ART level. Will probably not be implemented. We don't own any parameters.
+        e_70841_MAIN_1 : detection_of_software_incompatibility_with_another_ecu | Should be decided on ART level
+        e_70867_MAIN_1 : detection_of other_ecu_not_operating_normally | Not sure if have a matching application requirement, Should be decided on ART level.
+        e_70877_MAIN_1 : root_dtc_for_ecu_not_operating_normally | Not sure if have a matching application requirement, Should be decided on ART level.
+        e_70878_MAIN_1 : detection_of_other_ecu_sending_data_tagged_as_invalid | Should be decided on ART level
+        e_71745_MAIN_1 : root_dtc_for_ecu_sending_data_tagged_as_invalid | Should be decided on ART level
+        e_71746_MAIN_1 : detection_of_other_ecu_sending_faulty_data | Should be decided on ART level
+        e_71752_MAIN_2 : detection_of_corrupt_data_received_from_other_ecu_by_rolling_counter | Should be decided on ART level
+        e_332533_MAIN_1 : detection_of_corrupt_data_received_from_other_ecu_by_end_to_end_checksum | Should be decided on ART level
+        e_115361_MAIN_2 : detection_of_faults_caused_by_the_ecu_operating_environment_or_customer_actions | Should be decided on ART level
+        e_481770_MAIN_0 : detection_of_faults_caused_by_ambient_temperature_too_high | Check with Application team if we have this requirement (Thermal). Should be decided on ART level.
+        e_481771_MAIN_0 : detection_of_faults_caused_by_ambient_temperature_too_low | Check with Application team if we have this requirement (Thermal). Should be decided on ART level.
+        e_71767_MAIN_1 : detection_of_events_caused_by_customer_operating_vehicle_or_vehicle_equipment_outside_specification | DTC not implemented yet
+        e_71792_MAIN_1 : detection_of_events_caused_by_other_condition_that_is_out_of_range_for_full_operation | DTC not implemented yet
+        e_71801_MAIN_3 : detected_of_events_associated_with_driver_indications | For Application Team. Maybe NA.
+        e_486502_MAIN_0 : data_identifier_associated_with_driver_indications |For Application Team. Maybe NA.
+        e_67982_MAIN_0 : support_for_external_switch_input_signal_data_records_actual_input_signal | <Reason>
+        e_74112_MAIN_2 : routine_Info_byte_rinf | Push to application team
+        e_74114_MAIN_1 : routine_result_availability | Push to application team
+        e_74115_MAIN_1 : routine_type_definition | Push to application team
+        e_74127_MAIN_2 : routine_status_definition | Push to application team
+        e_484130_MAIN_0 : positive_response_on_start_routine | Push to application team
+        e_72177_MAIN_1 : check_programming_pre_conditions_routine | Should be tested by application team
+        e_391191_MAIN_1 : ecu_operation_cycle | Decided that it is for the application team Carcom.
+        e_181435_MAIN_3 : e2e_crc_calculation | Changed to application team (Mascot)
+        e_55619__1 : application_layer | APPL. Already tested in DVA.
+        e_438801_MAIN_1 : remote_vehicle_data_collection_rvdc_data_record | For Application Team.
+        e_77743_MAIN_2 : spare_capacity | Changed to application
+        e_181434_MAIN_2 : e2e_data_type_size | Changed to application team (Mascot)
+        e_181433_MAIN_1 : e2e_protection_mechanisms | Changed to application team (Mascot)
+        e_487899_MAIN_1 : sec_oc_customization_for_immediate_return_of_authentic_data | Changed to application
+
+    --Design--:
+        e_71837_MAIN_1 : data_records_not_included_in_local_snapshot_data | Design requirement. Can be checked by validation of snapshot information for each DTC in the SDDB. Should be tested so system design do follow this req. Does not need the ECU for the test.
+        e_68082_MAIN_0 : support_for_other_internal_signal_data_records_defined_by_the_implementer | Design requirement. Not testable
+        e_68083_MAIN_0 : access_to_other_internal_signal_data_records_defined_by_the_implementer | Design requirement. Not testable
+        e_68084_MAIN_0 : individual_control_of_other_ecu_internal_signal_data_records_defined_by_the_implementer | Design requirement. Not testable
+        e_67945_MAIN_1 : specification_of_supported_services_for_each_data_record | Design requirement. Implicitly tested by several requirements.
+        e_481873_MAIN_0 : root_of_trust_key_provisioning | Not possible to read MAC or test this. Making this a DESIGN requirement.
+        e_469129_MAIN_2 : random_number_generation_security_access | Design requirement
+        e_481870_MAIN_0 : security_access_protected_services | This is a general design requirement that all teams has to be aware of but can not be tested.
+
+    --Deviation--:
+        e_468872_MAIN_2 : secure_boot_process | This will bypass chain-of-trust in some occasions
+        e_473642_MAIN_0 : chain_of_trust | The Root-of-Trust code is locked to Read Only Memory (ROM) or similar immutable memory area is not fulfilled. In some cases we will not use chain-of-trust
+        e_468871_MAIN_1 : root_of_trust_code_protection | We bought HSM. It is possibly to update with special software. We don't fulfill the requirement. Need deviation.
+        e_468869_MAIN_1 : secure_boot_activation | This will bypass chain-of-trust in some occasions
+        e_447591_MAIN_3 : tier1_file_deliveries | Deviation needed as SWCE (postbuild) will not be delivered
 
     --Manual--:
         e_60107__2 : n_cs_performance_requirement_in_programming_session | <Reason>
         e_396513_MAIN_0 : concurrency_of_functional_and_physical_messages_all_sessions | Timing must be tested with a tool that can trigger to send based on other CAN frames.
         e_53863__2 : sample_mode | Single sample mode is the preferred operating mode at 500 kbit/s.
         e_481875_MAIN_0 : random_number_generator_validation | This can't be tested with standard SW. Need special tools.
+        e_418471_MAIN_3 : public_key_data_record_write | This test needs to be manually tested.
+        e_480600_MAIN_2 : disable_hardware_debug_interfaces_to_hsm | This needs to be manually tested.
+        e_469023_MAIN_1 : action_on_failure | This test to be manually tested.
+        e_469233_MAIN_3 : protect_hardware_debug_interfaces | This test to be manually tested.
 
     --dSpace--:
+        e_115621_MAIN_4 : support_for_dtc_status_indicator_30_warning_indicator_requested_since_last_clear | DTC not implemented yet.
+        e_72012_MAIN_6 : sampling_criteria_for_dtc_snapshot_record_number_0x20_single_sample | Security constant is not implemented
+        e_72027_MAIN_2 : support_for_local_dtc_snapshot_data | Requirement to be tested for all DTCs which are not implemented.
+        e_72067_MAIN_6 : support_for_dtc_status_indicator_30_ageddyc | <Reason>
+        e_72069_MAIN_4 : support_for_dtc_status_indicator_30_symptom_since_last_clear | <Reason>
+        e_72141_MAIN_4 : transfer_of_dtc_information_to_long_term_memory | DTC information shall be transferred from short- to long-term memory at least at the end of production line.
+        e_441094_MAIN_3 : sampling_criteria_for_dtc_snapshot_record_number_0x21_single_sample | DTC not implemented yet.
+        e_72036_MAIN_7 : fault_detection_counter_10_fdc10 | DTC not implemented yet.
+        e_76140_MAIN_1 : ecureset_11_hardReset | <Reason>
+        e_482735_MAIN_0 : storage_of_dtc_info | Easier to test on dSpace
 
     --vbf_modification--:
         e_53958__6 : complete_compatible_function_return_value | Need to modify VBFs to test the Compatible part
         e_405051_MAIN_1 : complete_compatible_function_error_handling | Need to modify VBFs to test the Compatible part
         e_401156_MAIN_2 : complete_compatible_function | Need to modify VBFs to test the Compatible part
         e_52282__2: complete_and_compatible_function | Need to modify VBFs to test Not Compatible part
-        e_428667_MAIN_2: signing_function_generate_signature | Support function unavailable to generate signature for validation.
+        e_428667_MAIN_3: signing_function_generate_signature | Support function unavailable to generate signature for validation.
         e_404696_MAIN_3 : verification_block_table_format_identifier_definition |  Need to modify VBFs to test format of the Verification Block
         e_398360_MAIN_4: format_of_the_verification_block_table | Need to modify VBFs to test format of the Verification Block Table
+        e_53957__3 : complete_compatible_function | Need to modify VBFs to test the complete compatible function
 
     --SecOC--:
         e_487904_MAIN_1 : sec_oc_detection_of_non_programmed_production_keys | SecOC not implemented yet
+        e_488983_MAIN_0 : sec_oc_did_for_sec_oc_verification_failure_counters | SecOC not implemented yet
+        e_469403_MAIN_1 : sec_oc_default_development_key | SecOC not implemented yet
+        e_488712_MAIN_0 : sec_oc_key_update_handling_in_ecu | SecOC not implemented yet
         e_487909_MAIN_1 : sec_oc_cluster_key_identifier | SecOC not implemented yet
+        e_487895_MAIN_1 : sec_oc_diagnostic_trouble_code_detection_of_corrupt_data_received | SecOC not implemented yet
+        e_487905_MAIN_1 : sec_oc_distribution_of_the_sec_oc_keys_to_ecu_suppliers | SecOC not implemented yet
+        e_487907_MAIN_1 : secoc_key_sync_test_diagnostics | SecOC not implemented yet
+        e_488878_MAIN_0 : sec_oc_did_for_sec_oc_verification_failures | SecOC not implemented yet
+        e_486608_MAIN_0 : event_type_secure_on_board_communication | SecOC not implemented yet
+        e_487902_MAIN_1 : sec_oc_key_type_structure | SecOC not implemented yet
+        e_469414_MAIN_2 : secoc_message_verification_handling_of_too_many_invalid_attempts | SecOC not implemented yet
+        e_487972_MAIN_1 : secoc_cluster_key_identifier_storage | SecOC not implemented yet
+        e_487906_MAIN_1 : secoc_key_programmed_status_diagnostic_trouble_code | SecOC not implemented yet
+        e_469403_MAIN_2 : secoc_default_development_key | SecOC not implemented yet
+        e_487892_MAIN_1 : sec_oc_profile_configuration_mac_truncation | SecOC not implemented yet
+        e_488877_MAIN_0 : identify_which_signals_to_be_protected_by_sec_oc | SecOC not implemented yet
+        e_469398_MAIN_2 : autosar_sec_oc_support | SecOC not implemented yet
+        e_488754_MAIN_0 : sec_oc_action_on_message_failures | SecOC not implemented yet
+        e_487901_MAIN_0 : sec_oc_cluster | SecOC not implemented yet
+        e_487908_MAIN_1 : supported_sec_oc_cluster_key_identifiers_in_a_ecu | SecOC not implemented yet  
+        e_488802_MAIN_0 : sec_oc_encryption_method_for_key_format_0b01_in_key_attributes | SecOC not implemented yet
+        e_488752_MAIN_0 : sec_oc_key_encryption | SecOC not implemented yet
+        e_489055_MAIN_0 : sec_oc_key_decryption | SecOC not implemented yet
+        e_469405_MAIN_2 : sec_oc_provisioning_of_production_key | SecOC not implemented yet
+        e_487903_MAIN_1 : sec_oc_key_storage | SecOC not implemented yet
+        e_487877_MAIN_1 : sec_oc_fvm_solution | SecOC not implemented yet
+        e_488846_MAIN_0 : sec_oc_fvm_notation | SecOC not implemented yet
+        e_488850_MAIN_0 : sec_oc_fv_handling_flow | SecOC not implemented yet
+        e_488670_MAIN_0 : sec_oc_timestamp_format | SecOC not implemented yet
+        e_488672_MAIN_0 : sec_oc_maximum_rx_and_tx_timing_difference | SecOC not implemented yet
+        e_488673_MAIN_0 : sec_oc_fv_options | SecOC not implemented yet
+        e_487879_MAIN_1 : sec_oc_rx_acceptance_window_and_freshness_check | SecOC not implemented yet
+        e_487880_MAIN_1 : sec_oc_fv_construction_logic | SecOC not implemented yet
+        e_488674_MAIN_0 : sec_oc_fv_option_0_no_fv_used | SecOC not implemented yet
+        e_488675_MAIN_0 : sec_oc_fv_option_1_full_fv_sent_in_pdu | SecOC not implemented yet
+        e_488676_MAIN_0 : sec_oc_fv_option_2_32_bit_partial_fv_sent_in_pdu | SecOC not implemented yet
+        e_488678_MAIN_0 : sec_oc_fv_option_3_24_bit_partial_fv_sent_in_pdu | SecOC not implemented yet
+        e_488679_MAIN_0 : sec_oc_fv_option_4_16_bit_partial_fv_sent_in_pdu | SecOC not implemented yet     
+        e_488680_MAIN_0 : sec_oc_fv_option_5_8_bit_partial_fv_sent_in_pdu | SecOC not implemented yet    
+        e_488681_MAIN_0 : sec_oc_fv_option_6_no_fv_sent_in_pdu | SecOC not implemented yet     
+        e_487881_MAIN_1 : sec_oc_detection_and_handling_of_abnormal_timestamps | SecOC not implemented yet     
+        e_489080_MAIN_0 : sec_oc_default_configurations | SecOC not implemented yet    
+        e_487887_MAIN_1 : sec_oc_profile_configuration_crypto_algorithm | SecOC not implemented yet       
+        e_487893_MAIN_1 : sec_oc_profile_configuration_fv | SecOC not implemented yet     
+        e_487986_MAIN_1 : sec_oc_profiles_and_configuration_overview | SecOC not implemented yet     
+        e_487890_MAIN_1 : sec_oc_configuration_using_cryptographic_pdu | SecOC not implemented yet     
+        e_488700_MAIN_0 : sec_oc_configuration_use_auth_data_freshness | SecOC not implemented yet
+        e_488701_MAIN_0 : sec_oc_configuration_secure_area | SecOC not implemented yet
+        e_488702_MAIN_0 : sec_oc_configuration_sec_oc_rx_acceptance_window | SecOC not implemented yet
+        e_488703_MAIN_0 : sec_oc_configuration_sec_oc_cluster_key_id | SecOC not implemented yet 
+        e_487898_MAIN_1 : sec_oc_configurations_in_ecu_extract | SecOC not implemented yet 
+        e_487899_MAIN_1 : sec_oc_customization_for_immediate_return_of_authentic_data | SecOC not implemented yet
+        e_487883_MAIN_0 : sec_oc_optimization_for_cpu_load | SecOC not implemented yet
+        e_487882_MAIN_1 : sec_oc_optimization_for_latency | SecOC not implemented yet
+        e_487963_MAIN_1 : sec_oc_optimization_to_minimize_attacks_within_rx_acceptance_window | SecOC not implemented yet
+
+    --Excluded--:
+        e_76513_MAIN_1 : component_selection_can_physical_interfaces | This is hw req, need to hand-over to BMS team. (LEAR HW can't fulfill this)
+        e_76695_MAIN_2 : request_transfer_exit | Breaks testrun. Temporarily excluded
+        e_76690_MAIN_3 : transfer_data | Breaks testrun. Temporarily excluded
+        e_469411_MAIN_1 : system_hardening_follow_industry_accepted_processes | <Reason>
+
+    --Implicit--:
+        e_410732_MAIN_0 : default_signing_method | Implicitly tested when using SWDL
+        e_404598_MAIN_0 : signing_method_sha256_rsa2048_hash_function | Implicitly tested when using SWDL
+        e_404620_MAIN_1 : signing_method_sha256_rsa2048_public_key_algorithm | Implicitly tested when using SWDL
+        e_404623_MAIN_0 : signing_method_sha256_rsa2048_key_size | Implicitly tested when using SWDL
+        e_480624_MAIN_1 : security_access_key_usage | <Reason>
+        e_469025_MAIN_1 : minimum_cryptographic_support | <Reason>
 
 ihfa_v436:
     --NA--:

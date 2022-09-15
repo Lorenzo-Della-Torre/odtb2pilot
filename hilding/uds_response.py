@@ -52,7 +52,7 @@ class UdsResponse:
         response_patterns = [
             (r'.{2}7F(?P<service_id>.{2})(?P<nrc>.{2})',
              self.__negative_response),
-            (r'.{2,4}(?P<sid>50|51|59|62|6F|71|67|74|76|75|77|54)(?P<body>.*)',
+            (r'.{2,4}(?P<sid>50|51|59|62|63|6F|71|67|74|76|75|77|54)(?P<body>.*)',
              self.__positive_response)
         ]
         for pattern, processor in response_patterns:
