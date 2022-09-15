@@ -1,4 +1,5 @@
 """
+
 /*********************************************************************************/
 
 
@@ -21,7 +22,6 @@ Any unauthorized copying or distribution of content from this file is prohibited
 reqprod: 52246
 version: 1
 title: : Transport_Network Layer
-
 purpose: >
     To define the transport/network layer used by the bootloader.
 
@@ -31,8 +31,8 @@ description: >
 details: >
     Verify the transport/network layer used by the bootloader.
     Steps:
-    1. Verify programming preconditions
-    2. Verify ECU in Primary Bootloader Session
+        1. Verify programming preconditions
+        2. Verify ECU in primary bootloader
 """
 
 import logging
@@ -53,13 +53,13 @@ def step_1(dut: Dut):
     expected_result: True when routine control request and security access are
                      successful in programming session
     """
-    result = SE31.routinecontrol_requestsid_prog_precond(dut, stepno=1)
+    result = SE31.routinecontrol_requestsid_prog_precond(dut, stepno=101)
 
     if not result:
         logging.error("Test Failed: Routine control request failed")
         return False
 
-    # Set ECU to Programming Session
+    # Set to programming session
     dut.uds.set_mode(2)
 
     # Security access to ECU
@@ -75,24 +75,24 @@ def step_1(dut: Dut):
 
 def step_2(dut: Dut):
     """
-    action: Verify ECU in Primary Bootloader Session and then reset
-            ECU to get in default session
-    expected_result: True when ECU is in default session
+    action: Verify ECU is in primary bootloader and ECU hard reset
+    expected_result: True when ECU is in primary bootloader and after hard reset ECU is in
+                     default session
     """
     result = SE22.verify_pbl_session(dut)
     if not result:
-        logging.error("Test Failed: ECU is not in Primary Bootloader Session")
+        logging.error("Test Failed: ECU is not in primary bootloader")
         return False
 
-    # Reset ECU(1101)
+    # ECU hard reset
     reset_result = dut.uds.ecu_reset_1101()
 
     result = reset_result and SE22.read_did_f186(dut, dsession=b'\x01')
     if not result:
-        logging.error("Test Failed: ECU not in default session")
+        logging.error("Test Failed: ECU is not in default session")
         return False
 
-    logging.info("ECU is in default session")
+    logging.info("ECU is in default session as expected")
     return True
 
 
@@ -101,15 +101,18 @@ def run():
     Verify the transport/network layer used by the bootloader.
     """
     dut = Dut()
+
     start_time = dut.start()
     result = False
     result_step = False
+
     try:
-        dut.precondition(timeout=30)
+        dut.precondition(timeout=40)
+
         result_step = dut.step(step_1, purpose="Verify programming preconditions")
         if result_step:
-            result_step = dut.step(step_2, purpose="Verify ECU in Primary Bootloader"
-                                   " Session and then reset ECU to get in default session")
+            result_step = dut.step(step_2, purpose="Verify ECU is in primary bootloader and "
+                                                   "ECU hard reset")
         result = result_step
     except DutTestError as error:
         logging.error("Test failed: %s", error)
