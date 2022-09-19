@@ -1,0 +1,4 @@
+hvbm_p519:
+    run:
+        modified_vbf_path_exe: '/VBF_Reqprod/REQ_53973_2_EXE_E3.vbf'
+        modified_vbf_path_data: '/VBF_Reqprod/REQ_53973_1_DATA_E3.vbf'

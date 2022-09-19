@@ -246,6 +246,7 @@ hvbm_p519:
         e_404696_MAIN_3 : verification_block_table_format_identifier_definition |  Need to modify VBFs to test format of the Verification Block
         e_398360_MAIN_4: format_of_the_verification_block_table | Need to modify VBFs to test format of the Verification Block Table
         e_53957__3 : complete_compatible_function | Need to modify VBFs to test the complete compatible function
+        e_53973__3 : file_download_order | Need to modify VBFs to test the file download order
 
     --SecOC--:
         e_487904_MAIN_1 : sec_oc_detection_of_non_programmed_production_keys | SecOC not implemented yet
