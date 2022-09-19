@@ -31,8 +31,8 @@ description: >
 details: >
     Verify all of the PBL services are included in SBL services
     Steps:
-    1. Get all PBL and SBL services from sddb services dictionary
-    2. Compare and verify all of the PBL services are included in SBL services
+        1. Get all PBL and SBL services from sddb services dictionary
+        2. Compare and verify all of the PBL services are included in SBL services
 """
 
 import logging
@@ -40,14 +40,14 @@ from hilding.dut import DutTestError
 from hilding.dut import Dut
 
 
-def get_boot_loader_service(dut: Dut, boot_loader_type):
+def get_boot_loader_service(dut, boot_loader_type):
     """
     Get boot loader services from sddb services dictionary
     Args:
-        dut(Class object): Dut instance
-        boot_loader_type(str): Boot loader type (pbl or sbl)
+        dut (Dut): An instance of Dut
+        boot_loader_type (str): Boot loader type (pbl or sbl)
     Returns:
-        services_list(list): list of all the boot loader services
+        services_list (list): Boot loader services
     """
     services = dut.conf.rig.sddb_services
     services_list = []
@@ -56,43 +56,50 @@ def get_boot_loader_service(dut: Dut, boot_loader_type):
 
     if len(services_list) != 0:
         return services_list
-    message = "{} services not found in sddb services dictionary".format(
-        boot_loader_type)
-    logging.error(message)
+
+    logging.error("%s services not found in sddb services dictionary", boot_loader_type)
     return None
 
 
 def step_1(dut: Dut):
     """
-    action: Get Primary Boot Loader services
-    expected_result: Positive response with list of PBL services
+    action: Get primary boot loader services
+    expected_result: True when received list of PBL services
     """
     pbl_services_list = get_boot_loader_service(dut, 'pbl')
     if pbl_services_list is not None:
+        logging.info("Received PBL services as expected")
         return True, pbl_services_list
+
+    logging.error("Test Failed: Received unexpected services %s", pbl_services_list)
     return False, None
 
 
 def step_2(dut: Dut):
     """
-    action: Get Secondary Bool Loader services
-    expected_result: Positive response with list of SBL services
+    action: Get secondary boot loader services
+    expected_result: True when received list of SBL services
     """
     sbl_services_list = get_boot_loader_service(dut, 'sbl')
     if sbl_services_list is not None:
+        logging.info("Received SBL services as expected")
         return True, sbl_services_list
+
+    logging.error("Test Failed: Received unexpected services %s", sbl_services_list)
     return False, None
 
 
 def step_3(dut: Dut, pbl_services_list, sbl_services_list):
     """
-    action: Compare and verify all of the Promary Boot Leader services are
-    included in Secondary Boot Loader services
-    expected_result: Positive response
+    action: Compare and verify all of the primary boot loader services are
+            included in secondary boot loader services
+    expected_result: True when all PBL services are present in SBL services
     """
     # pylint: disable=unused-argument
     result = []
     unsupported_pbl = []
+
+    # Comparing the length of PBL and SBL service list
     if len(sbl_services_list) >= len(pbl_services_list):
         for pbl_service in pbl_services_list:
             if pbl_service in sbl_services_list:
@@ -100,12 +107,12 @@ def step_3(dut: Dut, pbl_services_list, sbl_services_list):
             else:
                 result.append(False)
                 unsupported_pbl.append(pbl_service)
-    if all(result) and len(result) != 0:
-        return True
-    message = "Test Failed: PBL Services {} are not present in SBL services".format(
-        unsupported_pbl)
-    logging.error(message)
 
+    if all(result) and len(result) != 0:
+        logging.info("All PBL services are present in SBL services as expected")
+        return True
+
+    logging.error("Test Failed: PBL services %s are not present in SBL services", unsupported_pbl)
     return False
 
 
@@ -114,23 +121,23 @@ def run():
     Verify all of the PBL services are included in SBL services
     """
     dut = Dut()
+
     start_time = dut.start()
     result = False
     result_step = False
+
     try:
-        dut.precondition(timeout=30)
-        result_step, pbl_services_list = dut.step(
-            step_1, purpose="Get PBL services")
+        dut.precondition(timeout=25)
+        result_step, pbl_services_list = dut.step(step_1, purpose='Get PBL services')
 
         if result_step:
-            result_step, sbl_services_list = dut.step(
-                step_2, purpose="Get SBL services")
+            result_step, sbl_services_list = dut.step(step_2, purpose='Get SBL services')
 
         if result_step:
-            result_step = dut.step(step_3, pbl_services_list, sbl_services_list,
-                                   purpose="Compare SBL and PBL services")
-
+            result_step = dut.step(step_3, pbl_services_list, sbl_services_list, purpose='Compare'
+                                                                           ' SBL and PBL services')
         result = result_step
+
     except DutTestError as error:
         logging.error("Test failed: %s", error)
     finally:
