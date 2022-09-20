@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,7 +18,19 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-Import script - Inherited from older version of requirement
+reqprod: 76503
+version: 2
+title: ReadDTCInformation (19) - reportDTCSnapshotRecordByDTCNumber (04)
+purpose: >
+    Snapshot of data values shall be stored along with the DTC when the criteria is fulfilled in
+    order for sampling a snapshot. This snapshot data shall be possible to read out.
+
+description: >
+    The ECU shall support the service ReadDTCInformation - reportDTCSnapshotRecordByDTCNumber
+    in all sessions where the ECU supports the service ReadDTCInformation.
+
+details: >
+    Import script - Inherited from older version of requirement
 """
 
 from e_76503_MAIN_1_19_reportdtcsnapshotrecordbydtcnumber_04_84 import run
