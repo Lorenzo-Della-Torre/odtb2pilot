@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -38,23 +38,23 @@ description: >
     Status “OK, programmed” means that all required security
     access keys per that level are successfully programmed.
 
-    Message direction:	Client <= Server
-    Message Type:	Diagnostic response readDataByIdentifier DID Security Access Key Status
+    Message direction:   Client <= Server
+    Message Type:   Diagnostic response readDataByIdentifier DID Security Access Key Status
 
     Data byte | Description (all values are in hexadecimal) | Byte Value (Hex)
     --------------------------------------------------------------------------
     #1          Positive Response read request                  62
     #2          DID Security Access Key Status Byte#1 (MSB)     D0
-    #3          DID Security Access Key Status Byte#2 (LSB)	    9B
-    #4          Number of supported Security Access Levels	    0x00-0xFF
-    #5          First supported security access level	        0x00-0xFF,
+    #3          DID Security Access Key Status Byte#2 (LSB)     9B
+    #4          Number of supported Security Access Levels     0x00-0xFF
+    #5          First supported security access level          0x00-0xFF,
                                                                 odd numbers (security_access_type
                                                                 for request seed)
-    #6      	Status first supported security access level	0x00=programmed
+    #6          Status first supported security access level    0x00=programmed
                                                                 0x01=not programmed
-    …	 	    …
-    #n	        i:th supported security access level	        0x00-0xFF, odd numbers
-    #n+1	    Status of i:th supported security               0x00, 0x01
+    …           …
+    #n          i:th supported security access level            0x00-0xFF, odd numbers
+    #n+1        Status of i:th supported security               0x00, 0x01
     #           access level
 
     The read only DID shall be possible to read in all sessions and
@@ -69,33 +69,37 @@ description: >
 details: >
     Verifying if respective security access key are programmed for different access levels in all
     3 diagnostic sessions.
-        01 -Diagnostic services in programmingSession, e.g. software download ( DID 0xF103)
-        05 - Diagnostic services in extendedSession(DID 0xF10A)
-        19 - Security Log ( DID 0xF115)
+        01 - Diagnostic services in programmingSession, e.g. software download (DID 0xF103)
+        05 - Diagnostic services in extendedSession (DID 0xF10A)
+        19 - Security Log (DID 0xF115)
         23 - Secure Debug (0xF112)
-        27 - Secure On-board Communication ( DID 0xF117)
+        27 - Secure On-board Communication (DID 0xF117)
 """
 
 import logging
 from hilding.dut import Dut
 from hilding.dut import DutTestError
+from supportfunctions.support_file_io import SupportFileIO
+
+SIO = SupportFileIO()
 
 
-def verify_levels(response, supported_keys):
+def verify_levels(response, did, supported_keys):
     """
-     Verifies security access levels are programmed for respective session
+    Verify security access levels are programmed for respective session
     Args:
-        response (dict): dut instance
-        supported_keys (dict): security access levels supported in respective session
+        response (dict): ECU response
+        did (str): DID 'D09B'
+        supported_keys (dict): Security access levels supported in respective session
     Returns:
-        bool: True if respective security access key are programmed in
-        respective sessions
+        return_verify (bool): True if respective security access key are programmed in
+                              respective sessions
     """
     true_counter = 0
     return_verify = False
 
     try:
-        if response['sid'] == "62" and response['did'] == "D09B":
+        if response['sid'] == "62" and response['did'] == did:
             payload = response['details']['item']
             for index in range(2, len(payload)-2, 4):
                 security_level = payload[index:index+2]
@@ -104,105 +108,104 @@ def verify_levels(response, supported_keys):
                     programmed_status == 0:
                     true_counter += 1
                 elif programmed_status != 0:
-                    msg = "Security level key: {} - Not Programmed".format(
-                        supported_keys[security_level])
-                    logging.info(msg)
+                    logging.info("Security level key: %s - Not Programmed",
+                                            supported_keys[security_level])
             return_verify = true_counter == len(supported_keys.keys())
         else:
             return_verify = False
     except KeyError:
-        logging.error(
-            "Test Failed: Key Error Occurred, DID and/or SID are not present in response from ECU")
+        logging.error("Test Failed: Key Error Occurred, DID and/or SID are not present in "
+                      "response from ECU")
         return_verify = False
     return return_verify
 
 
-def step_1(dut: Dut):
+def step_1(dut: Dut, parameters):
     """
-    action:
-        set mode to Default session and Send ReadDataByIdentifier(0xD09B)
-
-    expected_result: Positive response
+    action: Read DID D09B and verify that the security access keys are programmed in
+            default session.
+    expected_result: Security access key should indicate programmed(0x00) for all the five
+                     levels available in the D09B DID response.
     """
-    supported_keys = {
-        '01': "Programming Session",
-        '05': "Extended session",
-        '19': "Security Log",
-        '23': "Secure Debug",
-        '27': "Secure On-board Communication"
-    }
     dut.uds.set_mode(1)
-    response = dut.uds.read_data_by_id_22(bytes.fromhex('D09B'))
+    response = dut.uds.read_data_by_id_22(bytes.fromhex(parameters['did']))
     if response.raw[6:8] == '31':
         logging.error("Test Failed: Unable to read DID - D09B, received NRC31")
         return False
-    return verify_levels(response.data, supported_keys)
+
+    return verify_levels(response.data, did=parameters['did'],
+                         supported_keys=parameters['supported_keys_def'])
 
 
-def step_2(dut: Dut):
+def step_2(dut: Dut, parameters):
     """
-    action:
-        set mode to Extended session and Send ReadDataByIdentifier(0xD09B)
-
-    expected_result: Positive response
+    action: Read DID D09B and verify that the security access keys are programmed in
+            extended session.
+    expected_result: Security access key should indicate programmed(0x00) for all the five
+                     levels available in the D09B DID response.
     """
-    supported_keys = {
-        '05': "Extended session",
-        '19': "Security Log",
-        '23': "Secure Debug",
-        '27': "Secure On-board Communication"
-    }
     dut.uds.set_mode(3)
-    response = dut.uds.read_data_by_id_22(bytes.fromhex('D09B'))
+    response = dut.uds.read_data_by_id_22(bytes.fromhex(parameters['did']))
     if response.raw[6:8] == '31':
         logging.error("Test Failed: Unable to read DID - D09B, received NRC31")
         return False
-    return verify_levels(response.data, supported_keys)
+
+    return verify_levels(response.data, did=parameters['did'],
+                         supported_keys=parameters['supported_keys_ext'])
 
 
-def step_3(dut: Dut):
+def step_3(dut: Dut, parameters):
     """
-    action:
-        set mode to Programming session and Send ReadDataByIdentifier(0xD09B)
-
-    expected_result: Positive response
+    action: Read DID D09B and verify that the security access keys are programmed in
+            programming session.
+    expected_result: Security access key should indicate programmed(0x00) for all the five
+                     levels available in the D09B DID response.
     """
-    supported_keys = {
-        '01': "Programming Session",
-        '19': "Security Log"
-    }
     dut.uds.set_mode(2)
-    response = dut.uds.read_data_by_id_22(bytes.fromhex('D09B'))
+    response = dut.uds.read_data_by_id_22(bytes.fromhex(parameters['did']))
     if response.raw[6:8] == '31':
         logging.error("Test Failed: Unable to read DID - D09B, received NRC31")
         return False
-    return verify_levels(response.data, supported_keys)
+
+    return verify_levels(response.data, did=parameters['did'],
+                         supported_keys=parameters['supported_keys_prog'])
 
 
 def run():
     """
-    0xD09B verification in all sessions
+    Verifying if respective security access key are programmed for different access levels in all
+    3 diagnostic sessions.
     """
     dut = Dut()
+
     start_time = dut.start()
     result = False
+    result_step = False
+    parameters_dict = {'supported_keys_def': {},
+                       'supported_keys_ext': {},
+                       'supported_keys_prog': {},
+                       'did': ''}
     try:
-        # Communication with ECU lasts 30 seconds.
-        dut.precondition(timeout=30)
-        # Send ReadDataByIdentifier(0xD09B) in default session
-        result = dut.step(step_1, purpose="0xD09B in Default Session")
+        dut.precondition(timeout=90)
 
-        # Send ReadDataByIdentifier(0xD09B) in Extended session
-        result = result and dut.step(step_2, purpose="0xD09B in Extended Session")
+        parameters = SIO.parameter_adopt_teststep(parameters_dict)
+        if not all(list(parameters.values())):
+            raise DutTestError("yml parameters not found")
 
-        # Send ReadDataByIdentifier(0xD09B) in Programming session
-        result = result and dut.step(step_3, purpose="0xD09B in Programming Session")
+        result_step = dut.step(step_1, parameters, purpose="Verify security keys programmed"
+                                                           " using DID D09B in default session")
+        if result_step:
+            result_step = dut.step(step_2, parameters, purpose="Verify security keys programmed"
+                                   " using DID D09B in extended session")
+        if result_step:
+            result_step = dut.step(step_3, parameters, purpose="Verify security keys programmed"
+                                   " using DID D09B in programming session")
+        result = result_step
 
     except DutTestError as error:
         logging.error("Test failed: %s", error)
     finally:
         dut.postcondition(start_time, result)
-
 
 if __name__ == '__main__':
     run()
