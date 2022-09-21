@@ -45,9 +45,9 @@ description: >
     representation, i.e. the polynomial is 0x1021.
 
     There shall be different negative response codes to separate:
-    •	Trying to program a security access key a second time, when a
+    •   Trying to program a security access key a second time, when a
         valid key has already been written once (conditions not correct)
-    •	The checksum check fails when the key is programmed (request out of range).
+    •   The checksum check fails when the key is programmed (request out of range).
 
     Message direction- Client --> Server
     Message Type- Diagnostic request writeDataByIdentifier
@@ -56,26 +56,26 @@ description: >
     --------------------------------------------------------------------------
     # 1          WriteDataByIdentifier Request SID               2E
     --------------------------------------------------------------------------
-    # 2          Data Identifier – Security Access Key
+    # 2          Data Identifier - Security Access Key
                 # 1 msb (high byte)          DID value for key
-                for level ‘xx’  Byte
-    # 3          Data Identifier – Security Access Key for       to be programmed
-                level ‘xx’  Byte#2 lsb (low byte)
+                for level 'xx'  Byte
+    # 3          Data Identifier - Security Access Key for       to be programmed
+                level 'xx'  Byte#2 lsb (low byte)
     --------------------------------------------------------------------------
     # 4          Security Access Proof-of-ownership Key          00-FF
                 Data Record Byte#1 msb (high byte)
     # 19         Security Access Proof-of-ownership Key          00-FF
                 Data Record Byte#16 lsb (low byte)
     --------------------------------------------------------------------------
-    # 20      	Security Access Encryption and
+    # 20        Security Access Encryption and
                 Authentication Key Data Record Byte#1           00-FF
                 msb (high byte)
-    # 35      	Security Access Encryption and
+    # 35        Security Access Encryption and
                 Authentication Key Data Record Byte#16          00-FF
                 lsb (low byte)
-    # 36      	Security Access key Checksum Byte#1             00-FF
+    # 36        Security Access key Checksum Byte#1             00-FF
                 msb (high byte)	0x00=programmed
-    # 37      	Security Access key Checksum Byte#2             00-FF
+    # 37        Security Access key Checksum Byte#2             00-FF
                 lsb (low byte)	0x00=programmed
 
     Notes;
@@ -89,19 +89,19 @@ details: >
     Verifying if respective security access key are programmed for different access levels in all
     diagnostic sessions -
     Steps:
-    • Verify security access key are programmed for supported security access levels in programming
-      session with wrong structure & valid CRC and get requestOutOfRange NRC (31) response.
+    • Verify NRC-13(incorrectMessageLengthOrInvalidFormat) for WriteDataByIdentifier with wrong
+      structure and correct CRC in programming session
 
-    • Verify security access key are programmed for supported security access levels in extended
-      session with wrong structure & valid CRC and get requestOutOfRange NRC (31) response.
+    • Verify NRC-13(incorrectMessageLengthOrInvalidFormat) for WriteDataByIdentifier with wrong
+      structure and correct CRC in extended session
 
-    • Verify security access key are programmed for supported security access levels in programming
-      session with valid structure & wrong CRC and get requestOutOfRange NRC (31) response.
+    • Verify NRC-31(requestOutOfRange) for WriteDataByIdentifier with correct structure and wrong
+      CRC in programming session
 
-    • Verify security access key are programmed for supported security access levels in extended
-      session with valid structure & wrong CRC and get requestOutOfRange NRC (31) response.
+    • Verify NRC-31(requestOutOfRange) for WriteDataByIdentifier with correct structure and wrong
+      CRC in extended session
 
-    • Verify the DID is not readable with NRC (31) response
+    • Verify DIDs is not readable with NRC-31(requestOutOfRange) response
 
         01 - Diagnostic services in programmingSession, e.g. software download (DID 0xF103)
         05 - Diagnostic services in extendedSession(DID 0xF10A)
@@ -118,41 +118,48 @@ from supportfunctions.support_test_odtb2 import SupportTestODTB2
 from supportfunctions.support_carcom import SupportCARCOM
 from supportfunctions.support_file_io import SupportFileIO
 from supportfunctions.support_SBL import SupportSBL
-from supportfunctions.support_service27 import SupportService27
 from supportfunctions.support_sec_acc import SupportSecurityAccess
 
 SUTE = SupportTestODTB2()
 SC_CARCOM = SupportCARCOM()
 SIO = SupportFileIO()
 SSBL = SupportSBL()
-SE27 = SupportService27()
 SSA = SupportSecurityAccess()
 
 
-def write_data_by_identifier_with_wrong_crc(dut: Dut, did):
+def write_data_by_identifier_with_wrong_crc(dut: Dut, level, did):
     """
     WriteDataByIdentifier with valid structure & wrong CRC.
     Args:
-        dut (class object): Dut instance
-        did (str): security access DID
-        level (str): security access level
-    Returns: response
+        dut (Dut): An instance of Dut
+        level (str): Security level
+        did (str): Security access DID
+    Returns:
+        (bool): True when received NRC-31(requestOutOfRange)
     """
     sa_key_32byte = 'FF'*32
     wrong_crc_hex = 'FF'*2
     message = bytes.fromhex(did + sa_key_32byte + wrong_crc_hex)
     response = dut.uds.generic_ecu_call(SC_CARCOM.can_m_send("WriteDataByIdentifier",
                                                              message, b''))
-    return response.raw
+    if response.raw[6:8] == '31':
+        logging.info("Received NRC-31(requestOutOfRange) as expected")
+        return True
+
+    logging.error("Test Failed: Expected NRC-31, received %s for Security level %s and DID %s",
+                   response.raw, level, did)
+    return False
 
 
-def write_data_by_identifier_with_wrong_structure(dut: Dut, did):
+def write_data_by_identifier_with_wrong_structure(dut: Dut, level, did):
     """
     WriteDataByIdentifier with wrong structure & valid CRC.
     Args:
-        dut (class object): Dut instance
-        did (str): security access DID
-    Returns: response
+        dut (Dut): An instance of Dut
+        level (str): Security level
+        did (str): Security access DID
+    Returns:
+        (bool): True when received NRC-13(incorrectMessageLengthOrInvalidFormat)
     """
     sa_key_32byte = 'FF'*32
     crc = SUTE.crc16(bytearray(sa_key_32byte.encode('utf-8')))
@@ -161,79 +168,24 @@ def write_data_by_identifier_with_wrong_structure(dut: Dut, did):
     message = bytes.fromhex(did + wrong_structure_33byte + crc_hex[2:])
 
     response = dut.uds.generic_ecu_call(SC_CARCOM.can_m_send("WriteDataByIdentifier",
-                                                             message, b''))
-    return response.raw
-
-
-def read_yml_parameters(dut: Dut):
-    """
-    Read all the security access levels and DIDs.
-    Args: dut (class object): Dut instance
-    Returns: parameters(dict): yml parameters
-    """
-    # pylint: disable=unused-argument
-    parameters = {"sa_levels_dids_programming" : {},
-                "sa_levels_dids_extended" : {}}
-    parameters = SIO.extract_parameter_yml("*", parameters)
-
-    if parameters is None:
-        logging.error("Security Access parameters Levels and DIDs not found")
-        return None
-    return parameters
-
-
-def verify_wrong_structure_response(response, level, did):
-    """
-    Verify response NRC 13 when incorrect structure
-    Args:
-        response(str): response
-        level(str): Security access level
-        did(str): DID
-    Returns: True on successful verification
-    """
-    if response is None:
-        logging.error("Test Failed: Invalid or empty response")
-        return False
-
-    # NRC 13 Incorrect Message Length Or Invalid Format
-    if response[6:8] == '13':
+                                        message, b''))
+    if response.raw[6:8] == '13':
+        logging.info("Received NRC-13(incorrectMessageLengthOrInvalidFormat) as expected")
         return True
 
-    msg = "Response expected 13 but received: {} for Security level: {} and DID: {}".format(
-        response[6:8], level, did)
-    logging.error(msg)
+    logging.error("Test Failed: Expected NRC-13, received %s for Security level %s and DID %s",
+                   response.raw, level, did)
     return False
 
-
-def verify_wrong_crc_response(response, level, did):
-    """
-    Verify response NRC 31 when incorrect checksum
-    Args:
-        response(str): response
-        level(str): Security access level
-        did(str): DID
-    Returns: True on successful verification
-    """
-    if response is None:
-        logging.error("Test Failed: Invalid or empty response")
-        return False
-
-    # NRC 31 requestOutOfRange
-    if response[6:8] == '31':
-        return True
-
-    msg = "Response expected 31 but received: {} for Security level: {} and DID: {}".format(
-        response[6:8], level, did)
-    logging.error(msg)
-    return False
 
 def security_access(dut: Dut, level):
     """
     security access to ECU for request seed
     Args:
-        dut(class object): dut instance
+        dut (Dut): An instance of Dut
         level(str): Security access level
-    Returns: ECU response seed
+    Returns:
+        (bool): True when security access successful
     """
     # Set security access key and level
     SSA.set_keys(dut.conf.default_rig_config)
@@ -245,8 +197,7 @@ def security_access(dut: Dut, level):
 
     # Truncate initial 2 bytes from response to process server response seed
     server_res_seed = response.raw[4:]
-    result = SSA.process_server_response_seed(
-        bytearray.fromhex(server_res_seed))
+    result = SSA.process_server_response_seed(bytearray.fromhex(server_res_seed))
 
     # Prepare client request seed
     client_resp_key = SSA.prepare_client_send_key()
@@ -254,218 +205,226 @@ def security_access(dut: Dut, level):
 
     # Check serverResponseSeed is successful or not
     if result == 0 and '67' in response.raw:
-        logging.info("Security unlock successful")
+        logging.info("Security access successful for level %s", level)
         return True
-    logging.error("Security unlock failed")
+
+    logging.error("Security access denied for level %s", level)
     return False
 
 
-def step_1(dut: Dut):
+def read_security_did(dut: Dut, level, did):
     """
-    action:
-        Set ECU to programming session and Send WriteDataByIdentifier for supported security
-        access levels i.e. 01 and 19 with invalid structure & valid CRC and confirm that
-        service 2E responds with Incorrect Message Length Or Invalid Format NRC '13'.
-    expected_result: Negative response
+    Read security DIDs
+    Args:
+        dut (Dut): An instance of Dut
+        level (str): Security level
+        did (str): Security access DID
+    Returns:
+        (bool): True when received NRC-31(requestOutOfRange)
     """
-    result = []
-    parameters = read_yml_parameters(dut)
-    if parameters is None:
-        logging.error("Test Failed: yml parameters not found")
-        return False
+    response = dut.uds.read_data_by_id_22(bytes.fromhex(did))
+    if response.raw[6:8] == '31':
+        logging.info("Received NRC-31(requestOutOfRange) for level %s of read did %s", level, did)
+        return True
 
+    logging.error("Test Failed: Expected NRC-31, received %s for level %s and did %s ",
+                   response.raw, level, did)
+    return False
+
+
+def step_1(dut: Dut, parameters):
+    """
+    action: WriteDataByIdentifier with wrong structure but correct CRC for all supported security
+            level in programming session
+    expected_result: True when received NRC-13(incorrectMessageLengthOrInvalidFormat) for all
+                     supported security level
+    """
+    results = []
+    # Set ECU is in programming session
     # Sleep time to avoid NRC37
     time.sleep(5)
     dut.uds.set_mode(2)
 
     SSBL.get_vbf_files()
-
-    SSBL.sbl_activation(dut, dut.conf.default_rig_config, stepno=200,\
-                                            purpose="DL and activate SBL")
+    result = SSBL.sbl_activation(dut, sa_keys=dut.conf.default_rig_config)
+    if not result:
+        logging.error("Test Failed: SBL activation failed")
+        return False
 
     for level, did in parameters['sa_levels_dids_programming'].items():
-        response = write_data_by_identifier_with_wrong_structure(dut, did)
-        result.append(verify_wrong_structure_response(response, level, did))
+        result = write_data_by_identifier_with_wrong_structure(dut, level, did)
+        results.append(result)
 
-    if all(result) and len(result) == len(parameters['sa_levels_dids_programming']):
+    if all(results) and len(results) == len(parameters['sa_levels_dids_programming']):
+        logging.info("Received NRC-13 for incorrect structure in programming session as expected")
         return True
-    logging.error("Test Failed: Invalid response")
+
+    logging.error("Test Failed: NRC-13 is not received for incorrect structure in programming "
+                  "session")
     return False
 
 
-def step_2(dut: Dut):
+def step_2(dut: Dut, parameters):
     """
-    action:
-        Set ECU to Extended session and Send WriteDataByIdentifier for supported security access
-        levels i.e. 05, 19, 23 and 27 with invalid structure & valid CRC and confirm that service
-        2E responds with Incorrect Message Length Or Invalid Format NRC '13'.
-    expected_result: Negative response
+    action: WriteDataByIdentifier with wrong structure but correct CRC for all supported security
+            level in extended session
+    expected_result: True when received NRC-13(incorrectMessageLengthOrInvalidFormat) for all
+                     supported security level
     """
-    result = []
-    parameters = read_yml_parameters(dut)
+    results = []
+    # Set ECU is in extended session
     dut.uds.set_mode(1)
     dut.uds.set_mode(3)
-    if parameters is None:
-        logging.error("Test Failed: yml parameters not found")
-        return False
 
     for level, did in parameters['sa_levels_dids_extended'].items():
-        response = write_data_by_identifier_with_wrong_structure(dut, did)
-        result.append(verify_wrong_structure_response(response, level, did))
+        result = write_data_by_identifier_with_wrong_structure(dut, level, did)
+        results.append(result)
 
-    if all(result) and len(result) == len(parameters['sa_levels_dids_extended']):
+    if all(results) and len(results) == len(parameters['sa_levels_dids_extended']):
+        logging.info("Received NRC-13 for incorrect structure in extended session as expected")
         return True
-    logging.error("Test Failed: Invalid response")
+
+    logging.error("Test Failed: NRC-13 is not received for incorrect structure in extended "
+                  "session")
     return False
 
 
-def step_3(dut: Dut):
+def step_3(dut: Dut, parameters):
     """
-    action:
-        Set ECU to programming session and Send WriteDataByIdentifier for supported security access
-        levels i.e. 01 and 19 with valid structure & wrong CRC and confirm that service 2E responds
-        with requestOutOfRange NRC '31'.
-    expected_result: Negative response
+    action: WriteDataByIdentifier with correct structure but wrong CRC for all supported security
+            level in programming session
+    expected_result: True when received NRC-31(requestOutOfRange) for all supported security level
     """
-    result = []
-    parameters = read_yml_parameters(dut)
-    if parameters is None:
-        logging.error("Test Failed: yml parameters not found")
-        return False
-
+    results = []
+    # Set ECU is in programming session
     dut.uds.set_mode(2)
 
     SSBL.get_vbf_files()
-
-    SSBL.sbl_activation(dut, dut.conf.default_rig_config, stepno=200,\
-                                            purpose="DL and activate SBL")
+    result = SSBL.sbl_activation(dut, sa_keys=dut.conf.default_rig_config)
+    if not result:
+        logging.error("Test Failed: SBL activation failed")
+        return False
 
     for level, did in parameters['sa_levels_dids_programming'].items():
-        response = write_data_by_identifier_with_wrong_crc(dut, did)
-        result.append(verify_wrong_crc_response(response, level, did))
+        result = write_data_by_identifier_with_wrong_crc(dut, level, did)
+        results.append(result)
 
-    if all(result) and len(result) == len(parameters['sa_levels_dids_programming']):
+    if all(results) and len(results) == len(parameters['sa_levels_dids_programming']):
+        logging.info("Received NRC-31 for incorrect CRC in programming session as expected")
         return True
-    logging.error("Test Failed: Invalid response")
+
+    logging.error("Test Failed: NRC-31 is not received for incorrect CRC in programming session")
     return False
 
 
-def step_4(dut: Dut):
+def step_4(dut: Dut, parameters):
     """
-    action:
-        Set ECU to Extended session and Send WriteDataByIdentifier for supported security access
-        levels i.e. 05, 19, 23 and 27 with valid structure & wrong CRC and confirm that service
-        2E responds with requestOutOfRange NRC '31'.
-    expected_result: Negative response
+    action: WriteDataByIdentifier with correct structure but wrong CRC for all supported security
+            level in extended session
+    expected_result: True when received NRC-31(requestOutOfRange) for all supported security level
     """
-    result = []
-    parameters = read_yml_parameters(dut)
+    results = []
+    # Set ECU is in extended session
     dut.uds.set_mode(1)
     dut.uds.set_mode(3)
 
     time.sleep(5)
 
-    if parameters is None:
-        logging.error("Test Failed: yml parameters not found")
-        return False
-
     for level, did in parameters['sa_levels_dids_extended'].items():
         security_access(dut, level)
-        response = write_data_by_identifier_with_wrong_crc(dut, did)
-        result.append(verify_wrong_crc_response(response, level, did))
+        result = write_data_by_identifier_with_wrong_crc(dut, level, did)
+        results.append(result)
 
-    if all(result) and len(result) == len(parameters['sa_levels_dids_extended']):
+    if all(results) and len(results) == len(parameters['sa_levels_dids_extended']):
+        logging.info("Received NRC-31 for incorrect CRC in extended session as expected")
         return True
-    logging.error("Test Failed: Invalid response")
+
+    logging.error("Test Failed: NRC-31 is not received for incorrect CRC in extended session")
     return False
 
 
-def step_5(dut: Dut):
+def step_5(dut: Dut, parameters):
     """
-    action: Verify the DIDs are not be possible to read in extended session
-    expected_result: Negative response with NRC 31
+    action: Verify negative response for read security did in extended session
+    expected_result: True when received NRC-31(requestOutOfRange)
     """
-    result = []
-    parameters = read_yml_parameters(dut)
-    if parameters is None:
-        logging.error("Test Failed: yml parameters not found")
-        return False
-    for _, did in parameters['sa_levels_dids_extended'].items():
-        response = dut.uds.read_data_by_id_22(bytes.fromhex(did))
-        if response is not None:
-            # NRC 31 requestOutOfRange
-            if response.raw[6:8] == '31':
-                result.append(True)
-            else:
-                msg = "Invalid DID: {} response".format(did)
-                logging.error(msg)
-    if len(result) != 0 and all(result):
+    results = []
+
+    for level, did in parameters['sa_levels_dids_extended'].items():
+        result = read_security_did(dut, level, did)
+        results.append(result)
+
+    if len(results) != 0 and all(results):
+        logging.info("received NRC-31 for all DID in extended session as expected")
         return True
-    logging.error("Test Failed: Invalid response")
+
+    logging.error("Test Failed: NRC-31 is not received for all DID in extended session")
     return False
 
 
-def step_6(dut: Dut):
+def step_6(dut: Dut, parameters):
     """
-    action: Verify the DIDs are not be possible to read in programming session
-    expected_result: Negative response with NRC 31
+    action: Verify negative response for read security did in programming session
+    expected_result: True when received NRC-31(requestOutOfRange)
     """
-    result = []
+    results = []
     dut.uds.set_mode(2)
-    parameters = read_yml_parameters(dut)
-    if parameters is None:
-        logging.error("Test Failed: yml parameters not found")
-        return False
-    for _, did in parameters['sa_levels_dids_programming'].items():
-        response = dut.uds.read_data_by_id_22(bytes.fromhex(did))
-        if response is not None:
-            # NRC 31 requestOutOfRange
-            if response.raw[6:8] == '31':
-                result.append(True)
-            else:
-                msg = "Invalid DID: {} response".format(did)
-                logging.error(msg)
-    if len(result) != 0 and all(result):
+
+    for level, did in parameters['sa_levels_dids_programming'].items():
+        result = read_security_did(dut, level, did)
+        results.append(result)
+
+    if len(results) != 0 and all(results):
+        logging.info("received NRC-31 for all DID in programming session as expected")
         return True
-    logging.error("Test Failed: Invalid response")
+
+    logging.error("Test Failed: NRC-31 is not received for all DID in programming session")
     return False
 
 
 def run():
     """
-    Verifying if respective security access key are programmed
-    for different access levels in all diagnostic sessions.
-    It also check the DIDs are not readable
+    Verify respective security access key are programmed for different security access levels in
+    all diagnostic sessions and also verify negative response for read security DIDs
     """
     dut = Dut()
+
     start_time = dut.start()
     result = False
     result_step = False
+
+    parameters_dict = {"sa_levels_dids_programming" : {},
+                       "sa_levels_dids_extended" : {}}
     try:
         dut.precondition(timeout=200)
-        result_step = dut.step(step_1,
-                               purpose="Program security access invalid structure and valid"
-                               "CRC in programming mode with supported security access levels")
+
+        parameters = SIO.parameter_adopt_teststep(parameters_dict)
+        if not all(list(parameters.values())):
+            raise DutTestError("yml parameters not found")
+
+        result_step = dut.step(step_1, parameters, purpose="Verify response of "
+                               "WriteDataByIdentifier with wrong structure but correct CRC in "
+                               "programming session")
         if result_step:
-            result_step = dut.step(step_2,
-                                   purpose="Program security access invalid structure and valid "
-                                   "CRC in extended mode with security supported access levels")
-        if result_step:
-            result_step = dut.step(step_3,
-                                   purpose="Program security access key and wrong CRC in "
-                                   "programming mode with supported security access levels")
-        if result_step:
-            result_step = dut.step(step_4,
-                                   purpose="Program security access key and wrong CRC in "
-                                   "extended mode with supported security access levels")
-        if result_step:
-            result_step = dut.step(step_5, purpose="Verify DIDs are not readable in "
+            result_step = dut.step(step_2, parameters, purpose="Verify response of "
+                                   "WriteDataByIdentifier with wrong structure but correct CRC in "
                                    "extended session")
         if result_step:
-            result_step = dut.step(step_6, purpose="Verify DIDs are not readable in "
+            result_step = dut.step(step_3, parameters, purpose="Verify response of "
+                                   "WriteDataByIdentifier with correct structure but wrong CRC in "
                                    "programming session")
-
+        if result_step:
+            result_step = dut.step(step_4, parameters, purpose="Verify response of "
+                                   "WriteDataByIdentifier with correct structure but wrong CRC in "
+                                   "extended session")
+        if result_step:
+            result_step = dut.step(step_5, parameters, purpose="Verify negative response for read "
+                                   "security DIDs in extended session")
+        if result_step:
+            result_step = dut.step(step_6, parameters, purpose="Verify negative response for read "
+                                   "security did in programming session")
             result = result_step
+
     except DutTestError as error:
         logging.error("Test failed: %s", error)
     finally:
