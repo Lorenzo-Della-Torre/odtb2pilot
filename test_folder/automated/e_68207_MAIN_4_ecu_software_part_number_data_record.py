@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,228 +18,138 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-# Testscript Hilding MEPII
-# project:  BECM basetech MEPII
-# author:   J-ADSJO (Johan Adsjö)
-# date:     2020-10-20
-# version:  1.0
-# reqprod:  68207
+reqprod: 68207
+version: 4
+title: ECU Software Part Number data record
+purpose: >
+    To enable readout of the part number for the ECU software
 
-# inspired by https://grpc.io/docs/tutorials/basic/python.html
+description: >
+    A data record with identifier 0xF12E shall be implemented. The data records shall be
+    implemented exactly as defined in Carcom - Global Master Reference Database.
 
-# Copyright 2015 gRPC authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+    The content of the data record (0xF12E) with the data identifier shall be the following:
+    --------------------------------------------------------------------------------
+            Byte                          Description
+    --------------------------------------------------------------------------------
+            #1                     Total number of ECU Software Part Numbers
+            #2-8                   ECU Software #1 Part Number
+            #9-15                  ECU Software #2 Part Number
+              .
+              .
+            #N-(N+6)               ECU Software #X Part Number
+    --------------------------------------------------------------------------------
 
-The Python implementation of the gRPC route guide client.
+    The Part Number(s) is only allowed to be used for item(s) that can be separately downloaded to
+    the ECU.
+    • It shall be possible to read the data record by using the diagnostic service specified in
+    Ref[LC : Volvo Car Corporation - UDS Services - Service 0x22 (ReadDataByIdentifier) Reqs].
+
+    The identifier shall be implemented in the following sessions:
+    • Default session
+    • Extended Session
+
+details: >
+    Verify part-number from the response of DID 'F12E' in default session, also verify the
+    response of DID 'F12E' in default and extended session are equal
 """
 
-import time
-from datetime import datetime
-import sys
 import logging
-import inspect
-import odtb_conf
-
-from supportfunctions.support_can import SupportCAN, CanParam, CanTestExtra, CanPayload
+from hilding.dut import Dut
+from hilding.dut import DutTestError
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
-from supportfunctions.support_carcom import SupportCARCOM
-from supportfunctions.support_file_io import SupportFileIO
-from supportfunctions.support_precondition import SupportPrecondition
-from supportfunctions.support_postcondition import SupportPostcondition
-from supportfunctions.support_service22 import SupportService22
-from supportfunctions.support_service10 import SupportService10
 
-SIO = SupportFileIO
-SC = SupportCAN()
 SUTE = SupportTestODTB2()
-SC_CARCOM = SupportCARCOM()
-PREC = SupportPrecondition()
-POST = SupportPostcondition()
-SE10 = SupportService10()
-SE22 = SupportService22()
+
 
 def validate_partnumbers_f12e(message):
-    '''
-    Validate ECU Software Part Number
-    '''
-    valid = False
+    """
+    Validate part-number from the response of DID 'F12E'
+    Args:
+        message (str): response of DID 'F12E'
+    Returns:
+        (bool): True when successfully validate part-number from response
+    """
+    result = False
     pos = message.find('F12E')
-    amount = int(message[pos+4:pos+6])
-    logging.info("Number of PN in F12E Response: %s", amount)
-    if amount > 0:
-        valid = SUTE.validate_part_number_record(message[pos+6:pos+20])
-        logging.info("_swlm: %s is Valid? %s", message[pos+6:pos+20], valid)
-    if amount > 1:
-        valid = valid and SUTE.validate_part_number_record(message[pos+20:pos+34])
-        logging.info("_swp1: %s is Valid? %s", message[pos+20:pos+34], valid)
-    if amount > 2:
-        valid = valid and SUTE.validate_part_number_record(message[pos+34:pos+48])
-        logging.info("_swp2: %s is Valid? %s", message[pos+34:pos+48], valid)
-    if amount > 3:
-        valid = valid and SUTE.validate_part_number_record(message[pos+48:pos+62])
-        logging.info("_swce: %s is Valid? %s", message[pos+48:pos+62], valid)
-    if amount > 4:
-        valid = valid and SUTE.validate_part_number_record(message[pos+62:pos+76])
-        logging.info("_structure_pn: %s is Valid? %s", message[pos+62:pos+76], valid)
+    number = int(message[pos+4:pos+6])
+    logging.info("Number of part number in F12E Response: %s", number)
+    if number > 0:
+        result = SUTE.validate_part_number_record(message[pos+6:pos+20])
+        logging.info("_swlm: %s is Valid? %s", message[pos+6:pos+20], result)
+    if number > 1:
+        result = result and SUTE.validate_part_number_record(message[pos+20:pos+34])
+        logging.info("_swp1: %s is Valid? %s", message[pos+20:pos+34], result)
+    if number > 2:
+        result = result and SUTE.validate_part_number_record(message[pos+34:pos+48])
+        logging.info("_swp2: %s is Valid? %s", message[pos+34:pos+48], result)
+    if number > 3:
+        result = result and SUTE.validate_part_number_record(message[pos+48:pos+62])
+        logging.info("_swce: %s is Valid? %s", message[pos+48:pos+62], result)
+    if number > 4:
+        result = result and SUTE.validate_part_number_record(message[pos+62:pos+76])
+        logging.info("_structure_pn: %s is Valid? %s", message[pos+62:pos+76], result)
 
-    return valid
+    return result
 
 
-def step_2(can_p):
+def step_1(dut: Dut):
     """
-    Teststep 2: send requests DID F12E - in Default Session
+    action: Read DID F12E and verify part-number in default session
+    expected_result: Response of DID F12E should contain valid part-number
     """
-    # Parameters for the teststep
-    cpay: CanPayload = {
-        "payload": SC_CARCOM.can_m_send("ReadDataByIdentifier",
-                                        b'\xF1\x2E',
-                                        b''),
-        "extra": ''
-        }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    response = dut.uds.read_data_by_id_22(bytes.fromhex('F12E'))
+    result = validate_partnumbers_f12e(response.raw)
+    if result:
+        logging.info("Successfully verified part-number of DID 'F12E' in default session")
+        return True, response.raw
 
-    etp: CanTestExtra = {
-        "step_no": 2,
-        "purpose": "Request DID F12E - in Default Session",
-        "timeout": 1,
-        "min_no_messages": -1,
-        "max_no_messages": -1
-        }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
-
-    result = SUTE.teststep(can_p, cpay, etp)
-    time.sleep(1)
-    default_f12e_result = SC.can_messages[can_p["receive"]][0][2]
-
-    logging.info(default_f12e_result)
-
-    return result, default_f12e_result
+    logging.error("Test Failed: Part-number of DID 'F12E' in default session is invalid")
+    return False, None
 
 
-def step_5(can_p):
+def step_2(dut: Dut, res_of_default):
     """
-    Teststep 5: send requests DID F12E - in Extended Session
+    action: Read DID F12E and verify the response of DID F12E is equal in extended and default
+            session
+    expected_result: Response of DID F12E should be equal in extended and default session
     """
-    # Parameters for the teststep
-    cpay: CanPayload = {
-        "payload": SC_CARCOM.can_m_send("ReadDataByIdentifier",
-                                        b'\xF1\x2E',
-                                        b''),
-        "extra": ''
-        }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
-    etp: CanTestExtra = {
-        "step_no": 5,
-        "purpose": "Request DID F12E - in Extended Session",
-        "timeout": 1,
-        "min_no_messages": -1,
-        "max_no_messages": -1
-        }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    dut.uds.set_mode(3)
+    response = dut.uds.read_data_by_id_22(bytes.fromhex('F12E'))
 
-    result = SUTE.teststep(can_p, cpay, etp)
-    time.sleep(1)
+    if res_of_default == response.raw:
+        logging.info("Part-number of DID 'F12E' in default and extended session are equal")
+        return True
 
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]],
-                                             teststring='F12E')
-    extended_f12e_result = SC.can_messages[can_p["receive"]][0][2]
-    logging.info(extended_f12e_result)
-
-    return result, extended_f12e_result
+    logging.error("Test Failed: Part-number of DID 'F12E' in default and extended session are"
+                  " not equal")
+    return False
 
 
 def run():
     """
-    Run - Call other functions from here
+    Verify response of DID F12E in default session and extended session are equal
     """
+    dut = Dut()
 
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+    start_time = dut.start()
+    result = False
+    result_step = False
 
-    # where to connect to signal_broker
-    can_p: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        "send" : "Vcu1ToBecmFront1DiagReqFrame",
-        "receive" : "BecmToVcu1Front1DiagResFrame",
-        "namespace" : SC.nspace_lookup("Front1CANCfg0")
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
+    try:
+        dut.precondition(timeout=30)
+        result_step, res_of_default = dut.step(step_1, purpose="Verify part-number from the "
+                                               "response of DID 'F12E' in default session")
+        if result_step:
+            result_step = dut.step(step_2, res_of_default, purpose="Verify response of DID "
+                                   "'F12E' in extended and default session are equal")
+        result = result_step
 
-    logging.info("Testcase start: %s", datetime.now())
-    starttime = time.time()
-    logging.info("Time: %s \n", time.time())
+    except DutTestError as error:
+        logging.error("Test failed: %s", error)
+    finally:
+        dut.postcondition(start_time, result)
 
-    ############################################
-    # precondition
-    ############################################
-    timeout = 40
-    result = PREC.precondition(can_p, timeout)
-
-    if result:
-    ############################################
-    # teststeps
-    ############################################
-
-    # step1:
-    # action: Check if Default session
-    # result: BECM reports modeS
-        result = result and SE22.read_did_f186(can_p, b'\x01', stepno=1)
-        time.sleep(1)
-
-    # step2:
-    # action: send requests DID F12E
-    # result: Data record with ECU Software Part number is returned
-        result_2, default_f12e_result = step_2(can_p)
-
-    # step3:
-    # action: Check for valid Part Numbers
-    # result: Data record with ECU Software Part number is returned
-        step_no = 3
-        purpose = "Validate all ECU Part Numbers received"
-        SUTE.print_test_purpose(step_no, purpose)
-
-        result = result and result_2 and validate_partnumbers_f12e(default_f12e_result)
-        logging.info("Result Step 3: %s", result)
-
-    # step 4:
-    # action: Change to Extended session
-    # result: BECM reports mode
-        result = result and SE10.diagnostic_session_control_mode3(can_p, 4)
-        time.sleep(1)
-
-    # step5:
-    # action: send requests DID F12E
-    # result: Data record with ECU Software Part number is returned
-        result_5, extended_f12e_result =  step_5(can_p)
-        time.sleep(1)
-        result = result and result_5
-    # step6:
-    # action: Complete the testcase
-    # result: The record received in Default and Extended Session shall be equal
-        result = result and (default_f12e_result == extended_f12e_result)
-
-    # step7:
-    # action: Set to Default session before leaving
-    # result: BECM reports modes
-        result_end = SE10.diagnostic_session_control_mode1(can_p, 7)
-        time.sleep(1)
-        result = result and result_end
-
-    ############################################
-    # postCondition
-    ############################################
-
-    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()
