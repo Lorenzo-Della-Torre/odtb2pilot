@@ -100,7 +100,6 @@ hvbm_p519:
         e_489094_MAIN_0 : flashable_pbl_for_protected_boot_sector_update | Testable, developer can provide testing method information if needed.
         e_488754_MAIN_0 : secoc_action_on_message_failures | Identify which SecOC signals to be use to verify action on message failures.
         e_488702_MAIN_0 : secoc_configuration_secocrxacceptancewindow | <reason>
-        e_67741_MAIN_2 : compliance_to_iso_14229_1 | Mentor responsible for testing their implementation
         e_488673_MAIN_0 : secoc_fv_options | We need a decision which option to use.
         e_469130_MAIN_2 : security_access_key_storage | <Reason>
         e_473644_MAIN_1 : secure_boot_key_protection | <Reason>
@@ -196,6 +195,7 @@ hvbm_p519:
         e_181434_MAIN_2 : e2e_data_type_size | Changed to application team (Mascot)
         e_181433_MAIN_1 : e2e_protection_mechanisms | Changed to application team (Mascot)
         e_487899_MAIN_1 : sec_oc_customization_for_immediate_return_of_authentic_data | Changed to application
+        e_67741_MAIN_2 : compliance_to_iso_14229_1 | Mentor responsible for testing their implementation
 
     --Design--:
         e_71837_MAIN_1 : data_records_not_included_in_local_snapshot_data | Design requirement. Can be checked by validation of snapshot information for each DTC in the SDDB. Should be tested so system design do follow this req. Does not need the ECU for the test.
