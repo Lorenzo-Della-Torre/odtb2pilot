@@ -1,6 +1,5 @@
-
 hvbm_p519:
-  step_1:
+    run:
         client_seed_request:
             sa_sid: "27"
             sa_type: "01"
@@ -25,7 +24,6 @@ hvbm_p519:
             iv_len: 32
             encrypt_data_rec_len: 32
             auth_data_len: 32
-
 
         server_response_key:
             response_sid: "67"
