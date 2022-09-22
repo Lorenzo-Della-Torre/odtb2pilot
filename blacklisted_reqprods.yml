@@ -246,6 +246,7 @@ hvbm_p519:
         e_398360_MAIN_4: format_of_the_verification_block_table | Need to modify VBFs to test format of the Verification Block Table
         e_53957__3 : complete_compatible_function | Need to modify VBFs to test the complete compatible function
         e_53973__3 : file_download_order | Need to modify VBFs to test the file download order
+        e_53959__4 : complete_and_compatible_sequence_diagram | Need to modify VBFs to test the not complete & not compatible parts
 
     --SecOC--:
         e_487904_MAIN_1 : sec_oc_detection_of_non_programmed_production_keys | SecOC not implemented yet

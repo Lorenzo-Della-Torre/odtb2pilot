@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,363 +18,289 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-# Testscript Hilding MEPII
-# project:  BECM basetech MEPII
-# author:   LDELLATO (Lorenzo Della Torre)
-# date:     2019-12-13
-# version:  1.0
-# reqprod:  53959
+reqprod: 53959
+version: 4
+title: Complete and Compatible sequence diagram
+purpose: >
+    Definition in which order the ECU shall validate the stored software(s).
 
-# author:   LDELLATO (Lorenzo Della Torre)
-# date:     2020-09-17
-# version:  1.1
-# reqprod:  53959
+description: >
+    The ECU shall first check that all software parts are complete prior to the compatibility
+    check is performed. If the ECU contains incomplete software(s) it shall not check whether
+    the software(s) is compatible. Hence, the ECU cannot indicate that both the complete and
+    compatible check has failed. The software parts shall be checked in the order defined in
+    Figure - CompleteCompatibleFunction() sequence diagram
 
-# author:   J-ADSJO
-# date:     2020-12-07
-# version:  1.2
-# reqprod:  53959
-
-#inspired by https://grpc.io/docs/tutorials/basic/python.html
-
-# Copyright 2015 gRPC authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-The Python implementation of the gRPC route guide client.
+details: >
+    Verify complete and compatible sequence
 """
 
-import time
-from datetime import datetime
 import os
-import sys
 import logging
 import inspect
 import glob
-import odtb_conf
-
-from supportfunctions.support_can import SupportCAN, CanParam, CanTestExtra
-from supportfunctions.support_test_odtb2 import SupportTestODTB2
-from supportfunctions.support_carcom import SupportCARCOM
-from supportfunctions.support_file_io import SupportFileIO
-from supportfunctions.support_SBL import SupportSBL
-from supportfunctions.support_sec_acc import SupportSecurityAccess, SecAccessParam
-from supportfunctions.support_precondition import SupportPrecondition
-from supportfunctions.support_postcondition import SupportPostcondition
-from supportfunctions.support_service10 import SupportService10
+import hilding.flash as swdl
+from hilding.dut import Dut
+from hilding.dut import DutTestError
+from supportfunctions.support_can import SupportCAN
 from supportfunctions.support_service11 import SupportService11
-from supportfunctions.support_service22 import SupportService22
-from supportfunctions.support_service31 import SupportService31
+from supportfunctions.support_SBL import SupportSBL
+from supportfunctions.support_file_io import SupportFileIO
 
-SIO = SupportFileIO
 SC = SupportCAN()
-S_CARCOM = SupportCARCOM()
-SUTE = SupportTestODTB2()
 SSBL = SupportSBL()
-SSA = SupportSecurityAccess()
-
-PREC = SupportPrecondition()
-POST = SupportPostcondition()
-SE10 = SupportService10()
 SE11 = SupportService11()
-SE22 = SupportService22()
-SE31 = SupportService31()
+SIO = SupportFileIO()
 
-def step_1(can_p: CanParam, sa_keys):
-    """
-    Teststep 1: Activate SBL
-    """
-    stepno = 1
-    purpose = "Download and Activation of SBL"
 
-    result = SSBL.sbl_activation(can_p,
-                                 sa_keys,
-                                 stepno, purpose)
-    return result
-
-def step_3(can_p):
+def step_1(dut: Dut):
     """
-    Teststep 3: Not Compatible Software Download
+    action: Download SBL, ESS and activate SBL
+    expected_result: True on successful download of SBL, ESS and activation SBL
     """
-    stepno = 3
-    purpose = "Not Compatible Software Download"
+    # Loads the rig specific VBF files
+    vbf_result = swdl.load_vbf_files(dut)
+    if not vbf_result:
+        return False
 
-    #REQ_53959_SIGCFG_from_previous_release_E3.vbf
+    # Download and activate SBL
+    sbl_result = swdl.activate_sbl(dut)
+    if not sbl_result:
+        logging.error("Test Failed: SBL activation failed")
+        return False
+
+    logging.info("SBL activation successful")
+
+    # Download the ESS file to the ECU
+    ess_result = swdl.download_ess(dut)
+    if not ess_result:
+        logging.error("Test Failed: ESS Download failed")
+        return False
+
+    logging.info("ESS Download successful")
+    return True
+
+
+def step_2(dut: Dut, modified_vbf_path):
+    """
+    action: Software download with modified vbf file
+    expected_result: True on successful software download
+    """
     result = True
     odtb_proj_param = os.environ.get('ODTBPROJPARAM')
     if odtb_proj_param is None:
         odtb_proj_param = '.'
 
-    if not glob.glob(odtb_proj_param + "/VBF_Reqprod/REQ_53959_1*.vbf"):
+    if not glob.glob(odtb_proj_param + modified_vbf_path):
         result = False
     else:
-        for f_name in glob.glob(odtb_proj_param + "/VBF_Reqprod/REQ_53959_1*.vbf"):
-            result = result and SSBL.sw_part_download(can_p, f_name,
-                                                      stepno, purpose)
+        for f_name in glob.glob(odtb_proj_param + modified_vbf_path):
+            result = result and SSBL.sw_part_download(dut, f_name)
     return result
 
-def step_4(can_p):
+
+def step_3(dut: Dut):
     """
-    Teststep 4: Check the Complete and compatible Routine return Not Complete
+    action: Verify downloaded software is 'Not Complete, Compatible'
+    expected_result: True on recieving 'Not Complete, Compatible'
     """
-    time_stamp = [0]
+    # time_stamp = [0]
+    result_str = SSBL.check_complete_compatible_routine(dut, stepno=3)
+    result = (result_str  == 'Not Complete, Compatible')
 
-    etp: CanTestExtra = {
-        "step_no" : 4,
-        "purpose" : "Check the Complete and compatible Routine return Not Complete"
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    logging.info("Check(%s == Not Complete, Compatible) :%s",
+                     result_str, result)
 
-    result = SSBL.check_complete_compatible_routine(can_p, etp["step_no"])
-    result = result and (SSBL.pp_decode_routine_complete_compatible
-                         (SC.can_messages[can_p["receive"]][0][2])
-                         == 'Not Complete, Compatible')
-
-    time_stamp[0] = SC.can_frames[can_p["send"]][0][0]
-    time_stamp.append(SC.can_frames[can_p["receive"]][0][0])
-    result = result and ((time_stamp[1] - time_stamp[0])*1000.0 < 25.0)
+    time_stamp_send = SC.can_frames[dut["send"]][0][0]
+    time_stamp_recieve = SC.can_frames[dut["receive"]][0][0]
+    result = result and ((time_stamp_recieve - time_stamp_send)*1000.0 < 25.0)
     if result:
-        logging.info("P2Server time (%f) < 25 ms", (time_stamp[1] - time_stamp[0])*1000.0)
+        logging.info("P2Server time (%f) < 25 ms", (time_stamp_recieve - time_stamp_send)*1000.0)
     else:
-        logging.info("P2Server time (%f) > 25 ms", (time_stamp[1] - time_stamp[0])*1000.0)
+        logging.info("P2Server time (%f) > 25 ms", (time_stamp_recieve - time_stamp_send)*1000.0)
 
     for frame_type, frames in SC.can_frames.items():
         logging.info("%s:", frame_type)
         for frame in frames:
             ts_type, frame_type, frame_byte = frame
-            logging.info("%s", [round(1000 * (ts_type - time_stamp[0]), 3), frame_type, frame_byte])
+            logging.info("%s", [round(1000 * (ts_type - time_stamp_send), 3), frame_type,
+            frame_byte])
 
     return result
 
-def step_5(can_p):
-    """
-    Teststep 5: Complete Software Download
-    """
-    stepno = 5
-    purpose = " Complete Software Download"
 
-    #Download remnants VBF to Complete the Software Download
+def step_4(dut: Dut, modified_vbf_path):
+    """
+    action: Software download with modified vbf file
+    expected_result: True on successful software downlaod
+    """
     result = True
     odtb_proj_param = os.environ.get('ODTBPROJPARAM')
     if odtb_proj_param is None:
         odtb_proj_param = '.'
 
-    swps = odtb_proj_param + "/VBF_Reqprod/REQ_53959_2*.vbf"
+    swps = odtb_proj_param + modified_vbf_path
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), swps)
     if not glob.glob(swps):
         result = False
     else:
         for f_name in glob.glob(swps):
-            result = result and SSBL.sw_part_download(can_p, f_name,
-                                                      stepno, purpose)
+            result = result and SSBL.sw_part_download(dut, f_name)
     return result
 
-def step_6(can_p):
-    """
-    Teststep 6: Check the Complete and compatible Routine return Complete Not Compatible
-    """
-    time_stamp = [0]
 
-    etp: CanTestExtra = {
-        "step_no" : 6,
-        "purpose" : "Check the Complete and compatible Routine return Complete not Compatible"
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
-
-    result_str = SSBL.check_complete_compatible_routine(can_p, etp["step_no"])
+def step_5(dut: Dut):
+    """
+    action: Verify downloaded software is 'Complete, Not Compatible'
+    expected_result: True on recieving 'Complete, Not Compatible'
+    """
+    result_str = SSBL.check_complete_compatible_routine(dut, stepno=5)
     result = (result_str  == 'Complete, Not Compatible')
 
-    logging.info("Step 6: Check(%s == Complete, Not Compatible) :%s",
+    logging.info("Check(%s == Complete, Not Compatible) :%s",
                      result_str, result)
 
-    time_stamp[0] = SC.can_frames[can_p["send"]][0][0]
-    time_stamp.append(SC.can_frames[can_p["receive"]][0][0])
-    result = result and ((time_stamp[1] - time_stamp[0])*1000.0 < 25.0)
+    time_stamp_send = SC.can_frames[dut["send"]][0][0]
+    time_stamp_recieve = SC.can_frames[dut["receive"]][0][0]
+    result = result and ((time_stamp_recieve - time_stamp_send)*1000.0 < 25.0)
     if result:
-        logging.info("P2Server time (%f) < 25 ms", (time_stamp[1] - time_stamp[0])*1000.0)
+        logging.info("P2Server time (%f) < 25 ms", (time_stamp_recieve - time_stamp_send)*1000.0)
     else:
-        logging.info("P2Server time (%f) > 25 ms", (time_stamp[1] - time_stamp[0])*1000.0)
+        logging.info("P2Server time (%f) > 25 ms", (time_stamp_recieve - time_stamp_send)*1000.0)
 
     for frame_type, frames in SC.can_frames.items():
         logging.info("%s:", frame_type)
         for frame in frames:
             ts_type, frame_type, frame_byte = frame
-            logging.info("%s", [round(1000 * (ts_type - time_stamp[0]), 3), frame_type, frame_byte])
+            logging.info("%s", [round(1000 * (ts_type - time_stamp_send), 3), frame_type,
+            frame_byte])
 
     return result
 
-def step_7(can_p):
-    """
-    Teststep 7: Flash compatible Software Part
-    """
-    stepno = 7
-    purpose = " Complete Software Download"
 
-    #REQ_53959_SIGCFG_compatible_with current release
+def step_6(dut: Dut, modified_vbf_path):
+    """
+    action: Software download with modified vbf file
+    expected_result: True when download different SW parts variant complete
+    """
+
     result = True
     odtb_proj_param = os.environ.get('ODTBPROJPARAM')
     logging.info("\nODTBPROJPARAM: %s", odtb_proj_param)
     if odtb_proj_param is None:
         odtb_proj_param = '.'
 
-    swp = odtb_proj_param + "/VBF_Reqprod/REQ_53959_3*.vbf"
+    swp = odtb_proj_param + modified_vbf_path
     logging.info(swp)
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), swp)
     if not glob.glob(swp):
         result = False
     else:
         for f_name in glob.glob(swp):
-            result = result and SSBL.sw_part_download(can_p, f_name,
-                                                      stepno, purpose)
+            result = result and SSBL.sw_part_download(dut, f_name)
     return result
 
-def step_8(can_p):
-    """
-    Teststep 8: Check the Complete and compatible Routine return Complete and Compatible
-    """
-    time_stamp = [0]
 
-    etp: CanTestExtra = {
-        "step_no" : 8,
-        "purpose" : "Check the Complete and compatible Routine return Complete and Compatible"
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
-
-    result_str = SSBL.check_complete_compatible_routine(can_p, etp["step_no"])
+def step_7(dut: Dut):
+    """
+    action: Verify downloaded software is 'Complete, Compatible'
+    expected_result: True on recieving 'Complete, Compatible'
+    """
+    result_str = SSBL.check_complete_compatible_routine(dut, stepno=107)
     result = (result_str  == 'Complete, Compatible')
 
-    logging.info("Step 8: Check(%s == Complete, Compatible) :%s",
+    logging.info("Check(%s == Complete, Compatible) :%s",
                      result_str, result)
 
-    time_stamp[0] = SC.can_frames[can_p["send"]][0][0]
-    time_stamp.append(SC.can_frames[can_p["receive"]][0][0])
-    result = result and ((time_stamp[1] - time_stamp[0])*1000.0 < 25.0)
+    time_stamp_send = SC.can_frames[dut["send"]][0][0]
+    time_stamp_recieve = SC.can_frames[dut["receive"]][0][0]
+    result = result and ((time_stamp_recieve - time_stamp_send)*1000.0 < 25.0)
     if result:
-        logging.info("P2Server time (%f) < 25 ms", (time_stamp[1] - time_stamp[0])*1000.0)
+        logging.info("P2Server time (%f) < 25 ms", (time_stamp_recieve - time_stamp_send)*1000.0)
     else:
-        logging.info("P2Server time (%f) > 25 ms", (time_stamp[1] - time_stamp[0])*1000.0)
+        logging.info("P2Server time (%f) > 25 ms", (time_stamp_recieve - time_stamp_send)*1000.0)
 
     for frame_type, frames in SC.can_frames.items():
         logging.info("%s:", frame_type)
         for frame in frames:
             ts_type, frame_type, frame_byte = frame
-            logging.info("%s", [round(1000 * (ts_type - time_stamp[0]), 3), frame_type, frame_byte])
+            logging.info("%s", [round(1000 * (ts_type - time_stamp_send), 3), frame_type,
+            frame_byte])
 
     return result
 
 
+def step_8(dut: Dut):
+    """
+    action: ECU hard reset and check it is in default session
+    expected_result: True when ECU is in default session
+    """
+    # ECU reset
+    result = SE11.ecu_hardreset_5sec_delay(dut, stepno=108)
+    if not result:
+        logging.error("Test Failed: ECU reset failed")
+        return False
+
+    # Check active diagnostic session
+    active_session = dut.uds.active_diag_session_f186()
+    if active_session.data["details"]["mode"] == 1:
+        logging.info("ECU is in default session")
+        return True
+
+    logging.error("Test Failed: ECU is not in default session")
+    return False
+
+
 def run():
     """
-    Run - Call other functions from here
+    Verify complete and compatible sequence
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+    dut = Dut()
 
-    # where to connect to signal_broker
-    can_p: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        "send" : "Vcu1ToBecmFront1DiagReqFrame",
-        "receive" : "BecmToVcu1Front1DiagResFrame",
-        "namespace" : SC.nspace_lookup("Front1CANCfg0")
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
-    logging.info("Testcase start: %s", datetime.now())
-    starttime = time.time()
-    logging.info("Time: %s \n", time.time())
-    ############################################
-    # precondition
-    ############################################
-    # read VBF param when testscript is s started, if empty take default param
-    SSBL.get_vbf_files()
-    timeout = 2000
-    result = PREC.precondition(can_p, timeout)
+    start_time = dut.start()
+    result = False
+    result_step = False
 
-    #Init parameter for SecAccess Gen1 / Gen2 (current default: Gen1)
-    sa_keys: SecAccessParam = {
-        "SecAcc_Gen": 'Gen1',
-        "fixed_key": '0102030405',
-        "auth_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF',
-        "proof_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
-    }
-    SIO.parameter_adopt_teststep(sa_keys)
+    parameters_dict = {'modified_vbf_path_1': '',
+                       'modified_vbf_path_2' : '',
+                       'modified_vbf_path_3' : ''}
 
-    if result:
-    ############################################
-    # teststeps
-    ############################################
+    try:
+        dut.precondition(timeout=1000)
 
-        # step1:
-        # action: DL and activate SBL
-        # result: ECU sends positive reply
-        result = result and step_1(can_p,sa_keys)
+        parameters = SIO.parameter_adopt_teststep(parameters_dict)
 
-        # step2:
-        # action: download ESS Software Part
-        # result: ECU sends positive reply
-        result = result and SSBL.sw_part_download(can_p, SSBL.get_ess_filename(),\
-                                   stepno=2, purpose="ESS Software Part Download")
-        time.sleep(1)
+        if not all(list(parameters.values())):
+            raise DutTestError("yml parameters not found")
 
-        # step3:
-        # action: download SWP not compatible with current version
-        # result: ECU sends positive reply
-        result = result and step_3(can_p)
+        result_step = dut.step(step_1, purpose="Download SBL, ESS and activate SBL")
+        if result_step:
+            result_step = dut.step(step_2, parameters['modified_vbf_path_1'], purpose="Software"
+                                                             " download with modified vbf file")
+        if result_step:
+            result_step = dut.step(step_3, purpose="Verify downloaded software is 'Not Complete,"
+                                                   " Compatible'")
+        if result_step:
+            result_step = dut.step(step_4, parameters['modified_vbf_path_2'], purpose="Software"
+                                                             " download with modified vbf file")
+        if result_step:
+            result_step = dut.step(step_5, purpose="Verify downloaded software is 'Complete,"
+                                                   " Not Compatible'")
+        if result_step:
+            result_step = dut.step(step_6, parameters['modified_vbf_path_3'], purpose="Software"
+                                                             " download with modified vbf file")
+        if result_step:
+            result_step = dut.step(step_7, purpose="Verify downloaded software is 'Complete,"
+                                                   " Compatible'")
+        if result_step:
+            result_step = dut.step(step_8, purpose="ECU hard reset and check it is in default"
+                                                   " session")
+        result = result_step
+    except DutTestError as error:
+        logging.error("Test failed: %s", error)
+    finally:
+        dut.postcondition(start_time, result)
 
-        # step4:
-        # action: verify SWDL Not complete
-        # result: ECU sends positive reply "Not Complete, Compatible"
-        result = result and step_4(can_p)
-
-        # step5:
-        # action: Download the remnants Software Parts
-        # result: ECU sends positive reply
-        result = result and step_5(can_p)
-
-        # step6:
-        # action: verify SWDL Not compatible
-        # result: ECU sends positive reply "Complete, Not Compatible"
-        result = result and step_6(can_p)
-        time.sleep(3)
-
-        # step7:
-        # action: replace Not compatible SWP with compatible one
-        # result: ECU sends positive reply
-        result = result and step_7(can_p)
-
-        # step 8:
-        # action: Check Complete and Compatible
-        # result: BECM sends positive reply "Complete and Compatible"
-        #result = result and SSBL.check_complete_compatible_routine(can_p, stepno=8)
-        result = result and step_8(can_p)
-        time.sleep(3)
-
-        # step9:
-        # action: Hard Reset
-        # result: ECU sends positive reply
-        result_9 = SE11.ecu_hardreset_5sec_delay(can_p, stepno=9)
-        time.sleep(1)
-        result = result and result_9
-
-        # step10:
-        # action: verify ECU in default session
-        # result: ECU sends positive reply
-        result_10 =  SE22.read_did_f186(can_p, b'\x01', stepno=10)
-        result = result_10 and result
-
-    ############################################
-    # postCondition
-    ############################################
-
-    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()
