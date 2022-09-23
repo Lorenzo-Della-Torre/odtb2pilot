@@ -1,5 +1,5 @@
-
 """
+
 /*********************************************************************************/
 
 
@@ -38,6 +38,7 @@ description: >
 details: >
     Verify empty response is received for request sent when request queue is full.
 """
+
 import copy
 import logging
 import time
@@ -62,6 +63,7 @@ SE31 = SupportService31()
 S_CARCOM = SupportCARCOM()
 SE22 = SupportService22()
 RESPONSE_LIST = []
+
 
 def send_message(can_p, etp: CanTestExtra, cpay: CanPayload, wait_time):
     """
@@ -162,7 +164,7 @@ def flash_erase(dut, vbf_header, wait_time):
     """
     Routine Flash Erase
     Args:
-        dut (Dut): dut instance
+        dut (Dut): An instance of Dut
         vbf_header (dict): VBF file header
         wait_time (float): waiting time
     Returns:
@@ -260,7 +262,6 @@ def download_application_and_data(dut):
     Returns:
         boolean: True of download was successful, otherwise False
     """
-
     logging.info("Download application and data started")
     result = True
     purpose = "Download application and data"
@@ -282,7 +283,6 @@ def verify_ignored_request():
     global RESPONSE_LIST
     last_response = RESPONSE_LIST[-1]
 
-
     if last_response == '' or last_response is None :
         logging.info("Last request is ignored as expected when the receive queue is full")
         return True
@@ -299,28 +299,23 @@ def software_download(dut, wait_time, stepno):
         dut (Dut): An instance of Dut
         wait_time(float): wait time
         stepno(int): Test step number
-
     Returns:
         boolean: True on successful software download
     """
-
     # Load vbfs
     vbf_result = SSBL.get_vbf_files()
-
     if vbf_result is False:
         logging.error("Aborting software download due to problems when loading VBFs")
         return False
 
     # Activate sbl
     sbl_result = SSBL.sbl_activation(dut, sa_keys=dut.conf.default_rig_config)
-
     if sbl_result is False:
         logging.error("Aborting software download due to problems when activating SBL")
         return False
 
     # Download ess
     ess_result = download_ess(dut, wait_time)
-
     if ess_result is False:
         logging.error("Aborting software download due to problems when downloading ESS "
                       "or consecutive positive response not received")
@@ -328,14 +323,12 @@ def software_download(dut, wait_time, stepno):
 
     # Download application and data
     app_result = download_application_and_data(dut)
-
     if app_result is False:
         logging.error("Aborting software download due to problems when downloading application")
         return False
 
     # Check Complete and Compatible
     check_complete_compatible = SSBL.check_complete_compatible_routine(dut, stepno)
-
     if check_complete_compatible is False:
         logging.error("Aborting software download due to problems when checking C & C")
         return False
@@ -354,20 +347,12 @@ def software_download(dut, wait_time, stepno):
     return correct_mode
 
 
-def step_1(dut: Dut):
+def step_1(dut: Dut, parameters):
     """
     action: Verify empty response is received for request sent when request queue is full.
-
     expected_result: True when request is ignored
     """
     dut.uds.set_mode(2)
-    # Read yml parameters
-    parameters_dict = {'wait_time': 0}
-    parameters = SIO.parameter_adopt_teststep(parameters_dict)
-    if not all(list(parameters.values())):
-        logging.error("Test Failed: yml parameter not found")
-        return False
-
     # Download software in a sequence and get consecutive positive response
     result = software_download(dut, parameters['wait_time'], stepno=1)
     if not result:
@@ -375,26 +360,27 @@ def step_1(dut: Dut):
         return False
 
     # Verify request is ignored when queue is full
-    result = verify_ignored_request()
-    if result:
-        return True
-
-    return False
+    return verify_ignored_request()
 
 
 def run():
     """
-    Verify empty response is received for request sent when request queue is full.
+    Verify empty response is received for request sent when request queue is full
     """
     dut = Dut()
     start_time = dut.start()
     result = False
+
+    parameters_dict = {'wait_time': 0}
     try:
         dut.precondition(timeout=900)
 
-        result = dut.step(step_1, purpose='Verify empty response is received for request sent'
-                                            ' when request queue is full.')
+        parameters = SIO.parameter_adopt_teststep(parameters_dict)
+        if not all(list(parameters.values())):
+            raise DutTestError("yml parameters not found")
 
+        result = dut.step(step_1, parameters, purpose="Verify empty response is received for"
+                                            " request sent when request queue is full")
     except DutTestError as error:
         logging.error("Test failed: %s", error)
     finally:
