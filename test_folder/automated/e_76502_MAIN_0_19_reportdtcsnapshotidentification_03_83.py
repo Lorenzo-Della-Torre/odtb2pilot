@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,144 +18,145 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-# Testscript Hilding MEPII
-# project:  BECM basetech MEPII
-# author:   LDELLATO (Lorenzo Della Torre)
-# date:     2020-05-06
-# version:  1.1
-# reqprod:  76502
+reqprod: 76502
+version: 0
+title: ReadDTCInformation (19) - reportDTCSnapshotIdentification (03)
+purpose: >
+    Since Volvo Car Corporation allows for multiple DTCSnapshot records for one DTC, it must be
+    possible to read out which DTCSnapshot records a specific DTC has.
 
-#inspired by https://grpc.io/docs/tutorials/basic/python.html
+description: >
+    The ECU shall support the service ReadDTCInformation - reportDTCSnapshotIdentification in all
+    sessions where the ECU supports the service ReadDTCInformation.
 
-# Copyright 2015 gRPC authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-The Python implementation of the gRPC route guide client.
+details: >
+    Verify ReadDTCInfoSnapshotIdentification and ReadDTCInfoSnapshotIdentification(83) with
+    positive reply and empty response respectively in both default and extended session.
 """
 
-import time
-from datetime import datetime
-import sys
 import logging
-import inspect
-
-import odtb_conf
-from supportfunctions.support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
-from supportfunctions.support_test_odtb2 import SupportTestODTB2
+from hilding.dut import Dut
+from hilding.dut import DutTestError
+from hilding.uds import UdsEmptyResponse
 from supportfunctions.support_carcom import SupportCARCOM
-from supportfunctions.support_file_io import SupportFileIO
+from supportfunctions.support_can import SupportCAN
 
-from supportfunctions.support_precondition import SupportPrecondition
-from supportfunctions.support_postcondition import SupportPostcondition
-
-SIO = SupportFileIO
 SC = SupportCAN()
-SUTE = SupportTestODTB2()
 SC_CARCOM = SupportCARCOM()
-PREC = SupportPrecondition()
-POST = SupportPostcondition()
 
-def step_1(can_p):
-    """
-    Teststep 1: verify ReadDTCInfoSnapshotIdentification reply positively
-    """
-    cpay: CanPayload = {
-        "payload": SC_CARCOM.can_m_send("ReadDTCInfoSnapshotIdentification", b'', b''),
-        "extra": ''
-        }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
-    etp: CanTestExtra = {
-        "step_no": 1,
-        "purpose": "verify ReadDTCInfoSnapshotIdentification reply positively",
-        "timeout": 1,
-        "min_no_messages": -1,
-        "max_no_messages": -1
-        }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
-    result = SUTE.teststep(can_p, cpay, etp)
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]],
-                                          teststring='5903')
-    return result
 
-def step_2(can_p):
+def request_snapshot_identification(dut):
     """
-    Teststep 2: verify ReadDTCInfoSnapshotIdentification reply empty message
+    Request ReadDTCInfoSnapshotIdentification
+    Args:
+        dut (Dut): An instance of Dut
+    Return:
+        (bool): True when received positive response
     """
-    cpay: CanPayload = {
-        "payload": SC_CARCOM.can_m_send("ReadDTCInfoSnapshotIdentification(83)", b'', b''),
-        "extra": ''
-        }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
-    etp: CanTestExtra = {
-        "step_no": 2,
-        "purpose": "verify ReadDTCInfoSnapshotIdentification reply empty message",
-        "timeout": 1,
-        "min_no_messages": -1,
-        "max_no_messages": -1
-        }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    payload = SC_CARCOM.can_m_send("ReadDTCInfoSnapshotIdentification", b'', b'')
+    response = dut.uds.generic_ecu_call(payload)
+    if response.raw[4:8] != '5903':
+        logging.error("Test Failed: Expected positive response '59', received %s",
+                       response.raw[4:8])
+        return False
 
-    result = SUTE.teststep(can_p, cpay, etp)
-    result = result and not SC.can_messages[can_p["receive"]]
+    logging.info("Received positive response '59' as expected")
+    return True
 
-    return result
+
+def request_snapshot_identification_83(dut):
+    """
+    Request ReadDTCInfoSnapshotIdentification(83)
+    Args:
+        dut (Dut): An instance of Dut
+    Return:
+        (bool): True when received empty response
+    """
+    payload = SC_CARCOM.can_m_send("ReadDTCInfoSnapshotIdentification(83)", b'', b'')
+    try:
+        dut.uds.generic_ecu_call(payload)
+    except UdsEmptyResponse:
+        pass
+
+    if not SC.can_messages[dut["receive"]]:
+        logging.info("Empty response received from ECU as expected")
+        return True
+
+    logging.error("Test Failed: Expected empty response, received %s",
+                   SC.can_messages[dut["receive"]])
+    return False
+
+
+def step_1(dut: Dut):
+    """
+    action: Request ReadDTCInfoSnapshotIdentification and ReadDTCInfoSnapshotIdentification(83)
+            in default session
+    expected result: Should give positive response for ReadDTCInfoSnapshotIdentification
+                     and empty message for ReadDTCInfoSnapshotIdentification(83)
+    """
+    # Request ReadDTCInfoSnapshotIdentification
+    result = request_snapshot_identification(dut)
+    if not result:
+        return False
+
+    # Request ReadDTCInfoSnapshotIdentification(83)
+    return request_snapshot_identification_83(dut)
+
+
+def step_2(dut: Dut):
+    """
+    action: Request ReadDTCInfoSnapshotIdentification and ReadDTCInfoSnapshotIdentification(83)
+            in extended session
+    expected result: Should give positive response for ReadDTCInfoSnapshotIdentification
+                     and empty message for ReadDTCInfoSnapshotIdentification(83)
+    """
+    # Set to extended session
+    dut.uds.set_mode(3)
+
+    # Request ReadDTCInfoSnapshotIdentification
+    result = request_snapshot_identification(dut)
+    if not result:
+        return False
+
+    # Request ReadDTCInfoSnapshotIdentification(83)
+    result = request_snapshot_identification_83(dut)
+    if not result:
+        return False
+
+    # Verify active diagnostic session
+    response = dut.uds.active_diag_session_f186()
+    if response.data["details"]["mode"] == 3:
+        logging.info("ECU is in extended session as expected")
+        return True
+
+    logging.error("Test Failed: ECU is not in extended session")
+    return False
+
 
 def run():
     """
-    Run - Call other functions from here
+    Verify ReadDTCInfoSnapshotIdentification and ReadDTCInfoSnapshotIdentification(83) with
+    positive reply and empty response respectively in both default and extended session
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+    dut = Dut()
 
-    # where to connect to signal_broker
-    can_p: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        "send" : "Vcu1ToBecmFront1DiagReqFrame",
-        "receive" : "BecmToVcu1Front1DiagResFrame",
-        "namespace" : SC.nspace_lookup("Front1CANCfg0")
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
+    start_time = dut.start()
+    result = False
+    result_step = False
 
-    logging.info("Testcase start: %s", datetime.now())
-    starttime = time.time()
-    logging.info("Time: %s \n", time.time())
+    try:
+        dut.precondition(timeout=40)
+        result_step = dut.step(step_1, purpose='Verify ReadDTCInfoSnapshotIdentification and '
+                               'ReadDTCInfoSnapshotIdentification(83) in default session')
+        if result_step:
+            result_step = dut.step(step_2, purpose='Verify ReadDTCInfoSnapshotIdentification and '
+                                   'ReadDTCInfoSnapshotIdentification(83) in extended session')
+        result = result_step
+    except DutTestError as error:
+        logging.error("Test failed: %s", error)
+    finally:
+        dut.postcondition(start_time, result)
 
-    ############################################
-    # precondition
-    ############################################
-    timeout = 30
-    result = PREC.precondition(can_p, timeout)
-
-    if result:
-    ############################################
-    # teststeps
-    ############################################
-
-    # step1:
-    # action:
-    # result: BECM sends positive reply
-        result = result and step_1(can_p)
-
-    # step2:
-    # action:
-    # result: BECM sends positive reply
-        result = result and step_2(can_p)
-
-    ############################################
-    # postCondition
-    ############################################
-
-    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()
