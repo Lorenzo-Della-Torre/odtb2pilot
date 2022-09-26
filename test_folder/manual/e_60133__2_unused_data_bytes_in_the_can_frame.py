@@ -1,10 +1,9 @@
 """
-
 /*********************************************************************************/
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,12 +17,26 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-Implicitly tested script
+reqprod: 60133
+version: 2
+title: Unused data bytes in the CAN frame
+purpose: >
+    Define what to do with data not used in the USDT frame.
 
-Tested implicitly by REQPROD 60129 Length of Classic CAN frames
+description: >
+    Unused data byte shall be padded with 0x00 and the receiver of the frame shall ignore padding.
+
+details: >
+    Implicitly tested script
+    Tested implicitly by REQPROD 60129
 """
 
+import logging
+import sys
+
 from e_60129__3_length_of_classic_can_frames import run
+
+logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
 if __name__ == '__main__':
     run()
