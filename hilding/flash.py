@@ -28,10 +28,8 @@ from hilding.dut import Dut
 
 from supportfunctions.support_SBL import SupportSBL
 from supportfunctions.support_sec_acc import SecAccessParam
-from supportfunctions.support_service3e import SupportService3e
 
 SSBL = SupportSBL()
-SS3E = SupportService3e()
 
 def load_vbf_files(dut):
     """Loads the rig specific VBF files found in rigs/<default-rig-name>/VBFs
@@ -193,8 +191,8 @@ def software_download(dut):
         return False
 
     # Check that the ECU ends up in mode 1 (default session)
-    SS3E.stop_periodic_tp_zero_suppress_prmib()
-    time.sleep(10)
+    dut.uds.ecu_reset_1101()
+    time.sleep(5)
     uds_response = dut.uds.active_diag_session_f186()
     mode = uds_response.data['details'].get('mode')
     correct_mode = True
