@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,229 +18,170 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-# Testscript Hilding MEPII
-# project:  BECM basetech MEPII
-# author:   J-ADSJO (Johan Adsjö)
-# date:     2020-10-21
-# version:  1.0
-# reqprod:  68197
-# -- UPDATES --
-# author:
-# date:
-# version:
-# changes:
+reqprod: 68197
+version: 1
+title: Autosar BSW cluster versions
+purpose:
+    To enable readout of the specific version of the (VCC) AUTOSAR cluster(s) implemented
+    in the ECU.
 
-# inspired by https://grpc.io/docs/tutorials/basic/python.html
+description:
+    If the ECU contains any AUTOSAR Basic Software cluster a data record with identifier as
+    specified in the table below shall be implemented exactly as defined in
+    Carcom - Global Master Reference Database.
 
-# Copyright 2015 gRPC authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+    -------------------------------------------
+    Description	                    Identifier
+    -------------------------------------------
+    Autosar BSW cluster version     F126
+    -------------------------------------------
+    •   It shall be possible to read the data record by using the diagnostic service specified in
+        Ref[LC : Volvo Car Corporation - UDS Services - Service 0x22 (ReadDataByIdentifier) Reqs].
 
-The Python implementation of the gRPC route guide client.
+    The identifier shall be implemented in the following sessions:
+    •   Default session
+    •   Extended Session
+
+details:
+    Read DID F126 and verify the autosar BSW cluster version data record also verify that
+    the data record in same in default and extended session.
 """
 
-import time
-from datetime import datetime
-import sys
 import logging
-import inspect
-import odtb_conf
-
-from supportfunctions.support_can import SupportCAN, CanParam, CanTestExtra, CanPayload
-from supportfunctions.support_test_odtb2 import SupportTestODTB2
-from supportfunctions.support_carcom import SupportCARCOM
-from supportfunctions.support_file_io import SupportFileIO
-from supportfunctions.support_precondition import SupportPrecondition
-from supportfunctions.support_postcondition import SupportPostcondition
-from supportfunctions.support_service22 import SupportService22
-from supportfunctions.support_service10 import SupportService10
-
-SIO = SupportFileIO
-SC = SupportCAN()
-SUTE = SupportTestODTB2()
-SC_CARCOM = SupportCARCOM()
-PREC = SupportPrecondition()
-POST = SupportPostcondition()
-SE10 = SupportService10()
-SE22 = SupportService22()
+from hilding.dut import Dut
+from hilding.dut import DutTestError
 
 
-def step_2(can_p):
+def request_read_data_by_id(dut, session):
     """
-    Teststep 2: send requests DID F126 - in Default Session
+    Request ReadDataByIdentifier(0x22)
+    Args:
+        dut (Dut): An instance of Dut
+        session (str): Diagnostic session
+    Returns:
+        (bool): True when received positive response '62'
+        response.raw (str): ECU response
     """
-    # Parameters for the teststep
-    cpay: CanPayload = {
-        "payload": SC_CARCOM.can_m_send("ReadDataByIdentifier",
-                                        b'\xF1\x26',
-                                        b''),
-        "extra": ''
-        }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
-    etp: CanTestExtra = {
-        "step_no": 2,
-        "purpose": "Request DID F126 - in Default Session",
-        "timeout": 1,
-        "min_no_messages": -1,
-        "max_no_messages": -1
-        }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    response = dut.uds.read_data_by_id_22(bytes.fromhex('F126'))
+    if response.raw[4:6] == '62' and response.raw[6:10] == 'F126':
+        logging.info("Received positive response '62' for request ReadDataByIdentifier in "
+                     "%s session as expected", session)
+        return True, response.raw
 
-    result = SUTE.teststep(can_p, cpay, etp)
-    time.sleep(1)
+    logging.error("Test Failed: Expected positive response '62' for request ReadDataByIdentifier "
+                  "in %s session, received %s", session, response.raw)
+    return False, None
 
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='F126')
-    logging.info(SC.can_messages[can_p["receive"]])
 
-    default_f126_result = SC.can_messages[can_p["receive"]][0][2]
-    logging.info(default_f126_result)
-    return result, default_f126_result
-
-def step_3(message):
+def verify_active_diag_session(dut, mode, session):
     """
-    Teststep 3: Verify the F126 Autosar BSW cluster version data record
-    From SDDB:
-      '22F126': {'Name': 'AUTOSAR BSW Vendor IDs and Cluster Versions', 'ID': 'F126', 'Size': '51'}
+    Request ReadDataByIdentifier(0x22)
+    Args:
+        dut (Dut): An instance of Dut
+        mode (int): Diagnostic mode
+        session (str): Diagnostic session
+    Returns:
+        (bool): True when ECU is in expected diagnostic session
     """
-    step_no = 3
-    purpose = "Verify the F126 Autosar BSW cluster version data record"
-    SUTE.print_test_purpose(step_no, purpose)
+    response = dut.uds.active_diag_session_f186()
+    if response.data["details"]["mode"] == mode:
+        logging.info("ECU is in %s session as expected", session)
+        return True
 
-    pos = message.find('F126')
-    result = (pos > 0)
-    m_length = (len(message) - pos - 4)/2
-    result = result and ( m_length== 51)
-    logging.info("F126 Size = %s", m_length)
-
-    logging.info("Result Step 3: %s", result)
-
-    return result
+    logging.error("Test Failed: ECU is not in %s session", session)
+    return False
 
 
-def step_5(can_p):
+def step_1(dut: Dut):
     """
-    Teststep 5: send requests DID F126 - in Default Session
+    action: Read DID 'F126' and verify the autosar BSW cluster version data record in default
+            session
+    expected_result: Autosar BSW cluster version data record should match and message length
+                     should equal to 51 bytes.
     """
-    # Parameters for the teststep
-    cpay: CanPayload = {
-        "payload": SC_CARCOM.can_m_send("ReadDataByIdentifier",
-                                        b'\xF1\x26',
-                                        b''),
-        "extra": ''
-        }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
-    etp: CanTestExtra = {
-        "step_no": 5,
-        "purpose": "Request DID F126 - in Extended Session",
-        "timeout": 1,
-        "min_no_messages": -1,
-        "max_no_messages": -1
-        }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    session_result = verify_active_diag_session(dut, mode=1, session='default')
+    if not session_result:
+        return False, None
 
-    result = SUTE.teststep(can_p, cpay, etp)
-    time.sleep(1)
+    did_result, response_default = request_read_data_by_id(dut, session='default')
+    if not did_result:
+        return False, None
 
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='F126')
-    logging.info(SC.can_messages[can_p["receive"]])
+    logging.info("Data record with autosar BSW cluster version in default session %s",
+                  response_default)
 
-    extended_f126_result = SC.can_messages[can_p["receive"]][0][2]
+    # Verify the autosar BSW cluster version data record
+    pos = response_default.find('F126')
+    result = pos > 0
+    message_length = int((len(response_default) - pos - 4)/2)
+    result = result and message_length == 51
+    if result:
+        logging.info("Received valid autosar BSW cluster version data record and size of the "
+                     "data is %s bytes", message_length)
+        return True, response_default
 
-    logging.info(extended_f126_result)
+    logging.info("Test Failed: Received invalid autosar BSW cluster version data record and size "
+                 "of the data is %s bytes", message_length)
+    return False, None
 
-    return result, extended_f126_result
+
+def step_2(dut: Dut, response_default):
+    """
+    action: Read DID 'F126' and compare autosar BSW cluster version data record
+    expected_result: Autosar BSW cluster version data record should same in default
+                     and extended session.
+    """
+    # Set to extended session
+    dut.uds.set_mode(3)
+
+    session_result = verify_active_diag_session(dut, mode=3, session='extended')
+    if not session_result:
+        return False
+
+    did_result, response_extended = request_read_data_by_id(dut, session='extended')
+    if not did_result:
+        return False
+
+    logging.info("Data record with autosar BSW cluster version in extended session %s",
+                  response_extended)
+
+    # Compare autosar BSW cluster version data record
+    result = bool(response_default == response_extended)
+    if result:
+        logging.info("Autosar BSW cluster version data record are same in both default and "
+                     "extended session")
+        return True
+
+    logging.error("Test Failed: Autosar BSW cluster version data record are not same in both "
+                  "default and extended session")
+    return False
 
 
 def run():
     """
-    Run - Call other functions from here
+    Read DID F126 and verify the autosar BSW cluster version data record and also verify
+    that the data record in same in default and extended session
     """
+    dut = Dut()
 
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+    start_time = dut.start()
+    result = False
+    result_step = False
 
-    # where to connect to signal_broker
-    can_p: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        "send" : "Vcu1ToBecmFront1DiagReqFrame",
-        "receive" : "BecmToVcu1Front1DiagResFrame",
-        "namespace" : SC.nspace_lookup("Front1CANCfg0")
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
+    try:
+        dut.precondition(40)
+        result_step, default_f126_result = dut.step(step_1, purpose='Read DID F126 and verify '
+                                                    'the autosar BSW cluster version data record '
+                                                    'in default session')
+        if result_step:
+            result_step = dut.step(step_2, default_f126_result, purpose='Read DID F126 and compare'
+                                                        ' autosar BSW cluster version data record')
+        result = result_step
+    except DutTestError as error:
+        logging.error("Test failed: %s", error)
+    finally:
+        dut.postcondition(start_time, result)
 
-    logging.info("Testcase start: %s", datetime.now())
-    starttime = time.time()
-    logging.info("Time: %s \n", time.time())
-
-    ############################################
-    # precondition
-    ############################################
-    timeout = 40
-    result = PREC.precondition(can_p, timeout)
-
-    if result:
-    ############################################
-    # teststeps
-    ############################################
-
-    # step 1:
-    # action: Check if Default session
-    # result: BECM reports modeS
-        result = result and SE22.read_did_f186(can_p, b'\x01', stepno=1)
-        time.sleep(1)
-
-    # step 2:
-    # action: send requests DID F126 in Default Session
-    # result: Data record with Autosar BSW cluster version is returned
-        result_step_2, default_f126_result = step_2(can_p)
-        result = result and result_step_2
-
-    # step 3:
-    # action: Verify the F126 Autosar BSW cluster version data record
-    # result: The record shall be valid
-
-        result = result and step_3(default_f126_result)
-
-    # step 4:
-    # action: Change to Extended session
-    # result: BECM reports mode
-
-        result = result and SE10.diagnostic_session_control_mode3(can_p, 4)
-        time.sleep(1)
-
-    # step 5:
-    # action: send requests DID F126 in Extended Session
-    # result: Data record with Autosar BSW cluster version is returned
-        result_step_5, extended_f126_result  = step_5(can_p)
-        time.sleep(1)
-        result = result and result_step_5
-
-    # step 6:
-    # action: Complete the testcase
-    # result: The content shall be equal of content recieved in step 1
-        result = result and (default_f126_result == extended_f126_result)
-
-    # step7:
-    # action: Set to Default session before leaving
-    # result: BECM reports modes
-        result_end = SE10.diagnostic_session_control_mode1(can_p, 7)
-        time.sleep(1)
-        result = result and result_end
-
-    ############################################
-    # postCondition
-    ############################################
-
-    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()
