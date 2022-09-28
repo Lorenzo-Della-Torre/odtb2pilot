@@ -1,10 +1,9 @@
 """
-
 /*********************************************************************************/
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,31 +17,30 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-Testscript Hilding MEPII
-project:  BECM basetech MEPII
-author:   DHJELM (Daniel Hjelm)
-date:     2020-11-16
-version:  1.0
-reqprod:  60104
+reqprod: 60104
+version: 1
+title: N_Bs timeout in programming session
+purpose: >
+    From a system perspective it is important that both sender and receiver side times out roughly
+    the same time. The timeout value shall be high enough to not be affected by situations like
+    occasional high busloads and low enough to get a user friendly system if for example an ECU
+    is not connected.
 
-title:
-N_Bs timeout in programming session
+description: >
+    N_Bs timeout value shall be 1000ms in programming session.
 
-purpose:
-From a system perspective it is important that both sender and receiver side
-times out roughly the same time. The timeout value shall be high enough to not
-be affected by situations like occasional high busloads and low enough to get a
-user friendly system if for example an ECU is not connected.
-
-description:
-N_Bs timeout value shall be 1000ms in programming session.
-
-Testscript for an implicitly tested requirement (tested implicitly)
+details: >
+    Implicitly tested script
+    Tested implicitly by REQPROD 60102 because N_Bs and N_As(Network layer timing parameter)
+    timeout value is 1000ms in programming session
 """
 
 import logging
+import sys
+from e_60102__1_n_as_timeout_prog_session import run
 
-logging.basicConfig(filename='{}.log'.format((__file__)[-3]), format='%(asctime)s - %(message)s',
-                    level=logging.INFO)
+logging.basicConfig(format=' %(message)s',stream=sys.stdout, level=logging.INFO)
 
-logging.info("Testcase result: Tested implicitly by REQPROD 60102")
+
+if __name__ == '__main__':
+    run()
