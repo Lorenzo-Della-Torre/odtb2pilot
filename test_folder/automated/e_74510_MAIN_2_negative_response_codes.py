@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,23 +18,15 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-testscript: Hilding MEPII
-project:    BECM basetech MEPII
-author:     GANDER10 (Gustav Andersson)
-date:       2021-02-08
-version:    1.0
-reqprod:    74510
+reqprod: 74510
+version: 2
+title: Negative response code other than generalReject (0x10) and  busyRepeatRequest (0x21).
 
-title:
-    Negative response code other than generalReject (0x10)
-    and busyRepeatRequest (0x21) ; 3
+purpose: >
+    Standardize the negative response codes that an ECU may send to make it easier to understand
+    why a ECU rejects a diagnostic service request.
 
-purpose:
-    Standardise the negative response codes that an ECU may
-    send to make it easier to understand why a ECU rejects a
-    diagnostic service request.
-
-description:
+description: >
     Rationale:
         The ECU will implement negative response codes that are specified
         in ISO 14229-1 according to their definition and NRC handling sequence.
@@ -45,24 +37,17 @@ description:
         services requests is allowed as specified by ISO 14229-1 unless
         otherwise is specified by this document.
 
-
-details:
-    Implicitly tested by:
-        REQPROD 76172 which verifies a negative response in programming session.
-        There are also serveral other REQPRODs which test this.
-        E.g. REQPROD 76173
+details: >
+    Implicitly tested script
+    Tested implicitly by REQPROD 76172 which verifies a negative response in programming session.
 """
 
 import logging
 import sys
+from e_76172_MAIN_0_readmemorybyaddress_s23 import run
 
-def run():
-    """
-    Run - Call other functions from here.
-    """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+logging.basicConfig(format=' %(message)s',stream=sys.stdout, level=logging.INFO)
 
-    logging.info("Testcase result: Implicitly tested by REQPROD 76172")
 
 if __name__ == '__main__':
     run()
