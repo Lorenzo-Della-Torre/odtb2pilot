@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,29 +18,25 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-    Testscript for an implicitly tested requirement (tested implicitly)
+reqprod: 60003
+version: 1
+title: Transport and Network layer
+purpose: >
+    Standardise communication to ensure all ECUs uses the same diagnostic communication
+    specifications. ISO standard shall be followed as far as possible unless otherwise specified
+    to reduce cost and make implementation easier.
 
-    Testscript Hilding MEPII
-    project:  BECM basetech MEPII
-    author:   LDELLATO (Lorenzo Della Torre)
-    date:     2020-05-16
-    version:  1.0
-    reqprod:  60003
+description: >
+    The transport/network layer shall be compliant to Road vehicles - Diagnostic communication over
+    Controller Area Network (DoCAN) - Part 2: Transport protocol and network layer services with the
+    restrictions/additions as defined by this document. If there are contradictions between this
+    specification, LC : VCC - DoCAN, and Road vehicles - Diagnostic communication over Controller
+    Area Network (DoCAN) - Part 2: Transport protocol and network layer services, then this
+    specification shall override Road vehicles - Diagnostic communication over Controller Area
+    Network (DoCAN) - Part 2: Transport protocol and network layer services.
 
-    Inspired by httpsgrpc.iodocstutorialsbasicpython.html
-    Copyright 2015 gRPC authors.
-
-    Licensed under the Apache License, Version 2.0 (the License);
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
-
-        httpwww.apache.orglicensesLICENSE-2.0
-
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an AS IS BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
+details: >
+    Implicitly tested script
 """
 
 import logging
@@ -48,7 +44,7 @@ import sys
 
 logging.basicConfig(format='%(asctime)s - %(message)s', stream=sys.stdout, level=logging.INFO)
 
-logging.info("Testcase result: Tested implicitly by REQPRODs in LC: "
+logging.info("Testcase result: tested implicitly by REQPRODs in LC: "
              "VCC DoCAN - SW reqs.:"
              "Requirements from section Addressing formats:"
              "REQPROD 60112 Supporting functional requests"

@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,255 +18,221 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-# Testscript Hilding MEPII
-# project:  BECM basetech MEPII
-# author:   G-HERMA6 (Gunnar Hermansson)
-# date:     2020-10-13
-# version:  2.0
-# reqprod:  60003
+reqprod: 60003
+version: 1
+title: Transport and Network layer
+purpose: >
+    Standardise communication to ensure all ECUs uses the same diagnostic communication
+    specifications. ISO standard shall be followed as far as possible unless otherwise specified
+    to reduce cost and make implementation easier.
 
-#inspired by https://grpc.io/docs/tutorials/basic/python.html
+description: >
+    The transport/network layer shall be compliant to Road vehicles - Diagnostic communication over
+    Controller Area Network (DoCAN) - Part 2: Transport protocol and network layer services with the
+    restrictions/additions as defined by this document. If there are contradictions between this
+    specification, LC : VCC - DoCAN, and Road vehicles - Diagnostic communication over Controller
+    Area Network (DoCAN) - Part 2: Transport protocol and network layer services, then this
+    specification shall override Road vehicles - Diagnostic communication over Controller Area
+    Network (DoCAN) - Part 2: Transport protocol and network layer services.
 
-# Copyright 2015 gRPC authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-The Python implementation of the gRPC route guide client.
+details: >
+    Request ReadDataByIdentifier(0x22) with DID EDA0 to get MF reply and verify all the expected
+    DIDs are present in received message
 """
 
-from datetime import datetime
-import logging
 import time
-import sys
-
-import odtb_conf
-
-from supportfunctions.support_can import SupportCAN, CanParam, CanTestExtra, CanPayload, CanMFParam
-from supportfunctions.support_carcom import SupportCARCOM
+import logging
+from hilding.dut import Dut
+from hilding.dut import DutTestError
 from supportfunctions.support_file_io import SupportFileIO
-from supportfunctions.support_precondition import SupportPrecondition
-from supportfunctions.support_postcondition import SupportPostcondition
-from supportfunctions.support_service22 import SupportService22
+from supportfunctions.support_can import SupportCAN, CanTestExtra, CanPayload, CanMFParam
+from supportfunctions.support_carcom import SupportCARCOM
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
 
-
+SIO = SupportFileIO()
 SC = SupportCAN()
 SC_CARCOM = SupportCARCOM()
-SIO = SupportFileIO()
-PREC = SupportPrecondition()
-POST = SupportPostcondition()
-SE22 = SupportService22()
 SUTE = SupportTestODTB2()
 
-def step_1(can_p):
+
+def verify_fc_wait_and_fc_cts(dut, fc_delay, fc_flag, max_delay=1):
     """
-    Step 1: Verify ECU is in default session.
+    Verify frame control with max number of WAIT frames and change frame control to continue
+    to send (0x30)
+    Args:
+        dut (Dut): Dut instance
+        fc_delay (int): Frame control delay
+        fc_flag (str): Frame control flag
+        max_delay (int): Maximum delay time
+    Returns: None
     """
-    SUTE.print_test_purpose(1, "Verify ECU is in default session.")
-    return SE22.read_did_f186(can_p, b'\x01')
-
-def step_2(can_p):
-    """
-    Step 2: Request EDA0 - Complete ECU part/serial number default session
-    """
-    cpay: CanPayload = {
-        "payload": SC_CARCOM.can_m_send( "ReadDataByIdentifier", b'\xED\xA0', b""),
-        "extra": b'',
-    }
-    SIO.parameter_adopt_teststep(cpay)
-
-    etp: CanTestExtra = {
-        "step_no": 2,
-        "purpose": "Request EDA0 - Complete ECU part/serial number to get MF reply",
-        "timeout": 0.0, # Don't wait - need to send FC frames
-        "min_no_messages": -1,
-        "max_no_messages": -1,
-    }
-    SIO.parameter_adopt_teststep(etp)
-
-    can_mf: CanMFParam = {
-        "block_size": 0,
-        "separation_time": 0,
-        "frame_control_delay": 970,  # Wait max 1000 ms before sending FC frame back
-        "frame_control_flag": 49,    # Wait
-        "frame_control_auto": False,
-    }
-    SIO.parameter_adopt_teststep(can_mf)
-
-    SC.change_mf_fc(can_p["send"], can_mf)
-
-    return SUTE.teststep(can_p, cpay, etp)
-
-
-def step_3(can_p):
-    """
-    Step 3: Loop: Wait maxtime to send reply for first frame, send reply
-    """
-    etp: CanTestExtra = {
-        "step_no": 3,
-        "purpose": "Verify FC with max number of WAIT frames",
-        "timeout": 0.0,  # Don't wait - need to send FC frames
-        "min_no_messages": -1,
-        "max_no_messages": -1,
-    }
-    SIO.parameter_adopt_teststep(etp)
-
-    can_mf: CanMFParam = {
-        "block_size": 0,
-        "separation_time": 0,
-        "frame_control_delay": 970,  # Requirement: Wait max 1000 ms before sending FC frame back
-        "frame_control_flag": 0x31,  # Wait
-        "frame_control_auto": False,
-    }
-    SIO.parameter_adopt_teststep(can_mf)
-
-    SUTE.print_test_purpose(etp['step_no'], etp['purpose'])
-
-    max_delay = 254
-
-    SC.change_mf_fc(can_p["send"], can_mf)
-
-    sig = can_p["send"]
+    can_mf: CanMFParam = {"block_size": 0,
+                          "separation_time": 0,
+                          "frame_control_delay": fc_delay,
+                          "frame_control_flag": fc_flag,
+                          "frame_control_auto": False}
+    SC.change_mf_fc(dut["send"], can_mf)
+    sig = dut["send"]
 
     for _ in range(max_delay):
-        time.sleep(SC.can_subscribes[sig][3]/1000)  # frame_control_delay / 1000
-        SC.send_fc_frame(can_p, frame_control_flag=SC.can_subscribes[sig][4],
+        # frame_control_delay / 1000
+        time.sleep(SC.can_subscribes[sig][3]/1000)
+
+        SC.send_fc_frame(dut, frame_control_flag=SC.can_subscribes[sig][4],
                          block_size=SC.can_subscribes[sig][1],
                          separation_time=SC.can_subscribes[sig][2])
+
         logging.info("DelayNo.: %s, Number of can_frames received: %s",
                      SC.can_subscribes[sig][5], len(SC.can_frames[sig]))
-        SC.can_subscribes[sig][5] += 1  # frame_control_responses
+        if max_delay > 1:
+            # Frame control responses
+            SC.can_subscribes[sig][5] += 1
 
 
-def step_4(can_p):
+def log_can_messages_frames_data():
     """
-    Step 4: Send flow control with continue flag (0x30), block_size=0, separation_time=0
+    Log data of CAN messages and CAN frames
+    Args: None
+    Returns: None
     """
-    etp: CanTestExtra = {
-        "step_no": 4,
-        "purpose": "Change FC to continue (0x30)",
-        "timeout": 0.0,  # Don't wait - need to send FC frames
-        "min_no_messages": -1,
-        "max_no_messages": -1,
-    }
-    SIO.parameter_adopt_teststep(etp)
-
-    can_mf: CanMFParam = {
-        "block_size": 0,
-        "separation_time": 0,
-        "frame_control_delay": 0,
-        "frame_control_flag": 0x30,
-        "frame_control_auto": True,
-    }
-    SIO.parameter_adopt_teststep(can_mf)
-
-    SUTE.print_test_purpose(etp['step_no'], etp['purpose'])
-    sig = can_p["send"]
-    time.sleep(SC.can_subscribes[sig][3]/1000)
-    SC.change_mf_fc(can_p["send"], can_mf)
-    SC.send_fc_frame(can_p, SC.can_subscribes[sig][4],
-                     SC.can_subscribes[sig][1], SC.can_subscribes[sig][2])
-
-
-def step_5(can_p):
-    """
-    Step 5: Verify received message
-    """
-    SUTE.print_test_purpose(stepno=5, purpose="Verify received message")
-
-    sig = can_p["receive"]
-
-    SC.clear_all_can_messages()
-    SC.update_can_messages(can_p)
-
-    logging.info("Step5: messages received %s", len(SC.can_messages))
-    logging.info("Step5: messages:")
+    logging.info("Messages received %s", len(SC.can_messages))
     for message, data in SC.can_messages.items():
         logging.info("%s: %s", message, data)
-    logging.info("Step5: frames received %s", len(SC.can_frames))
-    logging.info("Step5: frames:")
+
+    logging.info("Frames received %s", len(SC.can_frames))
     for frame_type, frames in SC.can_frames.items():
         logging.info("%s:", frame_type)
+
         for frame in frames:
             logging.info("%s", frame)
-    logging.info("Test if string contains all IDs expected:")
 
-    result = True
-    result = result and SUTE.test_message(SC.can_messages[sig], teststring='62EDA0')
-    result = result and SUTE.test_message(SC.can_messages[sig], teststring='F120')
-    result = result and SUTE.test_message(SC.can_messages[sig], teststring='F12A')
-    result = result and SUTE.test_message(SC.can_messages[sig], teststring='F12B')
-    result = result and SUTE.test_message(SC.can_messages[sig], teststring='F12E')
-    result = result and SUTE.test_message(SC.can_messages[sig], teststring='F18C')
 
-    return result
+def step_1(dut: Dut):
+    """
+    action: Verify ECU's active diagnostic session
+    expected_result: ECU should be in default session
+    """
+    # Verify active diagnostic session
+    res = dut.uds.active_diag_session_f186()
+    if res.data['details']['mode'] != 1:
+        logging.error("Test Failed: ECU is not in default session")
+        return False
+
+    logging.info("ECU is in default session as expected")
+    return True
+
+
+def step_2(dut: Dut):
+    """
+    action: Request ReadDataByIdentifier(0x22) with DID EDA0 to get MF reply
+    expected_result: ECU should give positive response '62'
+    """
+    cpay: CanPayload = {"payload": SC_CARCOM.can_m_send("ReadDataByIdentifier",
+                                                        bytes.fromhex('EDA0'),
+                                                        b""),
+                        "extra": b''}
+
+    etp: CanTestExtra = {"step_no": 102,
+                         "purpose": '',
+                         "timeout": 0.0,
+                         "min_no_messages": -1,
+                         "max_no_messages": -1}
+
+    can_mf: CanMFParam = {"block_size": 0,
+                          "separation_time": 0,
+                          "frame_control_delay": 970,
+                          "frame_control_flag": 49,
+                          "frame_control_auto": False}
+
+    SC.change_mf_fc(dut["send"], can_mf)
+
+    result = SUTE.teststep(dut, cpay, etp)
+    if result:
+        logging.info("Received positive response for a request ReadDataByIdentifier to get MF "
+                     "reply as expected")
+        return True
+
+    logging.error("Test Failed: Expected positive response for a request ReadDataByIdentifier "
+                  "to get MF reply but not received")
+    return False
+
+
+def step_3(dut: Dut, parameters):
+    """
+    action: Verify frame control with max number of WAIT frames
+    expected_result: Successfully verified frame control with max number of WAIT frames
+    """
+    verify_fc_wait_and_fc_cts(dut, fc_delay=970, fc_flag=0x31,
+                              max_delay=parameters['max_delay'])
+    return True
+
+
+def step_4(dut: Dut, parameters):
+    """
+    action: Verify DIDs in ECU response
+    expected_result: All DIDs should be present in ECU response
+    """
+    # Change frame control to continue to send (0x30)
+    verify_fc_wait_and_fc_cts(dut, fc_delay=0, fc_flag=0x30, max_delay=1)
+
+    sig = dut["receive"]
+    SC.clear_all_can_messages()
+    SC.update_can_messages(dut)
+
+    log_can_messages_frames_data()
+
+    results=[]
+    for teststring in parameters['teststrings']:
+        result = SUTE.test_message(SC.can_messages[sig], teststring=teststring)
+        if not result:
+            logging.error("%s is not found in ECU response", teststring)
+        results.append(result)
+
+    if all(results) and len(results) != 0:
+        logging.info("All DIDs are present in ECU response")
+        return True
+
+    logging.error("Test Failed: Some of the DIDs are not present in ECU response")
+    return False
+
 
 def run():
     """
-    Run - Call other functions from here
+    Request ReadDataByIdentifier(0x22) with DID EDA0 to get MF reply and verify all the expected
+    DIDs are present in received message
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+    dut = Dut()
 
-    can_p: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        "send" : "Vcu1ToBecmFront1DiagReqFrame",
-        "receive" : "BecmToVcu1Front1DiagResFrame",
-        "namespace" : SC.nspace_lookup("Front1CANCfg0")
-    }
-    SIO.parameter_adopt_teststep(can_p)
+    start_time = dut.start()
+    result = False
+    result_step = False
 
-    logging.info("Testcase start: %s", datetime.now())
-    starttime = time.time()
-    logging.info("Time: %s \n", time.time())
+    parameters_dict = {'max_delay': 0,
+                       'teststrings': []}
+    try:
+        dut.precondition(timeout=300)
 
-    ############################################
-    # precondition
-    ############################################
-    result = PREC.precondition(can_p, timeout=300)
+        parameters = SIO.parameter_adopt_teststep(parameters_dict)
+        if not all(list(parameters.values())):
+            raise DutTestError("yml parameters not found")
 
-    if result:
-        ############################################
-        # teststeps
-        ############################################
-        # step 1:
-        # action: verify default session
-        # result:
-        result = result and step_1(can_p)
+        result_step = dut.step(step_1, purpose="Verify ECU's active diagnostic session")
 
-        # step 2:
-        # action: request EDA0 - complete ECU part/serial number default session
-        # result:
-        result = result and step_2(can_p)
+        if result_step:
+            result_step = dut.step(step_2, purpose="Request ReadDataByIdentifier(0x22) with DID "
+                                                   "EDA0 to get MF reply")
+        if result_step:
+            result_step = dut.step(step_3, parameters, purpose="Verify frame control with max "
+                                                               "number of WAIT frames")
+        if result_step:
+            result_step = dut.step(step_4, parameters, purpose="Verify DIDs in ECU response")
+        result = result_step
 
-        # step 3:
-        # action: loop: wait maxtime to send reply for first frame
-        # result:
-        step_3(can_p)
+    except DutTestError as error:
+        logging.error("Test failed: %s", error)
+    finally:
+        dut.postcondition(start_time, result)
 
-        # step 4:
-        # action: send flow control with continue flag
-        # result:
-        step_4(can_p)
-
-        # step 5:
-        # action: verify received message
-        # result: verify whole message received
-        result = result and step_5(can_p)
-
-    ############################################
-    # postCondition
-    ############################################
-    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()
