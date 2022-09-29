@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,224 +18,201 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-# Testscript Hilding MEPII
-# project:  BECM basetech MEPII
-# author:   LDELLATO (Lorenzo Della Torre)
-# date:     2020-03-12
-# version:  1.0
-# reqprod:  53927
+reqprod: 53927
+version: 1
+title: Suspend non diagnostic communication
+purpose: >
+    To only have diagnostic communication between tester and ECU when executing the bootloader.
 
-# author:   LDELLATO (Lorenzo Della Torre)
-# date:     2020-09-18
-# version:  1.1
-# reqprod:  53927
+description: >
+    Whenever an ECU is executing the bootloader, it shall ensure that non diagnostic communication
+    e.g. network management messages between ECUs are suspended.
 
-# #inspired by https://grpc.io/docs/tutorials/basic/python.html
-# Copyright 2015 gRPC authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-The Python implementation of the gRPC route guide client.
+details: >
+    Verify subscribed non-diagnostic signal is suspended
 """
 
 import time
-from datetime import datetime
-import sys
 import logging
-
-import odtb_conf
-from supportfunctions.support_can import SupportCAN, CanParam, CanTestExtra
-from supportfunctions.support_test_odtb2 import SupportTestODTB2
-from supportfunctions.support_carcom import SupportCARCOM
+from hilding.dut import Dut
+from hilding.dut import DutTestError
 from supportfunctions.support_file_io import SupportFileIO
+from supportfunctions.support_can import SupportCAN, CanParam
 from supportfunctions.support_SBL import SupportSBL
-from supportfunctions.support_precondition import SupportPrecondition
-from supportfunctions.support_postcondition import SupportPostcondition
-from supportfunctions.support_service22 import SupportService22
-from supportfunctions.support_service10 import SupportService10
-from hilding.conf import Conf
 
-SIO = SupportFileIO
+SIO = SupportFileIO()
 SC = SupportCAN()
-SUTE = SupportTestODTB2()
 SSBL = SupportSBL()
-SC_CARCOM = SupportCARCOM()
-PREC = SupportPrecondition()
-POST = SupportPostcondition()
-SE10 = SupportService10()
-SE22 = SupportService22()
-conf = Conf()
 
-WAITING_TIME = 2 #seconds
-MAX_DIFF = 20 #max difference allowed for number of frame non-diagnostic received
-MIN_NON_DIAG = 10 #min number of non-diagnostic frames received allowed
 
-def step_1(can_p, timeout):
+def clear_can_messages(dut, parameters):
     """
-    Teststep 1: register non diagnostic signal
+    Clear CAN messages and CAN frames
+    Args:
+        dut (Dut): An instance of Dut
+        parameters (dict): waiting_time
+    Returns: None
     """
-    #same timeout for signal als for whole testscript
-    etp: CanTestExtra = {
-        'step_no': 1,
-        'purpose': "register another signal",
-        'timeout': timeout,
-        'min_no_messages': -1,
-        'max_no_messages': -1
-        }
+    SC.clear_all_can_messages()
+    SC.clear_all_can_frames()
+    SC.update_can_messages(dut)
+    time.sleep(parameters['waiting_time'])
 
-    # fetch any signal sent from BECM when awake
-    can_p_ex: CanParam = {
-        'netstub': SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        'send': "ECMFront1Fr02",
-        'receive': "BECMFront1Fr02",
-        'namespace': SC.nspace_lookup("Front1CANCfg0")
-        }
-    SIO.parameter_adopt_teststep(can_p_ex)
 
-    SC.subscribe_signal(can_p_ex, etp["timeout"])
+def step_1(dut: Dut, parameters):
+    """
+    action: Register non diagnostic signal
+    expected_result: Received number of frames should be more than 10
+    """
+    # Fetch any signal sent from HVBM when awake
+    can_p_ex: CanParam = {"netstub" : dut.network_stub,
+                          "send" : parameters['send'],
+                          "receive" : parameters['receive'],
+                          "namespace" : dut.namespace}
+
+    SC.subscribe_signal(can_p_ex, timeout=100)
+
     time.sleep(1)
-    SC.clear_all_can_messages()
-    #logging.debug("all can messages cleared")
-    SC.clear_all_can_frames()
-    SC.update_can_messages(can_p)
-    #logging.debug("all can messages updated")
-    time.sleep(WAITING_TIME)
-    #logging.info("Step%s: messages received %s", etp["step_no"],
-    #             len(SC.can_messages[can_p_ex["receive"]]))
-    #logging.info("Step%s: messages: %s \n", etp["step_no"],
-    #             SC.can_messages[can_p_ex["receive"]])
-    frames_step1 = len(SC.can_frames[can_p_ex["receive"]])
-    logging.info("Step%s: frames received %s", etp["step_no"], frames_step1)
-    logging.info("Step%s: frames: %s \n", etp["step_no"],
-                 SC.can_frames[can_p_ex["receive"]])
+    # Clear CAN messages and CAN frames
+    clear_can_messages(dut, parameters)
 
-    result = (len(SC.can_frames[can_p_ex["receive"]]) > 10)
+    frames_received = len(SC.can_frames[can_p_ex["receive"]])
+    logging.info("Number of frames received %s", frames_received)
+    logging.info("Frames: %s", SC.can_frames[can_p_ex["receive"]])
 
-    logging.info("Step%s teststatus: %s \n", etp["step_no"], result)
-    return result, can_p_ex, frames_step1
+    if frames_received > parameters['min_non_diag']:
+        logging.info("Received number of frames %s as expected", frames_received)
+        return True, frames_received
 
-def step_3(can_p, can_p_ex):
+    logging.error("Test Failed: Expected frames more than 10, received %s", frames_received)
+    return False, None
+
+
+def step_2(dut: Dut):
     """
-    Teststep 3: Verify subscribed signal in step 1 is suspended
+    action: Download and activate SBL
+    expected_result: SBL should be activated
     """
-    stepno = 3
-    purpose = "Verify subscribed non-diagnostic signal is suspended"
-    SUTE.print_test_purpose(stepno, purpose)
-    can_rec = can_p_ex["receive"]
-    SC.clear_all_can_messages()
-    logging.info("all can messages cleared")
-    SC.clear_all_can_frames()
-    SC.update_can_messages(can_p)
-    logging.info("all can messages updated")
-    time.sleep(WAITING_TIME)
-    logging.info("Step %s frames received %s", stepno, len(SC.can_frames[can_rec]))
-    logging.info("Step %s frames: %s", stepno, SC.can_frames[can_rec])
+    # Loads the rig specific VBF files
+    vbf_result = SSBL.get_vbf_files()
+    if not vbf_result:
+        return False
+
+    # Download and activate SBL on the ECU
+    sbl_result = SSBL.sbl_activation(dut, sa_keys=dut.conf.default_rig_config)
+    if not sbl_result:
+        logging.error("Test Failed: SBL activation failed")
+        return False
+
+    logging.info("SBL activation successful")
+    return True
+
+
+def step_3(dut: Dut, parameters):
+    """
+    action: Verify subscribed non-diagnostic signal is suspended
+    expected_result: Subscribed non-diagnostic signal should be suspended
+    """
+    can_rec = parameters['receive']
+    # Clear CAN messages and CAN frames
+    clear_can_messages(dut, parameters)
+
+    logging.info("Frames received %s", len(SC.can_frames[can_rec]))
+    logging.info("Frames: %s", SC.can_frames[can_rec])
 
     result = len(SC.can_frames[can_rec]) == 0
+    if result:
+        logging.info("Subscribed non-diagnostic signal is suspended, %s frame received as expected"
+                     , len(SC.can_frames[can_rec]))
+        return True
 
-    logging.info("Step %s teststatus: %s", stepno, result)
-    time.sleep(2)
-    return result
+    logging.error("Test Failed: Subscribed non-diagnostic signal is not suspended")
+    return False
 
-def step_5(can_p, frame_step1, can_p_ex):
+
+def step_4(dut: Dut):
     """
-    Teststep 5: Verify subscribed signal in step 1 is received
+    action: Set and verify ECU is in default session
+    expected_result: ECU should be in default session
     """
-    stepno = 5
-    purpose = "Verify subscribed non-diagnostic signal is received"
-    SUTE.print_test_purpose(stepno, purpose)
-    can_rec = can_p_ex["receive"]
-    SC.clear_all_can_messages()
-    logging.info("all can messages cleared")
-    SC.clear_all_can_frames()
-    SC.update_can_messages(can_p)
-    logging.info("all can messages updated")
-    time.sleep(WAITING_TIME)
-    logging.info("Step %s frames received %s", stepno, len(SC.can_frames[can_rec]))
-    logging.info("Step %s frames: %s", stepno, SC.can_frames[can_rec])
+    # Set to default session
+    dut.uds.set_mode(1)
 
-    result = ((len(SC.can_frames[can_rec]) + MAX_DIFF) > frame_step1 >
-              (len(SC.can_frames[can_rec]) - MAX_DIFF))
+    # Verify active diagnostic session
+    res = dut.uds.active_diag_session_f186()
+    if res.data['details']['mode'] != 1:
+        logging.error("ECU is not in default session")
+        return False
 
-    logging.info("Step %s teststatus: %s", stepno, result)
-    return result
+    logging.info("ECU is in default session as expected")
+    return True
+
+
+def step_5(dut: Dut, frames_received_step_1, parameters):
+    """
+    action: Verify subscribed non-diagnostic signal is received
+    expected_result: Subscribed non-diagnostic signal should be received
+    """
+    can_rec = parameters['receive']
+
+    # Clear CAN messages and CAN frames
+    clear_can_messages(dut, parameters)
+
+    logging.info("Frames received %s", len(SC.can_frames[can_rec]))
+    logging.info("Fames: %s", SC.can_frames[can_rec])
+
+    result = ((len(SC.can_frames[can_rec]) + parameters['max_diff']) > frames_received_step_1 >
+              (len(SC.can_frames[can_rec]) - parameters['max_diff']))
+
+    if result:
+        logging.info("Subscribed non-diagnostic signal is received")
+        return True
+
+    logging.error("Test Failed: Subscribed non-diagnostic signal is not received")
+    return False
+
 
 def run():
     """
-    Run - Call other functions from here
+    Verify subscribed non-diagnostic signal is suspended
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+    dut = Dut()
 
-    # start logging
-    # to be implemented
+    start_time = dut.start()
+    result = False
+    result_step = False
 
-    # where to connect to signal_broker
-    can_p: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT,
-                                               odtb_conf.ODTB2_PORT),
-        "send" : "Vcu1ToBecmFront1DiagReqFrame",
-        "receive" : "BecmToVcu1Front1DiagResFrame",
-        "namespace" : SC.nspace_lookup("Front1CANCfg0")
-    }
-    SIO.parameter_adopt_teststep(can_p)
-    logging.info("Testcase start: %s", datetime.now())
-    starttime = time.time()
-    logging.info("Time: %s \n", time.time())
-    ############################################
-    # precondition
-    ############################################
-    # read VBF param when testscript is s started, if empty take default param
-    SSBL.get_vbf_files()
-    timeout = 100
-    result = PREC.precondition(can_p, timeout)
+    parameters_dict = {'waiting_time': 0,
+                       'max_diff': 0,
+                       'min_non_diag': 0,
+                       'send': '',
+                       'receive': ''}
+    try:
+        dut.precondition(timeout=90)
 
-    if result:
-    ############################################
-    # teststeps
-    ############################################
-        # step1:
-        # action: register non diagnostic signal
-        # result: ECU sends positive reply
-        result_step1, can_p_ex, frames_step1 = step_1(can_p, timeout)
-        result = result and result_step1
+        parameters = SIO.parameter_adopt_teststep(parameters_dict)
+        if not all(list(parameters.values())):
+            raise DutTestError("yml parameters not found")
 
-        # step2:
-        # action: DL and activate SBL
-        # result: ECU sends positive reply
-        result = result and SSBL.sbl_activation(can_p, conf.default_rig_config ,stepno=2,
-                                                purpose="DL and activate SBL")
-        time.sleep(1)
+        result_step, frames_received_step_1 = dut.step(step_1, parameters,
+                                                       purpose="Register non diagnostic signal")
+        if result_step:
+            result_step = dut.step(step_2, purpose="Download and activate SBL")
+        if result_step:
+            result_step = dut.step(step_3, parameters, purpose="Verify subscribed non-diagnostic "
+                                                               "signal is suspended")
+        if result_step:
+            result_step = dut.step(step_4, purpose="Set and verify ECU is in default session")
+        if result_step:
+            result_step = dut.step(step_5, frames_received_step_1, parameters, purpose="Verify "
+                                                 "subscribed non-diagnostic signal is received")
+        result = result_step
 
-        # step3:
-        # action: Verify subscribed signal in step 1 is suspended
-        # result: ECU sends positive reply
-        result = result and step_3(can_p, can_p_ex)
+    except DutTestError as error:
+        logging.error("Test failed: %s", error)
+    finally:
+        dut.postcondition(start_time, result)
 
-        # step4:
-        # action: Change to default session
-        # result: ECU sends positive reply
-        result = result and SE10.diagnostic_session_control_mode1(can_p, stepno=4)
-
-        # step5:
-        # action: Verify subscribed signal in step 1 is received
-        # result: ECU sends positive reply
-        result = result and step_5(can_p, frames_step1, can_p_ex)
-
-    ############################################
-    # postCondition
-    ############################################
-
-    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()
