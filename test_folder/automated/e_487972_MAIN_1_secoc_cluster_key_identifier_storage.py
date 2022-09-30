@@ -24,7 +24,7 @@ purpose: >
     Define SecOC Cluster Key Identifier storage requirements in ECU.
 
 description: >
-    ECU shall persistently store all the preconfigured SecOC Cluster Key
+    ECU shall persistently store all the pre-configured SecOC Cluster Key
     Identifiers supported in the ECU.
 
     The SecOC Cluster Key Identifier(s) stored in ECU shall be protected
@@ -34,8 +34,8 @@ description: >
     debug interface or -protocol.
 
 details: >
-    Verify ECU is been protected from unauthorized use and it must not exist any other
-    service/interface to alter the SecOC Cluster Key Identifiers.
+    Verify SecOC Cluster Key Identifier is protected by using diagnostic service
+    (ReadDataByIdentifier) in programming and extended session, with and without security access.
 """
 
 import logging
@@ -60,9 +60,8 @@ def request_cluster_key_identifiers(dut, did, cluster_id):
     Returns:
         response.raw (str): response from ECU
     """
-
-    payload = SC_CARCOM.can_m_send("RoutineControlRequestSID", b'\x01'
-                                   + bytes.fromhex(did)
+    payload = SC_CARCOM.can_m_send("ReadDataByIdentifier",
+                                     bytes.fromhex(did)
                                    + bytes.fromhex(cluster_id)
                                    , b'')
     response = dut.uds.generic_ecu_call(payload)
@@ -89,26 +88,6 @@ def verify_negative_response(response, cluster_id):
     return False
 
 
-def verify_positive_response(response, cluster_id):
-    """
-    verify the positive response (0x31)
-    Args:
-        response (str): ECU response
-        cluster_id (str): cluster key identifier
-    Returns:
-        (bool): True when positve reponse found
-    """
-    if response[2:4] == '31':
-        logging.info("Received positve response and ECU is protected from unauthorized access "
-                    "by any other service/interface to alter the SecOC Cluster Key Id: %s",
-                    cluster_id)
-        return True
-
-    logging.error("Test failed: Expected response positve, received %s and ECU is not protected"
-                  " from unauthorized access.", response)
-    return False
-
-
 def step_1(dut:Dut, parameters):
     """
     action: Verify ECU shall be protected from unauthorized access without security access
@@ -120,9 +99,9 @@ def step_1(dut:Dut, parameters):
         results.append(verify_negative_response(response, cluster_id))
 
     if len(results) != 0 and all(results):
-        return True, parameters
+        return True
 
-    return False, None
+    return False
 
 
 def step_2(dut:Dut, parameters):
@@ -154,8 +133,7 @@ def step_3(dut:Dut, parameters):
     """
     action: Verify ECU shall be protected from unauthorized access to alter while any of the
             services with security access in Extended session
-    expected_result: True when positive response for all of the SecOC cluster key identifiers
-    positive response for Ext session with security unlock
+    expected_result: True when NRC 7F for all of the SecOC cluster key identifiers
     """
     # Set ECU to Extended Session
     dut.uds.set_mode(1)
@@ -169,7 +147,7 @@ def step_3(dut:Dut, parameters):
     results = []
     for cluster_id in parameters['cluster_key_identifier']:
         response = request_cluster_key_identifiers(dut, parameters['did'], cluster_id)
-        results.append(verify_positive_response(response, cluster_id))
+        results.append(verify_negative_response(response, cluster_id))
 
     if len(results) != 0 and all(results):
         return True
