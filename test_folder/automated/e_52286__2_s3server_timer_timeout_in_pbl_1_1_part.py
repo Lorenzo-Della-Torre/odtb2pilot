@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,136 +18,137 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-# Testscript Hilding MEPII
-# project:  BECM basetech MEPII
-# author:   LDELLATO (Lorenzo Della Torre)
-# date:     2020-06-10
-# version:  1.2
-# reqprod:  52286
-# #inspired by https://grpc.io/docs/tutorials/basic/python.html
-# Copyright 2015 gRPC authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 
-The Python implementation of the gRPC route guide client.
+reqprod: 52286
+version: 2
+title: S3Server timer timeout in PBL
+
+purpose: >
+    To define the behaviour when S3server times out in PBL.
+
+description: >
+    If S3server times out when running PBL, the ECU shall make a test on Complete and Compatible
+    function and if Complete and Compatible function returns PASSED the ECU shall make a reset.
+
+details: >
+    Verify behaviour of ECU's S3server times out in PBL session.
 """
 
 import time
-from datetime import datetime
-import sys
 import logging
-import inspect
-
-import odtb_conf
-from supportfunctions.support_can import SupportCAN, CanParam #, CanTestExtra
-from supportfunctions.support_test_odtb2 import SupportTestODTB2
-from supportfunctions.support_carcom import SupportCARCOM
-from supportfunctions.support_file_io import SupportFileIO
-
-from supportfunctions.support_precondition import SupportPrecondition
-from supportfunctions.support_postcondition import SupportPostcondition
-from supportfunctions.support_service10 import SupportService10
-from supportfunctions.support_service22 import SupportService22
+from hilding.dut import DutTestError
+from hilding.dut import Dut
 from supportfunctions.support_service31 import SupportService31
+from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_service3e import SupportService3e
 
-SIO = SupportFileIO
-SC = SupportCAN()
-SC_CARCOM = SupportCARCOM()
-SUTE = SupportTestODTB2()
-
-PREC = SupportPrecondition()
-POST = SupportPostcondition()
-SE10 = SupportService10()
 SE22 = SupportService22()
 SE31 = SupportService31()
 SE3E = SupportService3e()
 
+
+def verify_active_diagnostic_session(dut, mode, session):
+    """
+    Request to check active diagnostic session
+    Args:
+        dut (Dut): An instance of Dut
+        mode (int): ECU mode
+        session (str): Diagnostic session
+    Returns:
+        (bool): True on successfully verified active diagnostic session
+    """
+    active_session = SE22.read_did_f186(dut, mode)
+    if active_session:
+        logging.info("ECU is in %s session as expected", session)
+        return True
+
+    logging.error("Test Failed: ECU is not in %s session", session)
+    return False
+
+
+def step_1(dut: Dut):
+    """
+    action: Verify programming preconditions
+    expected_result: Programming preconditions should be verified
+    """
+    SE3E.stop_periodic_tp_zero_suppress_prmib()
+    result = SE31.routinecontrol_requestsid_prog_precond(dut)
+    if result:
+        logging.info("Successfully verified programming preconditions")
+        return True
+
+    logging.error("Test Failed: Unable to verify routine control request sid prog preconditions")
+    return False
+
+
+def step_2(dut: Dut):
+    """
+    action: Set ECU in programming session and verify active diagnostic session
+    expected_result: ECU should be in programming session
+    """
+    # Set to programming session
+    dut.uds.set_mode(2)
+
+    # Verify active diagnostic session
+    return verify_active_diagnostic_session(dut, mode=b'\x02', session='programming')
+
+
+def step_3(dut: Dut):
+    """
+    action: Wait shorter than timeout and verify ECU is in programming session
+    expected_result: True when ECU is in programming session
+    """
+    # Wait shorter than timeout for staying in current mode
+    logging.info("Waiting 4 seconds to send a diagnostic request just before S3 Server times out")
+    time.sleep(4)
+
+    # Verify active diagnostic session
+    return verify_active_diagnostic_session(dut, mode=b'\x02', session='programming')
+
+
+def step_4(dut: Dut):
+    """
+    action: Wait longer than timeout and verify ECU is in default session
+    expected_result: True when ECU is in default session
+    """
+    # Wait longer than timeout for staying in current mode
+    logging.info("Waiting 6 seconds to send a diagnostic request just after S3 Server times out")
+    time.sleep(6)
+
+    # Verify active diagnostic session
+    return verify_active_diagnostic_session(dut, mode=b'\x01', session='default')
+
+
 def run():
     """
-    Run - Call other functions from here
+    Verify behaviour of ECU's S3server times out in PBL session
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+    dut = Dut()
 
-    # start logging
-    # to be implemented
+    start_time = dut.start()
+    result = False
+    result_step = False
 
-    # where to connect to signal_broker
-    can_p: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        "send" : "Vcu1ToBecmFront1DiagReqFrame",
-        "receive" : "BecmToVcu1Front1DiagResFrame",
-        "namespace" : SC.nspace_lookup("Front1CANCfg0")
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
-    logging.info("Testcase start: %s", datetime.now())
-    starttime = time.time()
-    logging.info("Time: %s \n", time.time())
-    ############################################
-    # precondition
-    ############################################
-    timeout = 60
-    result = PREC.precondition(can_p, timeout)
-    SE3E.stop_periodic_tp_zero_suppress_prmib()
-    if result:
-    ############################################
-    # teststeps
-    ############################################
-        # step 1:
-        # action: Verify programming preconditions
-        # result: ECU sends positive reply
-        result = result and SE31.routinecontrol_requestsid_prog_precond(can_p, stepno=1)
+    try:
+        dut.precondition(timeout=60)
 
-        # step2:
-        # action: Change to programming session
-        # result: ECU sends positive reply
-        result = result and SE10.diagnostic_session_control_mode2(can_p, stepno=2)
+        result_step = dut.step(step_1, purpose="Verify programming preconditions")
+        if result_step:
+            result_step = dut.step(step_2, purpose="Set ECU in programming session and verify"
+                                                   " active diagnostic session")
+        if result_step:
+            result_step = dut.step(step_3, purpose="Wait shorter than timeout and verify"
+                                                   " ECU is in programming session")
+        if result_step:
+            result_step = dut.step(step_4, purpose="Wait longer than timeout and verify"
+                                                   " ECU is in default session")
+        result = result_step
 
-        # step3:
-        # action: Verify ECU in programming session
-        # result: ECU sends positive reply
-        time.sleep(1)
-        result = result and SE22.read_did_f186(can_p, b'\x02', stepno=3)
+    except DutTestError as error:
+        logging.error("Test failed: %s", error)
+    finally:
+        dut.postcondition(start_time, result)
 
-        # step4:
-        # action: don't send a request until timeout occured
-        # result:
-        logging.info("\n Step 4: Wait shorter than timeout for staying in current mode.")
-        logging.info("Step 4: No request to ECU.\n")
-        time.sleep(4)
-
-        # step5:
-        # action: Verify ECU is still in mode prog session
-        # result: ECU sends positive reply
-        result = result and SE22.read_did_f186(can_p, b'\x02', stepno=5)
-
-        # step6:
-        # action: wait longer than timeout
-        # result:
-        logging.info("\n Step 6: Wait longer than timeout for staying in current mode.")
-        logging.info("Step 6: No request to ECU as before.")
-        time.sleep(6)
-
-        # step7:
-        # action: verify ECU changed to default
-        # result: ECU sends positive reply
-        time.sleep(1)
-        result = result and SE22.read_did_f186(can_p, b'\x01', stepno=7)
-
-    ############################################
-    # postCondition
-    ############################################
-    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()
