@@ -18,7 +18,6 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-
 reqprod: 52246
 version: 1
 title: : Transport_Network Layer
@@ -35,6 +34,7 @@ details: >
         2. Verify ECU in primary bootloader
 """
 
+import time
 import logging
 from hilding.dut import Dut
 from hilding.dut import DutTestError
@@ -53,7 +53,7 @@ def step_1(dut: Dut):
     expected_result: True when routine control request and security access are
                      successful in programming session
     """
-    result = SE31.routinecontrol_requestsid_prog_precond(dut, stepno=101)
+    result = SE31.routinecontrol_requestsid_prog_precond(dut)
 
     if not result:
         logging.error("Test Failed: Routine control request failed")
@@ -75,7 +75,7 @@ def step_1(dut: Dut):
 
 def step_2(dut: Dut):
     """
-    action: Verify ECU is in primary bootloader and ECU hard reset
+    action: Verify ECU is in primary bootloader and do ECU hard reset
     expected_result: True when ECU is in primary bootloader and after hard reset ECU is in
                      default session
     """
@@ -86,6 +86,7 @@ def step_2(dut: Dut):
 
     # ECU hard reset
     reset_result = dut.uds.ecu_reset_1101()
+    time.sleep(5)
 
     result = reset_result and SE22.read_did_f186(dut, dsession=b'\x01')
     if not result:
@@ -112,8 +113,9 @@ def run():
         result_step = dut.step(step_1, purpose="Verify programming preconditions")
         if result_step:
             result_step = dut.step(step_2, purpose="Verify ECU is in primary bootloader and "
-                                                   "ECU hard reset")
+                                                   "do ECU hard reset")
         result = result_step
+
     except DutTestError as error:
         logging.error("Test failed: %s", error)
     finally:
