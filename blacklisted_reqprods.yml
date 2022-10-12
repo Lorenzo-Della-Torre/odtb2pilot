@@ -62,6 +62,7 @@ hvbm_p519:
         e_486601_MAIN_0 : event_type_debugger_authentication | Not applicable because disable the debugger port
         e_53913__1 : ecus_with_multiple_networks | This REPROD is not applicable for SPA2 because no multiple Network present.
         e_489094__0 : flashable_pbl_for_protected_boot_sector_update | We use special secondary bootloader's to update pbl and not the flashable pbl.
+        e_489058_MAIN_1 : maximum_time_to_update_pbl_using_flashable_bootloaders | We use special secondary bootloaders to update PBL and not the flashable PBL.
 
     --Inspection--:
         e_481878_MAIN_0 : interface_to_tee_cryptographic_operations | ETAS provides API. Inspect that we have received those files
