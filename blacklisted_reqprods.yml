@@ -317,10 +317,6 @@ hvbm_p519:
         e_469411_MAIN_1 : system_hardening_follow_industry_accepted_processes | <Reason>
 
     --Implicit--:
-        e_410732_MAIN_0 : default_signing_method | Implicitly tested when using SWDL
-        e_404598_MAIN_0 : signing_method_sha256_rsa2048_hash_function | Implicitly tested when using SWDL
-        e_404620_MAIN_1 : signing_method_sha256_rsa2048_public_key_algorithm | Implicitly tested when using SWDL
-        e_404623_MAIN_0 : signing_method_sha256_rsa2048_key_size | Implicitly tested when using SWDL
         e_480624_MAIN_1 : security_access_key_usage | <Reason>
         e_469025_MAIN_1 : minimum_cryptographic_support | <Reason>
 
