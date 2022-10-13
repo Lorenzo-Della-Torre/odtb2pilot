@@ -57,7 +57,7 @@ hvbm_p519:
         e_76697_MAIN_5 : request_transfer_exit_37_algorithm | vbf 2.6 version supports check memory, so no CRC will be available in transferResponseParameterRecord. So CRC Calculation will not applicable.
         e_128777_MAIN_1 : iso_specified_routines | No DIDs in the range. This is NA.
         e_76490_MAIN_1 : write_memory_by_address_alfid | Not applicable. This service is not used by Volvo Car Corporation.
-        e_76489_MAIN_0 : write_memory_by_address_3d | Not applicable. This service is not used by Volvo Car Corporation.
+        e_76489_MAIN_1 : write_memory_by_address_3d | Not applicable. This service is not used by Volvo Car Corporation.
         e_76683_MAIN_3 : requestupload | Not applicable because it is not requested by Mentor.
         e_486601_MAIN_0 : event_type_debugger_authentication | Not applicable because disable the debugger port
         e_53913__1 : ecus_with_multiple_networks | This REPROD is not applicable for SPA2 because no multiple Network present.
