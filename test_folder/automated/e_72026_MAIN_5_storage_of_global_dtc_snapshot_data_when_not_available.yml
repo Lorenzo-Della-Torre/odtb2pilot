@@ -1,4 +1,0 @@
-hvbm_p519:
-  step_1:
-    dtc_service: '0AA100'
-    mask: 'FF'

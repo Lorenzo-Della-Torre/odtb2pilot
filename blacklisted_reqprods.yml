@@ -239,6 +239,9 @@ hvbm_p519:
         e_72036_MAIN_7 : fault_detection_counter_10_fdc10 | DTC not implemented yet.
         e_76140_MAIN_1 : ecureset_11_hardReset | <Reason>
         e_482735_MAIN_0 : storage_of_dtc_info | Easier to test on dSpace
+        e_76508_MAIN_2 : readdtcinformation_19_reportdtcextendeddatarecordbydtcnumber_06_86 | <Reason>
+        e_72026_MAIN_5 : storage_of_global_dtc_snapshot_data_when_not_available | <Reason>
+        e_72063_MAIN_3 : support_for_dtc_status_indicator | <Reason>
 
     --vbf_modification--:
         e_53958__6 : complete_compatible_function_return_value | Need to modify VBFs to test the Compatible part
