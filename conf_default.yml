@@ -14,6 +14,21 @@ platforms:
         auth_key: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
         proof_key: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
         FC_Separation_time : '0A'
+    ecm_phev:
+        signal_send: 'Vcu1ToEcmFront1DiagReqFrame'
+        signal_receive: 'EcmToVcu1Front1DiagResFrame'
+        signal_periodic: 'Vcu1Front1NMFr'
+        signal_tester_present: 'Vcu1ToAllFuncFront1DiagReqFrame'
+        namespace: 'Front1CANCfg0'
+        wakeup_frame: '1A40C3FF01000000'
+        protocol: 'can'
+        framelength_max: 8
+        padding : 'True'
+        SecAcc_Gen: 'Gen1'
+        fixed_key: 'FFFFFFFFFF'
+        auth_key: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
+        proof_key: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
+        FC_Separation_time : '05'
     fioc_p519:
         signal_send: 'FiocdpToFiocFioc1canUdsDiagRequestFrame'
         signal_receive: 'FiocToFiocdpFioc1canUdsDiagResponseFrame'

@@ -1,7 +1,7 @@
 becm_p319:
     --NA--:
-        e_76490_MAIN_1 : e_76490_MAIN_1_write_memory_by_address_alfid | Reason unknown
-        e_128777_MAIN_1 : e_128777_MAIN_1_iso_specified_routines | Reason unknown
+        e_76490_MAIN_1 : write_memory_by_address_alfid | Reason unknown
+        e_128777_MAIN_1 : iso_specified_routines | Reason unknown
 
     --Inspection--:
 
@@ -55,11 +55,13 @@ hvbm_p519:
         e_130582_MAIN_1 : trepr_supported_in_data_upload | ECU does not support SID 35 So it is NA.
         e_76698_MAIN_6 : request_transfer_exit_37_non_volatile_memory | vbf 2.6 version supports check memory, so no CRC will be available in transferResponseParameterRecord. So CRC Calculation will not applicable.
         e_76697_MAIN_5 : request_transfer_exit_37_algorithm | vbf 2.6 version supports check memory, so no CRC will be available in transferResponseParameterRecord. So CRC Calculation will not applicable.
-        e_128777_MAIN_1 : e_128777_MAIN_1_iso_specified_routines | No DIDs in the range. This is NA.
-        e_76490_MAIN_0 : write_memory_by_address_alfid | Not applicable. This service is not used by Volvo Car Corporation.
+        e_128777_MAIN_1 : iso_specified_routines | No DIDs in the range. This is NA.
+        e_76490_MAIN_1 : write_memory_by_address_alfid | Not applicable. This service is not used by Volvo Car Corporation.
         e_76489_MAIN_0 : write_memory_by_address_3d | Not applicable. This service is not used by Volvo Car Corporation.
-        e_76683_MAIN_2 : requestupload | Not applicable because it is not requested by Mentor.
+        e_76683_MAIN_3 : requestupload | Not applicable because it is not requested by Mentor.
         e_486601_MAIN_0 : event_type_debugger_authentication | Not applicable because disable the debugger port
+        e_53913__1 : ecus_with_multiple_networks | This REPROD is not applicable for SPA2 because no multiple Network present.
+        e_489094__0 : flashable_pbl_for_protected_boot_sector_update | We use special secondary bootloader's to update pbl and not the flashable pbl.
 
     --Inspection--:
         e_481878_MAIN_0 : interface_to_tee_cryptographic_operations | ETAS provides API. Inspect that we have received those files
@@ -100,9 +102,7 @@ hvbm_p519:
         e_489094_MAIN_0 : flashable_pbl_for_protected_boot_sector_update | Testable, developer can provide testing method information if needed.
         e_488754_MAIN_0 : secoc_action_on_message_failures | Identify which SecOC signals to be use to verify action on message failures.
         e_488702_MAIN_0 : secoc_configuration_secocrxacceptancewindow | <reason>
-        e_67741_MAIN_2 : compliance_to_iso_14229_1 | Mentor responsible for testing their implementation
         e_488673_MAIN_0 : secoc_fv_options | We need a decision which option to use.
-        e_469129_MAIN_2 : random_number_generation_security_access | Design/Review that we use the correct random number
         e_469130_MAIN_2 : security_access_key_storage | <Reason>
         e_473644_MAIN_1 : secure_boot_key_protection | <Reason>
         e_468870_MAIN_1 : secure_boot_initialization | <Reason>
@@ -197,6 +197,7 @@ hvbm_p519:
         e_181434_MAIN_2 : e2e_data_type_size | Changed to application team (Mascot)
         e_181433_MAIN_1 : e2e_protection_mechanisms | Changed to application team (Mascot)
         e_487899_MAIN_1 : sec_oc_customization_for_immediate_return_of_authentic_data | Changed to application
+        e_67741_MAIN_2 : compliance_to_iso_14229_1 | Mentor responsible for testing their implementation
 
     --Design--:
         e_71837_MAIN_1 : data_records_not_included_in_local_snapshot_data | Design requirement. Can be checked by validation of snapshot information for each DTC in the SDDB. Should be tested so system design do follow this req. Does not need the ECU for the test.
@@ -205,7 +206,7 @@ hvbm_p519:
         e_68084_MAIN_0 : individual_control_of_other_ecu_internal_signal_data_records_defined_by_the_implementer | Design requirement. Not testable
         e_67945_MAIN_1 : specification_of_supported_services_for_each_data_record | Design requirement. Implicitly tested by several requirements.
         e_481873_MAIN_0 : root_of_trust_key_provisioning | Not possible to read MAC or test this. Making this a DESIGN requirement.
-        e_469129_MAIN_2 : random_number_generation_security_access | Design/Review that we use the correct random number
+        e_469129_MAIN_2 : random_number_generation_security_access | Design requirement
         e_481870_MAIN_0 : security_access_protected_services | This is a general design requirement that all teams has to be aware of but can not be tested.
 
     --Deviation--:
@@ -246,6 +247,8 @@ hvbm_p519:
         e_404696_MAIN_3 : verification_block_table_format_identifier_definition |  Need to modify VBFs to test format of the Verification Block
         e_398360_MAIN_4: format_of_the_verification_block_table | Need to modify VBFs to test format of the Verification Block Table
         e_53957__3 : complete_compatible_function | Need to modify VBFs to test the complete compatible function
+        e_53973__3 : file_download_order | Need to modify VBFs to test the file download order
+        e_53959__4 : complete_and_compatible_sequence_diagram | Need to modify VBFs to test the not complete & not compatible parts
 
     --SecOC--:
         e_487904_MAIN_1 : sec_oc_detection_of_non_programmed_production_keys | SecOC not implemented yet
@@ -264,6 +267,46 @@ hvbm_p519:
         e_487906_MAIN_1 : secoc_key_programmed_status_diagnostic_trouble_code | SecOC not implemented yet
         e_469403_MAIN_2 : secoc_default_development_key | SecOC not implemented yet
         e_487892_MAIN_1 : sec_oc_profile_configuration_mac_truncation | SecOC not implemented yet
+        e_488877_MAIN_0 : identify_which_signals_to_be_protected_by_sec_oc | SecOC not implemented yet
+        e_469398_MAIN_2 : autosar_sec_oc_support | SecOC not implemented yet
+        e_488754_MAIN_0 : sec_oc_action_on_message_failures | SecOC not implemented yet
+        e_487901_MAIN_0 : sec_oc_cluster | SecOC not implemented yet
+        e_487908_MAIN_1 : supported_sec_oc_cluster_key_identifiers_in_a_ecu | SecOC not implemented yet  
+        e_488802_MAIN_0 : sec_oc_encryption_method_for_key_format_0b01_in_key_attributes | SecOC not implemented yet
+        e_488752_MAIN_0 : sec_oc_key_encryption | SecOC not implemented yet
+        e_489055_MAIN_0 : sec_oc_key_decryption | SecOC not implemented yet
+        e_469405_MAIN_2 : sec_oc_provisioning_of_production_key | SecOC not implemented yet
+        e_487903_MAIN_1 : sec_oc_key_storage | SecOC not implemented yet
+        e_487877_MAIN_1 : sec_oc_fvm_solution | SecOC not implemented yet
+        e_488846_MAIN_0 : sec_oc_fvm_notation | SecOC not implemented yet
+        e_488850_MAIN_0 : sec_oc_fv_handling_flow | SecOC not implemented yet
+        e_488670_MAIN_0 : sec_oc_timestamp_format | SecOC not implemented yet
+        e_488672_MAIN_0 : sec_oc_maximum_rx_and_tx_timing_difference | SecOC not implemented yet
+        e_488673_MAIN_0 : sec_oc_fv_options | SecOC not implemented yet
+        e_487879_MAIN_1 : sec_oc_rx_acceptance_window_and_freshness_check | SecOC not implemented yet
+        e_487880_MAIN_1 : sec_oc_fv_construction_logic | SecOC not implemented yet
+        e_488674_MAIN_0 : sec_oc_fv_option_0_no_fv_used | SecOC not implemented yet
+        e_488675_MAIN_0 : sec_oc_fv_option_1_full_fv_sent_in_pdu | SecOC not implemented yet
+        e_488676_MAIN_0 : sec_oc_fv_option_2_32_bit_partial_fv_sent_in_pdu | SecOC not implemented yet
+        e_488678_MAIN_0 : sec_oc_fv_option_3_24_bit_partial_fv_sent_in_pdu | SecOC not implemented yet
+        e_488679_MAIN_0 : sec_oc_fv_option_4_16_bit_partial_fv_sent_in_pdu | SecOC not implemented yet     
+        e_488680_MAIN_0 : sec_oc_fv_option_5_8_bit_partial_fv_sent_in_pdu | SecOC not implemented yet    
+        e_488681_MAIN_0 : sec_oc_fv_option_6_no_fv_sent_in_pdu | SecOC not implemented yet     
+        e_487881_MAIN_1 : sec_oc_detection_and_handling_of_abnormal_timestamps | SecOC not implemented yet     
+        e_489080_MAIN_0 : sec_oc_default_configurations | SecOC not implemented yet    
+        e_487887_MAIN_1 : sec_oc_profile_configuration_crypto_algorithm | SecOC not implemented yet       
+        e_487893_MAIN_1 : sec_oc_profile_configuration_fv | SecOC not implemented yet     
+        e_487986_MAIN_1 : sec_oc_profiles_and_configuration_overview | SecOC not implemented yet     
+        e_487890_MAIN_1 : sec_oc_configuration_using_cryptographic_pdu | SecOC not implemented yet     
+        e_488700_MAIN_0 : sec_oc_configuration_use_auth_data_freshness | SecOC not implemented yet
+        e_488701_MAIN_0 : sec_oc_configuration_secure_area | SecOC not implemented yet
+        e_488702_MAIN_0 : sec_oc_configuration_sec_oc_rx_acceptance_window | SecOC not implemented yet
+        e_488703_MAIN_0 : sec_oc_configuration_sec_oc_cluster_key_id | SecOC not implemented yet 
+        e_487898_MAIN_1 : sec_oc_configurations_in_ecu_extract | SecOC not implemented yet 
+        e_487899_MAIN_1 : sec_oc_customization_for_immediate_return_of_authentic_data | SecOC not implemented yet
+        e_487883_MAIN_0 : sec_oc_optimization_for_cpu_load | SecOC not implemented yet
+        e_487882_MAIN_1 : sec_oc_optimization_for_latency | SecOC not implemented yet
+        e_487963_MAIN_1 : sec_oc_optimization_to_minimize_attacks_within_rx_acceptance_window | SecOC not implemented yet
 
     --Excluded--:
         e_76513_MAIN_1 : component_selection_can_physical_interfaces | This is hw req, need to hand-over to BMS team. (LEAR HW can't fulfill this)

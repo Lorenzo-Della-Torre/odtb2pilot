@@ -41,7 +41,7 @@ details: >
     routineStatusRecord in programming session and extended session
 """
 
-
+import time
 import logging
 from glob import glob
 from hilding.dut import Dut
@@ -150,6 +150,9 @@ def step_1(dut: Dut):
     action: Set programming session & security access to ECU
     expected_result: True on successful security access in programming session
     """
+    #Sleep time to avoid NRC37
+    time.sleep(5)
+
     # Set ECU to Programming session
     dut.uds.set_mode(2)
 

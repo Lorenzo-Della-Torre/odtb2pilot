@@ -99,6 +99,8 @@ def step_2(dut: Dut):
     action: SBL activation with correct call
     expected_result: True on successful SBL activation with correct call.
     """
+    # Sleep time to avoid NRC37
+    time.sleep(5)
     result = SE27.activate_security_access_fixedkey(dut, sa_keys=CNF.default_rig_config,
                                                     step_no=272, purpose="SecurityAccess")
     if not result:

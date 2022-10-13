@@ -1,4 +1,23 @@
 """
+
+/*********************************************************************************/
+
+
+
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
+
+
+
+NOTICE:
+This file contains material that is confidential and confidential to Volvo Cars and/or
+other developers. No license is granted under any intellectual or industrial property
+rights of Volvo Cars except as may be provided in an agreement with Volvo Cars.
+Any unauthorized copying or distribution of content from this file is prohibited.
+
+
+
+/*********************************************************************************/
+
 reqprod: 469462
 version: 1
 title: Authentication Data - Algorithm
@@ -31,26 +50,24 @@ details:
 import logging
 from Crypto.Cipher import AES
 from Crypto.Hash import CMAC
-from hilding.dut import DutTestError
 from hilding.dut import Dut
-from hilding.conf import Conf
-
-CNF = Conf()
+from hilding.dut import DutTestError
 
 
-def calculate_cmac(security_log):
+def calculate_cmac(dut, security_log):
     """
-    Calculate message authentication data using Crypto AES-128 algorithm
+    Calculate message authentication data using crypto AES-128 algorithm
     Args:
-        security_log(str): security log
+        dut (Dut): An instance of Dut
+        security_log (str): security log
     Returns:
-        calculated_cmac(Str): Calculated authentication data
+        calculated_cmac (str): Calculated authentication data
     """
-    # Get 128 bits auth_key from config
-    key_128 = bytes.fromhex(CNF.default_rig_config['security_log_auth_key'])
+    # Get 128 bits auth key from config
+    key_128 = bytes.fromhex(dut.conf.default_rig_config['security_log_auth_key'])
     cipher_obj = CMAC.new(key_128, ciphermod=AES)
     cipher_obj.update(bytes.fromhex(security_log))
-    # Extract most significant 4 bytes of authentication data form cipher_object
+    # Extract most significant 4 bytes of authentication data form cipher object
     calculated_cmac = cipher_obj.hexdigest()[:8].upper()
 
     return calculated_cmac
@@ -58,21 +75,25 @@ def calculate_cmac(security_log):
 
 def step_1(dut: Dut):
     """
-    action: Set ECU to extended session and read security log
-    expected_result: Positive response with security log
+    action: Read security log in extended session
+    expected_result: True when received positive response '62'
     """
     dut.uds.set_mode(3)
+
     response = dut.uds.read_data_by_id_22(bytes.fromhex('D046'))
-    if response is not None:
+    if response.raw[4:6] == '62':
+        logging.info("Successfully read DID D046 with positive response %s", response.raw[4:6])
         return True, response
-    logging.error("Test Failed: Invalid response or DID not readable")
+
+    logging.error("Test Failed: Expected positive response 62 for DID D046, received %s",
+                   response.raw)
     return False, None
 
 
 def step_2(dut: Dut, response):
     """
     action: Calculate and verify message authentication data
-    expected_result: Positive response
+    expected_result: True when successfully verified MAC for the security log
     """
     # pylint: disable=unused-argument
     received_cmac = ''
@@ -83,33 +104,36 @@ def step_2(dut: Dut, response):
     # Extracting header and message from security log(response.data['details']['item'][:-8])
     # to calculate CMAC
     security_log = response.data['details']['item'][:-8]
-    calculated_cmac = calculate_cmac(security_log)
+    calculated_cmac = calculate_cmac(dut, security_log)
     if received_cmac == calculated_cmac:
-        logging.info("MAC verification successful for the security log.")
+        logging.info("MAC verification successful for the security log")
         return True
-    message = "Message authentication data is not identical, expected CMAC: {} " \
-              "calculated CMAC: {}".format(received_cmac, calculated_cmac)
-    logging.error(message)
+
+    logging.error("Test Failed: Message authentication data is not identical, expected CMAC: %s,"
+                  " calculated CMAC: %s", received_cmac, calculated_cmac)
     return False
 
 
 def run():
     """
-    Calculated message authentication data using Crypto AES-128 algorithm and verify
-    with security log authentication data
+    Calculate message authentication data using Crypto AES-128 algorithm and verify with security
+    log authentication data
     """
     dut = Dut()
+
     start_time = dut.start()
     result = False
     result_step = False
+
     try:
-        dut.precondition()
-        result_step, security_log = dut.step(step_1, purpose="Set ECU to extended session "
-                                             "and read security log")
+        dut.precondition(timeout=30)
+        result_step, security_log = dut.step(step_1, purpose='Read security log in extended'
+                                                             ' session')
         if result_step:
-            result_step = dut.step(step_2, security_log,
-                                   purpose="Calculate and verify message authentication data")
+            result_step = dut.step(step_2, security_log, purpose='Calculate and verify message'
+                                                                 ' authentication data')
         result = result_step
+
     except DutTestError as error:
         logging.error("Test failed: %s", error)
     finally:

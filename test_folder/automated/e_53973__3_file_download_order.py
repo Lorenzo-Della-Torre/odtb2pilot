@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,327 +18,249 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-# Testscript Hilding MEPII
-# project:  BECM basetech MEPII
-# author:   LDELLATO (Lorenzo Della Torre)
-# date:     2020-02-10
-# version:  1.0
-# reqprod:  53973
+reqprod: 53973
+version: 3
+title: File download order
+purpose: >
+    To be able to download data files to the ECU individually or in any grouping combination
+    independent of order.
 
-# author:   LDELLATO (Lorenzo Della Torre)
-# date:     2020-09-16
-# version:  1.1
-# reqprod:  53973
+description: >
+    No restrictions on the download order/sequence of the downloadable data files are allowed,
+    with the exception of the SBL which shall be downloaded first.
+    It shall be possible to download each data file separately without any requirements of
+    downloading other data files before, exception is the SBL.
+    Note: If an ECU Software Structure (ESS) is to be downloaded, it shall always be downloaded
+    next to the SBL. Added here for information, it is a client requirement.
 
-#inspired by https://grpc.io/docs/tutorials/basic/python.html
-
-# Copyright 2015 gRPC authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-The Python implementation of the gRPC route guide client.
+details: >
+    Verify it is possible to download each data file separately without any requirements of
+    downloading other data files previously, except SBL.
 """
 
-import time
-from datetime import datetime
 import os
-import sys
-import logging
-import inspect
 import glob
-
-import odtb_conf
-from supportfunctions.support_can import SupportCAN, CanParam, CanTestExtra
-from supportfunctions.support_test_odtb2 import SupportTestODTB2
-from supportfunctions.support_carcom import SupportCARCOM
+import time
+import logging
+from hilding.dut import Dut
+from hilding.dut import DutTestError
 from supportfunctions.support_file_io import SupportFileIO
-from supportfunctions.support_SBL import SupportSBL
-from supportfunctions.support_sec_acc import SupportSecurityAccess
-
-from supportfunctions.support_precondition import SupportPrecondition
-from supportfunctions.support_postcondition import SupportPostcondition
-from supportfunctions.support_service10 import SupportService10
-from supportfunctions.support_service11 import SupportService11
-from supportfunctions.support_service22 import SupportService22
+from supportfunctions.support_can import SupportCAN
 from supportfunctions.support_service27 import SupportService27
 from supportfunctions.support_service31 import SupportService31
 from supportfunctions.support_service34 import SupportService34
+from supportfunctions.support_SBL import SupportSBL
 
-
-SIO = SupportFileIO
+SIO = SupportFileIO()
 SC = SupportCAN()
-S_CARCOM = SupportCARCOM()
-SUTE = SupportTestODTB2()
-SSBL = SupportSBL()
-SSA = SupportSecurityAccess()
-
-PREC = SupportPrecondition()
-POST = SupportPostcondition()
-SE10 = SupportService10()
-SE11 = SupportService11()
-SE22 = SupportService22()
 SE27 = SupportService27()
 SE31 = SupportService31()
 SE34 = SupportService34()
+SSBL = SupportSBL()
 
-def step_4():
-    """
-    Teststep 4: Read VBF files for ESS file (1st Logical Block)
-    """
-    stepno = 4
-    purpose = "1st files reading"
 
-    SUTE.print_test_purpose(stepno, purpose)
+def swdl_with_modified_vbf_path(dut, modified_vbf_path):
+    """
+    Read VBF files and download software parts
+    Args:
+        dut (Dut): An instance of Dut
+        modified_vbf_path (str): Modified vbf path
+    Returns:
+        (bool): True when successfully downloaded software parts
+    """
+    # Flash Software Part of DATA and EXE
+    result = True
+    odtb_proj_param = os.environ.get('ODTBPROJPARAM')
+    if odtb_proj_param is None:
+        odtb_proj_param = '.'
+
+    variant = odtb_proj_param + modified_vbf_path
+
+    if not glob.glob(variant):
+        result = False
+    else:
+        for f_name in glob.glob(variant):
+            result = result and SSBL.sw_part_download(dut, f_name)
+
+    return result
+
+
+def step_1(dut: Dut):
+    """
+    action: Verify download of 1st data block (ESS) is rejected
+    expected_result: True when download of 1st data block (ESS) is rejected
+    """
+    # Loads the rig specific VBF files
+    vbf_result = SSBL.get_vbf_files()
+    if not vbf_result:
+        logging.error("Test Failed: Unable to load VBF files")
+        return False
+
+    # Verify programming preconditions
+    routinecontrol_result = SE31.routinecontrol_requestsid_prog_precond(dut)
+    if not routinecontrol_result:
+        logging.error("Test Failed: Programming preconditions are not fulfilled")
+        return False
+
+    # Set to programming session
+    dut.uds.set_mode(2)
+
+    # Security access
+    sa_result = SE27.activate_security_access_fixedkey(dut, sa_keys=dut.conf.default_rig_config)
+    if not sa_result:
+        logging.error("Test Failed: Security access denied in programming session")
+        return False
+
+    # Read VBF files for ESS file (1st logical block)
     _, vbf_header, data, data_start = SSBL.read_vbf_file(SSBL.get_ess_filename())
-    return vbf_header, data, data_start
 
-def step_5(data, data_start):
-    """
-    Teststep 5: Extract data for ESS
-    """
-    stepno = 5
-    purpose = "EXtract data for ESS"
+    # Extract data for ESS
+    block_by = SSBL.block_data_extract(data, data_start)[1]
 
-    SUTE.print_test_purpose(stepno, purpose)
-
-    _, block_by, _ = SSBL.block_data_extract(data, data_start)
-    return block_by
-
-def step_6(can_p, block_by,
-           vbf_header):
-    """
-    Teststep 6: Verify Request Download the 1st data block (ESS) rejected
-    """
-    stepno = 6
-    purpose = "Verify Request Download the 1st data block (ESS) rejected"
-
-    SUTE.print_test_purpose(stepno, purpose)
+    # Verify request download the 1st data block (ESS) rejected
     SSBL.vbf_header_convert(vbf_header)
-    resultt, _ = SE34.request_block_download(can_p, vbf_header, block_by, stepno,
-                                             purpose)
-    result = not resultt
-    return result
+    result = SE34.request_block_download(dut, vbf_header, block_by)[0]
+    if result:
+        logging.error("Test Failed: Downloaded 1st data block (ESS) which is not expected")
+        return False
 
-def step_9(can_p):
+    logging.info("Successfully verified request download for 1st data block (ESS) is rejected")
+    return True
+
+
+def step_2(dut: Dut):
     """
-    Teststep 9: Flash Software Part != ESS
+    action: ECU reset and download and activation of SBL
+    expected_result: True on SBL activation
     """
-    stepno = 9
-    purpose = " Flash Software Part != ESS"
+    # ECU reset
+    result = dut.uds.ecu_reset_1101()
+    if not result:
+        logging.error("Test Failed: ECU reset failed")
+        return False
+    time.sleep(1)
 
-    #REQ_53973_SIGCFG_compatible_with current release
-    result = True
-    #by default we get files from VBF_Reqprod directory
-    odtb_proj_param = os.environ.get('ODTBPROJPARAM')
-    if odtb_proj_param is None:
-        odtb_proj_param = '.'
+    # Download and activate SBL
+    sbl_result = SSBL.sbl_dl_activation(dut, sa_keys=dut.conf.default_rig_config)
+    if not sbl_result:
+        logging.error("Test Failed: SBL activation failed")
+        return False
 
-    swp = odtb_proj_param + "/VBF_Reqprod/REQ_53973_1*.vbf"
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), swp)
-    if not glob.glob(swp):
-        result = False
-    else:
-        for f_name in glob.glob(swp):
-            result = result and SSBL.sw_part_download(can_p, f_name,
-                                                      stepno, purpose)
-    return result
+    logging.info("SBL activation successful")
+    return True
 
 
-def step_11(can_p):
+def step_3(dut: Dut, parameters):
     """
-    Teststep 11: Flash remnant Software Part != ESS
+    action: Verify it is possible to download each data file separately without any requirements
+            of downloading other data files previously
+    expected_result: True when successfully downloaded each data file separately after SBL download
     """
-    stepno = 11
-    purpose = " Flash remnant Software Part != ESS"
+    # Flash software part of EXE
+    modified_vbf_result = swdl_with_modified_vbf_path(dut, parameters['modified_vbf_path_data'])
+    if not modified_vbf_result:
+        return False
 
-    #REQ_53973_SWP's_compatible_with current release
-    result = True
-    odtb_proj_param = os.environ.get('ODTBPROJPARAM')
-    if odtb_proj_param is None:
-        odtb_proj_param = '.'
+    # Download ESS software part
+    result = SSBL.sw_part_download(dut, SSBL.get_ess_filename())
+    if not result:
+        logging.error("Test Failed: ESS download failed")
+        return False
 
-    #by default we get files from VBF_Reqprod directory
-    swps = odtb_proj_param + "/VBF_Reqprod/REQ_53973_2*.vbf"
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), swps)
-    if not glob.glob(swps):
-        result = False
-    else:
-        for f_name in glob.glob(swps):
-            result = result and SSBL.sw_part_download(can_p, f_name,
-                                                      stepno, purpose)
-    return result
+    # Flash software part of DATA
+    modified_vbf_result = swdl_with_modified_vbf_path(dut, parameters['modified_vbf_path_exe'])
+    if not modified_vbf_result:
+        return False
 
-def step_12(can_p):
+    # Verify the complete and compatible routine return 'Not Complete, Compatible'
+    result = SSBL.check_complete_compatible_routine(dut, stepno=2)
+    result = result and (SSBL.pp_decode_routine_complete_compatible(SC.can_messages\
+             [dut["receive"]][0][2])== 'Not Complete, Compatible')
+    if not result:
+        logging.error("Test Failed: Complete and compatible routine return does not return"
+                      " 'Not Complete, Compatible'")
+        return False
+
+    # Flash software part of EXE
+    modified_vbf_result = swdl_with_modified_vbf_path(dut, parameters['modified_vbf_path_data'])
+    if not modified_vbf_result:
+        return False
+
+    logging.info("Successfully downloaded each data file separately")
+    return True
+
+
+def step_4(dut: Dut):
     """
-    Teststep 12: Verify the Complete and compatible Routine return Not Complete
+    action: Check complete & compatibility and do ECU hard reset
+    expected_result: True when ECU is in default session
     """
-    etp: CanTestExtra = {
-        "step_no" : 12,
-        "purpose" : "Check the Complete and compatible Routine return Not Complete"
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    # Complete and compatible check
+    result = SSBL.check_complete_compatible_routine(dut, stepno=3)
+    if not result:
+        logging.error("Test Failed: Downloaded software is not complete and compatible")
+        return False
 
-    SUTE.print_test_purpose(etp["step_no"], etp["purpose"])
-    result = SSBL.check_complete_compatible_routine(can_p, etp["step_no"])
-    result = result and (SSBL.pp_decode_routine_complete_compatible
-                         (SC.can_messages[can_p["receive"]][0][2])
-                         == 'Not Complete, Compatible')
-    return result
+    logging.info("Downloaded software is complete and compatible")
 
-def step_13(can_p):
-    """
-    Teststep 13: Flash Software Part != ESS as in step_9
-    """
-    stepno = 13
-    purpose = " Flash Software Part != ESS as in step_9"
+    # ECU reset
+    result = dut.uds.ecu_reset_1101()
+    if not result:
+        logging.error("Test Failed: ECU reset failed")
+        return False
 
-    #REQ_53973_SIGCFG_compatible_with current release
-    result = True
-    #by default we get files from VBF_Reqprod directory
-    odtb_proj_param = os.environ.get('ODTBPROJPARAM')
-    if odtb_proj_param is None:
-        odtb_proj_param = '.'
+    # Read active diagnostic session
+    active_session = dut.uds.active_diag_session_f186()
 
-    swp = odtb_proj_param + "/VBF_Reqprod/REQ_53973_1*.vbf"
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), swp)
-    if not glob.glob(swp):
-        result = False
-    else:
-        for f_name in glob.glob(swp):
-            result = result and SSBL.sw_part_download(can_p, f_name,
-                                                      stepno, purpose)
-    return result
+    # Verify active diagnostic session
+    if active_session.data["details"]["mode"] == 1:
+        logging.info("ECU is in default session as expected")
+        return True
+
+    logging.error("Test Failed: ECU is not in default session")
+    return False
+
 
 def run():
     """
-    Run - Call other functions from here
+    Verify it is possible to download each data file separately without any requirements of
+    downloading other data files previously, except SBL.
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+    dut = Dut()
 
-    # where to connect to signal_broker
-    can_p: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        "send" : "Vcu1ToBecmFront1DiagReqFrame",
-        "receive" : "BecmToVcu1Front1DiagResFrame",
-        "namespace" : SC.nspace_lookup("Front1CANCfg0")
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
-    logging.info("Testcase start: %s", datetime.now())
-    starttime = time.time()
-    logging.info("Time: %s \n", time.time())
-    ############################################
-    # precondition
-    ############################################
-    # read VBF param when testscript is s started, if empty take default param
-    SSBL.get_vbf_files()
-    timeout = 1500
-    result = PREC.precondition(can_p, timeout)
+    start_time = dut.start()
+    result = False
+    result_step = False
 
-    if result:
-    ############################################
-    # teststeps
-    ############################################
-        # step 1:
-        # action: Verify programming preconditions
-        # result: ECU sends positive reply
-        result = result and SE31.routinecontrol_requestsid_prog_precond(can_p, stepno=1)
+    parameters_dict = {'modified_vbf_path_exe': '',
+                       'modified_vbf_path_data': ''}
 
-        # step2:
-        # action: Change to programming session
-        # result: ECU sends positive reply
-        result = result and SE10.diagnostic_session_control_mode2(can_p, stepno=2)
+    try:
+        dut.precondition(timeout=1000)
 
-        # step 3:
-        # action: Security Access Request SID
-        # result: ECU sends positive reply
-        result = result and SE27.activate_security_access(can_p, 3)
+        parameters = SIO.parameter_adopt_teststep(parameters_dict)
 
-        # step 4:
-        # action: Read VBF files for ESS file (1st Logical Block)
-        # result:
-        vbf_header, data, data_start = step_4()
+        if not all(list(parameters.values())):
+            raise DutTestError("yml parameters not found")
 
-        # step 5:
-        # action: Extract data for ESS
-        # result:
-        block_by = step_5(data, data_start)
+        result_step = dut.step(step_1, purpose='Verify download of 1st data block (ESS) is'
+                                               ' rejected')
+        if result_step:
+            result_step = dut.step(step_2, purpose='Download and activate SBL')
+        if result_step:
+            result_step = dut.step(step_3, parameters, purpose='Verify it is possible to download'
+                                   ' each data file separately without any requirements of'
+                                   ' downloading other data files previously')
+        if result_step:
+            result_step = dut.step(step_4, purpose='Check complete & compatibility and do ECU'
+                                                   ' hard reset')
+        result = result_step
 
-        # step 6:
-        # action: Verify Request Download the 1st data block (ESS) is rejected
-        # result: ECU sends positive reply
-        result = result and step_6(can_p, block_by, vbf_header)
+    except DutTestError as error:
+        logging.error("Test failed: %s", error)
+    finally:
+        dut.postcondition(start_time, result)
 
-        # step 7:
-        # action: # ECU Reset
-        # result: ECU sends positive reply
-        result = result and SE11.ecu_hardreset(can_p, stepno=7)
-        time.sleep(1)
-
-        # step8:
-        # action: DL and activate SBL
-        # result: ECU sends positive reply
-        result = result and SSBL.sbl_dl_activation(can_p, 8, "DL and activate SBL")
-
-        # step 9:
-        # action: Flash Software Part != ESS
-        # result: ECU sends positive reply
-        result = result and step_9(can_p)
-
-        # step10:
-        # action: download ESS Software Part
-        # result: ECU sends positive reply
-        result = result and SSBL.sw_part_download(can_p, SSBL.get_ess_filename(),\
-                                   stepno=10, purpose="ESS Software Part Download")
-        time.sleep(1)
-
-        # step11:
-        # action: Flash remnant Software Part != ESS
-        # result: ECU sends positive reply
-        result = result and step_11(can_p)
-
-        # step12:
-        # action: Verify the Complete and compatible Routine return Not Complete
-        # result: ECU sends positive reply
-        result = result and step_12(can_p)
-
-        # step13:
-        # action: Flash Software Part != ESS as in step_9
-        # result: ECU sends positive reply
-        result = result and step_13(can_p)
-
-        # step14:
-        # action: Check Complete and Compatible
-        # result: BECM sends positive reply "Complete and Compatible"
-        result = result and SSBL.check_complete_compatible_routine(can_p, stepno=14)
-
-
-        # step15:
-        # action: Hard Reset
-        # result: ECU sends positive reply
-        result = result and SE11.ecu_hardreset(can_p, stepno=15)
-        time.sleep(1)
-
-        # step16:
-        # action: verify ECU in default session
-        # result: ECU sends positive reply
-        result = result and SE22.read_did_f186(can_p, b'\x01', stepno=16)
-
-    ############################################
-    # postCondition
-    ############################################
-
-
-    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()

@@ -38,6 +38,7 @@ details: >
         3. Read security log again and verify authentication data is generated for latest event
 """
 
+import time
 import logging
 from hilding.dut import Dut
 from hilding.dut import DutTestError
@@ -91,6 +92,9 @@ def step_2(dut: Dut):
     action: Set ECU to programming session and Security Access to ECU
     expected_result: True when security access successful
     """
+    # Sleep time to avoid NRC37
+    time.sleep(5)
+
     dut.uds.set_mode(2)
 
     result = SE27.activate_security_access_fixedkey(dut, sa_keys=dut.conf.default_rig_config)

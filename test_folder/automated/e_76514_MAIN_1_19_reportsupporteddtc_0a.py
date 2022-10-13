@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,7 +18,18 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-Import script - Inherited from older version of requirement
+reqprod: 76514
+version: 1
+title: ReadDTCInformation (19) - reportSupportedDTC (0A)
+purpose: >
+    Read out supported DTCs from an ECU
+
+description: >
+    The ECU may support the service ReadDTCInformation - reportSupportedDTC in all sessions where
+    the ECU supports the service ReadDTCInformation.
+
+details: >
+    Import script - Inherited from older version of requirement
 """
 
 from e_76514_MAIN_0_19_reportsupporteddtc_0a import run

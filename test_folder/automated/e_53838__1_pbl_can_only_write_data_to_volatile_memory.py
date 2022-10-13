@@ -33,6 +33,7 @@ details: >
     Verify request block download is rejected for ESS file in PBL.
 """
 
+import time
 import logging
 from hilding.dut import Dut
 from hilding.dut import DutTestError
@@ -50,6 +51,8 @@ def step_1(dut):
     action: Security access in programming session
     expected_result: True when security access successful
     """
+    #Sleep time to avoid NRC37
+    time.sleep(5)
     dut.uds.set_mode(2)
     result = SE27.activate_security_access_fixedkey(dut, sa_keys=dut.conf.default_rig_config)
     if result:

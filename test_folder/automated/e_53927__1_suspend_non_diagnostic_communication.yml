@@ -1,8 +1,7 @@
-hvbm_p519_sa1:
-        step_1:
-                receive: HvbmHvbm1canFrame53_20
-                send: HvbmNmFrame
 hvbm_p519:
-        step_1:
-                receive: HvbmHvbm1canFrame53_20
-                send: HvbmNmFrame
+    run:
+        waiting_time: 2
+        max_diff: 20
+        min_non_diag: 10
+        send: 'HvbmNmFrame'
+        receive : 'HvbmHvbm1canFrame01_100'

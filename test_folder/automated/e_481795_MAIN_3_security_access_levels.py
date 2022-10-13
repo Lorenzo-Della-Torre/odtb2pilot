@@ -130,6 +130,10 @@ def step_1(dut: Dut):
     if not all(list(parameters.values())):
         logging.error("Test Failed: yml parameter not found")
         return False, None
+
+    #Sleep time to avoid NRC37
+    time.sleep(5)
+
     # Verify supported programming session security access level
     dut.uds.set_mode(2)
     for level in parameters['sa_levels_programming']:

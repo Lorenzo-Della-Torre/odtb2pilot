@@ -153,6 +153,8 @@ def run():
         # step 2:
         # action: Change to programming session
         # result: ECU sends positive reply
+        # Sleep time to avoid NRC37
+        time.sleep(5)
         result = result and SE10.diagnostic_session_control_mode2(can_p, stepno=2)
 
         # step 3:
@@ -174,6 +176,8 @@ def run():
         # step 6:
         # action: verify ECU in default session
         # result: ECU sends positive reply
+        # Sleep time to avoid NRC37
+        time.sleep(5)
         result = result and SE22.read_did_f186(can_p, b'\x01', stepno=6)
 
     ############################################

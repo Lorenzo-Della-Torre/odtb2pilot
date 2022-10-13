@@ -1,0 +1,13 @@
+hvbm_p519:
+    run:
+        valid_response_items : {"time" : "Latest event - Time",
+                                "event_code" : "Latest event - Event Code",
+                                "additional_data" : "Latest event - Additional Event Data"}
+
+        valid_successful_response_items : {"time" : "Latest successful event - Time",
+                                           "event_code" : "Latest successful event - Event Code",
+                                           "additional_data" : "Latest successful event - Additional Event Data"}
+
+        valid_rejected_response_items : {"time" : "Latest rejected event - Time",
+                                         "event_code" : "Latest rejected event - Event Code",
+                                         "additional_data" : "Latest rejected event - Additional Event Data"}

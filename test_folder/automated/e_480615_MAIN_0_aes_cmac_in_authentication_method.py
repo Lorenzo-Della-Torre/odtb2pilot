@@ -223,6 +223,8 @@ def step_1(dut: Dut):
     action: Set to programming session, security access to ECU and get subfunctions response.
     expected_result: True with security access messages of all subfunctions when ECU unlocked
     """
+    # Sleep time to avoid NRC37
+    time.sleep(5)
     dut.uds.set_mode(2)
     sa_response_dict = security_access(dut, sa_level=1)
     if sa_response_dict is None:

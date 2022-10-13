@@ -49,6 +49,7 @@ details: >
        verify negative response
 """
 
+import time
 import logging
 from hilding.dut import Dut
 from hilding.dut import DutTestError
@@ -188,6 +189,9 @@ def step_1(dut: Dut, sa_levels_dids_programming):
     expected_result: True when successfully verified keys are by default one-time-programmed.
     """
     results = []
+
+    # Sleep time to avoid NRC37
+    time.sleep(5)
 
     # Set ECU in programming session
     dut.uds.set_mode(2)

@@ -37,6 +37,7 @@ details: >
 
 """
 
+import time
 import logging
 from glob import glob
 from hilding.conf import Conf
@@ -81,6 +82,8 @@ def step_2(dut: Dut):
 
     expected_result: ECU is in programming session and security unlock successful.
     """
+    # Sleep time to avoid NRC37
+    time.sleep(5)
     dut.uds.set_mode(2)
     sa_keys = CNF.default_rig_config
     result = SE27.activate_security_access_fixedkey(dut, sa_keys, step_no=272,

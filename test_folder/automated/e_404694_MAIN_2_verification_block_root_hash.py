@@ -1,9 +1,10 @@
 """
+
 /*********************************************************************************/
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -16,6 +17,7 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
+
 reqprod: 404694
 version: 2
 title: Verification Block Root Hash
@@ -65,10 +67,8 @@ description: >
     data block containing the VBT.
 
 details: >
-    Read VBF and Calculating Root hash by conacationating Start Length
-    & Verification Block Table data
-    And Comparing the calculated root hash value with the root hash
-    value present in vbf Header
+    Read VBF, calculating root hash by concatenating start, length & verification block table
+    data and comparing the calculated root hash value with value present in vbf header.
 """
 
 import logging
@@ -85,111 +85,117 @@ SSBL = SupportSBL()
 
 def extract_vbt(vbf_data, vbf_offset):
     """
-    Extracting Verification block table data
+    Extracting vbf data block from vbf parameters
     Args:
         vbf_data (str): VBF data block
         vbf_offset (int): VBF offset
     Returns:
-        str: VBT data hex
+        data_block (str): VBT data in hex
     """
     data_block = ''
     # To extract VBT data, we need to extract last block of VBF file
-    # So we are iterating throught the loop and extracting every block
-    # and in the last iteration of the loop, we recieve VBT data block.
+    # So we are iterating through the loop and extracting every block
+    # and in the last iteration of the loop, we receive VBT data block.
     while True:
-        vbf_offset, vbf_block, vbf_block_data = SSBL.block_data_extract(
-            vbf_data, vbf_offset)
+        vbf_offset, vbf_block, vbf_block_data = SSBL.block_data_extract(vbf_data, vbf_offset)
         if vbf_block['StartAddress'] == 0:
             logging.debug("No more blocks")
             break
         data_block = LZMA.decode_barray(vbf_block_data)
+
     return data_block.hex()
 
 
 def extract_vbf_params(vbf_path):
     """
-    Extracting verification_block_root_hash, startAddress, length,
-            Verification Block Table data
+    Extracting vbf parameters from vbf file
     Args:
         vbf_path (dict): VBF file path
     Returns:
-        vbf_params (dict): dictionary of vbf parameters with file name
+        vbf_params (dict): VBF parameters with file name
     """
     vbf_params = {'vbf_data': '',
                   'vbf_root_hash': '',
                   'file_name': ''}
+
     _, vbf_header, vbf_data, vbf_offset = SSBL.read_vbf_file(vbf_path)
     vbt = extract_vbt(vbf_data, vbf_offset)
 
     vbf_params["vbf_root_hash"] = vbf_header['verification_block_root_hash']
     # Used [2:] to remove '0x' from the hex string
-    vbf_params["vbf_data"] = vbf_header["verification_block_start"][2:] + \
-        vbf_header["verification_block_length"][2:] + vbt
+    vbf_params["vbf_data"] = (vbf_header["verification_block_start"][2:] +
+                              vbf_header["verification_block_length"][2:] + vbt)
     vbf_params["file_name"] = vbf_path.split('/')[-1]
+
     return vbf_params
+
+
+def compare_root_hash(vbf_params_list):
+    """
+    Compare root hash values, calculated from vbf data with the values present in vbf header
+    Args:
+        vbf_params_list (list): VBF parameters
+    Returns:
+        (bool): True when hash values in vbf header are equal with calculated hash value
+    """
+    check_list = []
+
+    for vbf_params in vbf_params_list:
+        result = False
+        calculated_hash = hashlib.sha256(bytes.fromhex(vbf_params["vbf_data"]))
+        calculated_hash_hex = calculated_hash.hexdigest().upper()
+        vbf_root_hash = vbf_params["vbf_root_hash"][2:]
+
+        if calculated_hash_hex == vbf_root_hash:
+            result = True
+
+        check_list.append(result)
+
+    if len(check_list) != 0 and all(check_list):
+        return True
+
+    return False
 
 
 def step_1(dut: Dut):
     """
-    action: Reading and extracting vbf parameters from all vbf files
-    expected_result: list of vbf parameters
+    action: Calculate root hash from vbf data and compare with the value present in vbf header
+    expected_result: True when both calculated and value present in vbf header are equal
     """
-
     rig_vbf_path = dut.conf.rig.vbf_path
     vbf_paths = glob(str(rig_vbf_path) + "/*.vbf")
+
     if len(vbf_paths) == 0:
-        msg = "No vbf file found in path: {}".format(rig_vbf_path)
-        logging.error(msg)
-        return False, None
+        logging.error("Test Failed: No vbf file found in path: %s", rig_vbf_path)
+        return False
+
     vbf_params_list = list(map(extract_vbf_params, vbf_paths))
-    return True, vbf_params_list
+    result = compare_root_hash(vbf_params_list)
+    if result:
+        logging.info("Calculated root hash value and the root hash value present in vbf are equal")
+        return True
 
-
-def step_2(dut, vbf_params_list):
-    """
-    action: Compare verification_block_root_hash and Hash(startAddress||length
-            ||Verification Block Table data) for all vbf file parameters
-    expected_result: True
-    """
-    # pylint: disable=unused-argument
-    check_list = []
-    for vbf_params in vbf_params_list:
-        calculated_hash = hashlib.sha256(bytes.fromhex
-                                              (vbf_params["vbf_data"]))
-        calculated_hash_hex = calculated_hash.hexdigest().upper()
-        # Used [2:] to remove '0x' from the hex string
-        vbf_root_hash = vbf_params["vbf_root_hash"][2:]
-        if calculated_hash_hex == vbf_root_hash:
-            check_list.append(True)
-        else:
-            msg = "Test failed: vbf_root_hash and Hash(startAddress||length||\
-                Verification Block Table data) did not match for file:{}"\
-                    .format(vbf_params['file_name'])
-            logging.error(msg)
-            check_list.append(False)
-    return all(check_list)
+    logging.error("Test Failed: Calculated root hash value and the root hash value present in vbf "
+                  "header are not equal")
+    return False
 
 
 def run():
     """
-    Extracting verification_block_start, verification_block_length, VBT data.
-    Calculating hash(SHA256) and comparing with verification_block_root_hash.
+    Extracting verification block start, verification block length, VBT data.
+    Calculating hash(SHA256) and comparing with verification block root hash.
     """
-
     dut = Dut()
 
     start_time = dut.start()
     result = False
+
     try:
-        # Communication with ECU lasts 60 seconds.
-        dut.precondition(timeout=60)
+        dut.precondition(timeout=30)
 
-        result, vbf_params_list = dut.step(
-            step_1, purpose='Reading and extracting vbf parameters from all vbf files')
+        result = dut.step(step_1, purpose="Calculate root hash from vbf data and compare with the "
+                                          "value present in vbf header")
 
-        if result:
-            result = dut.step(step_2, vbf_params_list, purpose='Comparing vbf root hash'\
-                'and Hash(startAddress||length||Verification Block Table data)')
     except DutTestError as error:
         logging.error("Test failed: %s", error)
     finally:

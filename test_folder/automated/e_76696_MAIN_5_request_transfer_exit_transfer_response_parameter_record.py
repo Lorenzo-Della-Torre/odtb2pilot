@@ -68,6 +68,7 @@ details: >
         ii. Check CRC omitted
 """
 
+import time
 import logging
 from glob import glob
 from hilding.dut import Dut
@@ -158,6 +159,9 @@ def step_2(dut: Dut, vbf_params):
     action: Request transfer data(36) in sequence i.e. security access(27), SE34, SE36 and SE37
     expected_result: True when successfully sent request
     """
+    #Sleep time to avoid NRC37
+    time.sleep(5)
+
     # Set to programming session
     dut.uds.set_mode(2)
 
