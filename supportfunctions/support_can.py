@@ -46,6 +46,7 @@ import logging
 import time
 import threading
 from threading import Thread
+from pathlib import Path
 import sys
 from typing import Dict
 import grpc
@@ -263,7 +264,7 @@ class SupportCAN:
         Args: communication parameter can_p
         Returns: none
         """
-        source = common_pb2.ClientId(id=sys.argv[0].split('/')[-1].split('.')[0])
+        source = common_pb2.ClientId(id=self.get_file_name())
         signal = common_pb2.SignalId(name=can_p["receive"],
                                      namespace=self.nspace_lookup(can_p["namespace"]))
         sub_info = network_api_pb2.SubscriberConfig(clientId=source,\
@@ -522,6 +523,14 @@ class SupportCAN:
         """
         return common_pb2.NameSpace(name=namespace)
 
+    def get_file_name(self):
+        """
+        Returns the current python file name
+        """
+        path_name = Path(__file__).stem
+        return path_name
+
+
 
 # make sure you have Front1CANCfg0 namespace in interfaces.json
 #BO_ 1305 BecmFront1NMFr: 8 BECM
@@ -543,7 +552,7 @@ class SupportCAN:
         """
         subscribe_to_heartbeat
         """
-        source = common_pb2.ClientId(id=sys.argv[0].split('/')[-1].split('.')[0])
+        source = common_pb2.ClientId(id=cls.get_file_name())
         signal = common_pb2.SignalId(name="BecmFront1NMFr", namespace="Front1CANCfg0")
         sub_info = network_api_pb2.SubscriberConfig(clientId=source,\
                     signals=network_api_pb2.SignalIds(signalId=[signal]), onChange=False)
@@ -561,7 +570,7 @@ class SupportCAN:
         """
         Send signal on CAN: parameters name_DBC, namespace_DBC, payload
         """
-        source = common_pb2.ClientId(id=sys.argv[0].split('/')[-1].split('.')[0])
+        source = common_pb2.ClientId(id=cls.get_file_name())
 
         signal = common_pb2.SignalId(name=signal_name,
                                      namespace=cls.nspace_lookup(namespace))
@@ -665,9 +674,9 @@ class SupportCAN:
             # add first frame
             #check payloadlength first
             if (0x100000000000  + mess_length) > 0x1000ffffffff :
-                logging.error("Payload to big to fit in message: %s ", mess_length)
+                logging.error("Payload too big to fit in message: %s ", mess_length)
 
-            #check if mess_length would fit into a classic mess_length (<0xfff)
+            #check if mess_length would fit into a classic CAN mess_length (<0xfff)
             #if so use that format
             if mess_length < 0x1000:
                 self.add_canframe_tosend(can_p["send"],\
@@ -732,7 +741,7 @@ class SupportCAN:
         """
         send_FF_CAN
         """
-        source = common_pb2.ClientId(id=sys.argv[0].split('/')[-1].split('.')[0])
+        source = common_pb2.ClientId(id=self.get_file_name())
         signal = common_pb2.SignalId(name=can_p["send"],
                                      namespace=self.nspace_lookup(can_p["namespace"]))
         signal_with_payload = network_api_pb2.Signal(id=signal)
@@ -836,7 +845,7 @@ class SupportCAN:
             self.can_mf_send[can_p["send"]] = []
         #number of frames to send, array of frames to send
         self.can_mf_send[can_p["send"]] = [0, []]
-        source = common_pb2.ClientId(id=sys.argv[0].split('/')[-1].split('.')[0])
+        source = common_pb2.ClientId(id=self.get_file_name())
         signal = common_pb2.SignalId(name=can_p["send"],
                                      namespace=self.nspace_lookup(can_p["namespace"]))
         signal_with_payload = network_api_pb2.Signal(id=signal)
@@ -940,7 +949,7 @@ class SupportCAN:
 
         Send CAN message (8 bytes load) with raw (hex) payload
         """
-        source = common_pb2.ClientId(id=sys.argv[0].split('/')[-1].split('.')[0])
+        source = common_pb2.ClientId(id=cls.get_file_name())
         signal = common_pb2.SignalId(name=signal_name, namespace=cls.nspace_lookup(namespace))
         signal_with_payload = network_api_pb2.Signal(id=signal)
         signal_with_payload.raw = payload_value
@@ -959,7 +968,7 @@ class SupportCAN:
 
             Subfunction of send_cf_can
         """
-        source = common_pb2.ClientId(id=sys.argv[0].split('/')[-1].split('.')[0])
+        source = common_pb2.ClientId(id=self.get_file_name())
         signal = common_pb2.SignalId(name=can_p["send"],
                                      namespace=self.nspace_lookup(can_p["namespace"]))
         signal_with_payload = network_api_pb2.Signal(id=signal)
@@ -1001,7 +1010,7 @@ class SupportCAN:
         """
         #print("t_send signal_raw")
 
-        source = common_pb2.ClientId(id=sys.argv[0].split('/')[-1].split('.')[0])
+        source = common_pb2.ClientId(id=self.get_file_name())
         signal = common_pb2.SignalId(name=signal_name, namespace=self.nspace_lookup(namespace))
         signal_with_payload = network_api_pb2.Signal(id=signal)
 
