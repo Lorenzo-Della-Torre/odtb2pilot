@@ -523,7 +523,8 @@ class SupportCAN:
         """
         return common_pb2.NameSpace(name=namespace)
 
-    def get_file_name(self):
+    @classmethod
+    def get_file_name(cls):
         """
         Returns the current python file name
         """
