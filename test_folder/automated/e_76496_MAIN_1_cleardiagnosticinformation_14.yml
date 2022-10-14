@@ -1,0 +1,4 @@
+hvbm_p519:
+    run:
+        response_time : 3500
+        programming_supported : 'False'
