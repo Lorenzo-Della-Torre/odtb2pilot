@@ -294,20 +294,20 @@ hvbm_p519:
         e_488675_MAIN_0 : sec_oc_fv_option_1_full_fv_sent_in_pdu | SecOC not implemented yet
         e_488676_MAIN_0 : sec_oc_fv_option_2_32_bit_partial_fv_sent_in_pdu | SecOC not implemented yet
         e_488678_MAIN_0 : sec_oc_fv_option_3_24_bit_partial_fv_sent_in_pdu | SecOC not implemented yet
-        e_488679_MAIN_0 : sec_oc_fv_option_4_16_bit_partial_fv_sent_in_pdu | SecOC not implemented yet     
-        e_488680_MAIN_0 : sec_oc_fv_option_5_8_bit_partial_fv_sent_in_pdu | SecOC not implemented yet    
-        e_488681_MAIN_0 : sec_oc_fv_option_6_no_fv_sent_in_pdu | SecOC not implemented yet     
-        e_487881_MAIN_1 : sec_oc_detection_and_handling_of_abnormal_timestamps | SecOC not implemented yet     
-        e_489080_MAIN_0 : sec_oc_default_configurations | SecOC not implemented yet    
-        e_487887_MAIN_1 : sec_oc_profile_configuration_crypto_algorithm | SecOC not implemented yet       
-        e_487893_MAIN_1 : sec_oc_profile_configuration_fv | SecOC not implemented yet     
-        e_487986_MAIN_1 : sec_oc_profiles_and_configuration_overview | SecOC not implemented yet     
-        e_487890_MAIN_1 : sec_oc_configuration_using_cryptographic_pdu | SecOC not implemented yet     
+        e_488679_MAIN_0 : sec_oc_fv_option_4_16_bit_partial_fv_sent_in_pdu | SecOC not implemented yet
+        e_488680_MAIN_0 : sec_oc_fv_option_5_8_bit_partial_fv_sent_in_pdu | SecOC not implemented yet
+        e_488681_MAIN_0 : sec_oc_fv_option_6_no_fv_sent_in_pdu | SecOC not implemented yet
+        e_487881_MAIN_1 : sec_oc_detection_and_handling_of_abnormal_timestamps | SecOC not implemented yet
+        e_489080_MAIN_0 : sec_oc_default_configurations | SecOC not implemented yet
+        e_487887_MAIN_1 : sec_oc_profile_configuration_crypto_algorithm | SecOC not implemented yet
+        e_487893_MAIN_1 : sec_oc_profile_configuration_fv | SecOC not implemented yet
+        e_487986_MAIN_1 : sec_oc_profiles_and_configuration_overview | SecOC not implemented yet
+        e_487890_MAIN_1 : sec_oc_configuration_using_cryptographic_pdu | SecOC not implemented yet
         e_488700_MAIN_0 : sec_oc_configuration_use_auth_data_freshness | SecOC not implemented yet
         e_488701_MAIN_0 : sec_oc_configuration_secure_area | SecOC not implemented yet
         e_488702_MAIN_0 : sec_oc_configuration_sec_oc_rx_acceptance_window | SecOC not implemented yet
-        e_488703_MAIN_0 : sec_oc_configuration_sec_oc_cluster_key_id | SecOC not implemented yet 
-        e_487898_MAIN_1 : sec_oc_configurations_in_ecu_extract | SecOC not implemented yet 
+        e_488703_MAIN_0 : sec_oc_configuration_sec_oc_cluster_key_id | SecOC not implemented yet
+        e_487898_MAIN_1 : sec_oc_configurations_in_ecu_extract | SecOC not implemented yet
         e_487899_MAIN_1 : sec_oc_customization_for_immediate_return_of_authentic_data | SecOC not implemented yet
         e_487883_MAIN_0 : sec_oc_optimization_for_cpu_load | SecOC not implemented yet
         e_487882_MAIN_1 : sec_oc_optimization_for_latency | SecOC not implemented yet
@@ -320,6 +320,7 @@ hvbm_p519:
         e_469411_MAIN_1 : system_hardening_follow_industry_accepted_processes | <Reason>
 
     --Implicit--:
+        e_486497_MAIN_1 : bus_off | Implicitly tested by manual tests 52314 and 392111
         e_480624_MAIN_1 : security_access_key_usage | <Reason>
         e_469025_MAIN_1 : minimum_cryptographic_support | <Reason>
 
