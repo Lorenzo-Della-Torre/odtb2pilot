@@ -46,6 +46,7 @@ from protogenerated.network_api_pb2_grpc import NetworkServiceStub
 
 from supportfunctions.support_can import SupportCAN, CanParam, PerParam, CanMFParam
 from supportfunctions.support_service3e import SupportService3e
+from supportfunctions.support_file_io import SupportFileIO
 from hilding.uds import Uds
 from hilding.uds import EicDid
 from hilding.uds import IoVmsDid
@@ -172,6 +173,8 @@ class Dut:
             "frame" : bytes.fromhex(self.conf.rig.wakeup_frame),
             "intervall" : 0.4
             }
+        
+        SupportFileIO.parameter_adopt_teststep(heartbeat_param)
         log.debug("heartbeat_param %s", heartbeat_param)
 
         iso_tp = SupportCAN()
