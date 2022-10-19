@@ -173,7 +173,7 @@ class Dut:
             "frame" : bytes.fromhex(self.conf.rig.wakeup_frame),
             "intervall" : 0.4
             }
-        
+
         SupportFileIO.parameter_adopt_teststep(heartbeat_param)
         heartbeat_param['send'] = True
         log.debug("heartbeat_param %s", heartbeat_param)
