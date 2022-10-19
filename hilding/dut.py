@@ -112,10 +112,10 @@ class Dut:
             f'{self.conf.rig.signal_broker_port}')
         self.network_stub = NetworkServiceStub(self.channel)
         self.system_stub = SystemServiceStub(self.channel)
-        self.namespace = 'Front1CANCfg0'
-        self.protocol = 'can'
-        self.framelength_max = 8
-        self.padding = True
+        self.namespace = SupportFileIO.parameter_adopt_teststep('namespace')
+        self.protocol = SupportFileIO.parameter_adopt_teststep('protocol')
+        self.framelength_max = SupportFileIO.parameter_adopt_teststep('framelength_max')
+        self.padding = SupportFileIO.parameter_adopt_teststep('padding')
         self.uds = Uds(self)
         self.fail_purpose = ""
 
@@ -175,6 +175,7 @@ class Dut:
             }
         
         SupportFileIO.parameter_adopt_teststep(heartbeat_param)
+        heartbeat_param['send'] = True
         log.debug("heartbeat_param %s", heartbeat_param)
 
         iso_tp = SupportCAN()
