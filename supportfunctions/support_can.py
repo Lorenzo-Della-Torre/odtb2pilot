@@ -846,7 +846,7 @@ class SupportCAN:
             self.can_mf_send[can_p["send"]] = []
         #number of frames to send, array of frames to send
         self.can_mf_send[can_p["send"]] = [0, []]
-        source = common_pb2.ClientId(id=self.get_file_name())
+        source = common_pb2.ClientId(id="app_identifier")
         signal = common_pb2.SignalId(name=can_p["send"],
                                      namespace=self.nspace_lookup(can_p["namespace"]))
         signal_with_payload = network_api_pb2.Signal(id=signal)
@@ -950,7 +950,7 @@ class SupportCAN:
 
         Send CAN message (8 bytes load) with raw (hex) payload
         """
-        source = common_pb2.ClientId(id=cls.get_file_name())
+        source = common_pb2.ClientId(id="app_identifier")
         signal = common_pb2.SignalId(name=signal_name, namespace=cls.nspace_lookup(namespace))
         signal_with_payload = network_api_pb2.Signal(id=signal)
         signal_with_payload.raw = payload_value
@@ -969,7 +969,7 @@ class SupportCAN:
 
             Subfunction of send_cf_can
         """
-        source = common_pb2.ClientId(id=self.get_file_name())
+        source = common_pb2.ClientId(id="app_identifier")
         signal = common_pb2.SignalId(name=can_p["send"],
                                      namespace=self.nspace_lookup(can_p["namespace"]))
         signal_with_payload = network_api_pb2.Signal(id=signal)
@@ -1011,7 +1011,7 @@ class SupportCAN:
         """
         #print("t_send signal_raw")
 
-        source = common_pb2.ClientId(id=self.get_file_name())
+        source = common_pb2.ClientId(id="app_identifier")
         signal = common_pb2.SignalId(name=signal_name, namespace=self.nspace_lookup(namespace))
         signal_with_payload = network_api_pb2.Signal(id=signal)
 
