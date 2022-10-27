@@ -246,7 +246,7 @@ hvbm_p519:
         e_488670_MAIN_0 : secoc_timestamp_format | Check that we follow the AUTOSAR StbM specification
         e_161873_MAIN_2 : car_mode_data_record | This can be tested on HILding but 2A not implemented yet.
         e_353876_MAIN_3 : autosar_version | Developer need deviation for version of AUTOSAR 
-        e_53855____1 : sbl_in_volatile_memory | Verify that SBL is stored in volatile memory.
+        e_53855__1 : sbl_in_volatile_memory | Verify that SBL is stored in volatile memory.
         e_487898_MAIN_1 : secoc_configurations_in_ecu_extract | Need to verify that use ECU extract from Volvo.
         e_487887_MAIN_1 : secoc_profile_configuration_crypto_algorithm | Inspect in configuration file or tool
         e_487877_MAIN_1 : secoc_fvm_solution | Need to be sure it is a new message. We will use use the timesync module. Will calculate the time between the sending and receiving.
