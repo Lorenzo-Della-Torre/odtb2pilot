@@ -214,6 +214,7 @@ hvbm_p519:
         e_60016__1 : n_wftmax_value_for_client_side | Not applicable. NA folder script.
         e_68227_MAIN_1 : vehicle_id_number_data_rec | Not applicable. NA folder script.
         e_467281_MAIN_0 : data_compression_method_2_data_format | Not applicable. NA folder script.
+        e_60109__3 : duplex_communication | Probably a gateway requirement. NA for non-gateway ECUs.
 
     --Inspection--:
         e_481878_MAIN_0 : interface_to_tee_cryptographic_operations | ETAS provides API. Inspect that we have received those files
