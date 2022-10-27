@@ -40,7 +40,7 @@ hvbm_p519:
         e_488674_MAIN_0 : secoc_fv_option_0_no_fv_used | This not an option since we use FV from timesync
         e_488675_MAIN_0 : secoc_fv_option_1_full_fv_sent_in_pdu | We have only 64bit in CAN message
         e_480627_MAIN_1 : distribution_of_the_security_access_keys_to_ecu_suppliers | Should set initial key to FF. If any other key needs to be configured it should be done at HW end of line
-        e_52687____2 : data_compression_method_1_parameters | Not in use any longer.
+        e_52687__2 : data_compression_method_1_parameters | Not in use any longer.
         e_68182_MAIN_3 : security_constant_data_record | Security constant is not implemented
         e_458730_MAIN_1 : set_dtc_prepassed_prefailed_routine | There is another way to test it
         e_458755_MAIN_1 : start_new_operation_cycle_routine | There is another way to test it
