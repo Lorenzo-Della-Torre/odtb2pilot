@@ -332,6 +332,16 @@ hvbm_p519:
         e_397432_MAIN_4 : logical_block_declaration | To be inspected
         e_405471_MAIN_2 : check_mem_returnvalues | To be inspected
         e_469451_MAIN_0 : secure_storage_of_log_data | To be inspected
+        e_401157_MAIN_3 : complete_and_compatible_complete_function | Not access to BL code. Inspect Mentors test results. Should be validated that it is always performed by BL.
+        e_403711_MAIN_2 : complete_and_compatible_definition_of_being_complete | Not access to BL code. Inspect Mentors test results.
+        e_435534_MAIN_0 : use_of_profiles_and_transformers | Changed to Code Inspection
+        e_435535_MAIN_0 : simultaneous_use_of_profiles_and_transformers | Changed to Code Inspection
+        e_466661_MAIN_0 : data_compression_method_2_parameters | This also needs an updated bootloader as the current version is based on the old bastech SWRS that did not include the LZMA compression requirements.
+        e_466900_MAIN_0 : bootloader CAN busoff handling | Changed to Code Inspection
+        e_481758_MAIN_0 : 2_byte_base_dtc_definition | Tested by inspection. A validation of all defined DTCs in the SDDB can also be a method.
+        e_56192_MAIN_3 : server_support_of_queued_requests_in_programming_session | Difficult to test. Put on hold. Check with Mentor first
+        e_74506_MAIN_1 : negative_response_code_general_reject_0x10 | Check DCM configuration for NRC 0x10
+        e_76539_MAIN_3 : communication_stack_processing_period | Changed to Code Inspection
 
     --Diag--:
         e_68012_MAIN_0 : support_for_external_output_signal_data_records_actual_output_signal | Diagnosis responsible need to evaluate
@@ -464,6 +474,44 @@ hvbm_p519:
         e_76508_MAIN_2 : readdtcinformation_19_reportdtcextendeddatarecordbydtcnumber_06_86 | <Reason>
         e_72026_MAIN_5 : storage_of_global_dtc_snapshot_data_when_not_available | <Reason>
         e_72063_MAIN_3 : support_for_dtc_status_indicator | <Reason>
+        e_72072_MAIN_2 : temporarily_storage_of_dtc_information | The old script states that it is NA but it seems testable. Probably needs to be tested on dSpace HIL.
+        e_68085_MAIN_0 : reporting_other_ecu_internal_signal_data_records_defined_by_the_implementer_while_the_input_parameter_value_is_under_tester_control | Can be hard to run on the ODTB2. dSpace can be needed.
+        e_72166_MAIN_2 : system_supplier_specific_routines | Can be hard to run on the ODTB2. dSpace can be needed.
+        e_53883__2 : behaviour_outside_normal_supply_voltage_range | This is testable on our test bench with programmable power supply
+        e_478574_MAIN_1 : dtc_storage_capacity_in_long_term_memory | Testable with ODTB2. Read out all DTCs with snapshot and check how many that is. Might be to many to read, then we need to do it on dSpace.
+        e_69006_MAIN_2 : detection_of_low_supply_voltage | The DTC exist. Low Prio DTC. Can be difficult to see due to other high prio DTCs. Not to many DTCs should be set. Might be easier on dSpace.
+        e_72148_MAIN_7 : clear_dtc_information_when_the_long_term_memory_overflows | Testable but probably needs the dSpace HIL to control the DTCS. Overflow memory.
+        e_76588_MAIN_2 : input_output_control_by_identifier_2f | Not used in the finished product. 
+        e_76590_MAIN_2 : input_output_control_by_identifier_2f_input_output_control_parameter_iocp_return_control_to_ecu_00 | Not used in the finished product. 
+        e_76592_MAIN_2 : input_output_control_by_identifier_2f_input_output_control_parameter_iocp_short_term_adjustment_03 | Not used in the finished product.
+        e_76597_MAIN_2 : input_output_control_by_identifier_2f_consecutive_short_term_adjustment_requests | Not used in the finished product.
+        e_58806__5 : timing_at_network_and_hardware_wake_up_can_microcontroller_unpowered_in_sleep | added to Dspace
+        e_69518_MAIN_2 : ecu_voltage_measurement | Our test equipment should be able to test 250mV accuracy
+        e_72157_MAIN_3 : vehicle_manufacturer_specific_routines | Can be hard to run on the ODTB2. dSpace can be needed
+        e_72161_MAIN_1 : development_specific_routines | Can be hard to run on the ODTB2. dSpace can be needed
+        e_74142_MAIN_4 : non_volatile_data_shall_be_written_or_cleared_before_responding_on_the_diagnostic_request | Valid for any application team which implement diagnostic service that writes to NVM.
+        e_76496_MAIN_1 : clear_diagnostic_information_14 | Probably need dSpace
+        e_76497_MAIN_3 : clear_diagnostic_information_14_group_of_dtc_specific_dtc | Probably need dSpace
+        e_76498_MAIN_2 : clear_diagnostic_information_14_group_of_dtc_all_groups | Probably need dSpace
+        e_482737_MAIN_0 : dct_storage_time | Trigger specific DTC on the dSpace HIL and trigger power loss
+        e_72028_MAIN_2 : storage_of_local_dtc_snapshot_data_when_not_available | Can be tested in dSpace HIL.
+        e_482735_MAIN_0 : storage_of_dtc_information | Most are stored in long term memory.
+        e_72026__5 : storage_of_global_dtc_snapshot_data_when_not_available | Need an active DTC. Move to dspace
+        e_76508__2 : read__dtc_information_19_report_dtc_extended_data_record_by_dtc_number (06) | This script passes only when there is any DTC. Mostly the ECUs are DTC free. So it might fail always
+        e_72063_MAIN_3 : support_for_dtc_status_indicator_30 | This script will pass only when a particular DTC is present in the ECU. move to dspace
+        e_72071_MAIN_4 : support_for_dtc_status_indicator_30 | Can't control the environment with ODTB2.
+        e_71815_MAIN_4 : support_for_dtc_status_bit_test_failed | Testable but probably needs the dSpace HIL to control the DTCS
+        e_71823_MAIN_3 : support_for_dtc_status_bit_test_failed_this_operation_cycle | Testable but probably needs the dSpace HIL to control the DTCS
+        e_71824_MAIN_4 : support_for_dtc_status_bit_pending_dtc | Difficult to test on ODTB2, test on dSpace.
+        e_71827_MAIN_7 : support_for_dtc_status_bit_confirmed_dtc | Difficult to test on ODTB2, test on dSpace
+        e_71828_MAIN_3 : support_for_dtc_status_bit_test_not_completed_since_last_clear | Difficult to test on ODTB2, test on dSpace.
+        e_71829_MAIN_3 : support_for_dtc_status_bit_test_failed_since_last_clear | Testable but probably needs the dSpace HIL to control the DTCS.
+        e_71830_MAIN_3 : support_for_dtc_status_bit_test_not_completed_this_operation_cycle | Testable but probably needs the dSpace HIL to control the DTCS.
+        e_71831_MAIN_3 : support_for_dtc_status_bit_warning_indicator_equested | Testable but probably needs the dSpace HIL to control the DTCS.
+        e_72030_MAIN_6 : support_for_occ_1_operation_cycle_since_last_failed | Can't control the environment with ODTB2.
+        e_72031_MAIN_7 : support_for_occ_2_fault_free_op_cycles_since_first_failed | Testcase (DVM) and Dspace-testlog reviewed.
+        e_72033_MAIN_6 : support_for_occ_4_total_number_of_failed_cycles | Can't control the environment with ODTB2.
+        e_72152_MAIN_7 : clear_dtc_information_when_a_dtc_is_aged | Testable but probably needs the dSpace HIL to control the DTCS.
 
     --vbf_modification--:
         e_53958__6 : complete_compatible_function_return_value | Need to modify VBFs to test the Compatible part
