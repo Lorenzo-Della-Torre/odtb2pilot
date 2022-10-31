@@ -446,7 +446,6 @@ hvbm_p519:
         e_481875_MAIN_0 : random_number_generator_validation | This can't be tested with standard SW. Need special tools.
         e_418471_MAIN_3 : public_key_data_record_write | This test needs to be manually tested.
         e_480600_MAIN_2 : disable_hardware_debug_interfaces_to_hsm | This needs to be manually tested.
-        e_469023_MAIN_1 : action_on_failure | This test to be manually tested.
         e_469233_MAIN_3 : protect_hardware_debug_interfaces | This test to be manually tested.
         e_486601_MAIN_0 : event_type_debugger_authentication | Manual
 
