@@ -126,7 +126,7 @@ hvbm_p519:
         e_486612_MAIN_0 : event_type_cryptographic_operations | Not applicable. NA folder script.
         e_486614_MAIN_0 : event_type_user_account_log | Not applicable. NA folder script.
         e_486615_MAIN_0 : event_type_firewall_log | Not applicable. NA folder script.
-        e_486616_MAIN_0 : event_type_file_handling_log. NA folder script.
+        e_486616_MAIN_0 : event_type_file_handling_log | NA folder script.
         e_486617_MAIN_0 : event_type_event_logging_service | Not applicable. NA folder script.
         e_486685_MAIN_0 : authentication_key_programming_at_oem | Not applicable. NA folder script.
         e_52243__3 : supported_can_ids_2nd_part | Not applicable. NA folder script.
