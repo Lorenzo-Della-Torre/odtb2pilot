@@ -167,9 +167,6 @@ class Dut:
             "send" : True,
             "id" : self.conf.rig.signal_periodic,
             "nspace" : self.namespace,
-            "protocol" : "can",
-            "framelength_max" : 8,
-            "padding" : True,
             "frame" : bytes.fromhex(self.conf.rig.wakeup_frame),
             "intervall" : 0.4
             }
