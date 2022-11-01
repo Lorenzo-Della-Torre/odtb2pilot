@@ -719,8 +719,6 @@ class SupportCAN:
         mess_length = len(cpay["payload"])
         if can_p["protocol"] == 'canfd' and mess_length > 7:
             complete_frame = b'\x00'
-        elif can_p["protocol"] == 'canfd':
-            complete_frame = b''
         else:
             complete_frame = b''
         complete_frame = complete_frame + bytes([mess_length]) + cpay["payload"]

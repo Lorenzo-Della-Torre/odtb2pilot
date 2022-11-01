@@ -97,10 +97,6 @@ class SupportPrecondition:
         # start heartbeat, repeat every 0.4 second
         hb_param: PerParam = {
             "name" : "Heartbeat",
-            "send2" : True,
-            "protocol": 'can',
-            "framelength_max": 8,
-            "padding" : True,
             "id" : "BecmFront1NMFr",
             "nspace" : can_p["namespace"],
             "frame" : b'\x1A\x40\xC3\xFF\x01\x00\x00\x00',
