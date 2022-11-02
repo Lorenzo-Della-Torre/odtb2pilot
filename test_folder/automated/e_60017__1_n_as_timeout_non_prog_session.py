@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,264 +18,183 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-# Testscript Hilding MEPII
-# project:  BECM basetech MEPII
-# author:   LDELLATO (Lorenzo Della Torre)
-# date:     2020-06-24
-# version:  1.0
-# reqprod:  60017
+reqprod: 60017
+version: 1
+title: N_As timeout in non-programming session
+purpose: >
+    From a system perspective it is important that both sender and receiver side times out
+    roughly the same time. The timeout value shall be high enough to not be affected by
+    situations like occasional high busloads and low enough to get a user friendly system
+    if for example an ECU is not connected.
 
-# author:   HWEILER (Hans-Klaus Weile4r)
-# date:     2020-07-29
-# version:  1.1
-# changes:  YML parameters corrected, error setting FC-delay corrected, step order changed.
+description: >
+    N_As timeout value shall be 1000ms in non-programming session.
 
-# #inspired by https://grpc.io/docs/tutorials/basic/python.html
-# Copyright 2015 gRPC authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-The Python implementation of the gRPC route guide client.
+details: >
+    Verify N_As timeout value is 1000ms in non-programming session
+    Steps:
+        1. Send multi frame request DIDs with FC delay < 1000ms and FC delay > 1000ms for
+           default session
+        2. Send multi frame request DIDs with FC delay < 1000ms and FC delay > 1000ms for
+           extended session
 """
 
-import time
-from datetime import datetime
-import sys
 import logging
-import inspect
+from hilding.dut import Dut
+from hilding.dut import DutTestError
+from hilding.uds import UdsEmptyResponse
+from supportfunctions.support_can import SupportCAN, CanMFParam
 
-import odtb_conf
-
-from supportfunctions.support_can import SupportCAN, CanParam, CanMFParam, CanPayload, CanTestExtra
-from supportfunctions.support_test_odtb2 import SupportTestODTB2
-from supportfunctions.support_carcom import SupportCARCOM
-from supportfunctions.support_file_io import SupportFileIO
-
-from supportfunctions.support_precondition import SupportPrecondition
-from supportfunctions.support_postcondition import SupportPostcondition
-from supportfunctions.support_service22 import SupportService22
-from supportfunctions.support_service10 import SupportService10
-from supportfunctions.support_sec_acc import SupportSecurityAccess
-
-SSA = SupportSecurityAccess()
-SIO = SupportFileIO
 SC = SupportCAN()
-SUTE = SupportTestODTB2()
-SC_CARCOM = SupportCARCOM()
-PREC = SupportPrecondition()
-POST = SupportPostcondition()
-SE10 = SupportService10()
-SE22 = SupportService22()
 
 
-def step_1(can_p):
+def read_data_id_with_dids(dut):
     """
-    Change delay to reply to FF: delay < 1000 ms
+    Verify ReadDataByIdentifier service 22 with multiple DIDs
+    Args:
+        dut (Dut): An instance of Dut
+    Returns:
+        (bool): True on successfully verified non-empty response
     """
-    step_no = 1
-    purpose = "set Frame Control delay < 1000 ms"
-    result = True
-    SUTE.print_test_purpose(step_no, purpose)
+    # Send multi frame request DIDs with FC delay < 1000ms
+    response = dut.uds.read_data_by_id_22(bytes.fromhex('DD02DD0ADD06F186'))
+    if response is None:
+        logging.error("Test Failed: Empty response")
+        return False
 
-    #change Control Frame parameters
-    can_mf: CanMFParam = {
-        "block_size": 0,
-        "separation_time": 0,
-        "frame_control_delay": 950,
-        "frame_control_flag": 48,
-        "frame_control_auto": True
-        }
-    #SC.change_mf_fc(can_p["send"], can_mf)
-    SC.change_mf_fc(can_p["receive"], can_mf)
-    return result
+    logging.info("Received a response for request ReadDataByIdentifier")
+    return True
 
-def step_2(can_p):
+
+def change_control_frame_parameters(dut, frame_control_delay):
     """
-    Teststep 2: Send multi frame request DIDs with FC delay < 1000ms
+    Request change frame control delay
+    Args:
+        dut (Dut): An instance of Dut
+        frame_control_delay (int): Frame control delay
+    Returns: None
     """
-    result = True
-    cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("ReadDataByIdentifier",
-                                                         b'\xDD\x02\xDD\x0A\xDD\x06\xF1\x86', b''),
-                        "extra" : ''
-                       }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    can_mf: CanMFParam = {"block_size": 0,
+                          "separation_time": 0,
+                          "frame_control_delay": frame_control_delay,
+                          "frame_control_flag": 48,
+                          "frame_control_auto": True}
 
-    etp: CanTestExtra = {"step_no": 2,
-                         "purpose": "Send multi frame request DIDs with FC delay < 1000ms",
-                         "timeout": 1,
-                         "min_no_messages": -1,
-                         "max_no_messages": -1
-                        }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    SC.change_mf_fc(dut["receive"], can_mf)
 
-    result = SUTE.teststep(can_p, cpay, etp)
-    #test if frames contain all the IDs expected
-    logging.info("Test if string contains all IDs expected:")
-    logging.debug("Frames received: %s", SC.can_frames[can_p["receive"]])
-    logging.info("Messages received: %s", SC.can_messages[can_p["receive"]])
 
-    result = result and 'DD02' in SC.can_messages[can_p["receive"]][0][2]
+def fc_less_than_1000_ms(dut):
+    """
+    Send multi frame request DIDs with FC delay < 1000ms
+    Args:
+        dut (Dut): An instance of Dut
+    Returns:
+        (bool): True when ECU supports multiple dataIdentifiers with FC delay < 1000ms
+    """
+    # Change control frame parameters
+    change_control_frame_parameters(dut, frame_control_delay=950)
+
+    # Send multi frame request DIDs with FC delay < 1000ms
+    return read_data_id_with_dids(dut)
+
+
+def fc_greater_than_1000_ms(dut):
+    """
+    Send multi frame request DIDs with FC delay > 1000ms
+    Args:
+        dut (Dut): An instance of Dut
+    Returns:
+        (bool): True when received empty response from ECU
+    """
+    # Change control frame parameters
+    change_control_frame_parameters(dut, frame_control_delay=1050)
+
+    # Send multi frame request DIDs with FC delay > 1000ms
+    try:
+        dut.uds.read_data_by_id_22(bytes.fromhex('DD02DD0ADD064947'))
+    except UdsEmptyResponse:
+        pass
+
+    if not len(SC.can_messages[dut["receive"]]) == 0:
+        logging.error("Test Failed: Expected 0 length of message, received: %s",
+                      len(SC.can_messages[dut["receive"]]))
+        return False
+
+    # Set back frame_control_delay to default
+    change_control_frame_parameters(dut, frame_control_delay=0)
+    logging.info("Received message: %s as expected", SC.can_messages[dut["receive"]])
+    return True
+
+
+def step_1(dut: Dut):
+    """
+    action: Send multi frame request DIDs with FC delay < 1000ms and FC delay > 1000ms in
+            default session
+    expected_result: ECU should supports multiple dataIdentifiers with FC delay < 1000ms and
+                     empty frame be received for FC delay > 1000ms in default session
+    """
+    result =  fc_less_than_1000_ms(dut)
     if not result:
-        logging.info("Result after test DD02: %s", result)
-    result = result and 'DD0A' in SC.can_messages[can_p["receive"]][0][2]
+        return False
+
+    return fc_greater_than_1000_ms(dut)
+
+
+def step_2(dut: Dut):
+    """
+    action: Send multi frame request DIDs with FC delay < 1000ms and FC delay > 1000ms in
+            extended session
+    expected_result: ECU should supports multiple dataIdentifiers with FC delay < 1000ms and
+                     empty frame be received for FC delay > 1000ms in extended session
+    """
+    # Set ECU in extended session
+    dut.uds.set_mode(3)
+
+    # Check active diagnostic session
+    response = dut.uds.active_diag_session_f186()
+    if not response.data["details"]["mode"] == 3:
+        logging.error('Test Failed: Not in extended session, received session %s',
+                    response.data["details"]["mode"])
+        return False
+
+    result = fc_less_than_1000_ms(dut)
     if not result:
-        logging.info("Result after test DD0A: %s", result)
-    result = result and 'DD06' in SC.can_messages[can_p["receive"]][0][2]
-    if not result:
-        logging.info("Result after test DD06: %s", result)
-    result = result and 'F186' in SC.can_messages[can_p["receive"]][0][2]
-    if not result:
-        logging.info("Result after test F186: %s", result)
+        return False
 
-    logging.info("Step%s teststatus: %s \n", etp["step_no"], result)
-    logging.info("Step %s: Result teststep: %s \n", etp["step_no"], result)
-    return result
+    return fc_greater_than_1000_ms(dut)
 
-def step_3(can_p):
-    """
-    Teststep 3: set FC delay > 1000 ms
-    """
-    stepno = 3
-    purpose = "set FC delay > 1000 ms"
-    result = True
-    SUTE.print_test_purpose(stepno, purpose)
-    #change multi frame parameters
-    can_mf: CanMFParam = {
-        "block_size": 0,
-        "separation_time": 0,
-        "frame_control_delay": 1050,
-        "frame_control_flag": 48,
-        "frame_control_auto": True
-        }
-    #SC.change_mf_fc(can_p["send"], can_mf)
-    SC.change_mf_fc(can_p["receive"], can_mf)
-    return result
-
-def step_4(can_p):
-    """
-    Teststep 4: Send multi frame request DIDs with FC delay > 1000ms
-    """
-    cpay: CanPayload = {
-        "payload": SC_CARCOM.can_m_send("ReadDataByIdentifier",
-                                        b'\xDD\x02\xDD\x0A\xDD\x06\x49\x47', b''),
-        "extra" : ''
-        }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
-    etp: CanTestExtra = {"step_no": 4,
-                         "purpose": "Send multi frame request DIDs with FC delay > 1000ms",
-                         "timeout": 1,
-                         "min_no_messages": -1,
-                         "max_no_messages": -1
-                        }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
-    result = SUTE.teststep(can_p, cpay, etp)
-    logging.info("Result after teststep: %s", result)
-    #test if frames contain all the IDs expected
-    logging.info("Test if request timed out:")
-    logging.debug("Frames received: %s", SC.can_frames[can_p["receive"]])
-    logging.info("Messages received: %s", SC.can_messages[can_p["receive"]])
-
-    if not len(SC.can_messages[can_p["receive"]]) == 0:
-        logging.info("Len Mess received: %s", len(SC.can_messages[can_p["receive"]]))
-
-    logging.info("Step %s: Result teststep: %s \n", etp["step_no"], result)
-
-    return result
-
-def step_5(can_p):
-    """
-    Teststep 5: set back frame_control_delay to default
-    """
-
-    stepno = 5
-    purpose = "set back frame_control_delay to default"
-
-    can_mf: CanMFParam = {
-        "block_size": 0,
-        "separation_time": 0,
-        "frame_control_delay": 0,
-        "frame_control_flag": 48,
-        "frame_control_auto": True
-        }
-
-    SUTE.print_test_purpose(stepno, purpose)
-    SC.change_mf_fc(can_p["receive"], can_mf)
 
 def run():
     """
-    Run - Call other functions from here
+    Verify N_As timeout value is 1000ms in non-programming session
+    Steps:
+        1. Send multi frame request DIDs with FC delay < 1000ms and FC delay > 1000ms for
+           default session
+        2. Send multi frame request DIDs with FC delay < 1000ms and FC delay > 1000ms for
+           extended session
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+    dut = Dut()
 
-    # start logging
-    # to be implemented
+    start_time = dut.start()
+    result = False
+    result_step = False
 
-    # where to connect to signal_broker
-    can_p: CanParam = {
-        'netstub': SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        'send': "Vcu1ToBecmFront1DiagReqFrame",
-        'receive': "BecmToVcu1Front1DiagResFrame",
-        'namespace': SC.nspace_lookup("Front1CANCfg0")
-        }
-    #Read YML parameter for current function (get it from stack)
-    logging.debug("Read YML for %s", str(inspect.stack()[0][3]))
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
+    try:
+        dut.precondition(timeout=30)
 
-    logging.info("Testcase start: %s", datetime.now())
-    starttime = time.time()
-    logging.info("Time: %s \n", time.time())
+        result_step = dut.step(step_1, purpose="Verify multi frame request DIDs with"
+                               " FC delay < 1000ms and FC delay > 1000ms in default session")
+        if result_step:
+            result_step = dut.step(step_2, purpose="Verify multi frame request DIDs"
+                                   " with FC delay < 1000ms and FC delay > 1000ms in extended"
+                                   " session")
+        result = result_step
 
-    ############################################
-    # precondition
-    ############################################
-    timeout = 30
-    result = PREC.precondition(can_p, timeout)
+    except DutTestError as error:
+        logging.error("Test failed: %s", error)
+    finally:
+        dut.postcondition(start_time, result)
 
-    if result:
-    ############################################
-    # teststeps
-    ############################################
-
-    # step1:
-    # action: change delay for reply to FC frame
-    # result:
-        result = result and step_1(can_p)
-
-    # step2:
-    # action: send request with FC_delay < timeout
-    # result: whole message received
-        result = result and step_2(can_p)
-
-    # step3:
-    # action: set FC_delay > timeout
-    # result:
-        result = result and step_3(can_p)
-
-    # step4:
-    # action: send request with FC_delay > timeout
-    # result: no reply received
-        result = result and step_4(can_p)
-
-    # step5:
-    # action:
-    # result: set back frame_control_delay to default
-        step_5(can_p)
-
-    ############################################
-    # postCondition
-    ############################################
-
-    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()
