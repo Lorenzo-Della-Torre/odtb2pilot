@@ -126,6 +126,7 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
         cpay["payload"]
         """
         wait_max = False
+        padding = SIO.parameter_adopt_teststep("padding")
         if "wait_max" in etp:
             wait_max = etp["wait_max"]
 
@@ -133,7 +134,7 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
         logging.debug("To send:   [%s, %s, %s]", time.time(), can_p["send"],
                       (cpay["payload"]).hex().upper())
         SC.clear_all_can_messages()
-        SC.t_send_signal_can_mf(can_p, cpay, True, 0x00)
+        SC.t_send_signal_can_mf(can_p, cpay, padding, 0x00)
         #wait timeout for getting subscribed data
         if (wait_max or (etp["max_no_messages"] == -1)):
             time.sleep(etp["timeout"])

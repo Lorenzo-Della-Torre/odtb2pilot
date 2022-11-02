@@ -203,7 +203,7 @@ class SupportService27:
                         "Response from the ECU: %s", internal_response)
                     return False, ""
 
-                return True, internal_response[6:(6+4)]
+                return True, internal_response[2:(2+4)]
 
             return False, ""
 

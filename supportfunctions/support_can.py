@@ -46,6 +46,7 @@ import logging
 import time
 import threading
 from threading import Thread
+from pathlib import Path
 import sys
 from typing import Dict
 import grpc
@@ -152,9 +153,20 @@ class SupportCAN:
     def fill_payload(cls, payload_value, fill_value=0):
         """
         fill_payload
+
+        The CAN-FD payload size may be 0, 8, 12, 16, 20, 24, 32, 48, 64 Bytes
+        fill payload fills  up payload_value to next possible framelength
+        for CAN length will be max 8, for CAN_FD max 64
         """
+
+        pl_length = [0, 8, 12, 16, 20, 24, 32, 48, 64]
+        pl_pos = 0
+        for i in enumerate(pl_length):
+            if len(payload_value) > i[1]:
+                pl_pos = i[0]
+
         logging.debug("Payload to complete: %s", str(payload_value))
-        while len(payload_value) < 8:
+        while len(payload_value) < pl_length[pl_pos+1]:
             payload_value = payload_value + bytes([fill_value])
         logging.debug("New payload: %s", payload_value)
         return payload_value
@@ -225,7 +237,7 @@ class SupportCAN:
         # Format signal to be better readable
         return ([my_signal.signal[0].timestamp/1000000,\
                  my_signal.signal[0].id.name,\
-                 "{0:016X}".format(my_signal.signal[0].integer)])
+                 my_signal.signal[0].raw.hex().upper()])
 
     @classmethod
     def display_signals_available(cls, can_p: CanParam):
@@ -252,7 +264,7 @@ class SupportCAN:
         Args: communication parameter can_p
         Returns: none
         """
-        source = common_pb2.ClientId(id="hilding_support_can")
+        source = common_pb2.ClientId(id=self.get_file_name())
         signal = common_pb2.SignalId(name=can_p["receive"],
                                      namespace=self.nspace_lookup(can_p["namespace"]))
         sub_info = network_api_pb2.SubscriberConfig(clientId=source,\
@@ -286,7 +298,12 @@ class SupportCAN:
             logging.debug("Added object %s to subcribe %s", can_p["receive"], self.can_subscribes)
             for response in subscribe_object:
                 #if multiframe detected prepare answer and send it
-                det_mf = response.signal[0].integer>>60
+                #if no raw value found, take the integer one
+                if response.signal[0].raw == b'':
+                    det_mf = response.signal[0].integer>>60
+                else:
+                    det_mf = response.signal[0].raw[0]>>4
+
                 if (det_mf == 1) and (self.can_subscribes[can_p["receive"]][6]):
                     # send wanted reply with delay
                     time.sleep(self.can_subscribes[can_p["receive"]][3]/1000)
@@ -506,6 +523,15 @@ class SupportCAN:
         """
         return common_pb2.NameSpace(name=namespace)
 
+    @classmethod
+    def get_file_name(cls):
+        """
+        Returns the current python file name
+        """
+        path_name = Path(__file__).stem
+        return path_name
+
+
 
 # make sure you have Front1CANCfg0 namespace in interfaces.json
 #BO_ 1305 BecmFront1NMFr: 8 BECM
@@ -527,7 +553,7 @@ class SupportCAN:
         """
         subscribe_to_heartbeat
         """
-        source = common_pb2.ClientId(id="app_identifier")
+        source = common_pb2.ClientId(id=cls.get_file_name())
         signal = common_pb2.SignalId(name="BecmFront1NMFr", namespace="Front1CANCfg0")
         sub_info = network_api_pb2.SubscriberConfig(clientId=source,\
                     signals=network_api_pb2.SignalIds(signalId=[signal]), onChange=False)
@@ -545,7 +571,7 @@ class SupportCAN:
         """
         Send signal on CAN: parameters name_DBC, namespace_DBC, payload
         """
-        source = common_pb2.ClientId(id="app_identifier")
+        source = common_pb2.ClientId(id=cls.get_file_name())
 
         signal = common_pb2.SignalId(name=signal_name,
                                      namespace=cls.nspace_lookup(namespace))
@@ -648,13 +674,22 @@ class SupportCAN:
 
             # add first frame
             #check payloadlength first
-            if (0x100000000000000000000000000000000000 + mess_length) > \
-                0x1fffffffffffffffffffffffffffffffffff:
-                logging.error("Payload to big to fit in message: %s ", mess_length)
-            self.add_canframe_tosend(can_p["send"],\
-                bytes.fromhex(hex(0x100000000000000000000000000000000000 + mess_length)[2:])
-                + pl_work[0:fl_max-2])
-            pl_work = pl_work[fl_max-2:]
+            if (0x100000000000  + mess_length) > 0x1000ffffffff :
+                logging.error("Payload too big to fit in message: %s ", mess_length)
+
+            #check if mess_length would fit into a classic CAN mess_length (<0xfff)
+            #if so use that format
+            if mess_length < 0x1000:
+                self.add_canframe_tosend(can_p["send"],\
+                    bytes.fromhex(hex(0x1000 + mess_length)[2:])
+                    + pl_work[0:fl_max-2])
+                pl_work = pl_work[fl_max-2:]
+            else:
+                self.add_canframe_tosend(can_p["send"],\
+                    bytes.fromhex(hex(0x100000000000 + mess_length)[2:])
+                    + pl_work[0:fl_max-6])
+                pl_work = pl_work[fl_max-6:]
+
             logging.debug("Payload stored first frame: %s", self.can_mf_send)
             # add  remaining frames:
             while pl_work:
@@ -682,13 +717,17 @@ class SupportCAN:
         __send_sf
         """
         mess_length = len(cpay["payload"])
+        if can_p["protocol"] == 'canfd' and mess_length > 7:
+            complete_frame = b'\x00'
+        else:
+            complete_frame = b''
+        complete_frame = complete_frame + bytes([mess_length]) + cpay["payload"]
+
         if padding:
             self.add_canframe_tosend(can_p["send"],\
-                self.fill_payload(bytes([mess_length])\
-                + cpay["payload"], padding_byte))
+                self.fill_payload(complete_frame, padding_byte))
         else:
-            self.add_canframe_tosend(can_p["send"], bytes([mess_length])\
-                + cpay["payload"])
+            self.add_canframe_tosend(can_p["send"], complete_frame)
 
 
     def __print_payload(self, can_p: CanParam):
@@ -701,7 +740,7 @@ class SupportCAN:
         """
         send_FF_CAN
         """
-        source = common_pb2.ClientId(id="app_identifier")
+        source = common_pb2.ClientId(id=self.get_file_name())
         signal = common_pb2.SignalId(name=can_p["send"],
                                      namespace=self.nspace_lookup(can_p["namespace"]))
         signal_with_payload = network_api_pb2.Signal(id=signal)
@@ -756,6 +795,7 @@ class SupportCAN:
 
             if frame_control_flag == 1:
                 # Wait flag - wait for next FC frame
+                self.can_frames[can_p["receive"]].pop(0) #remove last frame received from list.
                 self.send_cf_can(can_p, frequency, timeout_ms)
             elif frame_control_flag == 2:
                 # overflow / abort
@@ -1074,7 +1114,7 @@ class SupportCAN:
                         #logging.debug("detect if CAN/CAN_FD multiframe")
                         if int(i[2][1:4], 16) == 0:
                             #logging.debug("decode CAN_FD multiframe")
-                            protocol = 'can_fd'
+                            protocol = 'canfd'
                             mf_mess_size = int(i[2][4:12], 16)
                             mess_bytes_received = (len(i[2]) / 2)-12 #payload starts byte6
                         else:
