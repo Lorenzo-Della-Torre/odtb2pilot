@@ -1,0 +1,28 @@
+ihfa_v436:
+        precondition_extra:
+                receive: IHFASignalFrame01
+                send: IhfaNmCanFrame
+        run:
+                numofframe: 3
+
+hlcm_p519:
+        precondition_extra:
+                receive: HvbmHvbm1canFrame53_20
+                send: HvbmNmFrame
+        run:
+                numofframe: 3
+
+hvbm_p519_sa1:
+        precondition_extra:
+                receive: HvbmHvbm1canFrame53_20
+                send: HvbmNmFrame
+        run:
+                numofframe: 3
+
+hvbm_p519:
+        precondition_extra:
+                receive: HvbmHvbm1canFrame01_100
+                send: HvbmNmFrame
+        run:
+                numofframe: 3
+
