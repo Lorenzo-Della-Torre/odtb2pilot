@@ -153,6 +153,8 @@ def step_2(dut: Dut):
     file = open("random.txt",'w',encoding='utf-8')
     # Write the pretext to the file.
     file.write(file_txt)
+    # To avoid NRC37
+    time.sleep(5)
 
     for _ in range(100):
         # Get ServerResponseSeed by sending ClientRequestSeed message.
@@ -185,7 +187,7 @@ def step_3(dut: Dut):
     # -a ----> All tests in dieharder suite
     # -g ----> The value 202 means that the file is of ASCII format.
     # -f ----> To provide the file name
-    cmd = "dieharder -a -g 202 -f random.txt"
+    cmd = "dieharder -a -f random.txt"
 
     logging.info("+======================================================================+")
     logging.info("*****************Randomness Test by die harder tool*********************")
