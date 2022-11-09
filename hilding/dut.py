@@ -319,7 +319,7 @@ class Dut:
         else:
             step_result = ret
         if step_result is False:
-            self.fail_purpose = "´" + purpose + "´," + " in step: " + str(self.uds.step)
+            self.fail_purpose = "'" + purpose + "'," + " in step: " + str(self.uds.step)
 
         return ret
 
