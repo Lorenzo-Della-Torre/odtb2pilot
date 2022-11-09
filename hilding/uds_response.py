@@ -691,16 +691,20 @@ def get_scaled_value(resp_item, sub_payload):
     Returns:
         string: String containing converted data
     """
+
     if 'outdatatype' in resp_item and resp_item['outdatatype'] == '06':
         sub_payload = sub_payload.rstrip("0") # Removing trailing zeros
         utf8_text = bytearray.fromhex(sub_payload).decode() # decode from hex to utf-8
         return utf8_text
 
+    if 'outdatatype' in resp_item and resp_item['outdatatype'] == '07':
+        part_text = sub_payload[0:8]+bytearray.fromhex(sub_payload[8:14]).decode("ascii")
+        return part_text
+
     int_value = int(sub_payload, 16)
     if 'formula' in resp_item:
         size = resp_item['size']
         formula = resp_item['formula']
-        log.debug('Formula = %s', formula)
         populated_formula = populate_formula(formula, int_value, size)
         log.debug('Populated formula = %s', populated_formula)
 
