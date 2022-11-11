@@ -1,0 +1,4 @@
+hvbm_p519:
+  run:
+    nrc21_path: '/misc/nrc_21.txt'
+    find_text: 'failed'
