@@ -302,9 +302,10 @@ def step_2(dut: Dut):
     action: Enter into programming session and unlock security with valid key
     expected_result: ECU is in programming session and security unlock successful
     """
+    dut.uds.set_mode(2)
+
     # Sleep time to avoid NRC37
     time.sleep(5)
-    dut.uds.set_mode(2)
 
     # Security access
     result = SE27.activate_security_access_fixedkey(dut, sa_keys=dut.conf.default_rig_config,

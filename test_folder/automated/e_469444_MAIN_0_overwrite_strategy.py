@@ -125,8 +125,6 @@ def step_2(dut: Dut):
     action: Security access with valid key for 15 times
     expected_result: True when security access is successful for all attempts
     """
-    # Sleep time to avoid NRC37
-    time.sleep(5)
     results = []
 
     # Set ECU in default session
@@ -134,6 +132,8 @@ def step_2(dut: Dut):
 
     for _ in range(15):
         dut.uds.set_mode(2)
+        # Sleep time to avoid NRC37
+        time.sleep(5)
         result = SE27.activate_security_access_fixedkey(dut, sa_keys=dut.conf.default_rig_config)
         results.append(result)
         time.sleep(2)
@@ -186,6 +186,8 @@ def step_4(dut: Dut):
 
     for count in range(16):
         dut.uds.set_mode(2)
+        # Sleep time to avoid NRC37
+        time.sleep(5)
         result = security_access_with_invalid_key(dut)
         results.append(result)
         if count % 2 != 0:
@@ -339,7 +341,7 @@ def run():
     result_step = False
 
     try:
-        dut.precondition(timeout=400)
+        dut.precondition(timeout=1000)
         result_step, events_and_codes = dut.step(step_1, purpose="Read security log event DID D046"
                                                                  " and extract event data")
         if result_step:

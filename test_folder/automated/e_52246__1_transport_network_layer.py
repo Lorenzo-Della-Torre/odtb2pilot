@@ -153,9 +153,9 @@ def run():
         # step 2:
         # action: Change to programming session
         # result: ECU sends positive reply
+        result = result and SE10.diagnostic_session_control_mode2(can_p, stepno=2)
         # Sleep time to avoid NRC37
         time.sleep(5)
-        result = result and SE10.diagnostic_session_control_mode2(can_p, stepno=2)
 
         # step 3:
         # action: Security Access Request SID

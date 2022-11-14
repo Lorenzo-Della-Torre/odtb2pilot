@@ -74,11 +74,11 @@ def step_1(dut: Dut):
     action: Verify SBL activation using the routine identifier (0x0301) in programming session
     expected result: True on received 'Type1,Completed'
     """
-    # Sleep time to avoid NRC37
-    time.sleep(5)
-
     # Set to programming session
     dut.uds.set_mode(2)
+
+    # Sleep time to avoid NRC37
+    time.sleep(5)
 
    # Loads the rig specific VBF files
     vbf_result = SSBL.get_vbf_files()
