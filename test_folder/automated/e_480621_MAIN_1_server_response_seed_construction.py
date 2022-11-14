@@ -205,10 +205,11 @@ def step_1(dut: Dut):
     action: Set to programming session, security access to ECU and get subfunctions response.
     expected_result: True with security access request and response seed message
     """
+    dut.uds.set_mode(2)
+
     # Sleep time to avoid NRC37
     time.sleep(5)
 
-    dut.uds.set_mode(2)
     sa_response_dict = security_access(dut)
     if sa_response_dict is None:
         logging.error("Test Failed: Security access not successful")

@@ -190,11 +190,11 @@ def step_1(dut: Dut, sa_levels_dids_programming):
     """
     results = []
 
-    # Sleep time to avoid NRC37
-    time.sleep(5)
-
     # Set ECU in programming session
     dut.uds.set_mode(2)
+
+    # Sleep time to avoid NRC37
+    time.sleep(5)
 
     # Validate response for all security levels
     for level, did in sa_levels_dids_programming.items():

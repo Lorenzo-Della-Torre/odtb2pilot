@@ -241,9 +241,10 @@ def step_1(dut: Dut, parameters):
     """
     results = []
     # Set ECU is in programming session
+    dut.uds.set_mode(2)
+
     # Sleep time to avoid NRC37
     time.sleep(5)
-    dut.uds.set_mode(2)
 
     SSBL.get_vbf_files()
     result = SSBL.sbl_activation(dut, sa_keys=dut.conf.default_rig_config)
@@ -298,6 +299,9 @@ def step_3(dut: Dut, parameters):
     results = []
     # Set ECU is in programming session
     dut.uds.set_mode(2)
+
+    # Sleep time to avoid NRC37
+    time.sleep(5)
 
     SSBL.get_vbf_files()
     result = SSBL.sbl_activation(dut, sa_keys=dut.conf.default_rig_config)

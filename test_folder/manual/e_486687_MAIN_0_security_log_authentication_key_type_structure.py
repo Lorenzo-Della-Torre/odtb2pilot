@@ -83,10 +83,11 @@ def step_1(dut):
         logging.error("Test Failed: yml parameter not found")
         return False, None
 
+    dut.uds.set_mode(2)
+
     # Sleep time to avoid NRC37
     time.sleep(5)
 
-    dut.uds.set_mode(2)
     result = SE27.activate_security_access_fixedkey(dut, sa_keys=dut.conf.default_rig_config)
     if not result:
         logging.error("Test Failed: Security access denied in programming session")
