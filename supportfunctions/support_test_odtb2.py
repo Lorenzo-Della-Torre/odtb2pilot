@@ -58,6 +58,7 @@ import binascii
 from datetime import datetime
 import string
 import inspect
+from pathlib import Path
 
 #sys.path.append('generated')
 from supportfunctions.support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
@@ -91,28 +92,21 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
         """
         testresult = True
 
-        #print("Messagelist: ", messagelist)
         if teststring != '' and (messagelist in ('', [])):
             logging.warning("Bad: Empty messagelist, teststring '%s' not found", teststring)
             testresult = False
         else:
             for i in messagelist:
-            #print("can frame  ", i[2].upper())
-            #print("test against ", teststring)
                 if teststring == '':
                     logging.warning("Nothing expected. Received %s", i[2].upper())
                 elif teststring in i[2].upper():
                     logging.debug("Good: Expected: %s received: %s", teststring, i[2].upper())
-                    #continue
                 else:
                     testresult = False
                     logging.warning("Bad: Expected: %s received: %s", teststring, i[2].upper())
                     logging.warning("Try to decode error message (7F):")
                     logging.warning("%s", self.pp_decode_7f_response(i[2].upper()))
-                    #logging.info("test_message: test if 7F38 - "\
-                    #             "requestCorrectlyReceived-ResponsePending was received")
-                    #if self.check_7f78_response(i):
-                    #    logging.info("78 found")
+
         return testresult
 
 
@@ -147,6 +141,24 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
                 SC.update_can_messages(can_p)
                 time.sleep(0.05) #pause a bit to receive frames in background
 
+    @classmethod
+    def __validate_nrc_21(cls, message):
+        """
+        Validate NRC 21
+
+        This function monitors and creates an error file if NRC 21 is received from the ECU anytime.
+        """
+        pos = message.find('7F')
+        path = str(Path(__file__).parent.parent)
+        if ((pos != -1) and message[pos+4:pos+6] == '21'):
+            with open(path + '\\misc\\nrc_21.txt', 'a',encoding = 'utf-8') as nrc21_file:
+                nrc21_file.write("\n\nNRC 21 is received from the ECU which is not expected."
+                                                                    " Test failed\n")
+                nrc21_file.write("Received time: ")
+                nrc21_file.write(time.ctime())
+                nrc21_file.write("\nScript: ")
+                nrc21_file.write(inspect.stack()[-5][1])
+            logging.error("NRC 21 is received from the ECU which is not expected.")
 
     def teststep(self,# pylint: disable=too-many-statements
                  can_p: CanParam,
@@ -275,11 +287,13 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
                     testresult = testresult and\
                         self.test_message(SC.can_messages[can_p["receive"]],\
                                           can_answer.hex().upper())
+                self.__validate_nrc_21(SC.can_messages[can_p["receive"]][0][2])
         logging.debug("Step %s: Result from teststep method in support_test_odtb2.py: %s",
         etp["step_no"],
         testresult)
 
         return testresult
+
 
     @staticmethod
     def validate_serial_number_record(ecu_serial_number_record: str) -> bool:

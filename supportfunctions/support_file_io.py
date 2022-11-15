@@ -154,7 +154,7 @@ def _find_value_in_testspecific_yml(caller, dictionary_to_modify, changed_keys):
                     value_correct_type = _convert_type(dictionary_to_modify[key], value)
                     dictionary_to_modify[key] = value_correct_type
                     changed_keys.append(key)
-                    logging.info("Value of '%s' changed to '%s' found in %s",
+                    logging.debug("Value of '%s' changed to '%s' found in %s",
                                                                 key,
                                                                 value_correct_type,
                                                                 path_to_test_specific_yml)
@@ -271,7 +271,7 @@ class SupportFileIO:
                     value_correct_type = _convert_type(dictionary_to_modify[key], value)
                     dictionary_to_modify[key] = value_correct_type
                     changed_keys.append(key)
-                    logging.info("Value of '%s' changed to '%s' found in conf_default",
+                    logging.debug("Value of '%s' changed to '%s' found in conf_default",
                                                                                 key,
                                                                                 value_correct_type)
         else:
