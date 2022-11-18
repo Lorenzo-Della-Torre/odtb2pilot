@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,250 +18,195 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-# Testscript Hilding MEPII
-# project:  BECM basetech MEPII
-# author:   LDELLATO (Lorenzo Della Torre)
-# date:     2020-02-27
-# version:  1.0
-# reqprod:  360452
+reqprod: 360452
+version: 1
+title: Authenticity verification at software download (Program mode)
+purpose: >
+    Verifying code after a software download (at installation) is the minimum level of the concept.
 
-# author:   LDELLATO (Lorenzo Della Torre)
-# date:     2020-09-23
-# version:  1.1
-# reqprod:  360452
+description: >
+   The authenticity verification function shall always be performed at software download
+   (installation).
 
-#inspired by https://grpc.io/docs/tutorials/basic/python.html
-
-# Copyright 2015 gRPC authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-The Python implementation of the gRPC route guide client.
+details: >
+    Check authenticity verification function
+    Steps:
+        1. Download and activate SBL
+        2. Verify complete and compatible messages are different before and after check memory
+        3. Download remaining software parts and check complete and compatibility
 """
 
-import time
-from datetime import datetime
-import sys
 import logging
-import inspect
-
-import odtb_conf
-from supportfunctions.support_can import SupportCAN, CanParam, CanTestExtra
-from supportfunctions.support_test_odtb2 import SupportTestODTB2
-from supportfunctions.support_carcom import SupportCARCOM
-from supportfunctions.support_file_io import SupportFileIO
+from hilding.dut import Dut
+from hilding.dut import DutTestError
+from supportfunctions.support_can import SupportCAN
 from supportfunctions.support_SBL import SupportSBL
-from supportfunctions.support_sec_acc import SupportSecurityAccess, SecAccessParam
-
-from supportfunctions.support_precondition import SupportPrecondition
-from supportfunctions.support_postcondition import SupportPostcondition
-from supportfunctions.support_service10 import SupportService10
-from supportfunctions.support_service11 import SupportService11
-from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_service31 import SupportService31
 
-SIO = SupportFileIO
 SC = SupportCAN()
-S_CARCOM = SupportCARCOM()
-SUTE = SupportTestODTB2()
 SSBL = SupportSBL()
-SSA = SupportSecurityAccess()
-
-PREC = SupportPrecondition()
-POST = SupportPostcondition()
-SE10 = SupportService10()
-SE11 = SupportService11()
-SE22 = SupportService22()
 SE31 = SupportService31()
 
-def step_1(can_p: CanParam, sa_keys):
-    """
-    Teststep 1: Activate SBL
-    """
-    stepno = 1
-    purpose = "Download and Activation of SBL"
 
-    result = SSBL.sbl_activation(can_p,
-                                 sa_keys,
-                                 stepno, purpose)
-    return result
-
-def step_3(can_p):
+def check_not_complete_and_compatible_routine(dut):
     """
-    Teststep 3: Check the Complete and compatible Routine return Not Complete
+    Check the not complete and compatible routine
+    Args:
+        dut (Dut): An instance of Dut
+    Returns:
+        (bool): True when complete and compatible routine return 'Not Complete, Compatible'
     """
-    etp: CanTestExtra = {
-        "step_no" : 3,
-        "purpose" : "Check the Complete and compatible Routine return Not Complete"
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    result = SSBL.check_complete_compatible_routine(dut, stepno=2)
+    result = result and (SSBL.pp_decode_routine_complete_compatible(
+                         SC.can_messages[dut["receive"]][0][2]) == 'Not Complete, Compatible')
+    if not result:
+        logging.error("Test Failed: Complete and compatible routine does not return "
+                     "'Not Complete, Compatible'")
+        return False
 
-    SUTE.print_test_purpose(etp["step_no"], etp["purpose"])
-    result = SSBL.check_complete_compatible_routine(can_p, etp["step_no"])
-    print(SSBL.pp_decode_routine_complete_compatible(SC.can_messages[can_p["receive"]][0][2]))
-    result = result and (SSBL.pp_decode_routine_complete_compatible
-                         (SC.can_messages[can_p["receive"]][0][2])
-                         == 'Not Complete, Compatible')
-    res_before_check_memory = SC.can_messages[can_p["receive"]][0][2]
-    return result, res_before_check_memory
+    return True
 
-def step_4(can_p, vbf_header):
+
+def step_1(dut):
     """
-    Teststep 4: Check memory with verification positive
+    action: Download and activate SBL
+    expected_result: SBL should be activated
     """
-    stepno = 4
-    purpose = "Check memory with verification positive"
+    # Load the VBF files
+    vbf_result = SSBL.get_vbf_files()
+    if not vbf_result:
+        logging.error("Test Failed: Unable to load VBF files")
+        return False
 
-    SUTE.print_test_purpose(stepno, purpose)
+    # Download and activate SBL
+    sbl_result = SSBL.sbl_activation(dut, sa_keys=dut.conf.default_rig_config)
+    if not sbl_result:
+        logging.error("Test Failed: SBL activation failed")
+        return False
 
-    result = SE31.check_memory(can_p, vbf_header, stepno)
+    logging.info("SBL activation successful")
+    return True
 
-    result = result and (SSBL.pp_decode_routine_check_memory
-                         (SC.can_messages[can_p["receive"]][0][2])
-                         == 'The verification is passed')
-    logging.info(SSBL.pp_decode_routine_check_memory(SC.can_messages[can_p["receive"]][0][2]))
-    return result
 
-def step_5(can_p):
+def step_2(dut):
     """
-    Teststep 5: Check the Complete and compatible Routine return Not Complete
+    action: Verify complete and compatible messages are different before and after check memory
+    expected_result: Complete and compatible messages should be different before and after
+                     check memory
     """
-    etp: CanTestExtra = {
-        "step_no" : 5,
-        "purpose" : "Check the Complete and compatible Routine return Not Complete"
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    # Download ESS software part without check
+    ess_result, vbf_header = SSBL.sw_part_download_no_check(dut, SSBL.get_ess_filename(),
+                                                            stepno='2')
+    if not ess_result:
+        logging.error("Test Failed: ESS download (without check) failed")
+        return False
 
-    SUTE.print_test_purpose(etp["step_no"], etp["purpose"])
-    result = SSBL.check_complete_compatible_routine(can_p, etp["step_no"])
-    print(SSBL.pp_decode_routine_complete_compatible(SC.can_messages[can_p["receive"]][0][2]))
-    result = result and (SSBL.pp_decode_routine_complete_compatible
-                         (SC.can_messages[can_p["receive"]][0][2])
-                         == 'Not Complete, Compatible')
-    res_after_check_memory = SC.can_messages[can_p["receive"]][0][2]
-    return result, res_after_check_memory
+    result = check_not_complete_and_compatible_routine(dut)
+    if not result:
+        return False
 
-def step_6(res_after_check_memory, res_before_check_memory):
+    res_before_check_memory = SC.can_messages[dut["receive"]][0][2]
+
+    result = SE31.check_memory(dut, vbf_header, stepno=2)
+    result = result and (SSBL.pp_decode_routine_check_memory(SC.can_messages[dut["receive"]][0][2])
+                                                             == 'The verification is passed')
+    if not result:
+        logging.error("Test Failed: Expected response 'The verification is passed' from check "
+                      "memory routine but not received")
+        return False
+
+    result = check_not_complete_and_compatible_routine(dut)
+    if not result:
+        return False
+
+    res_after_check_memory = SC.can_messages[dut["receive"]][0][2]
+
+    result = bool(res_after_check_memory != res_before_check_memory)
+    if not result:
+        logging.error("Test Failed: Complete and compatible message before check memory: %s is "
+                      "same as complete and compatible message after check memory: %s ",
+                      res_before_check_memory, res_after_check_memory)
+        return False
+
+    logging.info("Complete and compatible message before check memory: %s is different from "
+                 "complete and compatible message after check memory: %s ",
+                 res_before_check_memory, res_after_check_memory)
+    return True
+
+
+def step_3(dut):
     """
-    Teststep 6: Check Complete And Compatible messages differ before and after Check Memory
+    action: Download remaining software parts and check complete and compatibility
+    expected_result: Downloaded software should be complete and compatible
     """
-    stepno = 6
-    purpose = "Check Complete And Compatible messages differ before and after Check Memory"
-    SUTE.print_test_purpose(stepno, purpose)
-    result = res_after_check_memory != res_before_check_memory
-    return result
+    result = True
+    for swp in SSBL.get_df_filenames():
+        result = result and SSBL.sw_part_download(dut, swp, stepno='3')
+
+    if not result:
+        logging.error("Test Failed: Unable to download remaining software parts")
+        return False
+
+    logging.info("Successfully downloaded remaining software parts")
+
+    # Check complete and compatibility
+    cc_result = SSBL.check_complete_compatible_routine(dut, stepno=3)
+    if not cc_result:
+        logging.error("Test Failed: Downloaded software is not complete and compatible")
+        return False
+
+    logging.info("Downloaded software is complete and compatible")
+    return True
+
+
+def step_4(dut):
+    """
+    action: ECU hard reset and verify default session
+    expected_result: ECU should be in default session
+    """
+    # ECU reset
+    dut.uds.ecu_reset_1101()
+
+    # Verify active diagnostic session
+    response = dut.uds.active_diag_session_f186()
+    if response.data["details"]["mode"] == 1:
+        logging.info("ECU is in default session as expected")
+        return True
+
+    logging.error("Test Failed: ECU is not in default session")
+    return False
+
 
 def run():
     """
-    Run - Call other functions from here
+    Check authenticity verification function
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+    dut = Dut()
 
-    # where to connect to signal_broker
-    can_p: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        "send" : "Vcu1ToBecmFront1DiagReqFrame",
-        "receive" : "BecmToVcu1Front1DiagResFrame",
-        "namespace" : SC.nspace_lookup("Front1CANCfg0")
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
-    logging.info("Testcase start: %s", datetime.now())
-    starttime = time.time()
-    logging.info("Time: %s \n", time.time())
-    ############################################
-    # precondition
-    ############################################
-    # read VBF param when testscript is s started, if empty take default param
-    SSBL.get_vbf_files()
-    timeout = 2000
-    result = PREC.precondition(can_p, timeout)
+    start_time = dut.start()
+    result = False
+    result_step = False
 
-    #Init parameter for SecAccess Gen1 / Gen2 (current default: Gen1)
-    sa_keys: SecAccessParam = {
-        "SecAcc_Gen": 'Gen1',
-        "fixed_key": '0102030405',
-        "auth_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF',
-        "proof_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
-    }
-    SIO.parameter_adopt_teststep(sa_keys)
+    try:
+        dut.precondition(timeout=600)
 
-    if result:
-    ############################################
-    # teststeps
-    ############################################
+        result_step = dut.step(step_1, purpose='Download and activate SBL')
+        if result_step:
+            result_step = dut.step(step_2, purpose='Verify complete and compatible messages are '
+                                                   'different before and after check memory')
+        if result_step:
+            result_step = dut.step(step_3, purpose='Download remaining software parts and check '
+                                                   'complete and compatibility')
+        if result_step:
+            result_step = dut.step(step_4, purpose='ECU hard reset and verify default session')
 
-        # step1:
-        # action: DL and activate SBL
-        # result: ECU sends positive reply
-        result = result and step_1(can_p, sa_keys)
+        result = result_step
 
-        # step2:
-        # action: download ESS Software Part no check
-        # result: ECU sends positive reply
-        logging.info("ESS Software Part Download no check")
-        result_step2, vbf_header = SSBL.sw_part_download_no_check(can_p, SSBL.get_ess_filename(),
-                                                                  stepno=2)
-        result = result and result_step2
+    except DutTestError as error:
+        logging.error("Test failed: %s", error)
+    finally:
+        dut.postcondition(start_time, result)
 
-        # step 3:
-        # action: Check the Complete and compatible Routine return Not Complete
-        # result: BECM sends positive reply
-        result_step3, res_before_check_memory = step_3(can_p)
-        result = result and result_step3
-
-        # step 4:
-        # action: Check memory positive reply
-        # result: BECM sends positive reply
-        result = result and step_4(can_p, vbf_header)
-
-        # step 5:
-        # action: Check the Complete and compatible Routine return Not Complete
-        # result: BECM sends positive reply
-        result_step5, res_after_check_memory = step_5(can_p)
-        result = result and result_step5
-
-        # step 6:
-        # action: Check Complete And Compatible messages differ before and after Check Memory
-        # result: BECM sends positive reply
-        result = result and step_6(res_after_check_memory, res_before_check_memory)
-
-        # step7:
-        # action: Download the remnants Software Parts
-        # result: ECU sends positive reply
-        #Download the remnants Software Parts
-        for swp in SSBL.get_df_filenames():
-
-            result = result and SSBL.sw_part_download(can_p, swp, stepno=7)
-
-        # step8:
-        # action: Check Complete and Compatible
-        # result: ECU sends "Complete and Compatible" reply
-        result = result and SSBL.check_complete_compatible_routine(can_p, stepno=8)
-
-        # step9:
-        # action: Hard Reset
-        # result: ECU sends positive reply
-        result = result and SE11.ecu_hardreset(can_p, stepno=9)
-        time.sleep(1)
-
-        # step10:
-        # action: verify ECU in default session
-        # result: ECU sends positive reply
-        result = result and SE22.read_did_f186(can_p, b'\x01', stepno=10)
-
-    ############################################
-    # postCondition
-    ############################################
-    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()
