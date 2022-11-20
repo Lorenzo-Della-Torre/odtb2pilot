@@ -1,4 +1,23 @@
 """
+
+/*********************************************************************************/
+
+
+
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
+
+
+
+NOTICE:
+This file contains material that is confidential and confidential to Volvo Cars and/or
+other developers. No license is granted under any intellectual or industrial property
+rights of Volvo Cars except as may be provided in an agreement with Volvo Cars.
+Any unauthorized copying or distribution of content from this file is prohibited.
+
+
+
+/*********************************************************************************/
+
 reqprod: 480620
 version: 0
 title: clientRequestSeed - construction
@@ -46,13 +65,13 @@ def security_access(dut: Dut):
     """
     Get client request and response seed message
     Args:
-        dut(Dut): An instance of Dut
+        dut (Dut): An instance of Dut
     Returns:
-        sa_response_dict(dict): Security access client request and response seed message
+        sa_response_dict (dict): Security access client request and response seed message
     """
     sa_response_dict = {'client_req_seed': '',
-                        'server_res_seed': ''
-                        }
+                        'server_res_seed': ''}
+
     SSA.set_keys(dut.conf.default_rig_config)
     SSA.set_level_key(1)
     payload = SSA.prepare_client_request_seed()
@@ -72,10 +91,10 @@ def calculate_authentication_data(dut: Dut, message):
     """
     Calculate message authentication data using Crypto AES-128-CMAC algorithm
     Args:
-        dut(Dut): An instance of Dut
-        message(str): security access message
+        dut (Dut): An instance of Dut
+        message (str): security access message
     Returns:
-        calculated_cmac(Str): Calculated authentication data
+        calculated_cmac (str): Calculated authentication data
     """
     # Get 128 bits auth_key from config
     key_128 = bytes.fromhex(dut.conf.default_rig_config['auth_key'])
@@ -88,30 +107,33 @@ def calculate_authentication_data(dut: Dut, message):
 
 def step_1(dut: Dut):
     """
-    action: Set to programming session, security access to ECU and get request seed message.
-    expected_result: True with client request seed message
+    action: Set to programming session, security access to ECU and get request seed message
+    expected_result: Security access should be granted in programming session
     """
+    # Set to programming session
+    dut.uds.set_mode(2)
+
     # Sleep time to avoid NRC37
     time.sleep(5)
-
-    dut.uds.set_mode(2)
     request_seed_msg = security_access(dut)
     if request_seed_msg is None:
         logging.error("Test Failed: Security access not successful")
         return False, None
+
     return True, request_seed_msg
 
 
 def step_2(dut: Dut, req_seed_msg, req_seed_pos):
     """
     action: Calculate and verify client request seed CMAC
-    expected_result: True on successfully verified client request seed CMAC
+    expected_result: Successful verification of client request seed CMAC
     """
     calculated_cmac = calculate_authentication_data(dut, req_seed_msg[:req_seed_pos['rand_end']])
     req_seed_cmac = req_seed_msg[req_seed_pos['cmac_start']:]
     if calculated_cmac == req_seed_cmac:
         logging.info("Client request seed CMAC verification successful")
         return True
+
     logging.error("Test Failed: Client request seed CMAC verification failed expected %s, "
                   "calculated CMAC %s", req_seed_cmac, calculated_cmac)
     return False
@@ -119,13 +141,14 @@ def step_2(dut: Dut, req_seed_msg, req_seed_pos):
 
 def step_3(dut: Dut, response_seed):
     """
-    action: Verify Server response seed with positive response 67
-    expected_result: True on successfully verified server response seed
+    action: Verify Server response seed with positive response '67'
+    expected_result: Successful verification of server response seed
     """
     # pylint: disable=unused-argument
     if response_seed[0:2] == '67':
         logging.info("Server response seed message verified successfully")
         return True
+
     logging.error("Test Failed: Server response seed verification failed expected 67, "
                   "received %s", response_seed)
     return False
@@ -137,27 +160,31 @@ def run():
     clientRequestSeed authentication data and server response seed positive response(67)
     """
     dut = Dut()
+
     start_time = dut.start()
     result = False
     result_step = False
+
     parameters_dict = {'client_seed_pos': {}}
+
     try:
-        dut.precondition(timeout=30)
+        dut.precondition(timeout=40)
+
         parameters = SIO.parameter_adopt_teststep(parameters_dict)
         if not all(list(parameters.values())):
             raise DutTestError("yml parameter not found")
 
         result_step, sa_message = dut.step(step_1, purpose="Security access to ECU and get "
-                                           "client request seed message")
-
+                                                           "client request seed message")
         if result_step:
             result_step = dut.step(step_2, sa_message['client_req_seed'],
-                          parameters['client_seed_pos'], purpose="Verify client request seed CMAC")
+                                   parameters['client_seed_pos'],
+                                   purpose="Verify client request seed CMAC")
         if result_step:
             result_step = dut.step(step_3, sa_message['server_res_seed'],
-                                    purpose="Verify server response seed message")
-
+                                           purpose="Verify server response seed message")
         result = result_step
+
     except DutTestError as error:
         logging.error("Test failed: %s", error)
     finally:
