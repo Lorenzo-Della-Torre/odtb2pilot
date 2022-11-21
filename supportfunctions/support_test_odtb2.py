@@ -64,8 +64,10 @@ from pathlib import Path
 from supportfunctions.support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
 from supportfunctions.support_file_io import SupportFileIO
 
+from supportfunctions.support_carcom import SupportCARCOM
 SIO = SupportFileIO
 SC = SupportCAN()
+SC_CARCOM = SupportCARCOM()
 
 BYTE_SIZE = 2
 HEX_BASE = 16
@@ -199,6 +201,8 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
         testresult = True
 
         SC.clear_old_cf_frames()
+        #SC.fc_wait['Wait'] = True #set fc_wait to 'True' to test if flag recognized
+        SC.fc_wait['Wait'] = False #reset flag  for FC.Wait
 
         clear_old_mess = True
         if "clear_old_mess" in etp:
@@ -289,9 +293,45 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
                                           can_answer.hex().upper())
                 self.__validate_nrc_21(SC.can_messages[can_p["receive"]][0][2])
         logging.debug("Step %s: Result from teststep method in support_test_odtb2.py: %s",
-        etp["step_no"],
-        testresult)
+                      etp["step_no"],
+                      testresult)
 
+        if SC.fc_wait['Wait']:        #check if FC.Wait occured within teststep
+            logging.info("Flag for FC_WAIT was set")
+            logging.info("Check for session mode2")
+            logging.info("See REQPROD 115798;2;MAIN in Elektra")
+
+            #I wasn't able to use service#22 check F186 (import loop)
+            cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("ReadDataByIdentifier",
+                                                                 b'\xF1\x86', b''),
+                                "extra" : b'2'
+                               }
+            etp: CanTestExtra = {"step_no": etp['step_no'],
+                                 "purpose" : "Service22: Active Diagnostic Session",
+                                 "timeout" : 1,
+                                 "min_no_messages" : 1,
+                                 "max_no_messages" : 1
+                                }
+            #testsession2 = SUPPORT_TEST.teststep(can_p, cpay, etp)
+            # don't want to recurse in teststep to check session,
+            # may end up in endless loop
+            # and: that would even remove frames and messages received
+            self.__send(can_p, etp, cpay)
+            time.sleep(1)
+            expected_reply = '0462F18602000000'
+            if expected_reply == SC.can_frames[can_p['receive']][-1][2]:
+                logging.info("FC.Wait received in PBL/SBL")
+            else:
+                logging.warning("FC_WAIT received in mode1/3")
+                logging.warning("FC_WAIT not allowed in current mode (REQ 115798)")
+                with open(str(Path(__file__).parent.parent) +
+                          '/misc/fc_wait.txt',
+                          'w',encoding = 'utf-8') as fcwait_file:
+                    fcwait_file.write("FC_Wait is received while not in mode2. Test failed")
+                    fcwait_file.write("Received time: ")
+                    fcwait_file.write(time.ctime())
+                    fcwait_file.write("\nScript: ")
+                    fcwait_file.write(inspect.stack()[-5][1])
         return testresult
 
 
