@@ -136,6 +136,8 @@ class SupportCAN:
 
     _heartbeat = False
 
+    fc_wait = dict()
+    fc_wait['Wait'] = False
     #init array for payload to send
     can_mf_send = dict()
     pl_array = []
@@ -767,6 +769,8 @@ class SupportCAN:
         """
         time_start = time.time()
         last_frame = '00'
+        #Reset fc_wait flag before sending request
+        self.fc_wait['Wait'] = False
 
         # wait for FC frame to arrive (max 1 sec)
         # take last frame received
@@ -797,6 +801,7 @@ class SupportCAN:
                 # Wait flag - wait for next FC frame
                 self.can_frames[can_p["receive"]].pop(0) #remove last frame received from list.
                 self.send_cf_can(can_p, frequency, timeout_ms)
+                self.fc_wait['Wait'] = True
             elif frame_control_flag == 2:
                 # overflow / abort
                 logging.error("Error: FC 32 received, empty buffer to send.")
