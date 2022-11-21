@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,317 +18,360 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-# Testscript Hilding MEPII
-# project:  BECM basetech MEPII
-# author:   LDELLATO (Lorenzo Della Torre)
-# date:     2020-06-25
-# version:  1.0
-# reqprod:  60102
+reqprod: 60102
+version: 1
+title: N_As timeout in programming session
+purpose: >
+    From a system perspective it is important that both sender and receiver side times out roughly
+    the same time. The timeout value shall be high enough to not be affected by situations like
+    occasional high busloads and low enough to get a user friendly system if for example an ECU is
+    not connected
 
-# author:   HWEILER (Hans-Klaus Weiler)
-# date:     2020-08-04
-# version:  1.1
-# changes:  update support function, YML
+description: >
+    N_As timeout value shall be 1000ms in programming session
 
-# #inspired by https://grpc.io/docs/tutorials/basic/python.html
-# Copyright 2015 gRPC authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-The Python implementation of the gRPC route guide client.
+details: >
+    Software download request in pbl and routine control request in sbl, with flow control delay
+    more than timeout(>1000 ms) and less than timeout(<1000 ms)
 """
 
 import time
-from datetime import datetime
-import sys
+import os
 import logging
-import inspect
-
-import odtb_conf
-
-from supportfunctions.support_can import SupportCAN, CanParam, CanMFParam, CanPayload, CanTestExtra
+from hilding.dut import Dut
+from hilding.dut import DutTestError
+from supportfunctions.support_can import SupportCAN, CanMFParam, CanPayload, CanTestExtra
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
 from supportfunctions.support_carcom import SupportCARCOM
 from supportfunctions.support_file_io import SupportFileIO
-
-from supportfunctions.support_precondition import SupportPrecondition
-from supportfunctions.support_postcondition import SupportPostcondition
-from supportfunctions.support_service10 import SupportService10
-from supportfunctions.support_service11 import SupportService11
-from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_service27 import SupportService27
+from supportfunctions.support_service31 import SupportService31
 from supportfunctions.support_service34 import SupportService34
-from supportfunctions.support_sec_acc import SupportSecurityAccess
 from supportfunctions.support_SBL import SupportSBL
-from hilding.conf import Conf
 
-
-SSA = SupportSecurityAccess()
+SIO = SupportFileIO()
 SSBL = SupportSBL()
-SIO = SupportFileIO
 SC = SupportCAN()
 SUTE = SupportTestODTB2()
 SC_CARCOM = SupportCARCOM()
-PREC = SupportPrecondition()
-POST = SupportPostcondition()
-SE10 = SupportService10()
-SE11 = SupportService11()
-SE22 = SupportService22()
 SE27 = SupportService27()
+SE31 = SupportService31()
 SE34 = SupportService34()
-conf = Conf()
 
-def step_3():
-    """
-    Teststep 3: Read VBF files for SBL file (1st Logical Block)
-    """
-    stepno = 3
-    purpose = "1st files reading"
 
-    SUTE.print_test_purpose(stepno, purpose)
+def set_flow_control_delay(dut, delay):
+    """
+    Set flow control delay
+    Args:
+        dut (Dut): An instance of Dut
+        delay (int): Flow control delay
+    Returns: None
+    """
+    can_mf: CanMFParam = {"block_size": 0,
+                         "separation_time": 0,
+                         "frame_control_delay": delay,
+                         "frame_control_flag": 48,
+                         "frame_control_auto": False}
+    SC.change_mf_fc(dut["send"], can_mf)
+
+
+def get_vbf_params():
+    """
+    Extract vbf headers and vbf block from sbl type vbf file
+    Args: None
+    Returns:
+        vbf_header (dict): Vbf header
+        vbf_block (dict): Vbf block
+    """
+    SSBL.get_vbf_files()
+
     _, vbf_header, vbf_data, vbf_offset = SSBL.read_vbf_file(SSBL.get_sbl_filename())
     SSBL.vbf_header_convert(vbf_header)
-    return vbf_header, vbf_data, vbf_offset
+    vbf_block = SSBL.block_data_extract(vbf_data, vbf_offset)[1]
+    return vbf_header, vbf_block
 
-def step_4(vbf_offset, vbf_data):
-    """
-    Teststep 4: Extract data for the 1st block from SBL VBF
-    """
-    stepno = 4
-    purpose = "Extract data for the 1st block from SBL VBF"
 
-    SUTE.print_test_purpose(stepno, purpose)
-    vbf_offset, vbf_block, _ = SSBL.block_data_extract(vbf_data, vbf_offset)
-    logging.debug("block_data_extract - vbf_block('Length') : {0:08X}".format\
-                  (vbf_block['Length']))
-    logging.debug("block_Startaddress:              {0:08X}".format(vbf_block['StartAddress']))
-    return vbf_block
+def get_ess_params(ess_vbf_path):
+    """
+    Extract vbf headers from ess file
+    Args:
+        ess_vbf_path (str): Ess vbf file path
+    Returns:
+        vbf_header (dict): Vbf header
+    """
+    odtb_proj_param = os.environ.get('ODTBPROJPARAM')
+    if odtb_proj_param is None:
+        odtb_proj_param = '.'
 
-def step_5(can_p):
-    """
-    Teststep 5: set FC delay > 1000 ms
-    """
-    stepno = 5
-    purpose = "set FC delay > 1000 ms"
-    result = True
-    SUTE.print_test_purpose(stepno, purpose)
+    ess_vbf_invalid = odtb_proj_param + ess_vbf_path
+    vbf_header = SSBL.read_vbf_file(ess_vbf_invalid)[1]
+    SSBL.vbf_header_convert(vbf_header)
 
-    #change Control Frame parameters
-    can_mf: CanMFParam = {
-        "block_size": 0,
-        "separation_time": 0,
-        "frame_control_delay": 1050,
-        "frame_control_flag": 48,
-        "frame_control_auto": False
-        }
-    SC.change_mf_fc(can_p["send"], can_mf)
-    return result
+    return vbf_header
 
-def step_6(can_p, vbf_header, vbf_block):
+
+def read_did(dut, did):
     """
-    Teststep 6: Send multi frame request, delay in CF > 1000ms
+    Read DID 'EDA0' and find required DID in response for pbl/sbl
+    Args:
+        dut (Dut): An instance of Dut
+        did (str): Did to check
+    Returns:
+        (bool): True when required DID is present in response
     """
-    addr_b = vbf_block['StartAddress'].to_bytes(4, 'big')
-    len_b = vbf_block['Length'].to_bytes(4, 'big')
-    cpay: CanPayload = {"payload" : b'\x34' +\
-                                    vbf_header["data_format_identifier"].to_bytes(1, 'big') +\
-                                    b'\x44'+\
-                                    addr_b +\
-                                    len_b,
-                        "extra" : ''
-                       }
-    etp: CanTestExtra = {"step_no": 6,
-                         "purpose" : "Send multi frame request, delay in CF > 1000ms",
-                         "timeout" : 0.05,
-                         "min_no_messages" : -1,
-                         "max_no_messages" : -1
+    response = dut.uds.read_data_by_id_22(bytes.fromhex('EDA0'))
+    start_pos = response.raw.find(did)
+    if start_pos != -1 and response.raw[start_pos:start_pos+4] == did:
+        return True
+
+    return False
+
+
+def request_download(dut, vbf_header, vbf_block):
+    """
+    Send software download as multi frame request, with a delay more than 1000 ms in pbl
+    Args:
+        dut (Dut): An instance of Dut
+        vbf_header (dict): Vbf header
+        vbf_block (dict): Vbf block
+    Returns:
+        (bool): True on successful software download
+    """
+    start_add = vbf_block['StartAddress'].to_bytes(4,'big')
+    add_len = vbf_block['Length'].to_bytes(4,'big')
+
+    cpay: CanPayload = {"payload": SC_CARCOM.can_m_send("RequestDownload",
+                                   vbf_header["data_format_identifier"].to_bytes(1, 'big') +
+                                   bytes.fromhex('44') + start_add + add_len, b''),
+                        "extra": ''
                         }
-    result = SUTE.teststep(can_p, cpay, etp)
 
-    logging.info("Result after request: %s", result)
-    #test if frames contain all the IDs expected
-    logging.info("Test if request timed out:")
-    logging.debug("Frames received: %s", SC.can_frames[can_p["receive"]])
-    logging.info("Messages received: %s", SC.can_messages[can_p["receive"]])
+    etp: CanTestExtra = {"step_no": 102,
+                         "purpose": "Send multi frame request, delay in CF > 1000ms",
+                         "timeout": 0.05,
+                         "min_no_messages": -1,
+                         "max_no_messages": -1
+                         }
 
-    if not len(SC.can_messages[can_p["receive"]]) == 0:
-        logging.info("Len Mess received: %s", len(SC.can_messages[can_p["receive"]]))
-
-    logging.info("Step %s: Result teststep: %s \n", etp["step_no"], result)
-    return result
-
-def step_7(can_p):
-    """
-    Teststep 7: set FC delay < 1000 ms
-    """
-    stepno = 7
-    purpose = "set FC delay < 1000 ms"
-    result = True
-    SUTE.print_test_purpose(stepno, purpose)
-
-    #change Control Frame parameters
-    can_mf: CanMFParam = {
-        "block_size": 0,
-        "separation_time": 0,
-        "frame_control_delay": 950,
-        "frame_control_flag": 48,
-        "frame_control_auto": False
-        }
-    SC.change_mf_fc(can_p["send"], can_mf)
-    return result
-
-def step_8(can_p, vbf_header, vbf_block):
-    """
-    Teststep 8: Send multi frame request
-    """
-    stepno = 8
-
-    result = SE34.request_block_download(can_p, vbf_header, vbf_block, stepno=8,
-                                         purpose="Send multi frame request")
-
-    #test if frames contain all the IDs expected
-    logging.info("Test if string contains all IDs expected:")
-    logging.debug("Frames received: %s", SC.can_frames[can_p["receive"]])
-    logging.info("Messages received: %s", SC.can_messages[can_p["receive"]])
-
-    logging.info("Step %s: Result teststep: %s \n", stepno, result)
-    return result
-
-def step_9(can_p):
-    """
-    Teststep 9: verify session PBL
-    """
-    result = SE22.read_did_eda0(can_p, stepno=9)
-    logging.info("Complete Part/serial received: %s", SC.can_messages[can_p["receive"]])
-
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]],\
-                                          teststring='F121')
+    result = SUTE.teststep(dut, cpay, etp)
     return result
 
 
-def step_10(can_p):
+def step_1(dut):
     """
-    Teststep 10: set back frame_control_delay to default
+    action: Security access in pbl
+    expected_result: Security access should be granted in pbl
     """
-    stepno = 10
-    purpose = "set back frame_control_delay to default"
+    # Set ECU in programming session
+    dut.uds.set_mode(2)
 
-    can_mf: CanMFParam = {
-        "block_size": 0,
-        "separation_time": 0,
-        "frame_control_delay": 0,
-        "frame_control_flag": 48,
-        "frame_control_auto": False
-        }
+    # To avoid NRC-37
+    time.sleep(5)
 
-    SUTE.print_test_purpose(stepno, purpose)
-    SC.change_mf_fc(can_p["send"], can_mf)
+    # Security access in pbl
+    result = SE27.activate_security_access_fixedkey(dut, sa_keys=dut.conf.default_rig_config)
+    if not result:
+        logging.error("Test Failed: Security access denied in pbl")
+        return False
+
+    logging.info("Security access granted in pbl")
+    return True
+
+
+def step_2(dut):
+    """
+    action: Software download request in pbl with flow control delay more than 1000ms
+    expected_result: Software download request should be failed for flow control delay more
+                     than 1000ms
+    """
+    # Extract vbf parameters
+    vbf_header, vbf_block = get_vbf_params()
+    if not bool(vbf_header) and not bool(vbf_block):
+        logging.error("Test Failed: Vbf parameters are not found")
+        return False
+
+    # Software download request with delay more than 1000ms
+    set_flow_control_delay(dut, delay=1050)
+    result = request_download(dut, vbf_header, vbf_block)
+    if result and len(SC.can_messages[dut["receive"]]) == 0:
+        logging.info("Software download request is failed with flow control delay more than "
+                      "1000ms as expected")
+        return True
+
+    logging.error("Test Failed: Software download request is successful with flow control delay "
+                  "more than 1000ms")
+    return False
+
+
+def step_3(dut):
+    """
+    action: Software download request in pbl with flow control delay less than 1000ms
+    expected_result: Successful software download for flow control delay less than 1000ms
+    """
+    # Extract vbf parameters
+    vbf_header, vbf_block = get_vbf_params()
+    if not bool(vbf_header) and not bool(vbf_block):
+        logging.error("Test Failed: Vbf parameters are not found")
+        return False
+
+    # Software download request with delay less than 1000ms
+    set_flow_control_delay(dut, delay=850)
+    result = SE34.request_block_download(dut, vbf_header, vbf_block)[0]
+    if not result:
+        logging.error("Test Failed: Software download request failed for flow control "
+                      "delay less than 1000ms")
+        return False
+
+    logging.info("Software download request is successful with flow control delay "
+                  "less than 1000ms")
+    return True
+
+
+def step_4(dut, did):
+    """
+    action: Verify pbl is active and set flow control delay as default
+    expected_result: ECU should be in pbl
+    """
+    # Read did EDA0 and check response
+    result = read_did(dut, did)
+    set_flow_control_delay(dut, delay=0)
+    if result:
+        return True
+
+    logging.error("Test Failed: DID %s is not found in the response of DID EDA0", did)
+    return False
+
+
+def step_5(dut, ess_vbf_path):
+    """
+    action: SBL activation and routine control request with flow control delay more than 1000ms
+    expected_result: Routine control request should be failed for delay more than 1000ms
+    """
+    # ECU reset
+    dut.uds.ecu_reset_1101()
+
+    SSBL.get_vbf_files()
+    # SBL activation
+    result = SSBL.sbl_activation(dut, sa_keys=dut.conf.default_rig_config)
+    if not result:
+        logging.error("Test Failed: SBL activation failed")
+        return False
+
+    # Extract vbf parameter
+    vbf_header = get_ess_params(ess_vbf_path)
+    if not bool(vbf_header):
+        logging.error("Test Failed: Vbf parameters are not found")
+        return False
+
+    # Routine control request with delay more than 1000ms
+    set_flow_control_delay(dut, delay=1050)
+    SE31.routinecontrol_requestsid_flash_erase(dut, vbf_header)
+    if len(SC.can_messages[dut["receive"]]) == 0:
+        logging.info("Routine control request is failed for flow control delay more than "
+                      "1000 ms as expected")
+        return True, vbf_header
+
+    logging.error("Test Failed: Routine control request is successful for flow control delay "
+                  "more than 1000ms")
+    return False, None
+
+
+def step_6(dut, vbf_header, did):
+    """
+    action: Routine control request with flow control delay less than 1000ms and
+            verify sbl is active
+    expected_result: ECU should give NRC-31 for routine control request and sbl is active
+    """
+    # Routine control request with delay less than 1000ms
+    set_flow_control_delay(dut, delay=850)
+    SE31.routinecontrol_requestsid_flash_erase(dut, vbf_header)
+
+    response = SC.can_messages[dut["receive"]][0][2]
+    # Routine should give negative response as faulty ESS is used
+    if response[2:8] != '7F3131':
+        logging.error("Test Failed: Expected response of routine control request is NRC-31, but "
+                      "received %s", response)
+        return False
+
+    # Read DID EDA0 and check response
+    result = read_did(dut, did)
+    if not result:
+        logging.error("Test Failed: DID %s is not found in the response of DID EDA0", did)
+        return False
+
+    logging.info("Routine control request is successful for flow control delay less than "
+                 "1000ms")
+    return True
+
+
+def step_7(dut, did):
+    """
+    action: Verify SBL session is still active after setting flow control delay as default
+    expected_result: DID F122 should be present in response of DID EDA0
+    """
+    # Set delay to default
+    set_flow_control_delay(dut, delay=0)
+
+    # Read DID EDA0 and check response after default delay
+    result = read_did(dut, did)
+    if result:
+        logging.info("SBL session is still active after setting delay as default")
+        return True
+
+    logging.error("Test Failed: DID %s is not found in response of DID EDA0 after default delay",
+                  did)
+    return False
+
 
 def run():
     """
-    Run - Call other functions from here
+    Software download request in pbl and routine control request in sbl, with flow control delay
+    more than timeout(>1000 ms) and less than timeout(<1000 ms)
     """
-    #logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.DEBUG)
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+    dut = Dut()
 
-    # start logging
-    # to be implemented
+    start_time = dut.start()
+    result = False
+    result_step = False
 
-    # where to connect to signal_broker
-    can_p: CanParam = {
-        'netstub': SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        'send': "Vcu1ToBecmFront1DiagReqFrame",
-        'receive': "BecmToVcu1Front1DiagResFrame",
-        'namespace': SC.nspace_lookup("Front1CANCfg0")
-        }
-    #Read YML parameter for current function (get it from stack)
-    logging.debug("Read YML for %s", str(inspect.stack()[0][3]))
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
+    parameters_dict = {'response_did_pbl': '',
+                       'response_did_sbl': '',
+                       'ess_vbf_path': ''}
+    try:
+        dut.precondition(timeout=160)
+        parameters = SIO.parameter_adopt_teststep(parameters_dict)
 
-    logging.info("Testcase start: %s", datetime.now())
-    starttime = time.time()
-    logging.info("Time: %s \n", time.time())
+        if not all(list(parameters.values())):
+            raise DutTestError("yml parameters not found")
 
-    ############################################
-    # precondition
-    ############################################
-    # read VBF param when testscript is s started, if empty take default param
-    SSBL.get_vbf_files()
-    timeout = 40
-    result = PREC.precondition(can_p, timeout)
+        result_step = dut.step(step_1, purpose="Security access in pbl")
+        if result_step:
+            result_step = dut.step(step_2, purpose="Software download request in pbl with flow "
+                                                   "control delay more than 1000ms")
+        if result_step:
+            result_step = dut.step(step_3, purpose="Software download request in pbl with flow "
+                                                   "control delay less than 1000ms")
+        if result_step:
+            result_step = dut.step(step_4, parameters['response_did_pbl'], purpose="Verify pbl is "
+                                   "active and set flow control delay as default")
+        if result_step:
+            result_step, vbf_header = dut.step(step_5, parameters['ess_vbf_path'], purpose="SBL "
+                                               "activation and routine control request with flow "
+                                               "control delay more than 1000ms")
+        if result_step:
+            result_step = dut.step(step_6, vbf_header, parameters['response_did_sbl'], purpose=
+                                   "Routine control request with flow control delay less than "
+                                   "1000ms and verify sbl is active")
+        if result_step:
+            result_step = dut.step(step_7, parameters['response_did_sbl'], purpose="Verify SBL "
+                                   "session is still active after setting flow control delay as "
+                                   "default")
+        result = result_step
+    except DutTestError as error:
+        logging.error("Test failed: %s", error)
+    finally:
+        dut.postcondition(start_time, result)
 
-    if result:
-    ############################################
-    # teststeps
-    ############################################
-        # step1:
-        # action: # Change to programming session
-        # result: BECM reports mode
-        result = result and SE10.diagnostic_session_control_mode2(can_p, 1)
-
-        # step2:
-        # action: Security Access Request SID
-        # result: ECU sends positive reply
-
-        # Sleep time to avoid NRC37
-        time.sleep(5)
-        result = result and SE27.activate_security_access_fixedkey(can_p, conf.default_rig_config)
-
-        # step3:
-        # action: read SBL
-        # result: header, data, offset of VBF
-        vbf_header, vbf_data, vbf_offset = step_3()
-
-        # step4:
-        # action: extract data of first block in SBL
-        # result:
-        vbf_block = step_4(vbf_offset, vbf_data)
-
-        # step5:
-        # action: set FC_delay > timeout
-        # result:
-        result = result and step_5(can_p)
-
-        # step6:
-        # action: send request with FC_delay > timeout
-        # result: no reply received
-        result = result and step_6(can_p, vbf_header, vbf_block)
-
-        # step7:
-        # action: change delay for reply to FC frame
-        # result:
-        result = result and step_7(can_p)
-
-        # step8:
-        # action: send request with FC_delay < timeout
-        # result: whole message received
-        result = result and step_8(can_p, vbf_header, vbf_block)
-
-        # step8:
-        # action: verify session PBL
-        # result:
-        result = result and step_9(can_p)
-
-        # step10:
-        # action: set back frame_control_delay to default
-        # result:
-        step_10(can_p)
-
-    ############################################
-    # postCondition
-    ############################################
-
-    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()
