@@ -150,10 +150,11 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
 
         This function monitors and creates an error file if NRC 21 is received from the ECU anytime.
         """
+        message = message.upper()
         pos = message.find('7F')
         path = str(Path(__file__).parent.parent)
         if ((pos != -1) and message[pos+4:pos+6] == '21'):
-            with open(path + '\\misc\\nrc_21.txt', 'a',encoding = 'utf-8') as nrc21_file:
+            with open(path + '/misc/nrc_21.txt', 'a',encoding = 'utf-8') as nrc21_file:
                 nrc21_file.write("\n\nNRC 21 is received from the ECU which is not expected."
                                                                     " Test failed\n")
                 nrc21_file.write("Received time: ")
