@@ -1,0 +1,9 @@
+hvbm_p519:
+    run:
+        name: 'VehSpdLgtForHvBatt'
+        send: True
+        id: 'HvbmdpHvbm1canFrame05_300'
+        velocity_1: '0000000280000000'
+        velocity_2: '0000000380000000'
+        nspace: 'namespace'
+        intervall: 0.015
