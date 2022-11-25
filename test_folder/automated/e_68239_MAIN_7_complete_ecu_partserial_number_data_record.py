@@ -31,17 +31,17 @@ description: >
     identifier. The "composite" data record with identifier 0xEDA0 shall contain the following
     data items(the data items is depending of the currently active executing software):
 
-    Description	Identifier
-    ---------------------------------------------------------------------
-                                               Application   PBL	SBL
-    ---------------------------------------------------------------------
-    Diagnostic Database Part number    	            F120	F121    F122
-    ECU Core Assembly Part Number	                F12A	F12A	F12A
-    ECU Delivery Assembly Part Number	            F12B	F12B	F12B
-    ECU Serial Number	                            F18C	F18C	F18C
-    Software Part Number	                        F12E	F125	F124
-    Private ECU(s) or component(s) Serial Number	F13F	  -	      -
-    ----------------------------------------------------------------------
+    Description       Identifier
+    ------------------------------------------------------------------------------
+                                               Application    PBL         SBL
+    ------------------------------------------------------------------------------
+    Diagnostic Database Part number                F120       F121       F122
+    ECU Core Assembly Part Number                  F12A       F12A       F12A
+    ECU Delivery Assembly Part Number              F12B       F12B       F12B
+    ECU Serial Number                              F18C       F18C       F18C
+    Software Part Number                           F12E       F125       F124
+    Private ECU(s) or component(s) Serial Number   F13F         -          -
+    ------------------------------------------------------------------------------
     •   The data records shall be implemented exactly as defined in Carcom - Global Master
         Reference Database.
     •   It shall be possible to read the data record by using the diagnostic service specified in
@@ -53,9 +53,9 @@ description: >
     •    Extended Session
 
 details: >
-    Validate Part/Serial number in default, extended and programming(PBL & SBL) session.
+    Validate Part/Serial numbers of DID 'EDA0' in default, extended and programming(PBL & SBL)
+    session.
 """
-
 
 import logging
 from hilding.dut import Dut
@@ -66,17 +66,17 @@ from supportfunctions.support_file_io import SupportFileIO
 
 SUTE = SupportTestODTB2()
 SSBL = SupportSBL()
-SIO = SupportFileIO
+SIO = SupportFileIO()
 
 
-def validate_ecu_partserial_no(dut, pn_sn):
+def validate_part_and_serial_no(dut, pn_sn):
     """
-    Request to validate ECU Part/Serial numbers
+    Validate part numbers and serial numbers in the response of DID 'EDA0'
     Args:
-        dut (Dut): Dut instance
+        dut (Dut): An instance of DUT
         pn_sn (List): Part/serial number
     Return:
-        (bool): True on receiving valid ECU Part/Serial numbers
+        (bool): True when all part/serial numbers present in the response are valid
     """
     response = dut.uds.read_data_by_id_22(bytes.fromhex('EDA0'))
     result = SUTE.validate_combined_did_eda0(response.raw, pn_sn)
@@ -87,10 +87,10 @@ def verify_active_session(dut, expected_session):
     """
     Verify active diagnostic session
     Args:
-        dut (Dut): Dut instance
-        expected_session (int): Integer value of diagnostic session
+        dut (Dut): An instance of DUT
+        expected_session (int): Mode of diagnostic session
     Returns:
-        (bool): True on successfully verifying active diagnostic session
+        (bool): True when ECU is in the expected session
     """
     # Read active diagnostic session
     active_session = dut.uds.active_diag_session_f186()
@@ -108,21 +108,26 @@ def verify_active_session(dut, expected_session):
 
 def step_1(dut:Dut, pn_sn_def_ext):
     """
-    action: Validate ECU Part/Serial numbers in default session
-    expected result: True on receiving valid ECU Part/Serial numbers
+    action: Validate part numbers and serial numbers in the response of DID 'EDA0' in default
+            session
+    expected result: All part/serial numbers present in the response are valid
     """
-    result = validate_ecu_partserial_no(dut, pn_sn_def_ext)
+    result = validate_part_and_serial_no(dut, pn_sn_def_ext)
     if not result:
-        logging.error("Test Failed: Received invalid ECU Part/Serial numbers in default session")
+        logging.error("Test Failed: All part/serial numbers present in the response of DID 'EDA0' "
+                      "in default session are not valid")
         return False
 
+    logging.info("All part/serial numbers present in the response of DID 'EDA0' in default session"
+                 " are valid")
     return True
 
 
 def step_2(dut:Dut, pn_sn_def_ext):
     """
-    action: Verify ECU Part/Serial numbers in extended session
-    expected result: True on receiving valid ECU Part/Serial numbers
+    action: Validate part numbers and serial numbers in the response of DID 'EDA0' in extended
+            session
+    expected result: All part/serial numbers present in the response are valid
     """
     # Set to extended session
     dut.uds.set_mode(3)
@@ -132,18 +137,21 @@ def step_2(dut:Dut, pn_sn_def_ext):
     if not active_session:
         return False
 
-    result = validate_ecu_partserial_no(dut, pn_sn_def_ext)
+    result = validate_part_and_serial_no(dut, pn_sn_def_ext)
     if not result:
-        logging.error("Test Failed: Received invalid ECU Part/Serial numbers in extended session")
+        logging.error("Test Failed: All part/serial numbers present in the response of DID 'EDA0' "
+                      "in extended session are not valid ")
         return False
 
+    logging.info("All part/serial numbers present in the response of DID 'EDA0' in extended "
+                 "session are valid")
     return True
 
 
 def step_3(dut: Dut, pn_sn_pbl):
     """
-    action: Verify ECU Part/Serial numbers in PBL
-    expected result: True on receiving valid ECU Part/Serial numbers
+    action: Validate part numbers and serial numbers in the response of DID 'EDA0' in PBL
+    expected result: All part/serial numbers present in the response are valid
     """
     # Set to programming session
     dut.uds.set_mode(2)
@@ -153,21 +161,20 @@ def step_3(dut: Dut, pn_sn_pbl):
     if not active_session:
         return False
 
-    result = validate_ecu_partserial_no(dut, pn_sn_pbl)
+    result = validate_part_and_serial_no(dut, pn_sn_pbl)
     if not result:
-        logging.error("Test Failed: Received invalid ECU Part/Serial numbers in PBL")
+        logging.error("Test Failed: All part/serial numbers present in the response of DID 'EDA0' "
+                      "in PBL are not valid ")
         return False
 
-    # Set ECU to default session
-    dut.uds.set_mode(1)
-
+    logging.info("All part/serial numbers present in the response of DID 'EDA0' in PBL are valid")
     return True
 
 
 def step_4(dut: Dut, pn_sn_sbl):
     """
-    action: Activate SBL and verify ECU Part/Serial numbers
-    expected_result: True on receiving valid ECU Part/Serial numbers
+    action: Validate part numbers and serial numbers in the response of DID 'EDA0' in SBL
+    expected result: All part/serial numbers present in the response are valid
     """
     # Loads the rig specific VBF files
     vbf_result = SSBL.get_vbf_files()
@@ -181,23 +188,27 @@ def step_4(dut: Dut, pn_sn_sbl):
         logging.error("Test Failed: SBL activation unsuccessful")
         return False
 
-    result = validate_ecu_partserial_no(dut, pn_sn_sbl)
+    result = validate_part_and_serial_no(dut, pn_sn_sbl)
     if not result:
-        logging.error("Test Failed: Received invalid ECU Part/Serial numbers in SBL")
+        logging.error("Test Failed: All part/serial numbers present in the response of DID 'EDA0' "
+                      "in SBL are not valid")
         return False
 
+    logging.info("All part/serial numbers present in the response of DID 'EDA0' in SBL are valid")
     return True
 
 
 def run():
     """
-    Validate Part/Serial numbers in default, extended and programming(PBL & SBL) session
+    Validate Part/Serial numbers of DID 'EDA0' in default, extended and programming(PBL & SBL)
+    session.
     """
     dut = Dut()
 
     start_time = dut.start()
     result = False
     result_step = False
+
     parameters_dict = {'pn_sn_def_ext': [],
                        'pn_sn_pbl': [],
                        'pn_sn_sbl': []}
@@ -209,21 +220,23 @@ def run():
         if not all(list(parameters.values())):
             raise DutTestError("yml parameters not found")
 
-
-        result_step = dut.step(step_1, parameters['pn_sn_def_ext'], purpose= "Validate ECU "
-                              "Part/Serial numbers in default session")
-
+        result_step = dut.step(step_1, parameters['pn_sn_def_ext'], purpose= "Validate part "
+                               "numbers and serial numbers in the response of DID 'EDA0' in "
+                               "default session")
         if result_step:
-            result_step = dut.step(step_2, parameters['pn_sn_def_ext'], purpose= "Verify ECU "
-                                  "Part/Serial numbers in extended session")
+            result_step = dut.step(step_2, parameters['pn_sn_def_ext'], purpose= "Validate part "
+                                   "numbers and serial numbers in the response of DID 'EDA0' in "
+                                   "extended session")
         if result_step:
-            result_step = dut.step(step_3, parameters['pn_sn_pbl'], purpose= "Verify ECU "
-                                  "Part/Serial numbers in PBL")
+            result_step = dut.step(step_3, parameters['pn_sn_pbl'], purpose= "Validate part "
+                                   "numbers and serial numbers in the response of DID 'EDA0' in "
+                                   "PBL")
         if result_step:
-            result_step = dut.step(step_4, parameters['pn_sn_sbl'] , purpose= "Activate SBL and "
-                                   "verify ECU Part/Serial numbers")
-
+            result_step = dut.step(step_4, parameters['pn_sn_sbl'] , purpose= "Validate part "
+                                   "numbers and serial numbers in the response of DID 'EDA0' in "
+                                   "SBL")
         result = result_step
+
     except DutTestError as error:
         logging.error("Test failed: %s", error)
     finally:
