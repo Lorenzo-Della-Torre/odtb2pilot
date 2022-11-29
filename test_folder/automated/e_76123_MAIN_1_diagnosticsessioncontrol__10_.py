@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,235 +18,287 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-# Testscript Hilding MEPII
-# project:  BECM basetech MEPII
-# author:   J-ASSAR1 (Joel Assarsson)
-# date:     2020-12-08
-# version:  1.0
-# reqprod:  76123
+reqprod: 76123
+version: 2
+title: : DiagnosticSessionControl (10)
+purpose: >
 
-General:        REQPROD 76123 / MAIN ; 2
-Title:          DiagnosticSessionControl (10)
-Purpose:        -
-Description:    See DVM
+description: >
+    The ECU must support the service diagnosticSessionControl. The ECU shall implement the service
+    accordingly:
+
+    Supported session:
+    The ECU shall support Service diagnosticSessionControl in:
+    • defaultSession
+    • extendedDiagnosticSession
+    • programmingSession, both primary and secondary bootloader
+
+    Response time:
+    Maximum response time for the service diagnosticSessionControl (0x10) is P2Server_max.
+
+    Effect on the ECU normal operation, programmingSession:
+    Transition from and to programmingSession is allowed to affect the ECUs ability to execute
+    tasks that are non-diagnostic. The service is only allowed to affect execution of the
+    non-diagnostic tasks during the execution of the diagnostic service. After the diagnostic
+    service is completed any effect on the non-diagnostic tasks is not allowed anymore
+    (normal operational functionality resumes).
+
+    Effect on the ECU normal operation, other sessions than programmingSession:
+    All other transitions than from and to programmingSession (excluding programmingSession to
+    programmingSession) shall not affect the ECUs ability to execute non-diagnostic tasks.
+
+    Entry conditions, programmingSession:
+    Entry conditions for service diagnosticSessionConrol (0x10), changing to programmingSession
+    (0x02) (excluding programmingSession to programmingSession):
+    The implementer shall implement the ECUs condition for entering programmingSession based on
+    the allocated functionality. The condition shall ensure a defined and safe vehicle state when
+    entering programmingSession and must at a minimum include vehicle speed < 3km/h and usage
+    mode ≠ Driving (if not otherwise approved Volvo Car Corporation).
+    In an impaired vehicle or in a stand-alone scenario if the vehicle signal(s) used in the
+    evaluation of the condition e.g. speed and/or "main propulsion system not active" is
+    unavailable shall the safety mechanism not prevent the ECU to change to programmingSession
+    to allow SWDL.
+    If the ECU implement safety requirements with an ASIL higher than QM it shall, in all
+    situations when diagnostic services may violate any of those safety requirements, reject the
+    critical diagnostic service requests. Note that if the ECU rejects such critical diagnostic
+    service requests, this requires an approval by Volvo Car Corporation.
+
+    Entry conditions, other sessions than programmingSession:
+    The ECU shall not implement entry conditions for service diagnosticSessionConrol (0x10) in
+    other session transitions than changing to programmingSession (0x02).
+
+    Security access:
+    The ECU shall not protect service diagnosticSessionControl by using the service securityAccess
+    (0x27).
+
+details:
+    Verify ECU behaviour on receiving DiagnosticSessionControl request for different vehicle speed.
+    - ECU should be in programming session when vehicle velocity < 3km/h
+    - ECU should be in default session when vehicle velocity > 3km/h
+    And also verify session change request to extended should be acknowledged within p2_server time
 """
 
 import time
-from datetime import datetime
-import sys
 import logging
+from hilding.dut import Dut
+from hilding.dut import DutTestError
+from supportfunctions.support_can import SupportCAN, PerParam
+from supportfunctions.support_file_io import SupportFileIO
+from supportfunctions.support_carcom import SupportCARCOM
+from supportfunctions.support_service22 import SupportService22
+from supportfunctions.support_test_odtb2 import SupportTestODTB2
 
-import odtb_conf
-from supportfunctions.support_can           import SupportCAN, CanPayload, CanParam,\
-                                                    CanTestExtra, PerParam
-from supportfunctions.support_test_odtb2    import SupportTestODTB2
-from supportfunctions.support_carcom        import SupportCARCOM
-from supportfunctions.support_file_io       import SupportFileIO
+SC = SupportCAN()
+SIO = SupportFileIO()
+SC_CARCOM = SupportCARCOM()
+SE22 = SupportService22()
+SUTE = SupportTestODTB2()
 
-from supportfunctions.support_precondition  import SupportPrecondition
-from supportfunctions.support_postcondition import SupportPostcondition
-from supportfunctions.support_service10     import SupportService10
-from supportfunctions.support_service22     import SupportService22
 
-SIO         = SupportFileIO
-SC          = SupportCAN()
-SUTE        = SupportTestODTB2()
-SC_CARCOM   = SupportCARCOM()
-PREC        = SupportPrecondition()
-POST        = SupportPostcondition()
-SE10        = SupportService10()
-SE22        = SupportService22()
-
-def step_1(can_p):
+def verify_active_diagnostic_session(dut, mode, session):
     """
-    Teststep 1: Send signal vehicle velocity < 3km/h
+    Verify active diagnostic session
+    Args:
+        dut (Dut): An instance of Dut
+        mode (int): Diagnostic mode
+        session (str): Diagnostic session
+    Returns:
+        (bool): True on successfully verifying active diagnostic session
     """
-    stepno = 1
-    purpose = "Send signal vehicle velocity < 3km/h"
-    SUTE.print_test_purpose(stepno, purpose)
+    active_session = dut.uds.active_diag_session_f186()
+    # Verify active diagnostic session
+    if active_session.data["details"]["mode"] == mode:
+        logging.info("ECU is in %s session as expected", session)
+        return True
 
-    can_p_ex: PerParam = {
-        "name" : 'VehSpdLgtSafe',
-        "send" : True,
-        "id" : "VCU1Front1Fr06",
-        "frame" : b'\x80\xd5\x00\x00\x00\x00\x00\x00',
-        "nspace" : can_p["namespace"].name,
-        "intervall" : 0.015,
-    }
-    SIO.parameter_adopt_teststep(can_p_ex)
-
-    SC.start_periodic(can_p["netstub"], can_p_ex)
+    logging.error("Test Failed: ECU is not in %s session", session)
+    return False
 
 
-def step_4(can_p):
+def step_1(dut: Dut, parameters):
     """
-    Teststep 4: Request session change to Mode 3
+    action: Send signal vehicle velocity < 3km/h
+    expected_result: Periodic signal should be started
     """
-    etp: CanTestExtra = {
-        "step_no" : 4,
-        "purpose" : "Request session change to Mode 3 while car moving.\
-                    BECM should acknowledge within 50ms and then change mode",
-        "timeout" : 0.001,
-        "min_no_messages" : -1,
-        "max_no_messages" : -1
-    }
-    SIO.parameter_adopt_teststep(etp)
-    cpay: CanPayload = {
-        "payload": SC_CARCOM.can_m_send("DiagnosticSessionControl",
-                                        b'\x03', b''),
-        "extra": ''
-        }
-    SIO.parameter_adopt_teststep(cpay)
-    sleep_time = 0.03
-    SIO.parameter_adopt_teststep(sleep_time)
-    allowed_time = 0.05
-    SIO.parameter_adopt_teststep(allowed_time)
+    # Send velocity signal
+    can_p_ex: PerParam = {"name" : parameters['name'],
+                          "send" : parameters['send'],
+                          "id" : parameters['id'],
+                          "frame" : bytes.fromhex(parameters['velocity_1']),
+                          "nspace" : dut["namespace"],
+                          "intervall" : 0.015}
 
+    SC.start_periodic(dut["netstub"], can_p_ex)
+    # Wait 2s after starting periodic signal
+    time.sleep(2)
+    return True
+
+
+def step_2(dut: Dut):
+    """
+    action: Set to programming session and verify active diagnostic session
+    expected_result: ECU should be in programming session
+    """
+    # Set to programming session
+    dut.uds.set_mode(2)
+    # Wait 3s after changing mode
+    time.sleep(3)
+
+    return verify_active_diagnostic_session(dut, mode=2, session='programming')
+
+
+def step_3(dut: Dut):
+    """
+    action: Set to default session and verify active diagnostic session
+    expected_result: ECU should be in default session
+    """
+    # Set to default session
+    dut.uds.set_mode(1)
+    # Wait 3s after changing mode
+    time.sleep(3)
+
+    return verify_active_diagnostic_session(dut, mode=1, session='default')
+
+
+def step_4(dut: Dut, parameters):
+    """
+    action: Acknowledge session change request to extended within p2_server time
+    expected_result: ECU should send positive response
+    """
     result = False
-    SC.clear_all_can_frames()
-    SC.clear_all_can_messages()
-    time.sleep(1)
-
-    time_1 = datetime.now()
-    SC.t_send_signal_can_mf(can_p, cpay, True, 0x00)
-    time.sleep(sleep_time)
-    SC.update_can_messages(can_p)
-    time_2 = datetime.now()
+    # Send session change request to extended
+    dut.uds.set_mode(3)
+    # Wait for 30ms after sending multiple can frames
+    time.sleep(parameters['sleep_time'])
+    SC.update_can_messages(dut)
+    elapsed_time = dut.uds.milliseconds_since_request()
 
     time.sleep(1)
-    delta_t = time_2-time_1
-    can_reply = SC.can_frames[can_p["receive"]]
-    logging.info(can_reply)
-    logging.info("Time 1: %s\n Time 2: %s\n Time D: %s", time_1, time_2, delta_t)
-    if delta_t.total_seconds() < allowed_time:
+    can_reply = SC.can_frames[dut["receive"]]
+    if elapsed_time < parameters['p2_server_time']:
+        logging.info("Elapsed time: %sms is less than p2_server time: %sms", elapsed_time,
+                      parameters['p2_server_time'])
         result = True
 
     result = result and SUTE.test_message(can_reply, "5003")
     if result:
-        logging.info("DiagnosticSessionControl acknowleged within time limits")
+        logging.info("DiagnosticSessionControl acknowledged within time limits")
 
     time.sleep(3)
-    result = result and SE22.read_did_f186(can_p, dsession=b'\x03')
+    result = result and SE22.read_did_f186(dut, dsession=b'\x03')
     return result
 
 
-def step_6(can_p):
+def step_5(dut: Dut):
     """
-    Teststep 6: Send signal vehicle velocity > 3km/h
+    action: Set to default session and verify active diagnostic session
+    expected_result: ECU should be in default session
     """
-    stepno = 6
-    purpose = "Send signal vehicle velocity > 3km/h"
-    SUTE.print_test_purpose(stepno, purpose)
+    # Set to default session
+    dut.uds.set_mode(1)
+    # Wait 3s after changing mode
+    time.sleep(3)
 
-    can_p_ex: PerParam = {
-        "name" : 'VehSpdLgtSafe',
-        "send" : True,
-        "id" : "VCU1Front1Fr06",
-        "frame" : b'\x80\xd6\x00\x00\x00\x00\x00\x00',
-        "nspace" : can_p["namespace"].name,
-        "intervall" : 0.015,
-    }
-    SIO.parameter_adopt_teststep(can_p_ex)
+    return verify_active_diagnostic_session(dut, mode=1, session='default')
+
+
+def step_6(dut: Dut, parameters):
+    """
+    action: Send signal vehicle velocity > 3km/h
+    expected_result: Periodic signal should be started
+    """
+    # Send velocity signal
+    can_p_ex: PerParam = {"name" : parameters['name'],
+                          "send" : parameters['send'],
+                          "id" : parameters['id'],
+                          "frame" : bytes.fromhex(parameters['velocity_2']),
+                          "nspace" : dut["namespace"],
+                          "intervall" : 0.015}
 
     SC.set_periodic(can_p_ex)
 
+    # Wait 2s after updating parameter to periodic signal
+    time.sleep(2)
 
-def step_7(can_p):
-    """
-    Teststep 7: Request session change to Mode 2 while car moving,
-    session should remain in Mode 1.
-    """
-    etp: CanTestExtra = {
-        "step_no" : 7,
-        "purpose" : "Request session change to Mode2 while car moving",
-        "timeout" : 3,
-        "min_no_messages" : -1,
-        "max_no_messages" : -1
-    }
-    SIO.parameter_adopt_teststep(etp)
-    result = SE10.diagnostic_session_control(can_p, etp, b'\x02')
+    SC.stop_periodic(parameters['name'])
+    return True
 
+
+def step_7(dut: Dut):
+    """
+    action: Request session change to programming while car is moving
+    expected result: ECU should remain in default session
+    """
+    # Set to programming session
+    response = dut.uds.generic_ecu_call(bytes.fromhex('1002'))
+    if not (response.raw[2:4] == '7F' and response.raw[6:8] == '22'):
+        logging.error("Expecting NRC-22 (ConditionNotCorrect) when session change to programming "
+                      "while car is moving but received %s", response.raw)
+        return False
+
+    logging.info("Session change to programming not allowed while car is moving, "
+                 "received NRC-22 (ConditionNotCorrect) as expected")
+
+    # Wait 3s after changing mode
     time.sleep(3)
-    result = result and SE22.read_did_f186(can_p, dsession=b'\x01')
+
+    result = verify_active_diagnostic_session(dut, mode=1, session='default')
+
     return result
 
 
 def run():
     """
-    Run - Call other functions from here
+    Verify ECU should remain in default session after getting session change request to programming
+    while vehicle is moving
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+    dut = Dut()
 
-    can_p: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        "send" : "Vcu1ToBecmFront1DiagReqFrame",
-        "receive" : "BecmToVcu1Front1DiagResFrame",
-        "namespace" : SC.nspace_lookup("Front1CANCfg0")
-    }
-    SIO.parameter_adopt_teststep(can_p)
+    start_time = dut.start()
+    result = False
+    result_step = False
 
-    logging.info("Testcase start: %s", datetime.now())
-    starttime = time.time()
-    logging.info("Time: %s \n", time.time())
+    parameters_dict = {'name': '',
+                       'send': '',
+                       'id': '',
+                       'velocity_1': '',
+                       'velocity_2': '',
+                       'sleep_time': 0.0,
+                       'p2_server_time': 0}
 
-    ############################################
-    # precondition
-    ############################################
-    timeout = 30
-    result = PREC.precondition(can_p, timeout)
+    try:
+        dut.precondition(timeout=90)
 
-    if result:
-        ############################################
-        # teststeps
-        ############################################
-        # step1:
-        # action: Send signal vehicle velocity < 3km/h
-        # result:
-        step_1(can_p)
-        time.sleep(2)
+        parameters = SIO.parameter_adopt_teststep(parameters_dict)
+        if not all(list(parameters.values())):
+            raise DutTestError("yml parameters not found")
 
-        # step2:
-        # action: Change to programming session
-        # result: Mode changed normally
-        result = result and SE10.diagnostic_session_control_mode2(can_p, 2)
-        time.sleep(3)
-        result = result and SE22.read_did_f186(can_p, dsession=b'\x02')
+        result_step = dut.step(step_1, parameters, purpose="Send signal vehicle velocity < 3km/h")
 
-        # step3:
-        # action: Change to default session
-        # result: Mode changed normally
-        result = result and SE10.diagnostic_session_control_mode1(can_p, 3)
-        time.sleep(3)
-        result = result and SE22.read_did_f186(can_p, dsession=b'\x01')
+        if result_step:
+            result_step = dut.step(step_2, purpose="Set to programming session and verify active "
+                                                   "diagnostic session")
+        if result_step:
+            result_step = dut.step(step_3, purpose="Set to default session and verify active "
+                                                   "diagnostic session")
+        if result_step:
+            result_step = dut.step(step_4, parameters, purpose="Acknowledge session change request"
+                                                              " to extended within p2_server time")
+        if result_step:
+            result_step = dut.step(step_5, purpose="Set to default session and verify active "
+                                                   "diagnostic session")
+        if result_step:
+            result_step = dut.step(step_6, parameters, purpose="Send signal vehicle "
+                                                               "velocity > 3km/h")
+        if result_step:
+            result_step = dut.step(step_7, purpose="Request session change to programming while "
+                                                   "car is moving")
+        result = result_step
+    except DutTestError as error:
+        logging.error("Test failed: %s", error)
+    finally:
+        dut.postcondition(start_time, result)
 
-        # step4:
-        # action: Change to extended session
-        # result: BECM acknowledges mode change within 50 ms.
-        result = result and step_4(can_p)
-
-        # step5:
-        # action: Change to default session
-        # result: Mode changed normally
-        result = result and SE10.diagnostic_session_control_mode1(can_p, 5)
-        time.sleep(3)
-        result = result and SE22.read_did_f186(can_p, dsession=b'\x01')
-
-        # step6:
-        # action: Send signal vehicle velocity > 3km/h
-        # result: BECM responds positively.
-        step_6(can_p)
-        time.sleep(2)
-
-        # step7:
-        # action: Request session change to Mode2 while car moving
-        # result: No mode change
-        result = result and step_7(can_p)
-
-    ############################################
-    # postCondition
-    ############################################
-
-    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()
