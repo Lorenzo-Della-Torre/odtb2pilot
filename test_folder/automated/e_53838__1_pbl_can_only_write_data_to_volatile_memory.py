@@ -46,27 +46,30 @@ SE27 = SupportService27()
 SE34 = SupportService34()
 
 
-def step_1(dut):
+def step_1(dut: Dut):
     """
     action: Security access in programming session
-    expected_result: True when security access successful
+    expected_result: Security access should be successful in programming session
     """
-    #Sleep time to avoid NRC37
-    time.sleep(5)
+    # Set ECU in programming session
     dut.uds.set_mode(2)
+
+    # Sleep time to avoid NRC37
+    time.sleep(5)
+
     result = SE27.activate_security_access_fixedkey(dut, sa_keys=dut.conf.default_rig_config)
     if result:
-        logging.info("Security access is successful")
+        logging.info("Security access is successful in PBL")
         return True
 
     logging.error("Test Failed: Security access denied in PBL")
     return False
 
 
-def step_2(dut):
+def step_2(dut: Dut):
     """
     action: Verify request block download(service 34) is rejected for ESS file
-    expected_result: True when request blok download rejected
+    expected_result: True when request block download rejected
     """
     # Extract vbf header and vbf block from ESS file
     SSBL.get_vbf_files()
@@ -84,10 +87,10 @@ def step_2(dut):
     return False
 
 
-def step_3(dut):
+def step_3(dut: Dut):
     """
     action: ECU hard reset and verify active diagnostic session
-    expected_result: True when ECU is in default session
+    expected_result: ECU should be in default session after ECU hard reset
     """
     # ECU hard reset
     dut.uds.ecu_reset_1101()
@@ -108,12 +111,14 @@ def run():
     Verify request block download is rejected for ESS file in PBL.
     """
     dut = Dut()
+
     start_time = dut.start()
     result = False
     result_step = False
 
     try:
         dut.precondition(timeout=60)
+
         result_step = dut.step(step_1, purpose="Security access in programming session")
         if result_step:
             result_step = dut.step(step_2, purpose="Verify request block download(service 34) is "
