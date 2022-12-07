@@ -1,4 +1,5 @@
 """
+
 /*********************************************************************************/
 
 
@@ -33,9 +34,9 @@ details: >
            volatile memory
 """
 
+import time
 import logging
 from glob import glob
-from hilding.conf import Conf
 from hilding.dut import Dut
 from hilding.dut import DutTestError
 from supportfunctions.support_SBL import SupportSBL
@@ -46,7 +47,6 @@ from supportfunctions.support_service36 import SupportService36
 from supportfunctions.support_service37 import SupportService37
 from supportfunctions.support_service31 import SupportService31
 
-CNF = Conf()
 SC = SupportCAN()
 SSBL = SupportSBL()
 SE27 = SupportService27()
@@ -178,8 +178,12 @@ def step_1(dut: Dut):
     expected_result: ECU is in programming session and security access is successful.
     """
     dut.uds.set_mode(2)
-    result = SE27.activate_security_access_fixedkey(dut, sa_keys=CNF.default_rig_config,
-                                                    step_no=272, purpose="SecurityAccess")
+
+    # Sleep time to avoid NRC37
+    time.sleep(5)
+
+    result = SE27.activate_security_access_fixedkey(dut, sa_keys=dut.conf.default_rig_config)
+
     if result:
         return True
 
