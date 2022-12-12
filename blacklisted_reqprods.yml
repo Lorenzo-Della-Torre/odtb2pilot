@@ -137,7 +137,6 @@ hvbm_p519:
         e_53566__3 : hdr_jitter | Not applicable. NA folder script.
         e_53581__3 : timeout_and_sleep_cmds | Not applicable. NA folder script.
         e_53584__2 : power_on_master_sends_fst_hdr | Not applicable. NA folder script.
-        e_53913__1 : ecu_with_multiple_networks_spa2 | Not applicable. NA folder script.
         e_53916__1 : gateway_requirement | Not applicable. NA folder script.
         e_53921__1 : interrupted_comm_to_priv_ecu | Not applicable. NA folder script.
         e_59045__6 : timing_at_net_and_hw_wake_up_can | Not applicable. NA folder script.
@@ -178,7 +177,6 @@ hvbm_p519:
         e_72146_MAIN_3 : clear_dtc_info_by_diag_service | Not applicable. NA folder script.
         e_53418__2 : ability_to_read_every_frame_instance | Not applicable. NA folder script.
         e_67861_MAIN_0 : id_option_iso_spec_data_recs | Not applicable. NA folder script.
-        e_342937_MAIN_0 : lin_master_n_cs_perf_prog_sess | Not applicable. NA folder script.
         e_466757_MAIN_0 : bit_rate_for_can_fd | Not applicable. NA folder script.
         e_53918__1 : prog_seq_private_ecu | Not applicable. NA folder script.
         e_53474__2 : ecu_power_loss | Not applicable. NA folder script.
@@ -472,7 +470,6 @@ hvbm_p519:
         e_482735_MAIN_0 : storage_of_dtc_info | Easier to test on dSpace
         e_76508_MAIN_2 : readdtcinformation_19_reportdtcextendeddatarecordbydtcnumber_06_86 | <Reason>
         e_72026_MAIN_5 : storage_of_global_dtc_snapshot_data_when_not_available | <Reason>
-        e_72063_MAIN_3 : support_for_dtc_status_indicator | <Reason>
         e_72072_MAIN_2 : temporarily_storage_of_dtc_information | The old script states that it is NA but it seems testable. Probably needs to be tested on dSpace HIL.
         e_68085_MAIN_0 : reporting_other_ecu_internal_signal_data_records_defined_by_the_implementer_while_the_input_parameter_value_is_under_tester_control | Can be hard to run on the ODTB2. dSpace can be needed.
         e_72166_MAIN_2 : system_supplier_specific_routines | Can be hard to run on the ODTB2. dSpace can be needed.
@@ -596,12 +593,10 @@ hvbm_p519:
         e_52247__2 : data_link_layer | Tested implicitly by REQPRODs in LC :CAN Datalink Layer - SW reqs.
         e_60003__1 : transport_and_network_layer | Tested implicitly by REQPRODs in LC VCC DoCAN - SW reqs Requirements from section Addressing formats and REQPROD 60112 Supporting functional requests Requirements from section BlockSize (BS) parameter definition and REQPROD 60006 BlockSize parameter non-programming session server side Requirements from section CAN frame data and payload configuration and REQPROD 60129 Length of Classic CAN frames Requirements from section Max number of FC. Wait frame transmission (N_WFTmax) and REQPROD 60015 N_WFTmax value for server side Requirements from section Separation( STmin) parameter definition and REQPROD 60010 Separation time (STmin) non-programming session server side Requirements from section Separation time between single frames and REQPROD 380118 Separation time between single frames programming session Requirements from section Timing parameters and REQPROD 60017 N_As_timeout_non_prog_session  Requirements from section Transport and Network Layer REQPROD 60004 Precedence of requirements Requirements from section Unexpected arrival of N_PDU REQPROD 60109 Duplex communication Requirements from section Use data frame by frame REQPROD 128908 Forward N_Data from each N_PDU to upper layer
         e_52249__2 : general_boot_req | Tested implicitly by REQPRODs in REQ-SET General Bootloader requirements
-        e_53975__1 : separate_memory_sectors | Tested implicitly by REQPROD 397292
         e_466756_MAIN_0 : bit_rate_for_classic_can | Tested implicitly by any REQPROD requiring CAN communication REQPROD_60017_N_As_timeout_non_prog_session for example
         e_52242__1 : application_layer | Tested implicitly by REQ_52245
         e_83301_MAIN_1 : physical_layer | Tested implicitly by REQPROD_53848_Communication_protocol REQPROD_53849_Applicable_CAN_standards and REQPROD_53850_The_priority_between_standard_documents_and_this_document and REQPROD_53853_PLL_bypass and REQPROD_53861_PLL_locking and REQPROD_53862_Resychronisation_strategy and REQPROD_53863_Sample_mode and REQPROD_53864_Bit_time_setup_for_500_kbps and REQPROD_53881_Standards_for_CAN_interface and REQPROD_53883_Behaviour_outside_normal_supply_voltage_range REQPROD_53884_CAN_bus_level_during_reset and REQPROD_53885_Bus_fault_reporting
         e_72146_MAIN_1 : clear_dtc_info_by_diag_service | Tested implicitly by REQPRODs in in LC VCC UDS Services Service 0x14 (ClearDiagnosticInformation) Reqs REQPROD 76496 ClearDiagnosticInformation(14) and REQPROD 76497 ClearDiagnosticInformation(14)-groupOfDTCSpecific DTC and REQPROD 363603 ClearDiagnosticInformation(14)-groupOfDTC All DTCs in emission related ECU and REQPROD 76498 ClearDiagnosticInformation(14)-groupOfDTC All Groups and REQPROD 74155 P4Server_max response time for clearDiagnosticInformation(14) and REQPROD 74179 Service clearDiagnosticInformation(14) affecting ECU functionality and REQPROD 74465 Entry conditions for diagnostic service ClearDiagnosticInformation(14) and REQPROD 74494 Security access protection for service clearDiagnosticInformation(14)
-        e_397436_MAIN_2 : reprogrammable_ecu_ess | Tested implicitly by REQPROD_411891_Immediately_apply_ESS_update
         e_52293__1 : trig_a_reset_in_ecu_appl_mode | Tested implicitly by REQPROD 76170 and REQPROD 76139
         e_74494_MAIN_1 : sec_access_for_service_14 | Tested implicitly by REQPROD 76496
 
