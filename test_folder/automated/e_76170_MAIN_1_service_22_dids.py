@@ -98,7 +98,7 @@ def read_data_by_id(dut, did_to_read, max_response_time, verify_two_dids_flag=Fa
 
     if response.raw[4:6] == '62' and response.raw[6:10] == did_to_read:
         logging.info("Received positive response '62' for DID %s for request "
-                        "ReadDataByIdentifier as expected", response.raw[6:10])
+                     "ReadDataByIdentifier as expected", response.raw[6:10])
         return True
 
     logging.error("Test Failed: Expected positive response '62', received %s", response.raw)
@@ -110,13 +110,7 @@ def step_1(dut: Dut, did_ext_def, max_response_time):
     action: Verify ReadDataByIdentifier in default session.
     expected_result: ECU should send positive response '62'.
     """
-    result = read_data_by_id(dut, did_ext_def, max_response_time, False)
-    if not result:
-        logging.error("Test Failed: Unable to read DID %s in default session", did_ext_def)
-        return False
-
-    logging.info("Successfully read DID %s in default session", did_ext_def)
-    return True
+    return read_data_by_id(dut, did_ext_def, max_response_time, False)
 
 
 def step_2(dut: Dut, two_dids_ext_def, max_response_time):
@@ -124,13 +118,7 @@ def step_2(dut: Dut, two_dids_ext_def, max_response_time):
     action: Verify with two DID's ReadDataByIdentifier in default session.
     expected_result: ECU should send positive response '62'.
     """
-    result = read_data_by_id(dut, two_dids_ext_def, max_response_time, True)
-    if not result:
-        logging.error("Test Failed: Unable to read DID%s in default session", two_dids_ext_def)
-        return False
-
-    logging.info("Successfully read DID%s in default session", two_dids_ext_def)
-    return True
+    return read_data_by_id(dut, two_dids_ext_def, max_response_time, True)
 
 
 def step_3(dut: Dut, did_ext_def, max_response_time):
@@ -141,13 +129,7 @@ def step_3(dut: Dut, did_ext_def, max_response_time):
     # Set ECU to extended session
     dut.uds.set_mode(3)
 
-    result = read_data_by_id(dut, did_ext_def, max_response_time, False)
-    if not result:
-        logging.error("Test Failed: Unable to read DID %s in extended session", did_ext_def)
-        return False
-
-    logging.info("Successfully read DID %s in extended session", did_ext_def)
-    return True
+    return read_data_by_id(dut, did_ext_def, max_response_time, False)
 
 
 def step_4(dut: Dut, two_dids_ext_def, max_response_time):
@@ -157,10 +139,8 @@ def step_4(dut: Dut, two_dids_ext_def, max_response_time):
     """
     result = read_data_by_id(dut, two_dids_ext_def, max_response_time, True)
     if not result:
-        logging.error("Test Failed: Unable to read DID %s in extended session", two_dids_ext_def)
         return False
 
-    logging.info("Successfully read DID %s in extended session", two_dids_ext_def)
     result = SE22.read_did_f186(dut, dsession=b'\x03')
     if result:
         logging.info("ECU is in extended session as expected")
@@ -186,13 +166,7 @@ def step_5(dut: Dut, did_prog, max_response_time):
         logging.error("Test Failed: Expected ECU to be in PBL session")
         return False
 
-    result = read_data_by_id(dut, did_prog, max_response_time, False)
-    if not result:
-        logging.error("Test Failed: Unable to read DID %s in PBL session", did_prog)
-        return False
-
-    logging.info("Successfully read DID %s in PBL session", did_prog)
-    return True
+    return read_data_by_id(dut, did_prog, max_response_time, False)
 
 
 def step_6(dut: Dut, two_dids_prog):
@@ -214,7 +188,7 @@ def step_6(dut: Dut, two_dids_prog):
         logging.error("Test Failed: Expected ECU to be in PBL session")
         return False
 
-    logging.error("Test Failed: Expected negative response, received %s",response)
+    logging.error("Test Failed: Expected negative response, received %s", response.raw)
     return False
 
 
@@ -223,7 +197,7 @@ def step_7(dut: Dut, did_prog, max_response_time):
     action: Verify ReadDataByIdentifier in SBL session
     expected_result: ECU should send positive response '62'
     """
-   # Setting up keys
+    # Setting up keys
     sa_keys: SecAccessParam = dut.conf.default_rig_config
 
     # Load VBF files
@@ -244,13 +218,7 @@ def step_7(dut: Dut, did_prog, max_response_time):
         logging.error("Test Failed: Expected ECU to be in SBL session")
         return False
 
-    result = read_data_by_id(dut, did_prog, max_response_time, False)
-    if not result:
-        logging.error("Test Failed: Unable to read DID %s in SBL session", did_prog)
-        return False
-
-    logging.info("Successfully read DID %s in SBL session", did_prog)
-    return True
+    return read_data_by_id(dut, did_prog, max_response_time, False)
 
 
 def step_8(dut: Dut, two_dids_prog):
@@ -274,7 +242,7 @@ def step_8(dut: Dut, two_dids_prog):
         logging.error("Test Failed: Expected ECU to be in SBL session")
         return False
 
-    logging.error("Test Failed: Expected negative response, received %s",response)
+    logging.error("Test Failed: Expected negative response, received %s", response.raw)
     return False
 
 
@@ -297,7 +265,7 @@ def run():
                        'two_dids_prog':'',
                        'max_response_time': 0}
     try:
-        dut.precondition(timeout=90)
+        dut.precondition(timeout=120)
 
         parameters = SIO.parameter_adopt_teststep(parameters_dict)
         if not all(list(parameters.values())):
