@@ -40,18 +40,14 @@ from hilding.dut import DutTestError
 from supportfunctions.support_can import SupportCAN, CanMFParam
 from supportfunctions.support_carcom import SupportCARCOM
 from supportfunctions.support_file_io import SupportFileIO
-from supportfunctions.support_service11 import SupportService11
 from supportfunctions.support_service27 import SupportService27
-from supportfunctions.support_service31 import SupportService31
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
 from supportfunctions.support_SBL import SupportSBL
 
 SC = SupportCAN()
 SC_CARCOM = SupportCARCOM()
 SIO = SupportFileIO()
-SE11 = SupportService11()
 SE27 = SupportService27()
-SE31 = SupportService31()
 SUTE = SupportTestODTB2()
 SSBL = SupportSBL()
 
@@ -92,6 +88,8 @@ def pbl_flash_erase(dut, memory_start, memory_length):
     erase = memory_add + memory_size
     payload = SC_CARCOM.can_m_send("RoutineControlRequestSID", bytes.fromhex('FF00')+ erase,
                                     bytes.fromhex('01'))
+
+    # Request to change frame control delay
     change_control_frame_parameters(dut)
 
     response = dut.uds.generic_ecu_call(payload)
@@ -100,20 +98,14 @@ def pbl_flash_erase(dut, memory_start, memory_length):
 
 def step_1(dut: Dut):
     """
-    action: Verify programming preconditions and security access in programming session
-    expected_result: True when security access is successful in programming session
+    action: Security access in programming session
+    expected_result: Security access should be successful in programming session
     """
-    # Verify programming preconditions
-    result = SE31.routinecontrol_requestsid_prog_precond(dut)
-    if not result:
-        logging.error("Test Failed: Routine control requestsid prog preconditions unsuccessful")
-        return False
-
-    #Sleep time to avoid NRC37
-    time.sleep(5)
-
     # Set to programming session
     dut.uds.set_mode(2)
+
+    # Sleep time to avoid NRC-37
+    time.sleep(5)
 
     # Security access
     sa_result = SE27.activate_security_access_fixedkey(dut, sa_keys=dut.conf.default_rig_config)
@@ -127,7 +119,7 @@ def step_1(dut: Dut):
 
 def step_2(dut: Dut, parameters):
     """
-    action: Request flash erase in PBL
+    action: Request flash erase in PBL memory location
     expected_result: True on receiving 'Type1,Aborted' response
     """
     # Request for flash erase in PBL
@@ -135,52 +127,53 @@ def step_2(dut: Dut, parameters):
                                memory_length=parameters['pbl_memory_write_length'])
     result  = SUTE.pp_decode_routine_control_response(response, 'Type1,Aborted')
     if result:
-        logging.info("Received flash erase routine reply aborted in PBL as expected")
+        logging.info("Received Type1, Aborted for flash erase on PBL memory location as expected")
         return True
 
-    logging.error("Test Failed: Received unexpected response %s", response)
+    logging.error("Test Failed: Type1, Aborted is not received for flash erase on PBL memory "
+                  "location")
     return False
 
 
 def step_3(dut: Dut):
     """
     action: Download and activate SBL
-    expected_result: True when successfully activated SBL
+    expected_result: SBL download and activation should be successful
     """
     # Loads the rig specific VBF files
     vbf_result = SSBL.get_vbf_files()
     if not vbf_result:
-        logging.error("Test Failed: Aborting due to problems when loading VBFs")
+        logging.error("Test Failed: VBF files are not found")
         return False
 
     # Download SBL
     result, vbf_sbl_header = SSBL.sbl_download(dut, SSBL.get_sbl_filename())
     if not result:
-        logging.error("Test Failed: SBL download failed")
+        logging.error("Test Failed: SBL download is failed")
         return False
 
     # Activate SBL
-    sbl_result = SSBL.activate_sbl(dut, vbf_sbl_header, stepno=2)
+    sbl_result = SSBL.activate_sbl(dut, vbf_sbl_header, stepno=300)
     if not sbl_result:
-        logging.error("Test Failed: SBL activation failed")
+        logging.error("Test Failed: SBL activation is failed")
         return False
 
-    logging.info("SBL activation successful")
+    logging.info("SBL download and activation is successful")
     return True
 
 
 def step_4(dut: Dut, parameters):
     """
     action: Verify flash erase of PBL memory address is not allowed
-    expected_result: True when received negative response '7F' and NRC-31(requestOutOfRange)
+    expected_result: ECU should give negative response '7F' and NRC-31(requestOutOfRange)
     """
     # Request for flash erase in PBL memory address
     response = pbl_flash_erase(dut, memory_start=parameters['pbl_memory_start_address'],
                                memory_length=parameters['pbl_memory_write_length'])
     result = SUTE.test_message(SC.can_messages[dut["receive"]], teststring='7F3131')
     if not result:
-        logging.error("Test Failed: Expected negative response '7F' and NRC-31(requestOutOfRange), "
-                      "received %s", response)
+        logging.error("Test Failed: Expected negative response '7F' and NRC-31(requestOutOfRange)"
+                      ", received %s", response)
         return False
 
     logging.info("Received negative response %s and NRC-%s as expected", response[2:4],
@@ -188,25 +181,23 @@ def step_4(dut: Dut, parameters):
     return True
 
 
-def step_5(dut: Dut):
+def step_5(dut):
     """
-    action: ECU hard reset
-    expected_result: True when ECU is in default session
+    action: ECU hard reset and verify active diagnostic session
+    expected_result: ECU should be in default session after ECU hard reset
     """
     # ECU hard reset
-    result = SE11.ecu_hardreset_5sec_delay(dut)
-    if not result:
-        logging.error("Test Failed: Unable to reset ECU")
-        return False
+    dut.uds.ecu_reset_1101()
 
     # Verify active diagnostic session
     response = dut.uds.active_diag_session_f186()
-    if not response.data["details"]["mode"] == 1:
-        logging.error("Test Failed: ECU is not in default session")
-        return False
+    if response.data["details"]["mode"] == 1:
+        logging.info("ECU is in default session as expected")
+        return True
 
-    logging.info("ECU is in default session as expected")
-    return True
+    logging.error("Test Failed: Expected ECU to be in default session, but it is in mode %s",
+                  response.data["details"]["mode"])
+    return False
 
 
 def run():
