@@ -456,6 +456,9 @@ hvbm_p519:
         e_480600_MAIN_2 : disable_hardware_debug_interfaces_to_hsm | This needs to be manually tested.
         e_469233_MAIN_3 : protect_hardware_debug_interfaces | This test to be manually tested.
         e_486601_MAIN_0 : event_type_debugger_authentication | Manual
+        e_53884__3 : can_bus_level_before_during_and_after_reset | This needs to be manually tested
+        e_396513_MAIN_0 : clustered_frame_transmission_and_no_priority_inversion_can | This needs to be manually tested
+        e_56197__1 : order_of_responses_in_programming_session | This needs to be manually tested
 
     --dSpace--:
         e_115621_MAIN_4 : support_for_dtc_status_indicator_30_warning_indicator_requested_since_last_clear | DTC not implemented yet.
