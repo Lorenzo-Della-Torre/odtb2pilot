@@ -37,8 +37,10 @@ details: >
     Verify negative response code busyRepeatRequest(0x21).
 """
 
+
 import os
 import logging
+from pathlib import Path
 from hilding.dut import Dut
 from hilding.dut import DutTestError
 from supportfunctions.support_file_io import SupportFileIO
@@ -53,13 +55,15 @@ def step_1(dut: Dut, paramters):
                      request
     """
     # pylint: disable=unused-argument
-    current_directory = os.getcwd()
-    file_path = current_directory + paramters['nrc21_path']
-    path_to_nrc_21 = os.path.exists(file_path)
+    directory = str(Path(__file__).parent.parent.parent)
+    file_path = directory + paramters['nrc21_path']
 
+    path_to_nrc_21 = os.path.exists(file_path)
     if not path_to_nrc_21:
-        logging.error("Test Failed: File not found in path: %s", file_path)
-        return False
+        logging.info("NRC_21 text file not found in path: %s", file_path)
+        return True
+
+    logging.error("NRC_21 text file found in path: %s", file_path)
 
     with open(file_path, 'r') as file:
         # Read all content from a file
