@@ -57,20 +57,61 @@ description: >
 details: >
     Verify response for dynamicallyDefineDataIdentifier(0x2C) in default & extended session with
     response code 0x6C and it should not support in programming session.
-
     Also the maximum response time for the service dynamicallyDefineDataIdentifier(0x2C) should
     be less than 200ms.
 """
+
 import logging
 from hilding.dut import Dut
 from hilding.dut import DutTestError
 from supportfunctions.support_carcom import SupportCARCOM
-from supportfunctions.support_service27 import SupportService27
 from supportfunctions.support_file_io import SupportFileIO
 
 SC_CARCOM = SupportCARCOM()
-SE27 = SupportService27()
-SIO = SupportFileIO
+SIO = SupportFileIO()
+
+
+def compare_positive_response_clear(response, define_did, session):
+    """
+    Compare dynamicallyDefineDataIdentifier(0x2C) - clear of dynamicallyDefineDataIdentifier
+    positive response
+    Args:
+        response (str): ECU response code
+        define_did (str): Dynamically define did
+        session (str): Diagnostic session
+    Returns:
+        (bool): True on successfully verified positive response
+    """
+    result = False
+
+    if response[2:4] == '6C' and response[6:10] == define_did:
+        logging.info("Received %s for request dynamicallyDefineDataIdentifier(0x2C) - "
+                     "clear of dynamicallyDefineDataIdentifier in %s session as expected",
+                      define_did, session)
+        result = True
+    else:
+        logging.error("Test Failed: Expected positive response %s, received %s in %s session",
+                       define_did, response, session)
+        result = False
+
+    return result
+
+
+def clear_dynamically_define_data_identifier(dut, define_did):
+    """
+    Initiate dynamicallyDefineDataIdentifier(0x2C) - clear of dynamicallyDefineDataIdentifier
+    request
+    Args:
+        dut (Dut): An instance of Dut
+        define_did (str): Dynamically defined did
+    Returns:
+        response (str): ECU response code
+    """
+    payload = SC_CARCOM.can_m_send("DynamicallyDefineDataIdentifier", b'\x03'
+                                   + bytes.fromhex(define_did)
+                                   , b'')
+    response = dut.uds.generic_ecu_call(payload)
+    return response.raw
 
 
 def compare_positive_response(response, time_elapsed, parameters, session):
@@ -78,26 +119,26 @@ def compare_positive_response(response, time_elapsed, parameters, session):
     Compare dynamicallyDefineDataIdentifier(0x2C) positive response
     Args:
         response (str): ECU response code
-        time_elapsed (int): response time
-        parameters (dict): maximum response time and define did
-        session (str): diagnostic session
+        time_elapsed (int): Response time
+        parameters (dict): Maximum response time and define did
+        session (str): Diagnostic session
     Returns:
-        (bool): True on Success
+        (bool): True when received positive response '6C'
     """
     result = False
-    if response[2:4] == '6C' and response[4:8] == parameters['define_did']:
+    if response[2:4] == '6C' and response[6:10] == parameters['define_did']:
         if time_elapsed <= parameters['max_response_time']:
             logging.info("Received %s within %sms for request "
                          "dynamicallyDefineDataIdentifier(0x2C) in %s session as expected",
                           parameters['define_did'], parameters['max_response_time'], session)
             result = True
         else:
-            logging.error("Test failed: Time elapsed %sms is greater than %sms in %s session",
-                        time_elapsed, parameters['max_response_time'], session)
+            logging.error("Test Failed: Time elapsed %sms is greater than %sms in %s session",
+                          time_elapsed, parameters['max_response_time'], session)
             result = False
     else:
-        logging.error("Test failed: Expected positive response %s, received %s in %s session",
-                        parameters['define_did'], response, session)
+        logging.error("Test Failed: Expected positive response %s, received %s in %s session",
+                       parameters['define_did'], response, session)
         result = False
 
     return result
@@ -108,21 +149,22 @@ def compare_negative_response(response, session, nrc_code):
     Compare dynamicallyDefineDataIdentifier(0x2C) negative response
     Args:
         response (str): ECU response code
-        session (str): diagnostic session
-        nrc_code(str): negative response code
+        session (str): Diagnostic session
+        nrc_code (str): Negative response code
     Returns:
-        (bool): True on Success
+        (bool): True when received negative response '7F'
     """
     result = False
     if response[2:4] == '7F' and response[6:8] == nrc_code:
         logging.info("Received NRC %s for request dynamicallyDefineDataIdentifier(0x2C) in %s"
-                        " session as expected", response[6:8], session)
+                     " session as expected", response[6:8], session)
         result = True
     else:
-        logging.error("Test failed: Expected NRC %s for request"
-                        " dynamicallyDefineDataIdentifier(0x2C) in %s session, received %s",
+        logging.error("Test Failed: Expected NRC %s for request"
+                      " dynamicallyDefineDataIdentifier(0x2C) in %s session, received %s",
                         nrc_code, session, response)
         result = False
+
     return result
 
 
@@ -130,7 +172,7 @@ def dynamically_define_data_identifier(dut, parameters):
     """
     Initiate dynamicallyDefineDataIdentifier(0x2C) request
     Args:
-        dut (class object): dut instance
+        dut (Dut): An instance of Dut
         parameters (dict): yml parameters
     Returns:
         response (str): ECU response code
@@ -148,32 +190,18 @@ def dynamically_define_data_identifier(dut, parameters):
 def step_1(dut: Dut, parameters):
     """
     action: Verify dynamicallyDefineDataIdentifier(0x2C) request in default session
-
     expected_result: ECU should send positive response within 200ms
     """
     # Initiate DynamicallyDefineDataIdentifier
     response = dynamically_define_data_identifier(dut, parameters)
     time_elapsed = dut.uds.milliseconds_since_request()
 
-    result = compare_positive_response(response, time_elapsed, parameters, 'default')
-    if not result:
-        return False
-
-    define_did = parameters['define_did']
-    # Verify response of dynamically defined did
-    response = dut.uds.read_data_by_id_22(bytes.fromhex(define_did))
-    if response.raw[2:4] == '62':
-        logging.info("Received positive response for dynamically define did %s", define_did)
-        return True
-
-    logging.error("Test failed: Unable to get response of dynamically define did %s", define_did)
-    return False
+    return compare_positive_response(response, time_elapsed, parameters, session='default')
 
 
 def step_2(dut: Dut, parameters):
     """
     action: Verify dynamicallyDefineDataIdentifier(0x2C) in programming session
-
     expected_result: ECU should not support dynamicallyDefineDataIdentifier(0x2C)
                      in programming session
     """
@@ -182,59 +210,42 @@ def step_2(dut: Dut, parameters):
 
     # Initiate DynamicallyDefineDataIdentifier
     response = dynamically_define_data_identifier(dut, parameters)
-    result = compare_negative_response(response, session="programming", nrc_code='11')
-
-    return result
+    return compare_negative_response(response, session='programming', nrc_code='11')
 
 
 def step_3(dut: Dut, parameters):
     """
     action: Verify dynamicallyDefineDataIdentifier(0x2C) request in extended session
-
-    expected_result: ECU should send positive response within 200ms after security access
+    expected_result: ECU should send positive response within 200ms
     """
     # Change to extended session
     dut.uds.set_mode(1)
     dut.uds.set_mode(3)
 
-    # Initiate DynamicallyDefineDataIdentifier without security access
-    response = dynamically_define_data_identifier(dut, parameters)
-    result_without_security = compare_negative_response(response, session="extended",
-                                                        nrc_code='33')
-    if not result_without_security:
-        return False
-
-    # Security access to ECU
-    security_access = SE27.activate_security_access_fixedkey(dut, dut.conf.default_rig_config,
-                                                            step_no=272, purpose="SecurityAccess")
-    if not security_access:
-        logging.error("Test failed: Security access denied in extended session")
-        return False
-
-    # Initiate DynamicallyDefineDataIdentifier with security access
+    # Initiate DynamicallyDefineDataIdentifier
     response = dynamically_define_data_identifier(dut, parameters)
     time_elapsed = dut.uds.milliseconds_since_request()
-    result_with_security = compare_positive_response(response, time_elapsed, parameters,
-                                                     'extended')
-    if not result_with_security:
-        return False
+    return compare_positive_response(response, time_elapsed, parameters, session='extended')
 
-    define_did = parameters['define_did']
-    # Verify response of dynamically defined did
-    response = dut.uds.read_data_by_id_22(define_did)
-    if response.raw[2:4] == '62':
-        logging.info("Received positive response for dynamically define did %s", define_did)
-        return True
 
-    logging.error("Test failed: Unable to get response of dynamically define did %s", define_did)
-    return False
+def step_4(dut: Dut, define_did):
+    """
+    action: Clear dynamicallyDefineDataIdentifier
+    expected_result: ECU should give positive response for request
+                     dynamicallyDefineDataIdentifier(0x2C) - clear of
+                     dynamicallyDefineDataIdentifier
+    """
+    # DynamicallyDefineDataIdentifier (2C)-clear of dynamicallyDefineDataIdentifier
+    response = clear_dynamically_define_data_identifier(dut, define_did)
+    return compare_positive_response_clear(response, define_did, session='Extended')
 
 
 def run():
     """
-    Verify the possibility to read out data with periodic transmission from ECUs within 200ms
-    and also check service dynamicallyDefineDataIdentifier(0x2C) is protected by using the
-    securityAccess
+    Verify response for dynamicallyDefineDataIdentifier(0x2C) in default & extended session with
+    response code 0x6C and it should not support in programming session.
+    Also the maximum response time for the service dynamicallyDefineDataIdentifier(0x2C) should
+    be less than 200ms.
     """
     dut = Dut()
 
@@ -242,34 +253,31 @@ def run():
     result = False
     result_step = False
 
-    parameters_dict = { 'max_response_time': 0,
-                        'define_did': '',
-                        'source_data_identifier':'',
-                        'position_in_source_data_record':'',
-                        'memory_size':''
-                    }
+    parameters_dict = {'max_response_time': 0,
+                       'define_did': '',
+                       'source_data_identifier':'',
+                       'position_in_source_data_record':'',
+                       'memory_size':''}
     try:
-        # Read parameters from yml file
         parameters = SIO.parameter_adopt_teststep(parameters_dict)
-
         if not all(list(parameters.values())):
             raise DutTestError("yml parameters not found")
 
         dut.precondition(timeout=60)
 
         result_step = dut.step(step_1, parameters, purpose='Verify '
-                                                  'dynamicallyDefineDataIdentifier(0x2C) response '
-                                                  'in default session')
-
+                              'dynamicallyDefineDataIdentifier(0x2C) response in default session')
         if result_step:
             result_step = dut.step(step_2, parameters, purpose='Verify'
-                                                   ' dynamicallyDefineDataIdentifier(0x2C)'
-                                                   ' negative response in programming session')
-
+                                  ' dynamicallyDefineDataIdentifier(0x2C) negative response in'
+                                  ' programming session')
         if result_step:
             result_step = dut.step(step_3, parameters, purpose='Verify '
-                                                  'dynamicallyDefineDataIdentifier(0x2C) response '
-                                                  'in extended session')
+                                  'dynamicallyDefineDataIdentifier(0x2C) response in extended'
+                                  ' session')
+        if result_step:
+            result_step = dut.step(step_4, parameters['define_did'], purpose='Clear'
+                                  ' dynamicallyDefineDataIdentifier')
         result = result_step
 
     except DutTestError as error:

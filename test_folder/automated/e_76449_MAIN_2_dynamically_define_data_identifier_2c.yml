@@ -1,9 +1,7 @@
 hvbm_p519:
     run:
         max_response_time: 200
-        define_did: 'F224'
-        source_data_identifier: '1A3B'
-        position_in_source_data_record: '03'
-        memory_size: '05'
-
-
+        define_did: 'F200'
+        source_data_identifier: 'F186'
+        position_in_source_data_record: '01'
+        memory_size: '01'
