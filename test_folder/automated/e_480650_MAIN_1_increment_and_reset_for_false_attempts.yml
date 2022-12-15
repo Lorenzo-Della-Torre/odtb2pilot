@@ -1,5 +1,5 @@
 hvbm_p519:
-    step_1:
+    run:
         sa_level_programming:
             - '01'
             - '19'
