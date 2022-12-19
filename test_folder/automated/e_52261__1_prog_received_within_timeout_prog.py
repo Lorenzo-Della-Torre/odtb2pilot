@@ -38,30 +38,27 @@ import logging
 from hilding.dut import Dut
 from hilding.dut import DutTestError
 from supportfunctions.support_can import SupportCAN, PerParam
-from supportfunctions.support_service3e import SupportService3e
 
 SC = SupportCAN()
-SS3E = SupportService3e()
 
 
 def start_heartbeat(dut: Dut):
     """
     Start heartbeat
     Args:
-        dut (Dut): Dut instance
+        dut (Dut): An instance of Dut
     Return: None
     """
     # Start heartbeat
-    heartbeat_param: PerParam = {
-                        "name" : "Heartbeat",
-                        "send" : True,
-                        "id" : dut.conf.rig.signal_periodic,
-                        "nspace" : dut.namespace.name,
-                        "protocol" : "can",
-                        "framelength_max" : 8,
-                        "padding" : True,
-                        "frame" : bytes.fromhex(dut.conf.rig.wakeup_frame),
-                        "intervall" : 0.4}
+    heartbeat_param: PerParam = {"name" : "Heartbeat",
+                                 "send" : True,
+                                 "id" : dut.conf.rig.signal_periodic,
+                                 "nspace" : dut.namespace,
+                                 "protocol" : "can",
+                                 "framelength_max" : 8,
+                                 "padding" : True,
+                                 "frame" : bytes.fromhex(dut.conf.rig.wakeup_frame),
+                                 "intervall" : 0.4}
     SC.start_heartbeat(dut.network_stub, heartbeat_param)
 
 
@@ -71,7 +68,6 @@ def step_1(dut: Dut):
             request for programming session.
     expected_result: ECU should enter into programming session within Timeout_Prog
     """
-
     # Stop NM frames
     SC.stop_heartbeat()
 
@@ -83,13 +79,12 @@ def step_1(dut: Dut):
 
     # Send burst diagnostic session control programming session with periodicity of 1ms
     # for 10ms
-    burst_param: PerParam = {
-                    "name" : "Burst",
-                    "send" : True,
-                    "id" : dut.conf.rig.signal_tester_present,
-                    "nspace" : dut["namespace"],
-                    "frame" : bytes.fromhex('0210820000000000'),
-                    "intervall" : 0.001}
+    burst_param: PerParam = {"name" : "Burst",
+                             "send" : True,
+                             "id" : dut.conf.rig.signal_tester_present,
+                             "nspace" : dut["namespace"],
+                             "frame" : bytes.fromhex('0210820000000000'),
+                             "intervall" : 0.001}
 
     SC.send_burst(dut["netstub"], burst_param, 10)
 
@@ -114,15 +109,12 @@ def run():
 
     start_time = dut.start()
     result = False
-    result_step = False
     try:
         dut.precondition(timeout=90)
 
-        result_step = dut.step(step_1, purpose="Verify whether the ECU is entering "
-                               "into programming session within Timeout_Prog after request for "
-                               "programming session")
+        result = dut.step(step_1, purpose="Verify whether the ECU is entering into programming "
+                          "session within Timeout_Prog after request for programming session")
 
-        result = result_step
     except DutTestError as error:
         logging.error("Test failed: %s", error)
     finally:
