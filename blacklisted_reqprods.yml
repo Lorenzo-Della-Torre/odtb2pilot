@@ -214,6 +214,7 @@ hvbm_p519:
         e_68227_MAIN_1 : vehicle_id_number_data_rec | Not applicable. NA folder script.
         e_467281_MAIN_0 : data_compression_method_2_data_format | Not applicable. NA folder script.
         e_60109__3 : duplex_communication | Probably a gateway requirement. NA for non-gateway ECUs.
+        e_435518_MAIN_1 : nvram_and_ram_spare_cap | This requirement is not applicable on HVBM MEP2.
 
     --Inspection--:
         e_481878_MAIN_0 : interface_to_tee_cryptographic_operations | ETAS provides API. Inspect that we have received those files
@@ -285,7 +286,6 @@ hvbm_p519:
         e_419911_MAIN_1 : authenticity_verification_at_run_time | To be inspected
         e_420111_MAIN_1 : sw_auth_sign_method_and_algo | To be inspected
         e_429095_MAIN_1 : reprogrammable_initial_key | To be inspected
-        e_435518_MAIN_1 : nvram_and_ram_spare_cap | To be inspected
         e_469426_MAIN_0 : security_event_types | To be inspected
         e_469427_MAIN_0 : analyze_and_agree_on_security_events | To be inspected
         e_481758_main_0 : 2_byte_base_dtc_def | To be inspected
