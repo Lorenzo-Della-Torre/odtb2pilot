@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -48,118 +48,107 @@ description: >
         - ECU Software Part Number: F12E
 
 details:
-    We extract F120, F12A, F12B, F12E in default mode,
-    F121, F125, F12C in PBL, and F122 in SBL
+    Verify part numbers of DIDs are valid in default, PBL and SBL
 """
 
-import sys
 import logging
-
 from hilding.dut import Dut
 from hilding.dut import DutTestError
-from hilding.uds import IoVmsDid
+from supportfunctions.support_file_io import SupportFileIO
+
+SIO = SupportFileIO()
 
 
-def step_1(dut: Dut):
+def verify_part_number(dut, dids, session):
     """
-    action:
-        Test default mode dids
-
-    expected_result: >
-        All returned part numbers should be valid
+    verify part number
+    Args:
+        dut (Dut): An instance of Dut
+        dids (list): List of DIDs
+        session (str): Diagnostic session
+    Returns:
+        (bool) : True when part number of all DIDs are valid
     """
-    dids = [
-        IoVmsDid.app_diag_part_num_f120,
-        IoVmsDid.ecu_core_assembly_part_num_f12a,
-        IoVmsDid.ecu_delivery_assembly_part_num_f12b,
-        IoVmsDid.ecu_software_part_number_f12e
-    ]
-    validate_dids(dut, dids)
+    for did in dids:
+        response = dut.uds.read_data_by_id_22(bytes.fromhex(did))
+        if response.raw[4:6] == '62':
+            if not did.upper()+'_valid' in response.data['details']:
+                logging.error("Test Failed: No valid %s returned by ecu for did: %s ",
+                               response.data['details']['name'], did)
+                return False
 
-def step_2(dut: Dut):
+            logging.info("%s is valid for did %s", response.data['details']['name'], did)
+
+        else:
+            logging.error("Test Failed: Expected positive response, received %s for DID %s",
+                          response.raw, did)
+            return False
+
+    logging.info("Part numbers are valid for all DIDs in %s session", session)
+    return True
+
+
+def step_1(dut: Dut, parameters):
     """
-    action:
-        Set ecu to programming mode (pbl)
-
-    expected_result: >
-        ECU: Empty response
-
-    comment: Mode 2 should be set
+    action: Verify part number of DIDs in default session
+    expected_result: Part numbers should be valid for all DIDs
     """
+    return verify_part_number(dut, parameters, session='default')
+
+
+def step_2(dut: Dut, parameters):
+    """
+    action: Verify part number of DIDs in PBL
+    expected_result: Part numbers should be valid for all DIDs
+    """
+    # Set to programming session
     dut.uds.set_mode(2)
 
-def step_3(dut: Dut):
+    return verify_part_number(dut, parameters, session='PBL')
+
+
+def step_3(dut: Dut, parameters):
     """
-    action:
-        Test programming mode dids (pdl)
-
-    expected_result: >
-        All returned part numbers should be valid
-
+    action: Verify part_number of DIDs in SBL
+    expected_result: Part numbers should be valid for all DIDs
     """
-    dids = [
-        IoVmsDid.pbl_diag_part_num_f121,
-        IoVmsDid.pbl_software_part_num_f125,
-        IoVmsDid.ecu_software_structure_part_number_f12c,
-    ]
-    validate_dids(dut, dids)
-
-def step_4(dut: Dut):
-    """
-    action:
-        Set ecu to programming mode (sbl)
-
-    expected_result: >
-        ECU: Empty response
-
-    comment: Mode 2 should be set and in sbl mode
-    """
+    # Activate SBL
     dut.uds.enter_sbl()
 
-def step_5(dut: Dut):
-    """
-    action:
-        Test programming mode dids (sdl)
-
-    expected_result: >
-        All returned part numbers should be valid
-
-    """
-    dids = [
-        IoVmsDid.sbl_diag_part_num_f122
-    ]
-    validate_dids(dut, dids)
-
-
-def validate_dids(dut, dids):
-    """ validate a list of dids """
-    for did in dids:
-        res = dut.uds.read_data_by_id_22(did)
-        logging.info(res)
-        if not did.hex().upper()+'_valid' in res.data['details']:
-            raise DutTestError(
-                "No valid {} returned by ecu".format(
-                    res.data['details']['name']))
+    return verify_part_number(dut, parameters, session='SBL')
 
 
 def run():
     """
-    Part number data records coding
+    Verify part numbers of DIDs are valid in default, PBL and SBL
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
-
     dut = Dut()
-    start_time = dut.start()
 
+    start_time = dut.start()
     result = False
+    result_step = False
+
+    parameters_dict = {'default_dids' : [],
+                       'pbl_dids' : [],
+                       'sbl_dids' : []}
+
     try:
-        dut.precondition(timeout=800)
-        dut.step(step_1)
-        dut.step(step_2)
-        dut.step(step_3)
-        dut.step(step_4)
-        dut.step(step_5)
-        result = True
+        dut.precondition(timeout=120)
+
+        parameters = SIO.parameter_adopt_teststep(parameters_dict)
+        if not all(list(parameters.values())):
+            raise DutTestError("yml parameters not found")
+
+        result_step = dut.step(step_1, parameters['default_dids'], purpose="Verify part number of "
+                                                                         "DIDs in default session")
+        if result_step:
+            result_step = dut.step(step_2, parameters['pbl_dids'], purpose="Verify part number of "
+                                                                           "DIDs in PBL")
+        if result_step:
+            result_step = dut.step(step_3, parameters['sbl_dids'], purpose="Verify part number of "
+                                                                           "DIDs in SBL")
+        result = result_step
+
     except DutTestError as error:
         logging.error("Test failed: %s", error)
     finally:
