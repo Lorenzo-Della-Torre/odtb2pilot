@@ -146,6 +146,7 @@ def step_3(dut: Dut):
     """
     # Sleep time to avoid NRC37
     time.sleep(5)
+
     sa_result = SE27.activate_security_access_fixedkey(dut, sa_keys=dut.conf.default_rig_config,
                                                        step_no=272, purpose="SecurityAccess")
     if sa_result:
@@ -187,6 +188,9 @@ def step_5(dut: Dut):
     """
     # Set to programming session
     dut.uds.set_mode(2)
+
+    # Sleep time to avoid NRC37
+    time.sleep(5)
 
     sa_keys = dut.conf.default_rig_config
     result, payload = SE27.activate_security_access_seed_and_calc(dut, sa_keys)
