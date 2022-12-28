@@ -242,6 +242,10 @@ class SupportService27:
                 raise Exception("Failed:  SecurityAccess parameters not set.")
         elif ecu_mode == 'SBL':
             logging.info("SS27 sec_acc_req_seed: SBL already activated")
+            cpay: CanPayload =\
+                {"payload" : payload_value,\
+                 "extra" : ''
+                }
         else:
             logging.debug("SS27 sec_acc_req_seed: unknown status")
             ### remove when EDA0 implemented in MEP2
