@@ -139,3 +139,18 @@ platforms:
         fixed_key: 'FFFFFFFFFF'
         auth_key: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
         proof_key: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
+    rml_p519:
+        signal_send: 'RmldpToRmlUdsDiagRequestFrame'
+        signal_receive: 'RmlToRmldpUdsDiagResponseFrame'
+        signal_periodic: 'RMLdpNMFrame'
+        signal_tester_present: 'RmldpToAllUdsDiagRequestFrame'
+        namespace: 'rml_can0'
+        wakeup_frame: '1A40C3FF01000000'
+        protocol: 'can'
+        framelength_max: 8
+        padding: 'True'
+        SecAcc_Gen: 'Gen2'
+        fixed_key: 'FFFFFFFFFF'
+        auth_key: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
+        proof_key: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
+
