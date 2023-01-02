@@ -60,43 +60,59 @@ def step_1(dut: Dut):
                      identical according to SDDB DIDs
     """
     results = []
+    dtcs_not_in_sddb = []
     failed_dtc = []
-    # Test all the DTCs are appropriate according to SDDB
+
+    # DTCs from ReadDTCByStatusMask
+    response = dut.uds.generic_ecu_call(bytes.fromhex('1902FF'))
+    response_dtcs = response.data['dtcs']
+
+    # DTCs from SDDB
     sddb_dtcs = dut.conf.rig.sddb_dtcs["sddb_dtcs"]
-    for dtc, dtc_data in sddb_dtcs.items():
-        payload = SC_CARCOM.can_m_send("ReadDTCInfoSnapshotRecordByDTCNumber",
-                                        bytearray.fromhex(dtc), bytes.fromhex('FF'))
 
-        dtc_response = dut.uds.generic_ecu_call(payload)
+    # Test all the DTCs are appropriate according to SDDB
+    for _, response_data in enumerate(response_dtcs):
+        dtc = response_data[0]
+        if dtc in sddb_dtcs.keys():
+            payload = SC_CARCOM.can_m_send("ReadDTCInfoSnapshotRecordByDTCNumber",
+                                            bytearray.fromhex(dtc), bytes.fromhex('FF'))
+            dtc_response = dut.uds.generic_ecu_call(payload)
 
-        # Compare the DTC snapshot positive response
-        if dtc_response.raw[2:4] == '59' or dtc_response.raw[4:6] == '59':
-            logging.info("DTC %s snapshot request returns positive response %s as expected", dtc,
-                         dtc_response.raw)
-            results.append(True)
-
-            # Compare the DTC snapshot DIDs are according to SDDB
-            if dtc_data['snapshot_dids'] != dtc_response.data['details']['snapshot_dids']:
-                logging.error("DTC snapshot did response are not equal with SDDB DIDs which is not"
-                             " expected for DTC %s", dtc)
-                results.append(False)
-                failed_dtc.append(["DTC snapshot did response are not equal with SDDB DIDs which"
-                                   " is not expected for DTC "+dtc])
-            else:
-                logging.info("DTC snapshot did response are equal with SDDB DIDs as expected"
-                              " for DTC %s", dtc)
+            # Compare the DTC snapshot positive response
+            if dtc_response.raw[2:4] == '59' or dtc_response.raw[4:6] == '59':
+                logging.info("DTC %s snapshot request returns positive response %s as expected",
+                              dtc, dtc_response.raw)
                 results.append(True)
+
+                # Compare the DTC snapshot DIDs are according to SDDB
+                if sddb_dtcs[dtc]['snapshot_dids'] != dtc_response.data['details']['snapshot_dids']:
+                    logging.error("DTC snapshot did response are not equal with SDDB DIDs which is "
+                                  "not expected for DTC %s", dtc)
+                    results.append(False)
+                    failed_dtc.append(["DTC snapshot did response are not equal with SDDB DIDs "
+                                       "which is not expected for DTC "+dtc])
+                else:
+                    logging.info("DTC snapshot did response are equal with SDDB DIDs as expected"
+                                 " for DTC %s", dtc)
+                    results.append(True)
+            else:
+                logging.error("DTC %s snapshot request returns negative response %s",
+                              dtc, dtc_response.raw)
+                results.append(False)
+                failed_dtc.append(["DTC "+dtc+" snapshot request returns negative response "+
+                                  dtc_response.raw])
         else:
-            logging.error("DTC %s snapshot request returns negative response %s",
-                           dtc, dtc_response.raw)
-            results.append(False)
-            failed_dtc.append(["DTC "+dtc+" snapshot request returns negative response "+
-                                dtc_response.raw])
+            dtcs_not_in_sddb.append(dtc)
 
     if all(results) and len(results) != 0:
+        if len(dtcs_not_in_sddb) != 0:
+            logging.error("Test Failed: DTCs not found in SDDB: %s", dtcs_not_in_sddb)
+            return False
         logging.info("Successfully verified all the DTCs are identical according to SDDB DIDs")
         return True
 
+    if len(dtcs_not_in_sddb) != 0:
+        logging.error("Test Failed: DTCs not found in SDDB: %s", dtcs_not_in_sddb)
     logging.error("Test Failed: Failed DTCs = %s", '\n'.join(map(str, failed_dtc)))
     logging.error("Test Failed: Some or one of the DIDs are not identical according to SDDB DIDs")
     return False
