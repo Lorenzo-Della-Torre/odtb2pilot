@@ -459,6 +459,7 @@ hvbm_p519:
         e_53884__3 : can_bus_level_before_during_and_after_reset | This needs to be manually tested
         e_396513_MAIN_0 : clustered_frame_transmission_and_no_priority_inversion_can | This needs to be manually tested
         e_56197__1 : order_of_responses_in_programming_session | This needs to be manually tested
+        e_77275_MAIN_2 : clustered_frame_transmission_and_no_priority_inversion_can | This needs to be manually tested.
 
     --dSpace--:
         e_115621_MAIN_4 : support_for_dtc_status_indicator_30_warning_indicator_requested_since_last_clear | DTC not implemented yet.
@@ -511,7 +512,7 @@ hvbm_p519:
         e_72031_MAIN_7 : support_for_occ_2_fault_free_op_cycles_since_first_failed | Testcase (DVM) and Dspace-testlog reviewed.
         e_72033_MAIN_6 : support_for_occ_4_total_number_of_failed_cycles | Can't control the environment with ODTB2.
         e_72152_MAIN_7 : clear_dtc_information_when_a_dtc_is_aged | Testable but probably needs the dSpace HIL to control the DTCS.
-        e_72035_MAIN_10 : support_for_operation_cycle_counter_6_consecutive_number_of_faulty_operation_cycles | < Reason >
+        e_72035_MAIN_10 : support_for_operation_cycle_counter_6_consecutive_number_of_faulty_operation_cycles | Can't control the environment with Hilding. But on dSpace it is possible to read operation Cycles.
 
     --vbf_modification--:
         e_53958__6 : complete_compatible_function_return_value | Need to modify VBFs to test the Compatible part
