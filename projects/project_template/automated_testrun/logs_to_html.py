@@ -182,6 +182,8 @@ def parse_some_args():
                         type=str, action='store', dest='script_folder', default='./',)
     parser.add_argument("--graphfile", help="Filename of the local_stats_plot generated file",
                         type=str, action='store', dest='graph_file', default='stats_plot.svg',)
+    parser.add_argument("--smoke_result", help="Result of the smoke test",
+                        type=str, action='store', dest='smoke_result')
     ret_args = parser.parse_args()
     return ret_args
 
@@ -557,18 +559,25 @@ def generate_html(folderinfo_result_tuple_list, outfile, verif_d,  # pylint: dis
                             folder_name = folderinfo_and_result_tuple[FOLDER_NAME_IDX]
                             testres_dict = folderinfo_and_result_tuple[TESTRES_DICT_IDX]
                             result = MISSING_STATUS
-                            if key in testres_dict:
-                                result = testres_dict[key]
+                            # show result in only one column if smoke test is failed
+                            if not testres_dict:
+                                if key == sorted_key_list[0]:
+                                    color = COLOR_DICT[MISSING_STATUS]
+                                    with tag(f'td rowspan="{len(sorted_key_list)}" h3 style="vertical-align: top;writing-mode: vertical-lr;font-size:40"/h3', klass="main", bgcolor=color):
+                                        text('SMOKE TEST FAILED')
+                            else:
+                                if key in testres_dict:
+                                    result = testres_dict[key]
 
-                            # Creating URL string
-                            href_string = (log_folders + '\\' + folder_name + '\\' + key
-                                           + LOG_FILE_EXT)
-                            color = COLOR_DICT[MISSING_STATUS]
-                            if result in COLOR_DICT:
-                                color = COLOR_DICT.get(result)
-                            with tag('td', klass="main", bgcolor=color):
-                                with tag("a", href=href_string, target='_blank'):
-                                    text(result)
+                                # Creating URL string
+                                href_string = (log_folders + '\\' + folder_name + '\\' + key
+                                            + LOG_FILE_EXT)
+                                color = COLOR_DICT[MISSING_STATUS]
+                                if result in COLOR_DICT:
+                                    color = COLOR_DICT.get(result)
+                                with tag('td', klass="main", bgcolor=color):
+                                    with tag("a", href=href_string, target='_blank'):
+                                        text(result)
 
                 # Sum row
                 with tag('tr'):
@@ -694,14 +703,15 @@ def main(margs):
 
             # Get all testfolders
             all_test_folders = [file_name for file_name in listdir(log_folders)
-                                if isdir(file_name) and RE_FOLDER_TIME.match(file_name)]
+                                if isdir(log_folders + '/' + file_name) and RE_FOLDER_TIME.match(file_name)]
             all_test_folders.sort(reverse=True)
             # Pick the 5 newest
             folders = all_test_folders[:5]
 
         # For each folder
         for folder_name in folders:
-            res_dict, _, _ = get_file_names_and_results(folder_name)
+
+            res_dict, _, _ = get_file_names_and_results(log_folders + '/' + folder_name)
             folder_time = get_folder_time(folder_name)
             logging.debug('Folder time: %s', folder_time)
             # Put all data in a tuple
