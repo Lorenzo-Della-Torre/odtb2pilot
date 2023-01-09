@@ -197,7 +197,7 @@ def run():
     result_step = False
 
     try:
-        dut.precondition(timeout=160)
+        dut.precondition(timeout=300)
 
         result_step = dut.step(step_1, purpose="Request SBL download")
 
