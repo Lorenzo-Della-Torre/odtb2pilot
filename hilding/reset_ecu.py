@@ -94,7 +94,7 @@ def reset_and_flash_ecu():
     start_time = dut.start()
     result = False
     try:
-        dut.precondition(timeout=600)
+        dut.precondition(timeout=1800)
         dut.step(reset_ecu_mode)
         time.sleep(2)
         result = True
