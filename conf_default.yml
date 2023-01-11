@@ -14,7 +14,7 @@ platforms:
         auth_key: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
         proof_key: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
         FC_Separation_time : '0A'
-    ecm_phev:
+    ecm_523a:
         signal_send: 'Vcu1ToEcmFront1DiagReqFrame'
         signal_receive: 'EcmToVcu1Front1DiagResFrame'
         signal_periodic: 'Vcu1Front1NMFr'
