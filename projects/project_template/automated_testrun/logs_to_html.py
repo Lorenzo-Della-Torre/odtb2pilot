@@ -67,7 +67,11 @@ RE_RESULT = re.compile(r'.*(?P<result>FAILED|PASSED|MANUAL|To be inspected|\
     |tested implicitly|Tested implicitly|Not applicable|Modified VBF needed|excluded|\
     |diagnostic|application|design|deviation|dSpace|SecOC not implemented|Implicitly tested).*')
 RE_FOLDER_TIME = re.compile(r'.*Testrun_(?P<date>\d+_\d+)')
-RE_REQPROD_ID = re.compile(r'\s*e_(?P<reqprod>\d+)_', flags=re.IGNORECASE)
+RE_REQPROD_ID_SCR = re.compile(r'\s*(?P<file_name>[a-zA-Z0-9_]*)--_--(?P<req>[a-zA-Z0-9_]*)',
+                                                                        flags=re.IGNORECASE)
+
+# For blacklisted log
+RE_REQPROD_ID_BL = re.compile(r'\s*[a-zA-Z]_(?P<reqprod>\d+)_', flags=re.IGNORECASE)
 # case insensitive
 
 # When calculating per cent, how many decimals do we want
@@ -531,9 +535,19 @@ def generate_html(folderinfo_result_tuple_list, outfile, verif_d,  # pylint: dis
                                 text('DVM')
 
                         # Second column - REQPROD
-                        e_match = RE_REQPROD_ID.match(key)
-                        if e_match:
-                            e_key = str(e_match.group('reqprod'))
+                        e_match_1 = RE_REQPROD_ID_SCR.match(key)
+                        e_match_2 = RE_REQPROD_ID_BL.match(key)
+                        if e_match_1:
+                            e_key = str(e_match_1.group('req'))
+                            req_set.add(e_key.split("_")[1])
+                            with tag('td', klass="main number"):
+                                if e_key in elektra_d:
+                                    with tag("a", href=elektra_d[e_key], target='_blank'):
+                                        text(e_key)
+                                else:
+                                    text(e_key)
+                        elif e_match_2:
+                            e_key = str(e_match_2.group('reqprod'))
                             req_set.add(e_key)
                             with tag('td', klass="main number"):
                                 if e_key in elektra_d:
@@ -542,16 +556,17 @@ def generate_html(folderinfo_result_tuple_list, outfile, verif_d,  # pylint: dis
                                 else:
                                     text(e_key)
 
+                        file_name = key.split("--_--")[0]
                         # Third column - Script name
-                        if key.lower() in url_dict:
+                        if file_name.lower() in url_dict:
                             with tag('td', klass="main"):
-                                with tag("a", href=url_dict[key.lower()], target='_blank'):
-                                    text(key)
+                                with tag("a", href=url_dict[file_name.lower()], target='_blank'):
+                                    text(file_name)
                         else:
                             # Highlight with blue if we don't find the matching URL
                             #with tag('td', bgcolor=BROKEN_URL_COLOR):
                             with tag('td', klass="main"):
-                                text(key)
+                                text(file_name)
 
                         # Fourth (fifth, sixth) - Result columns
                         # Look up in dicts
