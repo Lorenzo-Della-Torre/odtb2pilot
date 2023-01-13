@@ -589,6 +589,7 @@ hvbm_p519:
         e_76695_MAIN_2 : request_transfer_exit | Breaks testrun. Temporarily excluded
         e_76690_MAIN_3 : transfer_data | Breaks testrun. Temporarily excluded
         e_469411_MAIN_1 : system_hardening_follow_industry_accepted_processes | <Reason>
+        e_72220_MAIN_1 : erase_mem_resp_time | Breaks ECU. Temporarily excluded
 
     --Implicit--:
         e_486497_MAIN_1 : bus_off | Implicitly tested by manual tests 52314 and 392111
