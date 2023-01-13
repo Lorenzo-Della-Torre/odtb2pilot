@@ -26,6 +26,7 @@ from hilding.conf_analytics import Analytics
 #SSA = SupportSecurityAccess()
 
 class Rig:
+    #pylint: disable=too-many-public-methods
     """ hilding rig management """
     def __init__(self, conf):
         self.conf = conf
@@ -134,6 +135,11 @@ class Rig:
         """ get the path to the selected rig """
         rigs = self.conf.hilding_root.joinpath("rigs")
         return ensure_exists(rigs.joinpath(self.conf.selected_rig))
+
+    @property
+    def pbl_vbf_path(self):
+        """ get the path to the pbl vbf dir for the selected rig """
+        return ensure_exists(self.rig_path.joinpath("vbf","PBL_VBF"))
 
     @property
     def vbf_path(self):

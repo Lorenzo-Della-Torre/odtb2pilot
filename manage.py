@@ -193,6 +193,12 @@ if __name__ == "__main__":
     flash_parser = subparsers.add_parser(
         "flash", help="Flash (download) all the vbf files to the ECU"
     )
+    flash_pbl_parser = subparsers.add_parser(
+        "flash_pbl", help="Flash (download) all the pbl vbf files to the ECU"
+    )
+    flash_all_parser = subparsers.add_parser(
+        "flash_all", help="Flash (download) all the pbl vbf and vbf files to the ECU"
+    )
 
     config_parser = subparsers.add_parser(
         "Config", help="Open the Configuration tool"
@@ -243,4 +249,8 @@ if __name__ == "__main__":
         from misc.configuration_tool.ConfigurationTool import run
         run()
     elif args.command == 'flash':
-        flash()
+        flash(operation="Software download")
+    elif args.command == 'flash_pbl':
+        flash(operation="PBL update")
+    elif args.command == 'flash_all':
+        flash(operation="PBL update and software download")
