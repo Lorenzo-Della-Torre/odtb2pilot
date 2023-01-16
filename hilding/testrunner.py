@@ -247,11 +247,8 @@ def get_ecutest_files(file_dict, reqprod):
     if not test_files:
         file_name_fragment = reqprod.rstrip('.py')
         test_files = get_testfiles_generic(f"*/*{file_name_fragment}*.py")
+        return test_files
 
-    # If the file is not found again, exit the test.
-    if not test_files:
-        sys.exit(f"ecutest selection was terminated or\n"
-                 f"{file_dict} couldn't be found in {ecutest_dir}")
     return [Path(p.split("----->")[0]) for p in test_files]
 
 
