@@ -196,6 +196,24 @@ def add_testsuite_endtime(result_file):
         now = datetime.now().strftime("%Y%m%d %H%M")
         result_file_handle.write(f"Test done. Time: {now}\n")
 
+def global_verdict_file(result_file):
+    """ Create a file that specify the global verdict
+        This file is only used by the ci
+    """
+    with open(result_file) as file:
+        lines = [line.rstrip() for line in file]
+    global_verdict = "PASSED"
+
+    # check all verdicts in Result.txt file
+    for req in lines:
+        verdict = req.split()[1]
+        if verdict != "PASSED":
+            # result is failed if anything but PASSED
+            global_verdict = "FAILED"
+            break
+    filename = "global_verdict_"+global_verdict+".txt"
+    # create the empty txt file
+    open(result_file.parent.absolute().joinpath(filename),'a').close()
 
 def run_tests(test_files):
     """ run tests without saving any results """
@@ -351,6 +369,8 @@ def nightly(args):
         test_files, test_res_dir, args.use_db, args.use_mq, reset_between=True)
 
     add_testsuite_endtime(result_file)
+    # create an empty txt file with the global verdict as name
+    global_verdict_file(result_file)
 
 
 def script_picker(reqprod):
