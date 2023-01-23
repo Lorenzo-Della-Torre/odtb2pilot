@@ -556,9 +556,9 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
 
                     logging.debug("rec_message: to check %s", record)
                     if pn_sn[1] == 'PN':
-                        result = self.validate_part_number_records(record)
+                        result = self.validate_part_number_records(record) and result
                     elif pn_sn[1] == 'SN':
-                        result = self.validate_serial_number_records(record)
+                        result = self.validate_serial_number_records(record) and result
                     elif pn_sn[1] == 'VIDCV':
                         logging.info("Vendor ID, cluster version not validated   %s", record)
                     else:
