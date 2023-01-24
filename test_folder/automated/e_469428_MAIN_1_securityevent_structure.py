@@ -72,27 +72,38 @@ def extract_event_position(event_name):
     return event_num
 
 
-def extract_response_items(did_response, valid_response_items):
+def extract_response_items(did, security_events_not_having_time, did_response,\
+                           valid_response_items):
     """
     Extract response_items that contains any of the values belong to the keys "time",
     "event_code", additional_data" in valid_response_items
     Args:
+        did (str): DID
+        security_events_not_having_time (list): Security events not having time
         did_response (str): DID response from ECU
         valid_response_items (dict): Time, eventcode and additional data
     Returns:
         response_item_dict (dict): Valid response items
     """
-    response_item_dict = {"time_list" : [],
-                          "event_code_list" : [],
-                          "additional_data_list" : []}
-
-    for resp_item in did_response.details["response_items"]:
-        if valid_response_items["time"] in resp_item["name"]:
-            response_item_dict["time_list"].append(resp_item)
-        elif valid_response_items["event_code"] in resp_item["name"]:
-            response_item_dict["event_code_list"].append(resp_item)
-        elif valid_response_items["additional_data"] in resp_item["name"]:
-            response_item_dict["additional_data_list"].append(resp_item)
+    if did in security_events_not_having_time:
+        response_item_dict = {"event_code_list" : [],
+                              "additional_data_list" : []}
+        for resp_item in did_response.details["response_items"]:
+            if valid_response_items["event_code"] in resp_item["name"]:
+                response_item_dict["event_code_list"].append(resp_item)
+            elif valid_response_items["additional_data"] in resp_item["name"]:
+                response_item_dict["additional_data_list"].append(resp_item)
+    else:
+        response_item_dict = {"time_list" : [],
+                            "event_code_list" : [],
+                            "additional_data_list" : []}
+        for resp_item in did_response.details["response_items"]:
+            if valid_response_items["time"] in resp_item["name"]:
+                response_item_dict["time_list"].append(resp_item)
+            elif valid_response_items["event_code"] in resp_item["name"]:
+                response_item_dict["event_code_list"].append(resp_item)
+            elif valid_response_items["additional_data"] in resp_item["name"]:
+                response_item_dict["additional_data_list"].append(resp_item)
 
     return response_item_dict
 
@@ -120,10 +131,11 @@ def get_sub_payload_value(response_items, number_of_events):
     return event_list
 
 
-def find_events(did_response, parameters):
+def find_events(did, did_response, parameters):
     """
     Find events in the response
     Args:
+        did (str): DID
         did_response (str): ECU response
         parameters (dict): Valid response items
     Returns:
@@ -132,7 +144,8 @@ def find_events(did_response, parameters):
     name_of_last_event = did_response.details["response_items"][-2]['name']
     number_of_events = extract_event_position(name_of_last_event)
 
-    response_items = extract_response_items(did_response, parameters['valid_response_items'])
+    response_items = extract_response_items(did, parameters['security_events_not_having_time'],\
+                     did_response, parameters['valid_response_items'])
     found_events = get_sub_payload_value(response_items, number_of_events)
 
     return found_events
@@ -151,16 +164,20 @@ def get_substring(event, sub_string):
     return element
 
 
-def log_missing_events(events, did):
+def log_missing_events(security_events_not_having_time, events, did):
     """
     Find missing elements from the event and log them
     Args:
+        security_events_not_having_time (list): Security events not having time
         events (list): Events
         did (str): DID
     Returns:
         (bool): True when successfully verified the event structure
     """
-    search_list = ['Time', 'Event Code', 'Additional Event Data']
+    if did in security_events_not_having_time:
+        search_list = ['Event Code', 'Additional Event Data']
+    else:
+        search_list = ['Time', 'Event Code', 'Additional Event Data']
     logging.info("~~~~~~ Checking structure for DID %s in the sddb ~~~~~~", did)
     result = True
     for event in events:
@@ -174,18 +191,19 @@ def log_missing_events(events, did):
     return result
 
 
-def validate_events(events, did):
+def validate_events(events, did, parameters):
     """
     Check all events contain the same number of response_items
     Verify if successful events have codes in the range 0x80-0xFE and rejected events have codes
     in the range 0x01-0x7F
     Args:
+        parameters (list): Security events not having time
         events (list): Dictionaries containing events
         did (str): DID
     Returns:
         (bool): True when event codes are successfully verified
     """
-    result = log_missing_events(events, did)
+    result = log_missing_events(parameters['security_events_not_having_time'], events, did)
 
     for event in events:
         for entry in event.keys():
@@ -225,7 +243,7 @@ def evaluate_did_structure(dut, did, parameters):
                        did_response.raw)
         return False
 
-    events = find_events(did_response, parameters)
+    events = find_events(did, did_response, parameters)
 
     for i, event in enumerate(events):
         if not event:
@@ -233,7 +251,7 @@ def evaluate_did_structure(dut, did, parameters):
             result = False
 
     if result:
-        result = validate_events(events, did)
+        result = validate_events(events, did, parameters)
 
     return result
 
@@ -323,7 +341,8 @@ def run():
     start_time = dut.start()
     result = False
 
-    parameters_dict = {'valid_response_items': {}}
+    parameters_dict = {'valid_response_items': {},
+                       'security_events_not_having_time': []}
     try:
         dut.precondition(timeout=60)
         parameters = SIO.parameter_adopt_teststep(parameters_dict)

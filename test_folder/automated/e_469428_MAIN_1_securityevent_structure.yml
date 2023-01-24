@@ -3,3 +3,4 @@ hvbm_p519:
         valid_response_items : {"time" : "Time",
                                 "event_code" : "Event Code",
                                 "additional_data" : "Additional Event Data"}
+        security_events_not_having_time : ['D046', 'D048', 'D0B7']
