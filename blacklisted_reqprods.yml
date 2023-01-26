@@ -429,6 +429,9 @@ hvbm_p519:
         e_181433_MAIN_1 : e2e_protection_mechanisms | Changed to application team (Mascot)
         e_487899_MAIN_1 : sec_oc_customization_for_immediate_return_of_authentic_data | Changed to application
         e_67741_MAIN_2 : compliance_to_iso_14229_1 | Mentor responsible for testing their implementation
+        e_72161_MAIN_1 : development_specific_routines | Push to application team.
+        e_72166_MAIN_2 : system_supplier_specific_routines | Push to application team.
+        e_72157_MAIN_3 : vehicle_manufacturer_specific_routines | Push to application team.
 
     --Design--:
         e_71837_MAIN_1 : data_records_not_included_in_local_snapshot_data | Design requirement. Can be checked by validation of snapshot information for each DTC in the SDDB. Should be tested so system design do follow this req. Does not need the ECU for the test.
