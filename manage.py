@@ -39,6 +39,7 @@ from hilding.reset_ecu import reset_and_flash_ecu
 from hilding.flash import flash
 from hilding.conf import initialize_conf
 from hilding import get_conf
+from hilding.testrunner import relay
 
 def config_environ():
     """automatically set pythonpath and environment variables"""
@@ -204,6 +205,12 @@ if __name__ == "__main__":
         "Config", help="Open the Configuration tool"
     )
 
+    relay_parser = subparsers.add_parser(
+        "relay", help="Control the relay connected to the ECU."
+    )
+
+    relay_parser.add_argument('relay_state')
+
     args = parser.parse_args()
 
     # we probably want to make all of the logging user configurable, but right
@@ -254,3 +261,5 @@ if __name__ == "__main__":
         flash(operation="PBL update")
     elif args.command == 'flash_all':
         flash(operation="PBL update and software download")
+    elif args.command == 'relay':
+        relay(args.relay_state)

@@ -25,8 +25,7 @@ from supportfunctions.support_sec_acc import SecAccessParam
 from hilding.conf_analytics import Analytics
 #SSA = SupportSecurityAccess()
 
-class Rig:
-    #pylint: disable=too-many-public-methods
+class Rig: # pylint: disable=too-many-public-methods
     """ hilding rig management """
     def __init__(self, conf):
         self.conf = conf
@@ -63,6 +62,11 @@ class Rig:
     def platform(self):
         """ conf platform """
         return self.conf.selected_rig_dict.get('platform')
+
+    @property
+    def relay_name(self):
+        """ conf relay name """
+        return self.conf.selected_rig_dict.get('relay_connected')
 
     @property
     def signal_broker_port(self):

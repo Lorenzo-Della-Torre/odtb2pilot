@@ -1,0 +1,21 @@
+relay_types:
+    sequent_relay_4set:
+        number_of_relays: 4
+        power_relay_num: 1
+        PSR_relay_num: 2
+    sequent_relay_8set:
+        number_of_relays: 8
+        power_relay_num: 1
+        PSR_relay_num: 2
+    52pi_relay_4set:
+        address: 0x27
+        register: 0x02
+        number_of_relays: 4
+        power_relay_num: 1
+        PSR_relay_num: 2
+    heli_relay_4set:
+        address: 0x20
+        register: 0x06
+        number_of_relays: 4
+        power_relay_num: 1
+        PSR_relay_num: 2
