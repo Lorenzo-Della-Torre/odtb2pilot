@@ -24,6 +24,7 @@ import logging
 import sys
 import importlib
 import traceback
+import time
 from datetime import datetime
 from pathlib import Path
 import yaml
@@ -35,6 +36,7 @@ from hilding.reset_ecu import reset_and_flash_ecu
 from hilding.uds import UdsEmptyResponse
 
 from autotest.blacklisted_tests_handler import add_to_result, create_logs, get_dictionary_from_yml
+from supportfunctions.support_relay import Relay
 
 
 log = logging.getLogger('testrunner')
@@ -284,7 +286,7 @@ def get_testfiles_generic(glob_pattern):
 def runner(args):
     """ test suite/case runner """
 
-    logging.info(args)
+    logging.debug(args)
     if args.reqprod:
         file_name_list = script_picker(args.reqprod)
         test_files = get_ecutest_files(file_name_list, args.reqprod)
@@ -372,6 +374,29 @@ def nightly(args):
     # create an empty txt file with the global verdict as name
     global_verdict_file(result_file)
 
+def relay(relay_state):
+    """ Trigger relay """
+    rel = Relay()
+    success = 0
+    if relay_state == "on":
+        success = rel.ecu_on()
+    elif relay_state == "off":
+        success = rel.ecu_off()
+    elif relay_state == "reset":
+        logging.info("Waiting 5 seconds between ECU OFF and ON")
+        success = rel.ecu_off()
+        time.sleep(5)
+        success = success and rel.ecu_on()
+    elif relay_state == "toggle":
+        success = rel.toggle_power()
+    else:
+        logging.error(" ** Relay command not correct **")
+        logging.error(" ** Please use on/off/reset/toggle only **")
+
+    if success == 1:
+        logging.info("Success")
+    else:
+        logging.info("Not Success")
 
 def script_picker(reqprod):
     """
