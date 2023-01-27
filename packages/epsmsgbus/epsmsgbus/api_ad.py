@@ -25,17 +25,27 @@ Implementation of adapters and observers for AutomationDesk
 """
 
 import configparser
+import importlib
 import json
 import logging
 import os
+import re
 import warnings
+import requests
 
+
+import epsconfig
 import epsmsgbus.core as core
 import epsmsgbus.data as data
-import epsmsgbus.cynosure2 as cynosure2
+import epsmsgbus.cynosure as cynosure
+import epsmsgbus.productid as productid_mod
+import epsmsgbus.activityid as activityid_mod
+import epsmsgbus.ci_logs as logs_mod
 import epsplatform
 import epssut
 import epstasks
+import epssvn
+import string
 
 try:
     import tam.core.main.tam_globalstates as tam_globalstates
@@ -46,11 +56,16 @@ try:
 except ImportError:
     warnings.warn("Could not import 'tam.core.dialogs.tam_execconfigrc_dlg', are you running outside AutomationDesk?")
 
+restful_config = epsconfig.config('postconnect')
+config = epsconfig.config('db')
+if config.cynosure.major_version is None:
+    raise ValueError("Cynosure major version is not configured!")
+cynosure_msg = importlib.import_module('epsmsgbus.cynosure{}'.format(config.cynosure.major_version))
+
 
 log = logging.getLogger('epsmsgbus.api_ad')
 
 
-ARTIFACTORY_LOCATION = "artifactory/EPS_SW/Test_result/HILTest"
 JENKINS_SETTINGS = os.path.join(os.environ['SYSTEMDRIVE'] + os.sep + 'Jenkins', 'settings.ini')
 
 
@@ -79,48 +94,80 @@ class OutOfOrderError(Exception):
     pass
 
 
-
 # Adapters for data retrieval ============================================{{{1
 
 # TestSuiteDataAdapter ---------------------------------------------------{{{2
 class TestSuiteDataAdapter(data.TestSuiteDataAdapter):
     def __init__(self, audctx):
         self.audctx = audctx
-        self.name = tam_globalstates.GlobalStates.ExecutionBlock.GetName()
+        self.activityid = activityid_mod.get_activityid()
+        self.name = self.get_activity_name()
         self.result_dir = os.path.basename(audctx._INFO_.ResultDirectory)
         self.result_name = audctx._INFO_.ResultName
-        self._activityid = self._base_url = None
+        self._base_url = None
         self.is_ci = 'jenkins' in self.result_name.lower()
+        self.productid = productid_mod.get_productid()
+        self.path_info_data = logs_mod.get_logs_url()
 
     @property
     def base_url(self):
         if self._base_url is None:
-            c = configparser.ConfigParser()
-            c.read([JENKINS_SETTINGS])
-            return c.get('Artifactory', 'base_url')
+            try:
+                return self.path_info_data['base_url']
+            except:
+                c = configparser.ConfigParser()
+                c.read([JENKINS_SETTINGS])
+                return c.get('Artifactory', 'base_url')
         return self._base_url
 
-    # def get_activityid(self):
-    #     if self._activityid is None:
-    #         self._activityid = "{}:{}".format(self.ts_name, self.result_dir)
-    #     return self._activityid
+    def clear_activity_id(self):
+        activityid_mod.set_activityid()
+    
     def get_product_name(self):
-        return self.result_name
+        """Prefixing with project name since Cynosure3 requires that the product name
+        is at least 10 characters, which creates a problem in case the folder
+        name is very short.
+        NOTE: If the CI chain has supplied a product identity, then this is used
+              instead. Note that self.producctid can be None
+        """
+        try:
+            return self.productid['namespace']
+        except:
+            return '-'.join((self.audctx._INFO_.ProjectName, self.result_name))
 
     def get_product_id(self):
-        return self.result_dir
+        try:
+            return self.productid['instance']
+        except:
+            return self.result_dir
+
+    def get_activity_name(self):
+        try:
+            return self.activityid['namespace']
+        except Exception as e:
+            log.info(e)
+            return tam_globalstates.GlobalStates.ExecutionBlock.GetName()
+
+    def get_activity_id(self):
+        try:
+            return self.activityid['instance']
+        except:
+            return None
 
     def get_execution_info(self):
+        parameters = {}
+        parameters['Parameters'] = core.recurse_container(self.audctx.Parameters)
         return data.ExecutionInfo(
-                name=self.result_name, 
+                name=self.result_name,
                 description=tam_execconfigrc_dlg.ExecutionConfiguration.Description,
                 executor=os.environ.get('USERNAME', '<unknown>'),
-                project=self.audctx._INFO_.ProjectName)
+                project=self.audctx._INFO_.ProjectName,
+                parameters=parameters)
 
     def get_simulation_info(self):
         try:
-            sdfinfo = epstasks.SDFInfo(audctx.ModelLinks.HIL.MAPortConfiguration['ApplicationPath'])
-            modelinfo = epssut.ModelInfo(audctx, multi_processor=sdfinfo.is_multi_processor)
+            sdfinfo = epstasks.SDFInfo(self.audctx.ModelLinks.HIL.MAPortConfiguration['ApplicationPath'])
+            modelinfo = epssut.ModelInfo(self.audctx, multi_processor=sdfinfo.is_multi_processor)
             return data.SimulationInfo(
                     build_id=modelinfo.build_id,
                     project=modelinfo.project,
@@ -147,30 +194,30 @@ class TestSuiteDataAdapter(data.TestSuiteDataAdapter):
         githash = json_data.get('githash')
         changeset = json_data.get('changeset')
         inhousechangeset = json_data.get('inhousechangeset')
-        try: 
+        try:
             ecu = self.audctx.Constants.Software.Versions.ECU
         except:
             log.debug("Not adding ECU to result (not found).")
-        try: 
+        try:
             project = self.audctx.Constants.Software.Versions.Project
         except:
             log.debug("Not adding vehicle project to result (not found).")
-        try: 
+        try:
             series = self.audctx.Constants.Software.Versions.Series
         except:
             log.debug("Not adding vehicle series to result (not found).")
-        try: 
+        try:
             version = self.audctx.Constants.Software.Versions.ReleaseVersion
         except:
             log.debug("Not adding release version to result (not found).")
-        try: 
+        try:
             platform = self.audctx.Constants.Software.Versions.Platform
         except:
             log.debug("Not adding platform to result (not found).")
         return data.SoftwareInfo(
                 ecu=ecu,
                 platform=platform,
-                vehicle_project=project, 
+                vehicle_project=project,
                 vehicle_series=series,
                 version=version,
                 githash=githash,
@@ -179,27 +226,85 @@ class TestSuiteDataAdapter(data.TestSuiteDataAdapter):
 
     def get_testenv_info(self):
         hilinfo = get_hil_info()
+        regex = re.compile(r"(?i)^\s*(HIL)*[\s#]*(?P<id>[a-z0-9]+)\s*$")
+        m_r = regex.match(hilinfo.name)
+        if m_r:
+            hilname = "HIL {}".format(m_r.group('id').upper())
+            testequipmentlist = get_connected_equipments(hilname)
+        else:
+            testequipmentlist = []
+            log.warning(f"The HIL name: '{hilinfo.name}' (in HIL.cfg) is either missing or in wrong format 'HIL <id>'.")
         return data.TestEnvironmentinfo(
-                name=hilinfo.name,
-                description=hilinfo.description, 
-                platform=hilinfo.platform,
-                ipaddress=hilinfo.ipaddress)
+            name=hilinfo.name,
+            description=hilinfo.description,
+            platform=hilinfo.platform,
+            ipaddress=hilinfo.ipaddress,
+            testequipment=testequipmentlist)
+
+    def get_version_info(self):
+        repos = epsconfig.config('git').repos
+        eps_lib_repo = epssvn.GitInfo(repos.EPSLib)
+        test_repo = epssvn.GitInfo(string.Template(repos.TestcaseLib).substitute(USERPROFILE = 'C:'))
+        return [{
+                'name' : eps_lib_repo.root().split('\\')[-1],
+                'path' : eps_lib_repo.root(),
+                'revision' : eps_lib_repo.revision(),
+                'local_modifications' : eps_lib_repo.has_checkouts(),
+            },
+            {
+                'name' : test_repo.root().split('\\')[-1],
+                'path' : test_repo.root(),
+                'revision' : test_repo.revision(),
+                'local_modifications' : test_repo.has_checkouts(),
+            }]
+
+    def get_result(self):
+        if self.is_ci:
+            return "{base}/artifactory/{repo}/{path}/{jobid}.zip!/{report}.pdf".format(
+                    base=self.base_url,
+                    repo=self.path_info_data['repo'],
+                    path=self.path_info_data['basepath'],
+                    jobid=self.result_name,
+                    report=self.result_name)
 
     def get_logs(self):
         if self.is_ci:
-            return ["{base}/{location}/{jobid}.zip/{report}.pdf".format(
-                    base=self.base_url, 
-                    location=ARTIFACTORY_LOCATION, 
-                    jobid=self.result_name,
-                    report=self.result_name)]
+            return [self.get_build_url() + 'consoleText']
 
     def get_url(self):
         if self.is_ci:
-            return "{base}/{location}/{jobid}.zip".format(
-                    base=self.base_url, 
-                    location=ARTIFACTORY_LOCATION, 
+            return "{base}/artifactory/{repo}/{path}/{jobid}.zip".format(
+                    base=self.base_url,
+                    repo=self.path_info_data['repo'],
+                    path=self.path_info_data['basepath'],
                     jobid=self.result_name)
-        
+
+    def get_build_url(self):
+        if self.is_ci:
+            return self.path_info_data['build_url']
+
+
+    def get_other_info(self):
+        return data.RunTimeInfo()
+
+
+    def get_verdict_info(self, verdict, **dat):
+        return data.VerdictInfo(description="Execution for Suite %s is %s" % (self.name,verdict),
+                                vtype="environment",
+                                url=self.get_result() if self.is_ci else None,
+                                data=dat if self.is_ci else None)
+
+
+# TestStepDataAdapter3 ----------------------------------------------------{{{2
+class TestSuiteDataAdapter3(TestSuiteDataAdapter):
+    """Variant of TestSuiteDataAdapter where the logs are no longer a list of
+    URLs but instead a list of objects with three mandatory fields:
+    'name', 'url', and 'type', as required by Cynosure 3."""
+
+    def get_logs(self):
+        """Override 'get_logs()' to add more info about each log."""
+        return add_loginfo(super(TestSuiteDataAdapter3, self).get_logs())
+
 
 # TestCaseDataAdapter -----------------------------------------------------{{{2
 class TestCaseDataAdapter(data.TestCaseDataAdapter):
@@ -211,38 +316,47 @@ class TestCaseDataAdapter(data.TestCaseDataAdapter):
         self.result_name = audctx._INFO_.ResultName
         self.is_ci = 'jenkins' in self.result_name.lower()
         self._base_url = None
+        self.path_info_data = logs_mod.get_logs_url()
 
     @property
     def base_url(self):
         if self._base_url is None:
-            c = configparser.ConfigParser()
-            c.read([JENKINS_SETTINGS])
-            return c.get('Artifactory', 'base_url')
+            try:
+                return self.path_info_data['base_url']
+            except:
+                c = configparser.ConfigParser()
+                c.read([JENKINS_SETTINGS])
+                return c.get('Artifactory', 'base_url')
         return self._base_url
 
     def get_logs(self):
         if self.is_ci:
-            return ["{base}/{location}/{jobid}.zip/{logfile}.log".format(
-                    base=self.base_url, 
-                    location=ARTIFACTORY_LOCATION, 
+            return ["{base}/artifactory/{repo}/{path}/{jobid}.zip!/{logfile}.log".format(
+                    base=self.base_url,
+                    repo=self.path_info_data['repo'],
+                    path=self.path_info_data['basepath'],
                     jobid=self.result_name,
                     logfile=self.audctx._INFO_.SequencePath)]
 
     def get_testcode_info(self):
         return data.TestCodeInfo(
                 author=self.level.Author.strip(),
-                description=self.level.TemplateDescription.strip(),
-                creationdate=cynosure2.zulu_time(self.level.CreationDate),
-                modificationdate=cynosure2.zulu_time(self.level.ModificationDate),
+                description=get_description(self.level),
+                creationdate=cynosure.zulu_time(self.level.CreationDate),
+                modificationdate=cynosure.zulu_time(self.level.ModificationDate),
                 requirement=self.audctx.Requirement.strip(),
                 responsible=self.audctx.Responsible.strip())
 
-    def get_url(self):
-        if self.is_ci:
-            return "{base}/{location}/{jobid}.zip".format(
-                    base=self.base_url, 
-                    location=ARTIFACTORY_LOCATION, 
-                    jobid=self.result_name)
+
+# TestCaseDataAdapter3 -----------------------------------------------------{{{2
+class TestCaseDataAdapter3(TestCaseDataAdapter):
+    """Variant of TestCaseDataAdapter where the logs are no longer a list of
+    URLs but instead a list of objects with three mandatory fields:
+    'name', 'url', and 'type', as required by Cynosure 3."""
+
+    def get_logs(self):
+        """Override 'get_logs()' to add more info about each log."""
+        return add_loginfo(super(TestCaseDataAdapter3, self).get_logs())
 
 
 # TestStepDataAdapter ----------------------------------------------------{{{2
@@ -254,9 +368,9 @@ class TestStepDataAdapter(data.TestStepDataAdapter):
     def get_testcode_info(self):
         return data.TestCodeInfo(
                 author=self.level.Author.strip(),
-                description=self.level.TemplateDescription.strip(),
-                creationdate=cynosure2.zulu_time(self.level.CreationDate),
-                modificationdate=cynosure2.zulu_time(self.level.ModificationDate))
+                description=get_description(self.level),
+                creationdate=cynosure.zulu_time(self.level.CreationDate),
+                modificationdate=cynosure.zulu_time(self.level.ModificationDate))
 
 
 # Update report header with message id ==================================={{{1
@@ -265,6 +379,9 @@ class ADReportObserver(core.Observer):
         pass
 
     def notify_start(self, observable):
+        pass
+
+    def notify_update(self, observable, data):
         pass
 
     def notify_finish(self, observable, verdict):
@@ -280,7 +397,7 @@ class ADReportObserver(core.Observer):
 
 
 # Helpers ================================================================{{{1
-try: 
+try:
     HIL_INFO
 except NameError:
     HIL_INFO = None
@@ -297,6 +414,31 @@ class HILInfo(object):
         self.description = 'HIL simulator'
 
 
+def add_loginfo(url_list):
+    """Decorator to add more information to the 'logs' field that is needed for
+    Cynosure 3."""
+    if url_list is None:
+        return None
+    else:
+        logs = []
+        ix = 0
+        for url in url_list:
+            logs.append({
+                'name': 'log%02d' % ix,
+                'url': url,
+                'type': 'text',
+            })
+            ix += 1
+        return logs
+
+
+def get_description(ctx):
+    """Use InstanceDescription unless it's empty, in that case use
+    TemplateDescription."""
+    inst_desc = ctx.InstanceDescription.strip()
+    return ctx.TemplateDescription.strip() if len(inst_desc) == 0 else inst_desc
+
+
 def get_hil_info():
     """Return cached HILInfo object"""
     global HIL_INFO
@@ -305,13 +447,25 @@ def get_hil_info():
     return HIL_INFO
 
 
+def get_connected_equipments(parent):
+    url = restful_config.dest.api_url
+    response = requests.get(url, json={"parents": parent}).json()
+    idlist = []
+    for equipment in response[parent]:
+        if 'error' in equipment:
+            log.warning(equipment['error'])
+        else:
+            idlist.append(f"{equipment['type']}: {equipment['name']} ({equipment['id']})")
+    return idlist
+
+
 def get_message_handler():
     """Return message handler object based on HILInfo.  We only want to send
     messages and save to database if we are running on a HIL computer."""
     hilinfo = get_hil_info()
     # If the name contains HIL or platform is MABX
     is_hil = 'hil' in hilinfo.name.lower() or 'mabx' in hilinfo.platform.lower()
-    return cynosure2.messagehandler(use_mq=is_hil, use_db=is_hil)
+    return cynosure.messagehandler(use_mq=is_hil, use_db=is_hil)
 
 
 def map_verdict(aud_verdict):
@@ -421,12 +575,12 @@ class OutOfOrderCheck(object):
         finally:
             self.expect_start = False
 
-    def end(self):
+    def end(self, update=False):
         try:
             if self.expect_start:
                 # (N-1) : [pre-start-check]
                 # (N-1) : [start-check]
-                # (N-1) : [execution]        
+                # (N-1) : [execution]
                 # (N-1) : [end-check]
                 # (N-1) : [post-end-check]   X *Exception* somewhere here
                 # (N)   : [pre-start-check]  X  -"- (or here)
@@ -435,7 +589,7 @@ class OutOfOrderCheck(object):
                 # (N)   : [end-check]         <-- We are here
                 raise OutOfOrderError("This {} ended abnormally. Previous test case ended but this testcase was never started.".format(self.level_name))
         finally:
-            self.expect_start = True
+            self.expect_start = True if not update else self.expect_start
 
 
 # Test suite -------------------------------------------------------------{{{2
@@ -449,9 +603,9 @@ def testsuite_check_start():
     TESTSUITE_ORDER.start()
 
 
-def testsuite_check_end():
-    TESTSUITE_ORDER.end()
-
+def testsuite_check_end(Update=False):
+    TESTSUITE_ORDER.end(Update)
+        
 
 # Test case --------------------------------------------------------------{{{2
 try:
@@ -494,12 +648,27 @@ def testsuite_started(audctx):
         # Previous test suite was never ended, send message that it was aborted.
         core.testsuite().abort()
 
-    tsda = TestSuiteDataAdapter(audctx)
-    ts = core.testsuite(tsda.name) #TODO: identifier
+    if config.cynosure.major_version > 2:
+        tsda = TestSuiteDataAdapter3(audctx)
+    else:
+        tsda = TestSuiteDataAdapter(audctx)
+    # If no product was given via Jenkins
+    send_product = (tsda.productid is None)
+    ts = core.testsuite(tsda.name, tsda.get_activity_id())
     ts.register(data.TestSuiteDataObserver(tsda))
-    ts.register(cynosure2.TestSuiteMessageObserver(get_message_handler()))
+    ts.register(cynosure_msg.TestSuiteMessageObserver(get_message_handler(), send_product=send_product))
     ts.register(ADReportObserver())
     ts.start()
+
+def testsuite_updated(data):
+    """Called during execution of test suite."""
+    try:
+        testsuite_check_end(True)
+    except OutOfOrderError:
+        # This test suite was never startedm
+        core.testsuite().abort()
+    else:
+        core.testsuite().update(data)
 
 
 def testsuite_ended():
@@ -530,10 +699,13 @@ def testcase_started(audctx, level):
         log.error(e)
         log.debug("TRACE", exc_info=True)
 
-    tcda = TestCaseDataAdapter(audctx, level)
+    if config.cynosure.major_version > 2:
+        tcda = TestCaseDataAdapter3(audctx, level)
+    else:
+        tcda = TestCaseDataAdapter(audctx, level)
     tc = core.testsuite().testcase(tcda.name) #TODO: identifier
     tc.register(data.TestCaseDataObserver(tcda))
-    tc.register(cynosure2.TestCaseMessageObserver(get_message_handler()))
+    tc.register(cynosure_msg.TestCaseMessageObserver(get_message_handler()))
     tc.start()
 
 
@@ -562,7 +734,7 @@ def teststep_started(audctx, level):
     tssda = TestStepDataAdapter(audctx, level)
     tss = core.testsuite().testcase().teststep(tssda.name) #TODO: identifier
     tss.register(data.TestStepDataObserver(tssda))
-    tss.register(cynosure2.TestStepMessageObserver(get_message_handler()))
+    tss.register(cynosure_msg.TestStepMessageObserver(get_message_handler()))
     tss.start()
 
 

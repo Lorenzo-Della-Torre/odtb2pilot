@@ -1,8 +1,0 @@
-hvbm_p519_sa1:
-        register_non_diagnostic_signal:
-                receive: HvbmHvbm1canFrame53_20
-                send: HvbmNmFrame
-hvbm_p519:
-        register_non_diagnostic_signal:
-                receive: HvbmHvbm1canFrame53_20
-                send: HvbmNmFrame

@@ -1,4 +1,5 @@
 """
+
 /*********************************************************************************/
 
 
@@ -17,11 +18,9 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-
 reqprod: 76170
 version: 1
 title: : ReadDataByIdentifier (22) - dataIdentifier(-s)
-
 purpose: >
     It shall be possible to read data from all ECUs
 
@@ -31,9 +30,9 @@ description: >
 
     Supported sessions:
     The ECU shall support Service readDataByIdentifer in:
-    •	defaultSession
-    •	extendedDiagnosticSession
-    •	programmingSession, both primary and secondary bootloader
+    •   defaultSession
+    •   extendedDiagnosticSession
+    •   programmingSession, both primary and secondary bootloader
 
     Response time:
     Maximum response time for the service readDataByIdentifier (0x22) is 200 ms.
@@ -51,169 +50,211 @@ description: >
 
 details: >
     Verify service 22(ReadDataByIdentifier) in all supported diagnostic session
-    •	defaultSession
-    •	extendedDiagnosticSession
-    •	programmingSession
+    •   defaultSession
+    •   extendedDiagnosticSession
+    •   programmingSession, both primary and secondary bootloader
 """
-
 
 import logging
 from hilding.dut import Dut
 from hilding.dut import DutTestError
+from supportfunctions.support_SBL import SupportSBL
+from supportfunctions.support_sec_acc import SecAccessParam
 from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_file_io import SupportFileIO
 
 SE22 = SupportService22()
-SIO = SupportFileIO
+SIO = SupportFileIO()
+SSBL = SupportSBL()
 
 
-def read_data_id_with_two_dids(dut:Dut, did_to_read):
-    """
-    Verify the ReadDataByIdentifier service 22 with two DIDs
-    Args:
-        dut (Dut): An instance of Dut
-        did_to_read(str): DIDs for respective session (two_dids_ext_def, two_dids_prog)
-    Returns:
-        (bool): True when ECU positive response
-    """
-    response = dut.uds.read_data_by_id_22(bytes.fromhex(did_to_read))
-    if response.raw[4:6] == '62' and response.raw[6:10] == did_to_read[0:4] and\
-        response.raw[24:28] == did_to_read[4:8]:
-        logging.info("Received positive response %s and %s for request ReadDataByIdentifier ",
-                    response.raw[6:10],response.raw[24:28])
-        return True
-
-    logging.error("Test Failed:Expected Positive response, but received %s",response)
-    return False
-
-
-def read_data_id(dut:Dut, did_to_read):
+def read_data_by_id(dut, did_to_read, max_response_time, verify_two_dids_flag=False):
     """
     Verify the ReadDataByIdentifier service 22 with respective DID
     Args:
         dut (Dut): An instance of Dut
-        did_to_read(str): DID for respective session (did_ext_def, did_prog)
+        did_to_read (str): DID for respective session (did_ext_def, did_prog)
+        max_response_time (int): Response time
+        verify_two_dids_flag (bool): Flag to test two DID's
     Returns:
-        (bool): True when ECU positive response
+        (bool): True when received positive response '62'
     """
     response = dut.uds.read_data_by_id_22(bytes.fromhex(did_to_read))
+    time_elapsed = dut.uds.milliseconds_since_request()
+    if time_elapsed >= max_response_time:
+        logging.error("Test Failed: Elapsed time %sms is greater than %sms",
+                       time_elapsed, max_response_time)
+        return False
+
+    logging.info("Elapsed time %sms is less than %sms as expected", time_elapsed,
+                  max_response_time)
+
+    if verify_two_dids_flag and response.raw[4:6] == '62' and \
+        response.raw[6:10] == did_to_read[0:4] and response.raw[24:28] == did_to_read[4:8]:
+        logging.info("Received positive response '62' for DID's %s, %s for request "
+                     "ReadDataByIdentifier as expected", response.raw[6:10],
+                      response.raw[24:28])
+        return True
 
     if response.raw[4:6] == '62' and response.raw[6:10] == did_to_read:
-        logging.info("Received positive response %s for request ReadDataByIdentifier ",
-                    response.raw[6:10])
+        logging.info("Received positive response '62' for DID %s for request "
+                     "ReadDataByIdentifier as expected", response.raw[6:10])
         return True
-    logging.error("Test Failed: Expected positive response, but received %s",response)
+
+    logging.error("Test Failed: Expected positive response '62', received %s", response.raw)
     return False
 
 
-def step_1(dut: Dut, did_ext_def):
+def step_1(dut: Dut, did_ext_def, max_response_time):
     """
-    action: Verify service 22 with DID 'F120' in default session
-    expected_result: True on positive response
+    action: Verify ReadDataByIdentifier in default session.
+    expected_result: ECU should send positive response '62'.
     """
-    result = read_data_id(dut, did_ext_def)
-    if not result:
-        logging.error("Test Failed: ECU unable to read DID %s in default session", did_ext_def)
-        return False
-    logging.info("ECU successfully read DID %s in default session", did_ext_def)
-    return True
+    return read_data_by_id(dut, did_ext_def, max_response_time, False)
 
 
-def step_2(dut: Dut, two_dids_ext_def):
+def step_2(dut: Dut, two_dids_ext_def, max_response_time):
     """
-    action: Verify service 22 with DID 'F120F12A' in default session.
-    expected_result: True on positive response
+    action: Verify with two DID's ReadDataByIdentifier in default session.
+    expected_result: ECU should send positive response '62'.
     """
-    result = read_data_id_with_two_dids(dut, two_dids_ext_def)
-    if not result:
-        logging.error("Test Failed: ECU unable to read DID%s in default session", two_dids_ext_def)
-        return False
-    logging.info("ECU successfully read DID %s in default session", two_dids_ext_def)
-    return True
+    return read_data_by_id(dut, two_dids_ext_def, max_response_time, True)
 
 
-def step_3(dut: Dut, did_ext_def):
+def step_3(dut: Dut, did_ext_def, max_response_time):
     """
-    action: Verify service 22 with DID 'F120' in extended session
-    expected_result: True on positive response
+    action: Verify ReadDataByIdentifier in extended session.
+    expected_result: ECU should send positive response '62'.
     """
-    # Set ECU to Extended session
+    # Set ECU to extended session
     dut.uds.set_mode(3)
 
-    result = read_data_id(dut, did_ext_def)
-    if not result:
-        logging.error("Test Failed: ECU unable to read DID %s in extended session", did_ext_def)
-        return False
-    logging.info("ECU successfully read DID %s in extended session", did_ext_def)
-    return True
+    return read_data_by_id(dut, did_ext_def, max_response_time, False)
 
 
-def step_4(dut: Dut, two_dids_ext_def):
+def step_4(dut: Dut, two_dids_ext_def, max_response_time):
     """
-    action: Verify service 22 with DID 'F120F12A' in extended session
-    expected_result: True on positive response
+    action: Verify with two DID's ReadDataByIdentifier in extended session
+    expected_result: ECU should send positive response '62'
     """
-    result = read_data_id_with_two_dids(dut, two_dids_ext_def)
-
+    result = read_data_by_id(dut, two_dids_ext_def, max_response_time, True)
     if not result:
-        logging.error("Test Failed: ECU unable to read DID%s in extended session", two_dids_ext_def)
         return False
 
     result = SE22.read_did_f186(dut, dsession=b'\x03')
     if result:
-        logging.info("ECU successfully read DID %s in extended session", two_dids_ext_def)
-        # Set ECU to Default session
+        logging.info("ECU is in extended session as expected")
+        # Set ECU to default session
         dut.uds.set_mode(1)
         return True
 
-    logging.error("Test Failed: ECU not in extended session")
+    logging.error("Test Failed: ECU is not in extended session")
     return False
 
 
-def step_5(dut: Dut, did_prog):
+def step_5(dut: Dut, did_prog, max_response_time):
     """
-    action: Verify service 22 with DID 'F121' in programming session
-    expected_result: True on positive response
+    action: Verify ReadDataByIdentifier in PBL session
+    expected_result: ECU should send positive response '62'
     """
-    # Set ECU to Programming session
+    # Set ECU to programming session
     dut.uds.set_mode(2)
 
-    result = read_data_id(dut, did_prog)
-    if not result:
-        logging.error("Test Failed: ECU unable to read DID %s in programming session", did_prog)
+    # Verify current ECU mode is PBL session
+    ecu_mode = SE22.verify_pbl_session(dut)
+    if not ecu_mode:
+        logging.error("Test Failed: Expected ECU to be in PBL session")
         return False
-    logging.info("ECU successfully read DID %s in programming session", did_prog)
-    return True
+
+    return read_data_by_id(dut, did_prog, max_response_time, False)
 
 
 def step_6(dut: Dut, two_dids_prog):
     """
-    action: Verify service 22 with DID 'F121F12A' in programming session
-    expected_result: True on negative response and ECU is in programming session
+    action: Verify with two DID's ReadDataByIdentifier in PBL session
+    expected_result: ECU should send negative response
     """
-
     response = dut.uds.read_data_by_id_22(bytes.fromhex(two_dids_prog))
-
     if response.raw[2:4] == '7F':
-        logging.info("Received negative response %s for request ReadDataByIdentifier and NRC %s ",
-                    response.raw, response.data['nrc'])
-        result = SE22.read_did_f186(dut, dsession=b'\x02')
-        if result:
-            logging.info("ECU is in programming session")
-            # Set ECU to Default session
+        logging.info("Received negative response %s for request ReadDataByIdentifier "
+                     "as expected with NRC %s", response.raw, response.data['nrc'])
+
+        # Verify current ECU mode is PBL session
+        ecu_mode = SE22.verify_pbl_session(dut)
+        if ecu_mode:
+            logging.info("ECU is in PBL session")
+            return True
+
+        logging.error("Test Failed: Expected ECU to be in PBL session")
+        return False
+
+    logging.error("Test Failed: Expected negative response, received %s", response.raw)
+    return False
+
+
+def step_7(dut: Dut, did_prog, max_response_time):
+    """
+    action: Verify ReadDataByIdentifier in SBL session
+    expected_result: ECU should send positive response '62'
+    """
+    # Setting up keys
+    sa_keys: SecAccessParam = dut.conf.default_rig_config
+
+    # Load VBF files
+    result = SSBL.get_vbf_files()
+    if not result:
+        logging.error("Test Failed: Unable to load VBF files")
+        return False
+
+    # SBL activation
+    result_ssbl_active = SSBL.sbl_activation(dut, sa_keys)
+    if not result_ssbl_active:
+        logging.error("Test Failed: Unable to activate SBL")
+        return False
+
+    # Get current ECU mode
+    ecu_mode = SE22.verify_sbl_session(dut)
+    if not ecu_mode:
+        logging.error("Test Failed: Expected ECU to be in SBL session")
+        return False
+
+    return read_data_by_id(dut, did_prog, max_response_time, False)
+
+
+def step_8(dut: Dut, two_dids_prog):
+    """
+    action: Verify with two DID's ReadDataByIdentifier in SBL session
+    expected_result: ECU should send negative response
+    """
+    response = dut.uds.read_data_by_id_22(bytes.fromhex(two_dids_prog))
+    if response.raw[2:4] == '7F':
+        logging.info("Received negative response %s for request ReadDataByIdentifier "
+                     "as expected with NRC %s", response.raw, response.data['nrc'])
+
+        # Verify current ECU mode is SBL session
+        ecu_mode = SE22.verify_sbl_session(dut)
+        if ecu_mode:
+            logging.info("ECU is in SBL session")
+            # Set ECU to default session
             dut.uds.set_mode(1)
             return True
 
-    logging.error("Test Failed: Expected negative response, but received %s",response)
+        logging.error("Test Failed: Expected ECU to be in SBL session")
+        return False
+
+    logging.error("Test Failed: Expected negative response, received %s", response.raw)
     return False
 
 
 def run():
     """
-    Verify service 22 (ReadDataByIdentifier) is supported in default session, extended session
-    and programming session
+    Verify service 22(ReadDataByIdentifier) in all supported diagnostic session
+        •   Default session
+        •   Extended session
+        •   Programming session, both primary and secondary bootloader
     """
     dut = Dut()
+
     start_time = dut.start()
     result = False
     result_step = False
@@ -221,33 +262,43 @@ def run():
     parameters_dict = {'did_ext_def':'',
                        'did_prog':'',
                        'two_dids_ext_def':'',
-                       'two_dids_prog':''}
-
+                       'two_dids_prog':'',
+                       'max_response_time': 0}
     try:
-        dut.precondition(timeout=60)
-        parameters = SIO.parameter_adopt_teststep(parameters_dict)
+        dut.precondition(timeout=120)
 
+        parameters = SIO.parameter_adopt_teststep(parameters_dict)
         if not all(list(parameters.values())):
             raise DutTestError("yml parameters not found")
 
-        result_step = dut.step(step_1, parameters['did_ext_def'], purpose="Verify service 22 with"
-                                                                " DID 'F120' in Default session")
+        result_step = dut.step(step_1, parameters['did_ext_def'], parameters['max_response_time'],
+                               purpose="Verify service 22 with DID 'F120' in Default session")
         if result_step:
-            result_step = dut.step(step_2, parameters['two_dids_ext_def'], purpose="Verify service"
-                                                    " 22 with DIDs 'F120F12A' in Default session")
+            result_step = dut.step(step_2, parameters['two_dids_ext_def'],
+                                   parameters['max_response_time'],  purpose="Verify service 22 "
+                                   "with DIDs 'F120F12A' in Default session")
         if result_step:
-            result_step = dut.step(step_3, parameters['did_ext_def'], purpose="Verify service "
-                                                        "22 with DID 'F120' in Extended session")
+            result_step = dut.step(step_3, parameters['did_ext_def'],
+                                   parameters['max_response_time'], purpose="Verify service 22 "
+                                   "with DID 'F120' in Extended session")
         if result_step:
-            result_step = dut.step(step_4, parameters['two_dids_ext_def'], purpose="Verify service"
-                                                  " 22 with DIDs 'F120F12A' in Extended session")
+            result_step = dut.step(step_4, parameters['two_dids_ext_def'],
+                                   parameters['max_response_time'], purpose="Verify service 22 "
+                                   "with DIDs 'F120F12A' in Extended session")
         if result_step:
-            result_step = dut.step(step_5, parameters['did_prog'], purpose="Verify service 22 with"
-                                                              "DID 'F121' in programming session")
+            result_step = dut.step(step_5, parameters['did_prog'], parameters['max_response_time'],
+                                   purpose="Verify service 22 with DID 'F121' in PBL session")
         if result_step:
-            result_step = dut.step(step_6, parameters['two_dids_ext_def'], purpose="Verify service"
-                                                " 22 with DIDs 'F121F12A' in programming session")
+            result_step = dut.step(step_6, parameters['two_dids_prog'], purpose="Verify "
+                                   "service 22 with DIDs 'F121F12A' in PBL session")
+        if result_step:
+            result_step = dut.step(step_7, parameters['did_prog'], parameters['max_response_time'],
+                                   purpose="Verify service 22 with DID 'F121' in SBL session")
+        if result_step:
+            result_step = dut.step(step_8, parameters['two_dids_prog'], purpose="Verify "
+                                   "service 22 with DIDs 'F121F12A' in SBL session")
         result = result_step
+
     except DutTestError as error:
         logging.error("Test failed: %s", error)
     finally:

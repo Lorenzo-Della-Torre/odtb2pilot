@@ -24,8 +24,10 @@ import logging
 import sys
 import importlib
 import traceback
+import time
 from datetime import datetime
 from pathlib import Path
+import yaml
 
 from iterfzf import iterfzf
 
@@ -34,6 +36,7 @@ from hilding.reset_ecu import reset_and_flash_ecu
 from hilding.uds import UdsEmptyResponse
 
 from autotest.blacklisted_tests_handler import add_to_result, create_logs, get_dictionary_from_yml
+from supportfunctions.support_relay import Relay
 
 
 log = logging.getLogger('testrunner')
@@ -68,8 +71,8 @@ def configure_progress_log(test_res_dir):
 def parse_test_file_name(test_file_py):
     """ return a dictionary with reqprod, variant, revision, and description """
     reqprod_match = re.search(
-        r'^e_(?P<reqprod>\d+)_(?P<variant>[a-zA-Z]*)_' +
-        r'(?P<revision>\d+)_(?P<description>.*).py$', test_file_py.name)
+        r'(?P<file_name>[a-zA-Z0-9_]*).py-->' +
+        r'(?P<tool>[a-zA-Z]*)_(?P<reqprod>\d+)_(?P<variant_revision>[a-zA-Z0-9_]*)$', test_file_py)
     if not reqprod_match:
         sys.exit(f"Got a test with an incorrect format {test_file_py}")
     return reqprod_match.groupdict()
@@ -81,7 +84,7 @@ def get_test_case_name(test_file_py):
     # it might seem a bit silly to basically recreate the filename again, but
     # let's keep it like this until we have settled on a good way to name our
     # testcases using epsmsgbus and epsdb
-    return f"e_{t['reqprod']}_{t['variant']}_{t['revision']}_{t['description']}"
+    return f"{t['tool']}_{t['reqprod']}_{t['variant_revision']}"
 
 
 def fake_argv_filename(test_file_py):
@@ -99,7 +102,8 @@ def fake_argv_filename(test_file_py):
 def configure_log_file_handler(test_file_py):
     """ configure log file handler """
     test_res_dir = get_test_res_dir()
-    log_file = test_res_dir.joinpath(test_file_py.with_suffix('.log').name)
+    log_file = test_res_dir.joinpath(Path(test_file_py.replace(".py-->", "--_--"))
+                                                            .with_suffix('.log').name)
     log_file_handler = logging.FileHandler(log_file)
     log_file_handler.setFormatter(logging.Formatter(" %(message)s"))
     log_file_handler.setLevel(logging.INFO)
@@ -133,9 +137,9 @@ def run_test(test_file_py):
 
 def run_test_and_parse_log_to_result(test_file_py, result_file):
     """ create a test specific log, run the test, and parse the result """
-    log.info("Running: %s", test_file_py.name)
+    log.info("Running: %s", Path(test_file_py).name)
     log_file, log_file_handler = configure_log_file_handler(test_file_py)
-    verdict = run_test(test_file_py)
+    verdict = run_test(Path(test_file_py.split("-->")[0]))
     logging.root.removeHandler(log_file_handler)
     # open log file and check for result
     with open(log_file) as log_file_handle:
@@ -168,11 +172,12 @@ def run_test_and_parse_log_to_result(test_file_py, result_file):
                 else:
                     verdict = "errored"
 
-        reqprod = parse_test_file_name(test_file_py)['reqprod']
+        entry = parse_test_file_name(test_file_py)
+        requirement = f"{entry['tool']}_{entry['reqprod']}_{entry['variant_revision']}"
         # append to result file
         with open(result_file, mode='a') as result_file_handle:
-            result_file_handle.write(f"{reqprod} {hilding_verdict} {log_file.name}\n")
-        log.info("%s done: hilding_verdict = %s", reqprod, hilding_verdict)
+            result_file_handle.write(f"{requirement} {hilding_verdict} {log_file.name}\n")
+        log.info("%s done: hilding_verdict = %s", entry['reqprod'], hilding_verdict)
 
     return verdict
 
@@ -193,6 +198,24 @@ def add_testsuite_endtime(result_file):
         now = datetime.now().strftime("%Y%m%d %H%M")
         result_file_handle.write(f"Test done. Time: {now}\n")
 
+def global_verdict_file(result_file):
+    """ Create a file that specify the global verdict
+        This file is only used by the ci
+    """
+    with open(result_file) as file:
+        lines = [line.rstrip() for line in file]
+    global_verdict = "PASSED"
+
+    # check all verdicts in Result.txt file
+    for req in lines:
+        verdict = req.split()[1]
+        if verdict != "PASSED":
+            # result is failed if anything but PASSED
+            global_verdict = "FAILED"
+            break
+    filename = "global_verdict_"+global_verdict+".txt"
+    # create the empty txt file
+    open(result_file.parent.absolute().joinpath(filename),'a').close()
 
 def run_tests(test_files):
     """ run tests without saving any results """
@@ -223,7 +246,33 @@ def run_tests_and_save_results(test_files, result_dir, use_db=False, use_mq=Fals
     analytics.testsuite_ended()
 
 
-def get_ecutest_files(glob_pattern):
+def get_ecutest_files(file_dict, reqprod):
+    """ use fzf to select tests to run """
+    files = []
+    ecutest_dir = Path(__file__).parent.parent.joinpath("test_folder")
+    for key, value in file_dict.items():
+        files_temp = [str(f) for f in ecutest_dir.glob(f"*/*{key}.py")]
+        if len(files_temp) != 0:
+            files.append(files_temp[0]+ "----->"+value)
+
+    if reqprod.endswith(".py"):
+        test_files = [str(f) for f in ecutest_dir.glob(f"*/*{reqprod}")]
+    elif len(files) == 1:
+        test_files = files
+    else:
+        test_files = iterfzf(files, multi=True)
+
+    # If the file is not found in the mapping file,
+    # search the keyword in the test_folder folder.
+    if not test_files:
+        file_name_fragment = reqprod.rstrip('.py')
+        test_files = get_testfiles_generic(f"*/*{file_name_fragment}*.py")
+        return test_files
+
+    return [Path(p.split("----->")[0]) for p in test_files]
+
+
+def get_testfiles_generic(glob_pattern):
     """ use fzf to select tests to run """
     ecutest_dir = Path(__file__).parent.parent.joinpath("test_folder")
     files = [str(f) for f in ecutest_dir.glob(glob_pattern)]
@@ -236,9 +285,11 @@ def get_ecutest_files(glob_pattern):
 
 def runner(args):
     """ test suite/case runner """
+
+    logging.debug(args)
     if args.reqprod:
-        file_name_fragment = args.reqprod.rstrip('.py')
-        test_files = get_ecutest_files(f"*/*{file_name_fragment}*.py")
+        file_name_list = script_picker(args.reqprod)
+        test_files = get_ecutest_files(file_name_list, args.reqprod)
     else:
         # see if we can find a reqprod number in current branch (that is, if
         # the branch is named like req_60112 or BSW_REQPROD_60112)
@@ -253,11 +304,11 @@ def runner(args):
 
         if branch_name_reqprod:
             for reqprod in branch_name_reqprod:
-                test_files = get_ecutest_files(f"*/*{reqprod}*.py")
+                test_files = get_testfiles_generic(f"*/*{reqprod}*.py")
         else:
             # current git branch does not match so let's do a interactive fuzzy
             # select from all available automated tests
-            test_files = get_ecutest_files("*/*.py")
+            test_files = get_testfiles_generic("*/*.py")
 
     if args.save_result:
         run_tests_and_save_results(
@@ -306,7 +357,7 @@ def nightly(args):
                 current_category = stripped_line
                 blacklisted_reqprods[current_category] = {}
             elif current_category == "":
-                test_files.append(Path(stripped_line))
+                test_files.append(stripped_line)
             else:
                 split_line = stripped_line.split("|", maxsplit=1)
                 reqprod_id = split_line[0]
@@ -320,3 +371,47 @@ def nightly(args):
         test_files, test_res_dir, args.use_db, args.use_mq, reset_between=True)
 
     add_testsuite_endtime(result_file)
+    # create an empty txt file with the global verdict as name
+    global_verdict_file(result_file)
+
+def relay(relay_state):
+    """ Trigger relay """
+    rel = Relay()
+    success = 0
+    if relay_state == "on":
+        success = rel.ecu_on()
+    elif relay_state == "off":
+        success = rel.ecu_off()
+    elif relay_state == "reset":
+        logging.info("Waiting 5 seconds between ECU OFF and ON")
+        success = rel.ecu_off()
+        time.sleep(5)
+        success = success and rel.ecu_on()
+    elif relay_state == "toggle":
+        success = rel.toggle_power()
+    else:
+        logging.error(" ** Relay command not correct **")
+        logging.error(" ** Please use on/off/reset/toggle only **")
+
+    if success == 1:
+        logging.info("Success")
+    else:
+        logging.info("Not Success")
+
+def script_picker(reqprod):
+    """
+    This function returns the script name from the script mapping
+    file by taking the reqprod ID as input.
+    """
+
+    script = {}
+    with open('req_script_mapping.yml') as mapping_file:
+        mapping_dict = yaml.safe_load(mapping_file)
+
+    for key, value in mapping_dict.items():
+        if reqprod in value:
+            for req in value.split(" "):
+                if reqprod in req:
+                    script[key] = req
+
+    return script

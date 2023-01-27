@@ -1,0 +1,10 @@
+hvbm_p519:
+    run:
+        receive: HvbmHvbm1canFrame01_100
+        send: HvbmNmFram
+        sa_level_extended_session: ['05','19','23','27']
+        time_parameters:
+            p2server_max_non_prog: 50
+            p2server_max_prog: 25
+            jitter_testenv: 30
+        can_frame_tolerance: 50

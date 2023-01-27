@@ -1,4 +1,4 @@
 hvbm_p519:
-    step_2:
+    run:
         pbl_memory_start_address: '80000000'
         pbl_memory_write_length: '0000C000'

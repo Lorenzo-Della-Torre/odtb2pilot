@@ -1,4 +1,5 @@
 """
+
 /*********************************************************************************/
 
 
@@ -16,7 +17,6 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-
 
 reqprod: 481861
 version: 0
@@ -49,19 +49,19 @@ description: >
 
     Table - Routine Control "Check Security Access Method" request message structure-
     ===================================================================================
-    Message direction:	    Client => Server
-    Message Type:	        Diagnostic request Check SecurityAccess Method
+    Message direction:        Client => Server
+    Message Type:            Diagnostic request Check SecurityAccess Method
     ===================================================================================
-    Data byte   |	    Description                         |  Byte Value (Hex)
+    Data byte   |        Description                         |  Byte Value (Hex)
     ===================================================================================
-    #1        	    Routine Control request SID	                31
+    #1                Routine Control request SID                    31
     -----------------------------------------------------------------------------------
-    #2	            Subfunction routine control type	        01
+    #2                Subfunction routine control type            01
     -----------------------------------------------------------------------------------
     #3              Routine Identifier  [byte 1], msb           02
-    #4	            Routine Identifier [byte 2], lsb	        31
+    #4                Routine Identifier [byte 2], lsb            31
     -----------------------------------------------------------------------------------
-    #5	            Record: Security Access Level	            01, 03,  ..(odd number)
+    #5                Record: Security Access Level                01, 03,  ..(odd number)
     -----------------------------------------------------------------------------------
     Notes: The routine control record byte (security access level) shall be the
     requested security access level for subfunction requestSeed, i.e. odd number only.
@@ -70,23 +70,23 @@ description: >
 
     Table - Routine Control "Check Security Access Method" response message structure-
     ===================================================================================
-    Message direction:	Client =>  Server
-    Message Type:	Diagnostic response Check SecurityAccess Method
+    Message direction:    Client =>  Server
+    Message Type:    Diagnostic response Check SecurityAccess Method
     ===================================================================================
-    Data byte	        Description 	                       Byte Value (Hex)
+    Data byte            Description                            Byte Value (Hex)
     ===================================================================================
-    #1	            Routine Control response SID	            71
+    #1                Routine Control response SID                71
     ------------------------------------------------------------------------------------
-    #2	            Subfunction routine control type	        01
+    #2                Subfunction routine control type            01
     ------------------------------------------------------------------------------------
     #3              Routine Identifier  [byte 1], msb           02
-    #4	            Routine Identifier [byte 2], lsb	        31
+    #4                Routine Identifier [byte 2], lsb            31
     ------------------------------------------------------------------------------------
-    #5	            Routine info (status and type)	            See general
+    #5                Routine info (status and type)                See general
                                                                 diagnostic requirements
     ------------------------------------------------------------------------------------
     #6              Result value  [byte 1], msb                 00-FF
-    #7	            [byte 2], lsb	                            00-FF
+    #7                [byte 2], lsb                                00-FF
     ------------------------------------------------------------------------------------
     Notes: The result value shall be the supported authentication_method for requested
     security access level, i.e. byte 1 msb shall be the authentication_method msb.
@@ -96,19 +96,18 @@ details: >
     Routine request verification for security access levels and check for response with supported
     authentication method i.e. '0001' or 'FFFF' based on the security access level for programming
     and extended session respectively.
-
 """
 
-import logging
 import time
+import logging
 from hilding.dut import Dut
 from hilding.dut import DutTestError
-from supportfunctions.support_carcom import SupportCARCOM
 from supportfunctions.support_service27 import SupportService27
+from supportfunctions.support_carcom import SupportCARCOM
 from supportfunctions.support_file_io import SupportFileIO
 
 SE27 = SupportService27()
-S_CARCOM = SupportCARCOM()
+SC_CARCOM = SupportCARCOM()
 SIO = SupportFileIO()
 
 
@@ -117,15 +116,14 @@ def routine_control_request(dut, sa_level, p2server_max):
     Call routine control request and verify response time is less than p2server_max time frame
     Args:
         dut (Dut): An instance of Dut
-        sa_level (int): security access level
-        p2server_max (int): maximum allowed response time based on session
-
+        sa_level (int): Security access level
+        p2server_max (int): Maximum allowed response time based on session
     Returns:
-        auth_method (str) : last 4 bytes of the routine control request response
+        auth_method (str): Last 4 bytes of the routine control request response
     """
     # Preparing routine control request payload 31010231 + (Security access level)
     byte_routine_request = b'\x01\x02\x31' + bytes.fromhex(sa_level)
-    payload = S_CARCOM.can_m_send("RoutineControlRequestSID", byte_routine_request, b'')
+    payload = SC_CARCOM.can_m_send("RoutineControlRequestSID", byte_routine_request, b'')
 
     response = dut.uds.generic_ecu_call(payload)
     time_elapsed = dut.uds.milliseconds_since_request()
@@ -140,7 +138,7 @@ def routine_control_request(dut, sa_level, p2server_max):
             auth_method = ''
         else:
             logging.info("Elapsed time %sms is less than p2Server_max %sms for SA level %s as"
-                        " expected", time_elapsed, p2server_max, sa_level)
+                         " expected", time_elapsed, p2server_max, sa_level)
     else:
         logging.error("Response received %s for routine control request(SA level - %s)",
                        response.data['nrc'], sa_level)
@@ -154,9 +152,8 @@ def verify_sa_levels_and_p2_server_max(dut, sa_levels_and_auth_method, max_respo
     Verify security access levels and allowed authentication method is within max_response_time
     Args:
         dut (Dut): An instance of Dut
-        sa_levels_and_auth_method (dict): dictionary containing security access levels
-                    and allowed authentication method
-        max_response_time (int): maximum response time for respective session
+        sa_levels_and_auth_method (dict): Security access levels and allowed authentication method
+        max_response_time (int): Maximum response time for respective session
     Returns:
         (bool): True correct authentication method received for SA level
     """
@@ -187,9 +184,8 @@ def verify_sa_levels(dut, sa_levels_and_auth_method, session):
     Verify routine control request
     Args:
         dut (Dut): An instance of Dut
-        sa_levels_and_auth_method (dict): dictionary containing security access levels
-                    and allowed authentication method
-        session (str): programming or extended
+        sa_levels_and_auth_method (dict): Security access levels and allowed authentication method
+        session (str): Programming or extended
     Returns:
         (bool): True when received all SA level before security access
     """
@@ -197,7 +193,7 @@ def verify_sa_levels(dut, sa_levels_and_auth_method, session):
     for sa_level, allowed_value in sa_levels_and_auth_method.items():
         # Preparing routine control request payload 31010231 + (Security access level)
         byte_routine_request = b'\x01\x02\x31' + bytes.fromhex(sa_level)
-        payload = S_CARCOM.can_m_send("RoutineControlRequestSID", byte_routine_request, b'')
+        payload = SC_CARCOM.can_m_send("RoutineControlRequestSID", byte_routine_request, b'')
 
         response = dut.uds.generic_ecu_call(payload)
 
@@ -229,10 +225,10 @@ def step_1(dut: Dut, yml_parameters):
     """
     action: Verify routine control request respond with authentication method i.e. '0001' or
             'FFFF' based on the security access level for programming session.
-
     expected_result: ECU should send supported authentication method for respective security access
-            level for programming session.
+                     level for programming session.
     """
+    # Set to programming session
     dut.uds.set_mode(2)
 
     programming_sa_levels = yml_parameters['programming_sa_levels_and_auth_method']
@@ -242,22 +238,21 @@ def step_1(dut: Dut, yml_parameters):
     result_without_security_access = verify_sa_levels(dut, programming_sa_levels, 'programming')
 
     # Security access
-    sa_result = SE27.activate_security_access_fixedkey(dut, dut.conf.default_rig_config,
-                                                        step_no=272, purpose="SecurityAccess")
+    sa_result = SE27.activate_security_access_fixedkey(dut, dut.conf.default_rig_config)
 
     if not sa_result:
-        logging.error("Test failed: Security access denied for programming session")
+        logging.error("Test Failed: Security access denied for programming session")
         return False
 
     # Verify routine control request with security access
     result_with_security_access = verify_sa_levels_and_p2_server_max(dut, programming_sa_levels,
-                                                                   p2_server_max)
+                                                                     p2_server_max)
 
     if result_with_security_access and result_without_security_access:
         return True
 
     logging.error("Test Failed: Verification of supported security access levels and allowed"
-                                " authentication method failed for programming session")
+                  " authentication method failed for programming session")
     return False
 
 
@@ -265,11 +260,10 @@ def step_2(dut: Dut, yml_parameters):
     """
     action: Verify routine control request with supported authentication method i.e. '0001' or
             'FFFF' based on the security access level for extended session.
-
     expected_result: ECU should send supported authentication method for respective security access
                      level for extended session.
     """
-
+    # Set to extended session
     dut.uds.set_mode(1)
     dut.uds.set_mode(3)
 
@@ -281,11 +275,10 @@ def step_2(dut: Dut, yml_parameters):
 
     # Security access
     time.sleep(10)
-    sa_result = SE27.activate_security_access_fixedkey(dut, sa_keys=dut.CNF.default_rig_config,
-                                                        step_no=272, purpose="SecurityAccess")
+    sa_result = SE27.activate_security_access_fixedkey(dut, sa_keys=dut.conf.default_rig_config)
 
     if not sa_result:
-        logging.error("Test failed: Security access denied for extended session")
+        logging.error("Test Failed: Security access denied for extended session")
         return False
 
     # Verify routine control request with security access of extended session
@@ -296,7 +289,7 @@ def step_2(dut: Dut, yml_parameters):
         return True
 
     logging.error("Test Failed: Verification of supported security access levels and allowed"
-                                " authentication method failed for extended session")
+                  " authentication method failed for extended session")
     return False
 
 
@@ -312,27 +305,26 @@ def run():
     result = False
     result_step = False
 
-    parameters_dict = {'programming_sa_levels_and_auth_method' : '',
-                       'p2_server_max_programming' : '',
-                       'extended_sa_levels_and_auth_method' : '',
-                       'p2_server_max_extended' : ''}
+    parameters_dict = {'programming_sa_levels_and_auth_method' : {},
+                       'p2_server_max_programming' : 0,
+                       'extended_sa_levels_and_auth_method' : {},
+                       'p2_server_max_extended' : 0}
     try:
-        dut.precondition(timeout=60)
+        dut.precondition(timeout=100)
 
         parameters = SIO.parameter_adopt_teststep(parameters_dict)
         if not all(list(parameters.values())):
             raise DutTestError("yml parameters not found")
 
         result_step = dut.step(step_1, parameters, purpose=" Verify routine control request"
-                              " respond with authentication method i.e. '0001' or 'FFFF' based"
-                              " on the security access level for programming session")
-
+                               " respond with authentication method i.e. '0001' or 'FFFF' based"
+                               " on the security access level for programming session")
         if result_step:
-            result_step = dut.step(step_2, parameters, purpose="Verify routine control request"
-                                   " with supported authentication method i.e. '0001' or 'FFFF' "
+            result_step = dut.step(step_2, parameters, purpose="Verify routine control request "
+                                   "with supported authentication method i.e. '0001' or 'FFFF' "
                                    "based on the security access level for extended session")
-
         result = result_step
+
     except DutTestError as error:
         logging.error("Test failed: %s", error)
     finally:

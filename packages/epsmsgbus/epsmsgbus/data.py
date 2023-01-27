@@ -27,16 +27,20 @@ different objects.
 
 import uuid
 from epsmsgbus.core import Observer
+import logging
 
+log = logging.getLogger('epsmsgbus.data')
 
 # Data structures for metadata  =========================================={{{1
 class ExecutionInfo(object):
     """Information about the test execution itself."""
-    def __init__(self, name=None, description=None, executor=None, project=None):
+    def __init__(self, name=None, description=None, executor=None, 
+            project=None, parameters=None):
         self.name = name
         self.description = description
         self.executor = executor
         self.project = project
+        self.parameters = parameters
 
 
 class SimulationInfo(object):
@@ -63,8 +67,18 @@ class SoftwareInfo(object):
         self.version = version
         self.githash = githash
         self.changeset = changeset
-        self.inhousechangeset = inhousechangeset
+        self.inhousechangeset = inhousechangeset    
 
+class RunTimeInfo(list):
+    def __init__(self):
+        self = []
+
+    def __call__(self, data):
+        self.add(data)
+        return self
+
+    def add(self, data):
+        self.append(data)
 
 class TestCodeInfo(object):
     """Metadata about the test case implementation (the test code)."""
@@ -82,12 +96,22 @@ class TestCodeInfo(object):
 class TestEnvironmentinfo(object):
     """Information about the test environment (simulator, test object, etc.)
     This data container will likely have more attributes later on."""
-    def __init__(self, name=None, description=None, platform=None, ipaddress=None):
+    def __init__(self, name=None, description=None, platform=None, ipaddress=None, testequipment=None):
         self.name = name
         self.description = description
         self.ipaddress=ipaddress
         self.platform = platform
+        self.testequipment=testequipment
 
+
+class VerdictInfo(object):
+    def __init__(self, description=None, code=None, vtype=None, url=None, data=None):
+        self.description = description
+        self.code = code
+        self.vtype = vtype
+        self.url = url
+        self.data = data
+        
 
 # Adapters for getting metadata from the test environmenbt ==============={{{1
 class TestSuiteDataAdapter(object):
@@ -133,6 +157,18 @@ class TestSuiteDataAdapter(object):
         """Return URL to the test report."""
         pass
 
+    def get_build_url(self):
+        pass
+    
+    def get_version_info(self):
+        """Return versions of different repos"""
+        pass
+
+    def get_other_info(self):
+        return RunTimeInfo()
+
+    def get_verdict_info(self, verdict, **dat):
+        return VerdictInfo()
 
 class TestCaseDataAdapter(object):
     """Adapter for metadata from test cases and test steps. Only 'get_taskid()'
@@ -143,7 +179,7 @@ class TestCaseDataAdapter(object):
         return []
 
     def get_testcode_info(self):
-        """Return informatino about the test case itself (author, requirment,
+        """Return information about the test case itself (author, requirement,
         modification date, etc)."""
         return TestCodeInfo()
 
@@ -155,7 +191,6 @@ class TestCaseDataAdapter(object):
 class TestStepDataAdapter(TestCaseDataAdapter):
     """Test steps contain the same metadata as test cases."""
     pass
-
 
 
 # Observers that add meta data using adapters. ==========================={{{1
@@ -177,13 +212,24 @@ class TestSuiteDataObserver(Observer):
         observable.metadata.testenv_info = self.adapter.get_testenv_info()
         observable.metadata.simulation_info = self.adapter.get_simulation_info()
         observable.metadata.software_info = self.adapter.get_software_info()
-
+        observable.metadata.version_info = self.adapter.get_version_info()
+        observable.metadata.others = self.adapter.get_other_info()
+        
     def notify_finish(self, observable, verdict):
         """Copy results, note that the verdict is handled by the test suite!"""
-        observable.url = self.adapter.get_url()
+        observable.url = self.adapter.get_build_url()
         observable.logs = self.adapter.get_logs()
+        observable.metadata.verdict_info = self.adapter.get_verdict_info(verdict, HILTestResults=self.adapter.get_url())
+        self.adapter.clear_activity_id()
 
-
+    def notify_update(self, observable, data):
+        try:
+            observable.metadata.others(data)
+        except AttributeError as e:
+            #It is not a proper update, it is the beginning of execution from HILTest_mt pipeline
+            log.info(e)
+            self.notify_start(observable)
+        
 class TestCaseDataObserver(Observer):
     """Copy data from the adapter to the TestCase object."""
 

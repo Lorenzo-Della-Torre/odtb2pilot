@@ -36,38 +36,33 @@ description: >
 
 details: >
 
-    Validate Security Access response of clientRequestSeed,
-    serverResponseSeed, clientSendKey with correct message identifier.
-
-    Validate Security Access response of  clientRequestSeed and
-    clientSendKey with incorrect message identifier
+    Validate security access response of clientRequestSeed, serverResponseSeed, clientSendKey
+    with correct message identifier and incorrect message identifier
 
 """
 
 import time
 import logging
-from hilding.conf import Conf
 from hilding.dut import DutTestError
 from hilding.dut import Dut
 from supportfunctions.support_sec_acc import SupportSecurityAccess
 from supportfunctions.support_file_io import SupportFileIO
 
-CNF = Conf()
 SSA = SupportSecurityAccess()
 SIO = SupportFileIO()
 
 
-def security_access_method(dut: Dut):
+def security_access_method(dut):
     """
-    Security Access to ECU and store response of all sub functions in dictionary
+    Security access to ECU and store response of all sub functions in dictionary
     Args:
-                dut (class object): dut instance
-
-    Results: payload_dict
+    dut (Dut): An instance of dut
+    Results:
+    payload_dict (dict): payload dictionary for security access
     """
     payload_dict = {'client_seed': '', 'server_seed': '', 'client_key': ''}
 
-    SSA.set_keys(CNF.default_rig_config)
+    SSA.set_keys(dut.conf.default_rig_config)
     SSA.set_level_key(1)
     # Prepare request for a “client request seed”
     payload = SSA.prepare_client_request_seed()
@@ -84,70 +79,71 @@ def security_access_method(dut: Dut):
     response = response.raw[6:(6+4)]
     result = SSA.process_server_response_key(bytearray.fromhex(response))
     if result != 0:
-        logging.error("Security Access to ECU not Successful")
+        logging.error("Security access to ECU not successful")
     return payload_dict
 
 
 def step_1(dut: Dut):
     """
-    action: Perform all the Security Access methods i.e clientRequestSeed,
-            serverResponseSeed, clientSendKey and Validate correct
-            message identifiers.
+    action: Perform all the security access methods i.e clientRequestSeed, serverResponseSeed,
+            clientSendKey and validate correct message identifiers.
     expected_result: Positive response with valid message identifier.
     """
-    # Sleep time to avoid NRC37
-    time.sleep(5)
     parameters = SIO.extract_parameter_yml("*", "message_identifier")
     if parameters is not None:
         message_identifier = parameters
+
         dut.uds.set_mode(2)
-        # Security Access to ECU
+
+        # Sleep time to avoid NRC37
+        time.sleep(5)
+
+        # Security access to ECU
         payload_dict = security_access_method(dut)
 
-        # comparing bytearray converted client_seed payload value from 4:8(0001) with
+        # Comparing bytearray converted client_seed payload value from 4:8(0001) with
         # message identifier 0001
         if bytearray.hex(payload_dict['client_seed'][4:6]) != message_identifier[0]:
             msg = "Incorrect message identifier {} received for clientRequestSeed\
                                ".format(bytearray.hex(payload_dict['client_seed'][4:6]))
             raise DutTestError(msg)
 
-        # comparing server_seed payload value from 4:8(0002) with message identifier 0002
+        # Comparing server_seed payload value from 4:8(0002) with message identifier 0002
         if payload_dict['server_seed'][4:8] != message_identifier[1]:
             msg = "Incorrect message identifier {} received for serverResponseSeed\
                               ".format(payload_dict['server_seed'][4:8])
             raise DutTestError(msg)
 
-        # comparing bytearray converted client_key payload value from 4:8(0003) with
+        # Comparing bytearray converted client_key payload value from 4:8(0003) with
         # message identifier 0003
         if bytearray.hex(payload_dict['client_key']).upper()[4:8] != message_identifier[2]:
             msg = "Incorrect message identifier {} received for clientSendKey\
                                ".format(bytearray.hex(payload_dict['client_key']).upper()[4:8])
             raise DutTestError(msg)
 
-        msg = "Message identifiers for subfunctions clientRequestSeed, serverResponseSeed and "\
-              "clientSendKey are {}, {}, {} as expected".format(\
-               bytearray.hex(payload_dict['client_seed'][4:6]),payload_dict['server_seed'][4:8],\
-               bytearray.hex(payload_dict['client_key']).upper()[4:8])
-
-        logging.info(msg)
+        logging.info("Message identifiers for subfunctions clientRequestSeed, serverResponseSeed"
+                     " and clientSendKey are %s, %s, %s as expected",
+                      bytearray.hex(payload_dict['client_seed'][4:6]),
+                      payload_dict['server_seed'][4:8],
+                      bytearray.hex(payload_dict['client_key']).upper()[4:8])
         return True
 
-    logging.error("Test Failed: Yml Parameter not Found or incorrect message identifier")
+    logging.error("Test Failed: Yml Parameter not found or incorrect message identifier")
     return False
 
 
 def step_2(dut: Dut):
     """
-    action: Perform clientRequestSeed with incorrect message identifier
-            and compare response with 7F to validate negative response.
+    action: Perform clientRequestSeed with incorrect message identifier and compare response with
+            7F to validate negative response.
     expected_result: Negative response 0x7F in the can message.
     """
     dut.uds.set_mode(1)
     dut.uds.set_mode(2)
-    SSA.set_keys(CNF.default_rig_config)
+    SSA.set_keys(dut.conf.default_rig_config)
     SSA.set_level_key(1)
 
-    # prepare request for a “client request seed”
+    # Prepare request for a “client request seed”
     payload = SSA.prepare_client_request_seed()
 
     # Corrupt payload with message identifier 0x0004
@@ -160,23 +156,23 @@ def step_2(dut: Dut):
         logging.info("Received NRC 31(requestOutOfRange) for incorrect message identifier for seed"
                     " request as expected")
         return True
-    msg = "Test failed: Expected NRC 31(requestOutOfRange), received {}".format(response)
-    logging.error(msg)
+
+    logging.error("Test Failed: Expected NRC 31(requestOutOfRange), received %s", response)
     return False
 
 
 def step_3(dut: Dut):
     """
-    action: Perform clientSendKey with incorrect message identifier
-        and compare response with 7F to validate negative response.
+    action: Perform clientSendKey with incorrect message identifier and compare response with 7F
+            to validate negative response.
     expected_result: Negative response 7F in the can message.
     """
     dut.uds.set_mode(1)
     dut.uds.set_mode(2)
-    SSA.set_keys(CNF.default_rig_config)
+    SSA.set_keys(dut.conf.default_rig_config)
     SSA.set_level_key(1)
 
-    # prepare client request seed
+    # Prepare client request seed
     client_req_seed = SSA.prepare_client_request_seed()
     response = dut.uds.generic_ecu_call(client_req_seed)
 
@@ -192,39 +188,38 @@ def step_3(dut: Dut):
 
     # Check NRC 31(requestOutOfRange) for corrupted client key in response.raw
     if response.raw[6:8] == "31":
-        logging.info("Received NRC 31(requestOutOfRange) for incorrect message identifier for key "
-        "response as expected")
+        logging.info("Received NRC 31(requestOutOfRange) for incorrect message identifier for key"
+                     " response as expected")
         return True
 
-    msg = "Test failed: Expected NRC 31(requestOutOfRange), received {}".format(response)
-    logging.error(msg)
+    logging.error("Test Failed: Expected NRC 31(requestOutOfRange), received %s", response)
     return False
 
 
 def run():
     """
-    Validate Security Access response of clientRequestSeed,
-    serverResponseSeed, clientSendKey with correct message identifier
-    and incorrect message identifier.
-
+    Validate security access response of clientRequestSeed, serverResponseSeed, clientSendKey
+    with correct message identifier and incorrect message identifier.
     """
     dut = Dut()
+
     start_time = dut.start()
     result = False
     result_step = False
-    try:
-        dut.precondition(timeout=30)
 
-        result_step = dut.step(step_1, purpose="Security Access to ECU and verify correct message"
-                              " identifiers")
+    try:
+        dut.precondition(timeout=60)
+
+        result_step = dut.step(step_1, purpose="Security access to ECU and verify correct message"
+                                               " identifiers")
 
         if result_step:
             result_step = dut.step(step_2, purpose="Check clientRequestSeed with incorrect message"
-                                  " identifier")
+                                                   " identifier")
 
         if result_step:
             result_step = dut.step(step_3, purpose="Check clientSendKey with incorrect message"
-                                   " identifier")
+                                                   " identifier")
         result = result_step
 
     except DutTestError as error:

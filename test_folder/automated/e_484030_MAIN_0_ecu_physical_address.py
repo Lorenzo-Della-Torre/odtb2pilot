@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,14 +18,32 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-Implicitly tested script
+reqprod: 484030
+version: 0
+title: : ECU physical address
+purpose: >
+    To dedicate a physical logical address for the ECU
 
-This REQPROD is implicitly tested by all tests where a physical address
-message is used to read data by identifier e.g. REQPROD_68177.")
+description: >
+    Rationale:
+    To make it possible for the tester to send a specific request to a public ECU on a
+    network in the vehicle, each public ECU needs to have its own unique address. The allocation
+    of the address is a part of the internal architectural work at Volvo Cars.
+    Req:
+    The ECU shall implement one assigned vehicle unique physical logical address. The address
+    shall originate from Volvo Car Corporation.
+
+details: >
+    Implicitly tested by:
+    REQPROD 68177 active diagnostic session data record.
 """
 
-
+import sys
+import logging
 from e_68177_MAIN_1_active_diag_session_f186 import run
+
+logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+
 
 if __name__ == '__main__':
     run()

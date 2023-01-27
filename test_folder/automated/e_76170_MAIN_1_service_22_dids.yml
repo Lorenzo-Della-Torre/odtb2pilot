@@ -4,3 +4,5 @@ hvbm_p519:
         did_prog: 'F121'
         two_dids_ext_def: 'F120F12A'
         two_dids_prog: 'F121F12A'
+        max_response_time: 200
+

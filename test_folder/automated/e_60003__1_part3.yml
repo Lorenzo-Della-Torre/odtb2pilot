@@ -1,0 +1,4 @@
+hvbm_p519:
+  run:
+    max_delay: 254
+    teststrings: ['EDA0', 'F120', 'F12A', 'F12B', 'F12E', 'F18C']

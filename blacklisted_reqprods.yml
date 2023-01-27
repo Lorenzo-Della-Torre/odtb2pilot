@@ -1,7 +1,7 @@
 becm_p319:
     --NA--:
-        e_76490_MAIN_1 : e_76490_MAIN_1_write_memory_by_address_alfid | Reason unknown
-        e_128777_MAIN_1 : e_128777_MAIN_1_iso_specified_routines | Reason unknown
+        e_76490_MAIN_1 : write_memory_by_address_alfid | Reason unknown
+        e_128777_MAIN_1 : iso_specified_routines | Reason unknown
 
     --Inspection--:
 
@@ -40,7 +40,7 @@ hvbm_p519:
         e_488674_MAIN_0 : secoc_fv_option_0_no_fv_used | This not an option since we use FV from timesync
         e_488675_MAIN_0 : secoc_fv_option_1_full_fv_sent_in_pdu | We have only 64bit in CAN message
         e_480627_MAIN_1 : distribution_of_the_security_access_keys_to_ecu_suppliers | Should set initial key to FF. If any other key needs to be configured it should be done at HW end of line
-        e_52687____2 : data_compression_method_1_parameters | Not in use any longer.
+        e_52687__2 : data_compression_method_1_parameters | Not in use any longer.
         e_68182_MAIN_3 : security_constant_data_record | Security constant is not implemented
         e_458730_MAIN_1 : set_dtc_prepassed_prefailed_routine | There is another way to test it
         e_458755_MAIN_1 : start_new_operation_cycle_routine | There is another way to test it
@@ -55,11 +55,166 @@ hvbm_p519:
         e_130582_MAIN_1 : trepr_supported_in_data_upload | ECU does not support SID 35 So it is NA.
         e_76698_MAIN_6 : request_transfer_exit_37_non_volatile_memory | vbf 2.6 version supports check memory, so no CRC will be available in transferResponseParameterRecord. So CRC Calculation will not applicable.
         e_76697_MAIN_5 : request_transfer_exit_37_algorithm | vbf 2.6 version supports check memory, so no CRC will be available in transferResponseParameterRecord. So CRC Calculation will not applicable.
-        e_128777_MAIN_1 : e_128777_MAIN_1_iso_specified_routines | No DIDs in the range. This is NA.
-        e_76490_MAIN_0 : write_memory_by_address_alfid | Not applicable. This service is not used by Volvo Car Corporation.
-        e_76489_MAIN_0 : write_memory_by_address_3d | Not applicable. This service is not used by Volvo Car Corporation.
-        e_76683_MAIN_2 : requestupload | Not applicable because it is not requested by Mentor.
+        e_128777_MAIN_1 : iso_specified_routines | No DIDs in the range. This is NA.
+        e_76490_MAIN_1 : write_memory_by_address_alfid | Not applicable. This service is not used by Volvo Car Corporation.
+        e_76489_MAIN_1 : write_memory_by_address_3d | Not applicable. This service is not used by Volvo Car Corporation.
+        e_76683_MAIN_3 : requestupload | Not applicable because it is not requested by Mentor.
         e_486601_MAIN_0 : event_type_debugger_authentication | Not applicable because disable the debugger port
+        e_53913__1 : ecus_with_multiple_networks | This REPROD is not applicable for SPA2 because no multiple Network present.
+        e_489057_MAIN_0 : flashable_pbl_bootloader_sw_part_type | This requirement is not applicable to us because we use special secondary bootloaders to update pbl and not the flashable pbl.
+        e_489056_MAIN_0 : reset_by_flashable_bootloader_after_successful_update |This requirement is not applicable because we use special secondary bootloader's to update PBL and not the flashable PBL.
+        e_489094__0 : flashable_pbl_for_protected_boot_sector_update | We use special secondary bootloader's to update pbl and not the flashable pbl.
+        e_489058_MAIN_1 : maximum_time_to_update_pbl_using_flashable_bootloaders | We use special secondary bootloaders to update PBL and not the flashable PBL.
+        e_60109_MAIN_3 : duplex_communication | Not applicable. NA folder script.
+        e_68006_MAIN_1 : support_for_external_fm | Not applicable. NA folder script.
+        e_68006_MAIN_2 : support_for_external_fm | Not applicable. NA folder script.
+        e_68008_MAIN_0 : access_to_external_fm | Not applicable. NA folder script.
+        e_68009_MAIN_0 : reporting_external_fm | Not applicable. NA folder script.
+        e_68010_MAIN_0 : external_fm | Not applicable. NA folder script.
+        e_68011_MAIN_0 : support_ext_output_signal | Not applicable . NA folder script.
+        e_68061_MAIN_1 : hmi_signal_actual_input | Not applicable. NA folder script.
+        e_68062_MAIN_0 : hmi_signal_app_signal | Not applicable. NA folder script.
+        e_68063_MAIN_0 : access_input_hmi_signal | Not applicable. NA folder script.
+        e_68064_MAIN_0 : reporting_hmi_signal_input | Not applicable. NA folder script.
+        e_68065_MAIN_0 : update_time_hmi_signal | Not applicable. NA folder script.
+        e_68066_MAIN_0 : support_output_hmi_signal | Not applicable. NA folder script.
+        e_68067_MAIN_0 : access_output_hmi_signal | Not applicable. NA folder script.
+        e_68081_MAIN_0 : ind_control_output_hmi_signals | Not applicable. NA folder script.
+        e_70838_MAIN_2 : detection_of_incompatible_vin | Not applicable. NA folder script.
+        e_70838_MAIN_1 : detection_of_incompatible_vin | Not applicable. NA folder script.
+        e_72070_MAIN_4 : support_for_dtc_si_30 | Not applicable. NA folder script.
+        e_72072_MAIN_1 : temporarily_storage_of_dtc_information | Not applicable. NA folder script.
+        e_72072_MAIN_2 : temporarily_storage_of_dtc_information | Not applicable. NA folder script.
+        e_76591_MAIN_2 : iocp_freeze_current_state | Not applicable. NA folder script.
+        e_94723_MAIN_1 : detection_of_faulty_transmitted_data | Not applicable. NA folder script.
+        e_94723_MAIN_0 : detection_of_faulty_transmitted_data | Not applicable. NA folder script.
+        e_94726_MAIN_0 : detection_of_faulty_lin_response | Not applicable. NA folder script.
+        e_94726_MAIN_1 : detection_of_faulty_lin_response | Not applicable. NA folder script.
+        e_94729_MAIN_0 : detection_of_missing_lin_response | Not applicable. NA folder script.
+        e_94729_MAIN_1 : detection_of_missing_lin_response | Not applicable. NA folder script.
+        e_94731_MAIN_1 : base_dtc_value_for_lin_slave_node_failure | Not applicable. NA folder script.
+        e_94731_MAIN_0 : base_dtc_value_for_lin_slave_node_failure | Not applicable. NA folder script.
+        e_94733_MAIN_2 : detection_of_other_lin_network_faults | Not applicable. NA folder script.
+        e_94733_MAIN_3 : detection_of_other_lin_network_faults | Not applicable. NA folder script.
+        e_115163_MAIN_4 : dev_dtcs_impl | Not applicable. NA folder script.
+        e_115163_MAIN_5 : dev_dtcs_impl | Not applicable. NA folder script.
+        e_115401_MAIN_1 : snapshot_samples | Not applicable. NA folder script.
+        e_115401_MAIN_2 : snapshot_samples | Not applicable. NA folder script.
+        e_115421_MAIN_2 : dtc_snapshot_sampling_0x30 | Not applicable. NA folder script.
+        e_115421_MAIN_3 : dtc_snapshot_sampling_0x30 | Not applicable. NA folder script.
+        e_115623_MAIN_0 : dtc_storage_time | Not applicable. NA folder script.
+        e_115623_MAIN_1 : dtc_storage_time | Not applicable. NA folder script.
+        e_336996_MAIN_2 : dtc_snapshot_sampling_0x40 | Not applicable. NA folder script.
+        e_336996_MAIN_1 : dtc_snapshot_sampling_0x40 | Not applicable. NA folder script.
+        e_336997_MAIN_1 : dtc_snapshot_sampling_0x50 | Not applicable. NA folder script.
+        e_336997_MAIN_2 : dtc_snapshot_sampling_0x50 | Not applicable. NA folder script.
+        e_339294_MAIN_0 : definition_of_tcanresumecom | Not applicable. NA folder script.
+        e_378334_MAIN_2 : detection_of_faulty_lin_physical_bus | Not applicable. NA folder script.
+        e_378334_MAIN_1 : detection_of_faulty_lin_physical_bus | Not applicable. NA folder script.
+        e_392611_MAIN_1 : dev_dtcs | Not applicable. NA folder script.
+        e_392611_MAIN_2 : dev_dtcs | Not applicable. NA folder script.
+        e_469026_MAIN_2 : sign_server | Not applicable. NA folder script.
+        e_469439_MAIN_1 : event_type_diagnosticsession_control_and_reset | Not applicable. NA folder script.
+        e_469441_MAIN_1 : additional_event_types | Not applicable. NA folder script.
+        e_469449_MAIN_1 : authenticity_verification_of_components | Not applicable. NA folder script.
+        e_473643_MAIN_1 : secure_boot_key_revocation | Not applicable. NA folder script.
+        e_486602_MAIN_0 : event_type_personal_data_handling | Not applicable. NA folder script.
+        e_486606_MAIN_0 : event_type_can_communication | Not applicable. NA folder script.
+        e_486607_MAIN_0 : event_type_ethernet_communication | Not applicable. NA folder script.
+        e_486609_MAIN_0 : event_type_critical_diagnostics | Not applicable. NA folder script.
+        e_486610_MAIN_0 : event_type_system_integrity | Not applicable. NA folder script.
+        e_486611_MAIN_0 : event_type_ecu_operating_system | Not applicable. NA folder script.
+        e_486612_MAIN_0 : event_type_cryptographic_operations | Not applicable. NA folder script.
+        e_486614_MAIN_0 : event_type_user_account_log | Not applicable. NA folder script.
+        e_486615_MAIN_0 : event_type_firewall_log | Not applicable. NA folder script.
+        e_486616_MAIN_0 : event_type_file_handling_log | NA folder script.
+        e_486617_MAIN_0 : event_type_event_logging_service | Not applicable. NA folder script.
+        e_486685_MAIN_0 : authentication_key_programming_at_oem | Not applicable. NA folder script.
+        e_52243__3 : supported_can_ids_2nd_part | Not applicable. NA folder script.
+        e_53413__2 : pll_used_as_clock | Not applicable. NA folder script.
+        e_53415__3 : bus_bit_rate | Not applicable. NA folder script.
+        e_53476__3 : recovery_from_reset | Not applicable. NA folder script.
+        e_53566__3 : hdr_jitter | Not applicable. NA folder script.
+        e_53581__3 : timeout_and_sleep_cmds | Not applicable. NA folder script.
+        e_53584__2 : power_on_master_sends_fst_hdr | Not applicable. NA folder script.
+        e_53916__1 : gateway_requirement | Not applicable. NA folder script.
+        e_53921__1 : interrupted_comm_to_priv_ecu | Not applicable. NA folder script.
+        e_59045__6 : timing_at_net_and_hw_wake_up_can | Not applicable. NA folder script.
+        e_67742_MAIN_0 : compliance_to_iso_26021_1 | Not applicable. NA folder script.
+        e_67743_MAIN_2 : compliance_to_iso_26262 | Not applicable. NA folder script.
+        e_67868_MAIN_1 : dynamically_def_dids_in_asc_order | Not applicable. NA folder script.
+        e_67946_MAIN_2 : data_types_and_classification | Not applicable. NA folder script.
+        e_68204__2 : def_of_tcaneventwakeuptoapp | Not applicable. NA folder script.
+        e_82241_MAIN_2 : lin_transport_layer | Not applicable. NA folder script.
+        e_125501_MAIN_0 : lin_master_usage_of_n_cr | Not applicable. NA folder script.
+        e_181093_MAIN_3 : postbuild_supplier_deliverables | Not applicable. NA folder script.
+        e_339293_MAIN_0 : timing_at_resumed_com_can | Not applicable. NA folder script.
+        e_344381_MAIN_1 : system_adaption_data_rec | Not applicable. NA folder script.
+        e_344381_MAIN_2 : system_adaption_data_rec | Not applicable. NA folder script.
+        e_392594_MAIN_1 : development_specific_data_records | Not applicable. NA folder script.
+        e_392594_MAIN_0 : development_specific_data_records | Not applicable. NA folder script.
+        e_466908_MAIN_0 : can_fd_secondary_sample_point_offset | Not applicable. NA folder script.
+        e_468776_MAIN_0 : appl_lin_stds | Not applicable. NA folder script.
+        e_480711_MAIN_0 : handling_of_dlc_on_canfd | Not applicable. NA folder script.
+        e_125542_MAIN_0 : use_data_frame_by_frame | Not applicable. NA folder script.
+        e_181073_MAIN_2 : postbuild_cons_checks | Not applicable. NA folder script.
+        e_53912__1 : inter_com_to_the_sec_proc | Not applicable. NA folder script.
+        e_416271_MAIN_1 : delta_encoding_verification | Not applicable. NA folder script.
+        e_53849__5 : appl_can_stds | Not applicable. NA folder script.
+        e_53582__2 : local_event_master_sends_fst_hdr | Not applicable. NA folder script.
+        e_53861__2 : pll_locking | Not applicable. NA folder script.
+        e_53849__4 : appl_can_stds | Not applicable. NA folder script.
+        e_53535__3 : low_voltage_op | Not applicable. NA folder script.
+        e_401206_MAIN_1 : multiple_proc_verif_principle | Not applicable. NA folder script.
+        e_53919__1 : interrupted_comm_private_ecu | Not applicable. NA folder script.
+        e_113864_MAIN_1 : vehicle_state_of_health_data_record | Not applicable. NA folder script.
+        e_67868_MAIN_0 : dynamically_def_dids_in_asc_order | Not applicable. NA folder script.
+        e_181053_MAIN_8 : vcc_postbuild_bsw_mods | Not applicable. NA folder script.
+        e_53483__2 : rec_from_bus_short_to_bat | Not applicable. NA folder script.
+        e_342937_MAIN_0 : lin_master_n_cs_prog_session | Not applicable. NA folder script.
+        e_480645_MAIN_0 : length_of_canfd_frames | Not applicable. NA folder script.
+        e_67869_MAIN_2 : sup_services_for_dynamically_def_dids | Not applicable. NA folder script.
+        e_72146_MAIN_3 : clear_dtc_info_by_diag_service | Not applicable. NA folder script.
+        e_53418__2 : ability_to_read_every_frame_instance | Not applicable. NA folder script.
+        e_67861_MAIN_0 : id_option_iso_spec_data_recs | Not applicable. NA folder script.
+        e_466757_MAIN_0 : bit_rate_for_can_fd | Not applicable. NA folder script.
+        e_53918__1 : prog_seq_private_ecu | Not applicable. NA folder script.
+        e_53474__2 : ecu_power_loss | Not applicable. NA folder script.
+        e_396753_MAIN_2 : delta_encoding | Not applicable. NA folder script.
+        e_402300_MAIN_2 : multiple_proc_sec_proc_sbl_verif | Not applicable. NA folder script.
+        e_480861_MAIN_0 : can_frame_data_opt_on_canfd | Not applicable. NA folder script.
+        e_344378_MAIN_1 : customer_setting_param_data_rec | Not applicable. NA folder script.
+        e_68227_MAIN_0 : vehicle_id_number_data_rec | Not applicable. NA folder script.
+        e_435545_MAIN_0 : hw_time_stamping_sup | Not applicable. NA folder script.
+        e_60007__3 : blocksize_param_non-prog_ses_client_side | Not applicable. NA folder script.
+        e_60004__1 : precedence_of_reqs | Not applicable. NA folder script.
+        e_466757_MAIN_2 : bit_rate_for_can_fd | Not applicable. NA folder script.
+        e_53478__2 : rec_from_bus_short_to_grnd | Not applicable. NA folder script.
+        e_402299_MAIN_1 : multiple_proc_main_proc_sbl_verif | Not applicable. NA folder script.
+        e_113864_MAIN_2 : vehicle_state_of_health_data_record | Not applicable. NA folder script.
+        e_344378_MAIN_2 : customer_setting_param_data_rec | Not applicable. NA folder script.
+        e_466760_MAIN_0 : bit_time_setup_for_can_fd | Not applicable. NA folder script.
+        e_53524__3 : op_voltage_hysteresis | Not applicable. NA folder script.
+        e_53583__2 : ntw_event_wake_up_request_fst_hdr | Not applicable. NA folder script.
+        e_429415_MAIN_1 : requestupload_restricted_use | Not applicable. NA folder script.
+        e_435544_MAIN_1 : postbuild_variant_sup_comxf | Not applicable. NA folder script.
+        e_60011__2 : stmin_non_prog_session_client | Not applicable. NA folder script.
+        e_52677__3 : data_compression_method_1 | Not applicable. NA folder script.
+        e_67743_MAIN_1 : compliance_to_iso_26262 | Not applicable. NA folder script.
+        e_53536__3 : lin_conformance | Not applicable. NA folder script.
+        e_466756_MAIN_2 : bit_rate_for_classic_can | Not applicable. NA folder script.
+        e_67861_MAIN_1 : id_option_iso_spec_data_recs | Not applicable. NA folder script.
+        e_67869_MAIN_1 : sup_services_for_dynamically_def_dids | Not applicable. NA folder script.
+        e_435517_MAIN_0 : use_of_autosar_bsw_mods | Not applicable. NA folder script.
+        e_482754_MAIN_0 : rvdc_user_defined_did | Not applicable. NA folder script.
+        e_67742_MAIN_1 : compliance_to_iso_26021_1 | Not applicable. NA folder script.
+        e_53523__3 : normal_op_voltage | Not applicable. NA folder script.
+        e_53835__1 : calib_and_cust_data | Not applicable. NA folder script.
+        e_60016__1 : n_wftmax_value_for_client_side | Not applicable. NA folder script.
+        e_68227_MAIN_1 : vehicle_id_number_data_rec | Not applicable. NA folder script.
+        e_467281_MAIN_0 : data_compression_method_2_data_format | Not applicable. NA folder script.
+        e_60109__3 : duplex_communication | Probably a gateway requirement. NA for non-gateway ECUs.
+        e_435518_MAIN_1 : nvram_and_ram_spare_cap | This requirement is not applicable on HVBM MEP2.
 
     --Inspection--:
         e_481878_MAIN_0 : interface_to_tee_cryptographic_operations | ETAS provides API. Inspect that we have received those files
@@ -77,7 +232,6 @@ hvbm_p519:
         e_52314__5 : diagnostic_trouble_code_for_can_bus_off | This is a configuration in autosar the implementation is done by Mentor. Inspect configuration
         e_161873_MAIN_2 : car_mode_data_record | <Reason>
         e_60111__1 : can_frame_identifier_length | Look in CanIf and CAN configuration to validate that all outgoing frames is set to classic can with 11 bit addressing.
-        e_489057_MAIN_0 : flashable_pbl_bootloader_sw_part_type | Inspect that the vbf sw_part_type is SWBP or SWBT.
         e_397293_MAIN_1 : number_of_logical_blocks | Inspect that the actual number of logical blocks is statically configured in the bootloader, at least one logical block.
         e_404184_MAIN_2 : verification_block_table_on_unprocessed_data | Inspect that S19 files of SWP1, SWLM and ESS are subjected to SREC script to pad their data before constructing their VBF files.
         e_404595_MAIN_3 : signing_method_variability_control | This requirement is for Release team, who are responsible for setting the signing method for a vbf file.
@@ -92,7 +246,7 @@ hvbm_p519:
         e_488670_MAIN_0 : secoc_timestamp_format | Check that we follow the AUTOSAR StbM specification
         e_161873_MAIN_2 : car_mode_data_record | This can be tested on HILding but 2A not implemented yet.
         e_353876_MAIN_3 : autosar_version | Developer need deviation for version of AUTOSAR 
-        e_53855____1 : sbl_in_volatile_memory | Verify that SBL is stored in volatile memory.
+        e_53855__1 : sbl_in_volatile_memory | Verify that SBL is stored in volatile memory.
         e_487898_MAIN_1 : secoc_configurations_in_ecu_extract | Need to verify that use ECU extract from Volvo.
         e_487887_MAIN_1 : secoc_profile_configuration_crypto_algorithm | Inspect in configuration file or tool
         e_487877_MAIN_1 : secoc_fvm_solution | Need to be sure it is a new message. We will use use the timesync module. Will calculate the time between the sending and receiving.
@@ -100,7 +254,6 @@ hvbm_p519:
         e_489094_MAIN_0 : flashable_pbl_for_protected_boot_sector_update | Testable, developer can provide testing method information if needed.
         e_488754_MAIN_0 : secoc_action_on_message_failures | Identify which SecOC signals to be use to verify action on message failures.
         e_488702_MAIN_0 : secoc_configuration_secocrxacceptancewindow | <reason>
-        e_67741_MAIN_2 : compliance_to_iso_14229_1 | Mentor responsible for testing their implementation
         e_488673_MAIN_0 : secoc_fv_options | We need a decision which option to use.
         e_469130_MAIN_2 : security_access_key_storage | <Reason>
         e_473644_MAIN_1 : secure_boot_key_protection | <Reason>
@@ -108,6 +261,85 @@ hvbm_p519:
         e_469024_MAIN_1 : secure_boot_design_validation | <Reason>
         e_52243__2 : supported_can_ids_2nd_part | <Reason>
         e_469025_MAIN_1 : minimum_cryptographic_support | <Reason>
+        e_52251__1 : comp_hw_init_when_start_ecu | To be inspected
+        e_52254__1 : cold_start_detected | To be inspected
+        e_52257__1 : clear_progsignature_in_ram | To be inspected
+        e_52259__1 : progsignature_is_set | To be inspected
+        e_52292__2 : write_progsignature | To be inspected
+        e_52547__7 : autosar_conf_rec_values | To be inspected
+        e_53816__2 : internal_transfer_data_speed | To be inspected
+        e_53840__1 : pre-condition_state_ecus_io | To be inspected
+        e_53853__2 : pll_bypass | To be inspected
+        e_53864__3 : bit_time_set_up_for_classic_can | To be inspected
+        e_56148__1 : p2server_min | To be inspected
+        e_60105__2 : nbr_preform_prog_session_fc_cts_and_fc_ovflw | To be inspected
+        e_60110__1 : addressing_format_for_transport_and_network_layer | To be inspected
+        e_115798_MAIN_2 : fc_wait_usage | To be inspected
+        e_362336_MAIN_1 : needed_tier1_reqs_on_tier2 | To be inspected
+        e_366329_MAIN_2 : public_key_storage | To be inspected
+        e_397435_MAIN_1 : storage_of_ess | To be inspected
+        e_397440_MAIN_2 : erase_memory_when_ess_is_updated | To be inspected
+        e_399878_MAIN_2 : root_ecu_sws | To be inspected
+        e_400992_MAIN_3 : condit_lb_to_be_valid | To be inspected
+        e_401108_MAIN_3 : erase_status_information | To be inspected
+        e_416011_MAIN_0 : check_memory_application_start | To be inspected
+        e_419911_MAIN_1 : authenticity_verification_at_run_time | To be inspected
+        e_420111_MAIN_1 : sw_auth_sign_method_and_algo | To be inspected
+        e_429095_MAIN_1 : reprogrammable_initial_key | To be inspected
+        e_469426_MAIN_0 : security_event_types | To be inspected
+        e_469427_MAIN_0 : analyze_and_agree_on_security_events | To be inspected
+        e_481758_main_0 : 2_byte_base_dtc_def | To be inspected
+        e_398372_MAIN_2 : allocation_of_vbt | To be inspected
+        e_400961_MAIN_6 : validity_status_information_properties | To be inspected
+        e_467271_MAIN_2 : data_compression_method_selection | To be inspected
+        e_482736_MAIN_0 : temp_dtc_storage_in_shortterm_memory | To be inspected
+        e_399873_MAIN_2 : sws_declaration | To be inspected
+        e_419731_MAIN_3 : authenticity_verification_at_every_startup | To be inspected
+        e_419994_MAIN_4 : program_read_public_key | To be inspected
+        e_416451_MAIN_1 : sbl_verification_unused_data | To be inspected
+        e_397291_MAIN_3 : logical_block_properties | To be inspected
+        e_53923__3 : support_for_un_or_compressed_data | To be inspected
+        e_53978__1 : writing_of_received_data | To be inspected
+        e_60108__1 : n_cr_timeout_programming_session | To be inspected
+        e_419132_MAIN_0 : debug_tools_and_ports | To be inspected
+        e_53970__3 : max_time_cc_validation | To be inspected
+        e_52258__1 : progsignature_is_not_set | To be inspected
+        e_53980__2 : pre_calculated_hash | To be inspected
+        e_52250__1 : bootloader_flow_chart | To be inspected
+        e_53930__1 : progsignature-set | To be inspected
+        e_67946_MAIN_1 : data_types_and_classification | To be inspected
+        e_52683__2 : data_compression_method_1_parameters | To be inspected
+        e_52546__16 : autosar_conf_req_conf_values | To be inspected
+        e_402292_MAIN_1 : verification_block_table | To be inspected
+        e_53932__1 : progsignature-clear | To be inspected
+        e_400994_MAIN_2 : conditions_for_lb_to_be_invalid | To be inspected
+        e_404771_MAIN_3 : validation_of_the_ess_2nd_part | To be inspected
+        e_60063__4 : nbr_prefom_non_prog_fc_wait | To be inspected
+        e_53911__1 : prog_seq_second_processors | To be inspected
+        e_60106__2 : nbr_prefom_prog_fc_wait | To be inspected
+        e_53834__4 : handling_of_distr_relay | To be inspected
+        e_52286__2 : s3server_timer_timeout_in_pbl_2nd_part | To be inspected
+        e_362337_MAIN_1 : autosar_diagnostic_bsw_configuration | To be inspected
+        e_60015__1 : n_wftmax_value_server_side | To be inspected
+        e_128908_MAIN_2 : fwd_n_data_from_each_n_pdu_to_upper_layer | To be inspected
+        e_52252__1 : cold_warm_start_detected | To be inspected
+        e_52255__1 : warm_start_detected | To be inspected
+        e_52256__1 : check_progsignature_in_ram | To be inspected
+        e_52688__2 : data_compression_method_1_parameters | To be inspected
+        e_53802__1 : power_consumption | To be inspected
+        e_397432_MAIN_4 : logical_block_declaration | To be inspected
+        e_405471_MAIN_2 : check_mem_returnvalues | To be inspected
+        e_469451_MAIN_0 : secure_storage_of_log_data | To be inspected
+        e_401157_MAIN_3 : complete_and_compatible_complete_function | Not access to BL code. Inspect Mentors test results. Should be validated that it is always performed by BL.
+        e_403711_MAIN_2 : complete_and_compatible_definition_of_being_complete | Not access to BL code. Inspect Mentors test results.
+        e_435534_MAIN_0 : use_of_profiles_and_transformers | Changed to Code Inspection
+        e_435535_MAIN_0 : simultaneous_use_of_profiles_and_transformers | Changed to Code Inspection
+        e_466661_MAIN_0 : data_compression_method_2_parameters | This also needs an updated bootloader as the current version is based on the old bastech SWRS that did not include the LZMA compression requirements.
+        e_466900_MAIN_0 : bootloader CAN busoff handling | Changed to Code Inspection
+        e_481758_MAIN_0 : 2_byte_base_dtc_definition | Tested by inspection. A validation of all defined DTCs in the SDDB can also be a method.
+        e_56192_MAIN_3 : server_support_of_queued_requests_in_programming_session | Difficult to test. Put on hold. Check with Mentor first
+        e_74506_MAIN_1 : negative_response_code_general_reject_0x10 | Check DCM configuration for NRC 0x10
+        e_76539_MAIN_3 : communication_stack_processing_period | Changed to Code Inspection
 
     --Diag--:
         e_68012_MAIN_0 : support_for_external_output_signal_data_records_actual_output_signal | Diagnosis responsible need to evaluate
@@ -196,6 +428,10 @@ hvbm_p519:
         e_181434_MAIN_2 : e2e_data_type_size | Changed to application team (Mascot)
         e_181433_MAIN_1 : e2e_protection_mechanisms | Changed to application team (Mascot)
         e_487899_MAIN_1 : sec_oc_customization_for_immediate_return_of_authentic_data | Changed to application
+        e_67741_MAIN_2 : compliance_to_iso_14229_1 | Mentor responsible for testing their implementation
+        e_72161_MAIN_1 : development_specific_routines | Push to application team.
+        e_72166_MAIN_2 : system_supplier_specific_routines | Push to application team.
+        e_72157_MAIN_3 : vehicle_manufacturer_specific_routines | Push to application team.
 
     --Design--:
         e_71837_MAIN_1 : data_records_not_included_in_local_snapshot_data | Design requirement. Can be checked by validation of snapshot information for each DTC in the SDDB. Should be tested so system design do follow this req. Does not need the ECU for the test.
@@ -221,8 +457,12 @@ hvbm_p519:
         e_481875_MAIN_0 : random_number_generator_validation | This can't be tested with standard SW. Need special tools.
         e_418471_MAIN_3 : public_key_data_record_write | This test needs to be manually tested.
         e_480600_MAIN_2 : disable_hardware_debug_interfaces_to_hsm | This needs to be manually tested.
-        e_469023_MAIN_1 : action_on_failure | This test to be manually tested.
         e_469233_MAIN_3 : protect_hardware_debug_interfaces | This test to be manually tested.
+        e_486601_MAIN_0 : event_type_debugger_authentication | Manual
+        e_53884__3 : can_bus_level_before_during_and_after_reset | This needs to be manually tested
+        e_396513_MAIN_0 : clustered_frame_transmission_and_no_priority_inversion_can | This needs to be manually tested
+        e_56197__1 : order_of_responses_in_programming_session | This needs to be manually tested
+        e_77275_MAIN_2 : clustered_frame_transmission_and_no_priority_inversion_can | This needs to be manually tested.
 
     --dSpace--:
         e_115621_MAIN_4 : support_for_dtc_status_indicator_30_warning_indicator_requested_since_last_clear | DTC not implemented yet.
@@ -235,6 +475,47 @@ hvbm_p519:
         e_72036_MAIN_7 : fault_detection_counter_10_fdc10 | DTC not implemented yet.
         e_76140_MAIN_1 : ecureset_11_hardReset | <Reason>
         e_482735_MAIN_0 : storage_of_dtc_info | Easier to test on dSpace
+        e_76508_MAIN_2 : readdtcinformation_19_reportdtcextendeddatarecordbydtcnumber_06_86 | <Reason>
+        e_72026_MAIN_5 : storage_of_global_dtc_snapshot_data_when_not_available | <Reason>
+        e_72072_MAIN_2 : temporarily_storage_of_dtc_information | The old script states that it is NA but it seems testable. Probably needs to be tested on dSpace HIL.
+        e_68085_MAIN_0 : reporting_other_ecu_internal_signal_data_records_defined_by_the_implementer_while_the_input_parameter_value_is_under_tester_control | Can be hard to run on the ODTB2. dSpace can be needed.
+        e_72166_MAIN_2 : system_supplier_specific_routines | Can be hard to run on the ODTB2. dSpace can be needed.
+        e_53883__2 : behaviour_outside_normal_supply_voltage_range | This is testable on our test bench with programmable power supply
+        e_478574_MAIN_1 : dtc_storage_capacity_in_long_term_memory | Testable with ODTB2. Read out all DTCs with snapshot and check how many that is. Might be to many to read, then we need to do it on dSpace.
+        e_69006_MAIN_2 : detection_of_low_supply_voltage | The DTC exist. Low Prio DTC. Can be difficult to see due to other high prio DTCs. Not to many DTCs should be set. Might be easier on dSpace.
+        e_72148_MAIN_7 : clear_dtc_information_when_the_long_term_memory_overflows | Testable but probably needs the dSpace HIL to control the DTCS. Overflow memory.
+        e_76588_MAIN_2 : input_output_control_by_identifier_2f | Not used in the finished product. 
+        e_76590_MAIN_2 : input_output_control_by_identifier_2f_input_output_control_parameter_iocp_return_control_to_ecu_00 | Not used in the finished product. 
+        e_76592_MAIN_2 : input_output_control_by_identifier_2f_input_output_control_parameter_iocp_short_term_adjustment_03 | Not used in the finished product.
+        e_76597_MAIN_2 : input_output_control_by_identifier_2f_consecutive_short_term_adjustment_requests | Not used in the finished product.
+        e_58806__5 : timing_at_network_and_hardware_wake_up_can_microcontroller_unpowered_in_sleep | added to Dspace
+        e_69518_MAIN_2 : ecu_voltage_measurement | Our test equipment should be able to test 250mV accuracy
+        e_72157_MAIN_3 : vehicle_manufacturer_specific_routines | Can be hard to run on the ODTB2. dSpace can be needed
+        e_72161_MAIN_1 : development_specific_routines | Can be hard to run on the ODTB2. dSpace can be needed
+        e_74142_MAIN_4 : non_volatile_data_shall_be_written_or_cleared_before_responding_on_the_diagnostic_request | Valid for any application team which implement diagnostic service that writes to NVM.
+        e_76496_MAIN_1 : clear_diagnostic_information_14 | Probably need dSpace
+        e_76497_MAIN_3 : clear_diagnostic_information_14_group_of_dtc_specific_dtc | Probably need dSpace
+        e_76498_MAIN_2 : clear_diagnostic_information_14_group_of_dtc_all_groups | Probably need dSpace
+        e_482737_MAIN_0 : dct_storage_time | Trigger specific DTC on the dSpace HIL and trigger power loss
+        e_72028_MAIN_2 : storage_of_local_dtc_snapshot_data_when_not_available | Can be tested in dSpace HIL.
+        e_482735_MAIN_0 : storage_of_dtc_information | Most are stored in long term memory.
+        e_72026__5 : storage_of_global_dtc_snapshot_data_when_not_available | Need an active DTC. Move to dspace
+        e_76508__2 : read__dtc_information_19_report_dtc_extended_data_record_by_dtc_number (06) | This script passes only when there is any DTC. Mostly the ECUs are DTC free. So it might fail always
+        e_72063_MAIN_3 : support_for_dtc_status_indicator_30 | This script will pass only when a particular DTC is present in the ECU. move to dspace
+        e_72071_MAIN_4 : support_for_dtc_status_indicator_30 | Can't control the environment with ODTB2.
+        e_71815_MAIN_4 : support_for_dtc_status_bit_test_failed | Testable but probably needs the dSpace HIL to control the DTCS
+        e_71823_MAIN_3 : support_for_dtc_status_bit_test_failed_this_operation_cycle | Testable but probably needs the dSpace HIL to control the DTCS
+        e_71824_MAIN_4 : support_for_dtc_status_bit_pending_dtc | Difficult to test on ODTB2, test on dSpace.
+        e_71827_MAIN_7 : support_for_dtc_status_bit_confirmed_dtc | Difficult to test on ODTB2, test on dSpace
+        e_71828_MAIN_3 : support_for_dtc_status_bit_test_not_completed_since_last_clear | Difficult to test on ODTB2, test on dSpace.
+        e_71829_MAIN_3 : support_for_dtc_status_bit_test_failed_since_last_clear | Testable but probably needs the dSpace HIL to control the DTCS.
+        e_71830_MAIN_3 : support_for_dtc_status_bit_test_not_completed_this_operation_cycle | Testable but probably needs the dSpace HIL to control the DTCS.
+        e_71831_MAIN_3 : support_for_dtc_status_bit_warning_indicator_equested | Testable but probably needs the dSpace HIL to control the DTCS.
+        e_72030_MAIN_6 : support_for_occ_1_operation_cycle_since_last_failed | Can't control the environment with ODTB2.
+        e_72031_MAIN_7 : support_for_occ_2_fault_free_op_cycles_since_first_failed | Testcase (DVM) and Dspace-testlog reviewed.
+        e_72033_MAIN_6 : support_for_occ_4_total_number_of_failed_cycles | Can't control the environment with ODTB2.
+        e_72152_MAIN_7 : clear_dtc_information_when_a_dtc_is_aged | Testable but probably needs the dSpace HIL to control the DTCS.
+        e_72035_MAIN_10 : support_for_operation_cycle_counter_6_consecutive_number_of_faulty_operation_cycles | Can't control the environment with Hilding. But on dSpace it is possible to read operation Cycles.
 
     --vbf_modification--:
         e_53958__6 : complete_compatible_function_return_value | Need to modify VBFs to test the Compatible part
@@ -245,6 +526,8 @@ hvbm_p519:
         e_404696_MAIN_3 : verification_block_table_format_identifier_definition |  Need to modify VBFs to test format of the Verification Block
         e_398360_MAIN_4: format_of_the_verification_block_table | Need to modify VBFs to test format of the Verification Block Table
         e_53957__3 : complete_compatible_function | Need to modify VBFs to test the complete compatible function
+        e_53973__3 : file_download_order | Need to modify VBFs to test the file download order
+        e_53959__4 : complete_and_compatible_sequence_diagram | Need to modify VBFs to test the not complete & not compatible parts
 
     --SecOC--:
         e_487904_MAIN_1 : sec_oc_detection_of_non_programmed_production_keys | SecOC not implemented yet
@@ -285,20 +568,20 @@ hvbm_p519:
         e_488675_MAIN_0 : sec_oc_fv_option_1_full_fv_sent_in_pdu | SecOC not implemented yet
         e_488676_MAIN_0 : sec_oc_fv_option_2_32_bit_partial_fv_sent_in_pdu | SecOC not implemented yet
         e_488678_MAIN_0 : sec_oc_fv_option_3_24_bit_partial_fv_sent_in_pdu | SecOC not implemented yet
-        e_488679_MAIN_0 : sec_oc_fv_option_4_16_bit_partial_fv_sent_in_pdu | SecOC not implemented yet     
-        e_488680_MAIN_0 : sec_oc_fv_option_5_8_bit_partial_fv_sent_in_pdu | SecOC not implemented yet    
-        e_488681_MAIN_0 : sec_oc_fv_option_6_no_fv_sent_in_pdu | SecOC not implemented yet     
-        e_487881_MAIN_1 : sec_oc_detection_and_handling_of_abnormal_timestamps | SecOC not implemented yet     
-        e_489080_MAIN_0 : sec_oc_default_configurations | SecOC not implemented yet    
-        e_487887_MAIN_1 : sec_oc_profile_configuration_crypto_algorithm | SecOC not implemented yet       
-        e_487893_MAIN_1 : sec_oc_profile_configuration_fv | SecOC not implemented yet     
-        e_487986_MAIN_1 : sec_oc_profiles_and_configuration_overview | SecOC not implemented yet     
-        e_487890_MAIN_1 : sec_oc_configuration_using_cryptographic_pdu | SecOC not implemented yet     
+        e_488679_MAIN_0 : sec_oc_fv_option_4_16_bit_partial_fv_sent_in_pdu | SecOC not implemented yet
+        e_488680_MAIN_0 : sec_oc_fv_option_5_8_bit_partial_fv_sent_in_pdu | SecOC not implemented yet
+        e_488681_MAIN_0 : sec_oc_fv_option_6_no_fv_sent_in_pdu | SecOC not implemented yet
+        e_487881_MAIN_1 : sec_oc_detection_and_handling_of_abnormal_timestamps | SecOC not implemented yet
+        e_489080_MAIN_0 : sec_oc_default_configurations | SecOC not implemented yet
+        e_487887_MAIN_1 : sec_oc_profile_configuration_crypto_algorithm | SecOC not implemented yet
+        e_487893_MAIN_1 : sec_oc_profile_configuration_fv | SecOC not implemented yet
+        e_487986_MAIN_1 : sec_oc_profiles_and_configuration_overview | SecOC not implemented yet
+        e_487890_MAIN_1 : sec_oc_configuration_using_cryptographic_pdu | SecOC not implemented yet
         e_488700_MAIN_0 : sec_oc_configuration_use_auth_data_freshness | SecOC not implemented yet
         e_488701_MAIN_0 : sec_oc_configuration_secure_area | SecOC not implemented yet
         e_488702_MAIN_0 : sec_oc_configuration_sec_oc_rx_acceptance_window | SecOC not implemented yet
-        e_488703_MAIN_0 : sec_oc_configuration_sec_oc_cluster_key_id | SecOC not implemented yet 
-        e_487898_MAIN_1 : sec_oc_configurations_in_ecu_extract | SecOC not implemented yet 
+        e_488703_MAIN_0 : sec_oc_configuration_sec_oc_cluster_key_id | SecOC not implemented yet
+        e_487898_MAIN_1 : sec_oc_configurations_in_ecu_extract | SecOC not implemented yet
         e_487899_MAIN_1 : sec_oc_customization_for_immediate_return_of_authentic_data | SecOC not implemented yet
         e_487883_MAIN_0 : sec_oc_optimization_for_cpu_load | SecOC not implemented yet
         e_487882_MAIN_1 : sec_oc_optimization_for_latency | SecOC not implemented yet
@@ -309,14 +592,22 @@ hvbm_p519:
         e_76695_MAIN_2 : request_transfer_exit | Breaks testrun. Temporarily excluded
         e_76690_MAIN_3 : transfer_data | Breaks testrun. Temporarily excluded
         e_469411_MAIN_1 : system_hardening_follow_industry_accepted_processes | <Reason>
+        e_72220_MAIN_1 : erase_mem_resp_time | Breaks ECU. Temporarily excluded
 
     --Implicit--:
-        e_410732_MAIN_0 : default_signing_method | Implicitly tested when using SWDL
-        e_404598_MAIN_0 : signing_method_sha256_rsa2048_hash_function | Implicitly tested when using SWDL
-        e_404620_MAIN_1 : signing_method_sha256_rsa2048_public_key_algorithm | Implicitly tested when using SWDL
-        e_404623_MAIN_0 : signing_method_sha256_rsa2048_key_size | Implicitly tested when using SWDL
+        e_486497_MAIN_1 : bus_off | Implicitly tested by manual tests 52314 and 392111
         e_480624_MAIN_1 : security_access_key_usage | <Reason>
         e_469025_MAIN_1 : minimum_cryptographic_support | <Reason>
+        e_52245__2 : diagnostic_session__layer | Tested implicitly by REQPRODs in LC VCC UDS Session generic reqs and LC VCC UDS Session ECU reqs
+        e_52247__2 : data_link_layer | Tested implicitly by REQPRODs in LC :CAN Datalink Layer - SW reqs.
+        e_60003__1 : transport_and_network_layer | Tested implicitly by REQPRODs in LC VCC DoCAN - SW reqs Requirements from section Addressing formats and REQPROD 60112 Supporting functional requests Requirements from section BlockSize (BS) parameter definition and REQPROD 60006 BlockSize parameter non-programming session server side Requirements from section CAN frame data and payload configuration and REQPROD 60129 Length of Classic CAN frames Requirements from section Max number of FC. Wait frame transmission (N_WFTmax) and REQPROD 60015 N_WFTmax value for server side Requirements from section Separation( STmin) parameter definition and REQPROD 60010 Separation time (STmin) non-programming session server side Requirements from section Separation time between single frames and REQPROD 380118 Separation time between single frames programming session Requirements from section Timing parameters and REQPROD 60017 N_As_timeout_non_prog_session  Requirements from section Transport and Network Layer REQPROD 60004 Precedence of requirements Requirements from section Unexpected arrival of N_PDU REQPROD 60109 Duplex communication Requirements from section Use data frame by frame REQPROD 128908 Forward N_Data from each N_PDU to upper layer
+        e_52249__2 : general_boot_req | Tested implicitly by REQPRODs in REQ-SET General Bootloader requirements
+        e_466756_MAIN_0 : bit_rate_for_classic_can | Tested implicitly by any REQPROD requiring CAN communication REQPROD_60017_N_As_timeout_non_prog_session for example
+        e_52242__1 : application_layer | Tested implicitly by REQ_52245
+        e_83301_MAIN_1 : physical_layer | Tested implicitly by REQPROD_53848_Communication_protocol REQPROD_53849_Applicable_CAN_standards and REQPROD_53850_The_priority_between_standard_documents_and_this_document and REQPROD_53853_PLL_bypass and REQPROD_53861_PLL_locking and REQPROD_53862_Resychronisation_strategy and REQPROD_53863_Sample_mode and REQPROD_53864_Bit_time_setup_for_500_kbps and REQPROD_53881_Standards_for_CAN_interface and REQPROD_53883_Behaviour_outside_normal_supply_voltage_range REQPROD_53884_CAN_bus_level_during_reset and REQPROD_53885_Bus_fault_reporting
+        e_72146_MAIN_1 : clear_dtc_info_by_diag_service | Tested implicitly by REQPRODs in in LC VCC UDS Services Service 0x14 (ClearDiagnosticInformation) Reqs REQPROD 76496 ClearDiagnosticInformation(14) and REQPROD 76497 ClearDiagnosticInformation(14)-groupOfDTCSpecific DTC and REQPROD 363603 ClearDiagnosticInformation(14)-groupOfDTC All DTCs in emission related ECU and REQPROD 76498 ClearDiagnosticInformation(14)-groupOfDTC All Groups and REQPROD 74155 P4Server_max response time for clearDiagnosticInformation(14) and REQPROD 74179 Service clearDiagnosticInformation(14) affecting ECU functionality and REQPROD 74465 Entry conditions for diagnostic service ClearDiagnosticInformation(14) and REQPROD 74494 Security access protection for service clearDiagnosticInformation(14)
+        e_52293__1 : trig_a_reset_in_ecu_appl_mode | Tested implicitly by REQPROD 76170 and REQPROD 76139
+        e_74494_MAIN_1 : sec_access_for_service_14 | Tested implicitly by REQPROD 76496
 
 ihfa_v436:
     --NA--:

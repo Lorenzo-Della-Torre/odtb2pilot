@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2023 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,34 +18,29 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-# Testscript Hilding MEPII
-# project:  BECM basetech MEPII
-# author:   J-ADSJO
-# date:     2021-02-10
-# version:  1.0
-# reqprod:  128838
+reqprod: 128838
+version: 1
+title: ECU ability to receive a complete message
+purpose: >
+    To ensure performance and predictable response times. This requirement does not apply to
+    request and response messages gatewayed through a gateway.
 
-# #inspired by https://grpc.io/docs/tutorials/basic/python.html
-# Copyright 2015 gRPC authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+description: >
+    The ECU shall be able to receive a complete request message (receiving a queued request
+    excluded) without to halt the message, while sending of it is in progress, with the help of
+    services in lower OSI-layer e.g network/transport layer
 
-The Python implementation of the gRPC route guide client.
+details: >
+    Implicitly tested script
+    Tested implicitly by REQPROD 60017
 """
 
 import logging
 import sys
+from e_60017__1_n_as_timeout_non_prog_session import run
 
-logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+logging.basicConfig(format=' %(message)s',stream=sys.stdout, level=logging.INFO)
 
-logging.info("Testcase result: Tested implicitly by REQPROD 60017 (tested implicitly)")
+
+if __name__ == '__main__':
+    run()

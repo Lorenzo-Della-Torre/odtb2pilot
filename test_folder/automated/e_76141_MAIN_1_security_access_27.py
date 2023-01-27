@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,606 +18,439 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-testscript: Hilding MEPII
-project:    BECM basetech MEPII
-author:     GANDER10 (Gustav Andersson)
-date:       2020-12-12
-version:    1.0
-reqprod:    76141
+reqprod: 76141
+version: 1
+title: SecurityAccess (27)
+purpose: >
+    Define availability of SecurityAccess service
 
-title:
-    SecurityAccess (27) ; 2
-
-purpose:
-    Define availability of SecurityAccess service.
-
-description:
+description: >
     The ECU shall implement SecurityAccess (0x27) service accordingly:
 
     Supported session:
-        *   SecurityAccess shall not be supported in the defaultSession.
-
-        *   The services securityAccess – requestSeed 0x01 and sendKey
-            0x02 shall only be supported in programmingSession, both
-            primary and secondary bootloader.
-
-        *   The services securityAccess – requestSeed in the range
-            0x03-0x41 and sendKey in the range 0x04-0x42 may be
-            supported by the ECU but only in the extendedDiagnosticSession.
+        • SecurityAccess shall not be supported in the defaultSession.
+        • The services securityAccess requestSeed 0x01 and sendKey 0x02 shall only be supported
+          in programmingSession, both primary and secondary bootloader.
+        • The services securityAccess requestSeed in the range 0x03-0x41and sendKey in the
+          range 0x04-0x42 may be supported by the ECU but only in the extendedDiagnosticSession.
 
     SecurityAccess algorithm:
-    The requestSeed range 0x01-0x41 and corresponding sendKey
-    range 0x02-0x42 shall use the standardized SecurityAccess
-    algorithm specified by Volvo Car Corporation.
 
-    The requestSeed range 0x61-0x7E and corresponding sendKey
-    range 0x62-0x7F are not allowed to use the standardized
-    SecurityAccess algorithm specified by Volvo Car Corporation
-    but shall use another SecurityAccess algorithm provided by
-    the implementer. The number of bytes of the data parameter
-    securityKey is specified by the implementer.
-    Note that VCC tools are not required to support the range.
+    The requestSeed range 0x01-0x41 and corresponding sendKey range 0x02-0x42 shall use the
+    standardized SecurityAccess algorithm specified by Volvo Car Corporation.The requestSeed range
+    0x61-0x7E and corresponding sendKey range 0x62-0x7F are not allowed to use the standardized
+    SecurityAccess algorithm specified by Volvo Car Corporation but shall use another
+    SecurityAccess algorithm provided by the implementer. The number of bytes of the data parameter
+    securityKey is specified by the implementer. Note that VCC tools are not required to support
+    the range.
 
     P4Server_max response time:
-    Maximum response time for the service
-    securityAccess (0x27) is P2Server_max.
+    Maximum response time for the service securityAccess (0x27) is P2Server_max.
 
     Effect on the ECU operation:
-    The service securityAccess (0x27) shall not affect
-    the ECU’s ability to execute non-diagnostic tasks.
+    The service securityAccess (0x27) shall not affect the ECU's ability to execute non-diagnostic
+    tasks.
 
     Entry conditions:
     Entry conditions for service SecurityAccess (0x27) are not allowed.
 
-
-details:
-    The secondary bootloader wont request the security access since it is
-    already in an unlocked state after flashing the SBL.
-
-    Verify that the service wont interfere with the ECU ability to process
-    non-diagnostic tasks.
-    Verify that default session gives a negative response.
-    Verify that programming session (PBL) gives a positive response on
-        RequestSeed 0x01
-        SendKey 0x02
-    Verify that extended session gives a negative response for all
-    combinations of RequestSeed and Sendkey except
-        RequestSeed 0x05
-        SendKey 0x06
-
-    Measure the time for each response in the above mentioned sessions,
-    make sure that they are <= p2server_max.
-
+details: >
+    Verify SecurityAccess(0x27) is supported in programming and extended session for security level
+    (01) and security level (05,19,23,27) respectively. And verify that it is not supported in
+    default session. Also verify the response time of SecurityAccess(0x27) in different session.
 """
-from datetime import datetime
 
 import time
-import sys
 import logging
 import odtb_conf
-
-from supportfunctions.support_sec_acc import SupportSecurityAccess, SecAccessParam
+from hilding.dut import Dut
+from hilding.dut import DutTestError
 from supportfunctions.support_SBL import SupportSBL
-from supportfunctions.support_can import SupportCAN, CanParam, CanTestExtra, CanPayload
-from supportfunctions.support_test_odtb2 import SupportTestODTB2
-from supportfunctions.support_carcom import SupportCARCOM
+from supportfunctions.support_sec_acc import SupportSecurityAccess
+from supportfunctions.support_can import SupportCAN, CanParam, CanPayload
 from supportfunctions.support_file_io import SupportFileIO
-from supportfunctions.support_precondition import SupportPrecondition
-from supportfunctions.support_postcondition import SupportPostcondition
-from supportfunctions.support_service22 import SupportService22
-from supportfunctions.support_service10 import SupportService10
-from supportfunctions.support_service27 import SupportService27
-from supportfunctions.support_service11 import SupportService11
 
-SIO = SupportFileIO
-SC = SupportCAN()
-SUTE = SupportTestODTB2()
-SC_CARCOM = SupportCARCOM()
-PREC = SupportPrecondition()
-POST = SupportPostcondition()
-SE10 = SupportService10()
-SE11 = SupportService11()
-SE22 = SupportService22()
-SE27 = SupportService27()
-SSA = SupportSecurityAccess()
+SIO = SupportFileIO()
 SSBL = SupportSBL()
+SSA = SupportSecurityAccess()
+SC = SupportCAN()
 
-PBL = 'Primary bootloader'
-DEF_SESSION = 'Default session'
-PRG_SESSION = 'Programming session'
-EXT_SESSION = 'Extended session'
 
-def security_access_def_session(can_p, step_no):
+def register_non_diagnostic_signal(dut, parameters):
     """
-    Request seed in default session, expect negative response.
-    Do not request SendKey since requestSeed will always give
-    a negative response.
-    Evaluate the response and measure the time it took to receive
-    the response.
+    Register a non diagnostic signal
+    Args:
+        dut (Dut): An instance of Dut
+        parameters (dict): signals
+    Returns:
+        result (bool): True when successfully register non-diagnostic signal
+        num_frames (int): Number of CAN frames
+        can_p_ex (dict): CAN params
     """
-    purpose = "Request seed (0x01) in default session."
-    etp: CanTestExtra = {
-        "step_no": step_no,
-        "purpose" : purpose,
-        "timeout" : 1,
-        "min_no_messages" : -1,
-        "max_no_messages" : -1
-    }
-    SIO.parameter_adopt_teststep(etp)
+    can_p_ex: CanParam = {"netstub": SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT,
+                                                                odtb_conf.ODTB2_PORT),
+                          "send": parameters['send'],
+                          "receive": parameters['receive'],
+                          "namespace": dut["namespace"]}
 
-    # Send RequestSeed with 0x01.
-    cpay: CanPayload = {
-        "payload": b'\x27\x01',
-        "extra": ''
-    }
-    SIO.parameter_adopt_teststep(cpay)
-
-    # Send message
-    result = SUTE.teststep(can_p, cpay, etp)
-
-    # Not supported, expect negative response.
-    result = result and evaluate_response(can_p, '037F27')
-
-    # Make sure time from sent message to received < max limit.
-    result = result and elapsed_time(can_p, DEF_SESSION)
-
-    return result
-
-def security_access_prg_session(can_p, sa_keys, step_no):
-    """
-    Request seed and Send key in programming session,
-    expect positive response for values
-        RequestSeed: 0x01
-        SendKey: 0x02.
-    Evaluate the response and measure the time it took
-    to receive the response.
-    """
-    purpose = "RequestSeed (0x01) in programming session (Primary bootloader)."
-    etp: CanTestExtra = {
-        "step_no": step_no,
-        "purpose" : purpose,
-        "timeout" : 1,
-        "min_no_messages" : -1,
-        "max_no_messages" : -1
-    }
-    SIO.parameter_adopt_teststep(etp)
-
-    # RequestSeed 0x01
-    cpay: CanPayload = {
-        "payload": b'\x27\x01',
-        "extra": ''
-    }
-    SIO.parameter_adopt_teststep(cpay)
-
-    # Send message.
-    result = SUTE.teststep(can_p, cpay, etp)
-    result = result and evaluate_response(can_p, '6701')
-
-    # Make sure time from sent message to received < max limit.
-    result = result and elapsed_time(can_p, PRG_SESSION)
-    if not result:
-        return False
-
-    # Extract seed from the reply.
-    request_seed = SC.can_messages[can_p["receive"]][0][2][6:12]
-    logging.debug("Received data: %s", SC.can_messages[can_p["receive"]][0][2])
-    logging.debug("Extracted seed: %s", request_seed)
-
-    # Modify received seed with the security access algorithm.
-    modified_seed = SSA.set_security_access_pins(request_seed,
-                                                 sa_keys)
-
-    # Security access service with send key 0x02
-    service_call = bytearray(b'\x27\x02')
-
-    # Append the modified seed to the service call
-    service_call += modified_seed
-
-    purpose = "SendKey (0x02) in programming session (Primary bootloader)."
-    etp: CanTestExtra = {
-        "step_no": step_no,
-        "purpose" : purpose,
-        "timeout" : 1,
-        "min_no_messages" : -1,
-        "max_no_messages" : -1
-    }
-    SIO.parameter_adopt_teststep(etp)
-
-    # SendKey 0x02.
-    cpay: CanPayload = {
-        "payload": service_call,
-        "extra": ''
-    }
-    SIO.parameter_adopt_teststep(cpay)
-
-    # Send message.
-    result = result and SUTE.teststep(can_p, cpay, etp)
-    result = result and evaluate_response(can_p, '6702')
-
-    time.sleep(1)
-
-    # Make sure time from sent message to received < max limit.
-    result = result and elapsed_time(can_p, PRG_SESSION)
-
-    return result
-
-def security_access_ext_session(can_p, step_no):
-    """
-    Loop through the following values for each
-    RequestSeed and SendKey
-        - Request seed 0x03 - 0x41
-        - SendKey 0x04 - 0x42
-    Expect RequestSeed 0x05 and SendKey 0x06 to pass.
-    Finally, measure the time for ECU to respond.
-    """
-    SUTE.print_test_purpose("Purpose: Security access in extended session.", step_no)
-    result = True
-    se27 = b'\x27'
-    hex_counter = 3
-
-    # Initialize the RequestSeed list
-    r_seed = []
-    for i in range(0x03, 0x41 + 1):
-        r_seed.append(se27 + i.to_bytes((i.bit_length() + 7) // 8 or 1, 'big'))
-
-    # Initialize the SendKey list
-    s_key = []
-    for i in range(0x04, 0x42 + 1):
-        s_key.append(se27 + i.to_bytes((i.bit_length() + 7) // 8 or 1, 'big'))
-
-    etp: CanTestExtra = {
-        "step_no": step_no,
-        "purpose" : "",
-        "timeout" : 1,
-        "min_no_messages" : -1,
-        "max_no_messages" : -1
-    }
-    SIO.parameter_adopt_teststep(etp)
-
-    list_length = len(s_key)
-    # Loop through all seed and key combinations.
-    # Make sure 0x05 gives a positive response.
-    for i in range(0, list_length):
-        etp: CanTestExtra = {
-            "step_no": step_no,
-            "purpose" : f"RequestSeed: {hex(hex_counter).upper()}",
-            "timeout" : 1,
-            "min_no_messages" : -1,
-            "max_no_messages" : -1
-        }
-        SIO.parameter_adopt_teststep(etp)
-
-        # Send Request seed.
-        cpay: CanPayload = {
-            "payload": r_seed[i],
-            "extra": ''
-        }
-        SIO.parameter_adopt_teststep(cpay)
-
-        # Send message
-        SUTE.teststep(can_p, cpay, etp)
-
-        if i == 2: # RequestSeed 0x05
-            result = result and evaluate_response(can_p, '056705')
-        else:
-            result = result and evaluate_response(can_p, '037F')
-        if not result:
-            return False
-
-        # Extract seed from the reply.
-        request_seed = SC.can_messages[can_p["receive"]][0][2][6:12]
-        logging.debug("Received data: %s", SC.can_messages[can_p["receive"]][0][2])
-        logging.debug("Extracted seed: %s", request_seed)
-
-        # Modify received seed with the security algorithm.
-        modified_seed = SSA.set_security_access_pins(request_seed,
-                                                     fixed_key='7D122F43AF')
-        logging.debug("Modified seed: %s", modified_seed)
-
-        # Append the modified seed to the service call
-        s_key[i] += modified_seed
-
-        etp: CanTestExtra = {
-            "step_no": step_no,
-            "purpose" : f"SendKey: {hex(hex_counter + 1).upper()}",
-            "timeout" : 1,
-            "min_no_messages" : -1,
-            "max_no_messages" : -1
-        }
-        SIO.parameter_adopt_teststep(etp)
-
-        # Send 'SendKey'
-        cpay: CanPayload = {
-            "payload": s_key[i],
-            "extra": ''
-        }
-        SIO.parameter_adopt_teststep(cpay)
-
-        # Send message
-        SUTE.teststep(can_p, cpay, etp)
-
-        if i == 2: # SendKey 0x06
-            result = result and evaluate_response(can_p, '0267')
-        else:
-            result = result and evaluate_response(can_p, '037F')
-        hex_counter += 1
-
-    # Finally measure the time for the response.
-    result = result and elapsed_time(can_p, EXT_SESSION)
-    return result
-
-def security_access_cyclically(can_p, step_no):
-    """
-    Step request seed cyclically in extended session.
-    """
-    purpose = "Request seed cyclically (0x05) in extended session."
-    etp: CanTestExtra = {
-        "step_no": step_no,
-        "purpose" : purpose,
-        "timeout" : 1,
-        "min_no_messages" : -1,
-        "max_no_messages" : -1
-    }
-    SIO.parameter_adopt_teststep(etp)
-
-    # Send Request seed with 0x01.
-    cpay: CanPayload = {
-        "payload": b'\x27\x05',
-        "extra": ''
-    }
-    SIO.parameter_adopt_teststep(cpay)
-
-    result = SUTE.teststep(can_p, cpay, etp)
-
-    for _ in range(0, 20):
-        SC.t_send_signal_can_mf(can_p, cpay, True, 0x00)
-        result = result and evaluate_response(can_p, valid_data='056705', log=False)
-
-    result = result and evaluate_response(can_p, valid_data='056705')
-    return result
-
-def print_nrc(can_p):
-    """
-    Get and log NRC (Negative return code).
-    """
-    logging.info("NRC: %s",
-                 SUTE.pp_can_nrc(
-                 SC.can_messages[can_p["receive"]][0][2][6:8]))
-
-def evaluate_response(can_p, valid_data='', log=True):
-    """
-    Log result of data comparison (true/false)
-    If it was a NRC - pretty print number and corresponding string
-    If comparison is false and data does not contain a NRC log as unexpected.
-    Finally, return result.
-    """
-    # Check if empty
-    if not can_p["receive"]:
-        logging.info("No data in can_p['receive']")
-        return False
-
-    nrc = SC.can_messages[can_p["receive"]][0][2][0:4] == '037F'
-    result = SUTE.test_message(SC.can_messages[can_p["receive"]],
-                               teststring=valid_data)
-
-    # Check if it was a negative return code. If so, print.
-    if result and nrc:
-        print_nrc(can_p)
-
-    # If its not result and not a NRC, possible corrupt message.
-    if not result and not nrc:
-        logging.info("Unexpected data received: %s\n",
-                     SC.can_messages[can_p["receive"]][0][2])
-    # Log result
-    if log:
-        logging.info("Result: %s\n", result)
-
-    return result
-
-def register_non_diagnostic_signal(can_p, step_no):
-    """
-    Register a non diagnostic signal.
-    """
-    etp: CanTestExtra = {
-        "step_no" : "",
-        "purpose" : "",
-        "timeout" : 15,
-        "min_no_messages" : -1,
-        "max_no_messages" : -1
-    }
-    SIO.parameter_adopt_teststep(etp)
-
-    can_p_ex: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(
-            odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        "send" : "ECMFront1Fr02",
-        "receive" : "BECMFront1Fr02",
-        "namespace" : SC.nspace_lookup("Front1CANCfg0")
-    }
-    SIO.parameter_adopt_teststep(can_p_ex)
-
-    purpose = 'Register a non-diagnostic signal.'
-    SUTE.print_test_purpose(step_no, purpose)
-
-    # Subscribe to signal
-    SC.subscribe_signal(can_p_ex, etp["timeout"])
+    SC.subscribe_signal(can_p_ex, timeout=15)
     time.sleep(1)
 
     SC.clear_all_can_messages()
-    logging.debug("All can messages cleared")
-
     SC.clear_all_can_frames()
-    SC.update_can_messages(can_p)
-    logging.debug("All can messages updated")
-
+    SC.update_can_messages(dut)
     time.sleep(4)
+
     num_frames = len(SC.can_frames[can_p_ex["receive"]])
-    logging.debug("Number of frames received: %s", num_frames)
+    logging.info("Number of CAN frames received: %s", num_frames)
+    # Check CAN frames are more than 10
+    result = (num_frames > 10)
+    return result, num_frames, can_p_ex
 
-    # Check if any frames were received
-    result = (len(SC.can_frames[can_p_ex["receive"]]) > 10)
 
-    logging.info("Result: %s\n", result)
-    return result, can_p_ex, num_frames
-
-def verify_registered_signal(can_p_ex, num_frames, step_no):
+def send_security_access_cyclically(dut):
     """
-    Verify subscribed signal is is still sent.
+    Send request seed for multiple times to keep the ECU busy while non-diagnostic signal is being
+    sent
+    Args:
+        dut (Dut): An instance of Dut
+    Returns: None
     """
-    purpose = "Verify subscribed non-diagnostic signal is still sent."
-    SUTE.print_test_purpose(step_no, purpose)
+    cpay: CanPayload = {"payload": b'\x27\x05', "extra": ''}
+    SIO.parameter_adopt_teststep(cpay)
 
+    # If cyclical - send request multiple times to keep the ECU busy while non-diagnostic signal
+    # is being sent.
+    for _ in range(20):
+        SC.t_send_signal_can_mf(dut, cpay, True, 0x00)
+
+
+def verify_registered_signal(can_p_ex, num_frames, can_frame_tolerance):
+    """
+    Verify registered signal is still present
+    Args:
+        can_p_ex (dict): CAN params
+        num_frames (int): Number of CAN frames
+        can_frame_tolerance (int): Tolerance value for number of CAN frames
+    Returns:
+        result (bool): True when registered signal is present
+    """
     SC.clear_all_can_frames()
     SC.update_can_messages(can_p_ex)
 
     time.sleep(4)
-
-    result = ((len(SC.can_frames[can_p_ex["receive"]]) + 50) >\
-              num_frames >\
-              (len(SC.can_frames[can_p_ex["receive"]]) - 50))
-
-    logging.info("Result: %s\n", result)
-    return result
-
-def elapsed_time(can_p, session):
-    """
-    Elapsed time checks if
-    ((time_received - time_sent) + test environment jitter) <= p2server_max
-
-    Returns true / false
-    """
-    # Test environment jitter estimated at 30ms.
-    jitter_testenv = 0.030
-
-    # P2Server_max is 50ms in default and extended, 25ms in programming.
-    if session == PRG_SESSION:
-        p2server_max = 0.025
-    else:
-        p2server_max = 0.050
-
-    t_sent = float(SC.can_frames[can_p["send"]][0][0])
-    t_received = float(SC.can_frames[can_p["receive"]][0][0])
-
-    t_elapsed = (t_received - t_sent)
-    t_allowed = (p2server_max + jitter_testenv)
-
-    if t_elapsed <= t_allowed:
-        result = True
-    else:
-        logging.info("Failed: Response received outside time limit! \
-            \n Allowed: %s\n Actual: %s", \
-            round(t_allowed, 3), round(t_elapsed, 3))
-        result = False
+    latest_num_frames = len(SC.can_frames[can_p_ex["receive"]])
+    result = ((latest_num_frames + can_frame_tolerance) > num_frames >
+              (latest_num_frames - can_frame_tolerance))
 
     return result
+
+
+def security_access(dut, sa_level):
+    """
+    SecurityAccess(0x27) with supported security level in all diagnostic session
+    Args:
+        dut (Dut): An instance of Dut
+        sa_level (str): SecurityAccess(0x27) level
+    Returns:
+        (bool): True when SecurityAccess(0x27) successful for respective session
+    """
+    # Sleep time to avoid NRC-37
+    time.sleep(5)
+
+    SSA.set_keys(sa_keys=dut.conf.default_rig_config)
+    SSA.set_level_key(int(sa_level, 16))
+
+    client_req_seed = SSA.prepare_client_request_seed()
+    response = dut.uds.generic_ecu_call(client_req_seed)
+    time_req_seed = dut.uds.milliseconds_since_request()
+    if response.raw[4:6] != '67':
+        logging.error("Security access request seed failed for level %s", sa_level)
+        return False, time_req_seed, None
+
+    success = SSA.process_server_response_seed(bytearray.fromhex(response.raw[4:]))
+    if success != 0:
+        logging.error("Server response seed for security access is failed for level %s", sa_level)
+        return False, time_req_seed, None
+
+    sa_key_calculated = SSA.prepare_client_send_key()
+    response = dut.uds.generic_ecu_call(sa_key_calculated)
+    time_send_key = dut.uds.milliseconds_since_request()
+    if response.raw[2:4] != '67':
+        logging.error("Security access send key failed for level %s", sa_level)
+        return False, time_req_seed, time_send_key
+
+    result = (SSA.process_server_response_key(bytearray.fromhex(response.raw[6:10])) == 0)
+    if result:
+        logging.info("Security access successful for security level %s", sa_level)
+        return True, time_req_seed, time_send_key
+
+    logging.error("Security access failed for security level %s", sa_level)
+    return False, time_req_seed, time_send_key
+
+
+def verify_response_time(time_req_seed, time_send_key, parameters, session):
+    """
+    Verify response time for SecurityAccess(0x27)
+    Args:
+        time_req_seed (int): Response time for request seed
+        time_send_key (int): Response time for send key
+        parameters (dict): Time parameters
+        session (str): Diagnostic session
+    Returns:
+        (bool): True when response is within the time limit
+        time_req_seed (int): Response time for request seed
+        time_req_seed (int): Response time for send key
+        t_allowed (int): Response time allowed
+    """
+    jitter_testenv = parameters['jitter_testenv']
+    if session == 'programming':
+        p2server_max = parameters['p2server_max_prog']
+    else:
+        p2server_max = parameters['p2server_max_non_prog']
+    if time_send_key is None:
+        time_send_key = 0
+
+    t_allowed = p2server_max + jitter_testenv
+
+    if time_req_seed <= t_allowed and time_send_key <= t_allowed:
+        return True, time_req_seed, time_send_key, t_allowed
+
+    return False, time_req_seed, time_send_key, t_allowed
+
+
+def create_response_time_dict(res_time_allowed, res_time_received, t_elapsed, t_allowed, session):
+    """
+    Create dictionary of response time for all diagnostic session
+    Args:
+        res_time_allowed (dict): Allowed response time
+        res_time_received (dict): Response time received
+        t_elapsed (list): Response time calculated for request seed and send key respectively
+        t_allowed (int): Response time allowed
+        session (str): Diagnostic session
+    Returns:
+        res_time_allowed (dict): Allowed response time
+        res_time_received (dict): Response time received
+    """
+    res_time_allowed.update({session: t_allowed})
+    res_time_received.update({session: t_elapsed})
+    return res_time_allowed, res_time_received
+
+
+def step_1(dut: Dut, parameters):
+    """
+    action: Verify SecurityAccess(0x27) doesn't affect the ECU's ability to execute
+            non-diagnostic tasks
+    expected_result: SecurityAccess(0x27) should not affect on non-diagnostic task
+    """
+    # Set to extended session
+    dut.uds.set_mode(3)
+
+    result, num_frames, can_p_ex = register_non_diagnostic_signal(dut, parameters)
+    if not result:
+        logging.error("Test Failed: Unable to register non-diagnostic signal")
+        return False
+
+    # Send SecurityAccess(0x27) signal cyclically to keep the ECU busy while non-diagnostic signal
+    # is being sent
+    send_security_access_cyclically(dut)
+
+    # Verify signal is still present after cyclically send SecurityAccess(0x27) signal
+    result = result and verify_registered_signal(can_p_ex, num_frames,
+                                                 parameters['can_frame_tolerance'])
+    if not result:
+        logging.error("Test Failed: Unable to verify registered signal")
+        return False
+
+    logging.info("Successfully verified SecurityAccess(0x27) service has no effect on "
+                 "non-diagnostic tasks")
+    return True
+
+
+def step_2(dut: Dut, parameters):
+    """
+    action: Verify SecurityAccess(0x27) with supported security level(05,19,23,27) in extended
+            session and also verify response time
+    expected_result: SecurityAccess(0x27) should be successful with proper response time for all
+                     security levels
+    """
+    result_list = []
+    res_time_allowed = {}
+    res_time_received = {}
+    res_time = []
+
+    for sa_level in parameters['sa_level_extended_session']:
+        sa_result, time_req_seed, time_send_key = security_access(dut, sa_level)
+        res_time_result, time_req_seed, time_send_key, t_allowed = verify_response_time(
+                                                time_req_seed, time_send_key,
+                                                parameters['time_parameters'], session='extended')
+        res_time.append((time_req_seed, time_send_key))
+        result = sa_result and res_time_result
+        result_list.append(result)
+
+    res_time_allowed, res_time_received = create_response_time_dict(res_time_allowed,
+                                          res_time_received, res_time, t_allowed,
+                                          session='extended')
+
+    if len(result_list) != 0 and all(result_list):
+        logging.info("Security access successful for all security level with proper response time "
+                     "in extended session")
+        return True, res_time_allowed, res_time_received
+
+    logging.error("Test Failed: Security access is not successful or response time is not proper "
+                  "in extended session")
+    return False, res_time_allowed, res_time_received
+
+
+def step_3(dut: Dut, parameters, res_time_allowed, res_time_received):
+    """
+    action: Verify SecurityAccess(0x27) with security level(01) in default session and also
+            verify response time
+    expected_result: SecurityAccess(0x27) should be denied in default session and response time
+                     within the time limit
+    """
+    # Set to default session
+    dut.uds.set_mode(1)
+    res_time = []
+
+    sa_result, time_req_seed, time_send_key = security_access(dut, sa_level='01')
+    if not sa_result:
+        logging.info("Security access denied in default session as expected")
+        sa_result = True
+    else:
+        logging.error("Test Failed: Security access successful in default session")
+        sa_result = False
+
+    res_time_result, time_req_seed, time_send_key, t_allowed = verify_response_time(time_req_seed,
+                                                                 time_send_key,
+                                                                 parameters['time_parameters'],
+                                                                 session='default')
+
+    res_time.append((time_req_seed, time_send_key))
+
+    res_time_allowed, res_time_received = create_response_time_dict(res_time_allowed,
+                                                                    res_time_received, res_time,
+                                                                    t_allowed, session='default')
+
+    result = sa_result and res_time_result
+    if result:
+        logging.info("Response time is within the allowed time limit in default session")
+        return True, res_time_allowed, res_time_received
+
+    logging.error("Test Failed: Response time is not within the allowed time limit in "
+                  "default session")
+    return False, res_time_allowed, res_time_received
+
+
+def step_4(dut: Dut, parameters, res_time_allowed, res_time_received):
+    """
+    action: Verify SecurityAccess(0x27) with security level(01) in programming session and also
+            verify response time
+    expected_result: SecurityAccess(0x27) should be successful with proper response time
+    """
+    # Set to programming session
+    dut.uds.set_mode(2)
+    res_time = []
+
+    sa_result, time_req_seed, time_send_key = security_access(dut, sa_level='01')
+    res_time_result, time_req_seed, time_send_key, t_allowed = verify_response_time(time_req_seed,
+                                                                 time_send_key,
+                                                                 parameters['time_parameters'],
+                                                                 session='programming')
+
+    res_time.append((time_req_seed, time_send_key))
+
+    res_time_allowed, res_time_received = create_response_time_dict(res_time_allowed,
+                                                                  res_time_received, res_time,
+                                                                  t_allowed, session='programming')
+
+    result = sa_result and res_time_result
+    if result:
+        logging.info("Allowed response time(ms) in respective session: %s, received "
+                     "response time for request seed(ms) and response time for send key(ms) in "
+                     "different security levels: %s", res_time_allowed, res_time_received)
+        return True
+
+    logging.error("Test Failed: Allowed response time(ms) in respective session: %s, but received "
+                  "response time for request seed(ms) and response time for send key(ms) in "
+                  "different security levels: %s", res_time_allowed, res_time_received)
+    return False
+
+
+def step_5(dut: Dut):
+    """
+    action: Download and activate SBL
+    expected_result: SBL download and activation should be successful
+    """
+    # ECU hard reset
+    dut.uds.ecu_reset_1101()
+
+    # Load VBF files
+    vbf_result = SSBL.get_vbf_files()
+    if not vbf_result:
+        logging.error("Test Failed: Unable to load VBF files")
+        return False
+
+    # Download and activate SBL
+    sbl_result = SSBL.sbl_dl_activation(dut, sa_keys=dut.conf.default_rig_config)
+    if not sbl_result:
+        logging.error("Test Failed: SBL activation failed")
+        return False
+
+    logging.info("SBL activation successful")
+    return True
+
 
 def run():
     """
-    Run - Call other functions from here
+    Verify SecurityAccess(0x27) is supported in programming and extended session for security level
+    (01) and security level (05,19,23,27) respectively. And verify that it is not supported in
+    default session. Also verify the response time of SecurityAccess(0x27) in different session.
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+    dut = Dut()
 
-    # where to connect to signal_broker
-    can_p: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(
-            odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        "send" : "Vcu1ToBecmFront1DiagReqFrame",
-        "receive" : "BecmToVcu1Front1DiagResFrame",
-        "namespace" : SC.nspace_lookup("Front1CANCfg0")
-    }
-    SIO.parameter_adopt_teststep(can_p)
+    start_time = dut.start()
 
-    logging.info("Testcase start: %s", datetime.now())
-    starttime = time.time()
-    logging.info("Time: %s \n", time.time())
+    parameters_dict = {'receive': '',
+                       'send': '',
+                       'sa_level_extended_session': [],
+                       'time_parameters': {},
+                       'can_frame_tolerance': 0}
+    try:
+        dut.precondition(timeout=150)
 
-    ############################################
-    # precondition
-    ############################################
-    SSBL.get_vbf_files()
-    timeout = 200
-    result = PREC.precondition(can_p, timeout)
+        parameters = SIO.parameter_adopt_teststep(parameters_dict)
+        if not all(list(parameters.values())):
+            raise DutTestError("yml parameters not found")
 
-    #Init parameter for SecAccess Gen1 / Gen2 (current default: Gen1)
-    sa_keys: SecAccessParam = {
-        "SecAcc_Gen": 'Gen1',
-        "fixed_key": '0102030405',
-        "auth_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF',
-        "proof_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
-    }
-    SIO.parameter_adopt_teststep(sa_keys)
+        result = dut.step(step_1, parameters, purpose="Verify SecurityAccess(0x27) "
+                          "don't affect the ECU's ability to execute non-diagnostic tasks")
 
-    if result:
-        ############################################
-        # teststeps
-        ############################################
-        # Step 1:
-        # Action: Change to extended session.
-        # Result: ECU responds with a positive message.
-        result = result and \
-            SE10.diagnostic_session_control_mode3(can_p, 1)
+        result_step, res_time_allowed, res_time_received = dut.step(step_2, parameters,
+                                        purpose="Verify SecurityAccess(0x27) with supported "
+                                                "security level(05,19,23,27) in extended session")
+        result = result_step and result
 
-        # Step 2:
-        # Action: Register a non-diagnostic signal.
-        # Result: BECM send requested signals.
-        result, can_p_ex, num_frames = result and \
-            register_non_diagnostic_signal(can_p, 2)
+        result_step, res_time_allowed, res_time_received = dut.step(step_3, parameters,
+                                        res_time_allowed, res_time_received, purpose="Verify "
+                                        "SecurityAccess(0x27) with security level(01) in default "
+                                        "session")
+        result = result_step and result
 
-        # Step 3:
-        # Action: Send security access requestSeed cyclically
-        # Result: Positive replies for all requests.
-        result = result and \
-            security_access_cyclically(can_p, 3)
+        result_step = dut.step(step_4, parameters, res_time_allowed, res_time_received,
+                               purpose="verify SecurityAccess(0x27) with security level(01) in "
+                                       "programming session")
+        result = result_step and result
 
-        # Step 4:
-        # Action: Verify signal is still sent.
-        # Result: BECM send requested signals.
-        result = result and \
-            verify_registered_signal(can_p_ex, num_frames, 4)
+        result_step = dut.step(step_5, purpose="Download and activate SBL")
 
-        # Step 5:
-        # Action: Security access in extended session and verify response time.
-        # Result: Positive reply from becm_p319.
-        result = result and \
-            security_access_ext_session(can_p, 5)
+        result = result_step and result
 
-        # Step 6:
-        # Action: Change to default session
-        # Result: Positive reply from becm_p319
-        result = result and \
-            SE10.diagnostic_session_control_mode1(can_p, 6)
+    except DutTestError as error:
+        logging.error("Test failed: %s", error)
+    finally:
+        dut.postcondition(start_time, result)
 
-        # Step 7:
-        # Action: Security access in default session and verify response time.
-        # Result: Negative reply from becm_p319
-        result = result and \
-            security_access_def_session(can_p, 7)
-
-        # Step 8:
-        # Action: Change to programming session
-        # Result: Positive reply from becm_p319
-        result = result and \
-            SE10.diagnostic_session_control_mode2(can_p, 8)
-
-        # Step 9:
-        # Action: Security access in programming session
-        #         (Primary bootloader) and verify response time.
-        # Result: Positive reply from becm_p319
-        result = result and \
-            security_access_prg_session(can_p, sa_keys, 9)
-
-        # Step 10:
-        # Action: Active secondary bootloader
-        # Result: Positive reply from becm_p319
-        result = result and SSBL.sbl_activation(
-            can_p, sa_keys, stepno='11', purpose='Activate secondary bootloader')
-
-    ############################################
-    # postCondition
-    ############################################
-    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()
-
-# end_of_file

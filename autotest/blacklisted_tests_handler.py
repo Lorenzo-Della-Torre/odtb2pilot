@@ -89,6 +89,8 @@ def create_logs(reqprod_dict, directory):
                     log_file.write(f"Testcase result: SecOC not implemented. Info:{info}")
                 if category == "--Excluded--":
                     log_file.write(f"Testcase result: This script is temporarily excluded. Info:{info}")
+                if category == "--Implicit--":
+                    log_file.write(f"Testcase result: Implicitly tested by another testscript. Info:{info}")
                 #else:
                 #    log_file.write(f"Testcase result: {category}. Info: {info}")
 
@@ -138,11 +140,16 @@ def match_swrs_with_yml(swrs):
                 # We don't use '-' in the blacklist or in scriptnames. replacing with empty.
                 if variant == '-':
                     variant = ''
-                comparison_variable = f"e_{reqprod_id}_{variant}_{reqprod_data['Revision']}"
-                if comparison_variable in yml_reqprods:
-                    matching_reqprods_from_yml[category][comparison_variable] = yml_reqprods[comparison_variable]
+                # comparison list holds both CarWeaver and Elektra req structures
+                comparison_list = [f"e_{reqprod_id}_{variant}_{reqprod_data['Revision']}", f"cw_{reqprod_id}_{reqprod_data['Revision']}"]
+                # check if the requirement belongs to the blacklist
+                match_req = ''.join([req for req in comparison_list if req in yml_reqprods])
+                if match_req != '':
+                    matching_reqprods_from_yml[category][match_req] = yml_reqprods[match_req]
                     if reqprod_id in modified_swrs:
                         del modified_swrs[reqprod_id]
+                # keep the requirement since it does not belong to the blacklist
+                else: pass
 
     return matching_reqprods_from_yml, modified_swrs
 

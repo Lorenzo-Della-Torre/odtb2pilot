@@ -34,8 +34,11 @@ connected to a database.
 """
 
 import datetime
+from typing import Type
 import uuid
+import logging
 
+log = logging.getLogger('epsmsgbus.core')
 
 # Enumerations ==========================================================={{{1
 class EnumerationValue(object):
@@ -152,6 +155,10 @@ class Observable(object):
         for observer in self.observers:
             observer.notify_finish(self, verdict)
 
+    def notify_update(self, data):
+        for observer in self.observers:
+            observer.notify_update(self, data)
+
 
 class Observer(object):
     """Base class for observers. Each observer needs to implement the methods."""
@@ -165,11 +172,12 @@ class Observer(object):
     def notify_finish(self, observable, verdict):
         raise NotImplementedError("Method 'notify_finish' not implemented. Define ia a subclass.")
 
+    def notify_update(self, observable, data):
+        raise NotImplementedError("Method 'notify_update' not implemented. Define ia a subclass.")
 
 class Container(dict):
     """Generic container object for holding metadata."""
     pass
-
 
 class TestSuite(Observable):
     """Base class for test suites. Holds a number of "first-level" attributes.
@@ -178,6 +186,7 @@ class TestSuite(Observable):
     def __init__(self, name, identifier=None):
         super(TestSuite, self).__init__()
         self.name = name
+        self.identifier = identifier
         self.id = str(uuid.uuid4()) if identifier is None else identifier
         self.verdict = Verdict('unknown')
         self.state = Status('unknown')
@@ -206,7 +215,10 @@ class TestSuite(Observable):
         """Set start time and set state to 'ongoing'. Notify observers."""
         self.starttime = datetime.datetime.utcnow()
         self.state = Status('ongoing')
-        self.notify_start()
+        if self.identifier: #In case activity is taken from Jenkins, it is an update, else regular start
+            self.update()
+        else:
+            self.notify_start()
 
     def finish(self, verdict=None):
         """Set end time and set state to 'finished'. Save verdict and notify
@@ -221,6 +233,11 @@ class TestSuite(Observable):
         if verdict is not None:
             self.verdict = Verdict(verdict)
         self.notify_finish(self.verdict)
+
+    def update(self, data=None):
+        """Update could be an update on run-time based on a new info provided during execution
+        or it could be the beginning of execution from an activity started in Jenkins (data = None)"""
+        self.notify_update(data)
 
     def update_verdict(self, verdict):
         """Update my verdict, this is called from a test case object."""
@@ -343,6 +360,30 @@ def testsuite(name=None, identifier=None):
     if name is not None:
         CURRENT_TESTSUITE = TestSuite(name, identifier)
     return CURRENT_TESTSUITE
+
+def recurse_container(parent, parentName = None):
+    """Create a mapping of a AD container
+
+    :param parent: The root of the container.
+    :type parent: AD container.
+    :param parentName: Name of child AD containers, is only needed for recursion, defaults to None
+    :type parentName: String, optional
+    :return: Dict containing everything in the given AD container
+    :rtype: Dict
+    """
+    try:
+        buffer = {}
+        for child in parent:
+            result = recurse_container(child.Value, child._FullName)
+            if isinstance(result, tuple):
+                name, value = result
+                buffer[name] = value if isinstance(value, list) or isinstance(value, dict) else str(value)
+            elif isinstance(result, dict):
+                buffer[child._FullName.split('.')[-1]] = result
+        return buffer
+    except:
+        return (parentName.split('.')[-1], parent)
+    
 
 
 # eof

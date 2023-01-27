@@ -1,4 +1,5 @@
 """
+
 /*********************************************************************************/
 
 
@@ -35,7 +36,6 @@ description: >
 details: >
     Calculate and verify NRC 78 response time is greater than or equal to
     0.3 * P2*Server_max(1500.0ms) in both programming and extended session.
-
     Steps:
         1. Download Software
         2. Use custom Flash erase function for ESS VBF and store list of NRC 78 response time
@@ -48,7 +48,6 @@ from os import listdir
 from hilding.dut import Dut
 from hilding.dut import DutTestError
 from supportfunctions.support_sec_acc import SecAccessParam
-from supportfunctions.support_service3e import SupportService3e
 from supportfunctions.support_SBL import SupportSBL
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
 from supportfunctions.support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
@@ -57,13 +56,12 @@ from supportfunctions.support_carcom import SupportCARCOM
 from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_file_io import SupportFileIO
 
-SS3E = SupportService3e()
 SIO = SupportFileIO()
 SUTE = SupportTestODTB2()
 SSBL = SupportSBL()
 SC = SupportCAN()
 SE31 = SupportService31()
-S_CARCOM = SupportCARCOM()
+SC_CARCOM = SupportCARCOM()
 SE22 = SupportService22()
 
 
@@ -74,7 +72,7 @@ def send_message(can_p: CanParam, etp: CanTestExtra, cpay: CanPayload, wait_time
         can_p (class obj): CAN parameter
         etp (class obj): CAN TestExtra parameter
         cpay (class obj): CAN payload
-        wait_time (float): waiting time
+        wait_time (float): Waiting time
     Returns:
         None
     """
@@ -159,28 +157,26 @@ def flash_erase(dut, vbf_header, wait_time):
     """
     Routine Flash Erase
     Args:
-        dut (class obj): dut instance
+        dut (Dut): An instance of Dut
         vbf_header (str): VBF file header
-        wait_time (float): waiting time
+        wait_time (float): Waiting time
     Returns:
-        nrc_78_response_time_list (list): response time when received NRC 78.
+        nrc_78_response_time_list (list): Response time when received NRC 78.
     """
     for erase_el in vbf_header['erase']:
         # Read EDA0 DID
         result = SE22.read_did_eda0(dut)
         # Prepare payload
-        cpay: CanPayload = {"payload" : S_CARCOM.can_m_send("RoutineControlRequestSID",\
+        cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("RoutineControlRequestSID",\
                                         b'\xFF\x00' +\
                                         erase_el[0].to_bytes(4, byteorder='big') +\
                                         erase_el[1].to_bytes(4, byteorder='big'), b'\x01'),\
-                            "extra" : ''
-                            }
+                            "extra" : ''}
         etp: CanTestExtra = {"step_no": 230,\
                                 "purpose" : "RC flash erase",\
                                 "timeout" : 1,\
                                 "min_no_messages" : -1,\
-                                "max_no_messages" : -1
-                            }
+                                "max_no_messages" : -1}
         # start flash erase, may take long to erase
         nrc_78_response_time_list = flash(dut, cpay, etp, wait_time)
 
@@ -221,7 +217,7 @@ def load_vbf_files(dut):
     Args:
         dut (Dut): An instance of Dut
     Returns:
-        boolean: True if vbfs were loaded successfully, otherwise False
+        (bool): True if vbfs were loaded successfully, otherwise False
     """
     logging.info("~~~~~~~~ Loading VBFs started ~~~~~~~~")
     vbfs = listdir(dut.conf.rig.vbf_path)
@@ -243,7 +239,7 @@ def activate_sbl(dut):
     Args:
         dut (Dut): An instance of Dut
     Returns:
-        boolean: Result from support_SBL.sbl_activation.
+        (bool): Result from support_SBL.sbl_activation.
         Should be True if sbl is activated successfully,
         otherwise False
     """
@@ -263,10 +259,10 @@ def download_ess(dut, wait_time):
     Download the ESS file to the ECU
     Args:
         dut (Dut): An instance of Dut
-        wait_time(float): wait time
+        wait_time (float): wait time
     Returns:
-        boolean: True if download software part was successful, otherwise False
-        nrc_78_time_list: Response NRC 78 with time
+        (bool): True if download software part was successful, otherwise False
+        nrc_78_time_list (list): Response NRC 78 with time
     """
     result = SSBL.get_ess_filename()
     if result:
@@ -291,9 +287,8 @@ def download_application_and_data(dut):
     Args:
         dut (Dut): An instance of Dut
     Returns:
-        boolean: True of download was successful, otherwise False
+        (bool): True of download was successful, otherwise False
     """
-
     logging.info("~~~~~~~~ Download application and data started ~~~~~~~~")
     result = True
     purpose = "Download application and data"
@@ -307,11 +302,11 @@ def check_time_diff(nrc_78_response_time_list, p2_star_server_max):
     """
     Verify timing difference of NRC 78
     Args:
-        nrc_78_response_time_list (list): response time when received NRC 78.
-        p2_star_server_max: maximum response time
+        nrc_78_response_time_list (list): Response time when received NRC 78.
+        p2_star_server_max (int): Maximum response time
     Returns:
        (bool): True when time difference of two consecutive NRC 78 is greater then
-                0.3 * p2_star_server_max.
+               0.3 * p2_star_server_max.
     """
     if len(nrc_78_response_time_list) < 2:
         logging.error("Time difference cannot be calculated as two consecutive NRC 78 response"
@@ -319,7 +314,7 @@ def check_time_diff(nrc_78_response_time_list, p2_star_server_max):
         return False
 
     time_diff = nrc_78_response_time_list[1] - nrc_78_response_time_list[0]
-    if time_diff >= 0.3 * p2_star_server_max:
+    if time_diff*1000 >= 0.3*p2_star_server_max:
         logging.info("Two consecutive NRC 78 response time %sms is more than"
                      " 0.3 * P2*Server_max(%sms) as expected", time_diff, 0.3 * p2_star_server_max)
         return True
@@ -334,61 +329,54 @@ def software_download(dut, wait_time, stepno):
     Perform software download for all VBFs file type and verify ECU land up in default session.
     Args:
         dut (Dut): An instance of Dut
-        wait_time(float): wait time
-        stepno(int): Test step number
-
+        wait_time (float): Wait time
+        stepno (int): Test step number
     Returns:
-        boolean: True on successful software download
+        (bool): True on successful software download
     """
-
     # Load vbfs
     vbf_result = load_vbf_files(dut)
-
-    logging.info("Software download (loading vbfs) completed. Result: %s", vbf_result)
-
     if vbf_result is False:
         logging.error("Aborting software download due to problems when loading VBFs")
         return False, None
 
+    logging.info("Software download (loading vbfs) completed. Result: %s", vbf_result)
+
     # Activate sbl
     sbl_result = activate_sbl(dut)
-
-    logging.info("Software download (downloading and activating sbl) completed."
-                 " Result: %s", sbl_result)
-
     if sbl_result is False:
         logging.error("Aborting software download due to problems when activating SBL")
         return False, None
 
+    logging.info("Software download (downloading and activating sbl) completed."
+                 " Result: %s", sbl_result)
+
     # Download ess
     ess_result, nrc_78_time_list = download_ess(dut, wait_time)
-
-    logging.info("Software download (downloading ess) completed. Result: %s", ess_result)
-
     if ess_result is False:
         logging.error("Aborting software download due to problems when downloading ESS "
                       "or NRC 78 not received")
         return False, None
 
+    logging.info("Software download (downloading ess) completed. Result: %s", ess_result)
+
     # Download application and data
     app_result = download_application_and_data(dut)
-
-    logging.info("Software download (downloading application and data) done."
-                 " Result: %s", app_result)
-
     if app_result is False:
         logging.error("Aborting software download due to problems when downloading application")
         return False, None
 
+    logging.info("Software download (downloading application and data) done."
+                 " Result: %s", app_result)
+
     # Check Complete and Compatible
     check_result = SSBL.check_complete_compatible_routine(dut, stepno)
-
-    logging.info("Software download (Check Complete and Compatible) completed."
-                 " Result: %s", check_result)
-
     if check_result is False:
         logging.error("Aborting software download due to problems when checking C & C")
         return False, None
+
+    logging.info("Software download (Check Complete and Compatible) completed."
+                 " Result: %s", check_result)
 
     # Check that the ECU ends up in mode 1 (default session)
     dut.uds.set_mode(1)
@@ -404,38 +392,32 @@ def software_download(dut, wait_time, stepno):
     return correct_mode, nrc_78_time_list
 
 
-def step_1(dut: Dut):
+def step_1(dut: Dut, parameters):
     """
     action: Calculate and verify NRC 78 response time is greater than or equal to
             0.3 * P2*Server_max(1500.0ms) in programming session.
     expected_result: NRC 78 response time is greater than 0.3 * P2*Server_max(1500.0ms)
     """
+    # Set to programming session
+    dut.uds.set_mode(2)
+
     # Sleep time to avoid NRC37
     time.sleep(5)
-
-    dut.uds.set_mode(2)
-    # Read yml parameters
-    parameters_dict = {'p2_star_server_max': 0,
-                       'wait_time': 0}
-    parameters = SIO.parameter_adopt_teststep(parameters_dict)
-    if not all(list(parameters.values())):
-        logging.error("Test Failed: yml parameter not found")
-        return False, None
 
     # Download software in a sequence and get consecutive nrc 78 response time
     result, nrc_78_response_time_list = software_download(dut, parameters['wait_time'], stepno=1)
     if not result:
         logging.error("Test failed: Software Download failed")
-        return False, None
+        return False
     # NRC 78 response time is greater than or equal to 0.3 * P2*Server_max(1500.0ms)
     p2_star_result = check_time_diff(nrc_78_response_time_list, parameters['p2_star_server_max'])
     if p2_star_result:
-        return True, parameters
+        return True
 
     logging.error("Test failed: ECU response time is less than 0.3 * P2*Server_max(%sms)"
                   " or NRC 78 not received in programming session",
                    0.3*parameters['p2_star_server_max'])
-    return False, None
+    return False
 
 
 def step_2(dut: Dut, parameters):
@@ -444,8 +426,10 @@ def step_2(dut: Dut, parameters):
             0.3 * P2*Server_max(1500.0ms) in extended session.
     expected_result: NRC 78 response time is greater than 0.3 * P2*Server_max(1500.0ms)
     """
+    # Set to extended session
     dut.uds.set_mode(1)
     dut.uds.set_mode(3)
+
     # Download software in a sequence and get consecutive nrc 78 response time
     result, nrc_78_response_time_list = software_download(dut, parameters['wait_time'], stepno=2)
     if not result:
@@ -468,21 +452,28 @@ def run():
     0.3 * P2*Server_max(1500.0ms) in both programming and extended session.
     """
     dut = Dut()
+
     start_time = dut.start()
     result = False
     result_step = False
+
+    parameters_dict = {'p2_star_server_max': 0,
+                       'wait_time': 0}
+
     try:
         dut.precondition(timeout=1800)
 
-        result_step, parameters = dut.step(step_1, purpose='Calculate and verify NRC 78 response'
-                                            ' time is greater than 0.3 * P2*Server_max(1500.0ms)'
-                                            ' in programming session.')
+        parameters = SIO.parameter_adopt_teststep(parameters_dict)
+        if not all(list(parameters.values())):
+            raise DutTestError("yml parameters not found")
 
+        result_step = dut.step(step_1, parameters, purpose='Calculate and verify NRC 78 response'
+                              ' time is greater than 0.3 * P2*Server_max(1500.0ms) in programming'
+                              ' session.')
         if result_step:
             result_step = dut.step(step_2, parameters, purpose='Calculate and verify NRC 78 '
-                                            'response time is greater than '
-                                            '0.3 * P2*Server_max(1500.0ms) in extended session.')
-
+                                  'response time is greater than 0.3 * P2*Server_max(1500.0ms) in'
+                                  ' extended session.')
         result = result_step
 
     except DutTestError as error:

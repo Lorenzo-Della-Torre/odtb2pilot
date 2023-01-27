@@ -105,7 +105,7 @@ def security_access_with_invalid_key(dut):
 def step_1(dut: Dut):
     """
     action: Read security log event DID D046 and extract event data
-    expected_result: True when event data are extracted successfully
+    expected_result: Event data should be successfully extracted
     """
     # Set ECU in extended session
     dut.uds.set_mode(3)
@@ -123,10 +123,8 @@ def step_1(dut: Dut):
 def step_2(dut: Dut):
     """
     action: Security access with valid key for 15 times
-    expected_result: True when security access is successful for all attempts
+    expected_result: Security access should be successful for all attempts
     """
-    # Sleep time to avoid NRC37
-    time.sleep(5)
     results = []
 
     # Set ECU in default session
@@ -134,6 +132,8 @@ def step_2(dut: Dut):
 
     for _ in range(15):
         dut.uds.set_mode(2)
+        # Sleep time to avoid NRC37
+        time.sleep(5)
         result = SE27.activate_security_access_fixedkey(dut, sa_keys=dut.conf.default_rig_config)
         results.append(result)
         time.sleep(2)
@@ -149,8 +149,8 @@ def step_2(dut: Dut):
 def step_3(dut: Dut, events_and_codes):
     """
     action: Verify security log event data for successful event
-    expected_result: True when total number of successful events is incremented by 15 and Latest
-                     successful event code is '80'
+    expected_result: Total number of successful events should be incremented by 15 and latest
+                     successful event code should be '80'
     """
     # Set ECU in extended session
     dut.uds.set_mode(1)
@@ -177,7 +177,7 @@ def step_3(dut: Dut, events_and_codes):
 def step_4(dut: Dut):
     """
     action: Security access with invalid key for 16 times
-    expected_result: True when security access is denied for all attempts
+    expected_result: Security access should be denied for all attempts
     """
     results = []
 
@@ -186,6 +186,8 @@ def step_4(dut: Dut):
 
     for count in range(16):
         dut.uds.set_mode(2)
+        # Sleep time to avoid NRC37
+        time.sleep(5)
         result = security_access_with_invalid_key(dut)
         results.append(result)
         if count % 2 != 0:
@@ -202,8 +204,8 @@ def step_4(dut: Dut):
 def step_5(dut: Dut, events_and_codes):
     """
     action: Verify security log event data for rejected event
-    expected_result: True when total number of rejected events is incremented by 16 and latest
-                     rejected event code is '02'
+    expected_result: Total number of rejected events should be incremented by 16 and latest
+                     rejected event code should be '02'
     """
     # Set ECU in extended session
     dut.uds.set_mode(1)
@@ -229,11 +231,13 @@ def step_5(dut: Dut, events_and_codes):
 def step_6(dut: Dut):
     """
     action: Security access in programming session
-    expected_result: True when security access successful in programming session
+    expected_result: Security access should be successful in programming session
     """
     # Set ECU in programming session
     dut.uds.set_mode(2)
-    time.sleep(2)
+
+    # Sleep time to avoid NRC-37
+    time.sleep(5)
 
     result = SE27.activate_security_access_fixedkey(dut, sa_keys=dut.conf.default_rig_config)
     if result:
@@ -247,7 +251,7 @@ def step_6(dut: Dut):
 def step_7(dut: Dut, events_and_codes):
     """
     action: Verify successful events are incremented by one and rejected events are unchanged
-    expected_result: True when successful events are incremented by one and rejected events are
+    expected_result: Successful events should be incremented by one and rejected events should be
                      unchanged
     """
     # Set ECU in extended session
@@ -277,11 +281,12 @@ def step_7(dut: Dut, events_and_codes):
 def step_8(dut: Dut):
     """
     action: Security access with invalid key
-    expected_result: True when security access denied for invalid key
+    expected_result: Security access should be denied for invalid key
     """
     # Set ECU in programming session
     dut.uds.set_mode(2)
-    time.sleep(2)
+    # Sleep time to avoid NRC-37
+    time.sleep(5)
 
     result = security_access_with_invalid_key(dut)
     if result:
@@ -295,8 +300,8 @@ def step_8(dut: Dut):
 def step_9(dut: Dut, events_and_codes):
     """
     action: Verify security log event data after security access with invalid key
-    expected_result: True when rejected events and codes are overwritten but successful events are
-                     unchanged
+    expected_result: Rejected events and codes should be overwritten but successful events
+                     should be unchanged
     """
     # Set ECU in extended session
     dut.uds.set_mode(1)
@@ -339,7 +344,7 @@ def run():
     result_step = False
 
     try:
-        dut.precondition(timeout=400)
+        dut.precondition(timeout=1000)
         result_step, events_and_codes = dut.step(step_1, purpose="Read security log event DID D046"
                                                                  " and extract event data")
         if result_step:

@@ -25,11 +25,11 @@ This is a sample that shows how to use the API for message bus and database.
 
 import logging
 import epsmsgbus
-
+import epsmsgbus.activityid as activityid_mod
 
 class MyTestSuiteDataAdapter(epsmsgbus.TestSuiteDataAdapter):
     """Sample adapter where all fields are filled in."""
-    def __init__(self, name='Regression Test Suite', identifier='1.0.0', jobid='J12'):
+    def __init__(self, name='Regression Test Suite', identifier='1.0.0', jobid='J15'):
         self.name = name
         self.id = identifier
         self.jobid = jobid
@@ -83,16 +83,41 @@ class MyTestSuiteDataAdapter(epsmsgbus.TestSuiteDataAdapter):
 
     def get_logs(self):
         """Return list of URL's to optional log files or recorded data."""
-        return [
-            'http://the.url.to.me/results/testsuite/31411/log.txt',
-            'http://the.url.to.me/results/testsuite/31411/recording.mf4',
-            'http://the.url.to.me/results/testsuite/31411/inputdata.json',
-        ]
+        logs = []
+        url_list = [self.get_build_url() + 'consoleText']
+        ix = 0
+        for url in url_list:
+            logs.append({
+                'name': 'log%02d' % ix,
+                'url': url,
+                'type': 'text',
+            })
+            ix += 1
+        return logs
 
-    def get_url(self):
+    def get_result(self):
         """Return URL to the test report."""
         return 'http://the.url.to.me/results/testsuite/31411/report.pdf'
 
+    def get_url(self):
+        return ["https://ci2.artifactory.cm.volvocars.biz/artifactory/EPS_SW/Test_results/HILTest/jenkins_Test-z13_1.zip",
+                'http://the.url.to.me/results/testsuite/31411/recording.mf4',
+                'http://the.url.to.me/results/testsuite/31411/inputdata.json']
+
+    def get_build_url(self):
+        return 'https://eps-sw-swf-jenkins.volvocars.biz/job/HILTest_mt/5239/'
+
+    def get_verdict_info(self, verdict, **data):
+        logging.info("DATA sample: {} type {}".format(data, type(data)))
+        return epsmsgbus.VerdictInfo(
+            description="Execution for Suite %s is %s" % (self.name,verdict),
+            vtype="environment",
+            url=self.get_result(),
+            data=data)
+
+    def clear_activity_id(self):
+        activityid_mod.set_activityid()
+            
 
 class MyTestCaseDataAdapter(epsmsgbus.TestCaseDataAdapter):
     """Adapter for metadata from test cases and test steps. Only 'get_taskid()'
@@ -103,11 +128,21 @@ class MyTestCaseDataAdapter(epsmsgbus.TestCaseDataAdapter):
     # OPTIONAL fields ----------------------------------------------------{{{3
     def get_logs(self):
         """Return list of URL's with log data or recorded data."""
-        return [
+        logs = []
+        url_list = [
             'http://the.url.to.me/results/testsuite/31411/%s/log.txt' % self.name,
             'http://the.url.to.me/results/testsuite/31411/%s/recording.mf4' % self.name,
             'http://the.url.to.me/results/testsuite/31411/%s/inputdata.json' % self.name,
         ]
+        ix = 0
+        for url in url_list:
+            logs.append({
+                'name': 'log%02d' % ix,
+                'url': url,
+                'type': 'text',
+            })
+            ix += 1
+        return logs
 
     def get_testcode_info(self):
         """Return informatino about the test case itself (author, requirment,
@@ -185,7 +220,7 @@ def main():
     epsmsgbus.messagehandler(use_db=True, use_mq=True)
     # Start test suite with three test cases
     testsuite_started()
-
+    
     testcase_started('TestCase1-Init')
     teststep_started('Step 1 - download SW')
     teststep_ended('passed')

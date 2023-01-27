@@ -71,6 +71,49 @@ def sftp_copy(sftp, remote_file: Path, local_file: Path):
     sftp.get(remote_file.as_posix(), local_file, callback=print_totals)
 
 
+def copy_files(conf,user,sftp):
+    """copy files from delivery folder to rigs folder"""
+
+    remote_delivery_path = Path(f'/home/{user}/delivery')
+    delivery_files = sftp.listdir(remote_delivery_path.as_posix())
+
+    sddb_file_downloaded = False
+    for filename in delivery_files:
+        remote_file = remote_delivery_path.joinpath(filename)
+        if filename.endswith('.vbf'):
+            local_file = conf.rig.vbf_path.joinpath(filename)
+            sftp_copy(sftp, remote_file, local_file)
+        if filename.endswith('.sddb'):
+            local_file = conf.rig.sddb_path.joinpath(filename)
+            sftp_copy(sftp, remote_file, local_file)
+            sddb_file_downloaded = True
+        if filename.endswith('.dbc'):
+            local_file = conf.rig.dbc_path.joinpath(filename)
+            sftp_copy(sftp, remote_file, local_file)
+    if not Path.exists(conf.rig.pbl_vbf_path):
+        Path(conf.rig.pbl_vbf_path).mkdir(parents=True, exist_ok=True)
+
+    remote_PBL_upd_path = Path(f'/home/{user}/delivery/PBL_VBF')
+    try:
+        sftp.listdir(remote_PBL_upd_path.as_posix())
+    except FileNotFoundError:
+        log.info("%s does not exist on HILding. If this folder exists, all PBL vbf \
+files within it will be transferred to your local computer", str(remote_PBL_upd_path))
+    else:
+        log.info("Copy remote %s/*.{vbf} files to this host",
+             remote_PBL_upd_path)
+        PBL_upd_files = sftp.listdir(remote_PBL_upd_path.as_posix())
+        for filename in PBL_upd_files:
+            remote_file = remote_PBL_upd_path.joinpath(filename)
+            if filename.endswith('.vbf'):
+                local_file = conf.rig.pbl_vbf_path.joinpath(filename)
+                sftp_copy(sftp, remote_file, local_file)
+
+    if sddb_file_downloaded:
+        # automatically run the sddb parsing after downloading a new sddb file
+        parse_sddb_file()
+
+
 def get_rig_delivery_files():
     """
     download vbf and sddb file to rigs/X/vbf and /rigs/X/sddb
@@ -99,7 +142,7 @@ def get_rig_delivery_files():
     sftp = ssh.open_sftp()
     remote_delivery_path = Path(f'/home/{user}/delivery')
     try:
-        delivery_files = sftp.listdir(remote_delivery_path.as_posix())
+        sftp.listdir(remote_delivery_path.as_posix())
     except FileNotFoundError:
         log.info("%s does not exist on HILding. If this folder exists, all vbf, sddb and dbc \
 files within it will be transferred to your local computer", str(remote_delivery_path))
@@ -109,22 +152,8 @@ files within it will be transferred to your local computer", str(remote_delivery
 
         # remove previous file for this rig to keep things clean
         shutil.rmtree(conf.rig.rig_path)
-        sddb_file_downloaded = False
-        for filename in delivery_files:
-            remote_file = remote_delivery_path.joinpath(filename)
-            if filename.endswith('.vbf'):
-                local_file = conf.rig.vbf_path.joinpath(filename)
-                sftp_copy(sftp, remote_file, local_file)
-            if filename.endswith('.sddb'):
-                local_file = conf.rig.sddb_path.joinpath(filename)
-                sftp_copy(sftp, remote_file, local_file)
-                sddb_file_downloaded = True
-            if filename.endswith('.dbc'):
-                local_file = conf.rig.dbc_path.joinpath(filename)
-                sftp_copy(sftp, remote_file, local_file)
 
-        if sddb_file_downloaded:
-            # automatically run the sddb parsing after downloading a new sddb file
-            parse_sddb_file()
+        copy_files(conf,user,sftp)
+
 
 # check md5sum for ~/delivery/*.{vbf,sddb}

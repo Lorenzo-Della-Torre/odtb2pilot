@@ -29,8 +29,10 @@ import argparse
 import os
 import sys
 import re
+import yaml
+from pathlib import Path
 import req_parser.rif_swrs_to_graph as rif_mod
-
+import req_parser.csv_swrs_to_graph as csv_parser
 from blacklisted_tests_handler import match_swrs_with_yml
 
 # Logging has different levels: DEBUG, INFO, WARNING, ERROR, and CRITICAL
@@ -45,7 +47,7 @@ VER_ID = "Version id"
 ID = 'ID'
 TYPE_LIST = ["REQPROD"] # Only interested in the REQPRODS
 
-RE_FILE_NAME = re.compile(r'e_(?P<reqprod>\d+)_(?P<var>[a-zA-Z]*|-)_(?P<rev>\d+)_(?P<desc>.*).py$',
+RE_FILE_NAME = re.compile(r'^(e|cw)_(?P<reqprod>\d+)_(?P<var>[a-zA-Z]*|-)_?(?P<rev>\d+)$',
                           flags=re.IGNORECASE)
 
 def parse_some_args():
@@ -91,18 +93,26 @@ def swrs_parse(swrs):
         State
         ...
     """
-    sp_dict, spobj_dict, _ = rif_mod.parse_rif_to_dicts(swrs)
-    col_names = rif_mod.create_col_names(sp_dict, TYPE_LIST)
     reqprod_dict = dict()
-
-    for type_name in TYPE_LIST:
-        for obj_id in spobj_dict[type_name]:
-            reqprod_obj = dict()
-            reqprod_id = spobj_dict[type_name][obj_id].get(ID)
-            for _, col in enumerate(col_names, 1):
-                if col not in (OWN_ID, PARENT_ID, VER_ID):
-                    reqprod_obj[col] = spobj_dict[type_name][obj_id].get(col, "-")
-            reqprod_dict[str(reqprod_id)] = reqprod_obj
+    # check the extension of swrs export file:
+    # 1- 'xml' --> Elektra export   --> use xml parser
+    if swrs.endswith('.xml'):
+        sp_dict, spobj_dict, _ = rif_mod.parse_rif_to_dicts(swrs)
+        col_names = rif_mod.create_col_names(sp_dict, TYPE_LIST)
+        for type_name in TYPE_LIST:
+            for obj_id in spobj_dict[type_name]:
+                reqprod_obj = dict()
+                reqprod_id = spobj_dict[type_name][obj_id].get(ID)
+                for _, col in enumerate(col_names, 1):
+                    if col not in (OWN_ID, PARENT_ID, VER_ID):
+                        reqprod_obj[col] = spobj_dict[type_name][obj_id].get(col, "-")
+                reqprod_dict[str(reqprod_id)] = reqprod_obj
+    # 2- 'csv' --> CarWeaver export --> use csv parser
+    elif swrs.endswith('.csv'):
+        reqprod_dict = csv_parser.parse_csv_to_dicts(swrs)
+    # 3- unknown format --> pass and return empty dict
+    else: pass
+    
     return reqprod_dict
 
 
@@ -122,34 +132,60 @@ def match_f(req, var, rev, reqprod_dict):
             match = True
     return match
 
+def load_reqprod_map():
+    map_file_path = str(Path(__file__).parent.parent)
+    with open(map_file_path + '/req_script_mapping.yml') as mapping_file:
+        req_mapping_dict = yaml.safe_load(mapping_file)
+    return req_mapping_dict
+
+def script_picker(file, req_mapping_dict, reqprod_dict):
+    # extract file name from the long path
+    file_name = Path(file).stem
+    for key, value in req_mapping_dict.items():
+        # if file name found in mapping file
+        if file_name == key:
+            # for all the entries for a file in mapping
+            for req in value.split(" "):
+                # if the reqprod present in the input swrs list
+                if match_checker(req, reqprod_dict):
+                    return True, req
+    return False, None
+
+
+def match_checker(reqprod, reqprod_dict):
+    """ Checks if the reqprod matches with the SWRS list """
+    fn_regexp = RE_FILE_NAME.match(reqprod)
+
+    if fn_regexp:
+        req = str(fn_regexp.group('reqprod'))
+        var = str(fn_regexp.group('var'))
+        # In some cases we have removed the hyphen from the script name,
+        # but we still want to use it for comparison. So we set var to '-'
+        if var == '':
+            var = '-'
+        rev = str(fn_regexp.group('rev'))
+        match = match_f(req, var, rev, reqprod_dict)
+        return match
 
 def filter_files(reqprod_dict, script_folder):
     """ Rename files according to SWRS """
     included = list()
     excluded = list()
 
+    # load the reqprod mapping file into a dictionary
+    req_mapping_dict = load_reqprod_map()
+
     for root, _, files in os.walk(script_folder): # For root and each subfolder
         for file in files:  # For each file
-            fn_regexp = RE_FILE_NAME.match(file)
+            match, reqprod = script_picker(file, req_mapping_dict, reqprod_dict)
             file_path = os.path.join(root, file)
-
-            if fn_regexp:
-                req = str(fn_regexp.group('reqprod'))
-                var = str(fn_regexp.group('var'))
-                # In some cases we have removed the hyphen from the script name,
-                # but we still want to use it for comparison. So we set var to '-'
-                if var == '':
-                    var = '-'
-                rev = str(fn_regexp.group('rev'))
-                match = match_f(req, var, rev, reqprod_dict)
-                if match:
-                    LOGGER.debug('%s', match)
-                    included.append(file_path)
-                else: # Not matching rev and variant
-                    LOGGER.debug('No match! %s', file)
-                    excluded.append(file_path)
-            else: #Not matching regexp
+            if match and file_path.endswith('.py'):
+                LOGGER.debug('%s', match)
+                included.append(file_path + "-->" + reqprod)
+            else: # Not matching rev and variant
+                LOGGER.debug('No match! %s', file)
                 excluded.append(file_path)
+
     return included, excluded
 
 

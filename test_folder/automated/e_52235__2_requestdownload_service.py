@@ -64,10 +64,11 @@ def step_1(dut: Dut):
         logging.error("Test Failed: Programming preconditions are not fulfilled")
         return False
 
-    # Sleep time to avoid NRC37
-    time.sleep(5)
     # Set to programming session
     dut.uds.set_mode(2)
+
+    # Sleep time to avoid NRC37
+    time.sleep(5)
 
     # Security access
     sa_result = SE27.activate_security_access_fixedkey(dut, sa_keys=dut.conf.default_rig_config)

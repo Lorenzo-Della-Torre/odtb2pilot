@@ -58,13 +58,16 @@ import binascii
 from datetime import datetime
 import string
 import inspect
+from pathlib import Path
 
 #sys.path.append('generated')
 from supportfunctions.support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
 from supportfunctions.support_file_io import SupportFileIO
 
+from supportfunctions.support_carcom import SupportCARCOM
 SIO = SupportFileIO
 SC = SupportCAN()
+SC_CARCOM = SupportCARCOM()
 
 BYTE_SIZE = 2
 HEX_BASE = 16
@@ -91,28 +94,21 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
         """
         testresult = True
 
-        #print("Messagelist: ", messagelist)
         if teststring != '' and (messagelist in ('', [])):
             logging.warning("Bad: Empty messagelist, teststring '%s' not found", teststring)
             testresult = False
         else:
             for i in messagelist:
-            #print("can frame  ", i[2].upper())
-            #print("test against ", teststring)
                 if teststring == '':
                     logging.warning("Nothing expected. Received %s", i[2].upper())
                 elif teststring in i[2].upper():
                     logging.debug("Good: Expected: %s received: %s", teststring, i[2].upper())
-                    #continue
                 else:
                     testresult = False
                     logging.warning("Bad: Expected: %s received: %s", teststring, i[2].upper())
                     logging.warning("Try to decode error message (7F):")
                     logging.warning("%s", self.pp_decode_7f_response(i[2].upper()))
-                    #logging.info("test_message: test if 7F38 - "\
-                    #             "requestCorrectlyReceived-ResponsePending was received")
-                    #if self.check_7f78_response(i):
-                    #    logging.info("78 found")
+
         return testresult
 
 
@@ -126,6 +122,7 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
         cpay["payload"]
         """
         wait_max = False
+        padding = SIO.parameter_adopt_teststep("padding")
         if "wait_max" in etp:
             wait_max = etp["wait_max"]
 
@@ -133,7 +130,7 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
         logging.debug("To send:   [%s, %s, %s]", time.time(), can_p["send"],
                       (cpay["payload"]).hex().upper())
         SC.clear_all_can_messages()
-        SC.t_send_signal_can_mf(can_p, cpay, True, 0x00)
+        SC.t_send_signal_can_mf(can_p, cpay, padding, 0x00)
         #wait timeout for getting subscribed data
         if (wait_max or (etp["max_no_messages"] == -1)):
             time.sleep(etp["timeout"])
@@ -146,6 +143,25 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
                 SC.update_can_messages(can_p)
                 time.sleep(0.05) #pause a bit to receive frames in background
 
+    @classmethod
+    def __validate_nrc_21(cls, message):
+        """
+        Validate NRC 21
+
+        This function monitors and creates an error file if NRC 21 is received from the ECU anytime.
+        """
+        message = message.upper()
+        pos = message.find('7F')
+        path = str(Path(__file__).parent.parent)
+        if ((pos != -1) and message[pos+4:pos+6] == '21'):
+            with open(path + '/misc/nrc_21.txt', 'a',encoding = 'utf-8') as nrc21_file:
+                nrc21_file.write("\n\nNRC 21 is received from the ECU which is not expected."
+                                                                    " Test failed\n")
+                nrc21_file.write("Received time: ")
+                nrc21_file.write(time.ctime())
+                nrc21_file.write("\nScript: ")
+                nrc21_file.write(inspect.stack()[-5][1])
+            logging.error("NRC 21 is received from the ECU which is not expected.")
 
     def teststep(self,# pylint: disable=too-many-statements
                  can_p: CanParam,
@@ -186,6 +202,8 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
         testresult = True
 
         SC.clear_old_cf_frames()
+        #SC.fc_wait['Wait'] = True #set fc_wait to 'True' to test if flag recognized
+        SC.fc_wait['Wait'] = False #reset flag  for FC.Wait
 
         clear_old_mess = True
         if "clear_old_mess" in etp:
@@ -274,11 +292,49 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
                     testresult = testresult and\
                         self.test_message(SC.can_messages[can_p["receive"]],\
                                           can_answer.hex().upper())
+                self.__validate_nrc_21(SC.can_messages[can_p["receive"]][0][2])
         logging.debug("Step %s: Result from teststep method in support_test_odtb2.py: %s",
-        etp["step_no"],
-        testresult)
+                      etp["step_no"],
+                      testresult)
 
+        if SC.fc_wait['Wait']:        #check if FC.Wait occured within teststep
+            logging.info("Flag for FC_WAIT was set")
+            logging.info("Check for session mode2")
+            logging.info("See REQPROD 115798;2;MAIN in Elektra")
+
+            #I wasn't able to use service#22 check F186 (import loop)
+            cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("ReadDataByIdentifier",
+                                                                 b'\xF1\x86', b''),
+                                "extra" : b'2'
+                               }
+            etp: CanTestExtra = {"step_no": etp['step_no'],
+                                 "purpose" : "Service22: Active Diagnostic Session",
+                                 "timeout" : 1,
+                                 "min_no_messages" : 1,
+                                 "max_no_messages" : 1
+                                }
+            #testsession2 = SUPPORT_TEST.teststep(can_p, cpay, etp)
+            # don't want to recurse in teststep to check session,
+            # may end up in endless loop
+            # and: that would even remove frames and messages received
+            self.__send(can_p, etp, cpay)
+            time.sleep(1)
+            expected_reply = '0462F18602000000'
+            if expected_reply == SC.can_frames[can_p['receive']][-1][2]:
+                logging.info("FC.Wait received in PBL/SBL")
+            else:
+                logging.warning("FC_WAIT received in mode1/3")
+                logging.warning("FC_WAIT not allowed in current mode (REQ 115798)")
+                with open(str(Path(__file__).parent.parent) +
+                          '/misc/fc_wait.txt',
+                          'w',encoding = 'utf-8') as fcwait_file:
+                    fcwait_file.write("FC_Wait is received while not in mode2. Test failed")
+                    fcwait_file.write("Received time: ")
+                    fcwait_file.write(time.ctime())
+                    fcwait_file.write("\nScript: ")
+                    fcwait_file.write(inspect.stack()[-5][1])
         return testresult
+
 
     @staticmethod
     def validate_serial_number_record(ecu_serial_number_record: str) -> bool:
@@ -500,9 +556,9 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
 
                     logging.debug("rec_message: to check %s", record)
                     if pn_sn[1] == 'PN':
-                        result = self.validate_part_number_records(record)
+                        result = self.validate_part_number_records(record) and result
                     elif pn_sn[1] == 'SN':
-                        result = self.validate_serial_number_records(record)
+                        result = self.validate_serial_number_records(record) and result
                     elif pn_sn[1] == 'VIDCV':
                         logging.info("Vendor ID, cluster version not validated   %s", record)
                     else:

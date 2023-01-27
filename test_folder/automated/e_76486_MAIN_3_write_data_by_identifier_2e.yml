@@ -1,0 +1,5 @@
+hvbm_p519:
+    run:
+        did: 'DB90'
+        data_record: '01'
+        max_response_time: 5000

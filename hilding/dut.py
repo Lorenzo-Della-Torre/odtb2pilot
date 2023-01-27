@@ -46,10 +46,17 @@ from protogenerated.network_api_pb2_grpc import NetworkServiceStub
 
 from supportfunctions.support_can import SupportCAN, CanParam, PerParam, CanMFParam
 from supportfunctions.support_service3e import SupportService3e
+from supportfunctions.support_file_io import SupportFileIO
 from hilding.uds import Uds
 from hilding.uds import EicDid
 from hilding.uds import IoVmsDid
-from hilding import analytics
+
+# The try/catch is for the unit test not fail due to exception
+# ValueError: Cynosure major version is not configured!
+try:
+    from hilding import analytics
+except ValueError:
+    pass
 from hilding import get_conf
 
 # pylint: disable=no-member
@@ -78,6 +85,7 @@ def beamy_feature(func):
         func(*args, **kwargs)
     return wrapper_beamy_feature
 
+
 def analytics_test_step(func):
     """ Decorator to add test step analytics """
     def wrapper_test_step(self, *args, **kwargs):
@@ -95,8 +103,13 @@ def analytics_test_step(func):
         except Exception as e:
             analytics.teststep_ended("errored")
             raise e
-        # if we don't get any exception the test has passed
-        analytics.teststep_ended("passed")
+
+        # if we don't get any exception and the result is True the test has passed
+        if result:
+            analytics.teststep_ended("passed")
+        else:
+            analytics.teststep_ended("failed")
+
         return result
     return wrapper_test_step
 
@@ -111,10 +124,10 @@ class Dut:
             f'{self.conf.rig.signal_broker_port}')
         self.network_stub = NetworkServiceStub(self.channel)
         self.system_stub = SystemServiceStub(self.channel)
-        self.namespace = 'Front1CANCfg0'
-        self.protocol = 'can'
-        self.framelength_max = 8
-        self.padding = True
+        self.namespace = SupportFileIO.parameter_adopt_teststep('namespace')
+        self.protocol = SupportFileIO.parameter_adopt_teststep('protocol')
+        self.framelength_max = SupportFileIO.parameter_adopt_teststep('framelength_max')
+        self.padding = SupportFileIO.parameter_adopt_teststep('padding')
         self.uds = Uds(self)
         self.fail_purpose = ""
 
@@ -166,12 +179,12 @@ class Dut:
             "send" : True,
             "id" : self.conf.rig.signal_periodic,
             "nspace" : self.namespace,
-            "protocol" : "can",
-            "framelength_max" : 8,
-            "padding" : True,
             "frame" : bytes.fromhex(self.conf.rig.wakeup_frame),
             "intervall" : 0.4
             }
+
+        SupportFileIO.parameter_adopt_teststep(heartbeat_param)
+        heartbeat_param['send'] = True
         log.debug("heartbeat_param %s", heartbeat_param)
 
         iso_tp = SupportCAN()
@@ -318,7 +331,7 @@ class Dut:
         else:
             step_result = ret
         if step_result is False:
-            self.fail_purpose = "´" + purpose + "´," + " in step: " + str(self.uds.step)
+            self.fail_purpose = "'" + purpose + "'," + " in step: " + str(self.uds.step)
 
         return ret
 

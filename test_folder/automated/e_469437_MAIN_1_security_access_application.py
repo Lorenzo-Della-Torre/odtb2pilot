@@ -1,9 +1,10 @@
 """
+
 /*********************************************************************************/
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright Â© 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -34,155 +35,220 @@ description: >
     "Table - Security Access Application Event Code". Size 8 bits.
     AdditionalEventData: Byte value of subfunction requestSeed ("security access level").
     Size 8 bits.
-    Event Code	Event
-    0x00	    No History reported
-    0x01	    Invalid securityAccess subfunction SendKey attempt
-    0x02	    Invalid securityAccess subfunction SendKey attempt and delayTimer is activated
-    0x80	    Valid securityAccess subfunction SendKey attempt
+    Event Code  Event
+    0x00        No History reported
+    0x01        Invalid securityAccess subfunction SendKey attempt
+    0x02        Invalid securityAccess subfunction SendKey attempt and delayTimer is activated
+    0x80        Valid securityAccess subfunction SendKey attempt
     Table - Security Access Application Event Code
 
 details: >
-    Read Security log event DID D03C and save the rejected counter value
-    Create an Event, Security Access Application Event code 0x02,
-    Invalid securityAccess subfunction SendKey attempt and delayTimer is activated
-    Read Security log event DID D03C and verify counter has incremented and
-    Latest event code is 0x02
+    Request security access with invalid key twice to activate security access delay timer. Read
+    "Security Access Application" data record with identifier 0xD03C before and after the security
+    access with invalid key. And verify 'total rejected event count' is increased by 2 and
+    'rejected event code' is '02'.
+    steps:
+    1. Read security log event DID D03C and extract security event data for rejected events
+    2. Extract security event data after security access with invalid key
+    3. Security access with invalid key for second time and verify security events data for
+       rejected events
 """
 
 import logging
-import inspect
-import time
 from hilding.dut import Dut
 from hilding.dut import DutTestError
 from supportfunctions.support_service27 import SupportService27
-from supportfunctions.support_file_io import SupportFileIO
 from supportfunctions.support_sec_acc import SecAccessParam
 from supportfunctions.support_can import SupportCAN
 import supportfunctions.support_service27 as SP27
 
 SC = SupportCAN()
 SE27 = SupportService27()
-SIO = SupportFileIO()
+SSA = SecAccessParam()
 
 
-def security_access_negative_response(dut: Dut):
+def security_access_with_invalid_key(dut):
     """
-    Security access to ECU and corrupt the payload
+    Security access with invalid key
     Args:
-        dut(class object): Dut instance
+        dut (Dut): An instance of Dut
     Returns:
-        Response(str): Can response
+        Response (str): CAN message receive
     """
-    sa_keys: SecAccessParam = {
-        "SecAcc_Gen": 'Gen2',
-        "fixed_key": '0102030405',
-        "auth_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF',
-        "proof_key": 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), sa_keys)
-    SP27.SSA.set_keys(sa_keys)
+    sa_keys = dut.conf.default_rig_config
+    result, payload = SE27.activate_security_access_seed_and_calc(dut, sa_keys)
+    if not result:
+        logging.error("Request seed failed for security access")
+        return None
 
-    result, response = SE27.security_access_request_seed(dut, sa_keys)
-    SP27.SSA.process_server_response_seed(
-        bytearray.fromhex(response))
-    payload = SP27.SSA.prepare_client_send_key()
+    # Corrupting key payload
     payload[4] = 0xFF
     payload[5] = 0xFF
-    result2, response = SE27.security_access_send_key(
-        dut, sa_keys, payload)
-    result = result and result2
-    result = SP27.SSA.process_server_response_key(
-        bytearray.fromhex(response))
-    # Server response
-    return SC.can_messages['HvbmToHvbmdpUdsDiagResponseFrame'][0][2]
+
+    # Security access with invalid key
+    response = SE27.security_access_send_key(dut, sa_keys, payload)[1]
+    SP27.SSA.process_server_response_key(bytearray.fromhex(response))
+
+    # Returning server response
+    return SC.can_messages[dut["receive"]][0][2]
 
 
-def get_rejected_events_and_code(response):
+def get_rejected_events_and_codes(response):
     """
-    Read and store total rejected events and rejected events code in dictionary
+    Extract security log event data for rejected event from ECU response
     Args:
-        response(dict): DID response
+        response (dict): ECU response
     Returns:
-        rejected_events_and_code(dict): total rejected events and code
+        rejected_events_and_code (dict): Security log for rejected events and codes
     """
-    rejected_events_and_code = {'total_rejected_event': '',
+    rejected_events_and_code = {'total_successful_events': '',
+                                'total_rejected_events': '',
                                 'latest_rejected_event_code': ''}
-    for response_item in response.data['details']['response_items']:
-        if response_item['name'] == "Total number of rejected events":
-            rejected_events_and_code['total_rejected_event'] = int(
-                response_item['sub_payload'], 16)
+
+    response_items = response.data['details']['response_items']
+    rejected_events_and_code['total_successful_events'] = int(response_items[0]['sub_payload'], 16)
+    rejected_events_and_code['total_rejected_events'] = int(response_items[1]['sub_payload'], 16)
+
+    for response_item in response_items:
         if response_item['name'] == "Latest rejected event - Event Code":
-            rejected_events_and_code['latest_rejected_event_code'] = \
-                response_item['sub_payload']
-        if rejected_events_and_code['total_rejected_event'] != '' and \
-                rejected_events_and_code['latest_rejected_event_code'] != '':
+            rejected_events_and_code['latest_rejected_event_code'] = response_item['sub_payload']
             break
+
     return rejected_events_and_code
+
+
+def extract_security_event_data(dut):
+    """
+    Read security access application DID 'D03C' and extract events data
+    Args:
+        dut (Dut): An instance of dut
+    Returns:
+        rejected_events_and_code (dict): security event data
+    """
+    response = dut.uds.read_data_by_id_22(bytes.fromhex('D03C'))
+    if response.raw[4:6] == '62':
+        rejected_events_and_code = get_rejected_events_and_codes(response)
+        return rejected_events_and_code
+
+    return None
+
+
+def verify_response(events_and_code1, events_and_code3):
+    """
+    Verify security events data
+    Args:
+        events_and_code1 (dict): Security events data before security access with invalid key
+        events_and_code3 (dict): Security events data after security access with invalid key
+    Returns:
+        (bool): True when total number of rejected events is incremented by 2 and latest
+                rejected event code is '02'
+    """
+    total_rejected_events_latest = events_and_code3['total_rejected_events']
+    total_rejected_events = events_and_code1['total_rejected_events']
+    latest_rejected_event_code = events_and_code3['latest_rejected_event_code']
+
+    expected_rejected_events = total_rejected_events + 2
+
+    if total_rejected_events_latest == expected_rejected_events :
+        if latest_rejected_event_code == '02':
+            logging.info("Received security event data for rejected event as expected")
+            return True
+
+    logging.error("Test Failed: Expected rejected events counts: %s and rejected event code: '02' "
+                  "But received rejected event counts: %s and rejected event count: %s",
+                   expected_rejected_events, total_rejected_events_latest,
+                   latest_rejected_event_code)
+    return False
 
 
 def step_1(dut: Dut):
     """
-    action: Read Security log event DID D03C
-    expected_result: Positive response with the event data
+    action: Read security log event DID D03C and extract security event data for rejected events
+    expected_result: True when successfully extracted security event data
     """
-    response = dut.uds.read_data_by_id_22(b'\xd0\x3C')
-    # NRC 31 requestOutOfRange
-    if response.raw[6:8] != '31':
-        rejected_events_and_code = get_rejected_events_and_code(response)
-        return True, rejected_events_and_code
-    logging.error("Test Failed: NRC 31 requestOutOfRange received")
-    return False, None
+    events_and_code1 = extract_security_event_data(dut)
+    if events_and_code1 is not None:
+        logging.info("Security event data for rejected events: %s", events_and_code1)
+        return True, events_and_code1
+
+    logging.error("Test Failed: Unable to extract security events data for rejected event")
+    return False, events_and_code1
 
 
 def step_2(dut: Dut):
     """
-    action: Security Access to ECU with invalid key
-    expected_result: Negative response to send key with NRC 36
+    action: Extract security event data after security access with invalid key
+    expected_result: True when successfully extracted security event data after getting
+                     NRC-35(invalidKey)
     """
-    for _ in range(2):
-        dut.uds.set_mode(2)
-        response = security_access_negative_response(dut)
-        if response is None:
-            logging.error("Test Failed: Empty response")
-        elif response[2:4] == '7F' and response[6:8] == '36':
-            return True
-    return False
+    # Set ECU to extended session
+    dut.uds.set_mode(3)
+
+    # Security access with invalid key
+    response = security_access_with_invalid_key(dut)
+    if response[2:4] != '7F' and response[6:8] != '35':
+        logging.error("Test Failed: Expected NRC-35(invalidKey) for security access with "
+                      "invalid key, but received %s", response)
+        return False
+
+    logging.info("Received negative response with NRC-35(invalidKey) for first time security "
+                 "access with invalid key as expected")
+
+    events_and_code2 = extract_security_event_data(dut)
+    logging.info("Security event data, after first time security access with invalid key: %s",
+                 events_and_code2)
+
+    return True
 
 
-def step_3(dut: Dut, rejected_events_and_code):
+def step_3(dut: Dut, events_and_code1):
     """
-    action: Read Security log event DID D03C
-    expected_result: Total number of Rejected events is incremented
-                     Latest rejected event code is '02'
+    action: Security access with invalid key for second time and verify security events data
+    expected_result: True when total number of rejected events is incremented by 2 and latest
+                     rejected event code is '02'
     """
-    dut.uds.set_mode()
-    time.sleep(2)
-    response = dut.uds.read_data_by_id_22(b'\xd0\x3C')
-    rejected_events_and_code_latest = get_rejected_events_and_code(response)
-    if rejected_events_and_code_latest['total_rejected_event'] == \
-        rejected_events_and_code['total_rejected_event'] + 2 \
-            and rejected_events_and_code['latest_rejected_event_code'] == '02':
-        return True
-    logging.error(
-        "Test Failed: Rejected event count is not increased Or the event code is wrong")
-    return False
+    # Second time security access with invalid key for getting NRC-36(exceededNumberOfAttempts)
+    response = security_access_with_invalid_key(dut)
+    if response[2:4] != '7F' and response[6:8] != '36':
+        logging.error("Test Failed: Expected negative response with "
+                      "NRC-36(exceededNumberOfAttempts) for second time security access with "
+                      "invalid key, but received %s", response)
+        return False, None
+
+    logging.info("Received negative response with NRC-36(exceededNumberOfAttempts) for second "
+                    "time security access with invalid key as expected")
+
+    # Set ECU in default session
+    dut.uds.set_mode(1)
+
+    events_and_code3 = extract_security_event_data(dut)
+    logging.info("Security event data, after second time security access with invalid key: %s",
+                 events_and_code3)
+
+    return verify_response(events_and_code1, events_and_code3)
 
 
 def run():
-    """ Supporting functional requests """
+    """
+    Verify security log event for successful event and rejected event
+    """
     dut = Dut()
+
     start_time = dut.start()
     result = False
+    result_step = False
+
     try:
-        dut.precondition()
-        result, rejected_events_and_code = dut.step(
-            step_1, purpose='Read Security log event DID D03C')
-        if result:
-            result = dut.step(
-                step_2, purpose='Security Access with Invalid key')
-        if result:
-            result = dut.step(step_3, rejected_events_and_code,
-                                purpose='Read Security log event DID D03C with event code 02')
+        dut.precondition(timeout=60)
+        result_step, events_and_code1 = dut.step(step_1, purpose="Read security log event DID D03C"
+                                            " and extract security event data for rejected events")
+        if result_step:
+            result_step = dut.step(step_2, purpose="Extract security event data after security"
+                                                   " access with invalid key")
+        if result_step:
+            result_step = dut.step(step_3, events_and_code1, purpose="Security access with invalid"
+                                            " key for second time and verify security events data")
+        result = result_step
 
     except DutTestError as error:
         logging.error("Test failed: %s", error)

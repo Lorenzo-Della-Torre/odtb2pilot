@@ -67,7 +67,11 @@ RE_RESULT = re.compile(r'.*(?P<result>FAILED|PASSED|MANUAL|To be inspected|\
     |tested implicitly|Tested implicitly|Not applicable|Modified VBF needed|excluded|\
     |diagnostic|application|design|deviation|dSpace|SecOC not implemented|Implicitly tested).*')
 RE_FOLDER_TIME = re.compile(r'.*Testrun_(?P<date>\d+_\d+)')
-RE_REQPROD_ID = re.compile(r'\s*e_(?P<reqprod>\d+)_', flags=re.IGNORECASE)
+RE_REQPROD_ID_SCR = re.compile(r'\s*(?P<file_name>[a-zA-Z0-9_]*)--_--(?P<req>[a-zA-Z0-9_]*)',
+                                                                        flags=re.IGNORECASE)
+
+# For blacklisted log
+RE_REQPROD_ID_BL = re.compile(r'\s*[a-zA-Z]_(?P<reqprod>\d+)_', flags=re.IGNORECASE)
 # case insensitive
 
 # When calculating per cent, how many decimals do we want
@@ -182,6 +186,8 @@ def parse_some_args():
                         type=str, action='store', dest='script_folder', default='./',)
     parser.add_argument("--graphfile", help="Filename of the local_stats_plot generated file",
                         type=str, action='store', dest='graph_file', default='stats_plot.svg',)
+    parser.add_argument("--smoke_result", help="Result of the smoke test",
+                        type=str, action='store', dest='smoke_result')
     ret_args = parser.parse_args()
     return ret_args
 
@@ -529,9 +535,19 @@ def generate_html(folderinfo_result_tuple_list, outfile, verif_d,  # pylint: dis
                                 text('DVM')
 
                         # Second column - REQPROD
-                        e_match = RE_REQPROD_ID.match(key)
-                        if e_match:
-                            e_key = str(e_match.group('reqprod'))
+                        e_match_1 = RE_REQPROD_ID_SCR.match(key)
+                        e_match_2 = RE_REQPROD_ID_BL.match(key)
+                        if e_match_1:
+                            e_key = str(e_match_1.group('req'))
+                            req_set.add(e_key.split("_")[1])
+                            with tag('td', klass="main number"):
+                                if e_key in elektra_d:
+                                    with tag("a", href=elektra_d[e_key], target='_blank'):
+                                        text(e_key)
+                                else:
+                                    text(e_key)
+                        elif e_match_2:
+                            e_key = str(e_match_2.group('reqprod'))
                             req_set.add(e_key)
                             with tag('td', klass="main number"):
                                 if e_key in elektra_d:
@@ -540,16 +556,17 @@ def generate_html(folderinfo_result_tuple_list, outfile, verif_d,  # pylint: dis
                                 else:
                                     text(e_key)
 
+                        file_name = key.split("--_--")[0]
                         # Third column - Script name
-                        if key.lower() in url_dict:
+                        if file_name.lower() in url_dict:
                             with tag('td', klass="main"):
-                                with tag("a", href=url_dict[key.lower()], target='_blank'):
-                                    text(key)
+                                with tag("a", href=url_dict[file_name.lower()], target='_blank'):
+                                    text(file_name)
                         else:
                             # Highlight with blue if we don't find the matching URL
                             #with tag('td', bgcolor=BROKEN_URL_COLOR):
                             with tag('td', klass="main"):
-                                text(key)
+                                text(file_name)
 
                         # Fourth (fifth, sixth) - Result columns
                         # Look up in dicts
@@ -557,18 +574,25 @@ def generate_html(folderinfo_result_tuple_list, outfile, verif_d,  # pylint: dis
                             folder_name = folderinfo_and_result_tuple[FOLDER_NAME_IDX]
                             testres_dict = folderinfo_and_result_tuple[TESTRES_DICT_IDX]
                             result = MISSING_STATUS
-                            if key in testres_dict:
-                                result = testres_dict[key]
+                            # show result in only one column if smoke test is failed
+                            if not testres_dict:
+                                if key == sorted_key_list[0]:
+                                    color = COLOR_DICT[MISSING_STATUS]
+                                    with tag(f'td rowspan="{len(sorted_key_list)}" h3 style="vertical-align: top;writing-mode: vertical-lr;font-size:40"/h3', klass="main", bgcolor=color):
+                                        text('SMOKE TEST FAILED')
+                            else:
+                                if key in testres_dict:
+                                    result = testres_dict[key]
 
-                            # Creating URL string
-                            href_string = (log_folders + '\\' + folder_name + '\\' + key
-                                           + LOG_FILE_EXT)
-                            color = COLOR_DICT[MISSING_STATUS]
-                            if result in COLOR_DICT:
-                                color = COLOR_DICT.get(result)
-                            with tag('td', klass="main", bgcolor=color):
-                                with tag("a", href=href_string, target='_blank'):
-                                    text(result)
+                                # Creating URL string
+                                href_string = (log_folders + '\\' + folder_name + '\\' + key
+                                            + LOG_FILE_EXT)
+                                color = COLOR_DICT[MISSING_STATUS]
+                                if result in COLOR_DICT:
+                                    color = COLOR_DICT.get(result)
+                                with tag('td', klass="main", bgcolor=color):
+                                    with tag("a", href=href_string, target='_blank'):
+                                        text(result)
 
                 # Sum row
                 with tag('tr'):
@@ -694,14 +718,15 @@ def main(margs):
 
             # Get all testfolders
             all_test_folders = [file_name for file_name in listdir(log_folders)
-                                if isdir(file_name) and RE_FOLDER_TIME.match(file_name)]
+                                if isdir(log_folders + '/' + file_name) and RE_FOLDER_TIME.match(file_name)]
             all_test_folders.sort(reverse=True)
             # Pick the 5 newest
             folders = all_test_folders[:5]
 
         # For each folder
         for folder_name in folders:
-            res_dict, _, _ = get_file_names_and_results(folder_name)
+
+            res_dict, _, _ = get_file_names_and_results(log_folders + '/' + folder_name)
             folder_time = get_folder_time(folder_name)
             logging.debug('Folder time: %s', folder_time)
             # Put all data in a tuple

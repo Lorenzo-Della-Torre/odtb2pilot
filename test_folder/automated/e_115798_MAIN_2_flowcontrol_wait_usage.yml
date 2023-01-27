@@ -1,0 +1,3 @@
+hvbm_p519:
+  run:
+    fc_wait_path: '/misc/fc_wait.txt'

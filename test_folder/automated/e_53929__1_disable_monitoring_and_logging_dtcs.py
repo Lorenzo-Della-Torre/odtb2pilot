@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,168 +18,111 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-# Testscript Hilding MEPII
-# project:  BECM basetech MEPII
-# author:   LDELLATO (Lorenzo Della Torre)
-# date:     2020-03-23
-# version:  1.0
-# reqprod:  53929
+reqprod: 53929
+version: 1
+title: Disable monitoring and logging of DTCs
+purpose: >
+    To prevent logging and monitoring of DTCs when the bootloader executing.
 
-# author:   LDELLATO (Lorenzo Della Torre)
-# date:     2020-09-16
-# version:  1.1
-# reqprod:  53929
+description: >
+    ECU shall ensure that monitoring and logging of all diagnostic trouble codes(DTCs) is disabled
+    when executing a bootloader(programming session).
 
-#inspired by https://grpc.io/docs/tutorials/basic/python.html
-
-# Copyright 2015 gRPC authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-The Python implementation of the gRPC route guide client.
+details: >
+    Verify service-19 is disabled when ECU is in programming session
 """
 
-import time
-from datetime import datetime
-import sys
 import logging
-import inspect
-
-import odtb_conf
-from supportfunctions.support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
-from supportfunctions.support_test_odtb2 import SupportTestODTB2
-from supportfunctions.support_carcom import SupportCARCOM
-from supportfunctions.support_file_io import SupportFileIO
-from supportfunctions.support_SBL import SupportSBL
-from supportfunctions.support_sec_acc import SupportSecurityAccess
-
-from supportfunctions.support_precondition import SupportPrecondition
-from supportfunctions.support_postcondition import SupportPostcondition
-from supportfunctions.support_service10 import SupportService10
-from supportfunctions.support_service11 import SupportService11
-from supportfunctions.support_service22 import SupportService22
+from hilding.dut import Dut
+from hilding.dut import DutTestError
 from supportfunctions.support_service31 import SupportService31
 
-SIO = SupportFileIO
-SC = SupportCAN()
-SC_CARCOM = SupportCARCOM()
-SUTE = SupportTestODTB2()
-SSBL = SupportSBL()
-SSA = SupportSecurityAccess()
-
-PREC = SupportPrecondition()
-POST = SupportPostcondition()
-SE10 = SupportService10()
-SE11 = SupportService11()
-SE22 = SupportService22()
 SE31 = SupportService31()
 
 
-
-
-def step_3(can_p):
+def verify_active_diag_session(dut, mode, session):
     """
-    Teststep 3: Verify service 19 is disabled in PBL session
+    Verify active diagnostic session
+    Args:
+        dut (Dut): An instance of Dut
+        mode (int): Diagnostic session mode
+        session (str): Diagnostic session
+    Returns:
+        (bool): True on successfully verifying active diagnostic session
     """
+    response = dut.uds.active_diag_session_f186()
+    if response.data["details"]["mode"] == mode:
+        logging.info("ECU is in %s session as expected", session)
+        return True
 
-    etp: CanTestExtra = {
-        "step_no" : 3,
-        "purpose" : "Verify service 19 is disabled in PBL session",
-        "timeout": 1,
-        "min_no_messages": -1,
-        "max_no_messages": -1
-    }
+    logging.error("Test Failed: Expected ECU to be in %s session, received mode %s",
+                  session, response.data["details"]["mode"])
+    return False
 
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
 
-    cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("ReadDTCInfoSnapshotIdentification",
-                                                         b'', b''),
-                        "extra" : ''
-                       }
+def step_1(dut: Dut):
+    """
+    action: Verify programming preconditions and set ECU to programming session
+    expected_result: ECU should be in programming session after checking programming preconditions
+    """
+    result = SE31.routinecontrol_requestsid_prog_precond(dut)
+    if not result:
+        logging.error("Test Failed: Routine control request failed")
+        return False
 
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    # Set to programming session
+    dut.uds.set_mode(2)
 
-    result = SUTE.teststep(can_p, cpay, etp)
+    return verify_active_diag_session(dut, mode=2, session='programming')
 
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='7F1911')
-    logging.info('%s', SUTE.pp_decode_7f_response(SC.can_frames[can_p["receive"]][0][2]))
-    return result
+
+def step_2(dut: Dut):
+    """
+    action: Read ReadDTCInfoSnapshotIdentification while ECU executing bootloader and check ECU is
+            in default session after hard reset.
+    expected_result: ECU should give negative response '7F' and it should end up in default session
+    """
+    # Read ReadDTCInfoSnapshotIdentification
+    response = dut.uds.dtc_snapshot_ids_1903()
+
+    if response.raw[2:4] != '7F':
+        logging.error("Test Failed: Expected negative response for DTC request, received %s",
+                      response.raw)
+        return False
+
+    logging.info("Received negative response '7F' for DTC request as expected")
+
+    # ECU hard reset
+    dut.uds.ecu_reset_1101()
+
+    return verify_active_diag_session(dut, mode=1, session='default')
 
 
 def run():
     """
-    Run - Call other functions from here
+    Verify service-19 is disabled when ECU is in programming session
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+    dut = Dut()
 
-    # start logging
-    # to be implemented
+    start_time = dut.start()
+    result = False
+    result_step = False
 
-    # where to connect to signal_broker
-    can_p: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        "send" : "Vcu1ToBecmFront1DiagReqFrame",
-        "receive" : "BecmToVcu1Front1DiagResFrame",
-        "namespace" : SC.nspace_lookup("Front1CANCfg0")
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
-    logging.info("Testcase start: %s", datetime.now())
-    starttime = time.time()
-    logging.info("Time: %s \n", time.time())
-    ############################################
-    # precondition
-    ############################################
-    # read VBF param when testscript is s started, if empty take default param
-    SSBL.get_vbf_files()
-    timeout = 1000
-    result = PREC.precondition(can_p, timeout)
+    try:
+        dut.precondition(timeout=40)
+        result_step = dut.step(step_1, purpose="Verify programming preconditions and set ECU to "
+                                               "programming session")
+        if result_step:
+            result_step = dut.step(step_2, purpose="Read ReadDTCInfoSnapshotIdentification while "
+                                                   "ECU executing bootloader and check ECU is in "
+                                                   "default session after hard reset")
+        result = result_step
 
-    if result:
-    ############################################
-    # teststeps
-    ############################################
+    except DutTestError as error:
+        logging.error("Test failed: %s", error)
+    finally:
+        dut.postcondition(start_time, result)
 
-        # step 1:
-        # action: Verify programming preconditions
-        # result: ECU sends positive reply
-        result = result and SE31.routinecontrol_requestsid_prog_precond(can_p, stepno=1)
-
-        # step2:
-        # action: Change to programming session
-        # result: ECU sends positive reply
-        result = result and SE10.diagnostic_session_control_mode2(can_p, stepno=2)
-
-        # step 3:
-        # action: Verify service 19 is disabled in PBL session
-        # result: ECU sends positive reply
-        result = result and step_3(can_p)
-
-        # step4:
-        # action: Hard Reset
-        # result: ECU sends positive reply
-        result = result and SE11.ecu_hardreset(can_p, stepno=4)
-        time.sleep(1)
-
-        # step5:
-        # action: Verify ECU in Default Session
-        # result: ECU sends positive reply
-        result = result and SE10.diagnostic_session_control_mode1(can_p, stepno=5)
-
-    ############################################
-    # postCondition
-    ############################################
-
-    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()

@@ -20,6 +20,8 @@ Any unauthorized copying or distribution of content from this file is prohibited
 /*********************************************************************************/
 """
 from os import listdir
+from os import path
+from os import sep
 import logging
 import traceback
 import time
@@ -28,12 +30,10 @@ from hilding.dut import Dut
 
 from supportfunctions.support_SBL import SupportSBL
 from supportfunctions.support_sec_acc import SecAccessParam
-from supportfunctions.support_service3e import SupportService3e
 
 SSBL = SupportSBL()
-SS3E = SupportService3e()
 
-def load_vbf_files(dut):
+def load_vbf_files(location):
     """Loads the rig specific VBF files found in rigs/<default-rig-name>/VBFs
 
     Args:
@@ -43,12 +43,11 @@ def load_vbf_files(dut):
         boolean: True if vbfs were loaded successfully, otherwise False
     """
     logging.info("~~~~~~~~ Loading VBFs started ~~~~~~~~")
-    vbfs = listdir(dut.conf.rig.vbf_path)
-
-    paths_to_vbfs = [str(dut.conf.rig.vbf_path) + "/" + x for x in vbfs]
+    vbfs = listdir(location)
+    paths_to_vbfs = [str(location) + sep + x for x in vbfs if path.isfile(str(location)+ sep + x)]
 
     if not paths_to_vbfs:
-        logging.error("VBFs not found, expected in %s ... aborting", dut.conf.rig.vbf_path)
+        logging.error("VBFs not found, expected in %s ... aborting", location)
         return False
 
     result = SSBL.read_vbf_param(paths_to_vbfs)
@@ -131,7 +130,7 @@ def check_complete_and_compatible(dut):
 
     return SSBL.check_complete_compatible_routine(dut, stepno=1)
 
-def software_download(dut):
+def software_download(dut,param="Software download"):
     """The function that handles all the sub-steps when performing software download.
     This function will keep track of the progress and give error indications if a step fails
 
@@ -141,85 +140,122 @@ def software_download(dut):
     Returns:
         boolean: Result of software download
     """
+    for operation in param:
 
-    # Load vbfs
-    vbf_result = load_vbf_files(dut)
+        step = 1
 
-    logging.info("~~~~~~ Step 1/5 of software download (loading vbfs) done."
-    " Result: %s\n\n", vbf_result)
+        # Define vbfs location and total steps of the operation
+        if operation == "Software download":
+            location = dut.conf.rig.vbf_path
+            total_steps = 5
+        elif operation == "PBL update":
+            location = dut.conf.rig.pbl_vbf_path
+            total_steps = 4
 
-    if vbf_result is False:
-        logging.error("Aborting software download due to problems when loading VBFs")
-        return False
+        # Load vbfs
+        vbf_result = load_vbf_files(location)
 
-    # Activate sbl
-    sbl_result = activate_sbl(dut)
+        logging.info("~~~~~~ Step %s/%s of software download (loading vbfs) done."
+        " Result: %s\n\n", step, total_steps, vbf_result)
+        step += 1
 
-    logging.info("Step 2/5 of software download (downloading and activating sbl) done."
-    " Result: %s\n\n", sbl_result)
+        if vbf_result is False:
+            logging.error("Aborting %s due to problems when loading VBFs",operation)
+            return False
 
-    if sbl_result is False:
-        logging.error("Aborting software download due to problems when activating SBL")
-        return False
+        # Activate sbl
+        sbl_result = activate_sbl(dut)
 
-    # Download ess (if needed)
-    ess_result = download_ess(dut)
+        logging.info("~~~~~~ Step %s/%s of software download (downloading and activating sbl) done."
+        " Result: %s\n\n", step, total_steps, sbl_result)
+        step += 1
 
-    logging.info("Step 3/5 of software download (downloading ess) done. \
-     Result: %s\n\n", ess_result)
+        if sbl_result is False:
+            logging.error("Aborting %s due to problems when activating SBL",operation)
+            return False
 
-    if ess_result is False:
-        logging.error("Aborting software download due to problems when downloading ESS")
-        return False
+        # Download ess (if needed)
+        ess_result = download_ess(dut)
 
-    # Download application and data
-    app_result = download_application_and_data(dut)
+        logging.info("~~~~~~ Step %s/%s of software download (downloading ess) done. \
+        Result: %s\n\n", step, total_steps, ess_result)
+        step += 1
 
-    logging.info("Step 4/5 of software download (downloading application and data) done."
-    " Result: %s\n\n", app_result)
+        if ess_result is False:
+            logging.error("Aborting %s due to problems when downloading ESS", operation)
+            return False
 
-    if app_result is False:
-        logging.error("Aborting software download due to problems when downloading application")
-        return False
+        # Download application and data
+        app_result = download_application_and_data(dut)
 
-    # Check Complete And Compatible
-    check_result = check_complete_and_compatible(dut)
+        logging.info("~~~~~~ Step %s/%s of software download (downloading application and data) \
+        done."
+        " Result: %s\n\n", step, total_steps, app_result)
+        step += 1
 
-    logging.info("Step 5/5 of software download (Check Complete And Compatible) done."
-    " Result: %s\n\n", check_result)
+        if app_result is False:
+            logging.error("Aborting %s due to problems when downloading application", operation)
+            return False
 
-    if check_result is False:
-        logging.error("Aborting software download due to problems when checking C & C")
-        return False
+        # Check Complete And Compatible
+        if operation == "Software download":
+            check_result = check_complete_and_compatible(dut)
 
-    # Check that the ECU ends up in mode 1 (default session)
-    SS3E.stop_periodic_tp_zero_suppress_prmib()
-    time.sleep(10)
-    uds_response = dut.uds.active_diag_session_f186()
-    mode = uds_response.data['details'].get('mode')
-    correct_mode = True
-    if mode != 1:
-        logging.error("Software download complete "
-        "but ECU did not end up in mode 1 (default session), current mode is: %s", mode)
-        correct_mode = False
+            logging.info("~~~~~~ Step %s/%s of software download (Check Complete And Compatible) \
+            done."
+            " Result: %s\n\n", step, total_steps, check_result)
+
+            if check_result is False:
+                logging.error("Aborting %s due to problems when checking C & C",operation)
+                return False
+
+        # Check that the ECU ends up in expected mode
+        dut.uds.ecu_reset_1101()
+        time.sleep(5)
+        uds_response = dut.uds.active_diag_session_f186()
+        mode = uds_response.data['details'].get('mode')
+        if (operation=="PBL update" and mode==2) or (operation=="Software download" and mode==1):
+            logging.info("ECU ends up in mode %s as expected mode.",mode)
+            correct_mode = True
+        else:
+            correct_mode = False
+            logging.error("%s complete "
+            "but ECU did not end up in expected mode, current mode is: %s",operation, mode)
 
     return correct_mode
 
 
 
-def flash():
+def flash(operation):
     """Flashes the ECU with VBF files found in the rigs folder.
     If the script is executed on a remote computer the remote computers VBF files will be used.
     If executed locally on a hilding the VBF files on that hilding will be used.
     """
     dut = Dut()
     start_time = dut.start()
+
     result = False
     try:
         dut.precondition(timeout=1800)
-        result = dut.step(software_download, purpose="Perform software download")
+
+        if operation == "PBL update":
+            logging.info("----       Starting PBL update      ----")
+            param = ["PBL update"]
+
+        elif operation == "Software download":
+            logging.info("----   Starting software download   ----")
+            param = ["Software download"]
+
+        elif operation == "PBL update and software download":
+            logging.info("----       Starting PBL update      ----")
+            param = ["PBL update","Software download"]
+
+        purpose_text = "Perform " + operation
+        result = dut.step(software_download, param, purpose=purpose_text)
+
     except: # pylint: disable=bare-except
         error = traceback.format_exc()
         logging.error("Software download failed: %s", error)
+
     finally:
         dut.postcondition(start_time, result)

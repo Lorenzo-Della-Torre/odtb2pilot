@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,155 +18,217 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-# Testscript Hilding MEPII
-# project:  BECM basetech MEPII
-# author:   LDELLATO (Lorenzo Della Torre)
-# date:     2020-06-10
-# version:  1.2
-# reqprod:  52286
-# #inspired by https://grpc.io/docs/tutorials/basic/python.html
-# Copyright 2015 gRPC authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+reqprod: 52287
+version: 2
+title: S3Server timer timeout in SBL
+purpose: >
+    To define the behaviour when the S3server times out in SBL
 
-The Python implementation of the gRPC route guide client.
+description: >
+    When the S3server times out when running SBL, the ECU shall make a reset.
+
+details: >
+    Verify ECU will be in default session from SBL, for delay more than S3 server timeout.
+    Also verify ECU will be in PBL from SBL, after software download for delay more than timeout.
 """
 
 import time
-from datetime import datetime
-import sys
 import logging
-import inspect
-
-import odtb_conf
-from supportfunctions.support_can import SupportCAN, CanParam
-from supportfunctions.support_test_odtb2 import SupportTestODTB2
-from supportfunctions.support_carcom import SupportCARCOM
-from supportfunctions.support_file_io import SupportFileIO
+from hilding.dut import Dut
+from hilding.dut import DutTestError
 from supportfunctions.support_SBL import SupportSBL
-from supportfunctions.support_sec_acc import SupportSecurityAccess
-
-from supportfunctions.support_precondition import SupportPrecondition
-from supportfunctions.support_postcondition import SupportPostcondition
-from supportfunctions.support_service10 import SupportService10
 from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_service3e import SupportService3e
-from hilding.conf import get_conf
+from supportfunctions.support_can import SupportCAN
 
-SIO = SupportFileIO
-SC = SupportCAN()
-S_CARCOM = SupportCARCOM()
-SUTE = SupportTestODTB2()
 SSBL = SupportSBL()
-SSA = SupportSecurityAccess()
-
-PREC = SupportPrecondition()
-POST = SupportPostcondition()
-SE10 = SupportService10()
 SE22 = SupportService22()
 SE3E = SupportService3e()
-CONF = get_conf()
+SC = SupportCAN()
 
-def step_1(can_p: CanParam):
-    """
-    Teststep 1: Activate SBL
-    """
-    stepno = 1
-    purpose = "Download and Activation of SBL"
 
-    result = SSBL.sbl_activation(can_p,
-                                 sa_keys=CONF.default_rig_config,
-                                 stepno=stepno, purpose=purpose)
-    return result
+def step_1(dut: Dut):
+    """
+    action: Activate SBl and verify ECU is in SBL
+    expected_result: ECU should be in SBL after successful activation of SBL
+    """
+    SSBL.get_vbf_files()
+    result = SSBL.sbl_activation(dut, sa_keys=dut.conf.default_rig_config)
+    if not result:
+        logging.error("Test Failed: SBL activation failed")
+        return False
+
+    result = SE22.verify_sbl_session(dut)
+    if not result:
+        logging.error("Test Failed: ECU is not in SBL")
+        return False
+
+    logging.info("Successfully activate SBL and ECU is in SBL")
+    return True
+
+
+def step_2(dut: Dut):
+    """
+    action: Verify SBL after delay shorter than timeout
+    expected_result: ECU should be in SBL after delay shorter than timeout
+    """
+    # Stop sending tester present
+    SE3E.stop_periodic_tp_zero_suppress_prmib()
+
+    # Waiting 4 seconds to send a diagnostic request just before S3 Server times out
+    time.sleep(4)
+
+    # Verify sbl
+    result = SE22.verify_sbl_session(dut)
+    if not result:
+        logging.error("Test Failed: ECU is not in SBL")
+        return False
+
+    logging.info("ECU is in SBL after waiting shorter than timeout as expected")
+    return True
+
+
+def step_3(dut: Dut):
+    """
+    action: Verify ECU is in default session after delay more than timeout
+    expected_result: ECU should be in default session after delay more than timeout
+    """
+    # Waiting 6 seconds to send a diagnostic request just after S3 Server times out
+    time.sleep(6)
+
+    # Verify active diagnostic session
+    response = dut.uds.active_diag_session_f186()
+    if response.data["details"]["mode"] == 1:
+        logging.info("ECU is in default session as expected")
+        return True
+
+    logging.error("Test Failed: Expected ECU to be in default session, but it is in mode %s",
+                  response.data["details"]["mode"])
+    return False
+
+
+def step_4(dut: Dut):
+    """
+    action: Software download and verify software is not complete, compatible
+    expected_result: Downloaded software should not be complete, compatible
+    """
+    # SBl activation
+    result = SSBL.sbl_activation(dut, sa_keys=dut.conf.default_rig_config)
+    if not result:
+        logging.error("Test Failed: ECU is not in SBL")
+        return False
+
+    # Software download
+    result = SSBL.sw_part_download(dut, SSBL.get_ess_filename())
+    if not result:
+        logging.error("Test Failed: Software download is failed for ESS file")
+        return False
+
+    # Check complete and compatibility
+    result = SSBL.check_complete_compatible_routine(dut, stepno=101)
+    response = SSBL.pp_decode_routine_complete_compatible(SC.can_messages[dut["receive"]][0][2])
+    result = result and (response == 'Not Complete, Compatible')
+    if result:
+        logging.info("Downloaded software is %s as expected", response)
+        return True
+
+    logging.error("Test Failed: Expected not complete, compatible, but software is %s", response)
+    return False
+
+
+def step_5(dut: Dut):
+    """
+    action: Verify ECU is in PBL after delay more than timeout
+    expected_result: ECU should be in PBL after delay more than timeout
+    """
+    # Stop sending tester present
+    SE3E.stop_periodic_tp_zero_suppress_prmib()
+
+    # Waiting 6 seconds to send a diagnostic request just after S3 Server times out
+    time.sleep(6)
+
+    # Verify ECU is still in mode programming session
+    result =  SE22.verify_pbl_session(dut)
+    if not result:
+        logging.error("Test Failed: ECU is not in PBL")
+        return False
+
+    # Start periodic tester present
+    SE3E.start_periodic_tp_zero_suppress_prmib(dut, dut.conf.rig.signal_tester_present, 1.02)
+    return True
+
+
+def step_6(dut: Dut):
+    """
+    action: Software part download and check complete and compatibility
+    expected_result: Downloaded software part should be complete and compatible
+    """
+    # ECU hard reset
+    dut.uds.ecu_reset_1101()
+
+    # SBl activation
+    result = SSBL.sbl_activation(dut, sa_keys=dut.conf.default_rig_config)
+    if not result:
+        logging.error("Test Failed: SBL activation failed")
+        return False
+
+    # Software download
+    result = SSBL.sw_part_download(dut, SSBL.get_ess_filename())
+    if not result:
+        logging.error("Test Failed: Software part download failed")
+        return False
+
+    logging.info("Software download successful")
+    for swp in SSBL.get_df_filenames():
+        result = result and SSBL.sw_part_download(dut, swp)
+
+    # Check complete and compatible
+    result = result and SSBL.check_complete_compatible_routine(dut, stepno=103)
+    if not result:
+        logging.error("Test Failed: Software is not complete and compatible")
+        return False
+
+    logging.info("Download software is complete and compatible as expected")
+    # ECU hard reset
+    dut.uds.ecu_reset_1101()
+    return True
+
 
 def run():
     """
-    Run - Call other functions from here
+    Verify S3 server timeout in SBL
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+    dut = Dut()
 
-    # start logging
-    # to be implemented
+    start_time = dut.start()
+    result = False
+    result_step = True
 
-    # where to connect to signal_broker
-    can_p: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        "send" : "Vcu1ToBecmFront1DiagReqFrame",
-        "receive" : "BecmToVcu1Front1DiagResFrame",
-        "namespace" : SC.nspace_lookup("Front1CANCfg0")
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
-    logging.info("Testcase start: %s", datetime.now())
-    starttime = time.time()
-    logging.info("Time: %s \n", time.time())
-    ############################################
-    # precondition
-    ############################################
-    # read VBF param when testscript is s started, if empty take default param
-    SSBL.get_vbf_files()
-    time.sleep(4)
+    try:
+        dut.precondition(timeout=1800)
 
-    timeout = 500
-    result = PREC.precondition(can_p, timeout)
-    if result:
-    ############################################
-    # teststeps
-    ############################################
+        result_step = dut.step(step_1, purpose="Activate SBl and verify ECU is in SBL")
+        if result_step:
+            result_step = dut.step(step_2, purpose="Verify SBL after delay shorter than timeout")
+        if result_step:
+            result_step = dut.step(step_3, purpose="Verify ECU is in default session after delay "
+                                                   "more than timeout")
+        if result_step:
+            result_step = dut.step(step_4, purpose="Software download and verify software is not "
+                                                   "complete, compatible")
+        if result_step:
+            result_step = dut.step(step_5, purpose="Verify ECU is in PBL after delay more than "
+                                                   "timeout")
+        if result_step:
+            result_step = dut.step(step_6, purpose="Software part download and check complete and "
+                                                   "compatibility")
+        result = result_step
 
-        # step1:
-        # action: DL and activation of SBL
-        # result: ECU sends positive reply
-        result = result and step_1(can_p)
+    except DutTestError as error:
+        logging.error("Test failed: %s", error)
+    finally:
+        dut.postcondition(start_time, result)
 
-        # step2:
-        # action: Verify ECU in SBL
-        # result: ECU sends positive reply
-        result = result and SE22.verify_sbl_session(can_p, stepno=2)
-
-        # step3:
-        # action: stop sending tester present
-        # result:
-        logging.info("Step 3: stop sending tester present.")
-        SE3E.stop_periodic_tp_zero_suppress_prmib()
-
-        # step4:
-        # action: wait shorter than timeout
-        # result:
-        logging.info("Step 4: Wait shorter than timeout for staying in current mode.")
-        logging.info("Step 4: No request to ECU.")
-        time.sleep(4)
-
-        # step5:
-        # action: Verify ECU is still in SBL
-        # result: ECU sends positive reply
-        result = result and SE22.verify_sbl_session(can_p, stepno=5)
-
-        # step6:
-        # action: wait longher than timeout
-        # result:
-        logging.info("Step 6: Wait longher than timeout for staying in current mode.")
-        logging.info("Step 6: No request to ECU as before.")
-        time.sleep(6)
-
-        # step7:
-        # action: Verify ECU change to default session
-        # result: ECU sends positive reply
-        result = result and SE22.read_did_f186(can_p, b'\x01', stepno=7)
-
-    ############################################
-    # postCondition
-    ############################################
-    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()

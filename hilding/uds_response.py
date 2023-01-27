@@ -52,7 +52,7 @@ class UdsResponse:
         response_patterns = [
             (r'.{2}7F(?P<service_id>.{2})(?P<nrc>.{2})',
              self.__negative_response),
-            (r'.{2,4}(?P<sid>50|51|59|62|63|6F|71|67|74|76|75|77|54)(?P<body>.*)',
+            (r'.{2,4}(?P<sid>50|51|59|62|63|6F|71|67|74|76|75|77|54|6E|6C|6A)(?P<body>.*)',
              self.__positive_response)
         ]
         for pattern, processor in response_patterns:
@@ -691,16 +691,20 @@ def get_scaled_value(resp_item, sub_payload):
     Returns:
         string: String containing converted data
     """
+
     if 'outdatatype' in resp_item and resp_item['outdatatype'] == '06':
         sub_payload = sub_payload.rstrip("0") # Removing trailing zeros
         utf8_text = bytearray.fromhex(sub_payload).decode() # decode from hex to utf-8
         return utf8_text
 
+    if 'outdatatype' in resp_item and resp_item['outdatatype'] == '07':
+        part_text = sub_payload[0:8]+bytearray.fromhex(sub_payload[8:14]).decode("ascii")
+        return part_text
+
     int_value = int(sub_payload, 16)
     if 'formula' in resp_item:
         size = resp_item['size']
         formula = resp_item['formula']
-        log.debug('Formula = %s', formula)
         populated_formula = populate_formula(formula, int_value, size)
         log.debug('Populated formula = %s', populated_formula)
 

@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2022 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,172 +18,298 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-# Testscript Hilding MEPII
-# project:  BECM basetech MEPII
-# author:   hweiler (Hans-Klaus Weiler)
-# date:     2019-07-11
-# version:  1.0
-# reqprod:  60008
+reqprod: 60008
+version: 2
+title: BlockSize parameter programming session- server and client side
+purpose: >
+    Define BlockSize for programming session server side. For more information see section
+    BlockSize (BS) parameter definition.
 
-# author:   hweiler (Hans-Klaus Weiler)
-# date:     2020-08-10
-# version:  1.1
-# changes:  update for YML-parameter, updated support functions
+description: >
+    In programming session the receiver must respond with a BS value that does not generate more
+    than one FlowControl (FC) N_PDU (including the first FC N_PDU) per 4095 bytes of data for a
+    complete transaction.
 
-#inspired by https://grpc.io/docs/tutorials/basic/python.html
-
-# Copyright 2015 gRPC authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-The Python implementation of the gRPC route guide client.
+details: >
+    Verify FlowControl(FC) response in programming session by sending UDS request with 4065 bytes
+    and 4094 bytes
 """
 
-import time
-from datetime import datetime
 import logging
-
-import sys
-import inspect
-
-import odtb_conf
-from supportfunctions.support_can import SupportCAN, CanParam, CanTestExtra, CanPayload
-from supportfunctions.support_carcom import SupportCARCOM
+from hilding.dut import Dut
+from hilding.dut import DutTestError
+from hilding.uds import UdsEmptyResponse
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
+from supportfunctions.support_can import SupportCAN, CanTestExtra, CanPayload
+from supportfunctions.support_carcom import SupportCARCOM
 from supportfunctions.support_file_io import SupportFileIO
-from supportfunctions.support_precondition import SupportPrecondition
-from supportfunctions.support_postcondition import SupportPostcondition
-from supportfunctions.support_service10 import SupportService10
-from supportfunctions.support_service22 import SupportService22
 
-SIO = SupportFileIO
-SC = SupportCAN()
 SUTE = SupportTestODTB2()
+SC = SupportCAN()
 SC_CARCOM = SupportCARCOM()
-PREC = SupportPrecondition()
-POST = SupportPostcondition()
-SE10 = SupportService10()
-SE22 = SupportService22()
+SIO = SupportFileIO()
 
 
-
-
-
-# teststep 2: send request with MF to send
-def step_2(can_p):
+def prepare_payload(programming_did, payload_length):
     """
-    Teststep 2: send request with MF to send
+    Prepare payload with programming DID to send to the ECU
+    Args:
+        programming_did (str): Programming DID
+        payload_length (int): Payload maximum length
+    Returns:
+        payload (bytes): Padded payload
     """
-    cpay: CanPayload = {
-        "payload": SC_CARCOM.can_m_send("ReadDataByIdentifier",\
-                                        b'\xF1\x25\x00\x00\x00\x00\x00\x00',\
-                                        b''),
-        "extra": ''
-        }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    payload = bytes.fromhex(programming_did)
 
-    etp: CanTestExtra = {
-        "step_no" : 2,
-        "purpose" : "send DID request - requires MF to send",
-        "timeout" : 3, # wait for message to arrive, but don't test (-1)
-        "min_no_messages" : -1,
-        "max_no_messages" : -1
-        }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    # Padding the payload with 0x00 till the size becomes payload_length
+    while len(payload) < payload_length:
+        payload = payload + bytes.fromhex('00')
 
-    result = SUTE.teststep(can_p, cpay, etp)
-    logging.info("Step%s: result after CAN send %s", etp["step_no"], result)
+    return payload
 
-    # verify FC parameters from BECM for block_size
-    logging.info("FC parameters used:")
-    logging.info("Step%s: frames received %s", etp["step_no"], len(SC.can_frames[can_p["receive"]]))
-    logging.info("Step%s: frames: %s\n", etp["step_no"], SC.can_frames[can_p["receive"]])
-    logging.info("len FC %s", len(SC.can_cf_received[can_p["receive"]]))
-    logging.info("FC: %s", SC.can_cf_received[can_p["receive"]])
-    logging.info("CAN_frames: %s", SC.can_frames)
-    logging.info("Verify if FC is as required. "\
-                 "Continue to send (0x30): 0x%s separation_time: 0x%s",\
-                 int(SC.can_cf_received[can_p["receive"]][0][2][0:2], 16).to_bytes(1, 'big').hex(),\
-                 int(SC.can_cf_received[can_p["receive"]][0][2][4:6], 16).to_bytes(1, 'big').hex())
-    logging.info("Verify block_size is 0x00 (4095 bytes): %s: %s",\
-                 int((SC.can_cf_received[can_p["receive"]][0][2][2:4]), 16),\
-                 (int((SC.can_cf_received[can_p["receive"]][0][2][2:4]), 16) == 0))
-    logging.info("Step%s: result after CF received %s", etp["step_no"], result)
-    result = result and (int((SC.can_cf_received[can_p["receive"]][0][2][2:4]), 16) == 0)
-    logging.info("Step%s: result after CF2 received %s", etp["step_no"], result)
 
-    logging.info("Step %s Addon: Test if string contains all IDs expected:"\
-                 " (won't affect testresult)",\
-                 etp["step_no"])
-    SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='F125')
+def read_did_and_verify(dut, did_to_read, payload_length, response_flag=False):
+    """
+    Verify ReadDataByIdentifier service 22 with programming DID
+    Args:
+        dut (Dut): An instance of Dut
+        did_to_read (str): programming DID
+        payload_length (int): Payload maximum length
+        response_flag (bool): Check positive response when true
+    Returns:
+        (bool): True on successfully verified response
+    """
+    payload = prepare_payload(did_to_read, payload_length)
 
-    logging.info("Step %s teststatus: %s\n", etp["step_no"], result)
-    return result
+    cpay: CanPayload = {"payload": SC_CARCOM.can_m_send("ReadDataByIdentifier", payload, b''),
+                        "extra": ''}
+
+    etp: CanTestExtra = {"step_no" : 111,
+                         "purpose" : "send DID request - requires MF to send",
+                         "timeout" : 4, # wait for message to arrive, but don't test (-1)
+                         "min_no_messages" : -1,
+                         "max_no_messages" : -1}
+
+    result = SUTE.teststep(dut, cpay, etp)
+    logging.info("Result after CAN send %s", result)
+
+    response = SC.can_messages[dut["receive"]][0][2]
+
+    if response_flag:
+        if response[4:6] == '62':
+            # Verify if expected DID is present in reply
+            result = SUTE.test_message(SC.can_messages[dut["receive"]], teststring='F125')
+            if not result:
+                logging.error("Test Failed: Expected DID %s to be present in response,"
+                              " received %s", did_to_read, SC.can_messages[dut["receive"]])
+                return False
+
+            logging.info("Received positive response %s for request ReadDataByIdentifier as"
+                         " expected", response[4:6])
+            return True
+
+        logging.error("Test Failed: Expected positive response, received %s", response)
+        return False
+
+    if response[2:4] == '7F' and response[6:8] == '13':
+        logging.info("Received NRC %s for request ReadDataByIdentifier as expected",
+                      response[6:8])
+        return True
+
+    logging.error("Test Failed: Expected NRC '13', received %s", response)
+    return False
+
+
+def verify_fc_overflow(dut, did_to_read, payload_length):
+    """
+    Verify flow control overflow with payload of size 4094 bytes
+    Args:
+        dut (Dut): An instance of Dut
+        did_to_read (str): Programming DID
+        payload_length (int): Payload maximum length
+    Return:
+        response (bool): True when FlowControl(FC) overflow frame received
+    """
+    payload = prepare_payload(did_to_read, payload_length)
+
+    # Append ReadDataByIdentifier service
+    payload = SC_CARCOM.can_m_send("ReadDataByIdentifier", payload, b'')
+
+    try:
+        dut.uds.generic_ecu_call(payload)
+    except UdsEmptyResponse:
+        pass
+
+    # Verify FC parameters
+    logging.info("Received FC Frame: %s", SC.can_cf_received[dut["receive"]])
+    logging.info("Received CAN message: %s", SC.can_messages[dut["receive"]])
+    logging.info("CAN MultiFrame: %s", SC.can_frames[dut["receive"]])
+
+    fc_code_ovflw = '3200'
+
+    if SUTE.test_message(SC.can_cf_received[dut["receive"]], teststring=fc_code_ovflw):
+        return True
+
+    logging.error("Test Failed: ECU did not send 3200 FC.OVFLW message")
+    return False
+
+
+def verify_flowcontrol_message(dut, parameters, payload_length, response_flag):
+    """
+    Verify flow control message for a multiframe request with payload size 4065 bytes
+    Args:
+        dut (Dut): An instance of Dut
+        parameters (dict): Programming DID
+        payload_length (int): Payload maximum length
+        response_flag (bool): True for positive response
+    Return:
+        response (bool): True when flow control(FC) response is received
+    """
+    # Request DID in one request and verify if DID is included in response
+    result_non_prog_dids = read_did_and_verify(dut, parameters['prog_did'],
+                                               payload_length, response_flag)
+    if not result_non_prog_dids:
+        return False
+
+    # Verify FC parameters
+    fc_code = '3000'
+
+    if not SUTE.test_message(SC.can_cf_received[dut["receive"]], teststring=fc_code):
+        logging.error("Test Failed: ECU did not send FlowControl(FC) frame")
+        return False
+
+    return True
+
+
+def verify_flowcontrol_response_30(dut, parameters):
+    """
+    Verify FlowControl(FC) response with payload 4065 bytes
+    Args:
+        dut (Dut): An instance of Dut
+        parameters (dict): Programming DID and payload lengths
+    Return:
+        response (bool): True when FlowControl(FC) response verified
+    """
+    result_negative_response = verify_flowcontrol_message(dut,
+                               parameters, payload_length=parameters['pl_size_fc_30'],
+                               response_flag=False)
+    if not result_negative_response:
+        logging.error("Test Failed: Expected NRC-13 and frame control(FC) is not received")
+        return False
+
+    return True
+
+
+def verify_flowcontrol_response_32(dut, parameters):
+    """
+    Verify FlowControl(FC) response with payload 4094 bytes
+    Args:
+        dut (Dut): An instance of Dut
+        parameters (dict): Programming DID and payload lengths
+    Return:
+        response (bool): True when FlowControl(FC) response verified
+    """
+    # According to SWRS maximum byte value size should be 4095 bytes, but from ECU we are
+    #  getting FC-Overflow(32) in the range 4066 bytes to 4094 bytes.
+    result_non_prog_dids = verify_fc_overflow(dut, parameters['prog_did'],
+                           payload_length=parameters['pl_size_fc_32'])
+    if not result_non_prog_dids:
+        return False
+
+    return True
+
+
+def step_1(dut: Dut, parameters):
+    """
+    action: Set ECU in programming session and verify ReadDataByIdentifier service 22 with DID
+            'F125' in programming session
+    expected_result: DID in the request should be included in the ECU response
+    """
+    # Set to programming session
+    dut.uds.set_mode(2)
+
+    # Verify active diagnostic session
+    result = dut.uds.active_diag_session_f186()
+    if result.data['details']['mode'] != 2:
+        logging.error("Test Failed: ECU is not in programming session")
+        return False
+
+    result = read_did_and_verify(dut, parameters['prog_did'], payload_length=0, response_flag=True)
+    if not result:
+        return False
+
+    return True
+
+
+def step_2(dut: Dut, parameters):
+    """
+    action: Verify FlowControl(FC) in programming session with payload 4065 bytes
+    expected_result: ECU should give NRC-13 for payload 4065 bytes and FlowControl(FC) response
+                     should be successfully verified in programming session
+    """
+    result = verify_flowcontrol_response_30(dut, parameters)
+    if not result:
+        logging.error("Test Failed: FlowControl(FC) response is not received as expected in"
+                      " programming session")
+        return False
+
+    return True
+
+
+def step_3(dut: Dut, parameters):
+    """
+    action: Verify FlowControl(FC) in programming session with payload 4094 bytes
+    expected_result: FlowControl(FC) response should be successfully verified in programming
+                     session
+    """
+    result = verify_flowcontrol_response_32(dut, parameters)
+    if not result:
+        logging.error("Test Failed: FlowControl(FC) response is not received as expected in"
+                      " programming session")
+        return False
+
+    return True
 
 
 def run():
     """
-    Run - Call other functions from here
+    Verify FlowControl(FC) response in programming session by sending UDS request with 4065 bytes
+    and 4094 bytes
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
-    logging.info("Testcase start: %s", datetime.now())
-    starttime = time.time()
-    logging.info("Time: %s \n", time.time())
-    # where to connect to signal_broker
-    can_p: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        "send" : "Vcu1ToBecmFront1DiagReqFrame",
-        "receive" : "BecmToVcu1Front1DiagResFrame",
-        "namespace" : SC.nspace_lookup("Front1CANCfg0")
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
+    dut = Dut()
 
-    ############################################
-    # precondition
-    ############################################
-    timeout = 60   #seconds
-    result = PREC.precondition(can_p, timeout)
+    start_time = dut.start()
+    result = False
+    result_step = False
 
-    if result:
-    ############################################
-    # teststeps
-    ############################################
-    # step 1:
-    # action: change BECM to programming
-    # result: BECM reports mode
-        result = SE10.diagnostic_session_control_mode2(can_p, stepno=1)
+    parameters_dict = {'prog_did': '',
+                       'pl_size_fc_30': 0,
+                       'pl_size_fc_32': 0}
+    try:
+        dut.precondition(timeout=60)
 
-    # step2:
-    # action: Request combined DID requiring MF in reply
-    # result: Only one FC required for 4096 bytes: block_size in FC is 0x00
-        result = result and step_2(can_p)
+        parameters = SIO.parameter_adopt_teststep(parameters_dict)
+        if not all(list(parameters.values())):
+            raise DutTestError("yml parameters not found")
 
-    # step3:
-    # action: check current session
-    # result: BECM reports programming session
-        result = result and SE22.read_did_f186(can_p, dsession=b'\x02', stepno=3)
+        result_step = dut.step(step_1, parameters, purpose='Set ECU in extended session and'
+                               ' verify ReadDataByIdentifier service 22 with DID F125 in'
+                               ' programming session')
+        if result_step:
+            result_step = dut.step(step_2, parameters, purpose='Verify'
+                                   ' FlowControl(FC) in programming session with payload'
+                                   ' 4065 bytes')
+        if result_step:
+            result_step = dut.step(step_3, parameters, purpose='Verify'
+                                   ' FlowControl(FC) in programming session with payload'
+                                   ' 4094 bytes')
+        result = result_step
 
-    # step 4:
-    # action: change BECM to default
-    # result: BECM reports mode
-        result = result and SE10.diagnostic_session_control_mode1(can_p, stepno=4)
-        time.sleep(1)
+    except DutTestError as error:
+        logging.error("Test failed: %s", error)
+    finally:
+        dut.postcondition(start_time, result)
 
-    ############################################
-    # postCondition
-    ############################################
-
-    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()

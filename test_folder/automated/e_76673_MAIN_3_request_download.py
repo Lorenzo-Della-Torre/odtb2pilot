@@ -26,15 +26,15 @@ purpose: >
 
 description: >
     The ECU shall support the service RequestDownload (0x34).
+
     The ECU shall implement the service accordingly:
 
     Supported sessions:
-    The ECU shall support service RequestDownload in programmingSession,
-    both primary and secondary bootloader.
-
+    The ECU shall support service RequestDownload in programmingSession, both primary and secondary
+    bootloader.
     The ECU shall not support service RequestDownload in:
-    •	defaultSession
-    •	extendedDiagnosticSession
+    •   defaultSession
+    •   extendedDiagnosticSession
 
     Response time:
     Maximum response time for the service RequestDownload (0x34) is 1000ms.
@@ -68,6 +68,7 @@ SE27 = SupportService27()
 def get_vbf_params():
     """
     To extract vbf headers and vbf block from vbf file
+    Args: None
     Returns:
         vbf_params (dict): Dictionary containing vbf header and vbf block
     """
@@ -90,14 +91,13 @@ def service_34_for_non_programming_session(dut, session, vbf_params):
     """
     Verifying RequestDownload(0x34) in default/extended session
     Args:
-        dut (class object): dut instance
+        dut (Dut): An instance of Dut
         session (str): Diagnostic session
         vbf_params (dict): Dictionary containing vbf parameters
     Returns:
         bool: True if positive response is not received for RequestDownload(0x34).
     """
     result = SE34.request_block_download(dut, vbf_params["vbf_header"], vbf_params["vbf_block"])[0]
-
     if result:
         logging.error("Test Failed: RequestDownload(0x34) is supported in %s session, but "
                       "should not be supported", session)
@@ -111,8 +111,8 @@ def check_timing(dut, time_frame):
     """
     Verify response time for request service 34.
     Args:
-        dut (class object): dut instance
-        time_frame (int): valid timeframe
+        dut (Dut): An instance of Dut
+        time_frame (int): Valid timeframe
     Returns:
         bool: True if response received within given timeframe
     """
@@ -128,15 +128,16 @@ def check_timing(dut, time_frame):
     except IndexError:
         logging.error("Test Failed: Unable to receive correct response time for RequestDownload.")
         result = False
+
     return result
 
 
 def service_34_for_programming_session(dut, vbf_params):
     """
-    Verifying response of RequestDownload (0x34) in programming session
+    Verifying response of RequestDownload(0x34) in programming session
     Args:
-        dut (class object): dut instance
-        vbf_params (dict): dictionary containing vbf parameters
+        dut (Dut): An instance of Dut
+        vbf_params (dict): Dictionary containing vbf parameters
     Returns:
         bool: True if positive response 74 received for request service 34.
     """
@@ -144,22 +145,22 @@ def service_34_for_programming_session(dut, vbf_params):
 
     # Check response time for RequestDownload within 1000ms
     result_time = True
-    if not check_timing(dut, 1000):
+    if not check_timing(dut, time_frame=1000):
         result_time = False
-        logging.error("RequestDownload (0x34) response took longer than 1000ms")
+        logging.error("RequestDownload(0x34) response took longer than 1000ms")
 
     # RequestDownload should be supported in programming.
     if not result:
-        logging.error("Test Failed: RequestDownload (0x34) is not supported in programming session"
+        logging.error("Test Failed: RequestDownload(0x34) is not supported in programming session"
                       " but should be supported")
     return result and result_time
 
 
 def step_1(dut: Dut):
     """
-    action: Extract vbf parameters from the vbf file and verify response for RequestDownload (0x34)
+    action: Extract vbf parameters from the vbf file and verify response for RequestDownload(0x34)
             in default session
-    expected_result: True if RequestDownload (0x34) is not supported in default session after
+    expected_result: RequestDownload(0x34) should not be supported in default session after
                      successfully extract vbf parameters from vbf file.
     """
     vbf_params = get_vbf_params()
@@ -173,30 +174,32 @@ def step_1(dut: Dut):
 
 def step_2(dut: Dut, vbf_params):
     """
-    action: Verify response for RequestDownload (0x34) in programming mode with security access.
-    expected_result: True if positive response received for service 34.
+    action: Verify response for RequestDownload(0x34) in programming mode with security access.
+    expected_result: ECU should send positive response for service RequestDownload(0x34)
     """
-    #Sleep time to avoid NRC37
-    time.sleep(5)
-
+    # Set to programming session
     dut.uds.set_mode(2)
+
+    # Sleep time to avoid NRC37
+    time.sleep(5)
 
 	# RequestDownload without security access
     result = SE34.request_block_download(dut, vbf_params["vbf_header"], vbf_params["vbf_block"])[0]
     response = SC.can_messages[dut["receive"]][0][2]
 
     result_without_security = False
-    # Check if RequestDownload response code contains NRC 33 securityAccessDenied
+    # Check if RequestDownload response code contains NRC-33 (securityAccessDenied)
     if not result and response[6:8] == '33':
-        logging.info("Received NRC 33 for RequestDownload(0x34) as expected,before security unlock")
+        logging.info("Received NRC-33 for RequestDownload(0x34) as expected, before "
+                     "security unlock")
         result_without_security = True
     else:
-        logging.error("NRC 33 expected, received %s",response)
+        logging.error("NRC-33 expected, received %s", response)
         result_without_security = False
 
     # RequestDownload with security access
     result_with_security = SE27.activate_security_access_fixedkey(dut, dut.conf.default_rig_config,
-                                    step_no=272, purpose="SecurityAccess")
+                                                             step_no=272, purpose="SecurityAccess")
     if result_with_security:
         result_with_security = service_34_for_programming_session(dut, vbf_params)
     else:
@@ -207,11 +210,13 @@ def step_2(dut: Dut, vbf_params):
 
 def step_3(dut: Dut, vbf_params):
     """
-    action: Verify response for RequestDownload (0x34) in extended session
-    expected_result: RequestDownload (0x34) should not be supported in extended mode
+    action: Verify response for RequestDownload(0x34) in extended session
+    expected_result: RequestDownload(0x34) should not be supported in extended mode
     """
-    dut.uds.set_mode()
+    # Set to extended session
+    dut.uds.set_mode(1)
     dut.uds.set_mode(3)
+
     result = SE27.activate_security_access_fixedkey(dut, dut.conf.default_rig_config, step_no=274,
                                                     purpose="SecurityAccess")
 
@@ -226,12 +231,13 @@ def step_3(dut: Dut, vbf_params):
         result = service_34_for_non_programming_session(dut, "extended", vbf_params)
     else:
         logging.error("Test Failed: Security access is not supported in extended session.")
+
     return result
 
 
 def run():
     """
-    Verify response for RequestDownload (0x34) is supported in programming session and not
+    Verify response for RequestDownload(0x34) is supported in programming session and not
     in default or extended session.
     """
     dut = Dut()
@@ -247,13 +253,12 @@ def run():
                                            "default session")
         if result_step:
             result_step = dut.step(step_2, vbf_params, purpose="Verify response for "
-                                                "RequestDownload (0x34) in programming session")
-
+                                           "RequestDownload (0x34) in programming session")
         if result_step:
             result_step = dut.step(step_3, vbf_params, purpose="Verify response for "
-                                            "RequestDownload (0x34) request in extended session")
-
+                                           "RequestDownload (0x34) request in extended session")
         result = result_step
+
     except DutTestError as error:
         logging.error("Test failed: %s", error)
     finally:
