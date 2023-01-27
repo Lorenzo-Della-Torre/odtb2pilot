@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2022 Volvo Car Corporation. All rights reserved.
+Copyright © 2023 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -32,6 +32,7 @@ details: >
     Steps:
         1. Verify programming preconditions
         2. Verify ECU in primary bootloader
+        3. ECU reset and verify active diagnostic session
 """
 
 import time
@@ -50,11 +51,10 @@ SE27 = SupportService27()
 def step_1(dut: Dut):
     """
     action: Verify programming preconditions
-    expected_result: True when routine control request and security access are
-                     successful in programming session
+    expected_result: Routine control request and security access should be successful in
+                     programming session
     """
     result = SE31.routinecontrol_requestsid_prog_precond(dut)
-
     if not result:
         logging.error("Test Failed: Routine control request failed")
         return False
@@ -62,11 +62,14 @@ def step_1(dut: Dut):
     # Set to programming session
     dut.uds.set_mode(2)
 
+    # Sleep time to avoid NRC-37
+    time.sleep(5)
+
     # Security access to ECU
     security_access = SE27.activate_security_access_fixedkey(dut,
                                                              sa_keys=dut.conf.default_rig_config)
     if not security_access:
-        logging.error("Test Failed: security access denied in programming session")
+        logging.error("Test Failed: Security access denied in programming session")
         return False
 
     logging.info("Security access successful in programming session")
@@ -75,19 +78,26 @@ def step_1(dut: Dut):
 
 def step_2(dut: Dut):
     """
-    action: Verify ECU is in primary bootloader and do ECU hard reset
-    expected_result: True when ECU is in primary bootloader and after hard reset ECU is in
-                     default session
+    action: Verify ECU is in primary bootloader
+    expected_result: ECU should be in primary bootloader
     """
     result = SE22.verify_pbl_session(dut)
     if not result:
         logging.error("Test Failed: ECU is not in primary bootloader")
         return False
 
+    logging.info("ECU is in primary bootloader")
+    return True
+
+
+def step_3(dut: Dut):
+    """
+    action: ECU hard reset and verify ECU in default session
+    expected_result: ECU should be in default session
+    """
     # ECU hard reset
     reset_result = dut.uds.ecu_reset_1101()
     time.sleep(5)
-
     result = reset_result and SE22.read_did_f186(dut, dsession=b'\x01')
     if not result:
         logging.error("Test Failed: ECU is not in default session")
@@ -108,12 +118,14 @@ def run():
     result_step = False
 
     try:
-        dut.precondition(timeout=40)
+        dut.precondition(timeout=60)
 
         result_step = dut.step(step_1, purpose="Verify programming preconditions")
         if result_step:
-            result_step = dut.step(step_2, purpose="Verify ECU is in primary bootloader and "
-                                                   "do ECU hard reset")
+            result_step = dut.step(step_2, purpose="Verify ECU is in primary bootloader")
+        if result_step:
+            result_step = dut.step(step_3, purpose="ECU hard reset and verify ECU in default"
+                                                   " session")
         result = result_step
 
     except DutTestError as error:
