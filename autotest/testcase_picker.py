@@ -32,7 +32,7 @@ import re
 import yaml
 from pathlib import Path
 import req_parser.rif_swrs_to_graph as rif_mod
-
+import req_parser.csv_swrs_to_graph as csv_parser
 from blacklisted_tests_handler import match_swrs_with_yml
 
 # Logging has different levels: DEBUG, INFO, WARNING, ERROR, and CRITICAL
@@ -47,7 +47,7 @@ VER_ID = "Version id"
 ID = 'ID'
 TYPE_LIST = ["REQPROD"] # Only interested in the REQPRODS
 
-RE_FILE_NAME = re.compile(r'e_(?P<reqprod>\d+)_(?P<var>[a-zA-Z]*|-)_(?P<rev>\d+)$',
+RE_FILE_NAME = re.compile(r'^(e|cw)_(?P<reqprod>\d+)_(?P<var>[a-zA-Z]*|-)_?(?P<rev>\d+)$',
                           flags=re.IGNORECASE)
 
 def parse_some_args():
@@ -93,18 +93,26 @@ def swrs_parse(swrs):
         State
         ...
     """
-    sp_dict, spobj_dict, _ = rif_mod.parse_rif_to_dicts(swrs)
-    col_names = rif_mod.create_col_names(sp_dict, TYPE_LIST)
     reqprod_dict = dict()
-
-    for type_name in TYPE_LIST:
-        for obj_id in spobj_dict[type_name]:
-            reqprod_obj = dict()
-            reqprod_id = spobj_dict[type_name][obj_id].get(ID)
-            for _, col in enumerate(col_names, 1):
-                if col not in (OWN_ID, PARENT_ID, VER_ID):
-                    reqprod_obj[col] = spobj_dict[type_name][obj_id].get(col, "-")
-            reqprod_dict[str(reqprod_id)] = reqprod_obj
+    # check the extension of swrs export file:
+    # 1- 'xml' --> Elektra export   --> use xml parser
+    if swrs.endswith('.xml'):
+        sp_dict, spobj_dict, _ = rif_mod.parse_rif_to_dicts(swrs)
+        col_names = rif_mod.create_col_names(sp_dict, TYPE_LIST)
+        for type_name in TYPE_LIST:
+            for obj_id in spobj_dict[type_name]:
+                reqprod_obj = dict()
+                reqprod_id = spobj_dict[type_name][obj_id].get(ID)
+                for _, col in enumerate(col_names, 1):
+                    if col not in (OWN_ID, PARENT_ID, VER_ID):
+                        reqprod_obj[col] = spobj_dict[type_name][obj_id].get(col, "-")
+                reqprod_dict[str(reqprod_id)] = reqprod_obj
+    # 2- 'csv' --> CarWeaver export --> use csv parser
+    elif swrs.endswith('.csv'):
+        reqprod_dict = csv_parser.parse_csv_to_dicts(swrs)
+    # 3- unknown format --> pass and return empty dict
+    else: pass
+    
     return reqprod_dict
 
 
