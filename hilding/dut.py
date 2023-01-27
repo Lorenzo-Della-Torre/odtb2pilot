@@ -50,7 +50,13 @@ from supportfunctions.support_file_io import SupportFileIO
 from hilding.uds import Uds
 from hilding.uds import EicDid
 from hilding.uds import IoVmsDid
-from hilding import analytics
+
+# The try/catch is for the unit test not fail due to exception
+# ValueError: Cynosure major version is not configured!
+try:
+    from hilding import analytics
+except ValueError:
+    pass
 from hilding import get_conf
 
 # pylint: disable=no-member
@@ -79,6 +85,7 @@ def beamy_feature(func):
         func(*args, **kwargs)
     return wrapper_beamy_feature
 
+
 def analytics_test_step(func):
     """ Decorator to add test step analytics """
     def wrapper_test_step(self, *args, **kwargs):
@@ -96,8 +103,13 @@ def analytics_test_step(func):
         except Exception as e:
             analytics.teststep_ended("errored")
             raise e
-        # if we don't get any exception the test has passed
-        analytics.teststep_ended("passed")
+
+        # if we don't get any exception and the result is True the test has passed
+        if result:
+            analytics.teststep_ended("passed")
+        else:
+            analytics.teststep_ended("failed")
+
         return result
     return wrapper_test_step
 

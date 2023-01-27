@@ -1,0 +1,375 @@
+# Message samples ========================================================{{{1
+
+# ProductCreated ---------------------------------------------------------{{{2
+{
+	"productId": {
+		"namespace": "myAwesomeApplication",
+		"instance": "5.4.3"
+	},
+	"type": "source",
+	"productOf": [
+		{
+			"namespace": "myFirstRepository",
+			"instance": "0fd527268ae55c524a29f294a43b6c1b79734fd5"
+		},
+		{
+			"namespace": "mySecondRepository",
+			"instance": "1c4c9131633380c33bc582a9beb525f8b4f0f456"
+		}
+	],
+	"producedBy": {
+		"namespace": "MyApplicationTest",
+		"instance": "7f4b60d4-e670-11e8-a273-2751691dd8eb"
+	},
+	"track": "refs/for/master",
+	"contact": {
+		"id": "user1",
+		"email": "user1@domain.com",
+		"url": "http://contact.information.com"
+	},
+	"title": "string",
+	"description": "This is a good commit message or descriptive text of the product instance",
+	"url": "https://ici.jenkins.cm.volvocars.biz/job/CF_CI_Build/708/",
+	"time": "2018-09-27T11:08:00Z",
+	"tags": [
+		"tag1",
+		"tag2"
+	],
+	"custom": {
+		"env": "v1.2.3"
+	},
+	"vendor": {
+		"confidenceLevel": {
+			"systemci": "2"
+		},
+		"projects": [
+			"V331"
+		],
+		"level": "Unit",
+		"revision": "13",
+		"type": "In-Car Digital",
+		"official": true,
+		"requirements": [
+			{
+				"requirement": {
+					"namespace": "myAwesomeApplication",
+					"instance": "766cad50-e671-11e8-b255-1383166220ff"
+				},
+				"implemented": true
+			}
+		]
+	},
+	"sender": {
+		"application": "myawesomescript.py"
+	}
+}
+
+
+# ActivityCreated --------------------------------------------------------{{{2
+{
+  "productIds": [
+    {
+      "namespace": "myAwesomeApplication",
+      "instance": "5.4.3"
+    }
+  ],
+  "activityId": {
+    "namespace": "MyApplicationTest",
+    "instance": "7f4b60d4-e670-11e8-a273-2751691dd8eb"
+  },
+  "parentActivityId": {
+    "namespace": "MyApplicationTest",
+    "instance": "7f4b60d4-e670-11e8-a273-2751691dd8eb"
+  },
+  "track": "refs/for/master",
+  "chainIdentifier": "string",
+  "triggeredBy": [
+    {
+      "namespace": "myFirstTest",
+      "instance": "123"
+    },
+    {
+      "namespace": "myParallelSecondTest",
+      "instance": "456"
+    }
+  ],
+  "allocatedTo": {
+    "resourceId": {
+      "namespace": "generic",
+      "instance": "766cad50-e671-11e8-b255-1383166220ff"
+    },
+    "state": "online",
+    "status": "active",
+    "capabilities": [
+      "string"
+    ],
+    "configurationUrl": "string",
+    "accessToken": "string",
+    "hostname": "string",
+    "allocation": {
+      "activityId": {
+        "namespace": "MyApplicationTest",
+        "instance": "7f4b60d4-e670-11e8-a273-2751691dd8eb"
+      },
+      "estimatedDuration": 0,
+      "createdAt": "string",
+      "createdBy": {
+        "id": "user1",
+        "email": "user1@domain.com",
+        "url": "http://contact.information.com"
+      }
+    },
+    "contact": {
+      "id": "user1",
+      "email": "user1@domain.com",
+      "url": "http://contact.information.com"
+    },
+    "title": "string",
+    "description": "This is a good commit message or descriptive text of the product instance",
+    "url": "https://ici.jenkins.cm.volvocars.biz/job/CF_CI_Build/708/",
+    "time": "2018-09-27T11:08:00Z",
+    "tags": [
+      "tag1",
+      "tag2"
+    ],
+    "custom": {
+      "env": "v1.2.3"
+    }
+  },
+  "requirements": [
+    "string"
+  ],
+  "environment": {},
+  "runner": "bash",
+  "workspace": {
+    "save": "always"
+  },
+  "action": "string",
+  "estimatedDuration": 0,
+  "queueTimeout": 0,
+  "concurrencyLimit": 0,
+  "tokens": [
+    "8DAAD3EC60FB7592"
+  ],
+  "flowId": "string",
+  "state": "ongoing",
+  "verdict": "passed",
+  "verdictMessage": "Guru Meditation #00000001.48454C50",
+  "fault": {
+    "code": "illegal-parking-brake-value",
+    "domain": "environment",
+    "probableCategory": "test_case_data",
+    "probableCause": "invalid_simulator_value_provided_by_test_case",
+    "url": "http://domain.com/issue/abc123",
+    "data": {
+      "hello": "world"
+    }
+  },
+  "metrics": {
+    "load": "97",
+    "trend": "4"
+  },
+  "logs": [
+    "3e16b784-e671-11e8-8c54-8b12dd985a95"
+  ],
+  "contact": {
+    "id": "user1",
+    "email": "user1@domain.com",
+    "url": "http://contact.information.com"
+  },
+  "title": "string",
+  "description": "This is a good commit message or descriptive text of the product instance",
+  "url": "https://ici.jenkins.cm.volvocars.biz/job/CF_CI_Build/708/",
+  "time": "2018-09-27T11:08:00Z",
+  "tags": [
+    "tag1",
+    "tag2"
+  ],
+  "custom": {
+    "env": "v1.2.3"
+  },
+  "vendor": {
+    "requirements": [
+      {
+        "namespace": "myAwesomeApplication",
+        "instance": "766cad50-e671-11e8-b255-1383166220ff"
+      }
+    ]
+  },
+  "sender": {
+    "application": "myawesomescript.py"
+  }
+}
+
+
+# TaskCreated ------------------------------------------------------------{{{2
+{
+  "activityId": {
+    "namespace": "MyApplicationTest",
+    "instance": "7f4b60d4-e670-11e8-a273-2751691dd8eb"
+  },
+  "taskId": {
+    "namespace": "MyApplicationTestcase",
+    "instance": "960ec946-e670-11e8-9879-f77c02364bf9"
+  },
+  "parentTaskId": {
+    "namespace": "MyApplicationTestcase",
+    "instance": "960ec946-e670-11e8-9879-f77c02364bf9"
+  },
+  "state": "ongoing",
+  "verdict": "passed",
+  "verdictMessage": "Guru Meditation #00000001.48454C50",
+  "fault": {
+    "code": "illegal-parking-brake-value",
+    "domain": "environment",
+    "probableCategory": "test_case_data",
+    "probableCause": "invalid_simulator_value_provided_by_test_case",
+    "url": "http://domain.com/issue/abc123",
+    "data": {
+      "hello": "world"
+    }
+  },
+  "metrics": {
+    "load": "97",
+    "trend": "4"
+  },
+  "logs": [
+    "3e16b784-e671-11e8-8c54-8b12dd985a95"
+  ],
+  "contact": {
+    "id": "user1",
+    "email": "user1@domain.com",
+    "url": "http://contact.information.com"
+  },
+  "title": "string",
+  "description": "This is a good commit message or descriptive text of the product instance",
+  "url": "https://ici.jenkins.cm.volvocars.biz/job/CF_CI_Build/708/",
+  "time": "2018-09-27T11:08:00Z",
+  "tags": [
+    "tag1",
+    "tag2"
+  ],
+  "custom": {
+    "env": "v1.2.3"
+  },
+  "vendor": {
+    "requirements": [
+      {
+        "namespace": "myAwesomeApplication",
+        "instance": "766cad50-e671-11e8-b255-1383166220ff"
+      }
+    ]
+  },
+  "sender": {
+    "application": "myawesomescript.py"
+  }
+}
+
+
+# Data objects ==========================================================={{{1
+# NOTE 1: 'state' is handled implicitely, don't set this value.
+
+# test suite - ProductCreated --------------------------------------------{{{2
+   productId:
+     source: Hardcoded --------------------------------------------------{{{3
+       namespace: 'EPSHIL' (fixed)
+     source: OS Env -----------------------------------------------------{{{3
+       instance: Name of test suite + date
+
+ source: Hardcoded --------------------------------------------------{{{3
+   type: 'baseline'
+
+ source: OS Env -----------------------------------------------------{{{3
+   time: datetime.datetime.utcnow()
+
+
+# test suite - ActivityCreated -------------------------------------------{{{2
+   productId: [ productId from ProductCreated ]
+
+   activityId:
+      namespace: 'EPSHIL'
+      instance:
+
+   time: timeOp.get_current_zulu_time()}
+
+   url: self.base_artifactory + "/artifactory/EPS_SW/Test_results/HILTest/" + jenkins_job + ".zip"
+
+   logs: [self.base_artifactory + "/artifactory/EPS_SW/Test_results/HILTest/" + jenkins_job + ".zip!/" + jenkins_job + ".pdf"])
+
+   custom:
+     source: OS Env -----------------------------------------------------{{{3
+      'EPSHIL_System_executor' : username, # os.environ.get('USERNAME', '<unknown>*)
+      'EPSHIL_ini_execution_time' : timeOp.get_current_zulu_time()}
+     source: aductx._INFO_ ----------------------------------------------{{{3
+      'EPSHIL_System_project_AD_name' : audctx._INFO_.ProjectName,
+      'EPSHIL_Jenkins_JobId' : audctx._INFO_.ResultName,
+     source: AD Project -------------------------------------------------{{{3
+      'EPSHIL_System_ECU' = audctx.Constants.Software.Versions.ECU
+      'EPSHIL_System_project' = audctx.Constants.Software.Versions.Project
+      'EPSHIL_System_series' = audctx.Constants.Software.Versions.Series
+      'EPSHIL_System_release_version' = audctx.Constants.Software.Versions.ReleaseVersion
+      'EPSHIL_System_platform' = audctx.Constants.Software.Versions.Platform
+     source: exec object ------------------------------------------------{{{3
+      'EPSHIL_TestExecutionDescription' : tam_execconfigrc_dlg.ExecutionConfiguration.Description,
+     source: JSON -------------------------------------------------------{{{3
+      'EPSHIL_GitHash'] = json_data.get('githash', '')
+      'EPSHIL_Baseline_Changeset' = json_data.get('changeset', '')
+      'EPSHIL_Development_Baseline_Changeset' = json_data.get('inhousechangeset', '')
+     source: Simulation model -------------------------------------------{{{3
+      'EPSHIL_Model_id' :  modelinfo.build_id,
+      'EPSHIL_Model_project' : modelinfo.project,
+      'EPSHIL_Model_branch' : modelinfo.branch,
+      'EPSHIL_Model_ECU' : modelinfo.ecu,
+      'EPSHIL_Model_CAN_database' : modelinfo.dbc,
+
+
+# -- At end of execution = ActivityUpdated --
+   verdict: 'skipped'
+
+   custom:
+      'EPSHIL_end_execution_time' : timeOp.get_current_zulu_time(),
+      'EPSHIL_executionTime' : str(timeOp.time_difference(ini_time = self.activity_fields['custom']['EPSHIL_ini_execution_time'], end_time = timeOp.get_current_zulu_time())),
+      'EPSHIL_Version' : version,
+      'EPSHIL_TroubleReport' : 'not implemented',
+      'EPSHIL_Comment' : 'not implemented',
+
+ test case - TaskCreated ------------------------------------------------{{{2
+
+   custom:
+     source: audctx._INFO_ ----------------------------------------------{{{3
+      'EPSHIL_author' : audctx._INFO_.Shift(get_testcase_level(audctx)).Author,
+      'EPSHIL_description' : audctx._INFO_.Shift(get_testcase_level(audctx)).TemplateDescription,
+      'EPSHIL_creation_date' : epscynosure.timeOp.timer(audctx._INFO_.Shift(get_testcase_level(audctx)).CreationDate),
+      'EPSHIL_modification_date' : epscynosure.timeOp.timer(audctx._INFO_.Shift(get_testcase_level(audctx)).ModificationDate),
+      'EPSHIL_requirement' : audctx.Requirement,
+      'EPSHIL_TCresponsible' : audctx.Responsible,
+
+ -- At end of execution = TaskUpdated --
+
+   verdict: self.add_new_data(key = 'verdict', value = audverdict.name(verdict))
+
+   custom:
+      'EPSHIL_end_execution_time' : timeOp.get_current_zulu_time(),
+      'EPSHIL_executionTime' : str(timeOp.time_difference(ini_time = self.activity_fields['custom']['EPSHIL_ini_execution_time'], end_time = timeOp.get_current_zulu_time())),
+      'EPSHIL_Version' : version,
+
+
+# test step - TaskCreated ------------------------------------------------{{{2
+   custom:
+     source: audctx._INFO_ ----------------------------------------------{{{3
+      'EPSHIL_author' : audctx._INFO_.Shift(int(cls.level)).Author,
+      'EPSHIL_description' : audctx._INFO_.Shift(int(cls.level)).TemplateDescription,
+      'EPSHIL_creation_date' : epscynosure.timeOp.timer(audctx._INFO_.Shift(int(cls.level)).CreationDate),
+      'EPSHIL_modification_date' : epscynosure.timeOp.timer(audctx._INFO_.Shift(int(cls.level)).ModificationDate),
+
+ -- At end of execution = TaskUpdated --
+
+   verdict: self.add_new_data(key = 'verdict', value = audverdict.name(verdict))
+   custom:
+      'EPSHIL_end_execution_time' : timeOp.get_current_zulu_time(),
+      'EPSHIL_executionTime' : str(timeOp.time_difference(ini_time = self.activity_fields['custom']['EPSHIL_ini_execution_time'], end_time = timeOp.get_current_zulu_time())),
+      'EPSHIL_Version' : version,
+      'EPSHIL_TroubleReport' : 'not implemented',
+      'EPSHIL_Comment' : 'not implemented',
+
+# EOF

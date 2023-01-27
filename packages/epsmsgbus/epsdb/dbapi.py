@@ -41,15 +41,15 @@ admin = core.admin
 DatabaseContext = core.DatabaseContext
 
 
-def store_message(message):
+def store_message(message, share_activity):
     """Store data [in JSON or a mapping (dict)]."""
     if core.CONFIG.enabled:
         try:
             data = json.loads(message) if isinstance(message, str) else message
-            core.store_data(data)
+            core.store_data(data, share_activity)
         except Exception as e:
             log.error("Problem saving to database [%s]." % e)
-            log.debug("TRACE", exc_info=True)
+            log.error("TRACE", exc_info=True)
     else:
         log.debug("Saving to database is disabled.")
 
