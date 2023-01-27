@@ -39,7 +39,7 @@ log = logging.getLogger("epsdb.core")
 # Globals ================================================================{{{1
 DEFAULT_CONFIG_NAME = 'db'
 
-TEST_FRAMEWORK = 'hilding'
+TEST_FRAMEWORK = 'Hilding'
 TEST_ENVIRONMENT = 'pirig'
 
 
@@ -52,7 +52,7 @@ class DatabaseConfiguration(object):
 
     def __init__(self, name=DEFAULT_CONFIG_NAME):
         c = epsconfig.config(name)
-        if c.is_valid():
+        if c:
             self.enabled = c.database.enabled or False
             self.dbtype = c.database.type
             self.connstr = []
@@ -67,6 +67,12 @@ try:
     CONFIG
 except NameError:
     CONFIG = DatabaseConfiguration()
+
+
+# Message format version ================================================={{{1
+# Unfortunately we need to parse the messages slightly different between
+# versions 2 and 3
+CYNOSURE_MAJOR_VERSION = epsconfig.config(DEFAULT_CONFIG_NAME).cynosure.major_version or 0
 
 
 # Basic database functions ==============================================={{{1
@@ -106,7 +112,6 @@ class ConnectionFactory(object):
             try:
                 import pyodbc
                 self.dbmod = pyodbc
-                log.debug("pyodbc has been imported")
             except Exception as e:
                 log.error("Could not instantiate pyodbc driver [%s].", e)
                 log.debug("TRACE", exc_info=True)
@@ -124,7 +129,6 @@ class ConnectionFactory(object):
 
     def connection(self):
         """Return database connection object (DBI)."""
-        log.debug("Connecting... : %s", *self.connstr)
         try:
             return self.dbmod.connect(*self.connstr)
         except Exception as e:
@@ -192,7 +196,10 @@ class CommonMapping(object):
 
     def testsuite_result(self, msg):
         """Column 'testsuite_result'."""
-        return self.safe_get(msg, 'activityId', 'instance')
+        if CYNOSURE_MAJOR_VERSION > 2:
+            return self.safe_get(msg, 'activityId')
+        else:
+            return self.safe_get(msg, 'activityId', 'instance')
 
     def verdict(self, msg):
         """Column 'verdict'."""
@@ -212,6 +219,21 @@ class CommonMapping(object):
             value = value.get(key, {})
         return value or ''
 
+    def find_version_info(self, key, version_info_list):
+        """Return version_info_listonary with the information requested for a specific name (key)"""
+        is_found = False
+        item = None
+        element = 0
+        while not is_found and element < len(version_info_list):
+            aux = version_info_list[element]
+            if key == aux.get('name'):
+                is_found = True
+                item = aux
+            else:
+                element+=1
+        return item
+
+
 
 class TestsuiteResultMapping(CommonMapping):
     """Mappings for table 'testsuite_result'."""
@@ -226,11 +248,17 @@ class TestsuiteResultMapping(CommonMapping):
 
     def uuid(self, msg):
         """Column 'uuid' - the test suite id."""
-        return self.safe_get(msg, 'activityId', 'instance')
+        if CYNOSURE_MAJOR_VERSION > 2:
+            return self.safe_get(msg, 'activityId')
+        else:
+            return self.safe_get(msg, 'activityId', 'instance')
 
     def name(self, msg):
         """Column 'name'."""
-        return self.safe_get(msg, 'activityId', 'namespace')
+        if CYNOSURE_MAJOR_VERSION > 2:
+            return self.safe_get(msg, 'name').split('/')[-1]
+        else:
+            return self.safe_get(msg, 'activityId', 'namespace')
 
     def ad_project(self, msg):
         """AutomationDesk project used in the tests."""
@@ -238,16 +266,27 @@ class TestsuiteResultMapping(CommonMapping):
 
     def changeset(self, msg):
         """Column 'baseline_changeset'."""
-        return self.safe_get(msg, 'custom', 'EPSHIL_Baseline_Changeset')
+        value = self.safe_get(msg, 'custom', 'EPSHIL_Baseline_Changeset')
+        try: 
+            value = int(value)
+        except:
+            pass
+        return value
 
     def description(self, msg):
         """Override for column 'description'."""
+        
         return self.safe_get(msg, 'custom', 'EPSHIL_TestExecutionDescription')
 
     def devchgnum(self, msg):
         """Column 'baseline_changeset'."""
         # Return None if empty to avoid FK constraint problems
-        return self.safe_get(msg, 'custom', 'EPSHIL_Development_Baseline_Changeset')
+        value = self.safe_get(msg, 'custom', 'EPSHIL_Development_Baseline_Changeset')
+        try: 
+            value = int(value)
+        except:
+            pass
+        return value
 
     def ecu(self, msg):
         """ECU - will only return value if ECU exists in catalog data."""
@@ -272,10 +311,6 @@ class TestsuiteResultMapping(CommonMapping):
         """The (Jenkins) job id for the test job itself."""
         return self.safe_get(msg, 'custom', 'EPSHIL_Jenkins_JobId')
 
-    def model_branch(self, msg):
-        """Branch for the simulation model."""
-        return self.safe_get(msg, 'custom', 'EPSHIL_Model_branch')
-
     def model_can_db(self, msg):
         """CAN database used in the simulation model."""
         return self.safe_get(msg, 'custom', 'EPSHIL_Model_CAN_database')
@@ -294,7 +329,11 @@ class TestsuiteResultMapping(CommonMapping):
 
     def partnums(self, msg):
         """Software part numbers."""
-        return self.safe_get(msg, 'custom', 'EPSHIL_SWPartnumbers') or []
+        return self.safe_get(msg, 'custom', 'EPSHIL_SWPartNumbers') or []
+
+    def hwpartnums(self, msg):
+        """Software part numbers."""
+        return self.safe_get(msg, 'custom', 'EPSHIL_HWPartNumbers') or []
 
     def relver(self, msg):
         """Software release version identifier."""
@@ -330,13 +369,50 @@ class TestsuiteResultMapping(CommonMapping):
         """Vehicle series."""
         return self.safe_get(msg, 'custom', 'EPSHIL_System_series') or '-'
 
+    def version_framework(self,msg):
+        """Return framework repo version"""
+        return self.find_version_info('framework', self.safe_get(msg, 'custom', 'EPSHIL_System_repo_information'))
+
+    def version_test(self,msg):
+        """Return test repo version"""
+        return self.find_version_info('test', self.safe_get(msg, 'custom', 'EPSHIL_System_repo_information'))
+
+    def sw_tag(self, msg):
+        """Return sw tag."""
+        return self.safe_get(msg, 'custom', 'EPSHIL_Software_tag')
+
+    def automation_desk_version(self, msg):
+        """Return AutomationDesk version."""
+        return self.safe_get(msg, 'custom', 'EPSHIL_System_AD_Version')
+
+    def package_url(self,msg):
+        """Return package url to artifactory .zip"""
+        custom = self.safe_get(msg, 'custom', 'EPSHIL_package_url')
+        if custom == '':
+            custom = self.safe_get(msg, 'revision', 'previous', 'custom', 'EPSHIL_package_url')
+        return custom
+    
+    def test_equipment(self,msg):
+        """Return test equipment identifier"""
+        return self.safe_get(msg, 'custom', 'EPSHIL_System_testequipment')
+
 
 class TestcaseResultMapping(CommonMapping):
     """Mappings for table 'testcase_result'."""
 
+    def uuid(self, msg):
+        """Column 'uuid' - the test suite id."""
+        if CYNOSURE_MAJOR_VERSION > 2:
+            return self.safe_get(msg, 'taskId')
+        else:
+            return self.safe_get(msg, 'taskId', 'instance')
+
     def name(self, msg):
         """Column 'name'."""
-        return self.safe_get(msg, 'taskId', 'namespace')
+        if CYNOSURE_MAJOR_VERSION > 2:
+            return self.safe_get(msg, 'name').split('/')[-1]
+        else:
+            return self.safe_get(msg, 'taskId', 'namespace')
 
     def requirement_id(self, msg):
         """Not stored in testcase result, using work-around
@@ -354,27 +430,35 @@ class TeststepResultMapping(CommonMapping):
 
     def name(self, msg):
         """Column 'name'."""
-        return self.safe_get(msg, 'taskId', 'namespace')
+        if CYNOSURE_MAJOR_VERSION > 2:
+            return self.safe_get(msg, 'name').split('/')[-1]
+        else:
+            return self.safe_get(msg, 'taskId', 'namespace')
 
     def testcase_result(self, msg):
         """Column 'testcase_result'."""
-        return self.safe_get(msg, 'parentTaskId', 'namespace')
+        if CYNOSURE_MAJOR_VERSION > 2:
+            return self.safe_get(msg, 'parentTaskId')
+        else:
+            return self.safe_get(msg, 'parentTaskId', 'namespace')
 
 
 # Insert new data in requirements tables ================================={{{1
 class RequirementParser(object):
-    re_req = re.compile(r'^(REQPROD)?[_ ]*(?P<number>\d{2,})(/(?P<branch>[A-Za-z][^/]*))?(/(?P<revision>\d+))?$')
+    re_req = re.compile(r'^(REQPROD)?[_ ]*(?P<number>\d{2,})(/(?P<branch>[A-Za-z][^/]*))?(/(?P<revision>\d+))?(?P<rest>.*)$')
+    re_handle_id = re.compile(r'^([x,X])(?P<number>\d{16,})(/(?P<branch>[A-Za-z][^/]*))?(/(?P<revision>\d+))?(?P<rest>.*)$') #check 16 elements
     def __init__(self, reqstring):
         self.number = self.revision = -1
         self.branch = '-'
-        m_req = self.re_req.match(reqstring)
+        self.req = reqstring
+        m_req = self.re_handle_id.match(reqstring) if reqstring.startswith(('x','X')) else self.re_req.match(reqstring)
         if m_req:
             # The typecast to int should always work since both number and
             # revision only gives a match for numbers
-            self.number = int(m_req.group('number'))
+            self.number = m_req.group('number')
             self.branch = '-' if m_req.group('branch') is None else m_req.group('branch').upper()
             if m_req.group('revision'):
-                self.revision = int(m_req.group('revision'))
+                self.revision = m_req.group('revision')
 
     def __repr__(self):
         return self.key
@@ -384,23 +468,27 @@ class RequirementParser(object):
 
     @property
     def id(self):
+        def mapping_req():
+            return 'x' if self.req.startswith(('x','X')) else 'REQPROD '
+        
         if self.number:
             if self.branch:
                 if self.revision:
-                    return 'REQPROD {}/{}/{}'.format(self.number, self.branch, self.revision)
+                    return mapping_req() + '{}/{}/{}'.format(self.number, self.branch, self.revision)
                 else:
-                    return 'REQPROD {}/{}'.format(self.number, self.branch)
+                    return mapping_req() + '{}/{}'.format(self.number, self.branch)
             else:
                 if self.revision:
-                    return 'REQPROD {} Revision {}'.format(self.number, self.revision)
+                    return mapping_req() + '{} Revision {}'.format(self.number, self.revision)
                 else:
-                    return 'REQPROD {}'.format(self.number)
+                    return mapping_req() + '{}'.format(self.number)
         else:
             return ''
 
     @property
     def key(self):
-        return '{}:{}:{}'.format(self.number, self.revision, self.branch)
+        default = '{}:{}:{}'.format(self.number, self.revision, self.branch) 
+        return 'x%s' % self.number if self.req.startswith(('x','X')) else default
 
 
 # Database insert/update statements ======================================{{{1
@@ -463,20 +551,44 @@ class TestsuiteResultInsert(DataMapper):
             # Store in 'runtime_data'
             self.add_attribute(db, uuid, 'git_hash', self.mapping.git_hash(msg))
             self.add_attribute(db, uuid, 'jenkins_jobid', self.mapping.jenkins_jobid(msg))
-            self.add_attribute(db, uuid, 'model_branch', self.mapping.model_branch(msg))
-            self.add_attribute(db, uuid, 'model_can_db', self.mapping.model_can_db(msg))
+            self.add_attribute(db, uuid, 'can_db', self.mapping.model_can_db(msg))
             self.add_attribute(db, uuid, 'model_ecu', self.mapping.model_ecu(msg))
-            self.add_attribute(db, uuid, 'model_id', self.mapping.model_id(msg))
+            self.add_attribute(db, uuid, 'hil_model_id', self.mapping.model_id(msg))
             self.add_attribute(db, uuid, 'model_project', self.mapping.model_project(msg))
             self.add_attribute(db, uuid, 'system_name', self.mapping.system_name(msg))
             self.add_attribute(db, uuid, 'system_ecu', self.mapping.ecu_raw(msg))
             self.add_attribute(db, uuid, 'system_platform', self.mapping.vehicle_platform_raw(msg))
             self.add_attribute(db, uuid, 'system_AD_project', self.mapping.ad_project(msg))
-            self.add_attribute(db, uuid, 'system_development_change_number', devchgnum)
             self.add_attribute(db, uuid, 'system_series', vehicle_series)
             self.add_attribute(db, uuid, 'system_vehicle_project', self.mapping.vehicle_project_raw(msg))
             self.add_attribute(db, uuid, 'system_release_version', relver)
-            self.add_attribute(db, uuid, 'baseline_changeset', changeset)
+            self.add_attribute(db, uuid, 'release_baseline', changeset)
+
+            # If self.mapping.version_framework(msg) is 'NoneType' we get an exception when we execute 'get'.
+            # That is why we have this extra check
+            version_framework = self.mapping.version_framework(msg)
+            if isinstance(version_framework, dict):
+                self.add_attribute(db, uuid, 'epc_framework_repo',  version_framework.get('revision'))
+            else:
+                self.add_attribute(db, uuid, 'epc_framework_repo', '')
+
+            # If self.mapping.version_framework(msg) is 'NonType' we get an exception when we execute 'get'.
+            # That is why we have this extra check
+            version_test = self.mapping.version_test(msg)
+            if isinstance(version_test, dict):
+                self.add_attribute(db, uuid, 'epc_test_repo', version_test.get('revision'))
+            else:
+                self.add_attribute(db, uuid, 'epc_test_repo', '')
+
+            self.add_attribute(db, uuid, 'automation_desk_version', self.mapping.automation_desk_version(msg))
+            package_urls = self.mapping.package_url(msg)
+            if isinstance(package_urls, list):
+                for i, package_url in enumerate(package_urls, start=1):
+                    self.add_attribute(db, uuid, 'package_url_'+str(i), package_url)
+            else:
+                self.add_attribute(db, uuid, 'package_url_1', self.mapping.package_url(msg))
+            for i, test_equipment in enumerate(self.mapping.test_equipment(msg), start=1):
+                self.add_attribute(db, uuid, 'test_equipment_'+str(i), test_equipment)
         if devchgnum:
             with DatabaseContext() as db:
                 # Create baseline if not exists, save in own transaction
@@ -492,7 +604,7 @@ class TestsuiteResultInsert(DataMapper):
                     db.sql(merge_stmt, (changeset, devchgnum, "TBD", self.mapping.start_time(msg), relver, vehicle_series))
                 except Exception:
                     # This error is not uncommon, that's why we are using warning instead of error.
-                    log.warning("Create baseline record failed (change_id={}, development_change_number={}).".format(change_id, development_change_number))
+                    log.warning("Create baseline record failed, This error is not uncommon, that's why we are using warning instead of error")
                     log.debug("TRACE", exc_info=True)
         else:
             log.debug("No development change number given, not creating 'release_baseline' record.")
@@ -515,8 +627,13 @@ class TestsuiteResultUpdate(DataMapper):
         """If partnumbers have been added, store them as well."""
         super(TestsuiteResultUpdate, self).store(msg)
         changeset = self.mapping.changeset(msg)
+        try:
+            changeset = int(changeset)
+        except ValueError:
+            changeset = ''
         ecu = self.mapping.ecu(msg)
         partnums = self.mapping.partnums(msg)
+        hwpartnums = self.mapping.hwpartnums(msg)
         uuid = self.mapping.uuid(msg)
         if partnums:
             changeset = self.mapping.changeset(msg)
@@ -525,9 +642,22 @@ class TestsuiteResultUpdate(DataMapper):
                 pnix = 0
                 for pn in partnums:
                     pnix += 1
-                    self.add_attribute(db, uuid, 'system_partnumber_%02d' % pnix, pn)
+                    self.add_attribute(db, uuid, 'sw_partnumber_%02d' % pnix, pn)
                     self.add_product(db, ecu, pn)
-                    self.add_product_baseline(db, changeset, pn)
+                    if changeset and isinstance(changeset, int):
+                        self.add_product_baseline(db, changeset, pn)
+                self.add_attribute(db, uuid, 'sw_tag', self.mapping.sw_tag(msg))
+        if hwpartnums:
+            changeset = self.mapping.changeset(msg)
+            ecu = self.mapping.ecu(msg)
+            with DatabaseContext() as db:
+                pnix = 0
+                for pn in hwpartnums:
+                    pnix += 1
+                    self.add_attribute(db, uuid, 'hw_partnumber_%02d' % pnix, pn)
+                    self.add_product(db, ecu, pn)
+                    if changeset and isinstance(changeset, int):
+                        self.add_product_baseline(db, changeset, pn)
 
     def add_product(self, db, ecu, partnumber):
         """Add software part numbers, create product if not exists."""
@@ -567,7 +697,7 @@ class TestcaseResultInsert(DataMapper):
         """Return mappings."""
         name = self.mapping.name(msg)
         return (
-            name,
+            self.mapping.uuid(msg),
             self.mapping.testsuite_result(msg),
             name,
             name,
@@ -627,7 +757,7 @@ class TestcaseResultUpdate(DataMapper):
 
     command = (
         "UPDATE testcase_result SET verdict=?, status=?, end_time=?"
-        "  WHERE testsuite_result = ? AND pkey = ?")
+        "  WHERE pkey = ?")
 
     def values(self, msg):
         """Return mappings."""
@@ -635,8 +765,7 @@ class TestcaseResultUpdate(DataMapper):
             self.mapping.verdict(msg),
             'finished',
             self.mapping.end_time(msg),
-            self.mapping.testsuite_result(msg),
-            self.mapping.name(msg))
+            self.mapping.uuid(msg))
 
 
 class TeststepResult(DataMapper):
@@ -747,8 +876,6 @@ class Admin(object):
                 name VARCHAR(256) NOT NULL,
                 description VARCHAR(512) NULL,
                 file_path VARCHAR(512) NULL,
-                requirement VARCHAR(64) NULL,
-                FOREIGN KEY(requirement) REFERENCES requirement (pkey) ON DELETE SET NULL ON UPDATE CASCADE);
             """),
         ('observer_result', """
             CREATE TABLE observer_result (
@@ -1046,12 +1173,10 @@ class Admin(object):
 
     framework_values = (
         ('unknown',     "Unknown framework"),
-        ('AutomationDesk', "dSPACE AutomationDesk"),
-        ('hilding',     "Python based test framework"),)
+        ('AutomationDesk', "dSPACE AutomationDesk"),)
 
     environment_values = (
-        ('HIL',     "Hardware-In-the-Loop testing"),
-        ('pirig',   "Hilding rig testing"),)
+        ('HIL',     "Hardware-In-the-Loop testing"),)
 
     reqtype_values = (
         ('srd', 'System requirement'),)
@@ -1192,21 +1317,11 @@ def set_config(enabled=None, dbtype=None, connstr=None):
         CONFIG.connstr = connstr
 
 
-def store_data(data):
+def store_data(data,share_activity):
     """Store data (a mapping)."""
     if 'type' in data and data['type'] == 'baseline':
         # DO NOTHING right now, baseline messages don't contain anything interesting
         pass
-    elif 'productIds' in data:
-        # *** TEST SUITE ***
-        # Activity = test suite
-        tsuite_map = TestsuiteResultMapping()
-        if 'verdict' in data:
-            # The message was an update message for a test suite (activity)
-            TestsuiteResultUpdate(tsuite_map).store(data)
-        else:
-            # The message was a create message for a test suite (activity)
-            TestsuiteResultInsert(tsuite_map).store(data)
     elif 'taskId' in data:
         # Tasks (test cases and test steps)
         if 'parentTaskId' in data:
@@ -1222,7 +1337,15 @@ def store_data(data):
             else:
                 # The message was a create message for a test case (task)
                 TestcaseResultInsert(tcase_map).store(data)
-
+    elif 'activityId' in data:
+        # *** TEST SUITE ***
+        # Activity = test suite
+        tsuite_map = TestsuiteResultMapping()
+        if 'verdict' in data:
+            # The message was an update message for a test suite (activity)
+            TestsuiteResultUpdate(tsuite_map).store(data)
+        elif ('productId' or 'productIds') in data or share_activity:
+            TestsuiteResultInsert(tsuite_map).store(data)
 
 # modeline ==============================================================={{{1
 # vim: set fdm=marker:

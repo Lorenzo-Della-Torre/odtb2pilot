@@ -20,4 +20,4 @@ Any unauthorized copying or distribution of content from this file is prohibited
 """
 
 from .api import *
-__version__ = '0.1'
+__version__ = '0.2'

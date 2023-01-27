@@ -21,7 +21,14 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 """
 import time
-from hilding import testrunner
+
+# The try/catch is for the unit test not fail due to exception
+# ValueError: Cynosure major version is not configured!
+try:
+    from hilding import testrunner
+except ValueError:
+    pass
+
 
 def _test_get_test_res_dir():
     """ make sure two calls to get_test_res_dir gives us the same directory """

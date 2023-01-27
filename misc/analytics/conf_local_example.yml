@@ -1,0 +1,27 @@
+# note: conf_local.yml should never be committed to the repo
+default_rig: piX
+rigs:
+    piX:
+        hostname: bsw-ci-p519
+        user: ci
+        platform: hvbm_p519
+        signal_broker_port: 50051 #optional
+        analytics:
+            test_suite_name: Hilding user test suite
+            test_suite_identifier: 1.0
+            test_suite_description: Nightly run
+            executor: Hilding
+            project: P519
+            platform: SPA2
+            branch: master
+            ecu: HVBM
+            dbc: unknown
+            vehicle_project: P519
+            vehicle_series: unknown
+            sw_version: 17.3.1
+            sw_githash: unknown
+            sw_changeset: unknown
+            sw_inhousechangeset: unknown
+            testenv_info_name: pi12
+            testenv_info_description: Hilding pi12
+            testenv_info_platform: Raspberry

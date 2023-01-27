@@ -38,40 +38,57 @@ Use like this:
 
 
 """
+import importlib
+
 import epsmsgbus.core as core
 import epsmsgbus.data as data
-import epsmsgbus.cynosure2 as cynosure2
 
+import epsconfig
 # To be used by client code
 from epsmsgbus.core import Verdict
 from epsmsgbus.data import ExecutionInfo
 from epsmsgbus.data import SimulationInfo
 from epsmsgbus.data import SoftwareInfo
 from epsmsgbus.data import TestCodeInfo
+from epsmsgbus.data import VerdictInfo
 from epsmsgbus.data import TestEnvironmentinfo
 from epsmsgbus.data import TestSuiteDataAdapter
 from epsmsgbus.data import TestCaseDataAdapter
 from epsmsgbus.data import TestStepDataAdapter
-from epsmsgbus.cynosure2 import messagehandler
+import epsmsgbus.activityid as activity_mod
+
+from epsmsgbus.cynosure import messagehandler
+
+
+config = epsconfig.config('db')
+if config.cynosure.major_version is None:
+    raise ValueError("Cynosure major version is not configured!")
+cynosure_msg = importlib.import_module('epsmsgbus.cynosure{}'.format(config.cynosure.major_version))
 
 
 __all__ = ['messagehandler', 'Verdict', 'ExecutionInfo', 'TestEnvironmentinfo',
-        'SimulationInfo', 'TestCodeInfo', 'SoftwareInfo',
+           'SimulationInfo', 'TestCodeInfo', 'SoftwareInfo', 'VerdictInfo',
         'TestSuiteDataAdapter', 'TestCaseDataAdapter', 'TestStepDataAdapter',
         'testsuite_started', 'testsuite_ended',
         'testcase_started', 'testcase_ended',
         'teststep_started', 'teststep_ended']
 
 
-def testsuite_started(adapter, name, identifier=None):
+def testsuite_started(adapter, name, identifier=None, use_db=None):
     """Call when a test suite is started.
 
     'name' is the name of the test suite (as it will be used in reports).
     'adapter' is an adapter for retrieving metadata.
     """
-    ts = core.testsuite(name=name, identifier=identifier)
+    if activity_mod.get_activityid():
+      id = activity_mod.get_activityid()
+      name = id['namespace']
+      id = id['instance']
+      ts = core.testsuite(name=name, identifier=id)
+    else:
+      ts = core.testsuite(name=name, identifier=identifier)
     ts.register(data.TestSuiteDataObserver(adapter))
-    ts.register(cynosure2.TestSuiteMessageObserver(messagehandler()))
+    ts.register(cynosure_msg.TestSuiteMessageObserver(messagehandler(use_db=use_db)))
     ts.start()
 
 
@@ -94,7 +111,7 @@ def testcase_started(adapter, name, identifier=None):
     """
     tc = core.testsuite().testcase(name=name, identifier=identifier)
     tc.register(data.TestCaseDataObserver(adapter))
-    tc.register(cynosure2.TestCaseMessageObserver(messagehandler()))
+    tc.register(cynosure_msg.TestCaseMessageObserver(messagehandler()))
     tc.start()
 
 
@@ -117,7 +134,7 @@ def teststep_started(adapter, name, identifier=None):
     """
     ts = core.testsuite().testcase().teststep(name=name, identifier=identifier)
     ts.register(data.TestStepDataObserver(adapter))
-    ts.register(cynosure2.TestStepMessageObserver(messagehandler()))
+    ts.register(cynosure_msg.TestStepMessageObserver(messagehandler()))
     ts.start()
 
 
