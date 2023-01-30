@@ -18,7 +18,6 @@ hvbm_p519:
         e_441876_MAIN_1 : software_authentication_security_classes | EOL testing. We will use the second security class. All security classes are NA for us.
         e_435017_MAIN_0 : production_key_programming | Encryption and decryption will be on raw data and not on compressed data. Tool verification?
         e_76515_MAIN_3 : read_dtc_information_19_report_dtc_with_permanent_status_15 | If ECU doesn't become emission related.
-        e_488703_MAIN_0 : secoc_configuration_secoc_clusterkeyID | NA Because we only have one cluster and one key.
         e_476807_MAIN_2 : disable_software_interfaces_for_non_specified_software_services | Need specific services to debug SW
         e_473645_MAIN_0 : secure_boot_from_optional_media | Need to enable secure boot from optional boot media for secure boot actions and signature verifications.
         e_442538_MAIN_1 : public_key_types | Requirement is not applicable for the ECU supplier but for off-board systems.
@@ -32,13 +31,6 @@ hvbm_p519:
         e_247653_MAIN_9 : independent_reconfiguration | Postbuild Concept is optional to implement
         e_76526_MAIN_1 : lin_master | No LIN on the HVBM
         e_481041_MAIN_0 : requestdownload_service_on_can_fd | CAN FD not implemented
-        e_487883_MAIN_0 : secoc_optimization_for_cpu_load | An OEM specific configuration shall be introduced to balance the CPU load to stay at a reasonable level for SecOC MAC calculation.
-        e_487882_MAIN_1 : secoc_optimization_for_latency. | An OEM specific configuration shall be introduced to reduce latency for SecOC MAC verification.
-        e_487963_MAIN_1 : secoc_optimization_to_minimize_attacks_within_rx_acceptance_window | An OEM specific configuration shall be introduced to minimize replay attacks within the the RX Acceptance Window.
-        e_488700_MAIN_0 : secoc_configuration_useauthdatafreshness | An OEM specific configuration shall be introduced  to use freshness info to minimize the replay attack window
-        e_488846_MAIN_0 : secoc_fvm_notation | Not testable
-        e_488674_MAIN_0 : secoc_fv_option_0_no_fv_used | This not an option since we use FV from timesync
-        e_488675_MAIN_0 : secoc_fv_option_1_full_fv_sent_in_pdu | We have only 64bit in CAN message
         e_480627_MAIN_1 : distribution_of_the_security_access_keys_to_ecu_suppliers | Should set initial key to FF. If any other key needs to be configured it should be done at HW end of line
         e_52687__2 : data_compression_method_1_parameters | Not in use any longer.
         e_68182_MAIN_3 : security_constant_data_record | Security constant is not implemented
@@ -50,7 +42,6 @@ hvbm_p519:
         e_68266_MAIN_1 : emissions_related_dtcs_defined_by_SAEJ2012 | Not obd2 node
         e_68267_MAIN_2 : dtcs_defined_by_SAEJ2012 | Not obd2 node
         e_181453_MAIN_1 : e2e_protection_wrapper | Not using wrapper and not implemented yet. We use 1A autosar standard and volvo wrapper, but don't know which one yet.
-        e_76513_MAIN_1 : component_selection_can_physical_interfaces | This is hw req, need to hand-over to BMS team. (LEAR HW can't fulfill this)
         e_74110_MAIN_2 : safety_requirements | valid for application teams also. requirement for the Safety Team.
         e_130582_MAIN_1 : trepr_supported_in_data_upload | ECU does not support SID 35 So it is NA.
         e_76698_MAIN_6 : request_transfer_exit_37_non_volatile_memory | vbf 2.6 version supports check memory, so no CRC will be available in transferResponseParameterRecord. So CRC Calculation will not applicable.
@@ -59,7 +50,6 @@ hvbm_p519:
         e_76490_MAIN_1 : write_memory_by_address_alfid | Not applicable. This service is not used by Volvo Car Corporation.
         e_76489_MAIN_1 : write_memory_by_address_3d | Not applicable. This service is not used by Volvo Car Corporation.
         e_76683_MAIN_3 : requestupload | Not applicable because it is not requested by Mentor.
-        e_486601_MAIN_0 : event_type_debugger_authentication | Not applicable because disable the debugger port
         e_53913__1 : ecus_with_multiple_networks | This REPROD is not applicable for SPA2 because no multiple Network present.
         e_489057_MAIN_0 : flashable_pbl_bootloader_sw_part_type | This requirement is not applicable to us because we use special secondary bootloaders to update pbl and not the flashable pbl.
         e_489056_MAIN_0 : reset_by_flashable_bootloader_after_successful_update |This requirement is not applicable because we use special secondary bootloader's to update PBL and not the flashable PBL.
@@ -83,8 +73,6 @@ hvbm_p519:
         e_70838_MAIN_2 : detection_of_incompatible_vin | Not applicable. NA folder script.
         e_70838_MAIN_1 : detection_of_incompatible_vin | Not applicable. NA folder script.
         e_72070_MAIN_4 : support_for_dtc_si_30 | Not applicable. NA folder script.
-        e_72072_MAIN_1 : temporarily_storage_of_dtc_information | Not applicable. NA folder script.
-        e_72072_MAIN_2 : temporarily_storage_of_dtc_information | Not applicable. NA folder script.
         e_76591_MAIN_2 : iocp_freeze_current_state | Not applicable. NA folder script.
         e_94723_MAIN_1 : detection_of_faulty_transmitted_data | Not applicable. NA folder script.
         e_94723_MAIN_0 : detection_of_faulty_transmitted_data | Not applicable. NA folder script.
@@ -230,7 +218,6 @@ hvbm_p519:
         e_481891_MAIN_0 : root_of_trust_public_key_protection | Design requirement. We are using the HSM.
         e_481887_MAIN_0 : initial_confidential_key_provisioning | Design requirement. We don't do this. This is for the factory EOL.
         e_52314__5 : diagnostic_trouble_code_for_can_bus_off | This is a configuration in autosar the implementation is done by Mentor. Inspect configuration
-        e_161873_MAIN_2 : car_mode_data_record | <Reason>
         e_60111__1 : can_frame_identifier_length | Look in CanIf and CAN configuration to validate that all outgoing frames is set to classic can with 11 bit addressing.
         e_397293_MAIN_1 : number_of_logical_blocks | Inspect that the actual number of logical blocks is statically configured in the bootloader, at least one logical block.
         e_404184_MAIN_2 : verification_block_table_on_unprocessed_data | Inspect that S19 files of SWP1, SWLM and ESS are subjected to SREC script to pad their data before constructing their VBF files.
@@ -460,7 +447,6 @@ hvbm_p519:
         e_469233_MAIN_3 : protect_hardware_debug_interfaces | This test to be manually tested.
         e_486601_MAIN_0 : event_type_debugger_authentication | Manual
         e_53884__3 : can_bus_level_before_during_and_after_reset | This needs to be manually tested
-        e_396513_MAIN_0 : clustered_frame_transmission_and_no_priority_inversion_can | This needs to be manually tested
         e_56197__1 : order_of_responses_in_programming_session | This needs to be manually tested
         e_77275_MAIN_2 : clustered_frame_transmission_and_no_priority_inversion_can | This needs to be manually tested.
 
@@ -474,7 +460,6 @@ hvbm_p519:
         e_441094_MAIN_3 : sampling_criteria_for_dtc_snapshot_record_number_0x21_single_sample | DTC not implemented yet.
         e_72036_MAIN_7 : fault_detection_counter_10_fdc10 | DTC not implemented yet.
         e_76140_MAIN_1 : ecureset_11_hardReset | <Reason>
-        e_482735_MAIN_0 : storage_of_dtc_info | Easier to test on dSpace
         e_76508_MAIN_2 : readdtcinformation_19_reportdtcextendeddatarecordbydtcnumber_06_86 | <Reason>
         e_72026_MAIN_5 : storage_of_global_dtc_snapshot_data_when_not_available | <Reason>
         e_72072_MAIN_2 : temporarily_storage_of_dtc_information | The old script states that it is NA but it seems testable. Probably needs to be tested on dSpace HIL.
