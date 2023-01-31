@@ -36,20 +36,18 @@ description: >
     be ignored unless it can be queued as well.
 
 details: >
-    Send three consecutive flash erase requests just before downloading ESS software part using
-    threading and verify that ECU should not give any response for the third flash erase request
-    since request queue is full.
+    Send three consecutive flash erase requests just before downloading ESS software part  and
+    verify that ECU should not give any response for the third flash erase request since request
+    queue is full.
 """
 
-import copy
-import logging
 import time
-import threading
+import logging
 from hilding.dut import Dut
 from hilding.dut import DutTestError
 from supportfunctions.support_SBL import SupportSBL
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
-from supportfunctions.support_can import SupportCAN, CanPayload, CanTestExtra
+from supportfunctions.support_can import SupportCAN, CanPayload
 from supportfunctions.support_carcom import SupportCARCOM
 from supportfunctions.support_file_io import SupportFileIO
 
@@ -58,106 +56,9 @@ SUTE = SupportTestODTB2()
 SSBL = SupportSBL()
 SC = SupportCAN()
 SC_CARCOM = SupportCARCOM()
-RESPONSE_LIST = []
 
 
-def send_message(dut, etp: CanTestExtra, cpay: CanPayload, wait_time):
-    """
-    Send CAN message to ECU.
-    Args:
-        dut (Dut): An instance of Dut
-        etp (class obj): CAN TestExtra parameter
-        cpay (class obj): CAN payload
-        wait_time (float): Waiting time
-    Returns:
-        None
-    """
-    wait_max = False
-    if "wait_max" in etp:
-        wait_max = etp["wait_max"]
-
-    wait_start = time.time()
-    # Clean CAN messages
-    SC.clear_all_can_messages()
-    SC.t_send_signal_can_mf(dut, cpay, padding=True, padding_byte=0x00)
-
-    # Compare max number of messages and update
-    if (wait_max or (etp["max_no_messages"] == -1)):
-        time.sleep(etp["timeout"])
-        SC.update_can_messages(dut)
-    else:
-        SC.update_can_messages(dut)
-        while((time.time()-wait_start <= etp["timeout"])
-                and (len(SC.can_messages[dut["receive"]]) < etp["max_no_messages"])):
-            SC.clear_can_message(dut["receive"])
-            SC.update_can_messages(dut)
-            # Pause a bit to receive frames in background
-            time.sleep(wait_time)
-
-
-def flash(dut, cpay: CanPayload, etp: CanTestExtra, wait_time, lock):
-    """
-    Generate NRC 78 followed by positive response and return corresponding positive response time
-    Args:
-        dut (Dut): An instance of Dut
-        etp (class obj): CAN test parameters
-        cpay (class obj): CAN payload
-        wait_time (float): Waiting time
-        lock (class obj): Threading lock object
-    Returns:
-        None
-    """
-    # pylint: disable=global-statement
-    global RESPONSE_LIST
-    lock.acquire()
-
-    # Clean previous can frame
-    SC.clear_old_cf_frames()
-
-    clear_old_mess = True
-    if "clear_old_mess" in etp:
-        clear_old_mess = etp["clear_old_mess"]
-
-    if clear_old_mess:
-        logging.debug("Clear old messages")
-        SC.clear_all_can_frames()
-        SC.clear_all_can_messages()
-
-    # Message to send
-    send_message(dut, etp, cpay, wait_time)
-
-    # Check for NRC 78 when received CAN message
-    if SC.can_messages[dut["receive"]]:
-        while SUTE.check_7f78_response(SC.can_messages[dut["receive"]]):
-            response_78 = SC.can_messages[dut["receive"]][0][2]
-            RESPONSE_LIST.append(copy.deepcopy(response_78))
-            # Remove first frame when buffer is full
-            SC.remove_first_can_frame(dut["receive"])
-            # Wait for next frame to be received
-            wait_loop = 0
-            max_7fxx78 = 10
-
-            new_max_7fxx78 = SIO.parameter_adopt_teststep('max_7fxx78')
-            if new_max_7fxx78 != '':
-                max_7fxx78 = new_max_7fxx78
-            # Wait for next message
-            while (len(SC.can_frames[dut['receive']]) == 0) and (wait_loop <= max_7fxx78):
-                time.sleep(1)
-                wait_loop += 1
-
-            # Clear messages
-            SC.clear_can_message(dut["receive"])
-            SC.update_can_messages(dut)
-    lock.release()
-    try:
-        positive_response = SC.can_messages[dut["receive"]][0][2]
-    except IndexError:
-        positive_response = None
-
-    RESPONSE_LIST.append(copy.deepcopy(positive_response))
-
-
-def flash_erase(dut, vbf_header, wait_time):
+def flash_erase(dut, vbf_header):
     """
     Send three consecutive routine flash erase
     Args:
@@ -167,6 +68,7 @@ def flash_erase(dut, vbf_header, wait_time):
     Returns:
         None
     """
+    response_list=[]
     for erase_el in vbf_header['erase']:
 
         # Prepare payload
@@ -175,30 +77,11 @@ def flash_erase(dut, vbf_header, wait_time):
                                         erase_el[1].to_bytes(4, byteorder='big'), b'\x01'),
                             "extra" : ''}
 
-        etp: CanTestExtra = {"step_no": 230,
-                             "purpose" : "RC flash erase",
-                             "timeout" : 1,
-                             "min_no_messages" : -1,
-                             "max_no_messages" : -1}
+        for _ in range(3):
+            SC.t_send_signal_can_mf(dut, cpay, padding=True, padding_byte=0x00)
+            response_list.append(SC.can_messages[dut["receive"]][0][2])
 
-        # Start flash erase, may take long to erase
-        lock = threading.Lock()
-        flash_thread_1 = threading.Thread(target=flash, args=(dut, cpay, etp, wait_time, lock))
-        flash_thread_2 = threading.Thread(target=flash, args=(dut, cpay, etp, wait_time, lock))
-        flash_thread_3 = threading.Thread(target=flash, args=(dut, cpay, etp, wait_time, lock))
-        # Starting flash thread 1
-        flash_thread_1.start()
-        # Starting flash thread 2
-        flash_thread_2.start()
-        # Starting flash thread 3
-        flash_thread_3.start()
-
-        # Wait until flash thread 1 is completely executed
-        flash_thread_1.join()
-        # Wait until flash thread 2 is completely executed
-        flash_thread_2.join()
-        # Wait until flash thread 3 is completely executed
-        flash_thread_3.join()
+        return response_list
 
 
 def step_1(dut: Dut):
@@ -228,10 +111,9 @@ def step_1(dut: Dut):
     return True
 
 
-def step_2(dut: Dut, wait_time):
+def step_2(dut: Dut):
     """
     action: Send three consecutive flash erase requests just before downloading ESS software part
-            using threading
     expected_result: True when ESS software download successful after multi-thread request
     """
     result = SSBL.get_ess_filename()
@@ -240,13 +122,13 @@ def step_2(dut: Dut, wait_time):
         SSBL.vbf_header_convert(vbf_header)
 
         # Request erase memory with three consecutive flash erase requests
-        flash_erase(dut, vbf_header, wait_time)
+        response_list = flash_erase(dut, vbf_header)
         result = SSBL.sw_part_download(dut, result, purpose="Download ESS")
         if result:
-            return True
+            return True, response_list
 
     logging.error("Test Failed: ESS software download failed")
-    return result
+    return False, None
 
 
 def step_3(dut: Dut):
@@ -262,15 +144,13 @@ def step_3(dut: Dut):
     return result
 
 
-def step_4(dut: Dut):
+def step_4(dut: Dut, response_list):
     """
     action: Verify ECU response of three consecutive flash erase requests
     expected_result: ECU should not give any response in third request
     """
     # pylint: disable=unused-argument
-    # pylint: disable=global-statement
-    global RESPONSE_LIST
-    last_response = RESPONSE_LIST[-1]
+    last_response = response_list[-1]
 
     if last_response is None :
         logging.info("Last request is ignored as expected when the receive queue is full")
@@ -283,8 +163,8 @@ def step_4(dut: Dut):
 
 def run():
     """
-    Send three consecutive flash erase requests just before downloading ESS software part using
-    threading and verify empty response is received for the third flash erase request since request
+    Send three consecutive flash erase requests just before downloading ESS software part  and
+    verify that ECU should not give any response for the third flash erase request since request
     queue is full.
     """
     dut = Dut()
@@ -293,25 +173,19 @@ def run():
     result = False
     result_step = False
 
-    parameters_dict = {'wait_time': 0}
-
     try:
         dut.precondition(timeout=900)
 
-        parameters = SIO.parameter_adopt_teststep(parameters_dict)
-        if not all(list(parameters.values())):
-            raise DutTestError("yml parameters not found")
-
         result_step = dut.step(step_1, purpose="SBL activation")
         if result_step:
-            result_step = dut.step(step_2, parameters, purpose="Send three consecutive flash erase"
-                                   " requests just before downloading ESS software part using "
-                                   "threading")
+            result_step, response_list = dut.step(step_2, purpose="Send three "
+                                                 "consecutive flash erase requests just before "
+                                                 "downloading ESS software part")
         if result_step:
             result_step = dut.step(step_3, purpose="Download remaining software part")
         if result_step:
-            result_step = dut.step(step_4, purpose="Verify ECU should ignore the third consecutive"
-                                                   " request")
+            result_step = dut.step(step_4, response_list, purpose="Verify ECU should ignore the "
+                                                                  "third consecutive request")
         result = result_step
 
     except DutTestError as error:
