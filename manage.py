@@ -39,7 +39,7 @@ from hilding.reset_ecu import reset_and_flash_ecu
 from hilding.flash import flash
 from hilding.conf import initialize_conf
 from hilding import get_conf
-from hilding.testrunner import relay
+#from hilding.testrunner import relay
 
 def config_environ():
     """automatically set pythonpath and environment variables"""
