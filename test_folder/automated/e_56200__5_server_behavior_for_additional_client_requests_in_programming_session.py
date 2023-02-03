@@ -36,13 +36,14 @@ description: >
     be ignored unless it can be queued as well.
 
 details: >
-    Send flash erase requests first and then send multiple request of DID 'F186' in queue just
-    before downloading ESS software part and verify that ECU should not give any response for last
-    DID request since request queue is full.
+    Send flash erase requests in queue for four times using thread just before downloading ESS
+    software part and verify that ECU should not give any response for last DID request since
+    request queue is full.
 """
 
 import time
 import logging
+import threading
 from hilding.dut import Dut
 from hilding.dut import DutTestError
 from supportfunctions.support_SBL import SupportSBL
@@ -106,9 +107,9 @@ def step_1(dut: Dut):
     return True
 
 
-def step_2(dut: Dut, num_of_request):
+def step_2(dut: Dut):
     """
-    action: Send flash erase requests and multiple DID request in queue just before downloading
+    action: Send flash erase requests in queue for four times using thread just before downloading
             ESS software part
     expected_result: True when ESS software download successful after multi-thread request
     """
@@ -117,29 +118,42 @@ def step_2(dut: Dut, num_of_request):
         vbf_header = SSBL.read_vbf_file(result)[1]
         SSBL.vbf_header_convert(vbf_header)
 
-        # Request erase memory with three consecutive flash erase requests
-        flash_erase(dut, vbf_header)
+        # Request erase memory with four consecutive flash erase requests using thread
+        flash_thread_1 = threading.Thread(target=flash_erase, args=(dut, vbf_header))
+        flash_thread_2 = threading.Thread(target=flash_erase, args=(dut, vbf_header))
+        flash_thread_3 = threading.Thread(target=flash_erase, args=(dut, vbf_header))
+        flash_thread_4 = threading.Thread(target=flash_erase, args=(dut, vbf_header))
 
-        cpay: CanPayload = {"payload": SC_CARCOM.can_m_send("ReadDataByIdentifier",
-                                                        bytes.fromhex('F186'),
-                                                        b""),
-                            "extra": b''}
+        # starting flash thread 1
+        flash_thread_1.start()
+        time.sleep(0.005)
+        # starting flash thread 2
+        flash_thread_2.start()
+        time.sleep(0.005)
+        # starting flash thread 3
+        flash_thread_3.start()
+        time.sleep(0.005)
+        # starting flash thread 4
+        flash_thread_4.start()
 
-        for _ in range(num_of_request):
-            SC.clear_all_can_frames()
-            # Send queued request
-            SC.t_send_signal_can_mf(dut, cpay, True, 0x00)
-            time.sleep(13)
-            SC.update_can_messages(dut)
+        # wait until flash thread 1 is completely executed
+        flash_thread_1.join()
+        # wait until flash thread 2 is completely executed
+        flash_thread_2.join()
+        # wait until flash thread 3 is completely executed
+        flash_thread_3.join()
+        # wait until flash thread 4 is completely executed
+        flash_thread_4.join()
 
-        logging.info("CAN Messages : %s", SC.can_messages[dut['receive']])
-        # Number of response received while sending multiple request in queue. Ignore first message
-        # as it's coming from "check_memory" of "SBL_download"
-        num_of_res_received = len(SC.can_messages[dut['receive']][1:])
+        time.sleep(15)
+        SC.update_can_messages(dut)
+        response = SC.can_frames[dut['receive']]
 
         result = SSBL.sw_part_download(dut, result, purpose="Download ESS")
+        time.sleep(5)
+
         if result:
-            return True, num_of_res_received
+            return True, response
 
     logging.error("Test Failed: ESS software download failed")
     return False, None
@@ -158,27 +172,34 @@ def step_3(dut: Dut):
     return result
 
 
-def step_4(dut: Dut, num_of_res_received, num_of_request):
+def step_4(dut: Dut, response):
     """
-    action: Verify number of response received is equal to (total number of request-1)
-    expected_result: Number of response received should be equal to (total number of request-1)
+    action: Verify number of response received is one less than number of request send
+    expected_result: Number of response received should be one less than number of request send
     """
     # pylint: disable=unused-argument
-    expected_num_of_response = (num_of_request-1)
-    if (num_of_res_received is not None) and (num_of_res_received == expected_num_of_response):
+    res_received = []
+
+    for res in response:
+        if res[2] == '057101FF00100000':
+            res_received.append(res[2])
+
+    logging.info("Response received: %s", res_received)
+    num_of_res_received = len(res_received)
+    if (num_of_res_received is not None) and (num_of_res_received == 3):
         logging.info("Last request is ignored as expected when the receive queue is full")
         return True
 
-    logging.error("Test Failed: Expected number of response is %s, but received %s",
-                  expected_num_of_response, num_of_res_received)
+    logging.error("Test Failed: Expected number of response is 3, but received %s",
+                  num_of_res_received)
     return False
 
 
 def run():
     """
-    Send flash erase requests first and then send multiple request of DID 'F186' in queue just
-    before downloading ESS software part and verify that ECU should not give any response for last
-    DID request since request queue is full.
+    Send flash erase requests in queue for four times just before downloading ESS software part
+    and verify that ECU should not give any response for last DID request since request queue is
+    full.
     """
     dut = Dut()
 
@@ -186,25 +207,19 @@ def run():
     result = False
     result_step = False
 
-    parameters_dict = {'num_of_request': 0}
-
     try:
         dut.precondition(timeout=900)
 
-        parameters = SIO.parameter_adopt_teststep(parameters_dict)
-        if not all(list(parameters.values())):
-            raise DutTestError("yml parameter not found")
-
         result_step = dut.step(step_1, purpose="SBL activation")
         if result_step:
-            result_step, num_of_res_received = dut.step(step_2, parameters['num_of_request'],
-                                                        purpose="Send multiple request in queue "
+            result_step, response = dut.step(step_2,purpose="Send flash erase request "
+                                                        "in queue for four times just before "
                                                         "downloading ESS software part")
         if result_step:
             result_step = dut.step(step_3, purpose="Download remaining software part")
         if result_step:
-            result_step = dut.step(step_4, num_of_res_received, parameters['num_of_request'],
-                                  purpose="Verify ECU should ignore the third consecutive request")
+            result_step = dut.step(step_4, response, purpose="Verify ECU should ignore "
+                                                                        "last request")
         result = result_step
 
     except DutTestError as error:
