@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2022 Volvo Car Corporation. All rights reserved.
+Copyright © 2023 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -36,9 +36,9 @@ description: >
     be ignored unless it can be queued as well.
 
 details: >
-    Send flash erase requests in queue for four times using thread just before downloading ESS
-    software part and verify that ECU should not give any response for last DID request since
-    request queue is full.
+    Send flash erase and read did F186 requests in queue for three times using thread just before
+    downloading ESS software part and verify that ECU should not give any response for last DID
+    request since request queue is full.
 """
 
 import time
@@ -47,13 +47,9 @@ import threading
 from hilding.dut import Dut
 from hilding.dut import DutTestError
 from supportfunctions.support_SBL import SupportSBL
-from supportfunctions.support_test_odtb2 import SupportTestODTB2
 from supportfunctions.support_can import SupportCAN, CanPayload
 from supportfunctions.support_carcom import SupportCARCOM
-from supportfunctions.support_file_io import SupportFileIO
 
-SIO = SupportFileIO()
-SUTE = SupportTestODTB2()
 SSBL = SupportSBL()
 SC = SupportCAN()
 SC_CARCOM = SupportCARCOM()
@@ -65,11 +61,9 @@ def flash_erase(dut, vbf_header):
     Args:
         dut (Dut): An instance of Dut
         vbf_header (dict): VBF file header
-        wait_time (float): Waiting time
     Returns:
         None
     """
-
     for erase_el in vbf_header['erase']:
         # Prepare payload
         cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("RoutineControlRequestSID",
@@ -80,10 +74,31 @@ def flash_erase(dut, vbf_header):
         SC.t_send_signal_can_mf(dut, cpay, padding=True, padding_byte=0x00)
 
 
+def request_read_data_by_identifier(dut, vbf_header):
+    """
+    Send two consecutive ReadDataByIdentifier request
+    Args:
+        dut (Dut): An instance of Dut
+    Returns:
+        None
+    """
+    # This is to avoid thread execution exception
+    logging.info("vbf header %s", vbf_header)
+
+    for _ in range(2):
+        cpay: CanPayload = {"payload": SC_CARCOM.can_m_send("ReadDataByIdentifier",
+                                                        bytes.fromhex('F186'),
+                                                        b""),
+                            "extra": b''}
+
+        # Send queued request
+        SC.t_send_signal_can_mf(dut, cpay, True, 0x00)
+
+
 def step_1(dut: Dut):
     """
     action: SBL activation
-    expected_result: True when SBl activation successful
+    expected_result: SBL should be successfully activated
     """
     # Set to programming session
     dut.uds.set_mode(2)
@@ -109,50 +124,36 @@ def step_1(dut: Dut):
 
 def step_2(dut: Dut):
     """
-    action: Send flash erase requests in queue for four times using thread just before downloading
-            ESS software part
-    expected_result: True when ESS software download successful after multi-thread request
+    action: Send flash erase and read did F186 requests in queue for three times using thread just
+            before downloading ESS software part
+    expected_result: ESS software should be successfully downloaded after multi-thread request
     """
     result = SSBL.get_ess_filename()
     if result:
         vbf_header = SSBL.read_vbf_file(result)[1]
         SSBL.vbf_header_convert(vbf_header)
 
-        # Request erase memory with four consecutive flash erase requests using thread
+        # Request flash erase and read did F186 requests in queue using thread
         flash_thread_1 = threading.Thread(target=flash_erase, args=(dut, vbf_header))
-        flash_thread_2 = threading.Thread(target=flash_erase, args=(dut, vbf_header))
-        flash_thread_3 = threading.Thread(target=flash_erase, args=(dut, vbf_header))
-        flash_thread_4 = threading.Thread(target=flash_erase, args=(dut, vbf_header))
+        flash_thread_2 = threading.Thread(target=request_read_data_by_identifier,
+                                          args=(dut, vbf_header))
 
-        # starting flash thread 1
+        # Starting flash thread 1
         flash_thread_1.start()
         time.sleep(0.005)
-        # starting flash thread 2
+        # Starting flash thread 2
         flash_thread_2.start()
-        time.sleep(0.005)
-        # starting flash thread 3
-        flash_thread_3.start()
-        time.sleep(0.005)
-        # starting flash thread 4
-        flash_thread_4.start()
 
-        # wait until flash thread 1 is completely executed
+        # Wait until flash thread 1 is completely executed
         flash_thread_1.join()
-        # wait until flash thread 2 is completely executed
+        # Wait until flash thread 2 is completely executed
         flash_thread_2.join()
-        # wait until flash thread 3 is completely executed
-        flash_thread_3.join()
-        # wait until flash thread 4 is completely executed
-        flash_thread_4.join()
-
 
         SC.update_can_messages(dut)
-        time.sleep(15)
+        time.sleep(20)
         response = SC.can_frames[dut['receive']]
-
         result = SSBL.sw_part_download(dut, result, purpose="Download ESS")
         time.sleep(5)
-
         if result:
             return True, response
 
@@ -167,9 +168,8 @@ def step_3(dut: Dut):
     """
     result = True
     for vbf_file in SSBL.get_df_filenames():
-        result = result and SSBL.sw_part_download(dut, vbf_file, purpose="Download application"\
+        result = result and SSBL.sw_part_download(dut, vbf_file, purpose="Download application"
                                                                          " and data")
-
     return result
 
 
@@ -180,27 +180,26 @@ def step_4(dut: Dut, response):
     """
     # pylint: disable=unused-argument
     res_received = []
-
     for res in response:
-        if res[2] == '057101FF00100000':
+        if res[2] == '057101FF00100000' or res[2] == '0462F18602000000':
             res_received.append(res[2])
 
     logging.info("Response received: %s", res_received)
     num_of_res_received = len(res_received)
-    if (num_of_res_received is not None) and (num_of_res_received == 3):
+    if (num_of_res_received is not None) and (num_of_res_received == 2):
         logging.info("Last request is ignored as expected when the receive queue is full")
         return True
 
-    logging.error("Test Failed: Expected number of response is 3, but received %s",
+    logging.error("Test Failed: Expected number of response is 2, but received %s",
                   num_of_res_received)
     return False
 
 
 def run():
     """
-    Send flash erase requests in queue for four times just before downloading ESS software part
-    and verify that ECU should not give any response for last DID request since request queue is
-    full.
+    Send flash erase and read did F186 requests in queue for three times using thread just before
+    downloading ESS software part and verify that ECU should not give any response for last DID
+    request since request queue is full.
     """
     dut = Dut()
 
@@ -213,14 +212,15 @@ def run():
 
         result_step = dut.step(step_1, purpose="SBL activation")
         if result_step:
-            result_step, response = dut.step(step_2,purpose="Send flash erase request "
-                                                        "in queue for four times just before "
-                                                        "downloading ESS software part")
+            result_step, response = dut.step(step_2,purpose="Send flash erase and read did F186"
+                                                            " requests in queue for three times"
+                                                            " using thread just before"
+                                                            " downloading ESS software part")
         if result_step:
             result_step = dut.step(step_3, purpose="Download remaining software part")
         if result_step:
-            result_step = dut.step(step_4, response, purpose="Verify ECU should ignore "
-                                                                        "last request")
+            result_step = dut.step(step_4, response, purpose="Verify ECU should ignore last"
+                                                             " request")
         result = result_step
 
     except DutTestError as error:
