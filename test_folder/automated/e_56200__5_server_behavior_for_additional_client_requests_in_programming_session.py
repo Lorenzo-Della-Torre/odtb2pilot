@@ -145,8 +145,9 @@ def step_2(dut: Dut):
         # wait until flash thread 4 is completely executed
         flash_thread_4.join()
 
-        time.sleep(15)
+
         SC.update_can_messages(dut)
+        time.sleep(15)
         response = SC.can_frames[dut['receive']]
 
         result = SSBL.sw_part_download(dut, result, purpose="Download ESS")
