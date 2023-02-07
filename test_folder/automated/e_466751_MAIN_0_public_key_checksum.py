@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2023 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,203 +18,158 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-# Testscript Hilding MEPII
-# project:  ECU basetech MEPII
-# author:   J-ADSJO (Johan Adsjö)
-# date:     2021-01-12
-# version:  1.0
-# reqprod:  466751
+reqprod: 466751
+version: 0
+title: : Public Key Checksum data record
+purpose: >
+    To support diagnostic processes this information must be accessible in application,
+    to not have to force the vehicle into programmingSession
 
-# inspired by https://grpc.io/docs/tutorials/basic/python.html
+description: >
+    If the ECU is supporting the Software Authentication concept as defined in
+    Ref[LC : General Software Authentication], where the key type is "RAW_KEY_TYPE_WITH_CHECKSUM",
+    the ECU shall implement a data record as specified in the table below:
 
-# Copyright 2015 gRPC authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+    ----------------------------------------------
+    Description	                    Identifier
+    ----------------------------------------------
+    swAuth Public Key CheckSum	    D03A
+    ----------------------------------------------
 
-The Python implementation of the gRPC route guide client.
+    It shall be possible to read the data record by using the diagnostic service specified in
+    Ref[LC : Volvo Car Corporation - UDS Services - Service 0x22 (ReadDataByIdentifier) Reqs].
+    The ECU shall implement the data record exactly as defined in Carcom Global Master Referenced
+    Database (GMRDB).
+
+    The ECU shall support the identifier in the following sessions:
+    •   Default session
+    •   Extended Session
+
+details: >
+    Verify public key checksum data record with ReadDataByIdentifier(0x22) service using
+    DID 'D03A' and also verify it is supported in default and extended session.
 """
 
-import time
-from datetime import datetime
-import sys
 import logging
-import inspect
-import odtb_conf
-
-from supportfunctions.support_can import SupportCAN, CanParam, CanTestExtra, CanPayload
-from supportfunctions.support_test_odtb2 import SupportTestODTB2
-from supportfunctions.support_carcom import SupportCARCOM
+from hilding.dut import Dut
+from hilding.dut import DutTestError
 from supportfunctions.support_file_io import SupportFileIO
-from supportfunctions.support_precondition import SupportPrecondition
-from supportfunctions.support_postcondition import SupportPostcondition
 from supportfunctions.support_service22 import SupportService22
-from supportfunctions.support_service10 import SupportService10
 
-SIO = SupportFileIO
-SC = SupportCAN()
-SUTE = SupportTestODTB2()
-SC_CARCOM = SupportCARCOM()
-PREC = SupportPrecondition()
-POST = SupportPostcondition()
-SE10 = SupportService10()
+SIO = SupportFileIO()
 SE22 = SupportService22()
 
 
-def step_2(can_p):
+def request_read_data_by_id(dut, did_to_read, session):
     """
-    Teststep 2: send requests DID D03A - in Default Session
+    Request ReadDataByIdentifier(0x22) service
+    Args:
+        dut (Dut): An instance of Dut
+        did_to_read (str): DID 'D03A'
+        session (str): Diagnostic session
+    Returns:
+        (bool): True when received positive response '62'
     """
-    # Parameters for the teststep
-    cpay: CanPayload = {
-        "payload": SC_CARCOM.can_m_send("ReadDataByIdentifier",
-                                        b'\xD0\x3A',
-                                        b''),
-        "extra": ''
-        }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
-    etp: CanTestExtra = {
-        "step_no": 2,
-        "purpose": "Read Public Key Checksum - in Default Session",
-        "timeout": 1,
-        "min_no_messages": -1,
-        "max_no_messages": -1
-        }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    result = False
+    response = dut.uds.read_data_by_id_22(bytes.fromhex(did_to_read))
 
-    result = SUTE.teststep(can_p, cpay, etp)
-    time.sleep(3)
+    if response.raw[4:6] == '62' and response.raw[6:10] == did_to_read:
+        logging.info("Received positive response %s for request ReadDataByIdentifier(0x22) "
+                     "service in %s session", response.raw[4:6], session)
+        result = True
+    else:
+        logging.error("Test Failed: Expected positive response '62' for request "
+                      "ReadDataByIdentifier(0x22) service in %s session, received %s", session,
+                      response.raw)
+        result = False
 
-    logging.info("TestStep2 Received msg: %s", SC.can_messages[can_p["receive"]])
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='D03A')
+    return result
 
-    default_result = SC.can_messages[can_p["receive"]][0][2]
-    logging.info(default_result)
 
-    return result, default_result
-
-def step_4(can_p):
+def step_1(dut: Dut):
     """
-    Teststep 3: send requests DID D03A - in Extended Session
+    action: Set ECU to default session
+    expected_result: ECU should be in default session
     """
-    # Parameters for the teststep
-    cpay: CanPayload = {
-        "payload": SC_CARCOM.can_m_send("ReadDataByIdentifier",
-                                        b'\xD0\x3A',
-                                        b''),
-        "extra": ''
-        }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
+    # Set to default session
+    dut.uds.set_mode(1)
 
-    etp: CanTestExtra = {
-        "step_no": 4,
-        "purpose": "Request DID D03A - in Extended Session",
-        "timeout": 1,
-        "min_no_messages": -1,
-        "max_no_messages": -1
-        }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), etp)
+    # Verify active diagnostic session
+    result = SE22.read_did_f186(dut, b'\x01')
+    if result:
+        logging.info("ECU is in default session as expected")
+    else:
+        logging.error("Test Failed: ECU is not in default session")
 
-    result = SUTE.teststep(can_p, cpay, etp)
-    time.sleep(3)
+    return result
 
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]], teststring='D03A')
-    logging.info(SC.can_messages[can_p["receive"]])
 
-    extended_result = SC.can_messages[can_p["receive"]][0][2]
-    logging.info(extended_result)
+def step_2(dut: Dut, sw_auth_public_key_checksum):
+    """
+    action: Read DID 'swAuth Public Key CheckSum' in default session
+    expected_result: ECU should send positive response '62' in default session
+    """
+    return request_read_data_by_id(dut, sw_auth_public_key_checksum, 'default')
 
-    return result, extended_result
+
+def step_3(dut: Dut):
+    """
+    action: Set ECU to extended session
+    expected_result: ECU should be in extended session
+    """
+    # Set to extended session
+    dut.uds.set_mode(3)
+
+    # Verify active diagnostic session
+    result = SE22.read_did_f186(dut, b'\x03')
+    if result:
+        logging.info("ECU is in extended session as expected")
+    else:
+        logging.error("Test Failed: ECU is not in extended session")
+
+    return result
+
+
+def step_4(dut: Dut, sw_auth_public_key_checksum):
+    """
+    action: Read DID 'swAuth Public Key CheckSum' in extended session
+    expected_result: ECU should send positive response '62' in extended session
+    """
+    return request_read_data_by_id(dut, sw_auth_public_key_checksum, 'extended')
 
 
 def run():
     """
-    Run - Call other functions from here
+    Verify public key checksum data record with ReadDataByIdentifier(0x22) service using
+    DID 'D03A' and also verify it is supported in default and extended session.
     """
+    dut = Dut()
 
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+    start_time = dut.start()
 
-    # where to connect to signal_broker
-    can_p: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        "send" : "Vcu1ToECUFront1DiagReqFrame",
-        "receive" : "ECUToVcu1Front1DiagResFrame",
-        "namespace" : SC.nspace_lookup("Front1CANCfg0")
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
+    parameters_dict = {'sw_auth_public_key_checksum': ''}
 
-    logging.info("Testcase start: %s", datetime.now())
-    starttime = time.time()
-    logging.info("Time: %s \n", time.time())
+    try:
+        dut.precondition(timeout=90)
 
-    ############################################
-    # precondition
-    ############################################
-    timeout = 500
-    result = PREC.precondition(can_p, timeout)
-    result = True
+        parameters = SIO.parameter_adopt_teststep(parameters_dict)
+        if not all(list(parameters.values())):
+            raise DutTestError("yml parameters not found")
 
-    if result:
-    ############################################
-    # teststeps
-    ############################################
+        result = dut.step(step_1, purpose="Set ECU to default session")
+        result = result and dut.step(step_2, parameters['sw_auth_public_key_checksum'],
+                                     purpose="Read DID 'swAuth Public Key CheckSum' in default "
+                                             "session")
+        result = result and dut.step(step_3, purpose="Set ECU to extended session")
+        result = result and dut.step(step_4, parameters['sw_auth_public_key_checksum'],
+                                     purpose="Read DID 'swAuth Public Key CheckSum' in extended "
+                                             "session")
 
-    # step 1:
-    # action: Check if Default session
-    # result: ECU reports modeS
-        result = result and SE22.read_did_f186(can_p, b'\x01', stepno=1)
-        time.sleep(1)
+    except DutTestError as error:
+        logging.error("Test failed: %s", error)
+    finally:
+        dut.postcondition(start_time, result)
 
-    # step 2:
-    # action: send requests DID D03A in Default Session
-    # result: Data record with Autosar BSW cluster version is returned
-        result_step_2, default_result = step_2(can_p)
-
-    # step 3:
-    # action: Change to Extended session
-    # result: ECU reports mode
-        result = result and SE10.diagnostic_session_control_mode3(can_p, 3)
-        time.sleep(1)
-
-    # step 4:
-    # action: send requests DID D03A in Extended Session
-    # result: Data record with Autosar BSW cluster version is returned
-        result_step_4, extended_result = step_4(can_p)
-        time.sleep(1)
-
-    # step 5:
-    # action: Complete the testcase
-    # result: Merge the results from all steps
-    #         The record received in Default and Extended Session shall be equal
-        step_no = 5
-        purpose = "Verify the D03A records received are equal in all modes"
-        SUTE.print_test_purpose(step_no, purpose)
-        logging.info("D03A read in Default: %s  Valid: %s", default_result, result_step_2)
-        logging.info("D03A read in Extended: %s Valid: %s",extended_result, result_step_4)
-        result = result and result_step_2 and result_step_4
-        result = result and (default_result == extended_result)
-
-    # step 6:
-    # action: Set to Default session before leaving
-    # result: ECU reports modes
-        result_end = SE10.diagnostic_session_control_mode1(can_p, 6)
-        time.sleep(1)
-        result = result and result_end
-
-    ############################################
-    # postCondition
-    ############################################
-
-    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()
