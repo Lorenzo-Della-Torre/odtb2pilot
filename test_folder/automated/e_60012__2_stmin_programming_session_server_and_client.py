@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2023 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,215 +18,180 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-# Testscript Hilding MEPII
-# project:  BECM basetech MEPII
-# author:   LDELLATO (Lorenzo Della Torre)
-# date:     2020-08-19
-# version:  1.0
-# reqprod:  60012
+reqprod: 60012
+version: 2
+title: : Separation time (STmin) programming session server and client
+purpose: >
+    Define STmin for programming session and client. For more information see section Separation
+    (STmin) parameter definition.
 
-# #inspired by https://grpc.io/docs/tutorials/basic/python.html
-# Copyright 2015 gRPC authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+description: >
+    Separation time (STmin) for programming session shall be maximum 0ms for server and Client.
 
-The Python implementation of the gRPC route guide client.
+details: >
+    Verify separation time (STmin) for server side in PBL and SBL session are maximum 0ms
 """
 
-import time
-from datetime import datetime
-import sys
 import logging
-import inspect
-
-import odtb_conf
-
-from supportfunctions.support_can import SupportCAN, CanParam, CanPayload, CanTestExtra
-from supportfunctions.support_test_odtb2 import SupportTestODTB2
-from supportfunctions.support_carcom import SupportCARCOM
-from supportfunctions.support_file_io import SupportFileIO
-
-from supportfunctions.support_precondition import SupportPrecondition
-from supportfunctions.support_postcondition import SupportPostcondition
-from supportfunctions.support_service10 import SupportService10
-from supportfunctions.support_service11 import SupportService11
-from supportfunctions.support_service22 import SupportService22
-from supportfunctions.support_service27 import SupportService27
-from supportfunctions.support_service34 import SupportService34
-from supportfunctions.support_sec_acc import SupportSecurityAccess
+from hilding.dut import Dut
+from hilding.dut import DutTestError
+from supportfunctions.support_can import SupportCAN
 from supportfunctions.support_SBL import SupportSBL
-from hilding.conf import Conf
+from supportfunctions.support_service22 import SupportService22
 
-
-SSA = SupportSecurityAccess()
-SSBL = SupportSBL()
-SIO = SupportFileIO
 SC = SupportCAN()
-SUTE = SupportTestODTB2()
-SC_CARCOM = SupportCARCOM()
-PREC = SupportPrecondition()
-POST = SupportPostcondition()
-SE10 = SupportService10()
-SE11 = SupportService11()
+SSBL = SupportSBL()
 SE22 = SupportService22()
-SE27 = SupportService27()
-SE34 = SupportService34()
-conf = Conf()
 
-def step_3():
+
+def download_and_activate_sbl(dut):
     """
-    Teststep 3: Read VBF files for SBL file (1st Logical Block)
+    Download and activation of SBL
+    Args:
+        dut (Dut): An instance of Dut
+    Returns:
+        (bool): True on SBL activation
     """
-    stepno = 3
-    purpose = "1st files reading"
+    # Loads the rig specific VBF files
+    vbf_result = SSBL.get_vbf_files()
+    if not vbf_result:
+        logging.error("Test Failed: Unable to load VBF files")
+        return False
 
-    SUTE.print_test_purpose(stepno, purpose)
-    _, vbf_header, vbf_data, vbf_offset = SSBL.read_vbf_file(SSBL.get_sbl_filename())
-    SSBL.vbf_header_convert(vbf_header)
-    return vbf_header, vbf_data, vbf_offset
+    # Download and activate SBL
+    sbl_result = SSBL.sbl_dl_activation(dut, sa_keys=dut.conf.default_rig_config)
+    if not sbl_result:
+        logging.error("Test Failed: SBL activation failed")
+        return False
 
-def step_4(vbf_offset, vbf_data):
+    logging.info("SBL activation successful")
+    return True
+
+
+def read_did_and_verify(dut, did_to_read):
     """
-    Teststep 4: Extract data for the 1st block from SBL VBF
+    Verify ReadDataByIdentifier(0x22) service with programming DID
+    Args:
+        dut (Dut): An instance of Dut
+        did_to_read (str): Programming DID
+    Returns:
+        (bool): True when received NRC-31(requestOutOfRange)
     """
-    stepno = 4
-    purpose = "Extract data for the 1st block from SBL VBF"
+    # Padding the payload with 0x00 till the size becomes payload_length
+    payload = SC.fill_payload(bytes.fromhex(did_to_read), fill_value=0)
+    response = dut.uds.read_data_by_id_22(payload, b'')
 
-    SUTE.print_test_purpose(stepno, purpose)
-    vbf_offset, vbf_block, _ = SSBL.block_data_extract(vbf_data, vbf_offset)
-    logging.debug("block_data_extract - vbf_block('Length') : {0:08X}".format\
-                  (vbf_block['Length']))
-    logging.debug("block_Startaddress:              {0:08X}".format(vbf_block['StartAddress']))
-    return vbf_block
+    if response.raw[2:4] == '7F' and response.raw[6:8] == '31':
+        logging.info("Received NRC-%s for request ReadDataByIdentifier as expected",
+                      response.raw[6:8])
+        return True
 
-def step_5(can_p, vbf_header, vbf_block):
+    logging.error("Test Failed: Expected NRC-31(requestOutOfRange), received %s", response)
+    return False
+
+
+def step_1(dut: Dut):
     """
-    Teststep 5: Send multi frame request verify ST is 0
+    action: Send multi-frame and verify server reply with CTS with correct separation time
+            in PBL session
+    expected_result: True when separation time is 0ms
     """
-    addr_b = vbf_block['StartAddress'].to_bytes(4, 'big')
-    len_b = vbf_block['Length'].to_bytes(4, 'big')
-    cpay: CanPayload = {"payload" : b'\x34' +\
-                                    vbf_header["data_format_identifier"].to_bytes(1, 'big') +\
-                                    b'\x44'+\
-                                    addr_b +\
-                                    len_b,
-                        "extra" : ''
-                       }
-    etp: CanTestExtra = {"step_no": 5,
-                         "purpose" : "Send multi frame request verify ST is 0",
-                         "timeout" : 0.05,
-                         "min_no_messages" : -1,
-                         "max_no_messages" : -1
-                        }
-    result = SUTE.teststep(can_p, cpay, etp)
+    # Set to programming session
+    dut.uds.set_mode(2)
 
-    logging.info("Control Frame from Server: %s", SC.can_cf_received[can_p["receive"]][0][2])
+    # Verify PBL session
+    if SE22.get_ecu_mode(dut) != 'PBL':
+        logging.error("Expected ECU to be in PBL session, received %s", SE22.get_ecu_mode(dut))
+        return False
+    logging.info("ECU is in %s session as expected", SE22.get_ecu_mode(dut))
 
-    #test if ST is 0 ms: get ST from saved Control Frame
-    result = result and (int(SC.can_cf_received[can_p["receive"]][0][2][4:6], 16) == 0)
-    if int(SC.can_cf_received[can_p["receive"]][0][2][4:6], 16) == 0:
-        logging.info("ST is 0 ms")
+    did_response = read_did_and_verify(dut, did_to_read='F121')
+    if not did_response:
+        logging.error("Test Failed: ECU unable to read DID 'F121' in PBL session")
+        return False
+
+    logging.info("Control Frame from Server: %s", SC.can_cf_received[dut["receive"]][0][2])
+    logging.info("Separation time is [ms]: %d",
+                 int(SC.can_cf_received[dut["receive"]][0][2][4:6], 16))
+
+    # Test if separation time is maximum 0ms: get separation time from saved control frame
+    if int(SC.can_cf_received[dut["receive"]][0][2][4:6], 16) == 0:
+        result = True
+        # Verify that ECU is still in PBL
+        if SE22.get_ecu_mode(dut) != 'PBL':
+            logging.error("Test Failed: ECU is not in PBL session")
+            result = False
+        else:
+            logging.info("Separation time is 0 ms as expected")
     else:
-        logging.info("ST is not 0 ms")
+        logging.error("Test Failed: Separation time is greater than 0 ms")
+        result = False
     return result
 
-def step_6(can_p):
-    """
-    Teststep 6: verify session PBL
-    """
-    result = SE22.read_did_eda0(can_p, stepno=6)
-    logging.info("Complete Part/serial received: %s", SC.can_messages[can_p["receive"]])
 
-    result = result and SUTE.test_message(SC.can_messages[can_p["receive"]],\
-                                          teststring='F121')
+def step_2(dut: Dut):
+    """
+    action: Send multi-frame and verify server reply with CTS with correct separation time
+            in SBL session
+    expected_result: True when separation time is 0ms
+    """
+    result = download_and_activate_sbl(dut)
+    if not result:
+        return False
+
+    # Verify SBL session
+    if SE22.get_ecu_mode(dut) != 'SBL':
+        logging.error("Expected ECU to be in SBL session, received %s", SE22.get_ecu_mode(dut))
+        return False
+    logging.info("ECU is in %s session as expected", SE22.get_ecu_mode(dut))
+
+    did_response = read_did_and_verify(dut, did_to_read='F122')
+    if not did_response:
+        logging.error("Test Failed: ECU unable to read DID 'F122' in SBL session")
+        return False
+
+    logging.info("Control Frame from Server: %s", SC.can_cf_received[dut["receive"]][0][2])
+    logging.info("Separation time is [ms]: %d",
+                 int(SC.can_cf_received[dut["receive"]][0][2][4:6], 16))
+
+    # Test if separation time is maximum 0ms: get separation time from saved control frame
+    if int(SC.can_cf_received[dut["receive"]][0][2][4:6], 16) == 0:
+        result = True
+        # Verify that ECU is still in SBL
+        if SE22.get_ecu_mode(dut) != 'SBL':
+            logging.error("Test Failed: ECU is not in SBL session")
+            result = False
+        else:
+            logging.info("Separation time is 0 ms as expected")
+    else:
+        logging.error("Test Failed: Separation time is greater than 0 ms")
+        result = False
     return result
+
 
 def run():
     """
-    Run - Call other functions from here
+    Verify separation time (STmin) for server side in PBL and SBL session are maximum 0ms
     """
-    #logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.DEBUG)
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+    dut = Dut()
 
-    # start logging
-    # to be implemented
+    start_time = dut.start()
+    result = True
 
-    # where to connect to signal_broker
-    can_p: CanParam = {
-        'netstub': SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        'send': "Vcu1ToBecmFront1DiagReqFrame",
-        'receive': "BecmToVcu1Front1DiagResFrame",
-        'namespace': SC.nspace_lookup("Front1CANCfg0")
-        }
-    #Read YML parameter for current function (get it from stack)
-    logging.debug("Read YML for %s", str(inspect.stack()[0][3]))
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
+    try:
+        dut.precondition(timeout=100)
 
-    logging.info("Testcase start: %s", datetime.now())
-    starttime = time.time()
-    logging.info("Time: %s \n", time.time())
+        result = dut.step(step_1, purpose="Send multi-frame and verify server reply with CTS "
+                                          "with correct separation time in PBL session")
+        result = result and dut.step(step_2, purpose="Send multi-frame and verify server reply "
+                                                     "with CTS with correct separation time in "
+                                                     " SBL session")
 
-    ############################################
-    # precondition
-    ############################################
-    # read VBF param when testscript is s started, if empty take default param
-    SSBL.get_vbf_files()
-    timeout = 40
-    result = PREC.precondition(can_p, timeout)
+    except DutTestError as error:
+        logging.error("Test failed: %s", error)
+    finally:
+        dut.postcondition(start_time, result)
 
-    if result:
-    ############################################
-    # teststeps
-    ############################################
-        # step1:
-        # action: # Change to programming session
-        # result: BECM reports mode
-        result = result and SE10.diagnostic_session_control_mode2(can_p, 1)
-
-        # step2:
-        # action: Request Security Access to be able to unlock the server(s)
-        #         and run the primary bootloader.
-        # result: Positive reply from support function if Security Access to server is activated.
-
-        # Sleep time to avoid NRC37
-        time.sleep(5)
-        result = result and SE27.activate_security_access_fixedkey(can_p, conf.default_rig_config)
-
-        # step3:
-        # action: read SBL
-        # result: header, data, offset of VBF
-        vbf_header, vbf_data, vbf_offset = step_3()
-
-        # step4:
-        # action: extract data of first block in SBL
-        # result:
-        vbf_block = step_4(vbf_offset, vbf_data)
-
-        # step5:
-        # action:
-        # result:
-        result = result and step_5(can_p, vbf_header, vbf_block)
-
-        # step6:
-        # action: verify session PBL
-        # result:
-        result = result and step_6(can_p)
-
-    ############################################
-    # postCondition
-    ############################################
-
-    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()
