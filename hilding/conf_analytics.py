@@ -99,3 +99,7 @@ class Analytics:
     @property
     def testenv_info_platform(self):
         return self.analytics.get('testenv_info_platform', 'Hilding')
+
+    @property
+    def sw_tag(self):
+        return self.analytics.get('sw_tag', 'UNKNOWN')

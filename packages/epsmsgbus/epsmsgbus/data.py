@@ -59,7 +59,7 @@ class SoftwareInfo(object):
     """Metadata about the software under test (not the test framework)."""
     def __init__(self, ecu=None, platform=None, vehicle_project=None,
             vehicle_series=None, version=None, githash=None, changeset=None,
-            inhousechangeset=None):
+            inhousechangeset=None, sw_tag=None):
         self.ecu = ecu
         self.platform = platform
         self.vehicle_project = vehicle_project
@@ -67,7 +67,8 @@ class SoftwareInfo(object):
         self.version = version
         self.githash = githash
         self.changeset = changeset
-        self.inhousechangeset = inhousechangeset    
+        self.inhousechangeset = inhousechangeset
+        self.sw_tag = sw_tag
 
 class RunTimeInfo(list):
     def __init__(self):
@@ -214,13 +215,16 @@ class TestSuiteDataObserver(Observer):
         observable.metadata.software_info = self.adapter.get_software_info()
         observable.metadata.version_info = self.adapter.get_version_info()
         observable.metadata.others = self.adapter.get_other_info()
-        
+
     def notify_finish(self, observable, verdict):
         """Copy results, note that the verdict is handled by the test suite!"""
         observable.url = self.adapter.get_build_url()
         observable.logs = self.adapter.get_logs()
         observable.metadata.verdict_info = self.adapter.get_verdict_info(verdict, HILTestResults=self.adapter.get_url())
-        self.adapter.clear_activity_id()
+        try:
+            self.adapter.clear_activity_id()
+        except AttributeError as e:
+            log.warn(e)
 
     def notify_update(self, observable, data):
         try:
@@ -229,7 +233,7 @@ class TestSuiteDataObserver(Observer):
             #It is not a proper update, it is the beginning of execution from HILTest_mt pipeline
             log.info(e)
             self.notify_start(observable)
-        
+
 class TestCaseDataObserver(Observer):
     """Copy data from the adapter to the TestCase object."""
 

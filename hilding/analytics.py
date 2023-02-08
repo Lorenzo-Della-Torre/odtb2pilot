@@ -25,6 +25,7 @@ from secrets import token_urlsafe
 from datetime import datetime
 
 import epsmsgbus
+import epsmsgbus.activityid as activityid_mod
 from hilding import get_conf
 
 # we choose to use 7 bytes here to use the same token length as pmt
@@ -104,7 +105,8 @@ class TestSuiteDataAdapter(epsmsgbus.TestSuiteDataAdapter):
                 # this should be the githash for the firmware
                 githash=get_analytics().sw_githash,
                 changeset=get_analytics().sw_changeset,
-                inhousechangeset=get_analytics().sw_inhousechangeset)
+                inhousechangeset=get_analytics().sw_inhousechangeset,
+                sw_tag=get_analytics().sw_tag)
 
     def get_testenv_info(self): #pylint: disable=no-self-use
         """Return information about the test environment."""
@@ -113,6 +115,9 @@ class TestSuiteDataAdapter(epsmsgbus.TestSuiteDataAdapter):
                 description=get_analytics().testenv_info_description,
                 platform=get_analytics().platform)
 
+    def clear_activity_id(self): #pylint: disable=no-self-use
+        """Clears activity id"""
+        activityid_mod.set_activityid()
 
 class TestCaseDataAdapter(epsmsgbus.TestCaseDataAdapter): #pylint: disable=too-few-public-methods
     """Adapter for metadata from test cases and test steps. Only 'get_taskid()'

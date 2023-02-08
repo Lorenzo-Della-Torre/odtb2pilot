@@ -267,7 +267,7 @@ class TestsuiteResultMapping(CommonMapping):
     def changeset(self, msg):
         """Column 'baseline_changeset'."""
         value = self.safe_get(msg, 'custom', 'EPSHIL_Baseline_Changeset')
-        try: 
+        try:
             value = int(value)
         except:
             pass
@@ -275,7 +275,6 @@ class TestsuiteResultMapping(CommonMapping):
 
     def description(self, msg):
         """Override for column 'description'."""
-        
         return self.safe_get(msg, 'custom', 'EPSHIL_TestExecutionDescription')
 
     def devchgnum(self, msg):
@@ -646,7 +645,8 @@ class TestsuiteResultUpdate(DataMapper):
                     self.add_product(db, ecu, pn)
                     if changeset and isinstance(changeset, int):
                         self.add_product_baseline(db, changeset, pn)
-                self.add_attribute(db, uuid, 'sw_tag', self.mapping.sw_tag(msg))
+        with DatabaseContext() as db:
+            self.add_attribute(db, uuid, 'sw_tag', self.mapping.sw_tag(msg))
         if hwpartnums:
             changeset = self.mapping.changeset(msg)
             ecu = self.mapping.ecu(msg)
