@@ -153,8 +153,11 @@ class SupportPrecondition:
         pn_sn_list = []
         SIO.parameter_adopt_teststep('pn_sn_list')
 
+        result = SE22.read_did_f186(can_p, b'\01')
+        logging.info("Precondition ECU Mode 1 checked usine 22F186: %s\n", result)
+
         result = SE22.read_did_eda0(can_p, pn_sn_list)
-        logging.info("Precondition EDA0: %s\n", result)
+        logging.info("Precondition show all PN/SN using EDA0: %s\n", result)
 
         result = SE22.read_did_pbl_pn(can_p) and result
         logging.info("Precondition testok: %s\n", result)

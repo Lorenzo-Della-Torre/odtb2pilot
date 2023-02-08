@@ -225,11 +225,15 @@ class Dut:
 
         log.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Precondition started~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
+        res = self.uds.active_diag_session_f186()
+        #res = dut.SE22.read_did_f186(can_p, b'\01')
+        log.info("Precondition ECU Mode 1 checked usine 22F186: %s\n", res)
+
         res = self.uds.read_data_by_id_22(EicDid.complete_ecu_part_number_eda0)
-        log.debug("Precondition eda0: %s\n", res)
+        log.info("Precondition eda0: %s\n", res)
 
         res = self.uds.read_data_by_id_22(IoVmsDid.pbl_software_part_num_f125)
-        log.debug("Precondition f125: %s\n", res)
+        log.info("Precondition f125: %s\n", res)
         self.uds.step = 0
 
     def postcondition(self, start_time, result):
