@@ -33,7 +33,7 @@ from supportfunctions.support_sec_acc import SecAccessParam
 
 SSBL = SupportSBL()
 
-def load_vbf_files(location):
+def load_vbf_files(dut, pbl_vbf=False):
     """Loads the rig specific VBF files found in rigs/<default-rig-name>/VBFs
 
     Args:
@@ -43,6 +43,9 @@ def load_vbf_files(location):
         boolean: True if vbfs were loaded successfully, otherwise False
     """
     logging.info("~~~~~~~~ Loading VBFs started ~~~~~~~~")
+    location = dut.conf.rig.vbf_path
+    if pbl_vbf:
+        location = dut.conf.rig.pbl_vbf_path
     vbfs = listdir(location)
     paths_to_vbfs = [str(location) + sep + x for x in vbfs if path.isfile(str(location)+ sep + x)]
 
@@ -130,7 +133,7 @@ def check_complete_and_compatible(dut):
 
     return SSBL.check_complete_compatible_routine(dut, stepno=1)
 
-def software_download(dut,param="Software download"):
+def software_download(dut, param="Software download"):
     """The function that handles all the sub-steps when performing software download.
     This function will keep track of the progress and give error indications if a step fails
 
@@ -145,15 +148,15 @@ def software_download(dut,param="Software download"):
         step = 1
 
         # Define vbfs location and total steps of the operation
-        if operation == "Software download":
-            location = dut.conf.rig.vbf_path
-            total_steps = 5
-        elif operation == "PBL update":
-            location = dut.conf.rig.pbl_vbf_path
+        if operation == "PBL update":
+            pbl_vbf = True
             total_steps = 4
+        else:
+            pbl_vbf = False
+            total_steps = 5
 
         # Load vbfs
-        vbf_result = load_vbf_files(location)
+        vbf_result = load_vbf_files(dut, pbl_vbf)
 
         logging.info("~~~~~~ Step %s/%s of software download (loading vbfs) done."
         " Result: %s\n\n", step, total_steps, vbf_result)
