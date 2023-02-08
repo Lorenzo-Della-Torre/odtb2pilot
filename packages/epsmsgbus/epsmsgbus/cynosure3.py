@@ -341,6 +341,7 @@ class TestSuiteMessageObserver(core.Observer):
         m.set_custom(EPSHIL_System_project=sw_info.vehicle_project)
         m.set_custom(EPSHIL_System_release_version=sw_info.version)
         m.set_custom(EPSHIL_System_series=sw_info.vehicle_series)
+        m.set_custom(EPSHIL_Software_tag=sw_info.sw_tag)
         # Test env info
         t_info = o.metadata.testenv_info
         # NOTE: Adding tag for rig (HIL)
