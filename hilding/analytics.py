@@ -25,7 +25,6 @@ from secrets import token_urlsafe
 from datetime import datetime
 
 import epsmsgbus
-import epsmsgbus.activityid as activityid_mod
 from hilding import get_conf
 
 # we choose to use 7 bytes here to use the same token length as pmt
@@ -117,6 +116,7 @@ class TestSuiteDataAdapter(epsmsgbus.TestSuiteDataAdapter):
 
     def clear_activity_id(self): #pylint: disable=no-self-use
         """Clears activity id"""
+        activityid_mod = epsmsgbus.activityid
         activityid_mod.set_activityid()
 
 class TestCaseDataAdapter(epsmsgbus.TestCaseDataAdapter): #pylint: disable=too-few-public-methods
