@@ -45,8 +45,23 @@ from protogenerated.system_api_pb2_grpc import SystemServiceStub
 from protogenerated.network_api_pb2_grpc import NetworkServiceStub
 
 from supportfunctions.support_can import SupportCAN, CanParam, PerParam, CanMFParam
+from supportfunctions.support_cms_cvtn_emu import Support_emu_udp
+from supportfunctions.support_test_odtb2 import SupportTestODTB2
+from supportfunctions.support_carcom import SupportCARCOM
+from supportfunctions.support_service10 import SupportService10
+from supportfunctions.support_service11 import SupportService11
+from supportfunctions.support_service22 import SupportService22
+from supportfunctions.support_service27 import SupportService27
+#from supportfunctions.support_service2a import SupportService2A
+from supportfunctions.support_service31 import SupportService31
+from supportfunctions.support_service34 import SupportService34
+from supportfunctions.support_service36 import SupportService36
+from supportfunctions.support_service37 import SupportService37
 from supportfunctions.support_service3e import SupportService3e
+from supportfunctions.support_precondition import SupportPrecondition
+from supportfunctions.support_postcondition import SupportPostcondition
 from supportfunctions.support_file_io import SupportFileIO
+
 from hilding.uds import Uds
 from hilding.uds import EicDid
 from hilding.uds import IoVmsDid
@@ -129,6 +144,25 @@ class Dut:
         self.framelength_max = SupportFileIO.parameter_adopt_teststep('framelength_max')
         self.padding = SupportFileIO.parameter_adopt_teststep('padding')
         self.uds = Uds(self)
+
+        self.SIO = SupportFileIO()
+        self.SC = SupportCAN()
+        self.SEMU_UDP = Support_emu_udp()
+        self.SUTE = SupportTestODTB2()
+        self.SC_CARCOM = SupportCARCOM()
+        self.SE10 = SupportService10()
+        self.SE11 = SupportService11()
+        self.SE22 = SupportService22()
+        self.SE27 = SupportService27()
+#        self.SE2a = SupportService2A()
+        self.SE31 = SupportService31()
+        self.SE34 = SupportService34()
+        self.SE36 = SupportService36()
+        self.SE37 = SupportService37()
+        self.SE3e = SupportService3e()
+        self.PREC = SupportPrecondition()
+        self.POST = SupportPostcondition()
+
         self.fail_purpose = ""
 
     def __getitem__(self, key):# pylint: disable=too-many-return-statements
@@ -194,7 +228,7 @@ class Dut:
 
         # start testerpresent without reply
         tp_name = self.conf.rig.signal_tester_present
-        SupportService3e.start_periodic_tp_zero_suppress_prmib(self, tp_name)
+        self.SE3e.start_periodic_tp_zero_suppress_prmib(self, tp_name)
 
         # record signal we send as well
         iso_tp.subscribe_signal(self, timeout)
