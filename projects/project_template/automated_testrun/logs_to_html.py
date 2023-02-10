@@ -557,6 +557,8 @@ def generate_html(folderinfo_result_tuple_list, outfile, verif_d,  # pylint: dis
                                     text(e_key)
 
                         file_name = key.split("--_--")[0]
+                        if file_name.endswith(')'):
+                            file_name = file_name[:-3]
                         # Third column - Script name
                         if file_name.lower() in url_dict:
                             with tag('td', klass="main"):
