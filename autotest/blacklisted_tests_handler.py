@@ -66,6 +66,16 @@ def create_logs(reqprod_dict, directory):
             test_name = __split_and_remove_spaces(name_and_info)[0]
             info = __split_and_remove_spaces(name_and_info)[1]
             reqprod = __split_and_remove_spaces(reqprod)[0]
+
+            #change log name if log already exists so it's not overwritten
+            evaluation = 0
+            my_path = os.path.join(directory,f"{reqprod}_{test_name}.log")
+            if os.path.isfile(my_path):
+                while os.path.isfile(my_path):
+                    evaluation += 1
+                    my_path += "("+str(evaluation)+")"
+                test_name += "("+str(evaluation)+")"
+
             with open(os.path.join(directory,f"{reqprod}_{test_name}.log"), 'w') as log_file:
                 if category == "--NA--":
                     log_file.write(f"Testcase result: Not applicable. Info:{info}")
@@ -114,6 +124,16 @@ def get_dictionary_from_yml(yml_file_dir=""):
     relevant_blacklisted_reqs = blacklisted_reqs[conf.default_platform]
     return relevant_blacklisted_reqs
 
+def is_multi(yml_req_prod):
+    """Defines if the reqprod is tested by multiple scripts
+    """
+    # if reqprod line in blacklist ends with <| ¤ MULTI ¤> then it's tested by multiple scripts
+    split_req = yml_req_prod.split("|")
+    result = False
+    if split_req[-1].replace(' ','') == "¤MULTI¤":
+        result = True
+    return result
+
 def match_swrs_with_yml(swrs):
     """Finds all tests in swrs that are also present in the yaml file containing dummy tests.
     Will only include tests for default platform (set in conf_default.yml).
@@ -145,8 +165,14 @@ def match_swrs_with_yml(swrs):
                 # check if the requirement belongs to the blacklist
                 match_req = ''.join([req for req in comparison_list if req in yml_reqprods])
                 if match_req != '':
-                    matching_reqprods_from_yml[category][match_req] = yml_reqprods[match_req]
-                    if reqprod_id in modified_swrs:
+
+                    # Determine if REQPROD has ¤ MULTI ¤ flag in the blacklist file
+                    comparison_variable = f"e_{reqprod_id}_{variant}_{reqprod_data['Revision']}"
+                    matching_reqprods_from_yml[category][comparison_variable] = yml_reqprods[comparison_variable]
+                    multi = is_multi(matching_reqprods_from_yml[category][comparison_variable])
+
+                    # Determine if script should be run or not
+                    if reqprod_id in modified_swrs and not multi:
                         del modified_swrs[reqprod_id]
                 # keep the requirement since it does not belong to the blacklist
                 else: pass

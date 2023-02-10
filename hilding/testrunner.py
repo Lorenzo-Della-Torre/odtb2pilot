@@ -339,7 +339,7 @@ def nightly(args):
 
     test_res_dir = get_test_res_dir()
     result_file = test_res_dir.joinpath('Result.txt')
-    with open(args.testfile_list) as testfile_list:
+    with open(args.testfile_list,'r') as testfile_list:
         test_files = []
         blacklisted_reqprods = {}
         # This will keep track of what category of reqs. we are currently
@@ -352,16 +352,20 @@ def nightly(args):
             existing_categories = {}
         for line in testfile_list.readlines():
             stripped_line = line.strip()
-            if stripped_line in existing_categories:
-                current_category = stripped_line
-                blacklisted_reqprods[current_category] = {}
-            elif current_category == "":
-                test_files.append(stripped_line)
+            # verify line contains information
+            if stripped_line == '':
+                pass
             else:
-                split_line = stripped_line.split("|", maxsplit=1)
-                reqprod_id = split_line[0]
-                info = split_line[1]
-                blacklisted_reqprods[current_category][reqprod_id] = info
+                if stripped_line in existing_categories:
+                    current_category = stripped_line
+                    blacklisted_reqprods[current_category] = {}
+                elif current_category == "":
+                    test_files.append(stripped_line)
+                else:
+                    split_line = stripped_line.split("|", maxsplit=1)
+                    reqprod_id = split_line[0]
+                    info = split_line[1]
+                    blacklisted_reqprods[current_category][reqprod_id] = info
 
     add_to_result(blacklisted_reqprods, result_file)
     create_logs(blacklisted_reqprods, test_res_dir)
