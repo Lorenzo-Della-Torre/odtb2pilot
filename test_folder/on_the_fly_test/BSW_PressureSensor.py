@@ -63,6 +63,8 @@ from supportfunctions.support_service22 import SupportService22
 from supportfunctions.support_service3e import SupportService3e
 from supportfunctions.support_file_io import SupportFileIO
 
+from hilding.dut import Dut
+
 SIO = SupportFileIO
 SC = SupportCAN()
 S_CARCOM = SupportCARCOM()
@@ -81,19 +83,33 @@ def run():
     """
     Run
     """
+    dut = Dut()
     logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.DEBUG)
     #logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
     # start logging
     # to be implemented
 
+    platform=dut.conf.rigs[dut.conf.default_rig]['platform']
     # where to connect to signal_broker
     can_p: CanParam = {
         'netstub': SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        'send': "Vcu1ToBecmFront1DiagReqFrame",
-        'receive': "BecmToVcu1Front1DiagResFrame",
-        'namespace': SC.nspace_lookup("Front1CANCfg0")
+        'system_stub': '',
+        'namespace': dut.conf.platforms[platform]['namespace'],
+        'netstub_send': SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
+        'system_stub_send': '',
+        'namespace_send': dut.conf.platforms[platform]['namespace'],
+        'send': dut.conf.platforms[platform]['signal_send'],
+        'receive': dut.conf.platforms[platform]['signal_receive'],
+        'signal_periodic': dut.conf.platforms[platform]['signal_periodic'],
+        'signal_tester_present': dut.conf.platforms[platform]['signal_tester_present'],
+        'wakeup_frame': dut.conf.platforms[platform]['wakeup_frame'],
+        'protocol': dut.conf.platforms[platform]['protocol'],
+        'framelength_max': dut.conf.platforms[platform]['framelength_max'],
+        'padding': dut.conf.platforms[platform]['padding']
         }
-    #Read YML parameter for current function (get it from stack)
+        #'padding': dut.conf.platforms[platform]['padding'],
+        #'clientid': dut.conf.scriptname
+        #}
     SIO.parameter_adopt_teststep(can_p)
 
     #can_p: CanParam = {
