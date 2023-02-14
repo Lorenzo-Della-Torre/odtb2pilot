@@ -374,17 +374,23 @@ def run():
     platform=dut.conf.rigs[dut.conf.default_rig]['platform']
     can_p: CanParam = {
         'netstub': SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
+        'system_stub': '',
+        'namespace': dut.conf.platforms[platform]['namespace'],
+        'netstub_send': SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
+        'system_stub_send': '',
+        'namespace_send': dut.conf.platforms[platform]['namespace'],
         'send': dut.conf.platforms[platform]['signal_send'],
         'receive': dut.conf.platforms[platform]['signal_receive'],
-        'namespace': dut.conf.platforms[platform]['namespace'],
         'signal_periodic': dut.conf.platforms[platform]['signal_periodic'],
-        'signal_tester_preset': dut.conf.platforms[platform]['signal_tester_present'],
+        'signal_tester_present': dut.conf.platforms[platform]['signal_tester_present'],
         'wakeup_frame': dut.conf.platforms[platform]['wakeup_frame'],
         'protocol': dut.conf.platforms[platform]['protocol'],
         'framelength_max': dut.conf.platforms[platform]['framelength_max'],
         'padding': dut.conf.platforms[platform]['padding']
         }
-    #Read YML parameter for current function (get it from stack)
+        #'padding': dut.conf.platforms[platform]['padding'],
+        #'clientid': dut.conf.scriptname
+        #}
     SIO.parameter_adopt_teststep(can_p)
 
     logging.info("Testcase start: %s", datetime.now())
