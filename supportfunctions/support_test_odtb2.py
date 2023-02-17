@@ -85,7 +85,8 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
         print_test_purpose
         """
         logging.debug("stepno passed to print_test_purpose: %s", stepno)
-        logging.info("Purpose: %s", purpose)
+        if purpose != "None":
+            logging.info("Purpose: %s", purpose)
 
 
     def test_message(self, messagelist, teststring=''):
@@ -192,8 +193,10 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
         # If this function is called from uds.py no print is required since it is handled in dut.py
         try:
             called_from_uds = "uds.py" in inspect.stack()[1][1]
-            if int(etp['step_no']) < 100 and not called_from_uds:
-                logging.info(
+            if not called_from_uds:
+                self.print_test_purpose(etp['step_no'], etp['purpose'])
+                if int(etp['step_no']) < 100:
+                    logging.info(
                     "\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Step %s started~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
                     etp['step_no'])
         except ValueError:
@@ -213,7 +216,6 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
             logging.debug("Clear old messages")
             SC.clear_all_can_frames()
             SC.clear_all_can_messages()
-        self.print_test_purpose(etp['step_no'], etp['purpose'])
 
         # wait for messages
         # define answer to expect
