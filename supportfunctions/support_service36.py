@@ -67,6 +67,7 @@ class SupportService36: # pylint: disable=too-few-public-methods
         """
         Support function for Transfer Data
         """
+        purpose ="None"
         pad = 0
         logging.info("------Start Downloading blocks------")
         for i in range(int((vbf_block['Length']-1)/(nbl-2))+1):
