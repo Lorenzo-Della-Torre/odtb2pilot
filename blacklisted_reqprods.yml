@@ -203,6 +203,7 @@ hvbm_p519:
         e_467281_MAIN_0 : data_compression_method_2_data_format | Not applicable. NA folder script.
         e_60109__3 : duplex_communication | Probably a gateway requirement. NA for non-gateway ECUs.
         e_435518_MAIN_1 : nvram_and_ram_spare_cap | This requirement is not applicable on HVBM MEP2.
+        e_486601_MAIN_0 : event_type_debugger_authentication | Not applicable because disable the debugger port
 
     --Inspection--:
         e_481878_MAIN_0 : interface_to_tee_cryptographic_operations | ETAS provides API. Inspect that we have received those files
@@ -246,7 +247,6 @@ hvbm_p519:
         e_473644_MAIN_1 : secure_boot_key_protection | <Reason>
         e_468870_MAIN_1 : secure_boot_initialization | <Reason>
         e_469024_MAIN_1 : secure_boot_design_validation | <Reason>
-        e_52243__2 : supported_can_ids_2nd_part | <Reason>
         e_469025_MAIN_1 : minimum_cryptographic_support | <Reason>
         e_52251__1 : comp_hw_init_when_start_ecu | To be inspected
         e_52254__1 : cold_start_detected | To be inspected
@@ -300,7 +300,7 @@ hvbm_p519:
         e_402292_MAIN_1 : verification_block_table | To be inspected
         e_53932__1 : progsignature-clear | To be inspected
         e_400994_MAIN_2 : conditions_for_lb_to_be_invalid | To be inspected
-        e_404771_MAIN_3 : validation_of_the_ess_2nd_part | To be inspected
+        e_404771_MAIN_3 : validation_of_the_ess_2nd_part | To be inspected | ¤MULTI¤
         e_60063__4 : nbr_prefom_non_prog_fc_wait | To be inspected
         e_53911__1 : prog_seq_second_processors | To be inspected
         e_60106__2 : nbr_prefom_prog_fc_wait | To be inspected
@@ -327,6 +327,8 @@ hvbm_p519:
         e_56192_MAIN_3 : server_support_of_queued_requests_in_programming_session | Difficult to test. Put on hold. Check with Mentor first
         e_74506_MAIN_1 : negative_response_code_general_reject_0x10 | Check DCM configuration for NRC 0x10
         e_76539_MAIN_3 : communication_stack_processing_period | Changed to Code Inspection
+        e_400704_MAIN_3 : sbl_condition_for_activation_2nd_part | A part of the requirement is inspected. | ¤MULTI¤
+        e_469463_MAIN_1: key_storage_part2 | A part of the requirement is inspected. | ¤MULTI¤
 
     --Diag--:
         e_68012_MAIN_0 : support_for_external_output_signal_data_records_actual_output_signal | Diagnosis responsible need to evaluate
@@ -445,11 +447,16 @@ hvbm_p519:
         e_418471_MAIN_3 : public_key_data_record_write | This test needs to be manually tested.
         e_480600_MAIN_2 : disable_hardware_debug_interfaces_to_hsm | This needs to be manually tested.
         e_469233_MAIN_3 : protect_hardware_debug_interfaces | This test to be manually tested.
-        e_486601_MAIN_0 : event_type_debugger_authentication | Manual
         e_53884__3 : can_bus_level_before_during_and_after_reset | This needs to be manually tested
         e_56197__1 : order_of_responses_in_programming_session | This needs to be manually tested
         e_77275_MAIN_2 : clustered_frame_transmission_and_no_priority_inversion_can | This needs to be manually tested.
         e_392111_MAIN_0 : bootloader_CAN_busoff_handling | Script needs manual inputs
+        e_76542_MAIN_3 : communication_stack_processing_period_jitter | This is partially automated. Need manual verification.
+        e_469133_MAIN_2	: security_access_key_programming_at_oem | This needs a manual security key restore using debugger.
+        e_469463_MAIN_1: key_storage | This needs a manual security key restore using debugger. | ¤MULTI¤
+        e_486613_MAIN_0: event_type_security_key_updates | This needs a manual security key restore using debugger.
+        e_486686_MAIN_0	: security_log_authentication_key_detection_of_non_programmed_production_keys | This needs a manual security key restore using debugger.
+        e_486687_MAIN_0 : security_log_authentication_key_type_structure | This needs a manual security key restore using debugger.
 
     --dSpace--:
         e_115621_MAIN_4 : support_for_dtc_status_indicator_30_warning_indicator_requested_since_last_clear | DTC not implemented yet.
