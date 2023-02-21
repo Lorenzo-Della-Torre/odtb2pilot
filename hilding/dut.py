@@ -207,7 +207,7 @@ class Dut:
         logger.disabled = False
 
         self.uds.step = 100
-        # start heartbeat, repeat every 0.8 second
+        # start heartbeat, repeat every 0.4 second
         heartbeat_param: PerParam = {
             "name" : "Heartbeat",
             "send" : True,
@@ -318,6 +318,84 @@ class Dut:
             log.info("Testcase result: FAILED")
         if self.fail_purpose != "":
             log.info("Fail occurred at: %s ", self.fail_purpose)
+
+    def ecu_wake_up(self, timeout=30):
+        """ start heartbeat and tp
+
+        Args:
+            timeout (int, optional): Decides for how long the test is allowed to run.
+            Defaults to 30.
+        """
+
+        iso_tp = SupportCAN()
+
+        # start heartbeat, repeat every 0.4 second
+        heartbeat_param: PerParam = {
+            "name" : "Heartbeat",
+            "send" : True,
+            "id" : self.conf.rig.signal_periodic,
+            "nspace" : self.namespace,
+            "frame" : bytes.fromhex(self.conf.rig.wakeup_frame),
+            "intervall" : 0.4
+            }
+
+        SupportFileIO.parameter_adopt_teststep(heartbeat_param)
+        heartbeat_param['send'] = True
+
+        # start heartbeat, repeat every x second
+        iso_tp.start_heartbeat(self.network_stub, heartbeat_param)
+
+        # start testerpresent without reply
+        tp_name = self.conf.rig.signal_tester_present
+        SupportService3e.start_periodic_tp_zero_suppress_prmib(self, tp_name)
+
+        # record signal we send as well
+        iso_tp.subscribe_signal(self, timeout)
+
+        # record signal we send as well. Do notice the reverse order of the
+        # send and receive signals!
+        can_p2: CanParam = {"netstub": self.network_stub,
+                            "send": self.conf.rig.signal_receive,
+                            "receive": self.conf.rig.signal_send,
+                            "namespace": self.namespace,
+                            "protocol": self.protocol,
+                            "framelength_max": self.framelength_max,
+                            "padding" : self.padding
+                           }
+        iso_tp.subscribe_signal(can_p2, timeout)
+
+        # do not generate FC frames for signals we generated:
+        time.sleep(1)
+        can_mf: CanMFParam = {
+            "block_size": 0,
+            "separation_time": 0,
+            "frame_control_delay": 10,
+            "frame_control_flag": 48,
+            "frame_control_auto": False
+            }
+        iso_tp.change_mf_fc(can_p2["receive"], can_mf)
+
+    @staticmethod
+    def ecu_sleep():
+        """
+        Run postconditions and stops NM and TP frames
+        """
+
+        iso_tp = SupportCAN()
+        iso_tp.stop_periodic_all()
+
+        #There is an issue in unsubscribe_signals() that generates a lot of errors in the log.
+        #In order to not confuse users this was simply removed from the log by disabling the logger
+        logger = logging.getLogger()
+        logger.disabled = True
+
+        # deregister signals
+        iso_tp.unsubscribe_signals()
+
+        logger.disabled = False
+
+        # if threads should remain: try to stop them
+        iso_tp.thread_stop()
 
     def start(self):
         """Log the current time and return a timestamp
