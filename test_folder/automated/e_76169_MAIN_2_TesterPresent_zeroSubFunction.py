@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2023 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,197 +18,335 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-# Testscript ODTB2 MEPII
-# project:  BECM basetech MEPII
-# author:   J-ADSJO
-# date:     2021-02-19
-# version:  1.0
-# reqprod:  76169
+reqprod: 76169
+version: 2
+title: TesterPresent (3E) - zeroSubFunction (00, 80)
+purpose: >
+    Keep ECUs in a desired session for a longer period of time.  Although TesterPresent is not
+    necessary for keeping an ECU in defaultSession, all ECUs shall support TesterPresent in
+    default session since the response of the TesterPresent can be used as an indication of an
+    operational ECU.
 
-#inspired by https://grpc.io/docs/tutorials/basic/python.html
+description: >
+    The ECU must support the service testerPresent. The ECU shall implement the service
+    accordingly:
 
-# Copyright 2015 gRPC authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+    Supported session:
+        The ECU shall support Service testerPresent in:
+        •   defaultSession
+        •   extendedDiagnosticSession
+        •   programmingSession, both primary and secondary bootloader
 
-The Python implementation of the gRPC route guide client.
+    Response time:
+        Maximum response time for the service testerPresent (0x3E) is P2Server_max.
+
+    Effect on ECU normal operation:
+        The service testerPresent (0x3E) shall not affect the ECU's ability to execute
+        non-diagnostic tasks.
+
+    Entry conditions:
+        The ECU shall not implement entry conditions for service TesterPresent (0x3E).
+
+    Security access:
+        The ECU shall not protect service TesterPresent by using the service securityAccess (0x27).
+
+details: >
+    Verify ECU supports service testerPresent(0x3E) in default, extended, PBL and SBL session.
 """
 
 import time
-from datetime import datetime
-import sys
 import logging
-import inspect
+from hilding.dut import Dut
+from hilding.dut import DutTestError
+from supportfunctions.support_SBL import SupportSBL
 
-import odtb_conf
-
-from supportfunctions.support_can import SupportCAN, CanParam
-from supportfunctions.support_test_odtb2 import SupportTestODTB2
-from supportfunctions.support_carcom import SupportCARCOM
-from supportfunctions.support_file_io import SupportFileIO
-
-from supportfunctions.support_precondition import SupportPrecondition
-from supportfunctions.support_postcondition import SupportPostcondition
-from supportfunctions.support_service10 import SupportService10
-from supportfunctions.support_service22 import SupportService22
-from supportfunctions.support_service3e import SupportService3e
-
-SC = SupportCAN()
-S_CARCOM = SupportCARCOM()
-SUTE = SupportTestODTB2()
-SIO = SupportFileIO
-
-PREC = SupportPrecondition()
-POST = SupportPostcondition()
-SE10 = SupportService10()
-SE22 = SupportService22()
-SE3E = SupportService3e()
+SSBL = SupportSBL()
 
 
-def step_8(can_p: CanParam):
-    '''
-    Teststep 8: Start sending TesterPresent
-    '''
-    result = True
-    teststep = 8
-    #Start testerpresent without reply
-    tp_name = "Vcu1ToAllFuncFront1DiagReqFrame"
-    #Read current function name from stack:
-    new_tp_name = SIO.extract_parameter_yml(str(inspect.stack()[0][3]), "tp_name")
-    if new_tp_name != '':
-        tp_name = new_tp_name
-    logging.info("Step %s, Start sending TP again.", teststep)
-    SE3E.start_periodic_tp_zero_suppress_prmib(can_p, tp_name)
-    return result
-
-
-def run():# pylint: disable=too-many-statements
+def verify_active_diagnostic_session(dut, ecu_session):
     """
-    Run
+    Request to check active diagnostic session
+    Args:
+        dut (Dut): An instance of Dut
+        ecu_session (int): Diagnostic session
+    Return:
+        (bool): True when ECU is in expected session
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+    result = dut.uds.active_diag_session_f186()
 
-    # where to connect to signal_broker
-    can_p: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        "send" : "Vcu1ToBecmFront1DiagReqFrame",
-        "receive" : "BecmToVcu1Front1DiagResFrame",
-        "namespace" : SC.nspace_lookup("Front1CANCfg0")
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
+    if result.data["details"]["mode"] == ecu_session :
+        logging.info("ECU is in mode %s as expected", ecu_session)
+        return True
 
-    logging.info("Testcase start: %s", datetime.now())
-    starttime = time.time()
-    logging.info("Time: %s \n", time.time())
+    logging.error("Test Failed: Expected session %s, received session %s",
+                   ecu_session, result.data["details"]["mode"])
+    return False
 
-    ############################################
-    # precondition
-    ############################################
-    timeout = 60
-    result = PREC.precondition(can_p, timeout)
 
-    ############################################
-    # teststeps
-    ############################################
-    # step 1:
-    # action: Change to Extended Session
-    # result:
-    logging.info("Step 1: Request change to mode3 (extended session).")
-    result = result and SE10.diagnostic_session_control_mode3(can_p, 1)
+def verify_3e_service_response(dut, p2_server_max):
+    """
+    Verify maximum response time
+    Args:
+        dut (Dut): An instance of Dut
+        p2_server_max (int): Maximum response time
+    Return:
+        (bool): True when ECU is in default session
+    """
+    dut.SE3e.tester_present_zero_subfunction(dut)
+    time_elapsed = dut.uds.milliseconds_since_request()
+    response = dut.SC.can_messages[dut["receive"]][0][2]
+    if response[2:4] == '7E':
+        logging.info("Received positive rsponse %s for request TesterPresernt(3E) service",
+                      response)
+        # P2Server_max is 50ms in default and extended session and 25ms in programming session
+        if time_elapsed >= p2_server_max:
+            logging.error("Test Failed: Elapsed time %sms is greater than p2Server_max %sms",
+                           time_elapsed, p2_server_max)
+            return False
 
-    # step 2:
-    # action: Verify ECU is in Extended Session
-    # result:
-    logging.info("Step 2: Verify ECU is in Extended Session.")
-    result = result and SE22.read_did_f186(can_p, b'\x03', 2)
+        logging.info("Elapsed time %sms is less than p2Server_max %sms as expected",
+                     time_elapsed, p2_server_max)
+        return True
 
-    # step 3:
-    # action: Wait longer than timeout for fallback while sending TP.
-    # result:
-    logging.info("Step 3: Wait longer than timeout for fallback while sending TP.")
+    logging.error("Test Failed: Expected positive response '7E' for request TesterPresernt(3E) "
+                  "service, received %s", response)
+    return False
+
+
+def activate_sbl(dut):
+    """
+    Activate SBL and verify ECU is in SBL
+    Args:
+        dut (Dut): An instance of Dut
+    Return:
+        (bool): True when ECU is in SBL
+    """
+    SSBL.get_vbf_files()
+    result = SSBL.sbl_activation(dut, sa_keys=dut.conf.default_rig_config)
+    if not result:
+        logging.error("Test Failed: SBL activation failed")
+        return False
+
+    result = dut.SE22.verify_sbl_session(dut)
+    if not result:
+        logging.error("Test Failed: ECU is not in SBL")
+        return False
+
+    return True
+
+
+def step_1(dut: Dut, parameters):
+    """
+    action: Verify ECU stays in default session as no testerPresent is sent and also verify
+            response of 3E service in default session
+    expected_result: ECU should stay in default session and send positive response '7E' within
+                     p2server max time
+    """
+    # Set to default session
+    dut.uds.set_mode(1)
+
+    # Verify ECU is in default session
+    result = verify_active_diagnostic_session(dut, ecu_session=1)
+    if not result:
+        return False
+
+    # Wait longer than timeout
     time.sleep(6)
 
-    # step 4:
-    # action: Verify that ECU is still in extended after timeout due to TP sent.
-    # result:
-    logging.info("Step 4: Verify ECU still in extended due to TP sent.")
-    result = result and SE22.read_did_f186(can_p, b'\x03', 4)
+    # Verify that ECU is still in default session after timeout due to testerPresent sent
+    result = verify_active_diagnostic_session(dut, ecu_session=1)
+    if not result:
+        return False
 
-    # step 5:
-    # action: stop sending tester present
-    # result:
-    logging.info("Step 5: stop sending tester present.")
-    SE3E.stop_periodic_tp_zero_suppress_prmib()
+    # Stop sending tester present
+    dut.SE3e.stop_periodic_tp_zero_suppress_prmib()
 
-    # step 6:
-    # action: Wait longer than timeout for fallback while not sending TP.
-    # result:
-    logging.info("Step 6: Wait longer than timeout for fallback while not sending TP.")
+    result = verify_3e_service_response(dut,
+                                        p2_server_max=parameters['p2_server_max_non_programming'])
+    if not result:
+        return False
+
+    # Wait longer than timeout for fallback while not sending testerPresent
     time.sleep(6)
 
-    # step 7:
-    # action: Verify that ECU did fallback to default.
-    # result:
-    logging.info("Step 7: Verify ECU fallback to default as no TP sent.")
-    result = result and SE22.read_did_f186(can_p, b'\x01', 7)
+    # Verify ECU stays in default as no testerPresent sent
+    result = verify_active_diagnostic_session(dut, ecu_session=1)
+    if not result:
+        return False
 
-    # step 8:
-    # action: Start sending TesterPresent (TP) again
-    result = result and step_8(can_p)
-    logging.info("Step 8: Status script:. %s", result)
+    # Start sending TesterPresent
+    dut.SE3e.start_periodic_tp_zero_suppress_prmib(dut, can_id=dut.conf.rig.signal_tester_present)
+    return True
 
 
-    # step 9:
-    # action: Change to Programming Session
-    # result:
-    logging.info("Step 9: Request change to mode2 (programming session).")
-    result = result and SE10.diagnostic_session_control_mode2(can_p, 9)
+def step_2(dut: Dut, parameters):
+    """
+    action: Verify ECU fallback to default session as no testerPresent sent also verify response
+            of 3E service in extended session
+    expected_result: ECU should fallback to default session and send positive response '7E' within
+                     p2server max time
+    """
+    # Set to extended session
+    dut.uds.set_mode(3)
 
-    # step 10:
-    # action: Wait longer than timeout for fallback while sending TP.
-    # result:
-    logging.info("Step 10: Wait longer than timeout for fallback while sending TP.")
+    # Verify ECU is in extended session
+    result = verify_active_diagnostic_session(dut, ecu_session=3)
+    if not result:
+        return False
+
+    # Wait longer than timeout for fallback while sending testerPresent
     time.sleep(6)
 
-    # step 11:
-    # action: Verify that ECU is still in programming session after timeout due to TP sent.
-    # result:
-    logging.info("Step 11: Verify ECU still in programming due to TP sent.")
-    result = result and SE22.read_did_f186(can_p, b'\x02', 11)
+    # Verify that ECU is still in extended session after timeout due to testerPresent sent
+    result = verify_active_diagnostic_session(dut, ecu_session=3)
+    if not result:
+        return False
 
-    # step 12:
-    # action: stop sending tester present
-    # result:
-    logging.info("Step 12: stop sending tester present.")
-    SE3E.stop_periodic_tp_zero_suppress_prmib()
+    # Stop sending tester present
+    dut.SE3e.stop_periodic_tp_zero_suppress_prmib()
 
-    # step 13:
-    # action: Wait longer than timeout for fallback while not sending TP.
-    # result:
-    logging.info("Step 13: Wait longer than timeout for fallback while not sending TP.")
+    result = verify_3e_service_response(dut,
+                                        p2_server_max=parameters['p2_server_max_non_programming'])
+    if not result:
+        return False
+
+    # Wait longer than timeout for fallback while not sending testerPresent
     time.sleep(6)
 
-    # step 14:
-    # action: Verify that ECU did fallback to default.
-    # result:
-    logging.info("Step 14: Verify ECU fallback to default as no TP sent.")
-    result = result and SE22.read_did_f186(can_p, b'\x01', 14)
+    # Verify ECU fallback to default as no testerPresent sent
+    result = verify_active_diagnostic_session(dut, ecu_session=1)
+    if not result:
+        return False
+
+    # Start sending TesterPresent
+    dut.SE3e.start_periodic_tp_zero_suppress_prmib(dut, can_id=dut.conf.rig.signal_tester_present)
+    return True
 
 
-    ############################################
-    # postCondition
-    ############################################
-    POST.postcondition(can_p, starttime, result)
+def step_3(dut: Dut, parameters):
+    """
+    action: Verify ECU fallback to default session as no testerPresent sent also verify response
+            of 3E service in PBL session
+    expected_result: ECU should fallback to default session and send positive response '7E' within
+                     p2server max time
+    """
+    # Set to programming session
+    dut.uds.set_mode(2)
+
+    # Verify PBL session
+    pbl_result = dut.SE22.verify_pbl_session(dut)
+    if not pbl_result:
+        logging.error("Test Failed : ECU is not in PBL session")
+        return False
+
+    # Wait longer than timeout for fallback while sending testerPresent
+    time.sleep(6)
+
+    # Verify that ECU is still in PBL session after timeout due to testerPresent sent
+    pbl_result = dut.SE22.verify_pbl_session(dut)
+    if not pbl_result:
+        logging.error("Test Failed : ECU is not in PBL session")
+        return False
+
+    # Stop sending tester present
+    dut.SE3e.stop_periodic_tp_zero_suppress_prmib()
+
+    result = verify_3e_service_response(dut, p2_server_max=parameters['p2_server_max_programming'])
+    if not result:
+        return False
+
+    # Wait longer than timeout for fallback while not sending testerPresent
+    time.sleep(6)
+
+    # Verify ECU fallback to default as no testerPresent sent
+    result = verify_active_diagnostic_session(dut, ecu_session=1)
+    if not result:
+        return False
+
+    # Start sending TesterPresent
+    dut.SE3e.start_periodic_tp_zero_suppress_prmib(dut, can_id=dut.conf.rig.signal_tester_present)
+    return True
+
+
+def step_4(dut: Dut, p2_server_max_programming):
+    """
+    action: Verify ECU fallback to default session as no testerPresent sent also verify response
+            of 3E service in SBL session
+    expected_result: ECU should fallback to default session send positive response '7E' within
+                     p2server max time
+    """
+    result = activate_sbl(dut)
+    if not result:
+        return False
+
+    # Wait longer than timeout for fallback while sending testerPresent
+    time.sleep(6)
+
+    # Verify that ECU is still in SBL after timeout due to testerPresent sent
+    sbl_result = dut.SE22.verify_sbl_session(dut)
+    if not sbl_result:
+        logging.error("Test Failed: ECU is not in SBL session")
+        return False
+
+    # Stop sending tester present
+    dut.SE3e.stop_periodic_tp_zero_suppress_prmib()
+
+    result = verify_3e_service_response(dut, p2_server_max=p2_server_max_programming)
+    if not result:
+        return False
+
+    # Wait longer than timeout for fallback while not sending testerPresent
+    time.sleep(6)
+
+    # Verify ECU fallback to default as no testerPresent sent
+    result = verify_active_diagnostic_session(dut, ecu_session=1)
+    if not result:
+        return False
+
+    return True
+
+
+def run():
+    """
+    Verify ECU supports service testerPresent(0x3E) in default, extended, PBL and SBL session
+    """
+    dut = Dut()
+
+    start_time = dut.start()
+    result = False
+    result_step = False
+
+    parameters_dict = {'p2_server_max_programming' : 0,
+                       'p2_server_max_non_programming' : 0}
+
+    try:
+        dut.precondition(timeout=180)
+
+        parameters = dut.SIO.parameter_adopt_teststep(parameters_dict)
+        if not all(list(parameters.values())):
+            raise DutTestError("yml parameters not found")
+
+        result_step = dut.step(step_1, parameters, purpose="Verify ECU stays in default session "
+                               "as no testerPresent is sent and also verify response of 3E "
+                               "service in default session")
+        if result_step:
+            result_step = dut.step(step_2, parameters, purpose="Verify ECU fallback to default "
+                                   "session as no testerPresent sent also verify response "
+                                   "of 3E service in extended session")
+        if result_step:
+            result_step = dut.step(step_3, parameters, purpose="Verify ECU fallback to default "
+                                   "session as no testerPresent sent also verify response of 3E "
+                                   "service in PBL session")
+        if result_step:
+            result_step = dut.step(step_4, parameters['p2_server_max_programming'], purpose=
+                                   "Verify ECU fallback to default session as no testerPresent "
+                                   "sent also verify response of 3E service in SBL session")
+        result = result_step
+
+    except DutTestError as error:
+        logging.error("Test failed: %s", error)
+    finally:
+        dut.postcondition(start_time, result)
 
 
 if __name__ == '__main__':
