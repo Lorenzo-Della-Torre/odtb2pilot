@@ -452,10 +452,10 @@ hvbm_p519:
         e_77275_MAIN_2 : clustered_frame_transmission_and_no_priority_inversion_can | This needs to be manually tested.
         e_392111_MAIN_0 : bootloader_CAN_busoff_handling | Script needs manual inputs
         e_76542_MAIN_3 : communication_stack_processing_period_jitter | This is partially automated. Need manual verification.
-        e_469133_MAIN_2	: security_access_key_programming_at_oem | This needs a manual security key restore using debugger.
+        e_469133_MAIN_2 : security_access_key_programming_at_oem | This needs a manual security key restore using debugger.
         e_469463_MAIN_1: key_storage | This needs a manual security key restore using debugger. | ¤MULTI¤
         e_486613_MAIN_0: event_type_security_key_updates | This needs a manual security key restore using debugger.
-        e_486686_MAIN_0	: security_log_authentication_key_detection_of_non_programmed_production_keys | This needs a manual security key restore using debugger.
+        e_486686_MAIN_0 : security_log_authentication_key_detection_of_non_programmed_production_keys | This needs a manual security key restore using debugger.
         e_486687_MAIN_0 : security_log_authentication_key_type_structure | This needs a manual security key restore using debugger.
 
     --dSpace--:
