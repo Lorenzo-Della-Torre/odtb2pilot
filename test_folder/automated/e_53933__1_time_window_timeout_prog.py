@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2021 Volvo Car Corporation. All rights reserved.
+Copyright © 2023 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -18,234 +18,201 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 /*********************************************************************************/
 
-# Testscript Hilding MEPII
-# project:  BECM basetech MEPII
-# author:   LDELLATO (Lorenzo Della Torre)
-# date:     2020-01-30
-# version:  1.0
-# reqprod:  53933
+reqprod: 53933
+version: 1
+title: Time window (Timeout_Prog)
+purpose: >
+    To have the possibility to reprogram the ECU believes if it believes it has valid software(s)
+    present, but the application software is not correctly jumping to the PBL.
 
-# author:   LDELLATO (Lorenzo Della Torre)
-# date:     2020-09-22
-# version:  1.1
-# reqprod:  53933
+description: >
+    The primary bootloader (PBL) shall have a time window (Timeout_Prog) of 5 ms (-0% / +10%) for
+    detection of the DiagnosticSessionControl service. If a DiagnosticSessionControl service with
+    diagnosticSessionType equal to programmingSession is received during the time window the ECU
+    shall enter programmingSession state.
 
-#inspired by https://grpc.io/docs/tutorials/basic/python.html
+    The Timeout_prog timer is started when the ECU is able to receive incoming messages.
 
-# Copyright 2015 gRPC authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-The Python implementation of the gRPC route guide client.
+details: >
+    Verify Timeout_Prog for detection of diagnostic session control service
+    Steps:
+        1. Send burst diagnostic session control programming session with periodicity of 10ms
+           for 40ms window.
+        2. Send burst diagnostic session control programming session with periodicity of 1ms
+           for 40ms window.
 """
 
 import time
-from datetime import datetime
-import sys
 import logging
-import inspect
-
-import odtb_conf
-
-from supportfunctions.support_can import SupportCAN, CanParam, PerParam
-from supportfunctions.support_test_odtb2 import SupportTestODTB2
-from supportfunctions.support_carcom import SupportCARCOM
+from hilding.dut import Dut
+from hilding.dut import DutTestError
+from supportfunctions.support_can import SupportCAN, PerParam
 from supportfunctions.support_file_io import SupportFileIO
-from supportfunctions.support_SBL import SupportSBL
-from supportfunctions.support_sec_acc import SupportSecurityAccess
-from supportfunctions.support_rpi_gpio import SupportRpiGpio
+from supportfunctions.support_service3e import SupportService3e
 
-from supportfunctions.support_precondition import SupportPrecondition
-from supportfunctions.support_postcondition import SupportPostcondition
-from supportfunctions.support_service10 import SupportService10
-from supportfunctions.support_service11 import SupportService11
-from supportfunctions.support_service22 import SupportService22
-from supportfunctions.support_service31 import SupportService31
-from supportfunctions.support_service34 import SupportService34
-
-SIO = SupportFileIO
+SIO = SupportFileIO()
 SC = SupportCAN()
-S_CARCOM = SupportCARCOM()
-SUTE = SupportTestODTB2()
-SSBL = SupportSBL()
-SSA = SupportSecurityAccess()
-SGPIO = SupportRpiGpio()
+SE3E = SupportService3e()
 
-PREC = SupportPrecondition()
-POST = SupportPostcondition()
-SE10 = SupportService10()
-SE11 = SupportService11()
-SE22 = SupportService22()
-SE31 = SupportService31()
-SE34 = SupportService34()
 
-def step_1(can_p):
+def periodic_start_and_stop(dut):
     """
-    Teststep 1: Switch the ECU off and on
+    Periodic start and stop
+    Args:
+        dut (Dut): An instance of Dut
+    Returns: None
     """
-    stepno = 1
-    purpose = "Switch the ECU off and on"
-    SUTE.print_test_purpose(stepno, purpose)
-    time.sleep(1)
-    result = True
-    logging.info("Relais1 on")
-    SGPIO.t_send_gpio_signal_hex(can_p["netstub"], "Relais1", SC.nspace_lookup("RpiGPIO"), b'\x00')
-    time.sleep(3)
-    logging.info("Relais1 off")
-    SGPIO.t_send_gpio_signal_hex(can_p["netstub"], "Relais1", SC.nspace_lookup("RpiGPIO"), b'\x01')
-    return result
+    # Stop NM frames
+    SC.stop_heartbeat()
 
-def step_2(can_p):
-    """
-    Teststep 2: Send burst Diagnostic Session Control Programming Session with
-    periodicity of 10ms for 40 ms window
-    """
-    stepno = 2
-    purpose = """Send burst Diagnostic Session Control Programming Session with
-                 periodicity of 10ms for 40 ms window"""
-    SUTE.print_test_purpose(stepno, purpose)
+    # Send stop periodic
+    SE3E.stop_periodic_tp_zero_suppress_prmib()
 
-    burst_param: PerParam = {
-        "name" : "Burst",
+    # Wait for 15 secs
+    time.sleep(15)
+
+    # Send start periodic
+    heartbeat_param: PerParam = {
+        "name" : "Heartbeat",
         "send" : True,
-        "id" : "Vcu1ToAllFuncFront1DiagReqFrame",
-        "nspace" : can_p["namespace"],
-        "frame" : b'\x02\x10\x82\x00\x00\x00\x00\x00',
-        "intervall" : 0.010
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), burst_param)
-    # Send NM burst (4 frames):
-    # t_send_signal_hex(self, stub, signal_name, namespace, payload_value)
-    # SC.send_burst(self, stub, burst_id, burst_nspace, burst_frame,
-    # burst_intervall, burst_quantity)
-    SC.send_burst(can_p["netstub"], burst_param, 4)
-    time.sleep(2)
+        "id" : dut.conf.rig.signal_periodic,
+        "nspace" : dut.namespace,
+        "protocol" : "can",
+        "framelength_max" : 8,
+        "padding" : True,
+        "frame" : bytes.fromhex(dut.conf.rig.wakeup_frame),
+        "intervall" : 0.4
+        }
+    SC.start_heartbeat(dut.network_stub, heartbeat_param)
 
-def step_4(can_p):
-    """
-    Teststep 4: Switch the ECU off and on
-    """
-    stepno = 4
-    purpose = "Switch the ECU off and on"
-    SUTE.print_test_purpose(stepno, purpose)
-    time.sleep(1)
-    result = True
-    logging.info("Relais1 on")
-    SGPIO.t_send_gpio_signal_hex(can_p["netstub"], "Relais1", SC.nspace_lookup("RpiGPIO"), b'\x00')
-    time.sleep(3)
-    logging.info("Relais1 off")
-    SGPIO.t_send_gpio_signal_hex(can_p["netstub"], "Relais1", SC.nspace_lookup("RpiGPIO"), b'\x01')
-    return result
+    # Send start periodic
+    SE3E.start_periodic_tp_zero_suppress_prmib(dut)
 
-def step_5(can_p):
+
+def send_burst_of_diagnostic_session(dut, send, id_value, interval, quantity):
     """
-    Teststep 5: Send burst Diagnostic Session Control Programming Session with
-    periodicity of 2ms for 40 ms window
+    Send diagnostic session control programming session burst
+    Args:
+        dut (Dut): An instance of Dut
+        send (str): Send signal
+        id_value (str): Id signal
+        interval (float): Interval
+        quantity (int): Quantity
+    Returns: None
     """
-    stepno = 5
-    purpose = """Send burst Diagnostic Session Control Programming Session with
-                 periodicity of 1ms for 40 ms window"""
-    SUTE.print_test_purpose(stepno, purpose)
-    burst_param: PerParam = {
-        "name" : "Burst",
-        "send" : True,
-        "id" : "Vcu1ToAllFuncFront1DiagReqFrame",
-        "nspace" : can_p["namespace"],
-        "frame" : b'\x02\x10\x82\x00\x00\x00\x00\x00',
-        "intervall" : 0.001
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), burst_param)
-    # Send NM burst (20 frames):
-    # t_send_signal_hex(self, stub, signal_name, namespace, payload_value)
-    # SC.send_burst(self, stub, burst_id, burst_nspace, burst_frame,
-    # burst_intervall, burst_quantity)
-    SC.send_burst(can_p["netstub"], burst_param, 40)
-    time.sleep(2)
+    burst_param: PerParam = {"name" : "Burst",
+                             "send" : send,
+                             "id" : id_value,
+                             "nspace" : dut["namespace"],
+                             "frame" : b'\x02\x10\x82\x00\x00\x00\x00\x00',
+                             "intervall" : interval}
+
+    SC.send_burst(dut["netstub"], burst_param, quantity)
+
+
+def verify_active_diagnostic_session(dut, mode, session):
+    """
+    Verify active diagnostic session
+    Args:
+        dut (Dut): An instance of Dut
+        mode (int): ECU mode
+        session (str): Diagnostic session
+    Returns:
+        (bool): True on successfully verifying active diagnostic session
+    """
+    response = dut.uds.active_diag_session_f186()
+    if response.data["details"]["mode"] == mode:
+        logging.info("ECU is in %s session as expected", session)
+        return True
+
+    logging.error("Test Failed: ECU is not in %s session", session)
+    return False
+
+
+def step_1(dut: Dut, parameters):
+    """
+    action: Send burst diagnostic session control programming session with periodicity of 10ms for
+            40 ms window
+    expected_result: ECU should be in default session
+    """
+    periodic_start_and_stop(dut)
+    send_burst_of_diagnostic_session(dut, parameters['send'],
+                                     parameters['brust_id_for_periodicity_high_freq_window'],
+                                     parameters['interval_periodicity_high_freq_window'],
+                                     parameters['quantity_periodicity_high_freq_window'])
+
+    return verify_active_diagnostic_session(dut, mode=1, session='default')
+
+
+def step_2(dut: Dut, parameters):
+    """
+    action: Send burst diagnostic session control programming session with periodicity of 1ms for
+            40 ms window
+    expected_result: ECU should be in programming session
+    """
+    periodic_start_and_stop(dut)
+    send_burst_of_diagnostic_session(dut, parameters['send'],
+                                     parameters['brust_id_for_periodicity_low_freq_window'],
+                                     parameters['interval_periodicity_low_freq_window'],
+                                     parameters['quantity_periodicity_low_freq_window'])
+
+    return verify_active_diagnostic_session(dut, mode=2, session='programming')
+
+
+def step_3(dut: Dut):
+    """
+    action: ECU hard reset and verify active diagnostic session
+    expected_result:  ECU should be in default session
+    """
+    # ECU hard reset
+    dut.uds.ecu_reset_1101()
+
+    return verify_active_diagnostic_session(dut, mode=1, session='default')
+
 
 def run():
     """
-    Run - Call other functions from here
+    Verify Timeout_Prog for detection of diagnostic session control service
     """
-    logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
+    dut = Dut()
 
-    # where to connect to signal_broker
-    can_p: CanParam = {
-        "netstub" : SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
-        "send" : "Vcu1ToBecmFront1DiagReqFrame",
-        "receive" : "BecmToVcu1Front1DiagResFrame",
-        "namespace" : SC.nspace_lookup("Front1CANCfg0")
-    }
-    SIO.extract_parameter_yml(str(inspect.stack()[0][3]), can_p)
-    logging.info("Testcase start: %s", datetime.now())
-    starttime = time.time()
-    logging.info("Time: %s \n", time.time())
-    ############################################
-    # precondition
-    ############################################
-    timeout = 100
-    result = PREC.precondition(can_p, timeout)
+    start_time = dut.start()
+    result = False
+    result_step = False
 
-    if result:
-    ############################################
-    # teststeps
-    ############################################
-        # step1:
-        # action: Switch the ECU off and on
-        # result: BECM sends positive reply
-        result = result and step_1(can_p)
+    parameters_dict = {'send' : '',
+                       'brust_id_for_periodicity_high_freq_window': '',
+                       'brust_id_for_periodicity_low_freq_window': '',
+                       'interval_periodicity_high_freq_window': 0.0,
+                       'quantity_periodicity_high_freq_window': 0,
+                       'interval_periodicity_low_freq_window': 0.0,
+                       'quantity_periodicity_low_freq_window': 0,}
 
-        # step2:
-        # action: Send burst Diagnostic Session Control Programming Session with
-        # periodicity of 10ms for 40 ms window
-        # result:
-        step_2(can_p)
+    parameters = SIO.parameter_adopt_teststep(parameters_dict)
+    if not all(list(parameters.values())):
+        raise DutTestError("yml parameters not found")
 
-        # step3:
-        # action: verify ECU in default session
-        # result: ECU sends positive reply
-        result = result and SE22.read_did_f186(can_p, b'\x01', stepno=3)
+    try:
+        dut.precondition(timeout=90)
 
-        # step4:
-        # action: Switch the ECU off and on
-        # result:
-        result = result and step_4(can_p)
+        result_step = dut.step(step_1, parameters, purpose="Send burst diagnostic session control"
+                                                           " programming session with periodicity"
+                                                           " of 10ms for 40 ms window")
+        if result_step:
+            result_step = dut.step(step_2, parameters, purpose="Send burst diagnostic session "
+                                                               "control programming session with"
+                                                               " periodicity of 1ms for 40 ms"
+                                                               " window")
+        if result_step:
+            result_step = dut.step(step_3, purpose="ECU hard reset and verify active diagnostic"
+                                                   " session")
+        result = result_step
 
-        # step5:
-        # action: Send burst Diagnostic Session Control Programming Session with
-        # periodicity of 1ms for 40 ms window
-        # result:
-        step_5(can_p)
+    except DutTestError as error:
+        logging.error("Test failed: %s", error)
+    finally:
+        dut.postcondition(start_time, result)
 
-        # step6:
-        # action: verify ECU in programming session
-        # result: ECU sends positive reply
-        result = result and SE22.read_did_f186(can_p, b'\x02', stepno=6)
-
-        # step7:
-        # action: Hard Reset
-        # result: ECU sends positive reply
-        result = result and SE11.ecu_hardreset(can_p, stepno=7)
-
-        # step8:
-        # action: verify ECU in default session
-        # result: ECU sends positive reply
-        result = result and SE22.read_did_f186(can_p, b'\x01', stepno=8)
-
-    ############################################
-    # postCondition
-    ############################################
-
-    POST.postcondition(can_p, starttime, result)
 
 if __name__ == '__main__':
     run()

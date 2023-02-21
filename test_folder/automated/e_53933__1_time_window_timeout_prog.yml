@@ -1,4 +1,9 @@
 hvbm_p519:
-        step_5:
-                id: HvbmdpToAllUdsDiagRequestFrame
-                send: HvbmdpToHvbmUdsDiagRequestFrame
+    run:
+        send: "HvbmdpToHvbmUdsDiagRequestFrame"
+        brust_id_for_periodicity_high_freq_window: "Vcu1ToAllFuncFront1DiagReqFrame"
+        brust_id_for_periodicity_low_freq_window: "HvbmdpToAllUdsDiagRequestFrame"
+        interval_periodicity_high_freq_window: 0.010
+        quantity_periodicity_high_freq_window: 4
+        interval_periodicity_low_freq_window: 0.001
+        quantity_periodicity_low_freq_window: 40
