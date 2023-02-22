@@ -60,10 +60,13 @@ import epsmsgbus.activityid as activity_mod
 from epsmsgbus.cynosure import messagehandler
 
 
+cynosure_msg = None
+
 config = epsconfig.config('db')
 if config.cynosure.major_version is None:
-    raise ValueError("Cynosure major version is not configured!")
-cynosure_msg = importlib.import_module('epsmsgbus.cynosure{}'.format(config.cynosure.major_version))
+    print("Cynosure major version is not configured!")
+else:
+    cynosure_msg = importlib.import_module('epsmsgbus.cynosure{}'.format(config.cynosure.major_version))
 
 
 __all__ = ['messagehandler', 'Verdict', 'ExecutionInfo', 'TestEnvironmentinfo',
