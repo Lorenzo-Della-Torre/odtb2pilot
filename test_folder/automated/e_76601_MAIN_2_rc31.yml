@@ -1,4 +1,8 @@
 hvbm_p519:
     run:
+        rid :
+            type1_non_programming : '0206'
+            type2_non_programming : 'DCA0'
+            type3_non_programming : '4000'
+            type1_pbl_sbl : '0205'
         resp_time_type1 : 5000
-        resp_time_type2_type3 : 200
