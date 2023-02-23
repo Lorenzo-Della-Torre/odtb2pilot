@@ -1,0 +1,8 @@
+hvbm_p519:
+    run:
+        event_type_sa_prog_session: 'D046'
+        event_type_software_updates_boot: 'D048'
+        event_type_secure_boot: 'D0B7'
+        event_type_security_key_updates: 'D0C1'
+        event_type_sa_application: 'D03C'
+        event_type_secure_onboard_communication: 'D0BC'
