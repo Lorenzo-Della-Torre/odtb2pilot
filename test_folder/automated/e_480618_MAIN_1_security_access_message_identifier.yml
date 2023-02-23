@@ -1,5 +1,6 @@
 hvbm_p519:
-  message_identifier:
-  - "0001"
-  - "0002"
-  - "0003"
+    run:
+        message_identifier:
+        - "0001"
+        - "0002"
+        - "0003"

@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2022 Volvo Car Corporation. All rights reserved.
+Copyright © 2023 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -17,7 +17,6 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 
 /*********************************************************************************/
-
 
 reqprod: 480618
 version: 1
@@ -35,10 +34,8 @@ description: >
     serverResponseKey: 0x0004, reserved for future use.
 
 details: >
-
     Validate security access response of clientRequestSeed, serverResponseSeed, clientSendKey
-    with correct message identifier and incorrect message identifier
-
+    with correct message identifier and incorrect message identifier.
 """
 
 import time
@@ -56,9 +53,9 @@ def security_access_method(dut):
     """
     Security access to ECU and store response of all sub functions in dictionary
     Args:
-    dut (Dut): An instance of dut
+        dut (Dut): An instance of dut
     Results:
-    payload_dict (dict): payload dictionary for security access
+        payload_dict (dict): Payload dictionary for security access
     """
     payload_dict = {'client_seed': '', 'server_seed': '', 'client_key': ''}
 
@@ -83,53 +80,48 @@ def security_access_method(dut):
     return payload_dict
 
 
-def step_1(dut: Dut):
+def step_1(dut: Dut, parameters):
     """
     action: Perform all the security access methods i.e clientRequestSeed, serverResponseSeed,
             clientSendKey and validate correct message identifiers.
     expected_result: Positive response with valid message identifier.
     """
-    parameters = SIO.extract_parameter_yml("*", "message_identifier")
-    if parameters is not None:
-        message_identifier = parameters
+    message_identifier = parameters["message_identifier"]
 
-        dut.uds.set_mode(2)
+    dut.uds.set_mode(2)
 
-        # Sleep time to avoid NRC37
-        time.sleep(5)
+    # Sleep time to avoid NRC37
+    time.sleep(5)
 
-        # Security access to ECU
-        payload_dict = security_access_method(dut)
+    # Security access to ECU
+    payload_dict = security_access_method(dut)
 
-        # Comparing bytearray converted client_seed payload value from 4:8(0001) with
-        # message identifier 0001
-        if bytearray.hex(payload_dict['client_seed'][4:6]) != message_identifier[0]:
-            msg = "Incorrect message identifier {} received for clientRequestSeed\
-                               ".format(bytearray.hex(payload_dict['client_seed'][4:6]))
-            raise DutTestError(msg)
+    # Comparing bytearray converted client_seed payload value from 4:8(0001) with
+    # message identifier 0001
+    if bytearray.hex(payload_dict['client_seed'][4:6]) != message_identifier[0]:
+        msg = "Incorrect message identifier {} received for clientRequestSeed\
+                            ".format(bytearray.hex(payload_dict['client_seed'][4:6]))
+        raise DutTestError(msg)
 
-        # Comparing server_seed payload value from 4:8(0002) with message identifier 0002
-        if payload_dict['server_seed'][4:8] != message_identifier[1]:
-            msg = "Incorrect message identifier {} received for serverResponseSeed\
-                              ".format(payload_dict['server_seed'][4:8])
-            raise DutTestError(msg)
+    # Comparing server_seed payload value from 4:8(0002) with message identifier 0002
+    if payload_dict['server_seed'][4:8] != message_identifier[1]:
+        msg = "Incorrect message identifier {} received for serverResponseSeed\
+                            ".format(payload_dict['server_seed'][4:8])
+        raise DutTestError(msg)
 
-        # Comparing bytearray converted client_key payload value from 4:8(0003) with
-        # message identifier 0003
-        if bytearray.hex(payload_dict['client_key']).upper()[4:8] != message_identifier[2]:
-            msg = "Incorrect message identifier {} received for clientSendKey\
-                               ".format(bytearray.hex(payload_dict['client_key']).upper()[4:8])
-            raise DutTestError(msg)
+    # Comparing bytearray converted client_key payload value from 4:8(0003) with
+    # message identifier 0003
+    if bytearray.hex(payload_dict['client_key']).upper()[4:8] != message_identifier[2]:
+        msg = "Incorrect message identifier {} received for clientSendKey\
+                            ".format(bytearray.hex(payload_dict['client_key']).upper()[4:8])
+        raise DutTestError(msg)
 
-        logging.info("Message identifiers for subfunctions clientRequestSeed, serverResponseSeed"
-                     " and clientSendKey are %s, %s, %s as expected",
-                      bytearray.hex(payload_dict['client_seed'][4:6]),
-                      payload_dict['server_seed'][4:8],
-                      bytearray.hex(payload_dict['client_key']).upper()[4:8])
-        return True
-
-    logging.error("Test Failed: Yml Parameter not found or incorrect message identifier")
-    return False
+    logging.info("Message identifiers for subfunctions clientRequestSeed, serverResponseSeed"
+                 " and clientSendKey are %s, %s, %s as expected",
+                   bytearray.hex(payload_dict['client_seed'][4:6]),
+                   payload_dict['server_seed'][4:8],
+                   bytearray.hex(payload_dict['client_key']).upper()[4:8])
+    return True
 
 
 def step_2(dut: Dut):
@@ -152,9 +144,9 @@ def step_2(dut: Dut):
     response = dut.uds.generic_ecu_call(payload)
 
     # Check NRC 31(requestOutOfRange) for corrupted client key in response.raw
-    if response.raw[6:8] == "31":
+    if response.raw[2:4] == "7F" and response.raw[6:8] == "31":
         logging.info("Received NRC 31(requestOutOfRange) for incorrect message identifier for seed"
-                    " request as expected")
+                     " request as expected")
         return True
 
     logging.error("Test Failed: Expected NRC 31(requestOutOfRange), received %s", response)
@@ -174,6 +166,9 @@ def step_3(dut: Dut):
 
     # Prepare client request seed
     client_req_seed = SSA.prepare_client_request_seed()
+
+    time.sleep(5)
+
     response = dut.uds.generic_ecu_call(client_req_seed)
 
     # Prepare server seed payload by truncating first 2 bytes of message
@@ -186,13 +181,13 @@ def step_3(dut: Dut):
     payload[3] = 0x04
     response = dut.uds.generic_ecu_call(payload)
 
-    # Check NRC 31(requestOutOfRange) for corrupted client key in response.raw
-    if response.raw[6:8] == "31":
-        logging.info("Received NRC 31(requestOutOfRange) for incorrect message identifier for key"
+    # Check NRC 35(invalidKey) for corrupted client key in response.raw
+    if response.raw[2:4] == "7F" and response.raw[6:8] == "35":
+        logging.info("Received NRC 35(invalidKey) for incorrect message identifier for key"
                      " response as expected")
         return True
 
-    logging.error("Test Failed: Expected NRC 31(requestOutOfRange), received %s", response)
+    logging.error("Test Failed: Expected NRC 35(invalidKey), received %s", response)
     return False
 
 
@@ -207,16 +202,21 @@ def run():
     result = False
     result_step = False
 
+    # Read yml parameters
+    parameters_dict = {'message_identifier': []}
+
     try:
         dut.precondition(timeout=60)
 
-        result_step = dut.step(step_1, purpose="Security access to ECU and verify correct message"
-                                               " identifiers")
+        parameters = SIO.parameter_adopt_teststep(parameters_dict)
+        if not all(list(parameters.values())):
+            raise DutTestError("yml parameters not found")
 
+        result_step = dut.step(step_1, parameters, purpose="Security access to ECU and verify "
+                                                           " correct message identifiers")
         if result_step:
             result_step = dut.step(step_2, purpose="Check clientRequestSeed with incorrect message"
                                                    " identifier")
-
         if result_step:
             result_step = dut.step(step_3, purpose="Check clientSendKey with incorrect message"
                                                    " identifier")
