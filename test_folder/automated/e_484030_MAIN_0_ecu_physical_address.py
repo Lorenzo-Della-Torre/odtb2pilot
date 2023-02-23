@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2022 Volvo Car Corporation. All rights reserved.
+Copyright © 2023 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -20,7 +20,7 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 reqprod: 484030
 version: 0
-title: : ECU physical address
+title: ECU physical address
 purpose: >
     To dedicate a physical logical address for the ECU
 
@@ -40,7 +40,7 @@ details: >
 
 import sys
 import logging
-from e_68177_MAIN_1_active_diag_session_f186 import run
+from e_68177_MAIN_0_active_diag_session_f186 import run
 
 logging.basicConfig(format=' %(message)s', stream=sys.stdout, level=logging.INFO)
 
