@@ -70,7 +70,7 @@ SUTE = SupportTestODTB2()
 SC_CARCOM = SupportCARCOM()
 
 
-def send_multiframe_cts(dut: Dut, parameters):
+def send_multiframe_cts(dut: Dut, parameters, fc_separation_time):
     """
     Send a request with MultiFrame for FC.CTS state
     Args:
@@ -94,7 +94,7 @@ def send_multiframe_cts(dut: Dut, parameters):
     # Verify FC parameters
     logging.info("Received FC Frame: %s", SC.can_cf_received[dut["receive"]])
 
-    fc_code = '3000' + dut.conf.default_rig_config["FC_Separation_time"]
+    fc_code = '3000' + fc_separation_time
 
     logging.info("Received CAN message: %s", SC.can_messages[dut["receive"]])
     logging.info("CAN MultiFrame: %s", SC.can_frames[dut["receive"]])
@@ -106,7 +106,7 @@ def send_multiframe_cts(dut: Dut, parameters):
     return False
 
 
-def send_multiframe_ovflw(dut: Dut, parameters):
+def send_multiframe_ovflw(dut: Dut, parameters, fc_separation_time):
     """
     Send a request with payload of size 1025 bytes for FC.OVFLW
     Args:
@@ -135,7 +135,7 @@ def send_multiframe_ovflw(dut: Dut, parameters):
     logging.info("Received CAN message: %s", SC.can_messages[dut["receive"]])
     logging.info("CAN MultiFrame: %s", SC.can_frames[dut["receive"]])
 
-    fc_code_ovflw = '3200' + dut.conf.default_rig_config["FC_Separation_time"]
+    fc_code_ovflw = '3200' + fc_separation_time
 
     if SUTE.test_message(SC.can_cf_received[dut["receive"]], teststring=fc_code_ovflw):
         return True
@@ -166,13 +166,13 @@ def derive_nbr_time(dut: Dut, parameters):
     return result, nbr_time
 
 
-def step_1(dut: Dut, parameters):
+def step_1(dut: Dut, parameters, fc_separation_time):
     """
     action: Verify N_Br is less than 20 ms for FC.CTS in default session
     expected_result: Positive response on successfully verified N_Br time
     """
     # Send a request with payload size less than 1024 bytes to test ECU response for FC.CTS
-    cts_result = send_multiframe_cts(dut, parameters)
+    cts_result = send_multiframe_cts(dut, parameters, fc_separation_time)
     if cts_result:
         nbr_result, nbr_time = derive_nbr_time(dut, parameters)
         # Verify N_Br is less than 20 ms
@@ -188,13 +188,13 @@ def step_1(dut: Dut, parameters):
     return False
 
 
-def step_2(dut: Dut, parameters):
+def step_2(dut: Dut, parameters, fc_separation_time):
     """
     action: Verify N_Br is less than 20 ms for FC.OVFLW in default session
     expected_result: Positive response on successfully verified N_Br time
     """
     # Send a request with payload size greater than 1024 bytes to test ECU response for FC.OVFLW
-    ovflw_result = send_multiframe_ovflw(dut, parameters)
+    ovflw_result = send_multiframe_ovflw(dut, parameters, fc_separation_time)
     if ovflw_result:
         # Verify N_Br is less than 20 ms
         nbr_result, nbr_time = derive_nbr_time(dut, parameters)
@@ -210,7 +210,7 @@ def step_2(dut: Dut, parameters):
     return False
 
 
-def step_3(dut: Dut, parameters):
+def step_3(dut: Dut, parameters, fc_separation_time):
     """
     action: Verify N_Br is less than 20 ms for FC.CTS in extended session
     expected_result: Positive response on successfully verified N_Br time
@@ -219,7 +219,7 @@ def step_3(dut: Dut, parameters):
     dut.uds.set_mode(3)
 
     # Send a request with payload size less than 1024 bytes to test ECU response for FC.CTS
-    cts_result = send_multiframe_cts(dut, parameters)
+    cts_result = send_multiframe_cts(dut, parameters, fc_separation_time)
     if cts_result:
         nbr_result, nbr_time = derive_nbr_time(dut, parameters)
         # Verify N_Br is less than 20 ms
@@ -235,13 +235,13 @@ def step_3(dut: Dut, parameters):
     return False
 
 
-def step_4(dut: Dut, parameters):
+def step_4(dut: Dut, parameters, fc_separation_time):
     """
     action: Verify N_Br is less than 20 ms for FC.OVFLW in extended session
     expected_result: Positive response on successfully verified N_Br time
     """
     # Send a request with payload size greater than 1024 bytes to test ECU response for FC.OVFLW
-    ovflw_result = send_multiframe_ovflw(dut, parameters)
+    ovflw_result = send_multiframe_ovflw(dut, parameters, fc_separation_time)
     if ovflw_result:
         # Verify N_Br is less than 20 ms
         nbr_result, nbr_time = derive_nbr_time(dut, parameters)
@@ -276,20 +276,30 @@ def run():
         # Read yml parameters
         parameters = SIO.parameter_adopt_teststep(parameters_dict)
 
+        fc_separation_time = '05'
+        new_fc_separation_time = SIO.parameter_adopt_teststep('fc_separation_time')
+        if new_fc_separation_time != '':
+            assert isinstance(new_fc_separation_time, str)
+        fc_separation_time = new_fc_separation_time    # Verify FC parameters
+
         if not all(list(parameters.values())):
             raise DutTestError("yml parameters not found")
 
-        result_step = dut.step(step_1, parameters, purpose="Verify N_Br is less than 20 ms for"
-                                                           " FC.CTS in default session")
+        result_step = dut.step(step_1, parameters, fc_separation_time,
+                               purpose="Verify N_Br is less than 20 ms for"
+                                       " FC.CTS in default session")
         if result_step:
-            result_step = dut.step(step_2, parameters, purpose="Verify N_Br is less than 20 ms for"
-                                                               " FC.OVFLW in default session")
+            result_step = dut.step(step_2, parameters, fc_separation_time,
+                                   purpose="Verify N_Br is less than 20 ms for"
+                                           " FC.OVFLW in default session")
         if result_step:
-            result_step = dut.step(step_3, parameters, purpose="Verify N_Br is less than 20 ms for"
+            result_step = dut.step(step_3, parameters, fc_separation_time,
+                           purpose="Verify N_Br is less than 20 ms for"
                                                                " FC.CTS in extended session")
         if result_step:
-            result_step = dut.step(step_4, parameters, purpose="Verify N_Br is less than 20 ms for"
-                                                               " FC.OVFLW in extended session")
+            result_step = dut.step(step_4, parameters, fc_separation_time,
+                                   purpose="Verify N_Br is less than 20 ms for"
+                                           " FC.OVFLW in extended session")
         result = result_step
     except DutTestError as error:
         logging.error("Test failed: %s", error)

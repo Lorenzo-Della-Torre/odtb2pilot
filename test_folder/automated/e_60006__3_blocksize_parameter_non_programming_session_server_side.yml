@@ -1,6 +1,84 @@
+becm_p319:
+    run:
+        non_prog_dids: ['DD02', 'DD0A', '4802', '4947']
+        pl_size_positive_response : 12
+        pl_size_negative_response : 300
+        pl_size_overflow : 1025
+        fc_separation_time : '0A'
+ecm_523a:
+    run:
+        non_prog_dids: ['DD02', 'DD0A', '4802', '4947']
+        pl_size_positive_response : 12
+        pl_size_negative_response : 300
+        pl_size_overflow : 1025
+        fc_separation_time : '05'
+fioc_p519:
+    run:
+        non_prog_dids: ['DD02', 'DD0A', '4802', '4947']
+        pl_size_positive_response : 12
+        pl_size_negative_response : 300
+        pl_size_overflow : 1025
+        fc_separation_time : '05'
+hlcm_p519:
+    run:
+        non_prog_dids: ['DD02', 'DD0A', '4802', '4947']
+        pl_size_positive_response : 12
+        pl_size_negative_response : 300
+        pl_size_overflow : 1025
+        fc_separation_time : '05'
 hvbm_p519:
     run:
         non_prog_dids: ['DD02', 'DD0A', '4802', '4947']
         pl_size_positive_response : 12
         pl_size_negative_response : 300
         pl_size_overflow : 1025
+        fc_separation_time : '05'
+hvbm_p519_sa1:
+    run:
+        non_prog_dids: ['DD02', 'DD0A', '4802', '4947']
+        pl_size_positive_response : 12
+        pl_size_negative_response : 300
+        pl_size_overflow : 1025
+        fc_separation_time : '05'
+hvbm_v551:
+    run:
+        non_prog_dids: ['DD02', 'DD0A', '4802', '4947']
+        pl_size_positive_response : 12
+        pl_size_negative_response : 300
+        pl_size_overflow : 1025
+        fc_separation_time : '05'
+ihfa_p519:
+    run:
+        non_prog_dids: ['DD02', 'DD0A', '4802', '4947']
+        pl_size_positive_response : 12
+        pl_size_negative_response : 300
+        pl_size_overflow : 1025
+        fc_separation_time : '05'
+ihfa_v436:
+    run:
+        non_prog_dids: ['DD02', 'DD0A', '4802', '4947']
+        pl_size_positive_response : 12
+        pl_size_negative_response : 300
+        pl_size_overflow : 1025
+        fc_separation_time : '05'
+ihfa_v551:
+    run:
+        non_prog_dids: ['DD02', 'DD0A', '4802', '4947']
+        pl_size_positive_response : 12
+        pl_size_negative_response : 300
+        pl_size_overflow : 1025
+        fc_separation_time : '05'
+psmd_p519:
+    run:
+        non_prog_dids: ['DD02', 'DD0A', '4802', '4947']
+        pl_size_positive_response : 12
+        pl_size_negative_response : 300
+        pl_size_overflow : 1025
+        fc_separation_time : '05'
+rml_p519:
+    run:
+        non_prog_dids: ['DD02', 'DD0A', '4802', '4947']
+        pl_size_positive_response : 12
+        pl_size_negative_response : 300
+        pl_size_overflow : 1025
+        fc_separation_time : '05'

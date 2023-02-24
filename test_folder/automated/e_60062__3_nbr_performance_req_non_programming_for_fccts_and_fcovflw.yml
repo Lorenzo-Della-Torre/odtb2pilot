@@ -1,6 +1,84 @@
+becm_p319:
+    run:
+        did: 'DD02DD0BDD0C4947'
+        payload_max_length_cts: 1020
+        payload_max_length_ovflw: 1025
+        time: 20
+        FC_Separation_time : '0A'
+ecm_523a:
+    run:
+        did: 'DD02DD0BDD0C4947'
+        payload_max_length_cts: 1020
+        payload_max_length_ovflw: 1025
+        time: 20
+        FC_Separation_time : '05'
+fioc_p519:
+    run:
+        did: 'DD02DD0BDD0C4947'
+        payload_max_length_cts: 1020
+        payload_max_length_ovflw: 1025
+        time: 20
+        FC_Separation_time : '05'
+hlcm_p519:
+    run:
+        did: 'DD02DD0BDD0C4947'
+        payload_max_length_cts: 1020
+        payload_max_length_ovflw: 1025
+        time: 20
+        FC_Separation_time : '05'
 hvbm_p519:
     run:
         did: 'DD02DD0BDD0C4947'
         payload_max_length_cts: 1020
         payload_max_length_ovflw: 1025
         time: 20
+        FC_Separation_time : '05'
+hvbm_p519_sa1:
+    run:
+        did: 'DD02DD0BDD0C4947'
+        payload_max_length_cts: 1020
+        payload_max_length_ovflw: 1025
+        time: 20
+        fc_separation_time : '05'
+hvbm_v551:
+    run:
+        did: 'DD02DD0BDD0C4947'
+        payload_max_length_cts: 1020
+        payload_max_length_ovflw: 1025
+        time: 20
+        fc_separation_time : '05'
+ihfa_p519:
+    run:
+        did: 'DD02DD0BDD0C4947'
+        payload_max_length_cts: 1020
+        payload_max_length_ovflw: 1025
+        time: 20
+        fc_separation_time : '05'
+ihfa_v436:
+    run:
+        did: 'DD02DD0BDD0C4947'
+        payload_max_length_cts: 1020
+        payload_max_length_ovflw: 1025
+        time: 20
+        fc_separation_time : '05'
+ihfa_v551:
+    run:
+        did: 'DD02DD0BDD0C4947'
+        payload_max_length_cts: 1020
+        payload_max_length_ovflw: 1025
+        time: 20
+        fc_separation_time : '05'
+psmd_p519:
+    run:
+        did: 'DD02DD0BDD0C4947'
+        payload_max_length_cts: 1020
+        payload_max_length_ovflw: 1025
+        time: 20
+        fc_separation_time : '05'
+rml_p519:
+    run:
+        did: 'DD02DD0BDD0C4947'
+        payload_max_length_cts: 1020
+        payload_max_length_ovflw: 1025
+        time: 20
+        fc_separation_time : '05'
