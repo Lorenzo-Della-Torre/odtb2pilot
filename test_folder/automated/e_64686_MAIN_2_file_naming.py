@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2022 Volvo Car Corporation. All rights reserved.
+Copyright © 2023 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -20,7 +20,7 @@ Any unauthorized copying or distribution of content from this file is prohibited
 
 reqprod: 64686
 version: 2
-title:   File Naming
+title: File Naming
 purpose: >
     To identify the release of the VBF file.
 
@@ -49,7 +49,6 @@ description: >
         sw_version = "AB"; // Target version
         sw_current_part_number = "31808831"; // Source/current version part no
         sw_current_version = "A";
-
         The format of a delta filename shall be:
         <sw_current_part_number><sw_current_version><separator><sw_part_number><sw_version>.VBF
 
@@ -62,13 +61,13 @@ details: >
     extension of ".VBF
 """
 
-from os import listdir
 import time
-import os.path as path_mod
-from datetime import datetime
 import re
 import sys
 import logging
+import os.path as path_mod
+from os import listdir
+from datetime import datetime
 from hilding.dut import Dut
 from hilding.dut import DutTestError
 
@@ -78,17 +77,16 @@ RE_SW_PART_NUMBER = re.compile(r'\s*sw_part_number\s*=\s*"?(?P<sw_part_number>\w
 RE_SW_VERSION = re.compile(r'\s*sw_version\s*=\s*"?(?P<sw_version>\w*)')
 RE_SW_PART_TYPE = re.compile(r'\s*sw_part_type\s*=\s*(?P<sw_part_type>\w*)')
 
+
 def validate_vbf_name(infile):
     """
     action:
         Reads the vbf-files and compares the file name with the information in the header
-
     expected_result:
         Returns result of the validation
         True - If file_name match the information in the vbf file header
         False - If it doesn't match
 	"""
-
     # Variables
     match_sw_part_number = False
     match_sw_version = False
@@ -122,7 +120,7 @@ def validate_vbf_name(infile):
         sw_version = match_sw_version.group('sw_version')
         sw_part_type = match_sw_part_type.group('sw_part_type')
         logging.info('\n----------------\nsw_part_number = %s\nsw_version = %s\nsw_part_type = %s',
-                     sw_part_number, sw_version, sw_part_type)
+                    sw_part_number, sw_version, sw_part_type)
     else:
         # Did not find the necessary header information to make the comparison
         logging.fatal('\nDid not find the necessary header information to make the comparison')
@@ -138,12 +136,10 @@ def compare_part_number_and_version(sw_part_number, sw_version, file_name):
     action:
         Splits the file name into part number and version and compares them with the
         part number and version from the file header (input parameters to this function)
-
     expected_result:
         True - If they match
         False - If they do not match
     """
-
     result = True
     match_file_name = RE_FILE_NAME.match(file_name)
 
@@ -176,17 +172,16 @@ def run():
     try:
         vbfs = listdir(dut.conf.rig.vbf_path)
         paths_to_vbfs = [str(dut.conf.rig.vbf_path) + "/" + x for x in vbfs]
-
         if not paths_to_vbfs:
             logging.error("VBFs not found, expected in %s ... aborting", dut.conf.rig.vbf_path)
             sys.exit()
 
-        # A second result variabel because we want the other one to be False until the end in case
+        # A second result variable because we want the other one to be False until the end in case
         # we get an exception.
         test_result = True
 
         # Creating generator for looping paths_to_vbfs while test result is True
-        gen = (vbf for vbf in paths_to_vbfs if test_result)
+        gen = (vbf for vbf in paths_to_vbfs if test_result if vbf.endswith('.vbf'))
 
         # Looping using the generator
         for vbf in gen:
@@ -194,6 +189,7 @@ def run():
             test_result = validate_vbf_name(vbf)
 
         result = test_result
+
     except DutTestError as error:
         logging.error("Test failed: %s", error)
     finally:
