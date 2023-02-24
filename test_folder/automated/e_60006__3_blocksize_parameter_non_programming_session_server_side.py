@@ -133,7 +133,7 @@ def read_did_and_verify(dut, dids_to_read, payload_length, response_flag=False):
     return False
 
 
-def verify_fc_overflow(dut, dids_to_read, payload_length):
+def verify_fc_overflow(dut, dids_to_read, fc_separation_time, payload_length, ):
     """
     Verify flow control overflow with payload of size 1025 bytes
     Args:
@@ -158,7 +158,7 @@ def verify_fc_overflow(dut, dids_to_read, payload_length):
     logging.info("Received CAN message: %s", SC.can_messages[dut["receive"]])
     logging.info("CAN MultiFrame: %s", SC.can_frames[dut["receive"]])
 
-    fc_code_ovflw = '3200' + dut.conf.default_rig_config["FC_Separation_time"]
+    fc_code_ovflw = '3200' + fc_separation_time
 
     if SUTE.test_message(SC.can_cf_received[dut["receive"]], teststring=fc_code_ovflw):
         return True
@@ -167,7 +167,7 @@ def verify_fc_overflow(dut, dids_to_read, payload_length):
     return False
 
 
-def verify_flowcontrol_message(dut, parameters, payload_length, response_flag):
+def verify_flowcontrol_message(dut, parameters, fc_separation_time, payload_length, response_flag):
     """
     Verify flow control message for a multiframe request with payload size 12byte, 300 bytes
     and 1025 bytes
@@ -186,8 +186,7 @@ def verify_flowcontrol_message(dut, parameters, payload_length, response_flag):
     if not result_non_prog_dids:
         return False
 
-    # Verify FC parameters
-    fc_code = '3000' + dut.conf.default_rig_config["FC_Separation_time"]
+    fc_code = '3000' + fc_separation_time
 
     if not SUTE.test_message(SC.can_cf_received[dut["receive"]], teststring=fc_code):
         logging.error("Test Failed: ECU did not send FlowControl(FC) frame")
@@ -196,7 +195,7 @@ def verify_flowcontrol_message(dut, parameters, payload_length, response_flag):
     return True
 
 
-def verify_flowcontrol_response(dut, parameters):
+def verify_flowcontrol_response(dut, parameters, fc_separation_time):
     """
     Verify FlowControl(FC) response with payload 12 bytes, 300 bytes and 1025 bytes
     Args:
@@ -205,45 +204,56 @@ def verify_flowcontrol_response(dut, parameters):
     Return:
         response (bool): True when FlowControl(FC) response verified
     """
-    result_positive_response = verify_flowcontrol_message(dut, parameters, payload_length=0,
-                                                          response_flag=True)
+    result_positive_response = verify_flowcontrol_message(dut, parameters, fc_separation_time,
+                                                          payload_length=0,
+                                                          response_flag=True
+                                                          )
     if not result_positive_response:
         logging.error("Test Failed: Some or all the DIDs in the request are not included in the"
                       " reply and frame control(FC) is not received")
         return False
 
-    result_positive_response = result_positive_response and verify_flowcontrol_message(dut,
-                               parameters, payload_length=parameters['pl_size_positive_response'],
-                               response_flag=True)
+    result_positive_response = result_positive_response and\
+                               verify_flowcontrol_message(dut,
+                                   parameters, fc_separation_time,
+                                   payload_length=parameters['pl_size_positive_response'],
+                                   response_flag=True
+                                   )
     if not result_positive_response:
         logging.error("Test Failed: Some or all the DIDs in the request are not included in the"
                       " reply and frame control(FC) is not received")
         return False
 
-    result_negative_response = result_positive_response and verify_flowcontrol_message(dut,
-                               parameters, payload_length=parameters['pl_size_negative_response'],
-                               response_flag=False)
+    result_negative_response = result_positive_response and\
+                               verify_flowcontrol_message(dut,
+                                   parameters, fc_separation_time,
+                                   payload_length=parameters['pl_size_negative_response'],
+                                   response_flag=False
+                                   )
     if not result_negative_response:
         logging.error("Test Failed: Expected NRC-13 and frame control(FC) is not received")
         return False
 
-    result_non_prog_dids = result_negative_response and verify_fc_overflow(dut,
-                           parameters['non_prog_dids'],
-                           payload_length=parameters['pl_size_overflow'])
+    result_non_prog_dids = result_negative_response and\
+                           verify_fc_overflow(dut,
+                               parameters['non_prog_dids'],
+                               fc_separation_time,
+                               payload_length=parameters['pl_size_overflow']
+                               )
     if not result_non_prog_dids:
         return False
 
     return True
 
 
-def step_1(dut: Dut, parameters):
+def step_1(dut: Dut, parameters, fc_separation_time):
     """
     action: Verify FlowControl(FC) in default session with payload 12 bytes, 300 bytes and 1025
             bytes
     expected_result: True when FlowControl(FC) response is successfully verified in default
                      session
     """
-    result = verify_flowcontrol_response(dut, parameters)
+    result = verify_flowcontrol_response(dut, parameters, fc_separation_time)
     if not result:
         logging.error("Test Failed: FlowControl(FC) response is not received as expected in"
                       " default session")
@@ -266,14 +276,14 @@ def step_2(dut: Dut):
     return True
 
 
-def step_3(dut: Dut, parameters):
+def step_3(dut: Dut, parameters, fc_separation_time):
     """
     action: Verify FlowControl(FC) in extended session with payload 12 bytes, 300 bytes and 1025
             bytes
     expected_result: True when FlowControl(FC) response is successfully verified in extended
                      session
     """
-    result = verify_flowcontrol_response(dut, parameters)
+    result = verify_flowcontrol_response(dut, parameters, fc_separation_time)
     if not result:
         logging.error("Test Failed:FlowControl(FC) response is not received as expected in"
                       " extended session")
@@ -300,16 +310,23 @@ def run():
         dut.precondition(timeout=70)
         parameters = SIO.parameter_adopt_teststep(parameters_dict)
 
+        fc_separation_time = '05'
+        new_fc_separation_time = SIO.parameter_adopt_teststep('fc_separation_time')
+        if new_fc_separation_time != '':
+            assert isinstance(new_fc_separation_time, str)
+        fc_separation_time = new_fc_separation_time    # Verify FC parameters
         if not all(list(parameters.values())):
             raise DutTestError("yml parameters not found")
 
-        result_step = dut.step(step_1, parameters, purpose='Verify FlowControl(FC) response in'
-                                                           ' default Session')
+        result_step = dut.step(step_1, parameters, fc_separation_time,
+                               purpose='Verify FlowControl(FC) response in'
+                                       ' default Session')
         if result_step:
             result_step = dut.step(step_2, purpose='Verify ECU is in extended session')
         if result_step:
-            result_step = dut.step(step_3, parameters, purpose='Verify FlowControl(FC) response'
-                                                               ' in extended session')
+            result_step = dut.step(step_3, parameters, fc_separation_time,
+                                   purpose='Verify FlowControl(FC) response'
+                                           ' in extended session')
         result = result_step
     except DutTestError as error:
         logging.error("Test failed: %s", error)
