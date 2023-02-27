@@ -496,6 +496,27 @@ class SupportTestODTB2: # pylint: disable=too-many-public-methods
                     logging.info("Validate PN record fail: %s", pn_rec2)
         return result
 
+    @staticmethod
+    def validate_part_number_record_in_sbl(part_number_record_in_sbl: str) -> bool:
+        """
+        Validate a ECU part number record in SBL
+
+        A ECU part number record is 7 bytes long
+
+        It contains up to 14 digits coded in BCD, right justified, 0-padded.
+        """
+
+        # Validate 7 bytes of data (14 character hex string)
+        result = len(part_number_record_in_sbl) == 14
+        if not result:
+            logging.info("Validate SBL PN failed-wrong length: %s", len(part_number_record_in_sbl))
+
+        # Validate BCD coding in 7 bytes (14 nibbles), right justified, 0 padded
+        result = result and all(nibble in string.digits for nibble in part_number_record_in_sbl)
+        if not result:
+            logging.info("Validate SBL PN failed - wrong BCD part: %s", part_number_record_in_sbl)
+
+        return result
 
     def validate_combined_did_eda0(self, rec_message, pn_sn_list) -> bool:
     # pylint: disable=too-many-statements
