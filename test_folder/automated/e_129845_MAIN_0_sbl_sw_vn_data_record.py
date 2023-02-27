@@ -53,64 +53,58 @@ from supportfunctions.support_file_io import SupportFileIO
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
 
 SSBL = SupportSBL()
-SIO = SupportFileIO
+SIO = SupportFileIO()
 SUTE = SupportTestODTB2()
-
-
-def validate_and_get_pn_f124(message):
-    """
-    Validate and pretty print ECU delivery assembly part number.
-    Args:
-        message (str): ECU response message
-    Returns:
-        (bool): Boolean based on part number validity.
-    """
-    return SUTE.validate_serial_number_record(message[16:])
 
 
 def step_1(dut: Dut, did):
     """
-    action: Set to programming session and verify DID 'F124' from PBL.
-    expected_result: ECU sends NRC-31(requestOutOfRange).
+    action: Set ECU in programming session and verify response of DID 'F124' in PBL
+    expected_result: ECU should give negative response with NRC-31(requestOutOfRange)
     """
     # Set to programming session
     dut.uds.set_mode(2)
 
     response = dut.uds.read_data_by_id_22(bytes.fromhex(did))
     if response.raw[2:4] == '7F' and response.raw[6:8] == '31':
-        logging.info("Received NRC-%s as expected", response.raw[6:8])
+        logging.info("Received negative response with NRC-31(requestOutOfRange) in PBL as"
+                     " expected")
         return True
 
-    logging.error("Test Failed: Expected negative response with NRC-31(requestOutOfRange), "
-                  "received %s", response.raw)
+    logging.error("Test Failed: Expected negative response with NRC-31(requestOutOfRange) in PBL,"
+                  " received %s", response.raw)
     return False
 
 
 def step_2(dut: Dut, did):
     """
-    action: Activate SBL and verify did 'F124'.
-    expected_result: ECU sends positive response and part number is verified.
+    action: Activate SBL and verify part number of DID 'F124'
+    expected_result: SBL should be successfully activated and ECU should give positive response
+                     for DID 'F124', with a valid part number in SBL
     """
     SSBL.get_vbf_files()
-    result_sbl = SSBL.sbl_activation(dut, sa_keys=dut.conf.default_rig_config)
 
+    # Activate SBL
+    result_sbl = SSBL.sbl_activation(dut, sa_keys=dut.conf.default_rig_config)
     if result_sbl is False:
         logging.error("Test Failed: SBL activation failed")
         return False
 
+    # RequestReadDataByIdentifier(0x22) for DID 'F124'
     response = dut.uds.read_data_by_id_22(bytes.fromhex(did))
     if response.raw[4:6] != '62' and response.raw[6:10] != did:
-        logging.error("Test Failed: Expected positive response '62' for "
-                      "requestReadDataByIdentifier(0x22), received %s", response.raw)
+        logging.error("Test Failed: Expected positive response '62' for DID 'F124' in SBL,"
+                      " received %s", response.raw)
         return False
 
-    result = validate_and_get_pn_f124(message=response.raw)
-    if result is False:
-        logging.error("Test Failed: Invalid part number received")
-        return False
+    # Verify part number received from response is valid
+    result = SUTE.validate_part_number_record_in_sbl(response.raw[10:])
+    if result :
+        logging.info("Part number received from the response of DID 'F124' is valid as expected")
+        return True
 
-    logging.info("Valid part number received")
-    return True
+    logging.error("Test Failed: Part number received from the response of DID 'F124' is invalid")
+    return False
 
 
 def run():
@@ -126,17 +120,18 @@ def run():
     parameters_dict = {'did': ''}
 
     try:
-        dut.precondition(timeout=80)
+        dut.precondition(timeout=100)
 
         parameters = SIO.parameter_adopt_teststep(parameters_dict)
         if not all(list(parameters.values())):
             raise DutTestError("yml parameter not found")
 
-        result_step = dut.step(step_1, parameters['did'], purpose="Set to programming session and "
-                                                                  "verify DID 'F124' from PBL")
+        result_step = dut.step(step_1, parameters['did'], purpose="Set ECU in programming session"
+                                                                  " and verify response of DID"
+                                                                  " 'F124' in PBL")
         if result_step:
             result_step = dut.step(step_2, parameters['did'], purpose="Activate SBL and verify "
-                                                                      "did 'F124'")
+                                                                      "part number of DID 'F124'")
         result = result_step
 
     except DutTestError as error:
