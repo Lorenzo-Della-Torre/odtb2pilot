@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2022 Volvo Car Corporation. All rights reserved.
+Copyright © 2023 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -66,13 +66,14 @@ SSA = SupportSecurityAccess()
 CNF = Conf()
 
 
-def security_access_seed(dut: Dut, level):
+def security_access_seed(dut, level):
     """
-    security access to ECU for request seed
+    Security access to ECU for request seed
     Args:
-        dut(class object): dut instance
-        level(str): Security access level
-    Returns: ECU response seed
+        dut (Dut): An instance of Dut
+        level (str): Security access level
+    Returns:
+        server_res_seed (): ECU response seed
     """
     # Set security access key and level
     SSA.set_keys(CNF.default_rig_config)
@@ -84,14 +85,14 @@ def security_access_seed(dut: Dut, level):
 
     # Truncate initial 2 bytes from response to process server response seed
     server_res_seed = response.raw[4:]
-    result = SSA.process_server_response_seed(
-        bytearray.fromhex(server_res_seed))
+    result = SSA.process_server_response_seed(bytearray.fromhex(server_res_seed))
 
     # Check serverResponseSeed is successful or not
     if result == 0:
-        logging.info("serverResponseSeed successful")
+        logging.info("Server response seed successful")
         return server_res_seed
-    logging.error("Security Access Request Seed not successful")
+
+    logging.error("Security access request seed not successful")
     return None
 
 
@@ -99,9 +100,10 @@ def verify_ecu_response(response, level):
     """
     Verify serverResponseSeed response is 0x67
     Args:
-        response(str): response
-        level(str): Security access level
-    Returns: True on successful verification
+        response (str): Response
+        level (str): Security access level
+    Returns:
+        (bool): True on successful verification
     """
     if response is not None:
         # Extract first byte from response and compare with '0x67'
@@ -113,39 +115,31 @@ def verify_ecu_response(response, level):
     return False
 
 
-def step_1(dut: Dut):
+def step_1(dut: Dut, parameters):
     """
-    action: Read yml parameters and Set ECU to programming session. clientRequestSeed for
-            security access levels 01, 19 and validate the server seed response 0x67.
-
+    action: Set ECU to programming session. clientRequestSeed for security access levels 01, 19
+            and validate the server seed response 0x67.
     expected_result: Positive response when security access responseSeed is 67 for all
                      supported security access levels
     """
-    result = []
-
-    # Read yml parameters
-    parameters_dict = {'sa_levels_programming': '',
-                       'sa_levels_extended': ''}
-    parameters = SIO.parameter_adopt_teststep(parameters_dict)
-    if not all(list(parameters.values())):
-        logging.error("Test Failed: yml parameter not found")
-        return False, None
-
-    #Sleep time to avoid NRC37
-    time.sleep(5)
+    results = []
 
     # Verify supported programming session security access level
     dut.uds.set_mode(2)
+
+    # Sleep time to avoid NRC37
+    time.sleep(5)
+
     for level in parameters['sa_levels_programming']:
         response = security_access_seed(dut, level)
-        result.append(verify_ecu_response(response, level))
+        results.append(verify_ecu_response(response, level))
 
-    if len(result) != 0 and all(result):
-        return True, parameters
+    if len(results) != 0 and all(results):
+        return True
 
     logging.error("Test Failed: Invalid response or security access requestSeed not successful "
                   "in programming session")
-    return False, None
+    return False
 
 
 def step_2(dut: Dut, parameters):
@@ -155,23 +149,22 @@ def step_2(dut: Dut, parameters):
     expected_result: Positive response when security access responseSeed is 67 for all
                      supported security access levels
     """
-    result = []
-    if parameters is None:
-        logging.error("Test Failed: yml parameter not found")
-        return False
+    results = []
 
     dut.uds.set_mode(1)
     # Verify supported extended session security access level
     dut.uds.set_mode(3)
-    #Adding a sleep time to avoid NRC 37 (requiredTimeDelayNotExpired)
+
+    # Adding a sleep time to avoid NRC 37 (requiredTimeDelayNotExpired)
     time.sleep(5)
 
     for level in parameters['sa_levels_extended']:
         response = security_access_seed(dut, level)
-        result.append(verify_ecu_response(response, level))
+        results.append(verify_ecu_response(response, level))
 
-    if len(result) != 0 and all(result):
+    if len(results) != 0 and all(results):
         return True
+
     logging.error("Test Failed: Invalid response or security access requestSeed not successful "
                   "in extended session")
     return False
@@ -183,19 +176,28 @@ def run():
     diagnostic sessions.
     """
     dut = Dut()
+
     start_time = dut.start()
     result = False
     result_step = False
-    try:
-        dut.precondition(timeout=100)
 
-        result_step, parameters = dut.step(step_1, purpose="Verify security access request seed "
+    parameters_dict = {'sa_levels_programming': [],
+                       'sa_levels_extended': []}
+
+    try:
+        dut.precondition(timeout=120)
+
+        parameters = SIO.parameter_adopt_teststep(parameters_dict)
+        if not all(list(parameters.values())):
+            raise DutTestError("yml parameters not found")
+
+        result_step = dut.step(step_1, parameters, purpose="Verify security access request seed "
                                "for supported security levels in programming session")
         if result_step:
-            result_step = dut.step(step_2, parameters,
-                                    purpose="Verify security access request seed for "
-                                   "supported security levels in extended session")
+            result_step = dut.step(step_2, parameters, purpose="Verify security access request"
+                                   " seed for supported security levels in extended session")
         result = result_step
+
     except DutTestError as error:
         logging.error("Test failed: %s", error)
     finally:
