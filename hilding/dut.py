@@ -290,6 +290,7 @@ class Dut:
 
         start_time = datetime.now()
         timestamp = start_time.timestamp()
+        log.info("Testscript executed: %s", SupportCAN().get_file_name())
         log.info("Running test on: %s:%s",
                      self.conf.rig.hostname,
                      self.conf.rig.signal_broker_port)
