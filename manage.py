@@ -256,10 +256,10 @@ if __name__ == "__main__":
         from misc.configuration_tool.ConfigurationTool import run
         run()
     elif args.command == 'flash':
-        flash(operation="Software download")
+        flash(operation="SWDL")
     elif args.command == 'flash_pbl':
-        flash(operation="PBL update")
+        flash(operation="PBL")
     elif args.command == 'flash_all':
-        flash(operation="PBL update and software download")
+        flash(operation="PBL_SWDL")
     elif args.command == 'relay':
         relay(args.relay_state)
