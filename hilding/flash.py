@@ -133,7 +133,7 @@ def check_complete_and_compatible(dut):
 
     return SSBL.check_complete_compatible_routine(dut, stepno=1)
 
-def software_download(dut, param="Software download"):
+def software_download(dut, operation="SWDL"):
     """The function that handles all the sub-steps when performing software download.
     This function will keep track of the progress and give error indications if a step fails
 
@@ -143,87 +143,86 @@ def software_download(dut, param="Software download"):
     Returns:
         boolean: Result of software download
     """
-    for operation in param:
 
-        step = 1
+    step = 1
 
-        # Define vbfs location and total steps of the operation
-        if operation == "PBL update":
-            pbl_vbf = True
-            total_steps = 4
-        else:
-            pbl_vbf = False
-            total_steps = 5
+    # Define vbfs location and total steps to take
+    if operation == "PBL":
+        pbl_vbf = True
+        total_steps = 4
+    else:
+        pbl_vbf = False
+        total_steps = 5
 
-        # Load vbfs
-        vbf_result = load_vbf_files(dut, pbl_vbf)
+    # Load vbfs
+    vbf_result = load_vbf_files(dut, pbl_vbf)
 
-        logging.info("~~~~~~ Step %s/%s of software download (loading vbfs) done."
-        " Result: %s\n\n", step, total_steps, vbf_result)
-        step += 1
+    logging.info("~~~~~~ Step %s/%s of software download (loading vbfs) done."
+    " Result: %s\n\n", step, total_steps, vbf_result)
+    step += 1
 
-        if vbf_result is False:
-            logging.error("Aborting %s due to problems when loading VBFs",operation)
-            return False
+    if vbf_result is False:
+        logging.error("Aborting %s due to problems when loading VBFs", operation)
+        return False
 
-        # Activate sbl
-        sbl_result = activate_sbl(dut)
+    # Activate sbl
+    sbl_result = activate_sbl(dut)
 
-        logging.info("~~~~~~ Step %s/%s of software download (downloading and activating sbl) done."
-        " Result: %s\n\n", step, total_steps, sbl_result)
-        step += 1
+    logging.info("~~~~~~ Step %s/%s of software download (downloading and activating sbl) done."
+    " Result: %s\n\n", step, total_steps, sbl_result)
+    step += 1
 
-        if sbl_result is False:
-            logging.error("Aborting %s due to problems when activating SBL",operation)
-            return False
+    if sbl_result is False:
+        logging.error("Aborting %s due to problems when activating SBL", operation)
+        return False
 
-        # Download ess (if needed)
-        ess_result = download_ess(dut)
+    # Download ess (if needed)
+    ess_result = download_ess(dut)
 
-        logging.info("~~~~~~ Step %s/%s of software download (downloading ess) done. \
-        Result: %s\n\n", step, total_steps, ess_result)
-        step += 1
+    logging.info("~~~~~~ Step %s/%s of software download (downloading ess) done. \
+    Result: %s\n\n", step, total_steps, ess_result)
+    step += 1
 
-        if ess_result is False:
-            logging.error("Aborting %s due to problems when downloading ESS", operation)
-            return False
+    if ess_result is False:
+        logging.error("Aborting %s due to problems when downloading ESS", operation)
+        return False
 
-        # Download application and data
-        app_result = download_application_and_data(dut)
+    # Download application and data
+    app_result = download_application_and_data(dut)
 
-        logging.info("~~~~~~ Step %s/%s of software download (downloading application and data) \
+    logging.info("~~~~~~ Step %s/%s of software download (downloading application and data) \
+    done."
+    " Result: %s\n\n", step, total_steps, app_result)
+    step += 1
+
+    if app_result is False:
+        logging.error("Aborting %s due to problems when downloading application", operation)
+        return False
+
+    # Check Complete And Compatible
+    if operation == "SWDL":
+        check_result = check_complete_and_compatible(dut)
+
+        logging.info("~~~~~~ Step %s/%s of software download (Check Complete And Compatible) \
         done."
-        " Result: %s\n\n", step, total_steps, app_result)
-        step += 1
+        " Result: %s\n\n", step, total_steps, check_result)
 
-        if app_result is False:
-            logging.error("Aborting %s due to problems when downloading application", operation)
+        if check_result is False:
+            logging.error("Aborting %s due to problems when checking C & C", operation)
             return False
 
-        # Check Complete And Compatible
-        if operation == "Software download":
-            check_result = check_complete_and_compatible(dut)
-
-            logging.info("~~~~~~ Step %s/%s of software download (Check Complete And Compatible) \
-            done."
-            " Result: %s\n\n", step, total_steps, check_result)
-
-            if check_result is False:
-                logging.error("Aborting %s due to problems when checking C & C",operation)
-                return False
-
-        # Check that the ECU ends up in expected mode
-        dut.uds.ecu_reset_1101()
-        time.sleep(5)
-        uds_response = dut.uds.active_diag_session_f186()
-        mode = uds_response.data['details'].get('mode')
-        if (operation=="PBL update" and mode==2) or (operation=="Software download" and mode==1):
-            logging.info("ECU ends up in mode %s as expected mode.",mode)
-            correct_mode = True
-        else:
-            correct_mode = False
-            logging.error("%s complete "
-            "but ECU did not end up in expected mode, current mode is: %s",operation, mode)
+    # Check that the ECU ends up in expected mode
+    dut.uds.ecu_reset_1101()
+    time.sleep(5)
+    uds_response = dut.uds.active_diag_session_f186()
+    mode = uds_response.data['details'].get('mode')
+    if (operation=="PBL" and mode==2) or (operation=="SWDL" and mode==1):
+        logging.info("ECU ends up in mode %s as expected mode.",mode)
+        correct_mode = True
+    else:
+        correct_mode = False
+        logging.error("%s complete "
+        "but ECU did not end up in expected mode, current mode is: %s", operation, mode)
 
     return correct_mode
 
@@ -241,21 +240,25 @@ def flash(operation):
     try:
         dut.precondition(timeout=1800)
 
-        if operation == "PBL update":
+        if operation == "PBL":
             logging.info("----       Starting PBL update      ----")
-            param = ["PBL update"]
+            purpose_text = "Perform " + operation
+            result = dut.step(software_download, operation, purpose=purpose_text)
 
-        elif operation == "Software download":
+        elif operation == "SWDL":
             logging.info("----   Starting software download   ----")
-            param = ["Software download"]
+            purpose_text = "Perform " + operation
+            result = dut.step(software_download, operation, purpose=purpose_text)
 
-        elif operation == "PBL update and software download":
+        elif operation == "PBL_SWDL":
             logging.info("----       Starting PBL update      ----")
-            param = ["PBL update","Software download"]
-
-        purpose_text = "Perform " + operation
-        result = dut.step(software_download, param, purpose=purpose_text)
-
+            purpose_text = "Perform " + operation
+            result = dut.step(software_download, "PBL", purpose=purpose_text)
+            logging.info("----   Starting software download   ----")
+            purpose_text = "Perform " + operation
+            result = dut.step(software_download, "SWDL", purpose=purpose_text) and result
+        else:
+            logging.info("No suitable operation mode for flashing: %s", operation)
     except: # pylint: disable=bare-except
         error = traceback.format_exc()
         logging.error("Software download failed: %s", error)
