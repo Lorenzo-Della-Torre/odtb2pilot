@@ -98,7 +98,7 @@ class SupportPrecondition:
         hb_param: PerParam = {
             "name" : "Heartbeat",
             "id" : "BecmFront1NMFr",
-            "nspace" : can_p["namespace"],
+            "nspace_send" : can_p["namespace_send"],
             "frame" : b'\x1A\x40\xC3\xFF\x01\x00\x00\x00',
             "intervall" : 0.4
             }
@@ -198,7 +198,7 @@ class SupportPrecondition:
             "name" : "Burst",
             "send" : True,
             "id" : id_burst,
-            "nspace" : can_p["namespace"],
+            "nspace" : can_p["namespace_send"],
             "frame" : frame_burst,
             "intervall" : 0.001
             }
@@ -209,7 +209,7 @@ class SupportPrecondition:
             "name" : "Heartbeat",
             "send" : True,
             "id" : "MvcmFront1NMFr",
-            "nspace" : can_p["namespace"],
+            "nspace_send" : can_p["namespace_send"],
             "frame" : b'\x1A\x40\xC3\xFF\x01\x00\x00\x00',
             "intervall" : 0.4
             }

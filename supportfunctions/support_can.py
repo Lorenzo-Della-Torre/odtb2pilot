@@ -77,10 +77,13 @@ class CanParam(dict): # pylint: disable=too-few-public-methods
     def __init__(self):
         super().__init__(
             {'netstub': '',
+             'netstub_send': '',
              'system_stub': '',
+             'system_stub_send': '',
              'send': '',
              'receive': '',
              'namespace': '',
+             'namespace_send': '',
              'padding': True,
              'framelength_max': 8,
              'protocol': 'can'})
@@ -115,7 +118,7 @@ class PerParam(Dict): # pylint: disable=too-few-public-methods,inherit-non-class
     name: str
     send: bool
     id: str
-    nspace: str
+    nspace_send: str
     frame: bytes
     intervall: float
 
@@ -298,6 +301,9 @@ class SupportCAN:
                 fc_param["delay"], fc_param["flag"], fc_param["responses"], fc_param["auto"]]
             logging.debug("Added object %s to subcribe %s", can_p["receive"], self.can_subscribes)
             for response in subscribe_object:
+
+                #if no raw value found, take the integer one
+
                 #if multiframe detected prepare answer and send it
                 #if no raw value found, take the integer one
                 if response.signal[0].raw == b'':
@@ -382,11 +388,11 @@ class SupportCAN:
         start_periodic
 
         Start a periodic signal: parameters network_stub, send TRUE/FALSE,\
-                           name, DBC_name, DBC_namespace, CAN_frame, intervall
+                           name, DBC_name, DBC_namespace_send, CAN_frame, intervall
         """
         logging.debug("Start_sending_periodic: %s", per_param["name"])
         self.can_periodic[per_param["name"]] = [per_param["send"], per_param["id"],\
-            per_param["nspace"], per_param["frame"], per_param["intervall"]]
+            per_param["nspace_send"], per_param["frame"], per_param["intervall"]]
 
         logging.debug("self.can_periodic: %s", self.can_periodic)
 
@@ -409,7 +415,7 @@ class SupportCAN:
         if per_param["name"] in self.can_periodic:
             self.can_periodic[per_param["name"]][0] = per_param["send"]
             self.can_periodic[per_param["name"]][1] = per_param["id"]
-            self.can_periodic[per_param["name"]][2] = per_param["nspace"]
+            self.can_periodic[per_param["name"]][2] = per_param["nspace_send"]
             self.can_periodic[per_param["name"]][3] = per_param["frame"]
             self.can_periodic[per_param["name"]][4] = per_param["intervall"]
         else:
@@ -441,7 +447,7 @@ class SupportCAN:
             per_param["name"] = per_name
             per_param["send"] = False
             per_param["id"] = self.can_periodic[per_name][1]
-            per_param["nspace"] = self.can_periodic[per_name][2]
+            per_param["nspace_send"] = self.can_periodic[per_name][2]
             per_param["frame"] = self.can_periodic[per_name][3]
             per_param["intervall"] = self.can_periodic[per_name][4]
 
@@ -482,7 +488,7 @@ class SupportCAN:
         per_param["name"] = 'heartbeat'
         per_param["send"] = True
         per_param["id"] = hb_param["id"]
-        per_param["nspace"] = hb_param["nspace"]
+        per_param["nspace_send"] = hb_param["nspace_send"]
         per_param["frame"] = hb_param["frame"]
         per_param["intervall"] = hb_param["intervall"]
         self.start_periodic(stub, per_param)
@@ -550,33 +556,16 @@ class SupportCAN:
 # SG_ NM_CS_BECM : 11|1@0+ (1,0) [0|0] "" VCU1
 # SG_ NM_RMR_BECM : 8|1@0+ (1,0) [0|0] "" VCU1
 # SG_ NM_NodeID_BECM : 7|8@0+ (1,0) [0|0] "" VCU1
-    @classmethod
-    def subscribe_to_heartbeat(cls, stub):
-        """
-        subscribe_to_heartbeat
-        """
-        source = common_pb2.ClientId(id=cls.get_file_name()+'_rec')
-        signal = common_pb2.SignalId(name="BecmFront1NMFr", namespace="Front1CANCfg0")
-        sub_info = network_api_pb2.SubscriberConfig(clientId=source,\
-                    signals=network_api_pb2.SignalIds(signalId=[signal]), onChange=False)
-        while True:
-            try:
-                for response in stub.SubscribeToSignals(sub_info):
-                    logging.debug("Response start: %s", response)
-                    logging.debug("Response stop")
-            except grpc._channel._Rendezvous as err: # pylint: disable=protected-access
-                logging.error(err)
-
 
     @classmethod
-    def t_send_signal(cls, stub, signal_name, namespace, payload_value):
+    def t_send_signal(cls, stub, signal_name, namespace_send, payload_value):
         """
         Send signal on CAN: parameters name_DBC, namespace_DBC, payload
         """
         source = common_pb2.ClientId(id=cls.get_file_name()+'_send')
 
         signal = common_pb2.SignalId(name=signal_name,
-                                     namespace=cls.nspace_lookup(namespace))
+                                     namespace=cls.nspace_lookup(namespace_send))
         signal_with_payload = network_api_pb2.Signal(id=signal)
         signal_with_payload.integer = payload_value
         publisher_info = network_api_pb2.PublisherConfig(clientId=source,\
@@ -744,14 +733,14 @@ class SupportCAN:
         """
         source = common_pb2.ClientId(id=self.get_file_name()+'_send')
         signal = common_pb2.SignalId(name=can_p["send"],
-                                     namespace=self.nspace_lookup(can_p["namespace"]))
+                                     namespace=self.nspace_lookup(can_p["namespace_send"]))
         signal_with_payload = network_api_pb2.Signal(id=signal)
         signal_with_payload.raw = self.can_mf_send[can_p["send"]][1][0]
 
         publisher_info = network_api_pb2.PublisherConfig(clientId=source,\
             signals=network_api_pb2.Signals(signal=[signal_with_payload]), frequency=freq)
         try:
-            can_p["netstub"].PublishSignals(publisher_info)
+            can_p["netstub_send"].PublishSignals(publisher_info)
         except grpc._channel._Rendezvous as err: # pylint: disable=protected-access
             logging.error(err)
         self.can_mf_send[can_p["send"]][0] += 1 # notify frame sent
@@ -851,7 +840,7 @@ class SupportCAN:
         self.can_mf_send[can_p["send"]] = [0, []]
         source = common_pb2.ClientId(id=self.get_file_name()+'_send')
         signal = common_pb2.SignalId(name=can_p["send"],
-                                     namespace=self.nspace_lookup(can_p["namespace"]))
+                                     namespace=self.nspace_lookup(can_p["namespace_send"]))
         signal_with_payload = network_api_pb2.Signal(id=signal)
 
         # ToDo: test if payload can be sent over CAN(payload less then 4096 bytes) # pylint: disable=fixme
@@ -878,7 +867,8 @@ class SupportCAN:
                 publisher_info = network_api_pb2.PublisherConfig(clientId=source,\
                     signals=network_api_pb2.Signals(signal=[signal_with_payload]), frequency=0)
                 try:
-                    can_p["netstub"].PublishSignals(publisher_info)
+                    print("can_p in send_mf", can_p)
+                    can_p["netstub_send"].PublishSignals(publisher_info)
                 except grpc._channel._Rendezvous as err: # pylint: disable=protected-access
                     logging.error(err)
                 #remove payload after it's been sent
@@ -918,7 +908,7 @@ class SupportCAN:
                 publisher_info = network_api_pb2.PublisherConfig(clientId=source,\
                     signals=network_api_pb2.Signals(signal=[signal_with_payload]), frequency=0)
                 try:
-                    can_p["netstub"].PublishSignals(publisher_info)
+                    can_p["netstub_send"].PublishSignals(publisher_info)
                 except grpc._channel._Rendezvous as err: # pylint: disable=protected-access
                     logging.error(err)
                 #remove payload after it's been sent
@@ -947,14 +937,14 @@ class SupportCAN:
 
 
     @classmethod
-    def t_send_signal_hex(cls, stub, signal_name, namespace, payload_value):
+    def t_send_signal_hex(cls, stub, signal_name, namespace_send, payload_value):
         """
         t_send_signal_hex
 
         Send CAN message (8 bytes load) with raw (hex) payload
         """
         source = common_pb2.ClientId(id=cls.get_file_name()+'_send')
-        signal = common_pb2.SignalId(name=signal_name, namespace=cls.nspace_lookup(namespace))
+        signal = common_pb2.SignalId(name=signal_name, namespace=cls.nspace_lookup(namespace_send))
         signal_with_payload = network_api_pb2.Signal(id=signal)
         signal_with_payload.raw = payload_value
         publisher_info = network_api_pb2.PublisherConfig(clientId=source,\
@@ -974,7 +964,7 @@ class SupportCAN:
         """
         source = common_pb2.ClientId(id=self.get_file_name()+'_send')
         signal = common_pb2.SignalId(name=can_p["send"],
-                                     namespace=self.nspace_lookup(can_p["namespace"]))
+                                     namespace=self.nspace_lookup(can_p["namespace_send"]))
         signal_with_payload = network_api_pb2.Signal(id=signal)
 
         # continue sending as stated in FC frame
@@ -993,7 +983,7 @@ class SupportCAN:
             publisher_info = network_api_pb2.PublisherConfig(clientId=source,\
                 signals=network_api_pb2.Signals(signal=[signal_with_payload]), frequency=0)
             try:
-                can_p["netstub"].PublishSignals(publisher_info)
+                can_p["netstub_send"].PublishSignals(publisher_info)
                 self.can_mf_send[can_p["send"]][0] += 1
                 # wait ms, only 0-127 ms allowed, microseconds 0xF1-0xF9 ignored:
                 time.sleep((separation_time and 0x7F) / 1000)
@@ -1007,7 +997,7 @@ class SupportCAN:
                 logging.error(err)
 
 
-    def t_send_signal_raw(self, stub, signal_name, namespace, payload_value):
+    def t_send_signal_raw(self, stub, signal_name, namespace_send, payload_value):
         """
         Similar to t_send_signal_hex, but payload is filled with length of payload \
         and fillbytes to 8 bytes
@@ -1015,7 +1005,7 @@ class SupportCAN:
         #print("t_send signal_raw")
 
         source = common_pb2.ClientId(id=self.get_file_name()+'_send')
-        signal = common_pb2.SignalId(name=signal_name, namespace=self.nspace_lookup(namespace))
+        signal = common_pb2.SignalId(name=signal_name, namespace=self.nspace_lookup(namespace_send))
         signal_with_payload = network_api_pb2.Signal(id=signal)
 
         signal_with_payload.raw = self.fill_payload(self.add_pl_length(payload_value)\
@@ -1046,9 +1036,9 @@ class SupportCAN:
         """
         Build FlowControl frame and send
 
-        can_p["netstub"] = stub
+        can_p["netstub_send"] = stub
         can_p["send"] = signal_name
-        can_p["namespace"] = namespace
+        can_p["namespace_send"] = namespace_send
         """
         if (frame_control_flag < 48) | (frame_control_flag > 50):
             logging.error("CAN Flowcontrol: Error frame_control_flag: Out_of_range %s",
@@ -1062,7 +1052,7 @@ class SupportCAN:
                     +block_size.to_bytes(1, 'big') \
                     +separation_time.to_bytes(1, 'big') \
                     +b'\x00\x00\x00\x00\x00'
-        self.t_send_signal_hex(can_p["netstub"], can_p["send"], can_p["namespace"],
+        self.t_send_signal_hex(can_p["netstub_send"], can_p["send"], can_p["namespace"],
                                payload)
 
 
