@@ -456,6 +456,10 @@ hvbm_p519:
         e_486613_MAIN_0: event_type_security_key_updates | This needs a manual security key restore using debugger.
         e_486686_MAIN_0 : security_log_authentication_key_detection_of_non_programmed_production_keys | This needs a manual security key restore using debugger.
         e_486687_MAIN_0 : security_log_authentication_key_type_structure | This needs a manual security key restore using debugger.
+        e_53841__1 : pbl_diag_services | Need to set production key and then restore the ECU
+        e_53843__1 : pbl_diagnostic_data | Need to set production key and then restore the ECU
+        e_466751_MAIN_1 : public_key_checksum | Need to set production key and then restore the ECU
+        e_76486_MAIN_3 : write_data_by_identifier_2e | programming session needs to be tested manually | ¤MULTI¤
 
     --dSpace--:
         e_115621_MAIN_4 : support_for_dtc_status_indicator_30_warning_indicator_requested_since_last_clear | DTC not implemented yet.
