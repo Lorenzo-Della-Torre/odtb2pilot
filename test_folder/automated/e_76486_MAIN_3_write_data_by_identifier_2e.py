@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2022 Volvo Car Corporation. All rights reserved.
+Copyright © 2023 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -71,13 +71,6 @@ details: >
 import logging
 from hilding.dut import Dut
 from hilding.dut import DutTestError
-from supportfunctions.support_carcom import SupportCARCOM
-from supportfunctions.support_service27 import SupportService27
-from supportfunctions.support_file_io import SupportFileIO
-
-SC_CARCOM = SupportCARCOM()
-SE27 = SupportService27()
-SIO = SupportFileIO()
 
 
 def request_read_data_by_id(dut, did):
@@ -108,7 +101,8 @@ def step_1(dut: Dut):
         return False
 
     # Security access
-    sa_result = SE27.activate_security_access_fixedkey(dut, sa_keys=dut.conf.default_rig_config)
+    sa_result = dut.SE27.activate_security_access_fixedkey(dut,
+                                                           sa_keys=dut.conf.default_rig_config)
     if not sa_result:
         logging.error("Test Failed: Security access denied in extended session")
         return False
@@ -118,6 +112,24 @@ def step_1(dut: Dut):
 
 
 def step_2(dut: Dut, parameters):
+    """
+    action: Set data record of DID to '00' value
+    expected_result: ECU should send positive response '6E' with data record value '00'
+    """
+    message = bytes.fromhex(parameters['did']) + bytes.fromhex('00')
+    response = dut.uds.generic_ecu_call(dut.SC_CARCOM.can_m_send("WriteDataByIdentifier",
+                                                                 message, b''))
+
+    if response.raw[2:4] == '6E' and response.raw[4:10] == 'DB9000':
+        logging.info("Successfully set data record value of DID to '00'")
+        return True
+
+    logging.error("Test Failed: Data record of DID is not set to '00', received value %s",
+                  response)
+    return False
+
+
+def step_3(dut: Dut, parameters):
     """
     action: Request ReadDataByIdentifier(0x22) before overwriting data records of DID
     expected_result: ECU should send positive response '6E' and the response should contain
@@ -135,13 +147,13 @@ def step_2(dut: Dut, parameters):
     return False
 
 
-def step_3(dut: Dut, parameters):
+def step_4(dut: Dut, parameters):
     """
     action: Verify service WriteDataByIdentifier(0x2E) in extended session
     expected_result: ECU should send positive response '6E'
     """
     message = bytes.fromhex(parameters['did']) + bytes.fromhex(parameters['data_record'])
-    response = dut.uds.generic_ecu_call(SC_CARCOM.can_m_send("WriteDataByIdentifier",
+    response = dut.uds.generic_ecu_call(dut.SC_CARCOM.can_m_send("WriteDataByIdentifier",
                                                              message,
                                                              b''))
     # Verify response time
@@ -164,7 +176,7 @@ def step_3(dut: Dut, parameters):
     return False
 
 
-def step_4(dut: Dut, parameters):
+def step_5(dut: Dut, parameters):
     """
     action: Request ReadDataByIdentifier(0x22) after overwriting data records of DID
     expected_result: ECU should send positive response '6E' and the response should contain
@@ -181,14 +193,14 @@ def step_4(dut: Dut, parameters):
     return False
 
 
-def step_5(dut: Dut, parameters):
+def step_6(dut: Dut, parameters):
     """
     action: Restore default data records of DID using WriteDataByIdentifier(0x2E)
     expected_result: ECU should send positive response '6E' and default data records of DID
                      should be restored
     """
     message = bytes.fromhex(parameters['did']) + bytes.fromhex('00')
-    response = dut.uds.generic_ecu_call(SC_CARCOM.can_m_send("WriteDataByIdentifier",
+    response = dut.uds.generic_ecu_call(dut.SC_CARCOM.can_m_send("WriteDataByIdentifier",
                                                              message,
                                                              b''))
     # Verify service response
@@ -211,26 +223,30 @@ def run():
     parameters_dict = {'did': '',
                        'data_record': '',
                        'max_response_time': 0}
+
+    parameters = dut.SIO.parameter_adopt_teststep(parameters_dict)
+    if not all(list(parameters.values())):
+        raise DutTestError("yml parameters not found")
+
     try:
         dut.precondition(timeout=60)
-
-        parameters = SIO.parameter_adopt_teststep(parameters_dict)
-        if not all(list(parameters.values())):
-            raise DutTestError("yml parameters not found")
 
         result_step = dut.step(step_1, purpose='Set ECU to extended session and request security '
                                                'access')
         if result_step:
-            result_step = dut.step(step_2, parameters, purpose='Request ReadDataByIdentifier(0x22)'
+            result_step = dut.step(step_2, parameters, purpose="Set data record of DID to '00' "
+                                                               "value")
+        if result_step:
+            result_step = dut.step(step_3, parameters, purpose='Request ReadDataByIdentifier(0x22)'
                                            ' before overwriting data records of DID')
         if result_step:
-            result_step = dut.step(step_3, parameters, purpose='Verify service '
+            result_step = dut.step(step_4, parameters, purpose='Verify service '
                                            'WriteDataByIdentifier(0x2E) in extended session')
         if result_step:
-            result_step = dut.step(step_4, parameters, purpose='Request ReadDataByIdentifier(0x22)'
+            result_step = dut.step(step_5, parameters, purpose='Request ReadDataByIdentifier(0x22)'
                                            ' after overwriting data records of DID')
         if result_step:
-            result_step = dut.step(step_5, parameters, purpose='Restore default data records of '
+            result_step = dut.step(step_6, parameters, purpose='Restore default data records of '
                                            'DID using WriteDataByIdentifier(0x2E)')
         result = result_step
 
