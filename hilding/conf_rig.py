@@ -125,14 +125,6 @@ class Rig: # pylint: disable=too-many-public-methods
         return self.conf.selected_rig_dict.get(
             "namespace", platform_namespace)
 
-    @property
-    def namespace_send(self):
-        """ conf platform signal tester present """
-        platform_data = self.conf.platforms.get(self.platform, {})
-        platform_namespace_send = platform_data.get("namespace_send")
-        return self.conf.selected_rig_dict.get(
-            "namespace_send", platform_namespace_send)
-
 
     @property
     def wakeup_frame(self):
