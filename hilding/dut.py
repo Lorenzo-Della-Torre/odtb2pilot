@@ -139,13 +139,7 @@ class Dut:
             f'{self.conf.rig.signal_broker_port}')
         self.network_stub = NetworkServiceStub(self.channel)
         self.system_stub = SystemServiceStub(self.channel)
-        self.channel_send = grpc.insecure_channel(
-            f'{self.conf.rig.hostname}:'
-            f'{self.conf.rig.signal_broker_port}')
-        self.network_stub_send = NetworkServiceStub(self.channel_send)
-        self.system_stub_send = SystemServiceStub(self.channel_send)
         self.namespace = SupportFileIO.parameter_adopt_teststep('namespace')
-        self.namespace_send = SupportFileIO.parameter_adopt_teststep('namespace_send')
         self.protocol = SupportFileIO.parameter_adopt_teststep('protocol')
         self.framelength_max = SupportFileIO.parameter_adopt_teststep('framelength_max')
         self.padding = SupportFileIO.parameter_adopt_teststep('padding')
@@ -176,16 +170,12 @@ class Dut:
         # Do not use this for new features!
         if key == "netstub":
             return self.network_stub
-        if key == "netstub_send":
-            return self.network_stub_send
         if key == "send":
             return self.conf.rig.signal_send
         if key == "receive":
             return self.conf.rig.signal_receive
         if key == "namespace":
             return self.conf.rig.namespace
-        if key == "namespace_send":
-            return self.conf.rig.namespace_send
         if key == 'protocol':
             return self.protocol
         if key == 'framelength_max':
@@ -222,7 +212,7 @@ class Dut:
             "name" : "Heartbeat",
             "send" : True,
             "id" : self.conf.rig.signal_periodic,
-            "nspace_send" : self.namespace_send,
+            "nspace" : self.namespace,
             "frame" : bytes.fromhex(self.conf.rig.wakeup_frame),
             "intervall" : 0.4
             }
@@ -250,7 +240,6 @@ class Dut:
                             "send": self.conf.rig.signal_receive,
                             "receive": self.conf.rig.signal_send,
                             "namespace": self.namespace,
-                            "namespace_send": self.namespace_send,
                             "protocol": self.protocol,
                             "framelength_max": self.framelength_max,
                             "padding" : self.padding
