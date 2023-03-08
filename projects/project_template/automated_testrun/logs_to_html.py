@@ -623,6 +623,8 @@ def generate_html(folderinfo_result_tuple_list, outfile, verif_d,  # pylint: dis
                     req_counter = collections.Counter()
                     for req in verif_d:
                         req_counter[verif_d[req]] += 1
+                        if req not in req_set:
+                            logging.warning('Req: %s not covered', req)
 
                     # Counting how many unique requirements we have verified of each
                     # verification method
