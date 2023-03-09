@@ -323,7 +323,7 @@ hvbm_p519:
         e_466661_MAIN_0 : data_compression_method_2_parameters | This also needs an updated bootloader as the current version is based on the old bastech SWRS that did not include the LZMA compression requirements.
         e_466900_MAIN_0 : bootloader CAN busoff handling | Changed to Code Inspection
         e_481758_MAIN_0 : 2_byte_base_dtc_definition | Tested by inspection. A validation of all defined DTCs in the SDDB can also be a method.
-        e_56192_MAIN_3 : server_support_of_queued_requests_in_programming_session | Difficult to test. Put on hold. Check with Mentor first
+        e_56192__3 : server_support_of_queued_requests_in_programming_session | Difficult to test. Put on hold. Check with Mentor first
         e_74506_MAIN_1 : negative_response_code_general_reject_0x10 | Check DCM configuration for NRC 0x10
         e_76539_MAIN_3 : communication_stack_processing_period | Changed to Code Inspection
         e_400704_MAIN_3 : sbl_condition_for_activation_2nd_part | A part of the requirement is inspected. | ¤MULTI¤
