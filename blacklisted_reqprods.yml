@@ -476,7 +476,7 @@ hvbm_p519:
         e_72072_MAIN_2 : temporarily_storage_of_dtc_information | The old script states that it is NA but it seems testable. Probably needs to be tested on dSpace HIL.
         e_68085_MAIN_0 : reporting_other_ecu_internal_signal_data_records_defined_by_the_implementer_while_the_input_parameter_value_is_under_tester_control | Can be hard to run on the ODTB2. dSpace can be needed.
         e_72166_MAIN_2 : system_supplier_specific_routines | Can be hard to run on the ODTB2. dSpace can be needed.
-        e_53883__2 : behaviour_outside_normal_supply_voltage_range | This is testable on our test bench with programmable power supply
+        e_53883__3 : behaviour_outside_normal_supply_voltage_range | This is testable on our test bench with programmable power supply
         e_478574_MAIN_1 : dtc_storage_capacity_in_long_term_memory | Testable with ODTB2. Read out all DTCs with snapshot and check how many that is. Might be to many to read, then we need to do it on dSpace.
         e_69006_MAIN_2 : detection_of_low_supply_voltage | The DTC exist. Low Prio DTC. Can be difficult to see due to other high prio DTCs. Not to many DTCs should be set. Might be easier on dSpace.
         e_72148_MAIN_7 : clear_dtc_information_when_the_long_term_memory_overflows | Testable but probably needs the dSpace HIL to control the DTCS. Overflow memory.
