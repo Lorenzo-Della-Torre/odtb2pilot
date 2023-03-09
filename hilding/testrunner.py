@@ -33,6 +33,7 @@ from iterfzf import iterfzf
 from hilding import analytics
 from hilding.reset_ecu import reset_and_flash_ecu
 from hilding.uds import UdsEmptyResponse
+from hilding.dut import DutTestError
 
 from autotest.blacklisted_tests_handler import add_to_result, create_logs, get_dictionary_from_yml
 #from supportfunctions.support_relay import Relay
@@ -123,8 +124,10 @@ def run_test(test_file_py):
         spec.loader.exec_module(module)
         if 'run' in dir(module):
             module.run()
-    except UdsEmptyResponse:
-        log.error("Aborting the test.........")
+    except UdsEmptyResponse as uds_empty_response_error:
+        log.critical("UdsEmptyResponse: Aborting the test\n%s", uds_empty_response_error)
+    except DutTestError as dut_test_error:
+        log.error("DutTestError: Aborting the test\n%s", dut_test_error)
     except Exception as e: # pylint: disable=broad-except
         log.critical("Testcase failed:\n%s", e)
         verdict = "errored"
