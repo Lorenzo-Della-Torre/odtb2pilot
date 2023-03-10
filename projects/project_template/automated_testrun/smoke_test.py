@@ -25,10 +25,15 @@ import sys
 import ntpath
 import shutil
 from tempfile import mkstemp
+import logging
 
 
 
 def replace(file_path, pattern, subst):
+    """
+    Slightly modify the test script so it can return True if execution is successful
+    or False if execution is failed
+    """
     #Create temp file
     fh, abs_path = mkstemp()
     with os.fdopen(fh,'w') as new_file:
@@ -42,7 +47,7 @@ def replace(file_path, pattern, subst):
     #Move new file
     shutil.move(abs_path, file_path)
 
-def define_tests(test_list):
+def define_tests(test_list,repos):
     """
     Get test scripts from a list file
     """
@@ -51,7 +56,7 @@ def define_tests(test_list):
         test_files = []
         for line in testfile_list.readlines():
             stripped_line = line.strip()
-            test_files.append(stripped_line)
+            test_files.append(repos+stripped_line)
 
     return test_files
 
@@ -76,7 +81,7 @@ def select_script(test_script):
     # find the lower version existing in the folder
     test_script_to_try = test_script
     while version >= 0:
-        
+
         # decrease version by 1 in the script path
         version -= 1
         characters_list[version_digit] = str(version)
@@ -88,13 +93,13 @@ def select_script(test_script):
 
     return test_script
 
-def run_tests(dir_path,test_list):
+def run_tests(dir_path,odtb2_repos,test_list):
     """
     Run all selected tests
     """
 
     sys.path.append(dir_path)
-    sys.path.append(r'/home/pi/Repos/odtb2pilot')
+    sys.path.append(odtb2_repos)
 
     for line in test_list:
         # check if the line define a valid path
@@ -117,20 +122,28 @@ def run_tests(dir_path,test_list):
 
             # add print statement to the code to get the result of the entire script
             replace(script_new_path,"  run()","  print(run())")
-            replace(script_new_path,"dut.postcondition(start_time, result)","dut.postcondition(start_time, result)\n        return result")
+            replace(script_new_path,"dut.postcondition(start_time, result)",
+                    "dut.postcondition(start_time, result)\n        return result")
 
             # test current script
             script_under_test = __import__(os.path.splitext(script_name)[0])
             if not script_under_test.run():
+                logging.error("Smoke test stopped because of %s", line)
                 return False
 
     return True
 
 def create_temp_dir(dir_path):
+    """
+    Create a temporary folder to store modified scripts
+    """
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
 
 def delete_temp_dir(dir_path):
+    """
+    delete the temporary folder
+    """
     if os.path.exists(dir_path):
         shutil.rmtree(dir_path)
 
@@ -139,16 +152,19 @@ def main():
     Verify all smoke test scripts are passing
     """
 
-    # temp folder path
-    dir_path = r'/home/pi/Repos/odtb2pilot/projects/project_template/automated_testrun/test_folder'
+    # odtb2 path and temp folder path
+    odtb2_repos = os.path.dirname(os.getcwd())
+    for i in range(2):
+        odtb2_repos = os.path.dirname(odtb2_repos)
+    dir_path = os.getcwd()+"/test_folder"
 
     # get test scripts from the list
     test_list = "smoke_test_list.lst"
-    test_list = define_tests(test_list)
+    test_list = define_tests(test_list,odtb2_repos)
 
     # run test scripts
     create_temp_dir(dir_path)
-    result = run_tests(dir_path,test_list)
+    result = run_tests(dir_path,odtb2_repos,test_list)
     delete_temp_dir(dir_path)
 
     return result
