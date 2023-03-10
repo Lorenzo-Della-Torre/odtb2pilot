@@ -53,198 +53,200 @@ import time
 import logging
 from hilding.dut import Dut
 from hilding.dut import DutTestError
+from supportfunctions.support_sec_acc import SecAccessParam
 from supportfunctions.support_sec_acc import SupportSecurityAccess
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
 from supportfunctions.support_carcom import SupportCARCOM
 from supportfunctions.support_file_io import SupportFileIO
+from supportfunctions.support_service22 import SupportService22
+from supportfunctions.support_SBL import SupportSBL
+
 
 SUTE = SupportTestODTB2()
 SC_CARCOM = SupportCARCOM()
 SIO = SupportFileIO()
 SSA = SupportSecurityAccess()
+SE22 = SupportService22()
+SSBL = SupportSBL()
 
+
+def activate_sbl(dut, sa_key):
+    """
+    Download and activate SBL
+    Args:
+        dut (Dut): Dut instance
+        sa_key (str): security access key
+    Returns:
+        True when SBL is successfully downloaded and activated
+    """
+
+    # Load VBF files
+    if not SSBL.get_vbf_files():
+        logging.error("Test Failed: Unable to load VBF files")
+        return False
+
+    # SBL activation
+    if not SSBL.sbl_activation(dut, sa_key):
+        logging.error("Test Failed: Unable to activate SBL")
+        return False
+
+    # Get current ECU mode
+    if not SE22.verify_sbl_session(dut):
+        logging.error("Test Failed: Expected ECU to be in SBL session")
+        return False
+
+    return True
 
 def security_access(dut: Dut, sa_level):
     """
     Unlock security access levels to ECU
     Args:
         dut (Dut): Dut instance
-        level (str): security level
+        sa_level (str): HEX security level
     Returns:
-        Response (str): Can response
+        Response (bool): True if ECU is unlocked with given security access level
     """
+
+    # Request a seed from ECU
     SSA.set_keys(dut.conf.default_rig_config)
-    SSA.set_level_key(int(sa_level))
+    sa_level_decimal = int(sa_level, 16) # set_level_key is using sa_level as decimal variable
+    SSA.set_level_key(sa_level_decimal)
     payload = SSA.prepare_client_request_seed()
-
     response = dut.uds.generic_ecu_call(payload)
-    # Prepare server response seed
-    server_res_seed = response.raw[4:]
-    result = SSA.process_server_response_seed(bytearray.fromhex(server_res_seed))
 
+    # Calculate the key with the server seed
+    server_seed = response.raw[4:]
+    result = SSA.process_server_response_seed(bytearray.fromhex(server_seed))
+
+    # Send key to unlock ECU
     payload = SSA.prepare_client_send_key()
-    client_send_key = payload.hex().upper()
-
     response = dut.uds.generic_ecu_call(payload)
 
-    # Process server response key
+    # Process response from ECU
     result = SSA.process_server_response_key(bytearray.fromhex(response.raw[6:(6+4)]))
     if result != 0:
-        logging.error("Security access not successful")
-        return None
+        logging.error("Security access denied.")
+        return False
 
-    return client_send_key
+    logging.info("ECU unlock with security access %s", sa_level)
+    return True
 
 
-def prepare_message(dut: Dut, did):
+def program_key(dut: Dut, did, sa_key):
     """
-    Prepare the message to program the key for respective levels using writeDataByIdentifier
-    with payload & CRC.
+    Send a request to program the security access key
     Args:
         dut (Dut): Dut instance
         did (str): Security access DID
+        sa_key (str): Security access key to write
     response
         response.raw (str): ECU response
     """
-    sa_key_32byte = 'FF'*32
-    crc = SUTE.crc16(bytearray(sa_key_32byte.encode('utf-8')))
-    crc_hex = hex(crc)
 
-    message = bytes.fromhex(did + sa_key_32byte + crc_hex[2:])
+    # calculate crc16 checksum
+    checksum = hex(SUTE.crc16(bytes.fromhex(sa_key)))
 
+    # prepare request to send to the ECU
+    message = bytes.fromhex(did + sa_key + checksum[2:])
+
+    # send request and store response
     response = dut.uds.generic_ecu_call(SC_CARCOM.can_m_send("WriteDataByIdentifier",
                                                             message, b''))
     return response.raw
 
-
-def write_data_by_identifier_positive_response(dut: Dut, did, level):
+def step_1(dut: Dut, sa_levels_dids_extended):
     """
-    Program the key for respective levels using writeDataByIdentifier with payload & CRC.
-    Args:
-        dut (Dut): Dut instance
-        did (str): Security access DID
-        level (str): Security level
-    Returns:
-        (bool): True when received positive response
-    """
-    response = prepare_message(dut, did)
-
-    # Extract and validate positive response
-    if response[6:8] == '6E':
-        logging.info("Received positive response %s as expected", response)
-        logging.info("Successfully verified the key is one-time-programmed for"
-                     " security level %s and did %s", level, did)
-        return True
-
-    logging.error("Test Failed: Expected 6E, received %s", response)
-    return False
-
-
-def write_data_by_identifier_negative_response(dut: Dut, did, level):
-    """
-    Reprogram the key for respective levels using writeDataByIdentifier with payload & CRC.
-    Args:
-        dut (Dut): Dut instance
-        did (str): Security access DID
-        level (str): Security level
-    Returns:
-        (bool): True when received negative response
-    """
-    response = prepare_message(dut, did)
-
-    # Extract and validate negative response
-    if response[6:8] == '7F':
-        logging.info("Received negative response %s as expected", response)
-        logging.info("Successfully verified the key is by default one-time-programmed for"
-                     " security level %s and did %s", level, did)
-        return True
-
-    logging.error("Test Failed: Expected 7F, received %s", response)
-    return False
-
-
-def verify_results(results, session):
-    """
-    Verify the response of writeDataByIdentifier for all security access levels
-    Args:
-        results (list): List of boolean based on ECU response
-        session (str): Diagnostic session
-    Returns:
-        (bool): True when all results are true
-    """
-    if all(results) and len(results) != 0:
-        logging.info("Key is by default one-time-programmed for all security access level in"
-                     " %s session", session)
-        return True
-
-    logging.error("Test Failed: Key is not one-time-programmed for respective security access"
-                  " level in %s session", session)
-    return False
-
-
-def step_1(dut: Dut, sa_levels_dids_programming):
-    """
-    action: Set ECU to programming session and send WriteDataByIdentifier for supported security
-            access levels i.e. 01 and 19 to verify keys are by default one-time-programmed.
+    action: Try to program security access key twice in extended session
     expected_result: True when successfully verified keys are by default one-time-programmed.
     """
-    results = []
 
-    # Set ECU in programming session
-    dut.uds.set_mode(2)
+    # Setting up key
+    sa_key: SecAccessParam = dut.conf.default_rig_config
+    sa_key2write = sa_key["auth_key"]+sa_key["proof_key"]
 
-    # Sleep time to avoid NRC37
-    time.sleep(5)
-
-    # Validate response for all security levels
-    for level, did in sa_levels_dids_programming.items():
-        response = security_access(dut, level)
-        if response is not None:
-            results.append(write_data_by_identifier_positive_response(dut, did, level))
-            results.append(write_data_by_identifier_negative_response(dut, did, level))
-        else:
-            logging.error("Test Failed: Security access denied for level %s", level)
-            results.append(False)
-
-    result = verify_results(results, session='programming')
-    return result
-
-
-def step_2(dut: Dut, sa_levels_dids_extended):
-    """
-    action: Set ECU to Extended session and send WriteDataByIdentifier for supported security access
-            levels i.e. 05, 19, 23 to verify keys are by default one-time-programmed.
-    expected_result: True when successfully verified keys are by default one-time-programmed.
-    """
-    results = []
-
-    # Set ECU in extended session
-    dut.uds.set_mode(1)
-    dut.uds.set_mode(3)
-
-    # Validate response for all security levels
     for level, did in sa_levels_dids_extended.items():
-        response = security_access(dut, level)
-        if response is not None:
-            results.append(write_data_by_identifier_positive_response(dut, did, level))
-            results.append(write_data_by_identifier_negative_response(dut, did, level))
-        else:
-            logging.error("Test Failed: Security access denied for level %s", level)
-            results.append(False)
 
-    result = verify_results(results, session='extended')
-    return result
+        # set ECU to extended session
+        dut.uds.set_mode(3)
 
+        # unlock ECU security access
+        if not security_access(dut, level):
+            return False
+
+        # program security access key a first time
+        response = program_key(dut, did, sa_key2write)
+
+        if response[2:4] != "6E":
+            logging.error("Failed to write DID %s. received: %s", did, response)
+            return False
+        logging.info("DID %s successfully programmed", did)
+
+       # attempt to program security access key a second time
+        response = program_key(dut, did, sa_key2write)
+
+        if response[2:8] != "7F2E22":
+            logging.error("Expected request to fail because of condition not correct."
+                          " Received: %s", response)
+            return False
+        logging.info("Unable to write DID %s a second time as expected", did)
+
+        # reset ECU
+        dut.uds.ecu_reset_1101()
+        time.sleep(5)
+
+    return True
+
+def step_2(dut: Dut, sa_levels_dids_programming):
+    """
+    action: Try to program security access key twice in programming session SBL
+    expected_result: True when successfully verified keys are by default one-time-programmed.
+    """
+
+    # Setting up key
+    sa_key: SecAccessParam = dut.conf.default_rig_config
+    sa_key2write = sa_key["auth_key"]+sa_key["proof_key"]
+
+    for level, did in sa_levels_dids_programming.items():
+
+        # set ECU to programming session
+        dut.uds.set_mode(2)
+
+        # unlock ECU security access
+        if not security_access(dut, level):
+            return False
+
+        # Activate SBL with the security access key
+        if not activate_sbl(dut, sa_key):
+            logging.error("Unable to activate SBL")
+            return False
+        logging.info("SBL successfully activated")
+
+        # program security access key a first time
+        response = program_key(dut, did, sa_key2write)
+
+        if response[2:4] != "6E":
+            logging.error("Failed to write DID %s. received: %s", did, response)
+            return False
+        logging.info("DID %s successfully programmed", did)
+
+       # attempt to program security access key a second time
+        response = program_key(dut, did, sa_key2write)
+
+        if response[2:8] != "7F2E22":
+            logging.error("Expected request to fail because of condition not correct."
+                          " Received: %s", response)
+            return False
+        logging.info("Unable to write DID %s a second time as expected", did)
+
+        # reset ECU
+        dut.uds.ecu_reset_1101()
+        time.sleep(5)
+
+    return True
 
 def run():
     """
-    Verify if keys are by default one-time-programmable
-    Steps:
-    1. Unlock security access level for programming and extended diagnostic session and DIDs
-    2. Program the key for respective levels using writeDataByIdentifier and
-       verify positive response
-    3. Reprogram the key for respective levels using writeDataByIdentifier and
-       verify negative response
+    Verify keys are by default one-time-programmable
     """
     dut = Dut()
 
@@ -255,22 +257,23 @@ def run():
     parameters_dict = {"sa_levels_dids_programming" : {},
                        "sa_levels_dids_extended" : {}}
     try:
-        dut.precondition(timeout=60)
+        dut.precondition(timeout=400)
+
         # Read yml parameters
         parameters = SIO.parameter_adopt_teststep(parameters_dict)
 
         if not all(list(parameters.values())):
             raise DutTestError("yml parameters not found")
 
-        result_step = dut.step(step_1, parameters['sa_levels_dids_programming'], purpose="Verify"
-                               "  key is by default one-time-programmed for respective security"
-                               " access level in programming session")
-        if result_step:
-            result_step = dut.step(step_2, parameters['sa_levels_dids_extended'], purpose="Verify"
-                                   " key is by default one-time-programmed for respective security"
-                                   " access level in extended session")
-
+        # start test steps
+        result_step = dut.step(step_1, parameters['sa_levels_dids_extended'],
+                                purpose="try to program extended session security access keys "
+                                "twice")
+        result_step = result_step and dut.step(step_2, parameters['sa_levels_dids_programming'],
+                                purpose="try to program programming session SBL security access "
+                                "keys twice")
         result = result_step
+
     except DutTestError as error:
         logging.error("Test failed: %s", error)
     finally:
