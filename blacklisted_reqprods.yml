@@ -420,6 +420,8 @@ hvbm_p519:
         e_72161_MAIN_1 : development_specific_routines | Push to application team.
         e_72166_MAIN_2 : system_supplier_specific_routines | Push to application team.
         e_72157_MAIN_3 : vehicle_manufacturer_specific_routines | Push to application team.
+        e_76513_MAIN_1 : component_selection_can_physical_interfaces | This is hw req, should be tested by application team.
+        e_469411_MAIN_1 : system_hardening_follow_industry_accepted_processes | <Reason>
 
     --Design--:
         e_71837_MAIN_1 : data_records_not_included_in_local_snapshot_data | Design requirement. Can be checked by validation of snapshot information for each DTC in the SDDB. Should be tested so system design do follow this req. Does not need the ECU for the test.
@@ -584,10 +586,8 @@ hvbm_p519:
         e_487963_MAIN_1 : sec_oc_optimization_to_minimize_attacks_within_rx_acceptance_window | SecOC not implemented yet
 
     --Excluded--:
-        e_76513_MAIN_1 : component_selection_can_physical_interfaces | This is hw req, need to hand-over to BMS team. (LEAR HW can't fulfill this)
         e_76695_MAIN_2 : request_transfer_exit | Breaks testrun. Temporarily excluded
         e_76690_MAIN_3 : transfer_data | Breaks testrun. Temporarily excluded
-        e_469411_MAIN_1 : system_hardening_follow_industry_accepted_processes | <Reason>
         e_72220_MAIN_1 : erase_mem_resp_time | Breaks ECU. Temporarily excluded
 
     --Implicit--:
