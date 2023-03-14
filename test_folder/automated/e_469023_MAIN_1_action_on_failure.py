@@ -4,7 +4,7 @@
 
 
 
-Copyright © 2022 Volvo Car Corporation. All rights reserved.
+Copyright © 2023 Volvo Car Corporation. All rights reserved.
 
 
 
@@ -22,7 +22,7 @@ reqprod: 469023
 version: 1
 title: Action on failure
 purpose: >
-	Prevent any further operations after a Secure Boot verification failure.
+    Prevent any further operations after a Secure Boot verification failure.
 
 description: >
     If the Secure Boot verification process for any reason fails, the system shall be halted. To
