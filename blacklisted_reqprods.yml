@@ -462,6 +462,7 @@ hvbm_p519:
         e_53843__1 : pbl_diagnostic_data | Need to set production key and then restore the ECU
         e_466751_MAIN_1 : public_key_checksum | Need to set production key and then restore the ECU
         e_76486_MAIN_3 : write_data_by_identifier_2e | programming session needs to be tested manually | ¤MULTI¤
+        e_480626_MAIN_2 : security_access_detection_of_nonprogrammed_keys | security access production keys needs to be written
 
     --dSpace--:
         e_115621_MAIN_4 : support_for_dtc_status_indicator_30_warning_indicator_requested_since_last_clear | DTC not implemented yet.
