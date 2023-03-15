@@ -35,6 +35,7 @@ details: >
     as secure boot fails.
 """
 
+import time
 import logging
 from hilding.dut import Dut
 from hilding.dut import DutTestError
@@ -51,6 +52,12 @@ def step_1(dut: Dut):
     action: Software download
     expected_result: ECU should be in default session after successful software download
     """
+    # Set to programming session
+    dut.uds.set_mode(2)
+
+    # Sleep time to avoid NRC-37
+    time.sleep(5)
+
     result = swdl.software_download(dut)
     if result:
         logging.info("Software download successful")
@@ -125,6 +132,12 @@ def step_5(dut: Dut):
     action: Software download
     expected_result: ECU should be in default session after successful software download
     """
+    # Set to programming session
+    dut.uds.set_mode(2)
+
+    # Sleep time to avoid NRC-37
+    time.sleep(5)
+
     result = swdl.software_download(dut)
     if result:
         logging.info("Software download successful")
