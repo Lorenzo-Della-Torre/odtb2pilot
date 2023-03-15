@@ -561,6 +561,9 @@ class SupportSBL:
         # Change to Programming session
         result = SE10.diagnostic_session_control_mode2(can_p)
 
+        # Timer to avoid NRC 37
+        time.sleep(5)
+
         # Verify Session changed
         SE22.read_did_f186(can_p, dsession=b'\x02')
         result = result and self.sbl_activation_prog(can_p, sa_keys, stepno, purpose)
