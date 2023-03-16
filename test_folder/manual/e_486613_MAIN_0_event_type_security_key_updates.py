@@ -100,8 +100,8 @@ description: >
     shall be applied.
 
 details: >
-    Verify successful and failed event count for security key updates with both correct
-    and incorrect checksum.
+    Verify event type 'Security key update' is implemented by programming keys and calling
+    security key update did.
 """
 
 
@@ -109,6 +109,7 @@ import logging
 from hilding.dut import Dut
 from hilding.dut import DutTestError
 from supportfunctions.support_carcom import SupportCARCOM
+from supportfunctions.support_sec_acc import SecAccessParam
 from supportfunctions.support_sec_acc import SupportSecurityAccess
 from supportfunctions.support_service27 import SupportService27
 from supportfunctions.support_file_io import SupportFileIO
@@ -126,50 +127,60 @@ def security_access(dut: Dut, sa_level):
     Unlock security access levels to ECU
     Args:
         dut (Dut): Dut instance
-        level (str): security level
+        sa_level (str): HEX security level
     Returns:
-        Response (str): Can response
+        Response (bool): True if ECU is unlocked with given security access level
     """
+
+    # Request a seed from ECU
     SSA.set_keys(dut.conf.default_rig_config)
-    SSA.set_level_key(int(sa_level))
+    sa_level_base_16 = int(sa_level, 16)
+    SSA.set_level_key(sa_level_base_16)
     payload = SSA.prepare_client_request_seed()
-
     response = dut.uds.generic_ecu_call(payload)
-    # Prepare server response seed
-    server_res_seed = response.raw[4:]
-    result = SSA.process_server_response_seed(bytearray.fromhex(server_res_seed))
 
+    # Calculate the key with the server seed
+    server_seed = response.raw[4:]
+    result = SSA.process_server_response_seed(bytearray.fromhex(server_seed))
+
+    # Send key to unlock ECU
     payload = SSA.prepare_client_send_key()
-
     response = dut.uds.generic_ecu_call(payload)
 
-    # Process server response key
+    # Process response from ECU
     result = SSA.process_server_response_key(bytearray.fromhex(response.raw[6:(6+4)]))
     if result != 0:
-        logging.error("Security access not successful")
+        logging.error("Security access denied.")
         return False
 
+    logging.info("ECU unlock with security access %s", sa_level)
     return True
 
 
-def event_count(response, event_type):
+def program_key(dut: Dut, did, sa_key, valid_checksum=True):
     """
-    Get total number of successful or failed event count
+    Send a request to program the security access key
     Args:
-        response (str): Ecu response
-        event_type(str): successful/failed
-    Returns:
-        total_events(int): total number of successful or failed events
+        dut (Dut): Dut instance
+        did (str): Security access DID
+        sa_key (str): Security access key to write
+    response
+        response.raw (str): ECU response
     """
-    if event_type == 'successful':
-        total_events = response.data['details']['response_items'][0]['sub_payload']
-    elif event_type == 'failed':
-        total_events = response.data['details']['response_items'][1]['sub_payload']
-    else:
-        return None
 
-    total_events = int(total_events, 16)
-    return total_events
+    # calculate crc16 checksum
+    if valid_checksum:
+        checksum = hex(SUTE.crc16(bytes.fromhex(sa_key)))
+    else:
+        checksum = hex(SUTE.crc16(bytes.fromhex(sa_key))+1)
+
+    # prepare request to send to the ECU
+    message = bytes.fromhex(did + sa_key + checksum[2:])
+
+    # send request and store response
+    response = dut.uds.generic_ecu_call(SC_CARCOM.can_m_send("WriteDataByIdentifier",
+                                                            message, b''))
+    return response.raw
 
 
 def read_success_failed_events(dut, did, event_type):
@@ -180,146 +191,140 @@ def read_success_failed_events(dut, did, event_type):
         did(str): Security key read DID
         event_type(str ): successful/failed
     Returns:
-        (bool): True on positive response
+        (int): number of events of selected type
     """
+
+    # read security key did
     response = dut.uds.read_data_by_id_22(bytes.fromhex(did))
 
-    if response.raw[4:6] == '62':
-        logging.info("Received positive response %s for request security key updates did ",
-                     response.raw[4:6])
-        num_of_events = event_count(response, event_type)
-        return num_of_events
-    logging.error("Test Failed: Expected positive response (62), but received response: %s",
-                   response.raw)
-    return False
+    if response.raw[4:6] != '62':
+        logging.error("Unable to read did %s. Received response: %s", did, response.raw)
 
+    # count events
+    if event_type == 'successful':
+        total_events = response.data['details']['response_items'][0]['sub_payload']
+    elif event_type == 'failed':
+        total_events = response.data['details']['response_items'][1]['sub_payload']
+    else:
+        logging.error("event_type shall be 'successful' or 'failed' but is: %s", event_type)
+        return None
 
-def request_write_data_id(dut:Dut, message):
-    """
-    Request WriteDataByIdentifier (0x2E)
-    Args:
-        dut(Dut): An instance of Dut
-        message(bytes): request message
-    Returns:
-        (bool): True on positive response
-    """
-    # Request WriteDataByIdentifier
-    response = dut.uds.generic_ecu_call(SC_CARCOM.can_m_send("WriteDataByIdentifier",
-                                                             message, b''))
-    if response.raw[6:8] == '6E':
-        logging.info("Received Positive response 6E for WriteDataByIdentifier request")
-        return True
-
-    logging.error("Test Failed: Expected 6E for WriteDataByIdentifier, received %s",
-                    response.raw)
-    return False
+    base = 16
+    return int(total_events, base)
 
 
 def step_1(dut: Dut, parameters):
     """
-    action: Verify Event Type - Security Key Updates with WriteDataByIdentifier request and
-            reading DID 'D0C1' with correct key and wrong checksum
-    expected_result: True on receiving positive response
+    action: Try to update security access key with incorrect checksum and verify failed events
+            counter is increasing
+    expected_result: Failed events counter is increased by one
     """
 
+    # Setting up key
+    sa_key: SecAccessParam = dut.conf.default_rig_config
+    sa_key2write = sa_key["auth_key"]+sa_key["proof_key"]
+
+    # Switch to extended diagnostic session
     dut.uds.set_mode(3)
+
     # Security access to ECU
-    security_access_result= security_access(dut, sa_level='05')
-    if not security_access_result:
+    unlock_security_access = security_access(dut, sa_level='05')
+    if not unlock_security_access:
         logging.error("Test Failed: security access denied")
         return False
 
-    # checking number of successful event counts before write data by id
-    result_before_successful_event = read_success_failed_events(dut,
-                                     parameters['security_key_read_did'],
-                                     event_type='successful')
-
-    if result_before_successful_event is None:
-        logging.error("Unable to extract number of successful events")
+    # count number of failed events
+    init_failed_events = read_success_failed_events(dut, parameters['security_key_read_did'],
+                                event_type='failed')
+    if init_failed_events is None:
+        logging.error("Unable to extract number of failed events")
         return False
 
-    # preparing message with correct CRC
-    sa_key_32byte = parameters['security_log_authentication_key_data_record']
-    crc = SUTE.crc16(bytearray(sa_key_32byte.encode('utf-8')))
-    crc_hex = hex(crc)
-    message = bytes.fromhex(parameters['security_key_update_did'] +
-              parameters['security_log_authentication_key_data_record'] + crc_hex[2:])
+    # program security access key
+    response = program_key(dut, parameters['security_key_update_did'], sa_key2write,
+                           valid_checksum=False)
 
-    # write data by identifier request
-    result = request_write_data_id(dut,message)
-    if not result:
+    if response[2:8] != '7F2E31':
+        logging.error("Incorrect response code. Expected 7F2E31 and received: %s", response)
+        return False
+    logging.info("Unable to update security access key with incorrect checksum")
+
+    # Switch back to default session to disable security access
+    dut.uds.set_mode(1)
+
+    # count number of failed events
+    final_failed_events = read_success_failed_events(dut, parameters['security_key_read_did'],
+                                event_type='failed')
+    if final_failed_events is None:
+        logging.error("Unable to extract number of failed events")
         return False
 
-    # get number of successful event after writing the key
-    result_after_successful_event = read_success_failed_events(dut,
-                                    parameters['security_key_read_did'],
-                                    event_type='successful')
-    if result_after_successful_event is None:
-        logging.error("Unable to extract number of successful events")
+    # compare number of failed events before and after trying to update key
+    if init_failed_events + 1 != final_failed_events:
+        logging.error("Test Failed: Unexpected number of failed events")
         return False
+    logging.info("failed events counter increased by one as expected")
 
-    # verify successful events is increased by 1
-    if result_before_successful_event + 1 == result_after_successful_event:
-        logging.info("Total number successful of event count increased by 1 as expected")
-        return True
-    logging.error("Test Failed: Total number successful events not increased")
-    return False
+    return True
 
 
 def step_2(dut: Dut, parameters):
     """
-    action: Verify Event Type - Security Key Updates with WriteDataByIdentifier request and
-            reading DID 'D0C1' with correct key and wrong checksum
-    expected_result: True on receiving positive response
+    action: Update security access key and verify successful events counter is increasing
+    expected_result: Successful events counter is increased by one
     """
+
+    # Setting up key
+    sa_key: SecAccessParam = dut.conf.default_rig_config
+    sa_key2write = sa_key["auth_key"]+sa_key["proof_key"]
+
+    # switch to extended diagnostic session
     dut.uds.set_mode(3)
+
     # Security access to ECU
-    security_access_result= security_access(dut, sa_level='05')
-    if not security_access_result:
+    unlock_security_access = security_access(dut, sa_level='05')
+    if not unlock_security_access:
         logging.error("Test Failed: security access denied")
         return False
 
-    # get number of failed event counts before write data by id
-    result_before_failed_event = read_success_failed_events(dut,
-                                 parameters['security_key_read_did'], event_type='failed')
-    if result_before_failed_event is None:
-        logging.error("Unable to extract number of failed events")
+    # count number of successful events
+    init_successful_events = read_success_failed_events(dut, parameters['security_key_read_did'],
+                                event_type='successful')
+    if init_successful_events is None:
+        logging.error("Unable to extract number of successful events")
         return False
 
-    # preparing message with incorrect CRC
-    sa_key_32byte_crc = 'FF'*32
-    crc = SUTE.crc16(bytearray(sa_key_32byte_crc.encode('utf-8')))
-    crc_hex = hex(crc)[2:]
-    crc_hex_incorrect = crc_hex[::-1]
-    message = bytes.fromhex(parameters['security_key_update_did'] + sa_key_32byte_crc +\
-                             crc_hex_incorrect)
+    # program security access key
+    response = program_key(dut, parameters['security_key_update_did'], sa_key2write)
 
-    # write data by identifier request with incorrect CRC
-    result = request_write_data_id(dut, message)
-    if result:
-        logging.error("Test Failed: Expected to get negative response as incorrect CRC is "
-                     "provided with Write data by identifier request")
+    if response[2:4] != '6E':
+        logging.error("Unable to program security access key. response code: %s", response)
+        return False
+    logging.info("Security access key successfully updated")
+
+    # Switch back to default session to disable security access
+    dut.uds.set_mode(1)
+
+    # count number of successful events
+    final_successful_events = read_success_failed_events(dut, parameters['security_key_read_did'],
+                                event_type='successful')
+    if final_successful_events is None:
+        logging.error("Unable to extract number of successful events")
         return False
 
-    # get number of failed event after writing the key
-    result_after_failed_event = read_success_failed_events(dut,
-                                parameters['security_key_read_did'], event_type='failed')
-    if result_after_failed_event is None:
-        logging.error("Unable to extract number of failed events")
+    # compare number of successful events before and after updating key
+    if init_successful_events + 1 != final_successful_events:
+        logging.error("Test Failed: Unexpected number of successful events")
         return False
+    logging.info("Successful events counter increased by one as expected")
 
-    # verify failed events is increased by 1
-    if result_before_failed_event + 1 == result_after_failed_event:
-        logging.info("Total number count for failed events increased by 1 as expected")
-        return True
-    logging.error("Test Failed: Total number failed events not increased")
-    return False
+    return True
 
 
 def run():
     """
-    Verify successful and failed event count for security key updates with both correct
-    and incorrect checksum.
+    Verify event type 'Security key update' is implemented by programming keys and calling
+    security key update did.
     """
     dut = Dut()
     start_time = dut.start()
@@ -327,7 +332,6 @@ def run():
     result_step = False
 
     parameters_dict = {'security_key_update_did':'',
-                       'security_log_authentication_key_data_record':'',
                        'security_key_read_did':''}
 
     try:
@@ -337,15 +341,11 @@ def run():
         if not all(list(parameters.values())):
             raise DutTestError("yml parameters not found")
 
-        result_step = dut.step(step_1, parameters, purpose="Verify Event Type - Security Key"
-                                                   " Updates with WriteDataByIdentifier request"
-                                                   " with correct key & checksum "
-                                                   "and read DID 'D0C1'")
-        if result_step:
-            result_step = dut.step(step_2, parameters, purpose="Verify Event Type - Security Key"
-                                                   " Updates with WriteDataByIdentifier request"
-                                                   " with correct key & wrong checksum "
-                                                   "and read DID 'D0C1'")
+        result_step = dut.step(step_1, parameters, purpose="Try to update "
+                                "security access key with incorrect checksum and verify "
+                                "failed events counter is increasing")
+        result_step = result_step and dut.step(step_2, parameters, purpose="Update security "
+                               "access key and verify successful events counter is increasing")
 
         result = result_step
     except DutTestError as error:
