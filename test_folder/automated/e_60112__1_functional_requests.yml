@@ -4,4 +4,6 @@ hvbm_p519:
         send: HvbmdpToAllUdsDiagRequestFrame
 becm_p319:
         send: Vcu1ToAllFuncFront1DiagReqFrame
+ecm_phev:
+        send: Vcu1ToAllFuncFront1DiagReqFrame
 

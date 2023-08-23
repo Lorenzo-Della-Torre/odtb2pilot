@@ -1,0 +1,9 @@
+ecm_phev:
+    step_1:
+        sa_level_programming:
+            - '01'
+        sa_level_extended:
+            - '05'
+            - '11'
+            - '23'
+            - '27'

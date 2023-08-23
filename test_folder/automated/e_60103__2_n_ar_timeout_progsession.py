@@ -47,7 +47,9 @@ from supportfunctions.support_can import SupportCAN, CanTestExtra, CanPayload, C
 from supportfunctions.support_carcom import SupportCARCOM
 from supportfunctions.support_test_odtb2 import SupportTestODTB2
 from supportfunctions.support_SBL import SupportSBL
+from supportfunctions.support_service22 import SupportService22
 
+SE22 = SupportService22
 SIO = SupportFileIO()
 SC = SupportCAN()
 SC_CARCOM = SupportCARCOM()
@@ -187,11 +189,10 @@ def step_1(dut: Dut, parameters):
     if not result:
         return False
 
-    # Check active diagnostic session
+    # check active diagnostic sessiont
     response = dut.uds.active_diag_session_f186()
     if response.data["details"]["mode"] != 2:
-        logging.error("Test Failed: ECU is not in programming session, received session %s",
-                       response.data["details"]["mode"])
+        logging.error("Test Failed: ECU is not in programming session, received sessio n %s", response.data["details"]["mode"])
         return False
 
     logging.info("ECU is in programming session as expected")

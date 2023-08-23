@@ -191,6 +191,7 @@ def run():
         if result_step:
             result_step, pbl_did_dict = dut.step(step_2, purpose="Reading DIDs from sddb "
                                                                  "file in programming session")
+        print(f"The DID DICTIONARY IS:{pbl_did_dict}")    
         if result_step:
             result_step = dut.step(step_3, pbl_did_dict, purpose="Read all DIDs in programming "
                                                                  "session and compare with "

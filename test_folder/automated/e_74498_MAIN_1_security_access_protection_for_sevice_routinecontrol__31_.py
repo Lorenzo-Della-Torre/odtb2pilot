@@ -143,7 +143,7 @@ def step_5(can_p):
     """
     cpay: CanPayload = {
         "payload": SC_CARCOM.can_m_send("RoutineControlRequestSID",
-                                        b'\x03\x01',
+                                        b'\x02\x00',
                                         b'\x01'),
         "extra": ''
         }

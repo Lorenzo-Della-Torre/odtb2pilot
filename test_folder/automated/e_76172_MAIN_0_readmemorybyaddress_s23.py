@@ -159,8 +159,8 @@ def step_1(dut: Dut, parameters):
     """
     add_range = parameters['params_for_memory_read']['add_range']
     result = read_memory_by_address(dut, parameters['params_for_memory_read'], add_range,
-                                    session='default')
-    return result and verify_response_time(dut, parameters['time_parameters'], session='default')
+                                    session='extended')
+    return result and verify_response_time(dut, parameters['time_parameters'], session='extended')
 
 
 def step_2(dut: Dut, parameters):

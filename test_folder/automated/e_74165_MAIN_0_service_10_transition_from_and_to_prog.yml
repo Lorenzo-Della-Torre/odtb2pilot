@@ -6,3 +6,8 @@ hvbm_p519:
         step_1:
                 receive: HvbmHvbm1canFrame53_20
                 send: HvbmNmFrame
+
+ecm_phev:
+       step_1:
+               receive: ECMFront1Fr02
+               send: BECMFront1Fr02

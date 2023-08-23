@@ -3,3 +3,9 @@ hvbm_p519:
             p2server_max_programming : 0.025
             p2server_max_default : 0.050
             jitter_testenv : 0.030
+
+ecm_phev:
+        run:
+            p2server_max_programming : 0.025
+            p2server_max_default : 0.050
+            jitter_testenv : 0.030

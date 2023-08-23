@@ -66,7 +66,7 @@ def step_1(dut: Dut):
     response = dut.uds.active_diag_session_f186()
     if response.data["details"]["mode"] == 2:
         logging.info('ECU is in programming session as expected')
-        return True
+    return True
 
     logging.error('Test Failed: Not in programming session, received session %s',
                   response.data["details"]["mode"])

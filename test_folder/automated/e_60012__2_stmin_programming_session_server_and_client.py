@@ -81,7 +81,7 @@ def read_did_and_verify(dut, did_to_read):
     payload = SC.fill_payload(bytes.fromhex(did_to_read), fill_value=0)
     response = dut.uds.read_data_by_id_22(payload, b'')
 
-    if response.raw[2:4] == '7F' and response.raw[6:8] == '31':
+    if response.raw[2:4] == '7F' and response.raw[6:8] == '13':
         logging.info("Received NRC-%s for request ReadDataByIdentifier as expected",
                       response.raw[6:8])
         return True

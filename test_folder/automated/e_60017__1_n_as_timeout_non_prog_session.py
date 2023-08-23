@@ -57,7 +57,7 @@ def read_data_id_with_dids(dut):
         (bool): True on successfully verified non-empty response
     """
     # Send multi frame request DIDs with FC delay < 1000ms
-    response = dut.uds.read_data_by_id_22(bytes.fromhex('DD02DD0ADD06F186'))
+    response = dut.uds.read_data_by_id_22(bytes.fromhex('DD02DD0A03075B17'))
     if response is None:
         logging.error("Test Failed: Empty response")
         return False
@@ -111,7 +111,7 @@ def fc_greater_than_1000_ms(dut):
 
     # Send multi frame request DIDs with FC delay > 1000ms
     try:
-        dut.uds.read_data_by_id_22(bytes.fromhex('DD02DD0ADD064947'))
+        dut.uds.read_data_by_id_22(bytes.fromhex('DD02DD0A03075B17'))
     except UdsEmptyResponse:
         pass
 

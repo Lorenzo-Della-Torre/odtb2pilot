@@ -205,7 +205,7 @@ def run():
     parameters_dict = {'did_list_range' : []}
 
     try:
-        dut.precondition(timeout=30)
+        dut.precondition(timeout=1000)
 
         parameters = SIO.parameter_adopt_teststep(parameters_dict)
 

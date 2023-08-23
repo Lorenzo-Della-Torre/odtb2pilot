@@ -302,6 +302,8 @@ def run():
     except DutTestError as error:
         logging.error("Test failed: %s", error)
     finally:
+        #dut.uds.set_mode(1)
+        #time.sleep(2)
         dut.postcondition(start_time, result)
 
 if __name__ == '__main__':

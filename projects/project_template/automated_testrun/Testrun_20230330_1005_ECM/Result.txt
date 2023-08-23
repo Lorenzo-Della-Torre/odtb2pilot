@@ -1,0 +1,17 @@
+Results of testrun Testrun_20230330_1005_ECM:
+480628 INFO dut PASSED e_480628_MAIN_1_Server_random_number_validity_time.log
+469134 INFO dut FAILED e_469134_MAIN_1_default_values_delay_timers_and_counters_for_false_attempts.log
+480616 INFO dut PASSED e_480616_MAIN_1_aes_ctr_in_authentication_method.log
+480650 INFO dut PASSED e_480650_MAIN_1_increment_and_reset_for_false_attempts.log
+480620 INFO dut PASSED e_480620_MAIN_0_client_request_seed_construction.log
+480615 INFO dut PASSED e_480615_MAIN_0_aes_cmac_in_authentication_method.log
+480617 INFO dut FAILED e_480617_MAIN_1_security_access_message_structures.log
+481795 INFO dut PASSED e_481795_MAIN_3_security_access_levels.log
+480618 INFO dut Fail occurred at: 'Check clientRequestSeed with incorrect message identifier', in step: 2  e_480618_MAIN_1_security_access_message_identifier.log
+480619 INFO dut PASSED e_480619_MAIN_1_initialization_vectors.log
+480625  e_480625_MAIN_2_security_access_key_type_structure.log
+481861 INFO dut PASSED e_481861_MAIN_0_check_security_access_method_supported.log
+480649 INFO dut Fail occurred at: 'Verify number of clientRequestSeed accepted within timeout', in step: 1  e_480649_MAIN_1_Limit_clientRequestSeed_requests.log
+480623 INFO dut PASSED e_480623_MAIN_0_client_send_key_construction.log
+480621 INFO dut FAILED e_480621_MAIN_1_server_response_seed_construction.log
+Test done. Time: 20230330 1018

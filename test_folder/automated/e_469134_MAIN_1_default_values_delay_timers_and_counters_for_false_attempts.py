@@ -202,7 +202,7 @@ def verify_delay_timer_after_reset(dut, session, sa_level, ecu_reset_delay):
     dut.uds.ecu_reset_1101()
     dut.uds.set_mode(session)
     # wait for 4 seconds after ECU reset
-    time.sleep(ecu_reset_delay - 1)
+    time.sleep(ecu_reset_delay - 3)
     response = security_access_request_seed(dut, sa_level)
     # Extract server response and compare with requiredTimeDelayNotExpired (37)
     if response[2:4] != '7F' or response[6:8] != '37':
@@ -245,6 +245,9 @@ def step_1(dut: Dut, parameters):
     expected_result: True on successfully verified security access delay timer.
     """
     results = []
+    
+    #Set to programming session
+    dut.uds.set_mode(2)
 
     # Sleep time to avoid NRC37
     time.sleep(5)

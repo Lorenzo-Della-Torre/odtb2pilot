@@ -1,0 +1,21 @@
+
+
+NRC 21 is received from the ECU which is not expected. Test failed
+Received time: Mon Jun 12 07:23:33 2023
+Script: /home/hilding/Repos/odtb2pilot/test_folder/automated/e_74130_MAIN_0_routinestatus_routineexecutes_type2.py
+
+NRC 21 is received from the ECU which is not expected. Test failed
+Received time: Mon Jun 12 07:30:50 2023
+Script: /home/hilding/Repos/odtb2pilot/test_folder/automated/e_74130_MAIN_0_routinestatus_routineexecutes_type2.py
+
+NRC 21 is received from the ECU which is not expected. Test failed
+Received time: Mon Jun 12 07:32:05 2023
+Script: /home/hilding/Repos/odtb2pilot/test_folder/automated/e_74130_MAIN_0_routinestatus_routineexecutes_type2.py
+
+NRC 21 is received from the ECU which is not expected. Test failed
+Received time: Mon Jun 12 07:32:56 2023
+Script: /home/hilding/Repos/odtb2pilot/test_folder/automated/e_74130_MAIN_0_routinestatus_routineexecutes_type2.py
+
+NRC 21 is received from the ECU which is not expected. Test failed
+Received time: Tue Jul 11 13:07:24 2023
+Script: /home/hilding/Repos/odtb2pilot/test_folder/automated/e_481861_MAIN_0_check_security_access_method_supported.py

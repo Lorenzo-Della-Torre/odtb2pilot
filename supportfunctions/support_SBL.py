@@ -186,7 +186,27 @@ class SupportSBL:
             logging.debug("Support_SBL: new_ess_needed is empty. Leave True.")
         logging.debug("Support_SBL: ess_needed after YML: %s", ess_needed)
 
-        if (len(self._sbl) == 0) or\
+        # Some ECU like ECM don't include SBL vbf
+        # if so, state that in project or testscript parameters (yml file)
+        sbl_needed = True
+        new_sbl_needed = SIO.extract_parameter_yml("*", 'sbl_needed')
+        if new_sbl_needed != '':
+            assert isinstance(new_sbl_needed, bool)
+            sbl_needed = new_sbl_needed
+        else:
+            logging.debug("Support_SBL: new_sbl_needed is empty. Leave True.")
+        logging.debug("Support_SBL: sbl_needed after YML: %s", sbl_needed)
+
+        if (sbl_needed and (len(self._sbl) == 0)) or\
+            (ess_needed and (len(self._ess) == 0)) or (len(self._df) == 0):
+            logging.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            logging.info("!!!!!!       Some VBF files are missing      !!!!!!")
+            logging.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            logging.debug("len SBL: %s", len(self._sbl))
+            logging.debug("len ESS: %s", len(self._ess))
+            logging.debug("len DF: %s", len(self._df))
+
+        if (sbl_needed and (len(self._sbl) == 0)) or\
             (ess_needed and (len(self._ess) == 0)) or (len(self._df) == 0):
             logging.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             logging.info("!!!!!!       Some VBF files are missing      !!!!!!")
@@ -199,7 +219,7 @@ class SupportSBL:
         logging.info("ESS: %s", (self._ess if(self._ess) else 'Missing'))
         logging.info("Data Files: %s", (self._df if(self._df) else 'Missing'))
 
-        if (len(self._sbl) == 0) or\
+        if (sbl_needed and (len(self._sbl) == 0)) or\
             (ess_needed and (len(self._ess) == 0)) or (len(self._df) == 0):
             logging.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             logging.info("!!!!!!       Some VBF files are missing      !!!!!!")

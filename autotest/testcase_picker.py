@@ -134,6 +134,7 @@ def match_f(req, var, rev, reqprod_dict):
 
 def load_reqprod_map():
     map_file_path = str(Path(__file__).parent.parent)
+    print("The path is: {}".format(map_file_path))
     with open(map_file_path + '/req_script_mapping.yml') as mapping_file:
         req_mapping_dict = yaml.safe_load(mapping_file)
     return req_mapping_dict

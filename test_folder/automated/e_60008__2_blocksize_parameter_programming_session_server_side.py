@@ -35,6 +35,7 @@ details: >
     and 4094 bytes
 """
 
+import time
 import logging
 from hilding.dut import Dut
 from hilding.dut import DutTestError
@@ -227,9 +228,11 @@ def step_1(dut: Dut, parameters):
     """
     # Set to programming session
     dut.uds.set_mode(2)
-
+    dut.uds.set_mode(2)
+    dut.uds.set_mode(2)
     # Verify active diagnostic session
     result = dut.uds.active_diag_session_f186()
+    print(f"THE RESULT IS {result}")
     if result.data['details']['mode'] != 2:
         logging.error("Test Failed: ECU is not in programming session")
         return False

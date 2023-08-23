@@ -4,3 +4,10 @@ hvbm_p519:
             start_did: 'F200'
             end_did: 'F240'
         slow_rate_max_time: 600
+
+ecm_phev:
+    step_1:
+        periodic_dids:
+            start_did: 'F200'
+            end_did: 'F240'
+        slow_rate_max_time: 600

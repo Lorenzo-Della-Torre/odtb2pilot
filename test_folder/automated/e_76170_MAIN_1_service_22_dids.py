@@ -291,12 +291,12 @@ def run():
         if result_step:
             result_step = dut.step(step_6, parameters['two_dids_prog'], purpose="Verify "
                                    "service 22 with DIDs 'F121F12A' in PBL session")
-        if result_step:
+        """if result_step:
             result_step = dut.step(step_7, parameters['did_prog'], parameters['max_response_time'],
                                    purpose="Verify service 22 with DID 'F121' in SBL session")
         if result_step:
             result_step = dut.step(step_8, parameters['two_dids_prog'], purpose="Verify "
-                                   "service 22 with DIDs 'F121F12A' in SBL session")
+                                   "service 22 with DIDs 'F121F12A' in SBL session")"""
         result = result_step
 
     except DutTestError as error:

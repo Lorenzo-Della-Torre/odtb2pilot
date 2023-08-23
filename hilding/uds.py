@@ -111,6 +111,7 @@ class Uds:
 
         response = SC.can_messages[self.dut['receive']]
 
+
         if len(response) == 0:
             if SC.can_cf_received[self.dut["receive"]] and "3200" in\
                                                     SC.can_cf_received[self.dut["receive"]][0][2]:

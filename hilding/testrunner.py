@@ -20,6 +20,7 @@ Any unauthorized copying or distribution of content from this file is prohibited
 /*********************************************************************************/
 """
 import re
+import os
 import logging
 import sys
 import importlib
@@ -414,7 +415,10 @@ def script_picker(reqprod):
     """
 
     script = {}
-    with open('req_script_mapping.yml') as mapping_file:
+    odtb_repo_param= os.environ.get('TESTREPO')
+    if odtb_repo_param is None:
+        odtb_repo_param= '.'
+    with open(odtb_repo_param + '/' +  'req_script_mapping.yml') as mapping_file:
         mapping_dict = yaml.safe_load(mapping_file)
 
     for key, value in mapping_dict.items():

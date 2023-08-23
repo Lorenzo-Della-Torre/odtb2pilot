@@ -1,0 +1,2 @@
+Results of testrun Testrun_20230710_1640_ECM:
+Test done. Time: 20230710 1640

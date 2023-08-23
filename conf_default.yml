@@ -26,7 +26,7 @@ platforms:
         protocol: 'can'
         framelength_max: 8
         padding : 'True'
-        SecAcc_Gen: 'Gen1'
+        SecAcc_Gen: 'Gen2'
         fixed_key: 'FFFFFFFFFF'
         auth_key: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
         proof_key: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'

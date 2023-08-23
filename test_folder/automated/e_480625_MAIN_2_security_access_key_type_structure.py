@@ -245,12 +245,14 @@ def step_1(dut: Dut, parameters):
 
     # Sleep time to avoid NRC37
     time.sleep(5)
-
-    SSBL.get_vbf_files()
-    result = SSBL.sbl_activation(dut, sa_keys=dut.conf.default_rig_config)
-    if not result:
-        logging.error("Test Failed: SBL activation failed")
-        return False
+    
+    sbl_needed = SIO.extract_parameter_yml("*", 'sbl_needed')
+    if sbl_needed != False:
+        SSBL.get_vbf_files()
+        result = SSBL.sbl_activation(dut, sa_keys=dut.conf.default_rig_config)
+        if not result:
+            logging.error("Test Failed: SBL activation failed")
+            return False
 
     for level, did in parameters['sa_levels_dids_programming'].items():
         result = write_data_by_identifier_with_wrong_structure(dut, level, did)
@@ -302,12 +304,14 @@ def step_3(dut: Dut, parameters):
 
     # Sleep time to avoid NRC37
     time.sleep(5)
-
-    SSBL.get_vbf_files()
-    result = SSBL.sbl_activation(dut, sa_keys=dut.conf.default_rig_config)
-    if not result:
-        logging.error("Test Failed: SBL activation failed")
-        return False
+    
+    sbl_needed = SIO.extract_parameter_yml("*", 'sbl_needed')
+    if sbl_needed != False:
+        SSBL.get_vbf_files()
+        result = SSBL.sbl_activation(dut, sa_keys=dut.conf.default_rig_config)
+        if not result:
+            logging.error("Test Failed: SBL activation failed")
+            return False
 
     for level, did in parameters['sa_levels_dids_programming'].items():
         result = write_data_by_identifier_with_wrong_crc(dut, level, did)

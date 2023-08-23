@@ -280,8 +280,8 @@ class Dut:
         log.info("")
         log.info("~~~~Postcondition: Display current mode/session, change to mode1 (default)~~~~")
         self.uds.step = 200
-        res_mode = self.uds.active_diag_session_f186()
-        log.info("Current mode/session: %s", res_mode.details["mode"])
+        #res_mode = self.uds.active_diag_session_f186()
+        #log.info("Current mode/session: %s", res_mode.details["mode"])
 
         self.uds.set_mode(1)
         if self.uds.mode != 1:

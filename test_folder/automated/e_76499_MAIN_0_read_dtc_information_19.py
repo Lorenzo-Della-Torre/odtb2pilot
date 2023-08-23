@@ -77,7 +77,7 @@ def step_1(can_p):
     """
     cpay: CanPayload = {
         "payload": SC_CARCOM.can_m_send("ReadDTCInfoExtDataRecordByDTCNumber",
-                                        b'\x0B\x4A\x00', b'\xFF'),
+                                        b'\x0B\xE4\x00', b'\xFF'),
         "extra": ''
         }
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
@@ -92,7 +92,7 @@ def step_1(can_p):
 
     result = SUTE.teststep(can_p, cpay, etp)
     result = result and SUTE.test_message(SC.can_messages[can_p["receive"]],
-                                          teststring='59060B4A00')
+                                          teststring='59060BE400')
 
     return result
 

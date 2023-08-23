@@ -1,0 +1,6 @@
+Results of testrun Testrun_20230404_1316_ECM_VBFs_download:
+111111
+ PASSED
+ e_111111_VBFs_download.log
+
+Test done. Time: 20230404 1341

@@ -82,3 +82,10 @@ rml_p519:
         payload_max_length_ovflw: 1025
         time: 20
         fc_separation_time : '05'
+ecm_phev:
+    run:
+        did: 'DD02DD0BDD0C5B17'
+        payload_max_length_cts: 1020
+        payload_max_length_ovflw: 1025
+        time: 20
+        fc_separation_time : '05'

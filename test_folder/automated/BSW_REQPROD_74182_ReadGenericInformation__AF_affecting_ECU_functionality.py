@@ -74,7 +74,7 @@ def step_1(can_p):
     can_p_ex: CanParam = {
         'netstub': SC.connect_to_signalbroker(odtb_conf.ODTB2_DUT, odtb_conf.ODTB2_PORT),
         'send': "ECMFront1Fr02",
-        'receive': "BECMFront1Fr02",
+        'receive': "ECMFront1Fr02",
         'namespace': SC.nspace_lookup("Front1CANCfg0")
         }
     SIO.parameter_adopt_teststep(can_p_ex)

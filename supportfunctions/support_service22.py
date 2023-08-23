@@ -100,6 +100,7 @@ class SupportService22:
         result = SUPPORT_TEST.teststep(can_p, cpay, etp)
         if SC.can_messages[can_p["receive"]]:
             rec_message = SC.can_messages[can_p["receive"]][0][2]
+            #logging.info("Frames received: %s", SC.can_frames[can_p["receive"]])
             if pn_sn_list != []:
                 logging.debug("S220: validate reply contains PN/SN: %s", pn_sn_list)
                 result = result and\
@@ -200,6 +201,93 @@ class SupportService22:
                          SC.can_messages[can_p["receive"]][0][2], title=''))
         else:
             logging.info('%s', "No messages received for request Read DID EDA0")
+            logging.info("Frames received: %s", SC.can_frames[can_p["receive"]])
+            logging.info("Messages received: %s", SC.can_messages[can_p["receive"]])
+            result = False
+        return result
+
+    @staticmethod
+    def read_did_cvn(can_p: CanParam, stepno=220):
+        """
+        Read CVN   
+        """
+        cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("ReadDataByIdentifier",
+                                                             b'\xF8\x06', b''),
+                            "extra" : ''
+                           }
+        etp: CanTestExtra = {"step_no": stepno,
+                             "purpose" : "Service22: Application Diagnostic Database Part Number",
+                             "timeout" : 1,
+                             "min_no_messages" : -1,
+                             "max_no_messages" : -1
+                            }
+
+        result = SUPPORT_TEST.teststep(can_p, cpay, etp)
+        if SC.can_messages[can_p["receive"]]:
+            logging.info("Messages received: %s", SC.can_messages[can_p["receive"]])
+            message = SC.can_messages[can_p["receive"]][0][2]
+            pos1 = message.find('F806')
+            logging.info('CVN (F806) %s', message[pos1+4: pos1+18])
+        else:
+            logging.info('%s', "No messages received for request Read DID F806")
+            logging.info("Frames received: %s", SC.can_frames[can_p["receive"]])
+            logging.info("Messages received: %s", SC.can_messages[can_p["receive"]])
+            result = False
+        return result
+
+    @staticmethod
+    def read_did_cal_id(can_p: CanParam, stepno=220):
+        """
+        Read Cal ID
+        """
+        cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("ReadDataByIdentifier",
+                                                             b'\xF8\x04', b''),
+                            "extra" : ''
+                           }
+        etp: CanTestExtra = {"step_no": stepno,
+                             "purpose" : "Service22: Application Diagnostic Database Part Number",
+                             "timeout" : 1,
+                             "min_no_messages" : -1,
+                             "max_no_messages" : -1
+                            }
+
+        result = SUPPORT_TEST.teststep(can_p, cpay, etp)
+        if SC.can_messages[can_p["receive"]]:
+            logging.info("Messages received: %s", SC.can_messages[can_p["receive"]])
+            message = SC.can_messages[can_p["receive"]][0][2]
+            pos1 = message.find('F804')
+            logging.info('Cal ID (F804) %s', message[pos1+4: pos1+20])
+        else:
+            logging.info('%s', "No messages received for request Read DID F804")
+            logging.info("Frames received: %s", SC.can_frames[can_p["receive"]])
+            logging.info("Messages received: %s", SC.can_messages[can_p["receive"]])
+            result = False
+        return result
+
+    @staticmethod
+    def read_did_engine_platform(can_p: CanParam, stepno=220):
+        """
+        Read Engine, Platform   
+        """
+        cpay: CanPayload = {"payload" : SC_CARCOM.can_m_send("ReadDataByIdentifier",
+                                                              b'\xF1\x94', b''),
+                            "extra" : ''
+                           }
+        etp: CanTestExtra = {"step_no": stepno,
+                             "purpose" : "Service22: Application Diagnostic Database Part Number",
+                             "timeout" : 1,
+                             "min_no_messages" : -1,
+                             "max_no_messages" : -1
+                            }
+
+        result = SUPPORT_TEST.teststep(can_p, cpay, etp)
+        if SC.can_messages[can_p["receive"]]:
+            logging.info("Messages received: %s", SC.can_messages[can_p["receive"]])
+            message = SC.can_messages[can_p["receive"]][0][2]
+            pos1 = message.find('F194')
+            logging.info('Engine, Platform (F194) %s', bytearray.fromhex(message[pos1+4: pos1+50]).decode())
+        else:
+            logging.info('%s', "No messages received for request Read DID F194")
             logging.info("Frames received: %s", SC.can_frames[can_p["receive"]])
             logging.info("Messages received: %s", SC.can_messages[can_p["receive"]])
             result = False
@@ -570,22 +658,22 @@ class SupportService22:
             c_sid = True
         # No error message yet
         if 'error_message' not in did_dict:
-            # Verifying DID in response
-            if 'did' in did_dict and did_id in did_dict['did']:
-                c_did = True
-            # Verifying payload length
-            if ('payload_length' in did_dict and int(did_dict['size']) ==
-                    did_dict['payload_length']):
-                pass_or_fail_counter_dict['Passed'] += 1
-                c_size = True
-            # Wrong payload length
-            else:
-                if 'payload_length' in did_dict:
-                    did_dict['error_message'] = 'Size wrong. Expected %s but was %s' % (
-                        did_dict['size'], str(did_dict['payload_length']))
-                else:
-                    did_dict['error_message'] = 'No payload?'
-                pass_or_fail_counter_dict['Failed'] += 1
+           # Verifying DID in response
+           if 'did' in did_dict and did_id in did_dict['did']:
+               c_did = True
+           # Verifying payload length
+           if ('payload_length' in did_dict and int(did_dict['size']) ==
+                   did_dict['payload_length']):
+               pass_or_fail_counter_dict['Passed'] += 1
+               c_size = True
+           # Wrong payload length
+           else:
+               if 'payload_length' in did_dict:
+                   did_dict['error_message'] = 'Size wrong. Expected %s but was %s' % (
+                       did_dict['size'], str(did_dict['payload_length']))
+               else:
+                   did_dict['error_message'] = 'No payload?'
+               pass_or_fail_counter_dict['Failed'] += 1
 
         # Already an error message
         else:
@@ -619,3 +707,5 @@ class SupportService22:
         info_entry = Infoentry(did=did_id, name=name, c_sid=c_sid, c_did=c_did, c_size=c_size,
                                scal_val_list=scal_val_list, err_msg=err_msg, payload=data)
         return info_entry, pass_or_fail_counter_dict
+
+

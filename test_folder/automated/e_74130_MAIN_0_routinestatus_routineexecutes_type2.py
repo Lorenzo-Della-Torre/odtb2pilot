@@ -79,7 +79,7 @@ def step_2(can_p):
     """
     cpay: CanPayload = {
         "payload": SC_CARCOM.can_m_send("RoutineControlRequestSID",
-                                        b'\xDC\x11',
+                                        b'\x40\x05',
                                         b'\x01'),
         "extra": ''
         }
@@ -108,7 +108,7 @@ def step_3(can_p):
     """
     cpay: CanPayload = {
         "payload": SC_CARCOM.can_m_send("RoutineControlRequestSID",
-                                        b'\xDC\x11',
+                                        b'\x40\x05',
                                         b'\x03'),
         "extra": ''
         }

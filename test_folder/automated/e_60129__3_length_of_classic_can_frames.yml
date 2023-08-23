@@ -4,3 +4,10 @@ hvbm_p519:
         last_frame_padding : "0000000000"
         read_active_diagnostic_session_did : 'F186'
         power_supplies_did : 'FD00'
+
+ecm_phev:
+    run:
+        res_padded_frame : "62F18601000000"
+        last_frame_padding : "0000000000"
+        read_active_diagnostic_session_did : 'F186'
+        power_supplies_did : 'FD00'

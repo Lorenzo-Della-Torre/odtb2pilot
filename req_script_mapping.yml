@@ -79,7 +79,7 @@ e_489080_MAIN_0:
   cw_89575_4
   e_489080_MAIN_0
 
-e_480621_MAIN_1_server_response_seed_construction:
+e_480621_MAIN_1_ECM_server_response_seed_construction:
   cw_89419_4
   e_480621_MAIN_1
 
@@ -146,11 +146,11 @@ e_52283__1_non_complete_or_compatible_software:
   cw_89627_4
   e_52283__1
 
-e_480620_MAIN_0_client_request_seed_construction:
+e_480620_MAIN_0_ECM_client_request_seed_construction:
   cw_89418_4
   e_480620_MAIN_0
 
-e_480623_MAIN_0_client_send_key_construction:
+e_480623_MAIN_0_ECM_client_send_key_construction:
   cw_89420_4
   e_480623_MAIN_0
 
@@ -158,7 +158,7 @@ e_53849__4:
   cw_90921_4
   e_53849__5
 
-e_480618_MAIN_1_security_access_message_identifier:
+e_480618_MAIN_1_ECM_security_access_message_identifier:
   cw_89415_4
   e_480618_MAIN_1
 
@@ -320,7 +320,7 @@ e_68885_MAIN_3:
   cw_90021_4
   e_68885_MAIN_3
 
-e_480649_MAIN_1_Limit_clientRequestSeed_requests:
+e_480649_MAIN_1_ECM_Limit_clientRequestSeed_requests:
   cw_89421_4
   e_480649_MAIN_1
 
@@ -584,7 +584,7 @@ e_76697_MAIN_5:
   cw_90480_4
   e_76697_MAIN_5
 
-e_480650_MAIN_1_increment_and_reset_for_false_attempts:
+e_480650_MAIN_1_ECM_increment_and_reset_for_false_attempts:
   cw_89423_4
   e_480650_MAIN_1
 
@@ -604,7 +604,7 @@ e_60109_MAIN_3:
   cw_90527_4
   e_60109__3
 
-e_480616_MAIN_1_aes_ctr_in_authentication_method:
+e_480616_MAIN_1_ECM_aes_ctr_in_authentication_method:
   cw_89413_4
   e_480616_MAIN_1
 
@@ -839,7 +839,7 @@ e_76673_MAIN_3_request_download:
   cw_90469_4
   e_76673_MAIN_3
 
-e_480628_MAIN_1_Server_random_number_validity_time:
+e_480628_MAIN_1_ECM_Server_random_number_validity_time:
   cw_89422_4
   e_480628_MAIN_1
 
@@ -1326,7 +1326,7 @@ e_72034_MAIN_6:
   cw_90118_4
   e_72034_MAIN_6
 
-e_481861_MAIN_0_check_security_access_method_supported:
+e_481861_MAIN_0_ECM_check_security_access_method_supported:
   cw_89431_4
   e_481861_MAIN_0
 
@@ -1350,7 +1350,7 @@ e_69701_MAIN_1:
   cw_90036_4
   e_69701_MAIN_1
 
-e_480626_MAIN_2_security_access_detection_of_nonprogrammed_keys:
+e_480626_MAIN_2_ECM_security_access_detection_of_nonprogrammed_keys:
   cw_89429_4
   e_480626_MAIN_2
 
@@ -1714,7 +1714,7 @@ e_113482_MAIN_3_session_layer:
   cw_90499_4
   e_113482_MAIN_3
 
-e_480619_MAIN_1_initialization_vectors:
+e_480619_MAIN_1_ECM_initialization_vectors:
   cw_89417_4
   e_480619_MAIN_1
 
@@ -2121,7 +2121,7 @@ e_76539_MAIN_3:
   cw_89592_4
   e_76539_MAIN_3
 
-e_480617_MAIN_1_security_access_message_structures:
+e_480617_MAIN_1_ECM_security_access_message_structures:
   cw_89414_4
   e_480617_MAIN_1
 
@@ -2133,7 +2133,7 @@ e_72069_MAIN_4:
   cw_90124_4
   e_72069_MAIN_4
 
-e_480615_MAIN_0_aes_cmac_in_authentication_method:
+e_480615_MAIN_0_ECM_aes_cmac_in_authentication_method:
   cw_89412_4
   e_480615_MAIN_0
 
@@ -2664,7 +2664,7 @@ e_478574_MAIN_1:
   cw_90128_4
   e_478574_MAIN_1
 
-e_481795_MAIN_3_security_access_levels:
+e_481795_MAIN_3_ECM_security_access_levels:
   cw_89433_4
   e_481795_MAIN_3
 

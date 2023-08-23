@@ -22,3 +22,29 @@ hvbm_p519:
             ownership_start: 40
             ownership_end: 72
             cmac_start: 72
+
+              
+ecm_phev:
+    run:
+        client_seed_pos:
+            iv_start: 12
+            iv_end: 44
+            rand_start: 44
+            rand_end: 76
+            cmac_start: 76
+
+        server_seed_pos:
+            iv_start: 8
+            iv_end: 40
+            rand_start: 40
+            rand_end: 72
+            ownership_start: 72
+            ownership_end: 104
+            cmac_start: 104
+
+        client_key_pos:
+            rand_start: 8
+            rand_end: 40
+            ownership_start: 40
+            ownership_end: 72
+            cmac_start: 72

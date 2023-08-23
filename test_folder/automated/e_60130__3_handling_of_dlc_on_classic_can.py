@@ -86,7 +86,13 @@ def step_2(dut):
             "BO_ 1875 HvbmdpToHvbmUdsDiagRequestFrame : 7 HVBMdp",
             can0_dbc_file='HVBMsystemSPA2_MAIN_3_HVBM1CANCfg_200506_.dbc'
         )
+    elif platform == "ecm_phev":
+        dut.reconfigure_broker(
+            "BO_ 1840 Vcu1ToEcmFront1DiagReqFrame: 8 VCU1",
+            "BO_ 1840 Vcu1ToEcmFront1DiagReqRrame: 7 VCU1",
+            can0_dbc_file='SPA4510_ConfigurationsSPA3_Front1CANCfg_201120__ECM.dbc'
 
+       )
     try:
         dut.uds.read_data_by_id_22(global_timestamp_dd00)
     except UdsEmptyResponse:

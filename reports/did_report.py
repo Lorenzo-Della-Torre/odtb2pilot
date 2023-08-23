@@ -91,9 +91,9 @@ def get_ecu_content(dut: Dut):
         add_details(dut, did_counter, pbl_did_dict, pbl_dids)
 
         # SBL
-        dut.uds.enter_sbl()
-        sbl_did_dict = did.get('sbl_did_dict', {})
-        add_details(dut, did_counter, sbl_did_dict, sbl_dids)
+        #dut.uds.enter_sbl()
+        #sbl_did_dict = did.get('sbl_did_dict', {})
+        #add_details(dut, did_counter, sbl_did_dict, sbl_dids)
 
     except UdsError as error:
         log.error(error)
@@ -103,7 +103,7 @@ def get_ecu_content(dut: Dut):
     content['part_numbers'] = part_numbers_res.details
     content['app_dids'] = app_dids
     content['pbl_dids'] = pbl_dids
-    content['sbl_dids'] = sbl_dids
+    #content['sbl_dids'] = sbl_dids
     content['did_counter'] = did_counter
 
     return content
@@ -221,7 +221,7 @@ def did_report():
     start_time = dut.start()
     result = False
     try:
-        dut.precondition(timeout=1800)
+        dut.precondition(timeout=10000)
         content = get_ecu_content(dut)
         result = True
         create_report(content)

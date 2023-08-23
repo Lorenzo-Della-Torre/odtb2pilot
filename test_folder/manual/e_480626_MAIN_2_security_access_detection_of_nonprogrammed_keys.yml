@@ -18,3 +18,25 @@ hvbm_p519:
           '19': "Security Log"
 
         did: 'D09B'
+
+
+ecm_phev:
+    run:
+        supported_keys_def:
+          '01': "Programming Session"
+          '05': "Extended session"
+          '19': "Security Log"
+          '23': "Secure Debug"
+          '27': "Secure On-board Communication"
+
+        supported_keys_ext:
+          '05': "Extended session"
+          '19': "Security Log"
+          '23': "Secure Debug"
+          '27': "Secure On-board Communication"
+
+        supported_keys_prog:
+          '01': "Programming Session"
+          '19': "Security Log"
+
+        did: 'D09B'

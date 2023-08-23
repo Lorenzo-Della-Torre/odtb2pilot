@@ -1,0 +1,438 @@
+Results of testrun Testrun_20230712_1341_ECM:
+469428  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_469428_MAIN_1_securityevent_structure.yml
+74498 INFO root PASSED e_74498_MAIN_1_security_access_protection_for_sevice_routinecontrol__31_.log
+76690 INFO dut Fail occurred at: 'TransferData request in extended session', in step: 4  e_76690_MAIN_3_transfer_data.log
+76173 INFO dut FAILED e_76173_MAIN_0_readmemorybyaddress_alfid.log
+76696 INFO dut Fail occurred at: 'Extract vbf parameters', in step: 1  e_76696_MAIN_5_request_transfer_exit_transfer_response_parameter_record.log
+400894  e_400894_MAIN_5_request_download.log
+487905  e_487905_MAIN_1_sec_oc_distribution_of_the_sec_oc_keys_to_ecu_suppliers.log
+400425 INFO dut Fail occurred at: 'Verify current Software is Downloaded and signed separately.', in step: 1  e_400425_MAIN_2_programming_of_logical_blocks.log
+76467  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_76467_MAIN_1_dynamicallydefinedataidentifier_2c_addressandlengthformat_identifier.yml
+129845 INFO dut FAILED e_129845_MAIN_0_sbl_sw_vn_data_record.log
+56151 INFO dut Fail occurred at: 'Verify positive response for ReadMemoryByAddress(0x23) service in default session', in step: 1  e_56151__2_p2server_max_non_prg_session.log
+480617 INFO dut Fail occurred at: 'Check response for invalid message id', in step: 7  e_480617_MAIN_1_ECM_security_access_message_structures.log
+74166  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_74166_MAIN_1_service_10_all_other_session_transissions.yml
+67761 INFO dut Fail occurred at: 'Verify all DIDs in app_did_dict within given range in default session', in step: 2  e_67761_MAIN_3_manufacturer_dr.log
+480600  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_480600_MAIN_2_disable_hardware_debug_interfaces_to_hsm.yml
+72017  e_72017_MAIN_8_support_data_records_in_global_dtc_snapshot_data.log
+480620 INFO dut PASSED e_480620_MAIN_0_client_request_seed_construction.log
+68214 INFO dut Fail occurred at: 'Verify part number of DIDs in default session', in step: 1  e_68214_MAIN_5_part_num_coding.log
+76683  e_76683_MAIN_3_requestupload.log
+76677  e_76677_MAIN_2_requestdownload_address_and_length_format_identifier.log
+72168 INFO dut FAILED e_72168_MAIN_0_check_complete_and_compatible.log
+60112 INFO dut PASSED e_60112__1_functional_requests.log
+53927  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_53927__1_suspend_non_diagnostic_communication.yml
+60102 INFO dut FAILED e_60102__1_n_as_timeout_prog_session.log
+56150 INFO dut Fail occurred at: 'Verify positive response for ReadMemoryByAddress(0x23) service in default session', in step: 1  e_56150__1_p2server_max_prg_session.log
+469403 INFO dut Fail occurred at: 'Verify default development key is programmed to the ECU at OEM', in step: 1  e_469403_MAIN_2_secoc_default_development_key.log
+404623 INFO dut Fail occurred at: 'Verify current Software is Downloaded and signed separately.', in step: 1  e_404623_MAIN_0_signing_method_sha256_rsa2048_key_size.log
+68189 INFO dut Fail occurred at: 'Send ReadDataByIdentifier(0xF120) in default diagnostic session and verify that ECU replies with correct DID', in step: 1  e_68189_MAIN_2_application_diagnostic_database_part_number_data_record.log
+67821  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_67821_MAIN_1_identification_option_data_records.yml
+480623  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_480623_MAIN_0_client_send_key_construction.yml
+76444 INFO dut Fail occurred at: 'Verify ReadDataByPeriodicIdentifier(0x2A) response with transmissionMode slow in extended session', in step: 1  e_76444_MAIN_1_read_data_by_periodic_identifier_transmission_mode_slow.log
+74124  e_74124_MAIN_1_type_3__pos_resp_startroutine.log
+53854  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_53854__1_erase_and_write_data_with_sbl.yml
+74114  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_74114_MAIN_0_routine_result_availability.yml
+74130 INFO root FAILED e_74130_MAIN_0_routinestatus_routineexecutes_type2.log
+60062  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_60062__3_nbr_performance_req_non_programming_for_fccts_and_fcovflw.yml
+480617  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_480617_MAIN_1_security_access_message_structures.yml
+115798 INFO dut PASSED e_115798_MAIN_2_flowcontrol_wait_usage.log
+397292 INFO dut Fail occurred at: 'RequestDownload(0x34) with updated VBF block length', in step: 2  e_397292_MAIN_2_software_parts_per_logical_block.log
+60017 INFO dut Fail occurred at: 'Verify multi frame request DIDs with FC delay < 1000ms and FC delay > 1000ms in default session', in step: 1  e_60017__1_n_as_timeout_non_prog_session.log
+68197 INFO dut Fail occurred at: 'Read DID F126 and verify the autosar BSW cluster version data record in default session', in step: 1  e_68197_MAIN_1_autosar_bsw_cluster_version.log
+487909 INFO dut Fail occurred at: 'Initiate security access in extended diagnostic session', in step: 1  e_487909_MAIN_1_secoc_cluster_key_identifier.log
+400704 INFO dut Fail occurred at: 'Verify Routine Control start sent for Check Prog Precondition', in step: 1  e_400704_MAIN_3_sbl_condition_for_activation_1st_part.log
+76136 INFO root FAILED e_76136_MAIN_0_diagnosticsessioncontrol_parameterrecord.log
+74510 INFO dut Fail occurred at: 'Verify positive response for ReadMemoryByAddress(0x23) service in default session', in step: 1  e_74510_MAIN_2_negative_response_codes.log
+56155  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_56155__1_p2_star_server_max.yml
+76515 INFO root FAILED e_76515_MAIN_2_19_reportdtcwithpermanentstatus_15.log
+53913 INFO dut Fail occurred at: 'Verify no message received in routine control type-1(start) for check complete and compatible', in step: 2  e_53913__1_ecus_with_multiple_networks.log
+411891 INFO dut Fail occurred at: 'Download and activation of SBL', in step: 1  e_411891_MAIN_1_immediatley_apply_ess_updates.log
+56204  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_56204__1_p4server_equal_to_p2server.yml
+76503 INFO dut Fail occurred at: 'Verify ReadDTCInfoSnapshotRecordByDTCNumber and ReadDTCInfoSnapshotRecordByDTCNumber(84) in default session', in step: 1  e_76503_MAIN_1_19_reportdtcsnapshotrecordbydtcnumber_04_84.log
+52307 INFO dut Fail occurred at: 'Verify ECU transmit frame within TCANPowerWakeUpToApp time', in step: 1  e_52307__3_timing_at_power_up_or_reset_initialization_can.log
+76671 INFO root FAILED e_76671_MAIN_0_rc31_req_routine_res_ext.log
+53929 INFO dut Fail occurred at: 'Verify programming preconditions and set ECU to programming session', in step: 1  e_53929__1_disable_monitoring_and_logging_dtcs.log
+74156 INFO root FAILED e_74156_MAIN_1_p4server_max_for_readdtcinformation_19_ext.log
+76443  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_76443_MAIN_1_read_data_by_periodic_identifier_response_message_type.yml
+469134  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_469134_MAIN_1_default_values_delay_timers_and_counters_for_false_attempts.yml
+360452 INFO dut Fail occurred at: 'Download and activate SBL', in step: 1  e_360452_MAIN_1_authenticity_verification.log
+487892  e_487892_MAIN_1_sec_oc_profile_configuration_mac_truncation.log
+466751  e_466751_MAIN_0_public_key_checksum.log
+486677 INFO dut FAILED e_486677_MAIN_0_Event_logging_rate_limitation.log
+484129  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_484129_MAIN_0_routine_status_record.yml
+469433 INFO dut Fail occurred at: 'Read DID D046 and extract event data', in step: 1  e_469433_MAIN_0_Total_number_of_events.log
+405174 INFO dut Fail occurred at: 'Verify activation of SBL and ESS software part download no check', in step: 1  e_405174_MAIN_2_checkm_verification_programmed_data.log
+76171  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_76171_MAIN_2_read_did_multiple_request.yml
+76501 INFO root FAILED e_76501_MAIN_0_19_reportdtcbystatusmask_02_82_dtcstatusmask.log
+74156 INFO root FAILED e_74156_MAIN_1_p4server_max_for_readdtcinformation_19.log
+60081 INFO root FAILED e_60081__1_n_cr_timeout_in_non_prog_session_ext.log
+76141  e_76141_MAIN_1_security_access_27.log
+67867 INFO root FAILED e_67867_MAIN_1_supported_services_for_dynamically_defined_periodic_data_identifiers.log
+487909  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_487909_MAIN_1_secoc_cluster_key_identifier.yml
+76686 INFO root Not applicable e_76686_MAIN_1_requestupload_alfid.log
+76496 INFO dut Fail occurred at: 'Verify ClearDiagnosticInformation(0x14) service in default session', in step: 1  e_76496_MAIN_1_cleardiagnosticinformation_14.log
+480615  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_480615_MAIN_0_ECM_aes_cmac_in_authentication_method.yml
+74126 INFO root FAILED e_74126_MAIN_0_type_3_req_routine_res.log
+129845  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_129845_MAIN_0_sbl_sw_vn_data_record.yml
+469434 INFO dut FAILED e_469434_MAIN_0_minimum_number_of_events_to_be_stored.log
+398373  e_398373_MAIN_1_VBT_input_order_to_hash_function_per_data_block.log
+74130 INFO root FAILED e_74130_MAIN_0_routinestatus_routineexecutes_type3.log
+466751  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_466751_MAIN_0_public_key_checksum.yml
+480621 INFO dut PASSED e_480621_MAIN_1_ECM_server_response_seed_construction.log
+418011 INFO dut Fail occurred at: 'Verify activation of SBL and ESS software part download no check', in step: 1  e_418011_MAIN_1_check_memory_routine.log
+52246 INFO dut Fail occurred at: 'Verify programming preconditions', in step: 1  e_52246__1_transport_network_layer.log
+76671 INFO root FAILED e_76671_MAIN_0_rc31_req_routine_res_def.log
+74180  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_74180_MAIN_0_service_readdtcinformation__19__affecting_ecu_functionality.yml
+56204 INFO dut PASSED e_56204__1_p4server_equal_to_p2server.log
+410732 INFO dut Fail occurred at: 'Verify current Software is Downloaded and signed separately.', in step: 1  e_410732_MAIN_0_default_signing_method.log
+68200 INFO dut Fail occurred at: 'Send ReadDataByIdentifier in extended diagnostic session and verify ECU response of ReadDataByIdentifier request', in step: 2  e_68200_MAIN_2_ecu_core_assembly_part_number_data_record.log
+56155 INFO dut Fail occurred at: 'Calculate and verify time difference between NRC 78 and positive response in programming session', in step: 1  e_56155__1_p2_star_server_max.log
+469435  e_469435_MAIN_0_counter_overflow_strategy.log
+76172  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_76172_MAIN_0_readmemorybyaddress_s23.yml
+52291 INFO dut FAILED e_52291__1_enter_bootloader_from_ecu_application.log
+68177 INFO dut Fail occurred at: 'Read DID 'F186' and verify active diagnostic session is default', in step: 1  e_68177_MAIN_0_active_diag_session_f186.log
+74166 INFO root FAILED e_74166_MAIN_1_service_10_all_other_session_transissions.log
+469023  e_469023_MAIN_1_action_on_failure.log
+53975 INFO dut Fail occurred at: 'RequestDownload(0x34) with updated VBF block length', in step: 2  e_53975__1_separate_memory_sectors.log
+68207 INFO dut PASSED e_68207_MAIN_4_ecu_software_part_number_data_record.log
+53933  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_53933__1_time_window_timeout_prog.yml
+60081 INFO root FAILED e_60081__1_n_cr_timeout_in_non_prog_session.log
+487906  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_487906_MAIN_1_secoc_key_programmed_status_diagnostic_trouble_code.yml
+76485 INFO dut FAILED e_76485_MAIN_2_dynamically_define_data_identifier_2c_clear_of_dynamically_define_data_identifier.log
+72220  e_72220_MAIN_1_erase_mem_resp_time.log
+481257 INFO dut Fail occurred at: 'Verify current Software is Downloaded and signed separately.', in step: 1  e_481257_MAIN_0_transfer_data_36_hex_service.log
+487895 INFO dut Fail occurred at: 'Verify the status of DTC 0xD0C568 for all of the SecOC protected signals', in step: 1  e_487895_MAIN_1_sec_oc_diagnostic_trouble_code_detection_of_corrupt_data_received.log
+60019 INFO dut Fail occurred at: 'Send request with FC_delay less than timeout in extended session', in step: 3  e_60019__1_n_ar_timeout_non_prog_session.log
+404694  e_404694_MAIN_2_verification_block_root_hash.log
+53909 INFO dut FAILED e_53909__1_sbl_diagnostic_data.log
+52286 INFO dut Fail occurred at: 'Verify programming preconditions', in step: 1  e_52286__2_s3server_timer_timeout_in_pbl_1_1_part.log
+68239  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_68239_MAIN_7_complete_ecu_partserial_number_data_record.yml
+52283 INFO dut Fail occurred at: 'Verify current downloaded software is NotComplete, Compatible with manipulated data block and ECU is in programming session', in step: 2  e_52283__1_non_complete_or_compatible_software.log
+53933 yml parameters not found e_53933__1_time_window_timeout_prog.log
+76486  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_76486_MAIN_3_write_data_by_identifier_2e.yml
+76441 INFO dut FAILED e_76441_MAIN_0_read_memory_by_address_ms.log
+428665 INFO dut Fail occurred at: 'Extract vbf parameters', in step: 1  e_428665_MAIN_1_sign_software_part_private_key_syntax.log
+487904  e_487904_MAIN_1_sec_oc_detection_of_non_programmed_production_keys.log
+113861  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_113861_MAIN_0_diagnostic_readout.yml
+76670 INFO root FAILED e_76670_MAIN_1_rc31_stop_option_record.log
+488712 INFO dut FAILED e_488712_MAIN_0_sec_oc_key_update_handling_in_ecu.log
+480618  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_480618_MAIN_1_security_access_message_identifier.yml
+74167 INFO root FAILED e_74167_MAIN_0_service_ecureset__11__affecting_ecu_functionality.log
+404598 INFO dut Fail occurred at: 'Verify current Software is Downloaded and signed separately.', in step: 1  e_404598_MAIN_0_signing_method_sha256_rsa2048_hash_function.log
+67864  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_67864_MAIN_2_id_options_system_supplier_specific_data_records.yml
+67867 INFO root FAILED e_67867_MAIN_1_supported_services_for_dynamically_defined_periodic_data_identifiers_progsession.log
+68202 INFO dut Fail occurred at: 'Verify ECU is in default sesion', in step: 1  e_68202_MAIN_1_ecu_delivery_assembly_part_number_data_record.log
+76485  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_76485_MAIN_2_dynamically_define_data_identifier_2c_clear_of_dynamically_define_data_identifier.yml
+74450  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_74450_MAIN_2_entry_conditions_for_service_10_changing_to_programmingsession.yml
+60103  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_60103__2_n_ar_timeout_progsession.yml
+484030 INFO dut Fail occurred at: 'Read DID 'F186' and verify active diagnostic session is default', in step: 1  e_484030_MAIN_0_ecu_physical_address.log
+76622 INFO root FAILED e_76622_MAIN_0_rc31_stop_ext.log
+76446 INFO dut FAILED e_76446_MAIN_2_read_data_by_periodic_identifier_transmission_mode_fast.log
+74147 INFO root FAILED e_74147_MAIN_1_p4server_max_response_time_for_readdatabyidentifier__22_.log
+56154  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_56154__2_p2_star_server_min.yml
+480626  e_480626_MAIN_2_ECM_security_access_detection_of_nonprogrammed_keys.log
+469450 INFO dut FAILED e_469450_MAIN_1_security_log_access_control.log
+52282 INFO dut Fail occurred at: 'Verify current Downloaded Software is Complete & Compatible with latest VBF releases', in step: 1  e_52282__2_complete_and_compatible_function.log
+60062 INFO dut Fail occurred at: 'Verify N_Br is less than 20 ms for FC.CTS in default session', in step: 1  e_60062__3_nbr_performance_req_non_programming_for_fccts_and_fcovflw.log
+76622  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_76622_MAIN_0_rc31_stop_ext.yml
+480619 INFO dut PASSED e_480619_MAIN_1_initialization_vectors.log
+469465 INFO dut Fail occurred at: 'Read DID D046', in step: 1  e_469465_MAIN_0_auth_data_calc.log
+76136  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_76136_MAIN_0_diagnosticsessioncontrol_parameterrecord.yml
+428667  e_428667_MAIN_3_signing_function_generate_signature.log
+52284  e_52284__1_complete_and_compatible_software.log
+480625  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_480625_MAIN_2_security_access_key_type_structure.yml
+76685 INFO root Not applicable e_76685_MAIN_1_requestupload_dataformatidentifier.log
+60130  e_60130__3_handling_of_dlc_on_classic_can.log
+74124  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_74124_MAIN_1_type_3__pos_resp_startroutine.yml
+487904  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_487904_MAIN_1_sec_oc_detection_of_non_programmed_production_keys.yml
+76172 INFO dut Fail occurred at: 'Verify positive response for ReadMemoryByAddress(0x23) service in default session', in step: 1  e_76172_MAIN_0_readmemorybyaddress_s23.log
+76442  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_76442_MAIN_2_read_data_by_periodic_identifier_2a.yml
+480650 INFO dut Fail occurred at: 'Verify security access delay timer for supported security access level(01, 19) in programming session', in step: 1  e_480650_MAIN_1_increment_and_reset_for_false_attempts.log
+480618 INFO dut Fail occurred at: 'Check clientRequestSeed with incorrect message identifier', in step: 2  e_480618_MAIN_1_security_access_message_identifier.log
+76671  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_76671_MAIN_0_rc31_req_routine_res_ext.yml
+56194  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_56194__1_start_of_p2_server_for_queued_request_in_programming_session.yml
+480650 INFO dut Fail occurred at: 'Verify security access delay timer in programming session', in step: 1  e_480650_MAIN_1_ECM_increment_and_reset_for_false_attempts.log
+469414 INFO dut FAILED e_469414_MAIN_2_secoc_message_verification_handling_of_too_many_invalid_attempts.log
+391192 INFO dut Fail occurred at: 'Verify ECU is alive again within less than 2500 ms by requesting current ECU-mode', in step: 1  e_391192_MAIN_2_ECU_start_up_time.log
+53957  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_53957__3_completecompatiblefunction.yml
+72042 INFO dut Fail occurred at: 'Get time data from DTC snapshot', in step: 1  e_72042_MAIN_3_support_for_dtc_time_stamp_21.log
+480621 INFO dut PASSED e_480621_MAIN_1_server_response_seed_construction.log
+115798  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_115798_MAIN_2_flowcontrol_wait_usage.yml
+488878  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_488878_MAIN_0_sec_oc_did_for_sec_oc_verification_failures.yml
+74112 INFO root FAILED e_74112_MAIN_1_routineinfo_byte_extended_session.log
+60133 INFO dut Fail occurred at: 'Verify that a single frame reply is filled up to 8 bytes with x00', in step: 1  e_60133__2_unused_data_bytes_in_the_can_frame.log
+74143 INFO root FAILED e_74143_MAIN_0_p4server_max_response_time_for_service_10.log
+76621 INFO dut FAILED e_76621_MAIN_1_rc31_option_record.log
+469414  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_469414_MAIN_2_secoc_message_verification_handling_of_too_many_invalid_attempts.yml
+469444 INFO dut Fail occurred at: 'Read security log event DID D046 and extract event data', in step: 1  e_469444_MAIN_0_overwrite_strategy.log
+74147 INFO root FAILED e_74147_MAIN_1_p4server_max_response_time_for_readdatabyidentifier__22__prog.log
+113861 INFO dut Fail occurred at: 'Send ReadDataByIdentifier in default diagnostic session and verify ECU response of ReadDataByIdentifier request', in step: 1  e_113861_MAIN_0_diagnostic_readout.log
+480623  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_480623_MAIN_0_ECM_client_send_key_construction.yml
+52235 INFO dut Fail occurred at: 'Verify minimum maxNumberOfBlockLenght is between 2048 to 4095 bytes', in step: 1  e_52235__2_requestdownload_service.log
+76501 INFO root FAILED e_76501_MAIN_0_19_reportdtcbystatusmask_02_82_dtcstatusmask_ext.log
+469429  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_469429_MAIN_1_read_outsecurity_event_records.yml
+469432 INFO dut Fail occurred at: 'Test that D046 has the correct header', in step: 1  e_469432_MAIN_0_security_event_header.log
+52282  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_52282__2_complete_and_compatible_function.yml
+481861 INFO dut Fail occurred at: 'Verify routine control request with supported authentication method i.e. '0001' or 'FFFF' based on the security access level for extended session', in step: 2  e_481861_MAIN_0_check_security_access_method_supported.log
+74160 INFO root FAILED e_74160_MAIN_1_p4server_max_for_routinecontrol_31__exept_startroutine_type_1.log
+76499 INFO root FAILED e_76499_MAIN_0_read_dtc_information_19.log
+74172  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_74172_MAIN_0_service_readdatabyidentifier__22__affecting_ecu_functionality.yml
+76502 INFO dut Fail occurred at: 'Verify ReadDTCInfoSnapshotIdentification and ReadDTCInfoSnapshotIdentification(83) in default session', in step: 1  e_76502_MAIN_0_19_reportdtcsnapshotidentification_03_83.log
+67865 INFO dut Fail occurred at: 'Verify Dynamically defined periodic DataIdentifier(0x2A) response in extended session', in step: 1  e_67865_MAIN_1_dynamically_defined_periodic_data_identifiers_in_ascending_order.log
+76450  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_76450_MAIN_1_dynamically_define_dataidentifier_2c_definebyidentifier.yml
+53957 INFO dut FAILED e_53957__3_completecompatiblefunction.log
+486706  e_486706_MAIN_0_Distribution_Security_Log_Authentication_keys.log
+60003  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_60003__1_part3.yml
+76442 INFO dut Fail occurred at: 'Verify ReadDataByPeriodicIdentifier(0x2A) positive response in extended session', in step: 1  e_76442_MAIN_2_read_data_by_periodic_identifier_2a.log
+60064 INFO dut Fail occurred at: 'Verify ECU sends consecutive frames with N_Cs in default session', in step: 1  e_60064__4_n_cs_performance_requirement_in_non_programming_session.log
+469462 INFO dut Fail occurred at: 'Read security log in extended session', in step: 1  e_469462_MAIN_1_Authentication_data_algorithm.log
+53927 INFO dut FAILED e_53927__1_suspend_non_diagnostic_communication.log
+469134  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_469134_MAIN_1_ECM_default_values_delay_timers_and_counters_for_false_attempts.yml
+74184 INFO root FAILED e_74184_MAIN_0_service_routinecontrol__31__affecting_ecu_functionality.log
+404620 INFO dut Fail occurred at: 'Verify current Software is Downloaded and signed separately.', in step: 1  e_404620_MAIN_1_signing_method_sha256_rsa2048_public_key_algorithm.log
+76133 INFO dut PASSED e_76133_MAIN_1_diagnosticsessioncontrol_programmingsession.log
+53843 INFO dut FAILED e_53843__1_pbl_diagnostic_data.log
+72017  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_72017_MAIN_8_support_data_records_in_global_dtc_snapshot_data.yml
+76170 INFO dut Fail occurred at: 'Verify service 22 with DID 'F120' in Default session', in step: 1  e_76170_MAIN_1_service_22_dids.log
+74180 INFO root FAILED e_74180_MAIN_0_service_readdtcinformation__19__affecting_ecu_functionality.log
+480625 INFO dut Fail occurred at: 'Verify response of WriteDataByIdentifier with wrong structure but correct CRC in extended session', in step: 2  e_480625_MAIN_2_ECM_security_access_key_type_structure.log
+480615  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_480615_MAIN_0_aes_cmac_in_authentication_method.yml
+480649  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_480649_MAIN_1_Limit_clientRequestSeed_requests.yml
+481861 INFO dut Fail occurred at: 'Verify routine control request with supported authentication method i.e. '0001' or 'FFFF' based on the security access level for extended session', in step: 2  e_481861_MAIN_0_ECM_check_security_access_method_supported.log
+53843  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_53843__1_pbl_diagnostic_data.yml
+60006  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_60006__3_blocksize_parameter_non_programming_session_server_side.yml
+480616 INFO dut PASSED e_480616_MAIN_1_ECM_aes_ctr_in_authentication_method.log
+480649 INFO dut PASSED e_480649_MAIN_1_ECM_Limit_clientRequestSeed_requests.log
+76671  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_76671_MAIN_0_rc31_req_routine_res_def.yml
+67763  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_67763_MAIN_2_dev_dr.yml
+481795  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_481795_MAIN_3_ECM_security_access_levels.yml
+52307  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_52307__3_timing_at_power_up_or_reset_initialization_can.yml
+72203 INFO dut FAILED e_72203_MAIN_1_erase_memory_routine.log
+52290  e_52290__1_reception_of_ecu_reset_service.log
+55628 INFO dut PASSED e_55628__3_addressing_usdt_frames.log
+487907 INFO dut FAILED e_487907_MAIN_1_secoc_key_sync_test_diagnostics.log
+488754 INFO dut Fail occurred at: 'Verifying SecOC Action on Message Failures', in step: 1  e_488754_MAIN_0_secoc_action_on_message_failures.log
+418372 INFO dut FAILED e_418372_MAIN_1_ecu_sw_part_num_f12c.log
+469437 INFO dut Fail occurred at: 'Read security log event DID D03C and extract security event data for rejected events', in step: 1  e_469437_MAIN_1_security_access_application.log
+480625 INFO dut Fail occurred at: 'Verify response of WriteDataByIdentifier with wrong structure but correct CRC in programming session', in step: 1  e_480625_MAIN_2_security_access_key_type_structure.log
+74109  e_74109_MAIN_1_allowed_diag_services.log
+76169  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_76169_MAIN_2_TesterPresent_zeroSubFunction.yml
+128838 INFO dut Fail occurred at: 'Verify multi frame request DIDs with FC delay < 1000ms and FC delay > 1000ms in default session', in step: 1  e_128838_MAIN_0_ecu_complete_msg.log
+480650  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_480650_MAIN_1_ECM_increment_and_reset_for_false_attempts.yml
+53959  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_53959__4_complete_and_compatible_sequence_diagram.yml
+67761  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_67761_MAIN_3_manufacturer_dr.yml
+488983  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_488983_MAIN_0_sec_oc_did_for_sec_oc_verification_failure_counters.yml
+488878  e_488878_MAIN_0_sec_oc_did_for_sec_oc_verification_failures.log
+74165  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_74165_MAIN_0_service_10_transition_from_and_to_prog.yml
+404771 INFO dut Fail occurred at: 'Verify activation of SBL and ESS software part download no check', in step: 1  e_404771_MAIN_3_validation_of_the_ess_1st_part.log
+487972 INFO dut FAILED e_487972_MAIN_1_secoc_cluster_key_identifier_storage.log
+401156 INFO dut Fail occurred at: 'Verify current Downloaded Software is Complete & Compatible with latest VBF releases', in step: 1  e_401156_MAIN_2_complete_compatible_function.log
+76173  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_76173_MAIN_0_readmemorybyaddress_alfid.yml
+60012  e_60012__2_stmin_programming_session_server_and_client.log
+60021 INFO dut Fail occurred at: 'Verify multi frame request DIDs with FC delay < 1000ms and FC delay > 1000ms in default session', in step: 1  e_60021__1_n_bs_timeout_non_prog_session.log
+480619 INFO dut PASSED e_480619_MAIN_1_ECM_initialization_vectors.log
+76486 yml parameters not found e_76486_MAIN_3_write_data_by_identifier_2e.log
+76171 INFO dut FAILED e_76171_MAIN_2_read_did_multiple_request.log
+76489  e_76489_MAIN_1_write_memory_by_address_3d.log
+481861  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_481861_MAIN_0_check_security_access_method_supported.yml
+52281  e_52281__1_no_prog_received_within_timeout_prog.log
+480628 INFO dut PASSED e_480628_MAIN_1_Server_random_number_validity_time.log
+52286 INFO dut Fail occurred at: 'SBL activation and download ESS', in step: 1  e_52286__2_s3server_timer_timeout_in_pbl_1_2_part.log
+488712  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_488712_MAIN_0_sec_oc_key_update_handling_in_ecu.yml
+76443 INFO dut Fail occurred at: 'Set to extended mode and verify message type#2 response ReadDataByPeriodicIdentifier(0x2A)', in step: 1  e_76443_MAIN_1_read_data_by_periodic_identifier_response_message_type.log
+480617 INFO dut Fail occurred at: 'Check response for invalid message id', in step: 7  e_480617_MAIN_1_security_access_message_structures.log
+480618  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_480618_MAIN_1_ECM_security_access_message_identifier.yml
+76450 INFO dut Fail occurred at: 'Verify dynamicallyDefineDataIdentifier(0x2C)-defineByIdentifier(01, 81) response in default session', in step: 1  e_76450_MAIN_1_dynamically_define_dataidentifier_2c_definebyidentifier.log
+486608 INFO dut FAILED e_486608_MAIN_0_event_type_secure_on_board_communication.log
+68191 INFO dut Fail occurred at: 'Verify and compare primary bootloader diagnostic database part number by reading DID F121 & from sddb file', in step: 2  e_68191_MAIN_2_pbl_diag_part_num.log
+53841 INFO dut Fail occurred at: 'Read all DIDs in programming session and compare with response 0x62', in step: 3  e_53841__1_pbl_diag_services.log
+480620  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_480620_MAIN_0_client_request_seed_construction.yml
+480626  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_480626_MAIN_2_ECM_security_access_detection_of_nonprogrammed_keys.yml
+74450  e_74450_MAIN_2_entry_conditions_for_service_10_changing_to_programmingsession.log
+397436 INFO dut Fail occurred at: 'Download and activation of SBL', in step: 1  e_397436_MAIN_2_reprogrammable_ecu_ess.log
+53837 INFO dut FAILED e_53837__1_pbl_in_non_volatile_memory.log
+67867 INFO root FAILED e_67867_MAIN_1_supported_services_for_dynamically_defined_periodic_data_identifiers_extsession.log
+404693 INFO dut Fail occurred at: 'Read the vbf file and verify all the block header identifiers', in step: 1  e_404693_MAIN_3_verification_block_table_header_identifiers.log
+76499 INFO root FAILED e_76499_MAIN_0_read_dtc_information_19_ext.log
+76465  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_76465_MAIN_1_dynamically_define_data_identifier_2c_define_by_memory_address.yml
+76421 INFO dut FAILED e_76421_MAIN_0_read_memory_by_address_ma.log
+67865  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_67865_MAIN_1_dynamically_defined_periodic_data_identifiers_in_ascending_order.yml
+480620 INFO dut PASSED e_480620_MAIN_0_ECM_client_request_seed_construction.log
+76512  e_76512_MAIN_0_19_reportdtcextendeddatarecordbydtcnumber_06_86_recordnumber_specific_value_ext.log
+481795 INFO dut Fail occurred at: 'Verify security access request seed for supported security levels in extended session', in step: 2  e_481795_MAIN_3_ECM_security_access_levels.log
+76170  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_76170_MAIN_1_service_22_dids.yml
+74507  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_74507_MAIN_3_negative_response_code_busy_repeat_request_0x21.yml
+68214  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_68214_MAIN_5_part_num_coding.yml
+487892  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_487892_MAIN_1_sec_oc_profile_configuration_mac_truncation.yml
+486600  e_486600_MAIN_0_event_type_secure_boot.log
+60102  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_60102__1_n_as_timeout_prog_session.yml
+67821  e_67821_MAIN_1_identification_option_data_records.log
+52289 INFO dut Fail occurred at: 'Initially set ECU to programming session and verify ECU mode and security access. Again set ECU to programming session and verify security access', in step: 1  e_52289__1_reception_of_diagnostic_session_control_programming_session.log
+76601  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_76601_MAIN_2_rc31.yml
+60006 INFO dut Fail occurred at: 'Verify FlowControl(FC) response in default Session', in step: 1  e_60006__3_blocksize_parameter_non_programming_session_server_side.log
+459337  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_459337_MAIN_3_request_download_34_data_format_identifier.yml
+481795  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_481795_MAIN_3_security_access_levels.yml
+76169  e_76169_MAIN_2_TesterPresent_zeroSubFunction.log
+72168  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_72168_MAIN_0_check_complete_and_compatible.yml
+68230  e_68230_MAIN_1_ecu_sn_dr.log
+466659 INFO dut Fail occurred at: 'Verify current Software is Downloaded and signed separately.', in step: 1  e_466659_MAIN_0_data_compression_method_2.log
+489011  e_489011_MAIN_0_special_secondary_bootloader_for_protected_boot_sector_update.log
+76673  e_76673_MAIN_3_request_download.log
+459337 INFO dut FAILED e_459337_MAIN_3_request_download_34_data_format_identifier.log
+469440  e_469440_MAIN_1_event_type_software_updates_boot.log
+76139 INFO dut Fail occurred at: 'Verify ECU is in default session after reset(1101) and reset no reply(1181)', in step: 1  e_76139_MAIN_3_ecureset__11_.log
+53838  e_53838__1_pbl_can_only_write_data_to_volatile_memory.log
+469403  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_469403_MAIN_2_secoc_default_development_key.yml
+469438 INFO dut Fail occurred at: 'Read DID D046 and extract security log event data', in step: 1  e_469438_MAIN_2_Secuity_access_programming_session.log
+53839  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_53839__2_protected_boot_sector.yml
+72185  e_72185_MAIN_0_activate_sbl_routine.log
+480625  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_480625_MAIN_2_ECM_security_access_key_type_structure.yml
+76621  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_76621_MAIN_1_rc31_option_record.yml
+487907  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_487907_MAIN_1_secoc_key_sync_test_diagnostics.yml
+488983 INFO dut FAILED e_488983_MAIN_0_sec_oc_did_for_sec_oc_verification_failure_counters.log
+480615 INFO dut Fail occurred at: 'Verify server response seed CMAC', in step: 9  e_480615_MAIN_0_aes_cmac_in_authentication_method.log
+398360  e_398360_MAIN_4_format_of_verification_block_table.log
+68172 INFO dut FAILED e_68172_MAIN_0_usage_mode_data_record.log
+480628 INFO dut PASSED e_480628_MAIN_1_ECM_Server_random_number_validity_time.log
+60129 INFO dut Fail occurred at: 'Verify that a single frame reply is filled up to 8 bytes with x00', in step: 1  e_60129__3_length_of_classic_can_frames.log
+56200  e_56200__5_server_behavior_for_additional_client_requests_in_programming_session.log
+487905  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_487905_MAIN_1_sec_oc_distribution_of_the_sec_oc_keys_to_ecu_suppliers.yml
+67763 INFO dut Fail occurred at: 'Compare the APP software part number with SDDB software part number and also verify if all the data base DIDs are present in software APP for default session', in step: 1  e_67763_MAIN_2_dev_dr.log
+380118 INFO dut PASSED e_380118_MAIN_0_st_between_single_frames_prog_session.log
+480649  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_480649_MAIN_1_ECM_Limit_clientRequestSeed_requests.yml
+68239 INFO dut FAILED e_68239_MAIN_7_complete_ecu_partserial_number_data_record.log
+487895  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_487895_MAIN_1_sec_oc_diagnostic_trouble_code_detection_of_corrupt_data_received.yml
+405051  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_405051_MAIN_1_complete_compatible_function_error_handling.yml
+52261 INFO dut PASSED e_52261__1_prog_received_within_timeout_prog.log
+56154 INFO dut FAILED e_56154__2_p2_star_server_min.log
+484129 INFO dut Fail occurred at: 'Verifying Routine type and Routine status in Programming Session', in step: 2  e_484129_MAIN_0_routine_status_record.log
+487902 INFO dut FAILED e_487902_MAIN_1_sec_oc_key_type_structure.log
+76446  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_76446_MAIN_2_read_data_by_periodic_identifier_transmission_mode_fast.yml
+74140 INFO root Implicitly tested by REQPROD 74109 e_74140_MAIN_0_p4server_max_unsupported_services.log
+52287 INFO dut Fail occurred at: 'Activate SBl and verify ECU is in SBL', in step: 1  e_52287__2_s3server_timer_timeout_in_sbl_1_1_part.log
+74480 INFO root FAILED e_74480_MAIN_1_security_access_for_service_10.log
+76512  e_76512_MAIN_0_19_reportdtcextendeddatarecordbydtcnumber_06_86_recordnumber_specific_value.log
+52291  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_52291__1_enter_bootloader_from_ecu_application.yml
+76134 INFO dut Fail occurred at: 'Set to extended session with(0x03) and without reply(0x83) from default session', in step: 1  e_76134_MAIN_0_diagnosticsessioncontrol_extendedsession.log
+480621  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_480621_MAIN_1_server_response_seed_construction.yml
+53836 INFO dut Fail occurred at: 'Verify current Software is Downloaded and signed separately.', in step: 1  e_53836__1_two_level_bootloader.log
+76447  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_76447_MAIN_1_read_data_by_periodic_identifier_2a_transmission_mode_stop.yml
+418471 INFO dut Fail occurred at: 'Read public key Data record in PBL Session ', in step: 1  e_418471_MAIN_3_public_key_data_record_read.log
+76132 INFO dut Fail occurred at: 'Set mode to default and verify  that ECU is in default session', in step: 1  e_76132_MAIN_1_diagnosticsessioncontrol_defaultsession.log
+67864 INFO dut Fail occurred at: 'Filter DIDs for range F1F0-F1FF', in step: 2  e_67864_MAIN_2_id_options_system_supplier_specific_data_records.log
+76500 INFO dut Fail occurred at: 'Verify DTC information in default session', in step: 1  e_76500_MAIN_1_19_reportdtcbystatusmask_02_82.log
+488754  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_488754_MAIN_0_secoc_action_on_message_failures.yml
+67767 INFO dut Fail occurred at: 'Read and verify filtered DIDs list with ReadDataByIdentifier(0x22)', in step: 2  e_67767_MAIN_2_ecu_identification_and_configuration_data_records.log
+53973 INFO dut FAILED e_53973__3_file_download_order.log
+76622 INFO root FAILED e_76622_MAIN_0_rc31_stop_prg.log
+480620  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_480620_MAIN_0_ECM_client_request_seed_construction.yml
+480617  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_480617_MAIN_1_ECM_security_access_message_structures.yml
+53958 INFO dut Fail occurred at: 'Software download request for VBF files types and DATA(old vbf) and verify Compatible bit is set to 1', in step: 1  e_53958__6_complete_compatible_function_return_value.log
+76141  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_76141_MAIN_1_security_access_27.yml
+401140 INFO dut Fail occurred at: 'Verify current Downloaded Software is Complete & Compatible with latest VBF releases', in step: 1  e_401140_MAIN_3_complete_compatible_definition_of_being_compatible.log
+53858 INFO dut Fail occurred at: 'Activate SBL, verify service 3E and 22', in step: 1  e_53858__1_secondary_bootloader_diagnostic_services.log
+53909  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_53909__1_sbl_diagnostic_data.yml
+486608  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_486608_MAIN_0_event_type_secure_on_board_communication.yml
+113482 INFO dut Fail occurred at: 'Verify service 22 with DID 'F120' in Default session', in step: 1  e_113482_MAIN_3_session_layer.log
+480616 INFO dut PASSED e_480616_MAIN_1_aes_ctr_in_authentication_method.log
+68225  e_68225_MAIN_2_pbl_sw_part_num.log
+60112  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_60112__1_functional_requests.yml
+480649 INFO dut PASSED e_480649_MAIN_1_Limit_clientRequestSeed_requests.log
+400878 INFO dut Fail occurred at: 'SBL activation', in step: 1  e_400878_MAIN_3_erase_identifier.log
+76449 INFO dut Fail occurred at: 'Verify dynamicallyDefineDataIdentifier(0x2C) response in default session', in step: 1  e_76449_MAIN_2_dynamically_define_data_identifier_2c.log
+72041 INFO dut Fail occurred at: 'Get time data from DTC snapshot', in step: 1  e_72041_MAIN_3_support_for_dtc_time_stamp_20.log
+74167  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_74167_MAIN_0_service_ecureset__11__affecting_ecu_functionality.yml
+74507 INFO dut FAILED e_74507_MAIN_3_negative_response_code_busy_repeat_request_0x21.log
+480616  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_480616_MAIN_1_aes_ctr_in_authentication_method.yml
+52288 INFO dut Fail occurred at: 'Set ECU to default session from programming Session and verify its status', in step: 1  e_52288__1_Reception_of_DiagnosticSessionControl.log
+53854 INFO dut FAILED e_53854__1_erase_and_write_data_with_sbl.log
+481795 INFO dut Fail occurred at: 'Verify security access request seed for supported security levels in extended session', in step: 2  e_481795_MAIN_3_security_access_levels.log
+401156  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_401156_MAIN_2_complete_compatible_function.yml
+76670  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_76670_MAIN_1_rc31_stop_option_record.yml
+76515 INFO root FAILED e_76515_MAIN_2_19_reportdtcwithpermanentstatus_15_ext.log
+481861  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_481861_MAIN_0_ECM_check_security_access_method_supported.yml
+469134 INFO dut Fail occurred at: 'Verify security access delay timer is activated in programming session and expired after delay for supported security levels', in step: 1  e_469134_MAIN_1_ECM_default_values_delay_timers_and_counters_for_false_attempts.log
+469434  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_469434_MAIN_0_minimum_number_of_events_to_be_stored.yml
+74109  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_74109_MAIN_1_allowed_diag_services.yml
+74114 INFO dut Fail occurred at: 'Set to extended session and verify active diagnostic session', in step: 1  e_74114_MAIN_0_routine_result_availability.log
+76601 INFO dut Fail occurred at: 'Verify RoutineControlRequest with positive response 'Type1,Completed' for type 1 in default session', in step: 1  e_76601_MAIN_1_rc31.log
+60104 INFO dut FAILED e_60104__1_n_bs_timeout_prog_session.log
+76496  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_76496_MAIN_1_cleardiagnosticinformation_14.yml
+76444  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_76444_MAIN_1_read_data_by_periodic_identifier_transmission_mode_slow.yml
+485840 INFO dut PASSED e_485840_MAIN_0_ecu_functional_address.log
+480615 INFO dut Fail occurred at: 'Verify server response seed CMAC', in step: 9  e_480615_MAIN_0_ECM_aes_cmac_in_authentication_method.log
+480623 INFO dut PASSED e_480623_MAIN_0_client_send_key_construction.log
+469134 INFO dut Fail occurred at: 'Verify ECU reset delay timer is activated in programming session and expired after delay for supported security levels', in step: 2  e_469134_MAIN_1_default_values_delay_timers_and_counters_for_false_attempts.log
+398371 INFO dut Fail occurred at: 'Read the vbf file and verify all the block header identifiers', in step: 1  e_398371_MAIN_1_verification_block_table_per_software_part.log
+76447 INFO dut FAILED e_76447_MAIN_1_read_data_by_periodic_identifier_2a_transmission_mode_stop.log
+480621  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_480621_MAIN_1_ECM_server_response_seed_construction.yml
+76499 INFO dut FAILED e_76499_MAIN_1_read_dtc_information_19.log
+52285 INFO dut PASSED e_52285__1_Receive_and_process_diagnostic_programming_session_requests.log
+76692 INFO dut Fail occurred at: 'Read vbf file and extract vbf header, largest vbf block & vbf block data', in step: 1  e_76692_MAIN_2_transfer_data_block_sequence_counter_recieved_with_same_value.log
+53791  e_53791__1_non_volatile_memory_for_software_storage.log
+64686 INFO root PASSED e_64686_MAIN_2_file_naming.log
+76496 INFO dut Fail occurred at: 'Verify clear diagnostic information in default session', in step: 1  e_76496_MAIN_0_cleardiagnosticinformation_14.log
+68194 INFO root Tested implicitly by REQPROD 53909 and 68214 (tested implicitly) e_68194_MAIN_2_sbl_diag_db_pn.log
+56203  e_56203__1_p4server_max_def.log
+52306 INFO dut Fail occurred at: 'Verify ECU transmit frame within TCANPowerWakeUpToApp time', in step: 1  e_52306__4_definition_of_tcan_power_wakeup_to_app.log
+469429  e_469429_MAIN_1_read_outsecurity_event_records.log
+76123  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_76123_MAIN_1_diagnosticsessioncontrol__10_.yml
+487906 INFO dut FAILED e_487906_MAIN_1_secoc_key_programmed_status_diagnostic_trouble_code.log
+74107 INFO dut Fail occurred at: 'Verify ECU is alive again within less than 2500 ms by requesting current ECU-mode', in step: 1  e_74107_MAIN_3_ecu_ability_to_receive_requests.log
+76506 INFO root FAILED e_76506_MAIN_0_19_reportdtcsnapshotrecordbydtcnumber_04_84_rec_num_specific_val.log
+76445 INFO dut FAILED e_76445_MAIN_1_read_data_by_periodic_identifier_2a_transmission_mode_medium.log
+53857 INFO dut Fail occurred at: 'Request SBL download', in step: 1  e_53857__3_prevent_to_download_sbl_when_activated.log
+60008  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_60008__2_blocksize_parameter_programming_session_server_side.yml
+76465 INFO dut FAILED e_76465_MAIN_1_dynamically_define_data_identifier_2c_define_by_memory_address.log
+74159 INFO root FAILED e_74159_MAIN_0_p4server_max_response_time_for_routinecontrol_31__startroutine_routinetype_1.log
+404696  e_404696_MAIN_3_verification_block_table_format_identifier_definition.log
+53935 INFO dut Fail occurred at: 'Restore ECU firmware to complete and compatible', in step: 2  e_53935__1_validation_of_ecu_software.log
+76482 INFO dut FAILED e_76482_MAIN_1_dynamically_define_data_identifier_2c_clear_dynamically_defined_data_identifier.log
+56194 INFO dut FAILED e_56194__1_start_of_p2_server_for_queued_request_in_programming_session.log
+60129  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_60129__3_length_of_classic_can_frames.yml
+60008 INFO dut Fail occurred at: 'Verify FlowControl(FC) in programming session with payload 4094 bytes', in step: 3  e_60008__2_blocksize_parameter_programming_session_server_side.log
+53978  e_53978__1_writing_of_received_data_part_2.log
+457183 INFO dut Fail occurred at: 'Verify current Software is Downloaded and signed separately.', in step: 1  e_457183_MAIN_0_vbt_in_padded_data_block.log
+60103  e_60103__2_n_ar_timeout_progsession.log
+480650  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_480650_MAIN_1_increment_and_reset_for_false_attempts.yml
+480600 INFO dut Fail occurred at: 'Verify positive response in programming session with security access', in step: 2  e_480600_MAIN_2_disable_hardware_debug_interfaces_to_hsm.log
+53958  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_53958__6_complete_compatible_function_return_value.yml
+480618 INFO dut Fail occurred at: 'Check clientRequestSeed with incorrect message identifier', in step: 2  e_480618_MAIN_1_ECM_security_access_message_identifier.log
+68194 INFO root Tested implicitly by REQPROD 53909 and 68214 (tested implicitly) e_68194_MAIN_3_sbl_diag_db_pn.log
+74122 INFO root FAILED e_74122_MAIN_0_type_2_req_routine_res.log
+74184  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_74184_MAIN_0_service_routinecontrol__31__affecting_ecu_functionality.yml
+469428 INFO dut FAILED e_469428_MAIN_1_securityevent_structure.log
+480616  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_480616_MAIN_1_ECM_aes_ctr_in_authentication_method.yml
+67767  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_67767_MAIN_2_ecu_identification_and_configuration_data_records.yml
+74172 INFO root FAILED e_74172_MAIN_0_service_readdatabyidentifier__22__affecting_ecu_functionality.log
+60003 INFO dut Fail occurred at: 'Verify ECU's active diagnostic session', in step: 1  e_60003__1_part3.log
+74141 INFO dut Fail occurred at: 'Verify active diagnostic session is changed to default from extended session after ECU hard reset', in step: 1  e_74141_MAIN_2_diagnostic_service_makes_reset.log
+480623 INFO dut PASSED e_480623_MAIN_0_ECM_client_send_key_construction.log
+74165 INFO root FAILED e_74165_MAIN_0_service_10_transition_from_and_to_prog.log
+74116 INFO root FAILED e_74116_MAIN_2_routine_type_1_startroutine.log
+405051 INFO dut Fail occurred at: 'Software download request for VBF files types and DATA(old vbf) and verify Compatible bit is set to 1', in step: 1  e_405051_MAIN_1_complete_compatible_function_error_handling.log
+397438 INFO dut Fail occurred at: 'Download and activation of SBL', in step: 1  e_397438_MAIN_3_restricted_swdl_when_no_valid_ess_stored.log
+76671 INFO root FAILED e_76671_MAIN_0_rc31_req_routine_res_prg.log
+76123 INFO dut FAILED e_76123_MAIN_1_diagnosticsessioncontrol__10_.log
+76490  e_76490_MAIN_1_write_memory_by_address_alfid.log
+53839 INFO dut FAILED e_53839__2_protected_boot_sector.log
+76467 INFO dut FAILED e_76467_MAIN_1_dynamicallydefinedataidentifier_2c_addressandlengthformat_identifier.log
+469461 INFO dut Fail occurred at: 'Read DID D046', in step: 1  e_469461_MAIN_1_authentication_data_inputs.log
+53978  e_53978__1_writing_of_received_data_part_1.log
+76506 INFO root FAILED e_76506_MAIN_0_19_reportdtcsnapshotrecordbydtcnumber_04_84_rec_num_specific_val_ext.log
+76514 INFO dut Fail occurred at: 'Verify ECU supports the service ReadDTCInformation - reportSupportedDTC in default session', in step: 1  e_76514_MAIN_0_19_reportsupporteddtc_0a.log
+53856 INFO dut PASSED e_53856__2_sbl_shall_include_all_pbl_functionality.log
+76695 INFO dut Fail occurred at: 'RequestTransferExit request in extended session', in step: 4  e_76695_MAIN_2_request_transfer_exit.log
+74147 INFO root FAILED e_74147_MAIN_1_p4server_max_response_time_for_readdatabyidentifier__22__ext.log
+68264  e_68264_MAIN_1_dtc_defined_by_gmrdb.log
+74144 INFO root FAILED e_74144_MAIN_0_p4server_max_response_time_for_ecureset__11_.log
+53973  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_53973__3_file_download_order.yml
+487972  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_487972_MAIN_1_secoc_cluster_key_identifier_storage.yml
+486677  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_486677_MAIN_0_Event_logging_rate_limitation.yml
+60010 INFO dut Fail occurred at: 'Send multiframe and verify server reply with CTS with correct separation time in default session', in step: 1  e_60010__0_separationtime_non_prog_session_server_side.log
+76445  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_76445_MAIN_1_read_data_by_periodic_identifier_2a_transmission_mode_medium.yml
+76449  /home/hilding/Repos/odtb2pilot/test_folder/automated/e_76449_MAIN_2_dynamically_define_data_identifier_2c.yml
+53959 INFO dut FAILED e_53959__4_complete_and_compatible_sequence_diagram.log
+76601 INFO dut FAILED e_76601_MAIN_2_rc31.log
+Test done. Time: 20230712 1906

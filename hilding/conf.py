@@ -76,7 +76,7 @@ class Conf:
 
     def get_default_conf(self):
         """ returns a dictionary with the default conf """
-        conf_default_yml = self.hilding_root.joinpath("conf_default.yml")
+        conf_default_yml = self.hilding_root.joinpath("conf_default_ecm.yml")
         with open(conf_default_yml) as conf_default_file:
             conf_default = yaml.safe_load(conf_default_file)
         return conf_default
