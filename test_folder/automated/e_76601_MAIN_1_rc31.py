@@ -188,7 +188,7 @@ def step_5(dut: Dut):
     # Set to programming session
     dut.uds.set_mode(2)
 
-    response = routine_control_request(dut, routine_id=b'\x03\x01')
+    response = routine_control_request(dut, routine_id=b'\x02\x05')
     result = SUTE.test_message(SC.can_messages[dut["receive"]], teststring='7F3133')
     if not result:
         logging.error("Test Failed: Expected NRC 33 for routine identifier, received %s", response)
