@@ -72,7 +72,7 @@ def step_1(can_p):
     """
     cpay: CanPayload = {
         "payload": SC_CARCOM.can_m_send("ReadDTCInfoExtDataRecordByDTCNumber",
-                                        b'\x0B\x4A\x00', b'\xFF'),
+                                        b'\x0B\xE1\x23', b'\xFF'),
         "extra": ''
         }
     SIO.extract_parameter_yml(str(inspect.stack()[0][3]), cpay)
