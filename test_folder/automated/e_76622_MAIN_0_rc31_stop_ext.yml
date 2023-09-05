@@ -16,3 +16,12 @@ hvbm_p519:
                 payload: b'\x31\x02\xDC\x09'
                 payload_reply: 057102DC0930
                 routine_response: Type3,Completed
+ecm_phev:
+        step_2:
+                payload: b'\x31\x01\x40\x14'
+                payload_reply: "057101401422"
+                routine_response: Type2,Currently active
+        step_3:
+                payload: b'\x31\x02\x40\x14'
+                payload_reply: "057102401421"
+                routine_response: Type2,Aborted
