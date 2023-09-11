@@ -33,7 +33,7 @@ details: >
     clearDynamicallyDefinedDataIdentifier
 """
 
-
+import time
 import logging
 from hilding.dut import Dut
 from hilding.dut import DutTestError
@@ -48,7 +48,7 @@ SE27 = SupportService27()
 SIO = SupportFileIO
 
 
-def compare_positive_response(response, define_did, session):
+def compare_positive_response(response, parameters, session):
     """
     Compare dynamicallyDefineDataIdentifier(0x2C) - clear of dynamicallyDefineDataIdentifier
     positive response
@@ -61,15 +61,16 @@ def compare_positive_response(response, define_did, session):
         (bool): True on successfully verified positive response
     """
     result = False
-    if response[2:4] == '6C' and response[4:8] == define_did:
+    if response[2:4] == '6C' and response[6:10] == parameters['define_did']:
         logging.info("Received %s for request dynamicallyDefineDataIdentifier(0x2C) - "
                      " clear of dynamicallyDefineDataIdentifier in %s session as expected",
-                     define_did, session)
+                     parameters['define_did'], session)
         result = True
 
     else:
         logging.error("Test Failed: Expected positive response %s, received %s in %s session",
-                        define_did, response, session)
+                      parameters['define_did'], response, session)
+
         result = False
 
     return result
@@ -103,7 +104,7 @@ def compare_negative_response(response, session, nrc_code):
     return result
 
 
-def dynamically_define_data_identifier(dut, define_did, sub_function):
+def dynamically_define_data_identifier(dut, parameters, sub_function):
     """
     Initiate dynamicallyDefineDataIdentifier(0x2C) - clear of dynamicallyDefineDataIdentifier
     request
@@ -115,13 +116,34 @@ def dynamically_define_data_identifier(dut, define_did, sub_function):
         response (str): ECU response code
     """
     payload = SC_CARCOM.can_m_send("DynamicallyDefineDataIdentifier", bytes.fromhex(sub_function)
-                                + bytes.fromhex(define_did)
+                                + bytes.fromhex(parameters['define_did'])
+                                + bytes.fromhex(parameters['source_data_identifier'])
+                                + bytes.fromhex(parameters['position_in_source_data_record'])
+                                + bytes.fromhex(parameters['memory_size'])
+                                , b'')
+    response = dut.uds.generic_ecu_call(payload)
+    return response.raw
+
+def dynamically_define_data_identifier_clear(dut, parameters, sub_function):
+    """
+    Initiate dynamicallyDefineDataIdentifier(0x2C) - clear of dynamicallyDefineDataIdentifier
+    request
+    Args:
+        dut (Dut): dut instance
+        define_did (str): dynamically defined did
+        sub_function (str): subfunction of dynamicallyDefineDataIdentifier
+    Returns:
+        response (str): ECU response code
+    """
+    payload = SC_CARCOM.can_m_send("DynamicallyDefineDataIdentifier", bytes.fromhex(sub_function)
+                                + bytes.fromhex(parameters['define_did'])
                                 , b'')
     response = dut.uds.generic_ecu_call(payload)
     return response.raw
 
 
-def step_1(dut: Dut, define_did):
+
+def step_1(dut: Dut, parameters):
     """
     action: Verify defined data records are available until clear of
             dynamicallyDefineDataIdentifier request in default session
@@ -129,20 +151,21 @@ def step_1(dut: Dut, define_did):
                      dynamicallyDefineDataIdentifier in default session
     """
     # Initiate DynamicallyDefineDataIdentifier
-    response = dynamically_define_data_identifier(dut, define_did, sub_function='01')
-    result = compare_positive_response(response, define_did, 'default')
+    response = dynamically_define_data_identifier(dut, parameters, sub_function='01')
+    result = compare_positive_response(response, parameters, 'default')
     if not result:
         return False
 
     # Verify response of dynamically defined did
-    response = dut.uds.read_data_by_id_22(bytes.fromhex(define_did))
+    response = dut.uds.read_data_by_id_22(bytes.fromhex(parameters['define_did']))
     if response.raw[2:4] != '62':
         logging.error("Test failed: Unable to get response of dynamically define did %s",
-					   define_did)
+					   parameters['define_did'])
         return False
 
     # ECU reset
     dut.uds.ecu_reset_1101()
+    time.sleep(2)
     # Verify ECU Reset is completed by checking active session is default
     is_in_default = SE22.read_did_f186(dut, b'\x01')
     if not is_in_default:
@@ -150,16 +173,16 @@ def step_1(dut: Dut, define_did):
         return False
 
     # Verify response of dynamically defined did after ECU reset
-    response = dut.uds.read_data_by_id_22(bytes.fromhex(define_did))
+    response = dut.uds.read_data_by_id_22(bytes.fromhex(parameters['define_did']))
     if response.raw[2:4] != '62':
         logging.error("Test failed: Unable to get response of dynamically define did %s",
-                       define_did)
+                       parameters['define_did'])
         return False
 
     return True
 
 
-def step_2(dut: Dut, define_did):
+def step_2(dut: Dut, parameters):
     """
     action: Verify dynamicallyDefineDataIdentifier(0x2C) - clear of dynamicallyDefineDataIdentifier
             in programming session
@@ -170,12 +193,12 @@ def step_2(dut: Dut, define_did):
     dut.uds.set_mode(2)
 
     # Initiate DynamicallyDefineDataIdentifier - clear of dynamicallyDefineDataIdentifier
-    response = dynamically_define_data_identifier(dut, define_did, sub_function='03')
-    result = compare_negative_response(response, session="programming", nrc_code='7F')
+    response = dynamically_define_data_identifier_clear(dut, parameters, sub_function='03')
+    result = compare_negative_response(response, session="programming", nrc_code='11')
     return result
 
 
-def step_3(dut: Dut, define_did):
+def step_3(dut: Dut, parameters):
     """
     action: Verify defined data records are available until dynamicallyDefineDataIdentifier(0x2C) -
             clear of dynamicallyDefineDataIdentifier request in extended session
@@ -194,13 +217,13 @@ def step_3(dut: Dut, define_did):
         return False
 
     # Initiate DynamicallyDefineDataIdentifier
-    response = dynamically_define_data_identifier(dut, define_did, sub_function='01')
-    result = compare_positive_response(response, define_did, 'extended')
+    response = dynamically_define_data_identifier(dut,parameters, sub_function='01')
+    result = compare_positive_response(response, parameters, 'extended')
     if not result:
         return False
 
     # Verify response of dynamically defined did
-    response = dut.uds.read_data_by_id_22(bytes.fromhex(define_did))
+    response = dut.uds.read_data_by_id_22(bytes.fromhex(parameters['define_did']))
     if response.raw[2:4] != '62':
         logging.error("Test failed: Unable to get response of dynamically define did %s",
 					   define_did)
@@ -215,11 +238,19 @@ def step_3(dut: Dut, define_did):
         return False
 
     # Verify response of dynamically defined did after ECU reset
-    response = dut.uds.read_data_by_id_22(bytes.fromhex(define_did))
+    response = dut.uds.read_data_by_id_22(bytes.fromhex(parameters['define_did']))
     if response.raw[2:4] != '62':
         logging.error("Test failed: Unable to get response of dynamically define did %s",
-                       define_did)
+                       parameters['define_did'])
         return False
+
+
+    # Initiate DynamicallyDefineDataIdentifier - clear of dynamicallyDefineDataIdentifier
+    response = dynamically_define_data_identifier_clear(dut, parameters, sub_function='03')
+    result = compare_positive_response(response, parameters, 'extended')
+    if not result:
+        return False
+
 
     return True
 
@@ -236,7 +267,10 @@ def run():
     start_time = dut.start()
     result = False
     result_step = False
-    parameters_dict = { 'define_did': ''}
+    parameters_dict = { 'define_did': '',
+                        'source_data_identifier': '',
+                        'position_in_source_data_record': '',
+                        'memory_size': ''}
 
     try:
         dut.precondition(timeout=60)
@@ -245,19 +279,19 @@ def run():
         if not all(list(parameters.values())):
             raise DutTestError("yml parameter not found")
 
-        result_step = dut.step(step_1, parameters['define_did'], purpose='Verify '
+        result_step = dut.step(step_1, parameters, purpose='Verify '
                                 'dynamicallyDefineDataIdentifier(0x2C) - clear of '
                                 'dynamicallyDefineDataIdentifier response in default session')
 
 
         if result_step:
-            result_step = dut.step(step_2, parameters['define_did'], purpose='Verify'
+            result_step = dut.step(step_2, parameters, purpose='Verify'
                                     'dynamicallyDefineDataIdentifier(0x2C) -clear of '
                                     'dynamicallyDefineDataIdentifier negative response in '
                                     'programming session')
 
         if result_step:
-            result_step = dut.step(step_3, parameters['define_did'], purpose='Verify '
+            result_step = dut.step(step_3, parameters, purpose='Verify '
                                     'dynamicallyDefineDataIdentifier(0x2C) -clear of '
                                     'dynamicallyDefineDataIdentifier response in '
                                     'extended session')
