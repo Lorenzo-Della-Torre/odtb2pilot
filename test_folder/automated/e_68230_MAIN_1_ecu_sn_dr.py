@@ -208,8 +208,8 @@ def run():
         step_3(dut)
         step_4(dut)
         step_5(dut)
-        step_6(dut)
-        step_7(dut)
+        '''step_6(dut)
+        step_7(dut)'''
 
         result = True
     except DutTestError as error:

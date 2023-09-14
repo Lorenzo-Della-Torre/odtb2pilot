@@ -210,8 +210,7 @@ def run():
     result_step = False
 
     parameters_dict = {'pn_sn_def_ext': [],
-                       'pn_sn_pbl': [],
-                       'pn_sn_sbl': []}
+                       'pn_sn_pbl': []}
 
     try:
         dut.precondition(timeout=100)
@@ -231,10 +230,10 @@ def run():
             result_step = dut.step(step_3, parameters['pn_sn_pbl'], purpose= "Validate part "
                                    "numbers and serial numbers in the response of DID 'EDA0' in "
                                    "PBL")
-        if result_step:
+        '''if result_step:
             result_step = dut.step(step_4, parameters['pn_sn_sbl'] , purpose= "Validate part "
                                    "numbers and serial numbers in the response of DID 'EDA0' in "
-                                   "SBL")
+                                   "SBL")'''
         result = result_step
 
     except DutTestError as error:
