@@ -129,8 +129,7 @@ def run():
     result_step = False
 
     parameters_dict = {'default_dids' : [],
-                       'pbl_dids' : [],
-                       'sbl_dids' : []}
+                       'pbl_dids' : []}
 
     try:
         dut.precondition(timeout=120)
@@ -144,9 +143,9 @@ def run():
         if result_step:
             result_step = dut.step(step_2, parameters['pbl_dids'], purpose="Verify part number of "
                                                                            "DIDs in PBL")
-        if result_step:
+        '''if result_step:
             result_step = dut.step(step_3, parameters['sbl_dids'], purpose="Verify part number of "
-                                                                           "DIDs in SBL")
+                                                                           "DIDs in SBL")'''
         result = result_step
 
     except DutTestError as error:

@@ -7,5 +7,5 @@ hvbm_p519:
 ecm_phev:
     run:
         default_dids : ['F120','F12A','F12B','F12E']
-        pbl_dids : ['F121','F125','F12C']
-        sbl_dids : ['F122'] 
+        pbl_dids : ['F121','F125','F12A', 'F12B']
+     

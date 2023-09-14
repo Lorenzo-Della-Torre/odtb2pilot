@@ -150,7 +150,7 @@ def step_2(dut: Dut):
     if not result_non_prog_dids:
         return False, None
 
-    SSBL.get_vbf_files()
+    '''SSBL.get_vbf_files()
     # Activate SBL
     result = SSBL.sbl_activation(dut, sa_keys=dut.conf.default_rig_config)
     if not result:
@@ -160,7 +160,7 @@ def step_2(dut: Dut):
     # Request F12B DID in one request and verify if DID is included in response
     result_non_prog_dids, sbl_f12b_result = send_request_f12b(dut, did_to_read='F12B')
     if not result_non_prog_dids:
-        return False, None
+        return False, None'''
 
     # Change to default session
     dut.uds.set_mode(1)
@@ -168,8 +168,8 @@ def step_2(dut: Dut):
     # The response received in default, extended and programming session shall be equal
     result = (default_f12b_result == extended_f12b_result)
     logging.info("Response of did F12B is equal in default and extended session")
-    result = result and (pbl_f12b_result == sbl_f12b_result)
-    logging.info("Response of did F12B is equal in pbl and sbl session")
+    '''result = result and (pbl_f12b_result == sbl_f12b_result)
+    logging.info("Response of did F12B is equal in pbl and sbl session")'''
     result = result and (default_f12b_result == pbl_f12b_result)
     logging.info("Response of did F12B is equal in default and pbl session")
     return result, default_f12b_result

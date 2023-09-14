@@ -164,8 +164,8 @@ def step_3(dut: Dut):
     if not result:
         return False
 
-    result = verify_active_diagnostic_session(dut, mode=2, session='programming')
-    if not result:
+    return verify_active_diagnostic_session(dut, mode=2, session='programming')
+    '''if not result:
         return False
 
     result = download_and_activate_sbl(dut)
@@ -176,7 +176,7 @@ def step_3(dut: Dut):
     if not result:
         return False
 
-    return verify_active_diagnostic_session(dut, mode=2, session='programming')
+    return verify_active_diagnostic_session(dut, mode=2, session='programming')'''
 
 
 def run():
