@@ -56,11 +56,13 @@ from hilding.dut import Dut
 from hilding.dut import DutTestError
 from supportfunctions.support_can import SupportCAN
 from supportfunctions.support_SBL import SupportSBL
-from supportfunctions.support_service34 import SupportService34
+from supportfunctions.support_service10 import SupportService10
 from supportfunctions.support_service27 import SupportService27
+from supportfunctions.support_service34 import SupportService34
 
 SC = SupportCAN()
 SSBL = SupportSBL()
+SE10 = SupportService10()
 SE34 = SupportService34()
 SE27 = SupportService27()
 
@@ -78,7 +80,7 @@ def get_vbf_params():
     result = SSBL.get_vbf_files()
     if result:
         _, vbf_params["vbf_header"], vbf_data, vbf_offset = SSBL.read_vbf_file(
-                                                                        SSBL.get_sbl_filename())
+                                                                        SSBL.get_df_filenames()[0])
         SSBL.vbf_header_convert(vbf_params["vbf_header"])
         vbf_params["vbf_block"] = SSBL.block_data_extract(vbf_data, vbf_offset)[1]
         return vbf_params
@@ -215,8 +217,12 @@ def step_3(dut: Dut, vbf_params):
     """
     # Set to extended session
     dut.uds.set_mode(1)
+    time.sleep(5)
     dut.uds.set_mode(3)
+    #response = SE10.diagnostic_session_control_mode3(dut, stepno='')
+    #print("THE RESPONSE IS{}".format(response))
 
+    # Activate sec access
     result = SE27.activate_security_access_fixedkey(dut, dut.conf.default_rig_config, step_no=274,
                                                     purpose="SecurityAccess")
 
@@ -246,7 +252,7 @@ def run():
     result = False
     result_step = False
     try:
-        dut.precondition(timeout=60)
+        dut.precondition(timeout=80)
 
         result_step, vbf_params = dut.step(step_1, purpose="Extracting vbf parameters from vbf "
                                            "file and verify response for RequestDownload(0x34) in "
