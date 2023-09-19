@@ -588,8 +588,33 @@ class SupportSBL:
         SE22.read_did_f186(can_p, dsession=b'\x02')
         result = result and self.sbl_activation_prog(can_p, sa_keys, stepno, purpose)
         return result
-
-
+    
+    def security_access_activation(self, can_p: CanParam,\
+                                   sa_keys,\
+                                   stepno='',\
+                                   purpose='sec access activation'):
+        """
+        """
+        result = True
+        SE10.diagnostic_session_control_mode2(can_p)
+        time.sleep(1)
+        ecu_mode = SE22.get_ecu_mode(can_p)
+        if ecu_mode == 'PBL':
+            #Security Access Request SID
+            result = result and SE27.activate_security_access_fixedkey(can_p,
+                                                                       sa_keys,
+                                                                       stepno, purpose)
+        else:
+            SE10.diagnostic_session_control_mode2(can_p)
+            time.sleep(1)
+            ecu_mode = SE22.get_ecu_mode(can_p)
+            if ecu_mode == 'PBL':
+                #Security Access Request SID
+                result = result and SE27.activate_security_access_fixedkey(can_p,
+                                                                           sa_keys,
+                                                                           stepno, purpose)
+        return result
+    
     # Support Function for Flashing and activate Secondary Bootloader from Programming session
     def sbl_activation_prog(self, can_p: CanParam,\
                             sa_keys,\

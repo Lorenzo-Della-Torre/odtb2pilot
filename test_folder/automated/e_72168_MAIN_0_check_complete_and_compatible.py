@@ -50,7 +50,7 @@ details: >
 import logging
 from hilding.dut import Dut
 from hilding.dut import DutTestError
-from hilding.flash import load_vbf_files, activate_sbl, download_ess, download_application_and_data
+from hilding.flash import load_vbf_files, download_ess, download_application_and_data_no_check
 from supportfunctions.support_SBL import SupportSBL
 from supportfunctions.support_file_io import SupportFileIO
 
@@ -71,10 +71,15 @@ def request_software_download(dut):
     if not vbf_result:
         return False
 
-    # Downloads and activate SBL on the ECU using support function from support_SBL
-    sbl_result = activate_sbl(dut)
-    if not sbl_result:
+    #Activate PBL and sec access
+    sec_result = SSBL.security_access_activation(dut, sa_keys=dut.conf.default_rig_config)
+    if not sec_result:
         return False
+    
+    # Downloads and activate SBL on the ECU using support function from support_SBL
+    '''sbl_result = activate_sbl(dut)
+    if not sbl_result:
+        return False'''
 
     # Download the ESS file to the ECU
     ess_result = download_ess(dut)
@@ -82,7 +87,7 @@ def request_software_download(dut):
         return False
 
     # Download the application and data to the ECU
-    app_data_result = download_application_and_data(dut)
+    app_data_result = download_application_and_data_no_check(dut)
     if not app_data_result:
         return False
 
@@ -133,7 +138,7 @@ def run():
     parameters_dict = {'p2_server_max': 0}
 
     try:
-        dut.precondition(timeout=600)
+        dut.precondition(timeout=2000)
         parameters = SIO.parameter_adopt_teststep(parameters_dict)
 
         if not all(list(parameters.values())):

@@ -120,6 +120,24 @@ def download_application_and_data(dut):
 
     return result
 
+def download_application_and_data_no_check(dut):
+    """Download the application to the ECU
+
+    Args:
+        dut (Dut): An instance of Dut
+
+    Returns:
+        boolean: True of download was successful, otherwise False
+    """
+
+    logging.info("~~~~~~~~ Download application and data started ~~~~~~~~")
+    result = True
+    purpose = "Download application and data"
+    for vbf_file in SSBL.get_df_filenames():
+        result = result and SSBL.sw_part_download_no_check(dut, vbf_file)
+
+    return result
+
 def check_complete_and_compatible(dut):
     """Run complete and compatible routine
 
