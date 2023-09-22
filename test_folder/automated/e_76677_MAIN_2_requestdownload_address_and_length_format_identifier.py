@@ -62,7 +62,7 @@ def step_1(dut: Dut):
         logging.error("Test Failed: Unable to load VBF files")
         return False, None
 
-    _, vbf_params["vbf_header"], vbf_data, vbf_offset = SSBL.read_vbf_file(SSBL.get_sbl_filename())
+    _, vbf_params["vbf_header"], vbf_data, vbf_offset = SSBL.read_vbf_file(SSBL.get_df_filenames()[0])
     SSBL.vbf_header_convert(vbf_params["vbf_header"])
     vbf_params["vbf_block"] = SSBL.block_data_extract(vbf_data, vbf_offset)[1]
     logging.info("Successfully extract vbf block from SBL type vbf file")
