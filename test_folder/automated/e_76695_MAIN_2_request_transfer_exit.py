@@ -53,6 +53,7 @@ details: >
     Also the maximum response time for the service RequestTransferExit (0x37) should
     be less than 15000ms.
 """
+import time
 import logging
 from glob import glob
 from hilding.dut import Dut
@@ -290,7 +291,8 @@ def step_4(dut: Dut, vbf_params):
 
     expected_result: Request 37 should not support in extended mode
     """
-    dut.uds.set_mode()
+    dut.uds.set_mode(1)
+    time.sleep(3)
     dut.uds.set_mode(3)
     result = SE27.activate_security_access_fixedkey(dut, CNF.default_rig_config,
                                     step_no=272, purpose="SecurityAccess")
