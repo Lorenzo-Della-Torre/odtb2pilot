@@ -5,3 +5,7 @@ hvbm_p519:
 ecm_phev:
     run:
         did_list_range : [[EDA0,EDFF],[ED20,ED7F]]
+
+ecm_hp:
+    run:
+        did_list_range : [[EDA0,EDFF],[ED20,ED7F]]

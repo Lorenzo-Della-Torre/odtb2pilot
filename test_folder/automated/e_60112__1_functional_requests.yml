@@ -6,4 +6,6 @@ becm_p319:
         send: Vcu1ToAllFuncFront1DiagReqFrame
 ecm_phev:
         send: Vcu1ToAllFuncFront1DiagReqFrame
+ecm_hp:
+        send: Vcu1ToAllFuncFront1DiagReqFrame
 

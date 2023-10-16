@@ -1,3 +1,7 @@
 ecm_phev:
         step_1:
                 list_dids : ['DD00', 'DD01', 'DD02', 'DD0A']
+
+ecm_hp:
+        step_1:
+                list_dids : ['DD00', 'DD01', 'DD02', 'DD0A']

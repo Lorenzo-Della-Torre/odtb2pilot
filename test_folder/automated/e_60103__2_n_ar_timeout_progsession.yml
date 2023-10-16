@@ -7,3 +7,8 @@ ecm_phev:
   run:
       did: 'EDA0'
       number_of_frames: 1
+
+ecm_hp:
+  run:
+      did: 'EDA0'
+      number_of_frames: 1

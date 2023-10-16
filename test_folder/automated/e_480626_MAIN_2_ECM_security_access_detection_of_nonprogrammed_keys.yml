@@ -14,7 +14,33 @@ ecm_phev:
           '27': ""
           '31': ""
           
+        supported_keys_ext:
+          '05': "Extended session"
+          '03': ""
+          '11': ""
+          '23': ""
+          '31': ""
 
+        supported_keys_prog:
+          '01': "Programming Session"
+
+        did: 'D09B'
+ecm_hp:
+    run:
+        supported_keys_def:
+          '03': ""
+          '05': ""
+          '11': ""
+          '15': ""
+          '1B': ""
+          '1D': ""
+          '1F': ""
+          '21': ""
+          '23': ""
+          '25': ""
+          '27': ""
+          '31': ""
+          
         supported_keys_ext:
           '05': "Extended session"
           '03': ""

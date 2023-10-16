@@ -9,3 +9,10 @@ ecm_phev:
         source_data_identifier: 'F186'
         position_in_source_data_record: '01'
         memory_size: '01'
+
+ecm_hp:
+    run:
+        define_did: 'F200'
+        source_data_identifier: 'F186'
+        position_in_source_data_record: '01'
+        memory_size: '01'

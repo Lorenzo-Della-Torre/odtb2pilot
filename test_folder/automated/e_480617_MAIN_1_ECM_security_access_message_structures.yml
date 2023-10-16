@@ -49,3 +49,55 @@ ecm_phev:
             req_seed_auth_data_pos: 76
             res_seed_auth_data_pos: 104
             req_key_auth_data_pos: 72
+
+ecm_hp:
+    run:
+        client_seed_request:
+            sa_sid: "27"
+            sa_type: "01"
+            message_id: "0001"
+            auth_method: "0001"
+            iv_len: 32
+            encrypt_data_rec_len: 32
+            auth_data_len: 32
+
+        server_seed_response:
+            sa_sid: "67"
+            sa_type: "01"
+            message_id: "0002"
+            iv_len: 32
+            encrypt_data_rec_len: 64
+            auth_data_len: 32
+
+        client_send_key:
+            sa_sid: "27"
+            sa_type: "02"
+            message_id: "0003"
+            iv_len: 32
+            encrypt_data_rec_len: 32
+            auth_data_len: 32
+
+        server_response_key:
+            response_sid: "67"
+            sa_type: "02"
+
+        response_length:
+            client_req_sid_len: 108
+            server_res_sid_len: 136
+            client_sent_key_len: 104
+            server_res_key_len: 4
+
+        message_pos_len:
+            sid_pos: 0
+            type_pos: 2
+            msg_id_pos: 4
+            auth_method_pos: 8
+            req_seed_iv_pos: 12
+            res_seed_iv_pos: 8
+            req_key_iv_pos: 8
+            req_seed_encrypt_pos: 44
+            res_seed_encrypt_pos: 40
+            req_key_encrypt_pos: 40
+            req_seed_auth_data_pos: 76
+            res_seed_auth_data_pos: 104
+            req_key_auth_data_pos: 72

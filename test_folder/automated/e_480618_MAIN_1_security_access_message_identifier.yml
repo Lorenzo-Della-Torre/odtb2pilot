@@ -4,8 +4,13 @@ hvbm_p519:
         - "0001"
         - "0002"
         - "0003"
-
 ecm_phev:
+  run:
+    message_identifier:
+      - "0001"
+      - "0002"
+      - "0003"
+ecm_hp:
   run:
     message_identifier:
       - "0001"

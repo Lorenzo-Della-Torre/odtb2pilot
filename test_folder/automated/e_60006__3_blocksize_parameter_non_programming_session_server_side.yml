@@ -89,3 +89,10 @@ ecm_phev:
         pl_size_negative_response : 300
         pl_size_overflow : 1025
         fc_separation_time : '05'
+ecm_hp:
+    run:
+        non_prog_dids: ['DD02', 'DD0A', '0307', '5B17']
+        pl_size_positive_response : 12
+        pl_size_negative_response : 300
+        pl_size_overflow : 1025
+        fc_separation_time : '05'

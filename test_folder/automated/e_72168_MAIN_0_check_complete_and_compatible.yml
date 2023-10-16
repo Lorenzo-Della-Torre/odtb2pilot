@@ -5,3 +5,7 @@ hvbm_p519:
 ecm_phev:
     run:
         p2_server_max : 25 
+
+ecm_hp:
+    run:
+        p2_server_max : 25

@@ -26,3 +26,17 @@ ecm_phev:
             - '23'
             - '27'
             - '31'
+
+ecm_hp:
+    run:
+        security_access_delay: 10
+        security_access_level_check_delay: 15
+        ecu_reset_delay: 5
+        sa_level_programming:
+            - '01'
+        sa_level_extended:
+            - '05'
+            - '11'
+            - '23'
+            - '27'
+            - '31'

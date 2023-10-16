@@ -7,3 +7,8 @@ ecm_phev:
     run:
         response_time : 3500
         programming_supported : 'False'
+
+ecm_hp:
+    run:
+        response_time : 3500
+        programming_supported : 'False'

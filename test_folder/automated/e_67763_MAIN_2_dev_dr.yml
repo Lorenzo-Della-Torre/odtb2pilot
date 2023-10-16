@@ -9,3 +9,9 @@ ecm_phev:
         response_timeout : 2
         max_no_of_dids : 500
         app_db_part_number : 'F120'
+
+ecm_hp:
+    run:
+        response_timeout : 2
+        max_no_of_dids : 500
+        app_db_part_number : 'F120'

@@ -11,3 +11,8 @@ ecm_phev:
        step_1:
                receive: ECMFront1Fr02
                send: BECMFront1Fr02
+
+ecm_hp:
+       step_1:
+               receive: ECMFront1Fr02
+               send: BECMFront1Fr02

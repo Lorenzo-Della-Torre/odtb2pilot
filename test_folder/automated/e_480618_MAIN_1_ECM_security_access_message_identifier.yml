@@ -3,3 +3,8 @@ ecm_phev:
   - "0001"
   - "0002"
   - "0003"
+ecm_hp:
+  message_identifier:
+  - "0001"
+  - "0002"
+  - "0003"

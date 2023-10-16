@@ -5,3 +5,7 @@ hvbm_p519:
 ecm_phev:
     run:  
         diag_read_out_dids: ['EDC0']
+
+ecm_hp:
+    run:  
+        diag_read_out_dids: ['EDC0']

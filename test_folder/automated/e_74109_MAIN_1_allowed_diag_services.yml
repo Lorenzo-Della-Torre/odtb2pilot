@@ -9,3 +9,9 @@ ecm_phev:
             p2server_max_programming : 0.025
             p2server_max_default : 0.050
             jitter_testenv : 0.030
+
+ecm_hp:
+        run:
+            p2server_max_programming : 0.025
+            p2server_max_default : 0.050
+            jitter_testenv : 0.030

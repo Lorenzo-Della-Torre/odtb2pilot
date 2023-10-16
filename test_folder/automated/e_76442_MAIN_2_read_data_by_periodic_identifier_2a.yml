@@ -7,3 +7,8 @@ ecm_phev:
     run:
         max_response_time: 200
         periodic_did: '24'
+
+ecm_hp:
+    run:
+        max_response_time: 200
+        periodic_did: '24'

@@ -20,3 +20,14 @@ ecm_phev:
         negative_resp : '037F'
         positive_resp_valid_data: '102163'
         negative_resp_valid_data: '037F2378'
+
+ecm_hp:
+    run:
+        uds_service: '23'
+        address_and_length_format_identifier: '24'
+        memory_address: '70000000'
+        memory_size: '0020'
+        num_of_resend: 100
+        negative_resp : '037F'
+        positive_resp_valid_data: '102163'
+        negative_resp_valid_data: '037F2378'
