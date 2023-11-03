@@ -21,3 +21,13 @@ ecm_hp:
        PositionInSourceDataRecord: '01'
        MemorySize: '01'
        DataRecord: '03'
+
+ecm_lp:
+    run:
+       receive: 'UudtEcmVD2Fr01'  
+       DynamicallyDefinedDid: 'F200'
+       PeriodicDid: '00'
+       SourceDataIdentifier: 'F186'
+       PositionInSourceDataRecord: '01'
+       MemorySize: '01'
+       DataRecord: '03'

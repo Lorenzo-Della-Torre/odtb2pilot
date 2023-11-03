@@ -34,4 +34,16 @@ ecm_hp:
             p2server_max_prog: 25
             jitter_testenv: 30
 
+ecm_lp:
+    run:
+        params_for_memory_read:
+            add_id: '24'
+            add_range: '70000000'
+            num_bytes: '000A'
+            add_ranges_list: ['80090000','A0090000','70000000','60000000','50000000','B0000000']
+        time_parameters:
+            p2server_max_non_prog: 50
+            p2server_max_prog: 25
+            jitter_testenv: 30
+
 

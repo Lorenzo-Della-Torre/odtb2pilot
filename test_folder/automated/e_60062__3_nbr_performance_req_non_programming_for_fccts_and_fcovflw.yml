@@ -96,3 +96,10 @@ ecm_hp:
         payload_max_length_ovflw: 1025
         time: 20
         fc_separation_time : '05'
+ecm_lp:
+    run:
+        did: 'DD02DD0BDD0C5B17'
+        payload_max_length_cts: 1020
+        payload_max_length_ovflw: 1025
+        time: 20
+        fc_separation_time : '05'

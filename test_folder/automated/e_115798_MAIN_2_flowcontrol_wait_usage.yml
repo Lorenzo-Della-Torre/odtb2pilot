@@ -7,3 +7,6 @@ ecm_phev:
 ecm_hp:
   run: 
     fc_wait_path: '/misc/fc_wait.txt'
+ecm_lp:
+  run: 
+    fc_wait_path: '/misc/fc_wait.txt'

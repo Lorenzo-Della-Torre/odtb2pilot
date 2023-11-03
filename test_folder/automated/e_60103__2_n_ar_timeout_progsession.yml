@@ -12,3 +12,8 @@ ecm_hp:
   run:
       did: 'EDA0'
       number_of_frames: 1
+
+ecm_lp:
+  run:
+      did: 'EDA0'
+      number_of_frames: 1

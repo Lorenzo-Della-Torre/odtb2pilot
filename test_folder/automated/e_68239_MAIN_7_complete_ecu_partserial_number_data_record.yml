@@ -13,3 +13,8 @@ ecm_hp:
     run:
         pn_sn_def_ext: [['F120', 'PN'],['F12A', 'PN'],['F12B', 'PN'],['F18C', 'SN'],['F12E', 'PN']]
         pn_sn_pbl: [['F121', 'PN'],['F12A', 'PN'],['F12B', 'PN'],['F18C', 'SN'],['F125', 'PN']]
+
+ecm_lp:
+    run:
+        pn_sn_def_ext: [['F120', 'PN'],['F12A', 'PN'],['F12B', 'PN'],['F18C', 'SN'],['F12E', 'PN']]
+        pn_sn_pbl: [['F121', 'PN'],['F12A', 'PN'],['F12B', 'PN'],['F18C', 'SN'],['F125', 'PN']]

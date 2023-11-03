@@ -12,3 +12,8 @@ ecm_hp:
     run:
         max_response_time: 200
         periodic_did: '24'
+
+ecm_lp:
+    run:
+        max_response_time: 200
+        periodic_did: '24'

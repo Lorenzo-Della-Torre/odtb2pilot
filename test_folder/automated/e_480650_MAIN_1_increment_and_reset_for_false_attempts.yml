@@ -26,4 +26,12 @@ ecm_hp:
             - '11'
             - '23'
             - '27'
-
+ecm_lp:
+    run:
+        sa_level_programming:
+            - '01'
+        sa_level_extended:
+            - '05'
+            - '11'
+            - '23'
+            - '27'

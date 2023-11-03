@@ -9,3 +9,7 @@ ecm_phev:
 ecm_hp:
     run:
         p2_server_max : 25
+
+ecm_lp:
+    run:
+        p2_server_max : 25

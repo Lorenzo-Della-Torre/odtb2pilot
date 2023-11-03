@@ -12,3 +12,8 @@ ecm_hp:
   run:
       start_did_f1f0: 'F1F0'
       end_did_f1ff: 'F1FF'
+
+ecm_lp:
+  run:
+      start_did_f1f0: 'F1F0'
+      end_did_f1ff: 'F1FF'

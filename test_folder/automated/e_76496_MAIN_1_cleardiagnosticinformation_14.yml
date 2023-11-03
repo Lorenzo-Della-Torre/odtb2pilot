@@ -12,3 +12,8 @@ ecm_hp:
     run:
         response_time : 3500
         programming_supported : 'False'
+
+ecm_lp:
+    run:
+        response_time : 3500
+        programming_supported : 'False'

@@ -22,3 +22,11 @@ ecm_hp:
         pl_size_fc_30 : 4065
         # Range 4066 - 4094 bytes give FC-Overflow(32)
         pl_size_fc_32 : 4094
+
+ecm_lp:
+    run:
+        prog_did: 'F125'
+        # Range 0 - 4065 bytes give FC-CTS(30)
+        pl_size_fc_30 : 4065
+        # Range 4066 - 4094 bytes give FC-Overflow(32)
+        pl_size_fc_32 : 4094

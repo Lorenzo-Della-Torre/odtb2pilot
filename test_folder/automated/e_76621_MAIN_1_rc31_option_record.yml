@@ -12,3 +12,8 @@ ecm_hp:
     run:
         message: '023105'
         mask: '01'
+
+ecm_lp:
+    run:
+        message: '023105'
+        mask: '01'

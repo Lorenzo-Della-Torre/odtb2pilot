@@ -15,3 +15,9 @@ ecm_hp:
         response_timeout : 2
         max_no_of_dids : 500
         app_db_part_number : 'F120'
+
+ecm_lp:
+    run:
+        response_timeout : 2
+        max_no_of_dids : 500
+        app_db_part_number : 'F120'

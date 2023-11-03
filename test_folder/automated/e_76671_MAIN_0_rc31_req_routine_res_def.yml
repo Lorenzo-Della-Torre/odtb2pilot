@@ -4,3 +4,12 @@ hvbm_p519_sa1:
 hvbm_p519:
         step_2:
                 payload_reply: 037F3112
+ecm_phev:
+        step_2:
+                payload_reply: 037F3112
+ecm_hp:
+        step_2:
+                payload_reply: 037F3112
+ecm_lp:
+        step_2:
+                payload_reply: 037F3112

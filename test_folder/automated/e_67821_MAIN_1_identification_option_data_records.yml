@@ -21,3 +21,11 @@ ecm_hp:
         end_did_f17f: 'F17F'
         start_did_f1a0: 'F1A0'
         end_did1_f1ef: 'F1EF'
+
+ecm_lp:
+  run:
+    did_range_dict:
+        start_did_f100: 'F100'
+        end_did_f17f: 'F17F'
+        start_did_f1a0: 'F1A0'
+        end_did1_f1ef: 'F1EF'

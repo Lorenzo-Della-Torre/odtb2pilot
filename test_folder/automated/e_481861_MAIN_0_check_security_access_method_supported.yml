@@ -49,3 +49,20 @@ ecm_hp:
             '23' : "0001"
             '31' : "0001"
         p2_server_max_extended : 5000
+ecm_lp:
+    run:
+        programming_sa_levels_and_auth_method:
+            '01' : "0001"
+            '05' : "FFFF"
+            '11' : "FFFF"
+            '23' : "FFFF"
+            '31' : "FFFF"
+        p2_server_max_programming : 2500
+
+        extended_sa_levels_and_auth_method:
+            '01' : "FFFF"
+            '05' : "0001"
+            '11' : "0001"
+            '23' : "0001"
+            '31' : "0001"
+        p2_server_max_extended : 5000

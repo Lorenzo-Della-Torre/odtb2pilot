@@ -9,3 +9,7 @@ ecm_phev:
 ecm_hp:
     run:
         did_list_range : [[EDA0,EDFF],[ED20,ED7F]]
+
+ecm_lp:
+    run:
+        did_list_range : [[EDA0,EDFF],[ED20,ED7F]]
