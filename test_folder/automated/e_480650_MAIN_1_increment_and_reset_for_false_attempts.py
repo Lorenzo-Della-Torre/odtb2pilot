@@ -113,7 +113,7 @@ def activate_sa_delay_timer(dut, sa_level):
     """
     # Security access with invalid key
     response = security_access(dut, sa_level, invalid_key_flag=True)
-    if response[2:4] != '7F' and response[6:8] != '35':
+    if response[2:4] != '7F' or response[6:8] != '35':
         logging.error("Expected negative response '7F' and NRC-35(invalidKey) for security access "
                       "with invalid key, but received %s for level %s", response, sa_level)
         return False
@@ -123,7 +123,7 @@ def activate_sa_delay_timer(dut, sa_level):
 
     # Security access with invalid key for second time
     response = security_access(dut, sa_level, invalid_key_flag=True)
-    if response[2:4] != '7F' and response[6:8] != '36':
+    if response[2:4] != '7F' or response[6:8] != '36':
         logging.error("Expected negative response '7F' and NRC-36(exceededNumberOfAttempts) for "
                       "security access with invalid key, but received %s", response)
         return False
