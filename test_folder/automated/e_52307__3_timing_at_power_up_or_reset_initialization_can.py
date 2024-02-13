@@ -112,7 +112,7 @@ def send_signal(dut: Dut):
         "name" : "Heartbeat",
         "send" : True,
         "id" : dut.conf.rig.signal_periodic,
-        "nspace" : dut.namespace.name,
+        "nspace" : dut.namespace,
         "protocol" : "can",
         "framelength_max" : 8,
         "padding" : True,
