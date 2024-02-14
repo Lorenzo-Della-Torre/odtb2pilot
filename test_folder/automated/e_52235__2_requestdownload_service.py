@@ -77,7 +77,7 @@ def step_1(dut: Dut):
         return False
 
     # Read VBF files for SBL file (1st logical block)
-    _, vbf_header, data, data_start = SSBL.read_vbf_file(SSBL.get_sbl_filename())
+    _, vbf_header, data, data_start = SSBL.read_vbf_file(SSBL.get_df_filenames()[0])
 
     # Extract data for the 1st data block from SBL
     block_by = SSBL.block_data_extract(data, data_start)[1]
@@ -102,7 +102,7 @@ def step_2(dut: Dut):
     expected_result: True when ECU is in default session
     """
     # ECU reset
-    result = dut.uds.ecu_reset_1101()
+    result = dut.uds.ecu_reset_1101(5)
     if not result:
         logging.error("Test Failed: ECU reset failed")
         return False
