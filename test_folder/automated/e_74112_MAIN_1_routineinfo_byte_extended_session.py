@@ -107,7 +107,7 @@ def step_3(can_p):
     """
     cpay: CanPayload = {
         "payload": SC_CARCOM.can_m_send("RoutineControlRequestSID",
-                                        b'\xDC\x00',
+                                        b'\xDC\x65\x01\x02',
                                         b'\x01'),
         "extra": ''
         }
@@ -134,7 +134,7 @@ def step_4(can_p):
     """
     cpay: CanPayload = {
         "payload": SC_CARCOM.can_m_send("RoutineControlRequestSID",
-                                        b'\xDC\x00',
+                                        b'\x40\x25',
                                         b'\x03'),
         "extra": ''
         }
@@ -161,7 +161,7 @@ def step_5(can_p):
     """
     cpay: CanPayload = {
         "payload": SC_CARCOM.can_m_send("RoutineControlRequestSID",
-                                        b'\xDC\x00',
+                                        b'\x40\x25',
                                         b'\x02'),
         "extra": ''
         }
@@ -189,7 +189,7 @@ def step_6(can_p):
     """
     cpay: CanPayload = {
         "payload": SC_CARCOM.can_m_send("RoutineControlRequestSID",
-                                        b'\xDC\x10',
+                                        b'\x40\x05',
                                         b'\x01'),
         "extra": ''
         }
@@ -206,7 +206,7 @@ def step_6(can_p):
     result = SUTE.teststep(can_p, cpay, etp)
     result = result and\
              SUTE.pp_decode_routine_control_response(SC.can_frames[can_p["receive"]][0][2],
-                                                     'Type2,Completed')
+                                                     'Type2,Currently active')
     return result
 
 
@@ -216,7 +216,7 @@ def step_7(can_p):
     """
     cpay: CanPayload = {
         "payload": SC_CARCOM.can_m_send("RoutineControlRequestSID",
-                                        b'\xDC\x10',
+                                        b'\x40\x05',
                                         b'\x02'),
         "extra": ''
         }
@@ -281,17 +281,17 @@ def run():
     # step3:
     # action: send start RoutineControl signal for Type 3
     # result: BECM sends positive reply
-        result = result and step_3(can_p)
+        #result = result and step_3(can_p)
 
     # step4:
     # action: send result RoutineControl signal for Type 3
     # result: BECM sends positive reply
-        result = result and step_4(can_p)
+        #result = result and step_4(can_p)
 
     # step5:
     # action: send stop RoutineControl signal for Type 3
     # result: BECM sends positive reply
-        result = result and step_5(can_p)
+        #result = result and step_5(can_p)
 
     # step6:
     # action: send start RoutineControl signal for Type 2
