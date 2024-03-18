@@ -84,7 +84,7 @@ def step_1(dut: Dut):
 
 def step_2(dut: Dut, routine_id):
     """
-    action: Verify result availability before requesting the routine control type3 in extended
+    action: Verify result availability before requesting the routine control type2 in extended
             session
     expected_result: Should get negative response '7F' with NRC-24
     """
@@ -103,19 +103,19 @@ def step_2(dut: Dut, routine_id):
 
 def step_3(dut: Dut, routine_id):
     """
-    action: Verify Routine Type3 is in status running after start request is sent
+    action: Verify Routine Type2 is in status running after start request is sent
     expected_result: Should get positive response '71'
     """
     dut.uds.generic_ecu_call(SC_CARCOM.can_m_send("RoutineControlRequestSID",
                                                   bytes.fromhex(routine_id),
                                                   b'\x01'))
     result = SUTE.pp_decode_routine_control_response(SC.can_frames[dut["receive"]][0][2],
-                                                     "Type3,Currently active")
+                                                     "Type2,Currently active")
     if result:
-        logging.info("Received response 'Type3,Currently active' for routine identifier"
+        logging.info("Received response 'Type2,Currently active' for routine identifier"
                      " as expected")
     else:
-        logging.error("Test Failed: Expected response 'Type3,Currently active'")
+        logging.error("Test Failed: Expected response 'Type2,Currently active'")
 
     return result
 
@@ -130,11 +130,11 @@ def step_4(dut: Dut, routine_id):
                                                   bytes.fromhex(routine_id),
                                                   b'\x02'))
     result = SUTE.pp_decode_routine_control_response(SC.can_frames[dut["receive"]][0][2],
-                                                     "Type3,Completed")
+                                                     "Type2,Aborted")
     if result:
-        logging.info ("Received response 'Type3,Completed' for routine identifier as expected")
+        logging.info ("Received response 'Type2,Aborted' for routine identifier as expected")
     else:
-        logging.error("Test Failed: Expected response 'Type3,Completed'")
+        logging.error("Test Failed: Expected response 'Type2,Aborted'")
 
     return result
 
@@ -148,11 +148,11 @@ def step_5(dut: Dut, routine_id):
                                                   bytes.fromhex(routine_id),
                                                   b'\x03'))
     result = SUTE.pp_decode_routine_control_response(SC.can_frames[dut["receive"]][0][2],
-                                                     "Type3,Completed")
+                                                     "Type2,Aborted")
     if result:
-        logging.info ("Received response 'Type3,Completed' for routine identifier as expected")
+        logging.info ("Received response 'Type2,Aborted' for routine identifier as expected")
     else:
-        logging.error("Test Failed: Expected response 'Type3,Completed'")
+        logging.error("Test Failed: Expected response 'Type2,Aborted'")
 
     return result
 
@@ -174,11 +174,11 @@ def step_7(dut: Dut, routine_id):
                                                   bytes.fromhex(routine_id),
                                                   b'\x03'))
     result = SUTE.pp_decode_routine_control_response(SC.can_frames[dut["receive"]][0][2],
-                                                     "Type3,Completed")
+                                                     "Type2,Aborted")
     if result:
-        logging.info ("Received response 'Type3,Completed' for routine identifier as expected")
+        logging.info ("Received response 'Type2,Aborted' for routine identifier as expected")
     else:
-        logging.error("Test Failed: Expected response 'Type3,Completed'")
+        logging.error("Test Failed: Expected response 'Type2,Aborted'")
 
     return result
 
@@ -214,11 +214,11 @@ def step_10(dut: Dut, routine_id):
                                                   bytes.fromhex(routine_id),
                                                   b'\x03'))
     result = SUTE.pp_decode_routine_control_response(SC.can_frames[dut["receive"]][0][2],
-                                                     "Type3,Completed")
+                                                     "Type2,Aborted")
     if result:
-        logging.info ("Received response 'Type3,Completed' for routine identifier as expected")
+        logging.info ("Received response 'Type2,Aborted' for routine identifier as expected")
     else:
-        logging.error("Test Failed: Expected response 'Type3,Completed'")
+        logging.error("Test Failed: Expected response 'Type2,Aborted'")
 
     return result
 
@@ -247,10 +247,10 @@ def run():
 
         result = result and dut.step(step_2, parameters['routine_id'],
                                      purpose="Verify result availability before requesting the "
-                                             "routine control type3 in extended session")
+                                             "routine control type2 in extended session")
 
         result = result and dut.step(step_3, parameters['routine_id'],
-                                     purpose="Verify Routine Type 3 is running after start"
+                                     purpose="Verify Routine Type 2 is running after start"
                                              " request is sent in extended session")
 
         result = result and dut.step(step_4, parameters['routine_id'],
