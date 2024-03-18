@@ -11,3 +11,45 @@ hvbm_p519:
                 '0206': '100600'
             subfunctions:
             - "01"
+
+ecm_phev:
+    step_2:
+        programming:
+            rid_status_type:
+                '0205': '100000'
+            subfunctions:
+            - "01"
+    step_4:
+        extended:
+            rid_status_type:
+                '0206': '100600'
+            subfunctions:
+            - "01"
+
+ecm_hp:
+    step_2:
+        programming:
+            rid_status_type:
+                '0205': '100000'
+            subfunctions:
+            - "01"
+    step_4:
+        extended:
+            rid_status_type:
+                '0206': '100600'
+            subfunctions:
+            - "01"
+
+ecm_lp:
+    step_2:
+        programming:
+            rid_status_type:
+                '0205': '100000'
+            subfunctions:
+            - "01"
+    step_4:
+        extended:
+            rid_status_type:
+                '0206': '100600'
+            subfunctions:
+            - "01"

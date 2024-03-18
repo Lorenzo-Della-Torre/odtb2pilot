@@ -144,6 +144,40 @@ def routine_type_status(dut:Dut, vbf_header, parameters,
     logging.error('Test Failed: routine control request not successful')
     return False
 
+def routine_type_status_ext(dut:Dut, vbf_header, parameters,
+                                             rid, status):
+    """
+    To get Routine type and Routine status from Routine Control request
+    Args:
+        dut (class object): dut instance
+        vbf_header (dict) : vbf_header
+        rid (str): programming or extended rid
+        parameters (dict): subfunctions, status_type.
+    Returns:
+        bool: True on routine control successful
+    """
+    results = []
+    for sub_function in parameters['subfunctions']:
+        if rid == 'FF00':
+            SE31.routinecontrol_requestsid_flash_erase(dut, vbf_header, stepno=111)# check
+        else:
+            routine_control_request(dut, rid, sub_function)
+        can_msg_check = SC.can_messages[dut["receive"]][0][2]
+
+        if can_msg_check[6:10] == rid and can_msg_check[10:16] == status:
+            logging.info("Rid, Routine type and Status found %s", can_msg_check[6:10])
+            results.append(True)
+        else:
+            logging.error("Routine control Status type not as expected, received NRC:%s",
+                            can_msg_check)
+            results.append(False)
+
+    if len(results) != 0 and all(results):
+        logging.info('routine control request successful')
+        return True
+
+    logging.error('Test Failed: routine control request not successful')
+    return False
 
 def step_1(dut: Dut):
     """
@@ -203,7 +237,7 @@ def step_3(dut: Dut):
     dut.uds.set_mode(1)
     dut.uds.set_mode(3)
 
-    result = SE27.activate_security_access_fixedkey(dut, sa_keys=dut.conf.default_rig_config,
+    #result = SE27.activate_security_access_fixedkey(dut, sa_keys=dut.conf.default_rig_config,
                                                     step_no=272, purpose="SecurityAccess")
 
     if result:
