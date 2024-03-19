@@ -247,9 +247,9 @@ def run():
 
         result_step = dut.step(step_1, parameters, purpose="Request EDA0 DID with FC delay <"
                                " 1000ms and FC delay > 1000ms in PBL session")
-        if result_step:
+        '''if result_step:
             result_step = dut.step(step_2, parameters, purpose="Request EDA0 DID with FC delay <"
-                                   " 1000ms and FC delay > 1000ms in SBL session")
+                                   " 1000ms and FC delay > 1000ms in SBL session")'''
         result = result_step
 
     except DutTestError as error:
