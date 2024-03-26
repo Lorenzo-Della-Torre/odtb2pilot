@@ -14,3 +14,11 @@ ecm_hp:
             rand_start: 44
             rand_end: 76
             cmac_start: 76
+ecm_lp:
+    run:
+        client_seed_pos:
+            iv_start: 12
+            iv_end: 44
+            rand_start: 44
+            rand_end: 76
+            cmac_start: 76

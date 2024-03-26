@@ -3,3 +3,21 @@ hvbm_p519:
         did: 'DB90'
         data_record: '01'
         max_response_time: 5000
+ecm_phev:
+    run:
+        did: 'D9FB'
+        sec_access_level: 5
+        data_record: '01'
+        max_response_time: 5000
+ecm_hp:
+    run:
+        did: 'D9FB'
+        sec_access_level: 5
+        data_record: '01'
+        max_response_time: 5000
+ecm_lp:
+    run:
+        did: 'D9FB'
+        sec_access_level: 5
+        data_record: '01'
+        max_response_time: 5000

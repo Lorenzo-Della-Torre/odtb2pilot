@@ -2,3 +2,15 @@ hvbm_p519:
     run:
         periodic_did: '24'
         medium_rate_max_time: 300
+ecm_phev:
+    run:
+        periodic_did: '00'
+        medium_rate_max_time: 300
+ecm_hp:
+    run:
+        periodic_did: '00'
+        medium_rate_max_time: 300
+ecm_lp:
+    run:
+        periodic_did: '00'
+        medium_rate_max_time: 300
